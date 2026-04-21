@@ -1,5 +1,4 @@
 'use client';
-import { use } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -14,8 +13,8 @@ import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
-export default function OrgSubscriptionPage({ params }: { params: Promise<{ orgId: string }> }) {
-  const { orgId } = use(params);
+export default function OrgSubscriptionPage({ params }: { params: { orgId: string } }) {
+  const { orgId } = params;
   const router = useRouter();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);

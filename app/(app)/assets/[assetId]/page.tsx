@@ -1,5 +1,4 @@
 'use client';
-import { use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAsset } from '@/hooks/useAssets';
 import { useWarranties } from '@/hooks/useWarranties';
@@ -20,8 +19,8 @@ import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 
-export default function AssetDetailPage({ params }: { params: Promise<{ assetId: string }> }) {
-  const { assetId } = use(params);
+export default function AssetDetailPage({ params }: { params: { assetId: string } }) {
+  const { assetId } = params;
   const router = useRouter();
   const { user } = useAuthStore();
   const qc = useQueryClient();

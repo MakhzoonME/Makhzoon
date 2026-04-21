@@ -1,12 +1,11 @@
 'use client';
-import { use } from 'react';
 import { useWarranty } from '@/hooks/useWarranties';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { WarrantyForm } from '@/components/warranties/WarrantyForm';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 
-export default function EditWarrantyPage({ params }: { params: Promise<{ warrantyId: string }> }) {
-  const { warrantyId } = use(params);
+export default function EditWarrantyPage({ params }: { params: { warrantyId: string } }) {
+  const { warrantyId } = params;
   const { data: warranty, isLoading } = useWarranty(warrantyId);
 
   if (isLoading) return <LoadingSkeleton />;

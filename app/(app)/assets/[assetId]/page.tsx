@@ -1,0 +1,162 @@
+'use client';
+import { use } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAsset } from '@/hooks/useAssets';
+import { useWarranties } from '@/hooks/useWarranties';
+import { useAuthStore } from '@/store/auth.store';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { DataTable, ColumnDef } from '@/components/shared/DataTable';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
+import { ErrorState } from '@/components/shared/ErrorState';
+import { formatDate, isExpired, isExpiringSoon } from '@/lib/utils/date';
+import { Warranty } from '@/types';
+import { Edit, Plus } from 'lucide-react';
+import { RequestActionPanel } from '@/components/assets/RequestActionPanel';
+import { useState } from 'react';
+import { toast } from '@/hooks/useToast';
+import { useQueryClient } from '@tanstack/react-query';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+
+export default function AssetDetailPage({ params }: { params: Promise<{ assetId: string }> }) {
+  const { assetId } = use(params);
+  const router = useRouter();
+  const { user } = useAuthStore();
+  const qc = useQueryClient();
+  const { data: asset, isLoading, error } = useAsset(assetId);
+  const { data: warranties = [], isLoading: wLoading } = useWarranties({ assetId });
+  const [showRetire, setShowRetire] = useState(false);
+  const [retiring, setRetiring] = useState(false);
+
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isStaff = user?.role === 'staff';
+
+  async function handleRetire() {
+    setRetiring(true);
+    try {
+      await fetch(`/api/assets/${assetId}`, { method: 'DELETE' });
+      toast.success('Asset retired');
+      qc.invalidateQueries({ queryKey: ['assets'] });
+      router.push('/assets');
+    } catch { toast.error('Failed to retire asset'); }
+    finally { setRetiring(false); setShowRetire(false); }
+  }
+
+  const wColumns: ColumnDef<Warranty>[] = [
+    { key: 'vendor', header: 'Vendor', render: (w) => w.vendor },
+    { key: 'startDate', header: 'Start Date', render: (w) => formatDate(w.startDate) },
+    {
+      key: 'endDate', header: 'End Date',
+      render: (w) => <span className={isExpired(w.endDate) ? 'text-red-600' : ''}>{formatDate(w.endDate)}</span>
+    },
+    {
+      key: 'status', header: 'Status',
+      render: (w) => {
+        if (isExpired(w.endDate)) return <StatusBadge status="Expired" />;
+        if (isExpiringSoon(w.endDate)) return <StatusBadge status="Expiring Soon" />;
+        return <StatusBadge status="Active" />;
+      }
+    },
+    {
+      key: 'actions', header: 'Actions',
+      render: (w) => isAdmin ? (
+        <Button size="sm" variant="ghost" onClick={() => router.push(`/warranties/${w.id}/edit`)}>
+          <Edit className="h-3.5 w-3.5" />
+        </Button>
+      ) : null
+    },
+  ];
+
+  if (isLoading) return <LoadingSkeleton rows={6} columns={2} />;
+  if (error || !asset) return <ErrorState message="Asset not found." />;
+
+  return (
+    <div>
+      <PageHeader
+        title={`Asset: ${asset.name}`}
+        breadcrumb={[{ label: 'Assets', href: '/assets' }, { label: asset.name, href: `/assets/${assetId}` }]}
+        actions={isAdmin ? (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => router.push(`/assets/${assetId}/edit`)}>
+              <Edit className="h-4 w-4 mr-1" /> Edit
+            </Button>
+            {asset.status === 'Active' && (
+              <Button variant="destructive" size="sm" onClick={() => setShowRetire(true)}>Retire</Button>
+            )}
+          </div>
+        ) : undefined}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <Card className="lg:col-span-2">
+          <CardContent className="p-6">
+            <h2 className="text-sm font-semibold text-gray-900 mb-4">Details</h2>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              {[
+                ['Category', asset.category],
+                ['Status', <StatusBadge key="s" status={asset.status} />],
+                ['Serial Number', asset.serialNumber ? <span className="font-mono text-xs">{asset.serialNumber}</span> : '—'],
+                ['Assigned To', asset.assignedTo || '—'],
+                ['Location', asset.location || '—'],
+                ['Purchase Cost', asset.purchaseCost ? `${asset.purchaseCost} JOD` : '—'],
+                ['Purchase Date', asset.purchaseDate ? formatDate(asset.purchaseDate) : '—'],
+              ].map(([label, value]) => (
+                <div key={String(label)}>
+                  <dt className="text-gray-500">{label}</dt>
+                  <dd className="font-medium text-gray-900 mt-0.5">{value}</dd>
+                </div>
+              ))}
+              {asset.notes && (
+                <div className="col-span-2">
+                  <dt className="text-gray-500">Notes</dt>
+                  <dd className="font-medium text-gray-900 mt-0.5 whitespace-pre-wrap">{asset.notes}</dd>
+                </div>
+              )}
+            </dl>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="text-sm font-semibold text-gray-900 mb-4">Metadata</h2>
+            <dl className="space-y-3 text-sm">
+              {[
+                ['Created By', asset.createdBy],
+                ['Created At', formatDate(asset.createdAt)],
+                ['Updated By', asset.updatedBy],
+                ['Updated At', formatDate(asset.updatedAt)],
+              ].map(([label, value]) => (
+                <div key={String(label)}>
+                  <dt className="text-gray-500">{label}</dt>
+                  <dd className="font-medium text-gray-900">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 mb-6">
+        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-900">WARRANTIES</h2>
+          {isAdmin && <Button size="sm" onClick={() => router.push(`/warranties/new?assetId=${assetId}`)}><Plus className="h-4 w-4 mr-1" />Add Warranty</Button>}
+        </div>
+        <DataTable data={warranties} columns={wColumns} isLoading={wLoading} emptyMessage="No warranties attached." keyExtractor={(w) => w.id} />
+      </div>
+
+      {isStaff && <RequestActionPanel assetId={assetId} warranties={warranties} />}
+
+      <ConfirmDialog
+        open={showRetire}
+        onOpenChange={setShowRetire}
+        title="Retire Asset"
+        description={`Are you sure you want to retire "${asset.name}"?`}
+        confirmLabel="Retire"
+        onConfirm={handleRetire}
+        loading={retiring}
+      />
+    </div>
+  );
+}

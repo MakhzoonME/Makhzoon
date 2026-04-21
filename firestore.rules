@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSuperAdmin() {
+      return request.auth != null && request.auth.token.role == 'super_admin';
+    }
+    function isAdmin() {
+      return request.auth != null && request.auth.token.role == 'admin';
+    }
+    function isStaff() {
+      return request.auth != null && request.auth.token.role == 'staff';
+    }
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function belongsToOrg(orgId) {
+      return request.auth.token.organizationId == orgId;
+    }
+    function isAdminOfOrg(orgId) {
+      return isAdmin() && belongsToOrg(orgId);
+    }
+
+    match /organizations/{orgId} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    match /subscriptions/{subId} {
+      allow read, write: if isSuperAdmin();
+      allow read: if isAdminOfOrg(resource.data.organizationId);
+    }
+
+    match /users/{userId} {
+      allow read, write: if isSuperAdmin();
+      allow read, write: if isAdminOfOrg(resource.data.organizationId);
+      allow read: if isStaff() && belongsToOrg(resource.data.organizationId);
+    }
+
+    match /assets/{assetId} {
+      allow read, write: if isSuperAdmin();
+      allow read, write: if isAdminOfOrg(resource.data.organizationId);
+      allow read: if isStaff() && belongsToOrg(resource.data.organizationId);
+    }
+
+    match /warranties/{warrantyId} {
+      allow read, write: if isSuperAdmin();
+      allow read, write: if isAdminOfOrg(resource.data.organizationId);
+      allow read: if isStaff() && belongsToOrg(resource.data.organizationId);
+    }
+
+    match /requests/{requestId} {
+      allow read, write: if isSuperAdmin();
+      allow read, write: if isAdminOfOrg(resource.data.organizationId);
+      allow read, create: if isStaff() && belongsToOrg(resource.data.organizationId);
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isSuperAdmin();
+      allow read: if isAdmin() && belongsToOrg(resource.data.organizationId);
+      allow write: if false;
+    }
+  }
+}

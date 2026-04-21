@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --radius: 0.5rem;
+
+  /* Primary */
+  --primary-600: #2563EB;
+  --primary-500: #3B82F6;
+  --primary-400: #60A5FA;
+  --primary-100: #DBEAFE;
+  --primary-50: #EFF6FF;
+
+  /* Neutral */
+  --gray-950: #030712;
+  --gray-900: #111827;
+  --gray-800: #1F2937;
+  --gray-700: #374151;
+  --gray-600: #4B5563;
+  --gray-500: #6B7280;
+  --gray-400: #9CA3AF;
+  --gray-300: #D1D5DB;
+  --gray-200: #E5E7EB;
+  --gray-100: #F3F4F6;
+  --gray-50: #F9FAFB;
+  --white: #FFFFFF;
+
+  /* Semantic */
+  --green-700: #15803D;
+  --green-600: #16A34A;
+  --green-100: #DCFCE7;
+  --green-50: #F0FDF4;
+
+  --yellow-700: #A16207;
+  --yellow-600: #CA8A04;
+  --yellow-100: #FEF9C3;
+  --yellow-50: #FEFCE8;
+
+  --red-700: #B91C1C;
+  --red-600: #DC2626;
+  --red-100: #FEE2E2;
+  --red-50: #FEF2F2;
+
+  --blue-600: #2563EB;
+  --blue-100: #DBEAFE;
+  --blue-50: #EFF6FF;
+
+  /* Super Admin */
+  --super-admin-bg: #1E3A5F;
+  --super-admin-text: #BFDBFE;
+
+  /* Surface */
+  --surface-page: #F8FAFC;
+  --surface-card: #FFFFFF;
+  --surface-sidebar: #FFFFFF;
+  --border-default: #E5E7EB;
+  --border-strong: #D1D5DB;
+
+  --background: #F8FAFC;
+  --foreground: #111827;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

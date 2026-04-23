@@ -1,6 +1,8 @@
 import { adminAuth } from './admin';
 import { AuthUser, UserRole } from '@/types';
 import { cookies } from 'next/headers';
+import { getRequestSubdomain } from '@/lib/subdomain';
+import { getOrganizationBySubdomain } from '@/lib/firestore/organizations';
 
 export async function verifySessionCookie(): Promise<AuthUser | null> {
   try {
@@ -10,11 +12,25 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
 
     const decoded = await adminAuth.verifySessionCookie(session, true);
     const role = decoded.role as UserRole;
-    let organizationId = (decoded.organizationId as string | undefined) ?? null;
+    const claimOrgId = (decoded.organizationId as string | undefined) ?? null;
+    let organizationId = claimOrgId;
 
-    // Super admins can "enter" an organization via transfer mode; a transferOrgId
-    // cookie is set by /api/organizations/[orgId]/transfer and acts as the effective org.
-    if (role === 'super_admin') {
+    // Subdomain takes precedence over transferOrgId cookie when present.
+    // - super_admin: subdomain acts as implicit transfer mode
+    // - members: must belong to the subdomain's org
+    const subdomain = await getRequestSubdomain();
+    if (subdomain) {
+      const org = await getOrganizationBySubdomain(subdomain);
+      if (!org) return null;
+      if (role === 'super_admin') {
+        organizationId = org.id;
+      } else if (claimOrgId === org.id) {
+        organizationId = org.id;
+      } else {
+        // Signed in but not a member of this tenant
+        return null;
+      }
+    } else if (role === 'super_admin') {
       const transferOrgId = cookieStore.get('transferOrgId')?.value;
       if (transferOrgId) organizationId = transferOrgId;
     }

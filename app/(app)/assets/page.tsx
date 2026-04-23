@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Asset } from '@/types';
 import { formatDate } from '@/lib/utils/date';
-import { Plus, Edit, ArchiveX } from 'lucide-react';
+import { Plus, Edit, ArchiveX, Upload } from 'lucide-react';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -38,7 +38,7 @@ export default function AssetsPage() {
   const columns: ColumnDef<Asset>[] = [
     {
       key: 'name', header: 'Name',
-      render: (a) => <button className="font-medium text-blue-600 hover:underline text-left" onClick={() => router.push(`/assets/${a.id}`)}>{a.name}</button>
+      render: (a) => <button className="font-medium text-indigo-600 hover:text-indigo-700 hover:underline text-left" onClick={() => router.push(`/assets/${a.id}`)}>{a.name}</button>
     },
     { key: 'category', header: 'Category', render: (a) => a.category },
     { key: 'status', header: 'Status', render: (a) => <StatusBadge status={a.status} /> },
@@ -89,9 +89,14 @@ export default function AssetsPage() {
       <PageHeader
         title="Assets"
         actions={isAdmin ? (
-          <Button size="sm" onClick={() => router.push('/assets/new')}>
-            <Plus className="h-4 w-4 mr-1" /> Add Asset
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => router.push('/assets/import')}>
+              <Upload className="h-4 w-4 mr-1" /> Import CSV
+            </Button>
+            <Button size="sm" onClick={() => router.push('/assets/new')}>
+              <Plus className="h-4 w-4 mr-1" /> Add Asset
+            </Button>
+          </div>
         ) : undefined}
       />
 

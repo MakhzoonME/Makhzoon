@@ -47,3 +47,9 @@ export async function subdomainExists(subdomain: string): Promise<boolean> {
   const snap = await adminDb.collection('organizations').where('subdomain', '==', subdomain).limit(1).get();
   return !snap.empty;
 }
+
+export async function getOrganizationBySubdomain(subdomain: string): Promise<Organization | null> {
+  const snap = await adminDb.collection('organizations').where('subdomain', '==', subdomain).limit(1).get();
+  if (snap.empty) return null;
+  return toOrg(snap.docs[0].id, snap.docs[0].data());
+}

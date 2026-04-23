@@ -28,15 +28,16 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
   async function onSubmit(data: InviteUserFormData) {
     setLoading(true);
     try {
-      const res = await fetch('/api/users', {
+      const res = await fetch('/api/invites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.error ?? 'Failed to invite user'); }
       const result = await res.json();
-      toast.success(`User invited. Temp password: ${result.tempPassword}`);
+      toast.success(result.emailSent ? 'Invite email sent.' : `Invite link: ${result.acceptUrl}`);
       qc.invalidateQueries({ queryKey: ['users'] });
+      qc.invalidateQueries({ queryKey: ['invites'] });
       form.reset();
       onOpenChange(false);
     } catch (err: unknown) {

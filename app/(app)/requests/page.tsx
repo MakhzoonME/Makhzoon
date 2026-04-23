@@ -40,8 +40,8 @@ export default function RequestsPage() {
   }
 
   const columns: ColumnDef<Request>[] = [
-    { key: 'type', header: 'Type', render: (r) => <span className="font-medium text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">{typeLabels[r.type] ?? r.type}</span> },
-    { key: 'assetId', header: 'Asset', render: (r) => r.assetId ? <button className="text-blue-600 hover:underline" onClick={() => router.push(`/assets/${r.assetId}`)}>{r.assetId}</button> : <span className="text-gray-400">—</span> },
+    { key: 'type', header: 'Type', render: (r) => <span className="font-medium text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">{typeLabels[r.type] ?? r.type}</span> },
+    { key: 'assetId', header: 'Asset', render: (r) => r.assetId ? <button className="text-indigo-600 hover:underline" onClick={() => router.push(`/assets/${r.assetId}`)}>{r.assetId}</button> : <span className="text-gray-400">—</span> },
     { key: 'createdBy', header: 'Submitted By', render: (r) => r.createdBy },
     { key: 'createdAt', header: 'Date', render: (r) => formatDate(r.createdAt) },
     { key: 'description', header: 'Description', render: (r) => <span className="text-gray-600">{truncate(r.description, 60)}</span> },

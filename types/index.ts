@@ -6,3 +6,8 @@ export * from './organization.types';
 export * from './subscription.types';
 export * from './user.types';
 export * from './audit-log.types';
+export * from './asset-note.types';
+export * from './maintenance-record.types';
+export * from './asset-checkout.types';
+export * from './invite.types';
+export * from './report.types';

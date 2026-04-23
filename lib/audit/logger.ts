@@ -3,11 +3,16 @@ import { UserRole } from '@/types';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export type AuditAction =
-  | 'ASSET_CREATED' | 'ASSET_UPDATED' | 'ASSET_RETIRED'
+  | 'ASSET_CREATED' | 'ASSET_UPDATED' | 'ASSET_RETIRED' | 'ASSETS_IMPORTED'
+  | 'ASSET_NOTE_ADDED' | 'ASSET_NOTE_DELETED'
+  | 'MAINTENANCE_ADDED' | 'MAINTENANCE_UPDATED' | 'MAINTENANCE_DELETED'
+  | 'ASSET_CHECKED_OUT' | 'ASSET_CHECKED_IN'
   | 'WARRANTY_CREATED' | 'WARRANTY_UPDATED' | 'WARRANTY_DELETED'
+  | 'WARRANTY_ALERT_SENT'
   | 'REQUEST_SUBMITTED' | 'REQUEST_APPROVED' | 'REQUEST_REJECTED'
   | 'USER_INVITED' | 'USER_UPDATED' | 'USER_DEACTIVATED'
-  | 'ORGANIZATION_CREATED' | 'ORGANIZATION_UPDATED'
+  | 'INVITE_SENT' | 'INVITE_ACCEPTED' | 'INVITE_REVOKED'
+  | 'ORGANIZATION_CREATED' | 'ORGANIZATION_UPDATED' | 'ORGANIZATION_SELF_SERVE_CREATED'
   | 'SUBSCRIPTION_UPDATED'
   | 'TRANSFER_MODE_ENTERED' | 'TRANSFER_MODE_EXITED';
 
@@ -17,7 +22,7 @@ interface LogParams {
   role: UserRole;
   action: AuditAction;
   module: string;
-  recordId: string;
+  recordId?: string;
   oldValue?: Record<string, unknown>;
   newValue?: Record<string, unknown>;
   transferMode?: boolean;

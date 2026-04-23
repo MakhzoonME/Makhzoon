@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff } from 'lucide-react';
+import { buildTenantUrl, buildRootUrl } from '@/lib/utils/tenant-url';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,9 +33,11 @@ export default function LoginPage() {
 
       if (!res.ok) throw new Error('Session creation failed');
 
-      const { role } = await res.json();
+      const { role, subdomain } = await res.json();
       if (role === 'super_admin') {
-        router.push('/super-admin');
+        window.location.href = buildRootUrl('/super-admin');
+      } else if (subdomain) {
+        window.location.href = buildTenantUrl(subdomain, '/dashboard');
       } else {
         router.push('/dashboard');
       }
@@ -50,7 +53,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-blue-600 mb-4">
+          <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-indigo-600 mb-4">
             <span className="text-white text-lg font-bold">OA</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Office Asset System</h1>
@@ -104,6 +107,11 @@ export default function LoginPage() {
             </Button>
           </form>
         </div>
+
+        <p className="text-center text-sm text-gray-500 mt-6">
+          New to Office Assets?{' '}
+          <a href="/signup" className="font-medium text-indigo-600 hover:text-indigo-700">Create a workspace</a>
+        </p>
       </div>
     </div>
   );

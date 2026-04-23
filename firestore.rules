@@ -59,5 +59,29 @@ service cloud.firestore {
       allow read: if isAdmin() && belongsToOrg(resource.data.organizationId);
       allow write: if false;
     }
+
+    match /assetNotes/{noteId} {
+      allow read, write: if isSuperAdmin();
+      allow read, write: if isAdminOfOrg(resource.data.organizationId);
+      allow read, create: if isStaff() && belongsToOrg(resource.data.organizationId);
+      allow delete: if isStaff() && belongsToOrg(resource.data.organizationId) && resource.data.createdBy == request.auth.uid;
+    }
+
+    match /maintenanceRecords/{recordId} {
+      allow read, write: if isSuperAdmin();
+      allow read, write: if isAdminOfOrg(resource.data.organizationId);
+      allow read: if isStaff() && belongsToOrg(resource.data.organizationId);
+    }
+
+    match /assetCheckouts/{checkoutId} {
+      allow read, write: if isSuperAdmin();
+      allow read, write: if isAdminOfOrg(resource.data.organizationId);
+      allow read, create, update: if isStaff() && belongsToOrg(resource.data.organizationId);
+    }
+
+    match /invites/{inviteId} {
+      allow read, write: if isSuperAdmin();
+      allow read, write: if isAdminOfOrg(resource.data.organizationId);
+    }
   }
 }

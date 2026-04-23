@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { writeAuditLog } from '@/lib/audit/logger';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
+import { adminDb } from '@/lib/firebase/admin';
+import { getCookieDomain } from '@/lib/subdomain';
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   const user = await verifySessionCookie();
@@ -9,8 +11,21 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ or
   if (user.role !== 'super_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { orgId } = await params;
+
+  const orgDoc = await adminDb.collection('organizations').doc(orgId).get();
+  if (!orgDoc.exists) return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
+  const subdomain = (orgDoc.data()?.subdomain as string) ?? null;
+  const name = (orgDoc.data()?.name as string) ?? null;
+
+  const hdrs = await headers();
+  const cookieDomain = getCookieDomain(hdrs.get('host'));
   const cookieStore = await cookies();
-  cookieStore.set('transferOrgId', orgId, { httpOnly: true, path: '/', sameSite: 'lax' });
+  cookieStore.set('transferOrgId', orgId, {
+    httpOnly: true,
+    path: '/',
+    sameSite: 'lax',
+    ...(cookieDomain ? { domain: cookieDomain } : {}),
+  });
 
   await writeAuditLog({
     organizationId: orgId,
@@ -22,5 +37,5 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ or
     transferMode: true,
   });
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, orgId, name, subdomain });
 }

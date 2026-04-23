@@ -4,7 +4,12 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Public routes
-  if (pathname.startsWith('/login') || pathname.startsWith('/api/')) {
+  if (
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/signup') ||
+    pathname.startsWith('/invites/') ||
+    pathname.startsWith('/api/')
+  ) {
     return NextResponse.next();
   }
 

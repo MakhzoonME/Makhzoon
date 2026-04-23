@@ -14,6 +14,10 @@ import { formatDate, isExpired, isExpiringSoon } from '@/lib/utils/date';
 import { Warranty } from '@/types';
 import { Edit, Plus } from 'lucide-react';
 import { RequestActionPanel } from '@/components/assets/RequestActionPanel';
+import { AssetNotesSection } from '@/components/assets/AssetNotesSection';
+import { MaintenanceSection } from '@/components/assets/MaintenanceSection';
+import { CheckoutSection } from '@/components/assets/CheckoutSection';
+import { AssetQRCard } from '@/components/assets/AssetQRCard';
 import { useState } from 'react';
 import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -143,6 +147,16 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
           {isAdmin && <Button size="sm" onClick={() => router.push(`/warranties/new?assetId=${assetId}`)}><Plus className="h-4 w-4 mr-1" />Add Warranty</Button>}
         </div>
         <DataTable data={warranties} columns={wColumns} isLoading={wLoading} emptyMessage="No warranties attached." keyExtractor={(w) => w.id} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <CheckoutSection assetId={assetId} assetName={asset.name} />
+        <AssetQRCard assetId={assetId} assetName={asset.name} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <AssetNotesSection assetId={assetId} />
+        <MaintenanceSection assetId={assetId} />
       </div>
 
       {isStaff && <RequestActionPanel assetId={assetId} warranties={warranties} />}

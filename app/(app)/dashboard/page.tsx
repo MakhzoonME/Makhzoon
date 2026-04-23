@@ -63,7 +63,7 @@ export default function DashboardPage() {
         <Card className="cursor-pointer hover:shadow-sm transition-shadow" onClick={() => router.push('/assets?status=Active')}>
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-50"><Package className="h-5 w-5 text-blue-600" /></div>
+              <div className="p-2 rounded-lg bg-indigo-50"><Package className="h-5 w-5 text-indigo-600" /></div>
               <div>
                 <p className="text-xs text-gray-500 font-medium">Active Assets</p>
                 {isLoading ? <div className="h-6 w-12 bg-gray-200 rounded animate-pulse mt-1" /> : <p className="text-2xl font-bold text-gray-900">{activeAssets.length}</p>}

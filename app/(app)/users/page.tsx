@@ -15,7 +15,7 @@ export default function UsersPage() {
   const [showInvite, setShowInvite] = useState(false);
 
   const roleBadge = (role: string) => {
-    const cls = role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700';
+    const cls = role === 'admin' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700';
     return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${cls}`}>{role}</span>;
   };
 

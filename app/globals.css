@@ -3,14 +3,15 @@
 @tailwind utilities;
 
 :root {
-  --radius: 0.5rem;
+  --radius: 0.625rem;
 
-  /* Primary */
-  --primary-600: #2563EB;
-  --primary-500: #3B82F6;
-  --primary-400: #60A5FA;
-  --primary-100: #DBEAFE;
-  --primary-50: #EFF6FF;
+  /* Primary (indigo) */
+  --primary-700: #4338CA;
+  --primary-600: #4F46E5;
+  --primary-500: #6366F1;
+  --primary-400: #818CF8;
+  --primary-100: #E0E7FF;
+  --primary-50: #EEF2FF;
 
   /* Neutral */
   --gray-950: #030712;

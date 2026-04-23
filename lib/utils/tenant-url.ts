@@ -1,4 +1,5 @@
 const RESERVED = new Set(['', 'www', 'app', 'admin', 'api', 'static']);
+const PLATFORM_SUFFIXES = ['.vercel.app', '.netlify.app', '.pages.dev', '.onrender.com', '.fly.dev'];
 
 function splitHost(host: string): { hostname: string; port: string } {
   const idx = host.indexOf(':');
@@ -11,6 +12,7 @@ export function currentSubdomain(host: string): string | null {
   const { hostname } = splitHost(host);
   const lower = hostname.toLowerCase();
   if (lower === 'localhost' || /^\d{1,3}(\.\d{1,3}){3}$/.test(lower)) return null;
+  if (PLATFORM_SUFFIXES.some((s) => lower.endsWith(s))) return null;
   const parts = lower.split('.');
   if (parts.length === 2 && parts[1] === 'localhost') {
     return RESERVED.has(parts[0]) ? null : parts[0];
@@ -25,6 +27,8 @@ export function rootHost(host: string): string {
   const { hostname, port } = splitHost(host);
   const lower = hostname.toLowerCase();
   if (lower === 'localhost') return hostname + port;
+  // Platform hosts (vercel.app, etc.): the full host IS the root — no wildcard subdomains.
+  if (PLATFORM_SUFFIXES.some((s) => lower.endsWith(s))) return hostname + port;
   const parts = lower.split('.');
   if (parts.length >= 2 && parts[parts.length - 1] === 'localhost') return 'localhost' + port;
   if (parts.length >= 3) return parts.slice(-2).join('.') + port;

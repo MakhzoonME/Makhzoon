@@ -2,10 +2,15 @@ import { headers } from 'next/headers';
 
 const RESERVED = new Set(['', 'www', 'app', 'admin', 'api', 'static']);
 
+// Platform hosts where the apex (e.g. my-app.vercel.app) is the app itself, not a subdomain.
+// Any host ending in one of these is treated as "no subdomain" regardless of label count.
+const PLATFORM_SUFFIXES = ['.vercel.app', '.netlify.app', '.pages.dev', '.onrender.com', '.fly.dev'];
+
 export function extractSubdomain(host: string | null | undefined): string | null {
   if (!host) return null;
   const bare = host.split(':')[0].toLowerCase();
   if (bare === 'localhost' || bare === '127.0.0.1' || /^\d{1,3}(\.\d{1,3}){3}$/.test(bare)) return null;
+  if (PLATFORM_SUFFIXES.some((s) => bare.endsWith(s))) return null;
   const parts = bare.split('.');
 
   // localhost dev: testco.localhost -> ['testco', 'localhost']

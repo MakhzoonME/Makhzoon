@@ -25,8 +25,13 @@ export async function getAuditLogs(opts?: {
   dateFrom?: string;
   dateTo?: string;
   limit?: number;
-}): Promise<AuditLog[]> {
-  let q = adminDb.collection('auditLogs').orderBy('timestamp', 'desc').limit(opts?.limit ?? 50) as FirebaseFirestore.Query;
+  cursor?: string;
+}): Promise<{ logs: AuditLog[]; nextCursor: string | null }> {
+  const pageSize = opts?.limit ?? 50;
+  let q = adminDb
+    .collection('auditLogs')
+    .orderBy('timestamp', 'desc')
+    .limit(pageSize + 1) as FirebaseFirestore.Query;
 
   if (opts?.orgId) q = q.where('organizationId', '==', opts.orgId);
   if (opts?.userId) q = q.where('userId', '==', opts.userId);
@@ -34,6 +39,18 @@ export async function getAuditLogs(opts?: {
   if (opts?.dateFrom) q = q.where('timestamp', '>=', new Date(opts.dateFrom));
   if (opts?.dateTo) q = q.where('timestamp', '<=', new Date(opts.dateTo));
 
+  if (opts?.cursor) {
+    const cursorDoc = await adminDb.collection('auditLogs').doc(opts.cursor).get();
+    if (cursorDoc.exists) q = q.startAfter(cursorDoc);
+  }
+
   const snap = await q.get();
-  return snap.docs.map((d) => toLog(d.id, d.data()));
+  const docs = snap.docs;
+  const hasMore = docs.length > pageSize;
+  const page = hasMore ? docs.slice(0, pageSize) : docs;
+
+  return {
+    logs: page.map((d) => toLog(d.id, d.data())),
+    nextCursor: hasMore ? page[page.length - 1].id : null,
+  };
 }

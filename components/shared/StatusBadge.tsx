@@ -25,6 +25,16 @@ const statusConfig: Record<string, { variant: 'default' | 'green' | 'yellow' | '
   SUSPENDED: { variant: 'orange', label: 'Suspended' },
   Suspended: { variant: 'orange', label: 'Suspended' },
   deactivated: { variant: 'red', label: 'Deactivated' },
+  // Ticket statuses
+  OPEN: { variant: 'blue', label: 'Open' },
+  IN_PROGRESS: { variant: 'yellow', label: 'In Progress' },
+  RESOLVED: { variant: 'green', label: 'Resolved' },
+  CLOSED: { variant: 'default', label: 'Closed' },
+  // Ticket priorities
+  LOW: { variant: 'default', label: 'Low' },
+  MEDIUM: { variant: 'blue', label: 'Medium' },
+  HIGH: { variant: 'orange', label: 'High' },
+  URGENT: { variant: 'red', label: 'Urgent' },
 };
 
 export function StatusBadge({ status }: { status: Status }) {

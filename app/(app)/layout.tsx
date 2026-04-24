@@ -9,6 +9,7 @@ import {
   SIDEBAR_WIDTH_EXPANDED,
 } from '@/components/layout/AppSidebar';
 import { TransferModeBanner } from '@/components/layout/TransferModeBanner';
+import { ExpiryWarningBanner } from '@/components/shared/ExpiryWarningBanner';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { useTransferStore } from '@/store/transfer.store';
 import { useUiStore } from '@/store/ui.store';
@@ -63,6 +64,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-surface-page">
       <AppHeader orgName={orgName ?? undefined} />
       {showBanner && <TransferModeBanner />}
+      <ExpiryWarningBanner />
       <AppSidebar />
       <main
         className={`pt-14 ${showBanner ? 'mt-10' : ''} min-h-screen transition-[margin-left] duration-350 ease-out-expo`}

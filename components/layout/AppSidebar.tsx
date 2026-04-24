@@ -10,21 +10,34 @@ import {
   Users,
   CreditCard,
   BarChart3,
+  MessageCircle,
+  History,
   ChevronsLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
+import { useSubscriptionFeatures } from '@/hooks/useSubscriptionFeatures';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  adminOnly?: boolean;
+  featureKey?: string;
+}
+
+const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/assets', label: 'Assets', icon: Package },
-  { href: '/warranties', label: 'Warranties', icon: ShieldCheck },
-  { href: '/requests', label: 'Requests', icon: ClipboardList },
+  { href: '/warranties', label: 'Warranties', icon: ShieldCheck, featureKey: 'warranties' },
+  { href: '/requests', label: 'Requests', icon: ClipboardList, featureKey: 'requests' },
   { href: '/reports', label: 'Reports', icon: BarChart3, adminOnly: true },
   { href: '/users', label: 'Users', icon: Users, adminOnly: true },
   { href: '/subscription', label: 'Subscription', icon: CreditCard, adminOnly: true },
+  { href: '/support', label: 'Support', icon: MessageCircle, featureKey: 'support' },
+  { href: '/audit-logs', label: 'Audit Logs', icon: History, adminOnly: true },
 ];
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
@@ -36,9 +49,16 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { user } = useAuthStore();
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
+  const features = useSubscriptionFeatures();
 
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin';
-  const visibleItems = navItems.filter((item) => !item.adminOnly || canSeeAdmin);
+
+  const visibleItems = navItems.filter((item) => {
+    if (item.adminOnly && !canSeeAdmin) return false;
+    // Hide only when explicitly disabled; empty features object = show all
+    if (item.featureKey && features[item.featureKey] === false) return false;
+    return true;
+  });
 
   return (
     <TooltipProvider delayDuration={120} skipDelayDuration={200}>
@@ -95,9 +115,7 @@ export function AppSidebar() {
               </Link>
             );
 
-            if (!sidebarCollapsed) {
-              return <div key={href}>{link}</div>;
-            }
+            if (!sidebarCollapsed) return <div key={href}>{link}</div>;
 
             return (
               <Tooltip key={href}>

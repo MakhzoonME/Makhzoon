@@ -11,3 +11,5 @@ export * from './maintenance-record.types';
 export * from './asset-checkout.types';
 export * from './invite.types';
 export * from './report.types';
+export * from './usage.types';
+export * from './support-ticket.types';

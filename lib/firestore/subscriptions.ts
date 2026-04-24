@@ -6,6 +6,9 @@ function toSubscription(id: string, data: FirebaseFirestore.DocumentData): Subsc
   return {
     id,
     organizationId: data.organizationId,
+    packageId: data.packageId ?? null,
+    features: data.features ?? {},
+    notes: data.notes ?? null,
     packageDetails: data.packageDetails ?? {},
     startDate: data.startDate instanceof Timestamp ? data.startDate.toDate() : new Date(data.startDate),
     endDate: data.endDate instanceof Timestamp ? data.endDate.toDate() : new Date(data.endDate),

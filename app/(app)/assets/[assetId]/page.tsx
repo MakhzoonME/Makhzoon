@@ -166,7 +166,15 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
       <div className="bg-white rounded-lg border border-gray-200 mb-6">
         <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-900">WARRANTIES</h2>
-          {isAdmin && <Button size="sm" onClick={() => router.push(`/warranties/new?assetId=${assetId}`)}><Plus className="h-4 w-4 mr-1" />Add Warranty</Button>}
+          {isAdmin && (() => {
+            const now = new Date();
+            const hasActiveWarranty = (warranties as Warranty[]).some((w) => new Date(w.endDate) >= now);
+            return !hasActiveWarranty && (
+              <Button size="sm" onClick={() => router.push(`/warranties/new?assetId=${assetId}`)}>
+                <Plus className="h-4 w-4 mr-1" />Add Warranty
+              </Button>
+            );
+          })()}
         </div>
         <DataTable data={warranties} columns={wColumns} isLoading={wLoading} emptyMessage="No warranties attached." keyExtractor={(w) => w.id} />
       </div>

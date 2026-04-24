@@ -12,10 +12,11 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAssets } from '@/hooks/useAssets';
+import { useWarranties } from '@/hooks/useWarranties';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Asset } from '@/types';
+import { AlertTriangle, ShieldOff } from 'lucide-react';
 
 interface WarrantyFormProps { warranty?: Warranty; }
 
@@ -24,8 +25,28 @@ export function WarrantyForm({ warranty }: WarrantyFormProps) {
   const searchParams = useSearchParams();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const { data: assetsData } = useAssets({ status: 'Active' });
-  const assets = assetsData?.items ?? [];
+
+  // Fetch all active assets + all org warranties to compute availability
+  const { data: assetsData, isLoading: assetsLoading } = useAssets({ status: 'Active' });
+  const { data: allWarranties = [], isLoading: warrantiesLoading } = useWarranties();
+
+  // Assets eligible for a NEW warranty = active assets with no non-expired warranty
+  const availableAssets = useMemo(() => {
+    const allAssets = assetsData?.items ?? [];
+    if (warranty) return allAssets; // editing — show all (asset field is disabled anyway)
+
+    const now = new Date();
+    const assetIdsWithActiveWarranty = new Set(
+      (allWarranties as Warranty[])
+        .filter((w) => new Date(w.endDate) >= now)
+        .map((w) => w.assetId)
+    );
+
+    return allAssets.filter((a) => !assetIdsWithActiveWarranty.has(a.id));
+  }, [assetsData, allWarranties, warranty]);
+
+  const isLoadingData = assetsLoading || warrantiesLoading;
+  const noAssetsAvailable = !isLoadingData && availableAssets.length === 0 && !warranty;
 
   const form = useForm<WarrantyFormData>({
     resolver: zodResolver(warrantySchema),
@@ -44,26 +65,78 @@ export function WarrantyForm({ warranty }: WarrantyFormProps) {
     try {
       const url = warranty ? `/api/warranties/${warranty.id}` : '/api/warranties';
       const method = warranty ? 'PUT' : 'POST';
-      const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message ?? 'Failed'); }
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const contentType = res.headers.get('content-type') ?? '';
+        if (contentType.includes('application/json')) {
+          const e = await res.json();
+          const msg = typeof e.error === 'string' ? e.error : (e.error?.message ?? 'Failed to save warranty');
+          throw new Error(msg);
+        }
+        throw new Error(`Server error (${res.status})`);
+      }
       toast.success(warranty ? 'Warranty updated' : 'Warranty added');
       qc.invalidateQueries({ queryKey: ['warranties'] });
       router.back();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong');
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Full-page empty state — all assets already have an active warranty
+  if (noAssetsAvailable) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-6 text-center max-w-sm mx-auto">
+        <div className="h-14 w-14 rounded-full bg-amber-50 flex items-center justify-center mb-4">
+          <ShieldOff className="h-7 w-7 text-amber-500" />
+        </div>
+        <h3 className="text-base font-semibold text-gray-900 mb-1">No assets available</h3>
+        <p className="text-sm text-gray-500 mb-6">
+          All active assets already have a valid warranty. You can add a new warranty to an asset
+          once its existing warranty expires or is deleted.
+        </p>
+        <Button variant="outline" onClick={() => router.push('/warranties')}>
+          Back to Warranties
+        </Button>
+      </div>
+    );
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 max-w-lg">
+
+        {/* Asset selector — only shows assets without an active warranty */}
         <FormField control={form.control} name="assetId" render={({ field }) => (
           <FormItem>
             <FormLabel>Asset *</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!warranty}>
-              <FormControl><SelectTrigger><SelectValue placeholder="Select asset" /></SelectTrigger></FormControl>
+            <Select
+              onValueChange={field.onChange}
+              defaultValue={field.value}
+              disabled={!!warranty || isLoadingData}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder={isLoadingData ? 'Loading assets…' : 'Select asset'} />
+                </SelectTrigger>
+              </FormControl>
               <SelectContent>
-                {(assets as Asset[]).map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                {availableAssets.length === 0 ? (
+                  <div className="flex items-center gap-2 px-3 py-4 text-sm text-gray-500">
+                    <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0" />
+                    No assets available
+                  </div>
+                ) : (
+                  availableAssets.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
             <FormMessage />
@@ -86,7 +159,6 @@ export function WarrantyForm({ warranty }: WarrantyFormProps) {
               <FormMessage />
             </FormItem>
           )} />
-
           <FormField control={form.control} name="endDate" render={({ field }) => (
             <FormItem>
               <FormLabel>End Date *</FormLabel>
@@ -116,7 +188,9 @@ export function WarrantyForm({ warranty }: WarrantyFormProps) {
         )} />
 
         <div className="flex gap-2">
-          <Button type="submit" disabled={loading}>{loading ? 'Saving...' : (warranty ? 'Save Changes' : 'Add Warranty')}</Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Saving…' : (warranty ? 'Save Changes' : 'Add Warranty')}
+          </Button>
           <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
         </div>
       </form>

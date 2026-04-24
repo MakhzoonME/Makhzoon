@@ -3,7 +3,7 @@ import { UserRole } from '@/types';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export type AuditAction =
-  | 'ASSET_CREATED' | 'ASSET_UPDATED' | 'ASSET_RETIRED' | 'ASSETS_IMPORTED'
+  | 'ASSET_CREATED' | 'ASSET_UPDATED' | 'ASSET_RETIRED' | 'ASSET_DELETED' | 'ASSETS_IMPORTED'
   | 'ASSET_NOTE_ADDED' | 'ASSET_NOTE_DELETED'
   | 'MAINTENANCE_ADDED' | 'MAINTENANCE_UPDATED' | 'MAINTENANCE_DELETED'
   | 'ASSET_CHECKED_OUT' | 'ASSET_CHECKED_IN'

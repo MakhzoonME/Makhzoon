@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getAssetById, updateAsset } from '@/lib/firestore/assets';
+import { getAssetById, updateAsset, deleteAsset } from '@/lib/firestore/assets';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { assetSchema } from '@/lib/validations/asset.schema';
 
@@ -77,17 +77,33 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const asset = await getAssetById(assetId);
   if (!asset) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  await updateAsset(assetId, { status: 'Retired', updatedBy: user.uid });
-  await writeAuditLog({
-    organizationId: asset.organizationId,
-    userId: user.uid,
-    role: user.role,
-    action: 'ASSET_RETIRED',
-    module: 'assets',
-    recordId: assetId,
-    oldValue: { status: asset.status },
-    newValue: { status: 'Retired' },
-  });
+  if (asset.status === 'Retired') {
+    // Hard-delete already-retired assets
+    await deleteAsset(assetId);
+    await writeAuditLog({
+      organizationId: asset.organizationId,
+      userId: user.uid,
+      role: user.role,
+      action: 'ASSET_DELETED',
+      module: 'assets',
+      recordId: assetId,
+      oldValue: { status: asset.status, name: asset.name },
+      newValue: undefined,
+    });
+  } else {
+    // Retire active assets
+    await updateAsset(assetId, { status: 'Retired', updatedBy: user.uid });
+    await writeAuditLog({
+      organizationId: asset.organizationId,
+      userId: user.uid,
+      role: user.role,
+      action: 'ASSET_RETIRED',
+      module: 'assets',
+      recordId: assetId,
+      oldValue: { status: asset.status },
+      newValue: { status: 'Retired' },
+    });
+  }
 
   return NextResponse.json({ success: true });
 }

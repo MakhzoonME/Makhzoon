@@ -23,6 +23,8 @@ function useDashboard() {
       const warranties: Warranty[] = Array.isArray(warrantiesBody) ? warrantiesBody : [];
       return { assets, warranties };
     },
+    staleTime: 30_000,
+    refetchInterval: 30_000,
   });
 }
 
@@ -39,12 +41,12 @@ export default function DashboardPage() {
     { key: 'name', header: 'Name', render: (a) => <span className="font-medium text-gray-900">{a.name}</span> },
     { key: 'category', header: 'Category', render: (a) => a.category },
     { key: 'status', header: 'Status', render: (a) => <StatusBadge status={a.status} /> },
-    { key: 'createdBy', header: 'Added By', render: (a) => a.createdBy },
+    { key: 'createdBy', header: 'Added By', render: (a) => a.createdByName ?? a.createdByEmail ?? a.createdBy },
     { key: 'createdAt', header: 'Date Added', render: (a) => formatDate(a.createdAt) },
   ];
 
   const warrantyColumns: ColumnDef<Warranty>[] = [
-    { key: 'assetId', header: 'Asset', render: (w) => w.assetId },
+    { key: 'assetId', header: 'Asset', render: (w) => w.assetName ?? w.assetId },
     { key: 'vendor', header: 'Vendor', render: (w) => w.vendor },
     { key: 'endDate', header: 'Expiry Date', render: (w) => <span className="text-red-600">{formatDate(w.endDate)}</span> },
     {

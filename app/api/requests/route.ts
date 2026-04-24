@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
     description: data.description,
     status: 'PENDING',
     createdBy: user.uid,
+    createdByName: user.displayName || undefined,
+    createdByEmail: user.email || undefined,
     updatedBy: user.uid,
   });
 

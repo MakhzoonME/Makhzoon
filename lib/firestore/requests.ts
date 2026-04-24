@@ -20,6 +20,43 @@ function toRequest(id: string, data: FirebaseFirestore.DocumentData): Request {
   };
 }
 
+async function enrichRequests(requests: Request[]): Promise<Request[]> {
+  if (requests.length === 0) return requests;
+
+  // Batch-fetch asset names
+  const assetIds = Array.from(new Set(requests.map((r) => r.assetId).filter(Boolean) as string[]));
+  const userIds = Array.from(new Set(requests.map((r) => r.createdBy).filter(Boolean)));
+
+  const [assetDocs, userDocs] = await Promise.all([
+    assetIds.length > 0
+      ? adminDb.getAll(...assetIds.map((id) => adminDb.collection('assets').doc(id)))
+      : Promise.resolve([]),
+    userIds.length > 0
+      ? adminDb.getAll(...userIds.map((id) => adminDb.collection('users').doc(id)))
+      : Promise.resolve([]),
+  ]);
+
+  const assetNameMap = new Map<string, string>();
+  assetDocs.forEach((doc) => {
+    if (doc.exists) assetNameMap.set(doc.id, (doc.data() as { name: string }).name);
+  });
+
+  const userMap = new Map<string, { name?: string; email?: string }>();
+  userDocs.forEach((doc) => {
+    if (doc.exists) {
+      const d = doc.data() as { displayName?: string; email?: string };
+      userMap.set(doc.id, { name: d.displayName, email: d.email });
+    }
+  });
+
+  return requests.map((r) => ({
+    ...r,
+    assetName: r.assetId ? assetNameMap.get(r.assetId) : undefined,
+    createdByName: userMap.get(r.createdBy)?.name,
+    createdByEmail: userMap.get(r.createdBy)?.email,
+  }));
+}
+
 export async function getRequests(orgId: string, opts?: { status?: string; type?: string; userId?: string }): Promise<Request[]> {
   let q = adminDb.collection('requests')
     .where('organizationId', '==', orgId)
@@ -30,7 +67,8 @@ export async function getRequests(orgId: string, opts?: { status?: string; type?
   if (opts?.userId) q = q.where('createdBy', '==', opts.userId) as typeof q;
 
   const snap = await q.get();
-  return snap.docs.map((d) => toRequest(d.id, d.data()));
+  const requests = snap.docs.map((d) => toRequest(d.id, d.data()));
+  return enrichRequests(requests);
 }
 
 export async function getRequestById(id: string): Promise<Request | null> {

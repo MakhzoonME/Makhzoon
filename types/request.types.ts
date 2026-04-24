@@ -6,6 +6,7 @@ export interface Request {
   organizationId: string;
   type: RequestType;
   assetId?: string;
+  assetName?: string;
   warrantyId?: string;
   description: string;
   status: RequestStatus;
@@ -13,6 +14,8 @@ export interface Request {
   decisionAt?: Date;
   createdAt: Date;
   createdBy: string;
+  createdByName?: string;
+  createdByEmail?: string;
   updatedAt: Date;
   updatedBy: string;
 }

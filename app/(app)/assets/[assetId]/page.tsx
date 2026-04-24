@@ -37,14 +37,16 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
   const isStaff = user?.role === 'staff';
 
+  const isRetired = asset?.status === 'Retired';
+
   async function handleRetire() {
     setRetiring(true);
     try {
       await fetch(`/api/assets/${assetId}`, { method: 'DELETE' });
-      toast.success('Asset retired');
+      toast.success(isRetired ? 'Asset permanently deleted' : 'Asset retired');
       qc.invalidateQueries({ queryKey: ['assets'] });
       router.push('/assets');
-    } catch { toast.error('Failed to retire asset'); }
+    } catch { toast.error(isRetired ? 'Failed to delete asset' : 'Failed to retire asset'); }
     finally { setRetiring(false); setShowRetire(false); }
   }
 
@@ -81,11 +83,16 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
         breadcrumb={[{ label: 'Assets', href: '/assets' }, { label: asset.name, href: `/assets/${assetId}` }]}
         actions={isAdmin ? (
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => router.push(`/assets/${assetId}/edit`)}>
-              <Edit className="h-4 w-4 mr-1" /> Edit
-            </Button>
+            {asset.status !== 'Retired' && (
+              <Button variant="outline" size="sm" onClick={() => router.push(`/assets/${assetId}/edit`)}>
+                <Edit className="h-4 w-4 mr-1" /> Edit
+              </Button>
+            )}
             {asset.status === 'Active' && (
               <Button variant="destructive" size="sm" onClick={() => setShowRetire(true)}>Retire</Button>
+            )}
+            {asset.status === 'Retired' && (
+              <Button variant="destructive" size="sm" onClick={() => setShowRetire(true)}>Delete Permanently</Button>
             )}
           </div>
         ) : undefined}
@@ -194,9 +201,11 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
       <ConfirmDialog
         open={showRetire}
         onOpenChange={setShowRetire}
-        title="Retire Asset"
-        description={`Are you sure you want to retire "${asset.name}"?`}
-        confirmLabel="Retire"
+        title={isRetired ? 'Delete Asset Permanently' : 'Retire Asset'}
+        description={isRetired
+          ? `Permanently delete "${asset.name}"? This cannot be undone.`
+          : `Are you sure you want to retire "${asset.name}"?`}
+        confirmLabel={isRetired ? 'Delete Permanently' : 'Retire'}
         onConfirm={handleRetire}
         loading={retiring}
       />

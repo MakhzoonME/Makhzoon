@@ -20,15 +20,11 @@ export async function GET(req: NextRequest) {
 
     if (expiringSoon) {
       const warranties = await getExpiringWarranties(orgId, 30);
-      return NextResponse.json(warranties, {
-        headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
-      });
+      return NextResponse.json(warranties);
     }
 
     const warranties = await getWarranties(orgId, { assetId });
-    return NextResponse.json(warranties, {
-      headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
-    });
+    return NextResponse.json(warranties);
   } catch (err) {
     console.error('[GET /api/warranties]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -115,6 +115,10 @@ export async function updateAsset(id: string, data: Partial<Asset>): Promise<voi
   });
 }
 
+export async function deleteAsset(id: string): Promise<void> {
+  await adminDb.collection('assets').doc(id).delete();
+}
+
 export async function getAssetCategories(orgId: string): Promise<string[]> {
   const snap = await adminDb.collection('assets')
     .where('organizationId', '==', orgId)

@@ -6,9 +6,10 @@ import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, LogOut, Search, Activity } from 'lucide-react';
+import { ChevronDown, LogOut, Search, Activity, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { CommandPalette, useCommandPalette } from '@/components/shared/CommandPalette';
 import { AuditLogDrawer } from '@/components/shared/AuditLogDrawer';
+import { useUiStore } from '@/store/ui.store';
 
 const roleConfig = {
   super_admin: { variant: 'blue' as const, label: 'Super Admin' },
@@ -20,6 +21,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
   const { user } = useAuthStore();
   const router = useRouter();
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
+  const { sidebarCollapsed, toggleSidebar } = useUiStore();
   const [auditOpen, setAuditOpen] = useState(false);
   const [shortcutLabel, setShortcutLabel] = useState('Ctrl+K');
 
@@ -42,6 +44,19 @@ export function AppHeader({ orgName }: { orgName?: string }) {
   return (
     <>
       <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-gray-200 flex items-center px-4 gap-4 z-40">
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-pressed={sidebarCollapsed}
+          className="p-1.5 -ml-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95 transition-all duration-150 ease-out"
+        >
+          {sidebarCollapsed ? (
+            <PanelLeftOpen className="h-4 w-4" />
+          ) : (
+            <PanelLeftClose className="h-4 w-4" />
+          )}
+        </button>
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex items-center gap-2">
             <div className="h-7 w-7 rounded-md bg-indigo-600 flex items-center justify-center">

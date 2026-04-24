@@ -44,6 +44,9 @@ export async function POST(req: NextRequest) {
 
     await createSubscription({
       organizationId: orgId,
+      packageId: null,
+      features: {},
+      notes: data.packageDetails ?? null,
       packageDetails: { notes: data.packageDetails ?? '' },
       startDate: new Date(data.subscriptionStartDate),
       endDate: new Date(data.subscriptionEndDate),

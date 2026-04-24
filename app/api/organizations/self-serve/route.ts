@@ -64,6 +64,9 @@ export async function POST(req: NextRequest) {
   const trialEnd = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
   await createSubscription({
     organizationId,
+    packageId: null,
+    features: {},
+    notes: null,
     packageDetails: { tier: 'trial', trialDays: TRIAL_DAYS },
     startDate: now,
     endDate: trialEnd,

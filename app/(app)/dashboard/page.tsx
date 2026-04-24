@@ -17,9 +17,9 @@ function useDashboard() {
         fetch('/api/assets'),
         fetch('/api/warranties?expiringSoon=true'),
       ]);
-      const assetsBody = assetsRes.ok ? await assetsRes.json() : [];
+      const assetsBody = assetsRes.ok ? await assetsRes.json() : { items: [] };
       const warrantiesBody = warrantiesRes.ok ? await warrantiesRes.json() : [];
-      const assets: Asset[] = Array.isArray(assetsBody) ? assetsBody : [];
+      const assets: Asset[] = Array.isArray(assetsBody?.items) ? assetsBody.items : [];
       const warranties: Warranty[] = Array.isArray(warrantiesBody) ? warrantiesBody : [];
       return { assets, warranties };
     },

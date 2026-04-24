@@ -1,5 +1,5 @@
 'use client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 
 export function useWarranties(params?: { status?: string; assetId?: string }) {
   const query = new URLSearchParams();
@@ -13,7 +13,9 @@ export function useWarranties(params?: { status?: string; assetId?: string }) {
       if (!res.ok) throw new Error('Failed to fetch warranties');
       return res.json();
     },
-    staleTime: 30_000,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+    placeholderData: keepPreviousData,
   });
 }
 

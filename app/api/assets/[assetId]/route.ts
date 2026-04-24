@@ -15,7 +15,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ass
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  return NextResponse.json(asset);
+  return NextResponse.json(asset, {
+    headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
+  });
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {

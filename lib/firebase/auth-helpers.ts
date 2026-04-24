@@ -3,6 +3,7 @@ import { AuthUser, UserRole } from '@/types';
 import { cookies } from 'next/headers';
 import { getRequestSubdomain } from '@/lib/subdomain';
 import { getOrganizationBySubdomain } from '@/lib/firestore/organizations';
+import { getCachedSession, setCachedSession } from './session-cache';
 
 export async function verifySessionCookie(): Promise<AuthUser | null> {
   try {
@@ -10,7 +11,9 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
     const session = cookieStore.get('session')?.value;
     if (!session) return null;
 
-    const decoded = await adminAuth.verifySessionCookie(session, true);
+    const cached = getCachedSession(session);
+    const decoded = cached ?? await adminAuth.verifySessionCookie(session, true);
+    if (!cached) setCachedSession(session, decoded);
     const role = decoded.role as UserRole;
     const claimOrgId = (decoded.organizationId as string | undefined) ?? null;
     let organizationId = claimOrgId;

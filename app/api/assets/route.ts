@@ -17,14 +17,20 @@ export async function GET(req: NextRequest) {
 
     if (searchParams.get('categoriesOnly') === 'true') {
       const categories = await getAssetCategories(orgId);
-      return NextResponse.json({ categories });
+      return NextResponse.json({ categories }, {
+        headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
+      });
     }
 
     const status = searchParams.get('status') ?? undefined;
     const category = searchParams.get('category') ?? undefined;
+    const search = searchParams.get('search') ?? undefined;
+    const cursor = searchParams.get('cursor') ?? undefined;
 
-    const assets = await getAssets(orgId, { status, category });
-    return NextResponse.json(assets);
+    const result = await getAssets(orgId, { status, category, search, cursor });
+    return NextResponse.json(result, {
+      headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
+    });
   } catch (err) {
     console.error('[GET /api/assets]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

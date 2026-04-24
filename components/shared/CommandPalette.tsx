@@ -32,7 +32,8 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
   const router = useRouter();
   const { user } = useAuthStore();
   const [search, setSearch] = useState('');
-  const { data: assets = [] } = useAssets();
+  const { data: assetsData } = useAssets();
+  const assets = assetsData?.items ?? [];
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 

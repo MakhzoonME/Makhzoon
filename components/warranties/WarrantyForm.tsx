@@ -24,7 +24,8 @@ export function WarrantyForm({ warranty }: WarrantyFormProps) {
   const searchParams = useSearchParams();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const { data: assets = [] } = useAssets({ status: 'Active' });
+  const { data: assetsData } = useAssets({ status: 'Active' });
+  const assets = assetsData?.items ?? [];
 
   const form = useForm<WarrantyFormData>({
     resolver: zodResolver(warrantySchema),

@@ -31,7 +31,8 @@ export default function AssetsPage() {
   const [retiring, setRetiring] = useState(false);
 
   const debouncedSearch = useDebounce(search, 400);
-  const { data: assets = [], isLoading } = useAssets({ status: status || undefined, search: debouncedSearch });
+  const { data: assetsData, isLoading } = useAssets({ status: status || undefined, search: debouncedSearch });
+  const assets = assetsData?.items ?? [];
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 

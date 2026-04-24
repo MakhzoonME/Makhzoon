@@ -1,21 +1,29 @@
 'use client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import type { Asset } from '@/types';
 
-export function useAssets(params?: { status?: string; category?: string; search?: string }) {
+interface AssetsResponse {
+  items: Asset[];
+  nextCursor: string | null;
+}
+
+export function useAssets(params?: { status?: string; category?: string; search?: string; cursor?: string }) {
   const query = new URLSearchParams();
   if (params?.status) query.set('status', params.status);
   if (params?.category) query.set('category', params.category);
   if (params?.search) query.set('search', params.search);
+  if (params?.cursor) query.set('cursor', params.cursor);
 
-  return useQuery({
+  return useQuery<AssetsResponse>({
     queryKey: ['assets', params],
     queryFn: async () => {
       const res = await fetch(`/api/assets?${query.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch assets');
-      return res.json();
+      return res.json() as Promise<AssetsResponse>;
     },
-    staleTime: 30_000,
-    gcTime: 2 * 60_000,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -28,6 +36,8 @@ export function useAsset(id: string) {
       return res.json();
     },
     enabled: !!id,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   });
 }
 
@@ -40,6 +50,6 @@ export function useAssetCategories() {
       const data = await res.json();
       return data.categories ?? [];
     },
-    staleTime: 5 * 60_000,
+    staleTime: 10 * 60_000,
   });
 }

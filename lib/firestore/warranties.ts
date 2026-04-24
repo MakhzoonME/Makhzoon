@@ -23,10 +23,9 @@ async function attachAssetNames(warranties: Warranty[]): Promise<Warranty[]> {
   const uniqueAssetIds = Array.from(new Set(warranties.map((w) => w.assetId)));
   if (uniqueAssetIds.length === 0) return warranties;
 
-  // Batch-fetch all asset docs in parallel
-  const assetDocs = await Promise.all(
-    uniqueAssetIds.map((id) => adminDb.collection('assets').doc(id).get())
-  );
+  // Batch-fetch all asset docs in a single RPC
+  const refs = uniqueAssetIds.map((id) => adminDb.collection('assets').doc(id));
+  const assetDocs = await adminDb.getAll(...refs);
   const nameMap = new Map<string, string>();
   assetDocs.forEach((doc) => {
     if (doc.exists) nameMap.set(doc.id, (doc.data() as { name: string }).name);
@@ -38,7 +37,8 @@ async function attachAssetNames(warranties: Warranty[]): Promise<Warranty[]> {
 export async function getWarranties(orgId: string, opts?: { status?: string; assetId?: string }): Promise<Warranty[]> {
   let q = adminDb.collection('warranties')
     .where('organizationId', '==', orgId)
-    .orderBy('endDate', 'asc');
+    .orderBy('endDate', 'asc')
+    .limit(200);
 
   if (opts?.assetId) q = q.where('assetId', '==', opts.assetId) as typeof q;
 

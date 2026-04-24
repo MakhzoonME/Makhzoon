@@ -1,5 +1,5 @@
 'use client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 
 export function useUsers() {
   return useQuery({
@@ -9,6 +9,8 @@ export function useUsers() {
       if (!res.ok) throw new Error('Failed to fetch users');
       return res.json();
     },
-    staleTime: 60_000,
+    staleTime: 2 * 60_000,
+    gcTime: 10 * 60_000,
+    placeholderData: keepPreviousData,
   });
 }

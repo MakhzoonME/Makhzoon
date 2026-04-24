@@ -21,6 +21,7 @@ export async function getUsers(orgId: string): Promise<OrgUser[]> {
   const snap = await adminDb.collection('users')
     .where('organizationId', '==', orgId)
     .orderBy('createdAt', 'desc')
+    .limit(500)
     .get();
   return snap.docs.map((d) => toUser(d.id, d.data()));
 }

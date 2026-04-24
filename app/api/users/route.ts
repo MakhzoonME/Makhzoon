@@ -14,7 +14,9 @@ export async function GET(_req: NextRequest) {
   if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
 
   const users = await getUsers(orgId);
-  return NextResponse.json(users);
+  return NextResponse.json(users, {
+    headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
+  });
 }
 
 export async function POST(req: NextRequest) {

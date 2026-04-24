@@ -3,12 +3,26 @@ import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { cookies, headers } from 'next/headers';
 import { getCookieDomain } from '@/lib/subdomain';
 
+async function verifyWithRetry(idToken: string, attempt = 0) {
+  try {
+    return await adminAuth.verifyIdToken(idToken);
+  } catch (err) {
+    // On first cold-start the Admin SDK occasionally rejects a freshly-minted token.
+    // Wait 1 s and retry once before giving up.
+    if (attempt === 0) {
+      await new Promise((r) => setTimeout(r, 1000));
+      return verifyWithRetry(idToken, 1);
+    }
+    throw err;
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { idToken } = await req.json();
     if (!idToken) return NextResponse.json({ error: 'Missing token' }, { status: 400 });
 
-    const decoded = await adminAuth.verifyIdToken(idToken);
+    const decoded = await verifyWithRetry(idToken);
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
 

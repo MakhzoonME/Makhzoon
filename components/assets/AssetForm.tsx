@@ -50,8 +50,15 @@ export function AssetForm({ asset }: AssetFormProps) {
         body: JSON.stringify(data),
       });
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error?.message ?? 'Failed to save asset');
+        const contentType = res.headers.get('content-type') ?? '';
+        if (contentType.includes('application/json')) {
+          const err = await res.json();
+          const msg = typeof err.error === 'string'
+            ? err.error
+            : err.error?.message ?? 'Failed to save asset';
+          throw new Error(msg);
+        }
+        throw new Error(`Server error (${res.status}) — check console for details`);
       }
       const result = await res.json();
       toast.success(asset ? 'Asset updated' : 'Asset added successfully');

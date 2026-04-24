@@ -126,9 +126,9 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
             <h2 className="text-sm font-semibold text-gray-900 mb-4">Metadata</h2>
             <dl className="space-y-3 text-sm">
               {[
-                ['Created By', asset.createdBy],
+                ['Created By', asset.createdByEmail ?? asset.createdBy],
                 ['Created At', formatDate(asset.createdAt)],
-                ['Updated By', asset.updatedBy],
+                ['Updated By', asset.updatedByEmail ?? asset.updatedBy],
                 ['Updated At', formatDate(asset.updatedAt)],
               ].map(([label, value]) => (
                 <div key={String(label)}>

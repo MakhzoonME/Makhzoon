@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
-import { formatDate, isExpired, isExpiringSoon } from '@/lib/utils/date';
+import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
 import { Warranty } from '@/types';
 import { Edit, Plus } from 'lucide-react';
 import { RequestActionPanel } from '@/components/assets/RequestActionPanel';
@@ -58,9 +58,7 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
     {
       key: 'status', header: 'Status',
       render: (w) => {
-        if (isExpired(w.endDate)) return <StatusBadge status="Expired" />;
-        if (isExpiringSoon(w.endDate)) return <StatusBadge status="Expiring Soon" />;
-        return <StatusBadge status="Active" />;
+        return <StatusBadge status={getWarrantyStatus(w.endDate)} />;
       }
     },
     {

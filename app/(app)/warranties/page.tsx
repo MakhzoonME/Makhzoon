@@ -10,18 +10,12 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ExportButton } from '@/components/shared/ExportButton';
 import { Button } from '@/components/ui/button';
 import { Warranty } from '@/types';
-import { formatDate, isExpired, isExpiringSoon } from '@/lib/utils/date';
+import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
 import { Plus, Edit, Trash2, Check } from 'lucide-react';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-
-function getWarrantyStatus(w: Warranty): string {
-  if (isExpired(w.endDate)) return 'Expired';
-  if (isExpiringSoon(w.endDate)) return 'Expiring Soon';
-  return 'Active';
-}
 
 export default function WarrantiesPage() {
   const router = useRouter();
@@ -39,7 +33,7 @@ export default function WarrantiesPage() {
     { key: 'startDate', header: 'Start Date', render: (w) => formatDate(w.startDate) },
     { key: 'endDate', header: 'End Date', render: (w) => <span className={isExpired(w.endDate) ? 'text-red-600' : ''}>{formatDate(w.endDate)}</span> },
     { key: 'reminder', header: 'Reminder', render: (w) => w.reminder ? <Check className="h-4 w-4 text-green-600" /> : <span className="text-gray-400">—</span> },
-    { key: 'status', header: 'Status', render: (w) => <StatusBadge status={getWarrantyStatus(w)} /> },
+    { key: 'status', header: 'Status', render: (w) => <StatusBadge status={getWarrantyStatus(w.endDate)} /> },
     {
       key: 'actions', header: 'Actions',
       render: (w) => (

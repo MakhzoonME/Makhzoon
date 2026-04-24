@@ -22,6 +22,7 @@ import { useState } from 'react';
 import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { UserHoverCard } from '@/components/shared/UserHoverCard';
 
 export default function AssetDetailPage({ params }: { params: { assetId: string } }) {
   const { assetId } = params;
@@ -126,9 +127,7 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
             <h2 className="text-sm font-semibold text-gray-900 mb-4">Metadata</h2>
             <dl className="space-y-3 text-sm">
               {[
-                ['Created By', asset.createdByEmail ?? asset.createdBy],
                 ['Created At', formatDate(asset.createdAt)],
-                ['Updated By', asset.updatedByEmail ?? asset.updatedBy],
                 ['Updated At', formatDate(asset.updatedAt)],
               ].map(([label, value]) => (
                 <div key={String(label)}>
@@ -136,6 +135,32 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
                   <dd className="font-medium text-gray-900">{value}</dd>
                 </div>
               ))}
+              <div>
+                <dt className="text-gray-500 mb-0.5">Created By</dt>
+                <dd>
+                  <UserHoverCard
+                    user={{
+                      uid: asset.createdBy,
+                      name: asset.createdByName,
+                      email: asset.createdByEmail,
+                      role: asset.createdByRole,
+                    }}
+                  />
+                </dd>
+              </div>
+              <div>
+                <dt className="text-gray-500 mb-0.5">Updated By</dt>
+                <dd>
+                  <UserHoverCard
+                    user={{
+                      uid: asset.updatedBy,
+                      name: asset.updatedByName,
+                      email: asset.updatedByEmail,
+                      role: asset.updatedByRole,
+                    }}
+                  />
+                </dd>
+              </div>
             </dl>
           </CardContent>
         </Card>

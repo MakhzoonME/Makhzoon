@@ -18,9 +18,13 @@ function toAsset(id: string, data: FirebaseFirestore.DocumentData): Asset {
     createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
     createdBy: data.createdBy,
     createdByEmail: data.createdByEmail,
+    createdByName: data.createdByName,
+    createdByRole: data.createdByRole,
     updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
     updatedBy: data.updatedBy,
     updatedByEmail: data.updatedByEmail,
+    updatedByName: data.updatedByName,
+    updatedByRole: data.updatedByRole,
   };
 }
 

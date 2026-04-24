@@ -15,7 +15,11 @@ export interface Asset {
   createdAt: Date;
   createdBy: string;
   createdByEmail?: string;
+  createdByName?: string;
+  createdByRole?: string;
   updatedAt: Date;
   updatedBy: string;
   updatedByEmail?: string;
+  updatedByName?: string;
+  updatedByRole?: string;
 }

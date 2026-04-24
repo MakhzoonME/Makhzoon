@@ -47,6 +47,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ asse
     notes: data.notes || undefined,
     updatedBy: user.uid,
     updatedByEmail: user.email || undefined,
+    updatedByName: user.displayName || undefined,
+    updatedByRole: user.role || undefined,
   };
 
   await updateAsset(assetId, updates);

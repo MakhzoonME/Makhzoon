@@ -61,8 +61,12 @@ export async function POST(req: NextRequest) {
       notes: data.notes || undefined,
       createdBy: user.uid,
       createdByEmail: user.email || undefined,
+      createdByName: user.displayName || undefined,
+      createdByRole: user.role || undefined,
       updatedBy: user.uid,
       updatedByEmail: user.email || undefined,
+      updatedByName: user.displayName || undefined,
+      updatedByRole: user.role || undefined,
     });
 
     await writeAuditLog({

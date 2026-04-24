@@ -2,6 +2,7 @@ export interface Warranty {
   id: string;
   organizationId: string;
   assetId: string;
+  assetName?: string;
   vendor: string;
   startDate: Date;
   endDate: Date;

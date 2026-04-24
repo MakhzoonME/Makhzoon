@@ -19,6 +19,22 @@ function toWarranty(id: string, data: FirebaseFirestore.DocumentData): Warranty 
   };
 }
 
+async function attachAssetNames(warranties: Warranty[]): Promise<Warranty[]> {
+  const uniqueAssetIds = Array.from(new Set(warranties.map((w) => w.assetId)));
+  if (uniqueAssetIds.length === 0) return warranties;
+
+  // Batch-fetch all asset docs in parallel
+  const assetDocs = await Promise.all(
+    uniqueAssetIds.map((id) => adminDb.collection('assets').doc(id).get())
+  );
+  const nameMap = new Map<string, string>();
+  assetDocs.forEach((doc) => {
+    if (doc.exists) nameMap.set(doc.id, (doc.data() as { name: string }).name);
+  });
+
+  return warranties.map((w) => ({ ...w, assetName: nameMap.get(w.assetId) }));
+}
+
 export async function getWarranties(orgId: string, opts?: { status?: string; assetId?: string }): Promise<Warranty[]> {
   let q = adminDb.collection('warranties')
     .where('organizationId', '==', orgId)
@@ -27,7 +43,8 @@ export async function getWarranties(orgId: string, opts?: { status?: string; ass
   if (opts?.assetId) q = q.where('assetId', '==', opts.assetId) as typeof q;
 
   const snap = await q.get();
-  return snap.docs.map((d) => toWarranty(d.id, d.data()));
+  const warranties = snap.docs.map((d) => toWarranty(d.id, d.data()));
+  return attachAssetNames(warranties);
 }
 
 export async function getWarrantyById(id: string): Promise<Warranty | null> {
@@ -67,5 +84,6 @@ export async function getExpiringWarranties(orgId: string, days = 30): Promise<W
     .where('endDate', '<=', future)
     .orderBy('endDate', 'asc')
     .get();
-  return snap.docs.map((d) => toWarranty(d.id, d.data()));
+  const warranties = snap.docs.map((d) => toWarranty(d.id, d.data()));
+  return attachAssetNames(warranties);
 }

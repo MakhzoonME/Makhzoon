@@ -34,7 +34,7 @@ export default function WarrantiesPage() {
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   const columns: ColumnDef<Warranty>[] = [
-    { key: 'assetId', header: 'Asset', render: (w) => <button className="text-indigo-600 hover:underline" onClick={() => router.push(`/assets/${w.assetId}`)}>{w.assetId}</button> },
+    { key: 'assetId', header: 'Asset', render: (w) => <button className="text-indigo-600 hover:underline" onClick={() => router.push(`/assets/${w.assetId}`)}>{w.assetName ?? w.assetId}</button> },
     { key: 'vendor', header: 'Vendor', render: (w) => w.vendor },
     { key: 'startDate', header: 'Start Date', render: (w) => formatDate(w.startDate) },
     { key: 'endDate', header: 'End Date', render: (w) => <span className={isExpired(w.endDate) ? 'text-red-600' : ''}>{formatDate(w.endDate)}</span> },

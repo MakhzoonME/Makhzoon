@@ -126,15 +126,6 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
           <CardContent className="p-6">
             <h2 className="text-sm font-semibold text-gray-900 mb-4">Metadata</h2>
             <dl className="space-y-3 text-sm">
-              {[
-                ['Created At', formatDate(asset.createdAt)],
-                ['Updated At', formatDate(asset.updatedAt)],
-              ].map(([label, value]) => (
-                <div key={String(label)}>
-                  <dt className="text-gray-500">{label}</dt>
-                  <dd className="font-medium text-gray-900">{value}</dd>
-                </div>
-              ))}
               <div>
                 <dt className="text-gray-500 mb-0.5">Created By</dt>
                 <dd>
@@ -149,6 +140,10 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
                 </dd>
               </div>
               <div>
+                <dt className="text-gray-500">Created At</dt>
+                <dd className="font-medium text-gray-900">{formatDate(asset.createdAt)}</dd>
+              </div>
+              <div>
                 <dt className="text-gray-500 mb-0.5">Updated By</dt>
                 <dd>
                   <UserHoverCard
@@ -160,6 +155,10 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
                     }}
                   />
                 </dd>
+              </div>
+              <div>
+                <dt className="text-gray-500">Updated At</dt>
+                <dd className="font-medium text-gray-900">{formatDate(asset.updatedAt)}</dd>
               </div>
             </dl>
           </CardContent>

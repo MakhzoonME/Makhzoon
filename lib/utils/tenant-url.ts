@@ -43,6 +43,13 @@ export function buildTenantUrl(subdomain: string, pathname = '/dashboard'): stri
 
 export function buildRootUrl(pathname = '/super-admin'): string {
   if (typeof window === 'undefined') return pathname;
+  const { hostname } = splitHost(window.location.host);
+  const lower = hostname.toLowerCase();
+  // On localhost, cookies are scoped to the exact origin (not shared across subdomains).
+  // Stay on the current origin so we don't lose the session cookie.
+  if (lower === 'localhost' || lower.endsWith('.localhost')) {
+    return `${window.location.protocol}//${window.location.host}${pathname}`;
+  }
   const root = rootHost(window.location.host);
   return `${window.location.protocol}//${root}${pathname}`;
 }

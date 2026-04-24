@@ -10,7 +10,11 @@ export function useTransferMode() {
     const data: { subdomain?: string | null } = await res.json().catch(() => ({}));
     const sub = data.subdomain ?? null;
     setTransfer(targetOrgId, targetOrgName, sub);
-    if (sub) {
+    // On localhost, cookies are origin-scoped — staying on the same origin avoids
+    // redirecting to a subdomain that has no session cookie.
+    const hn = window.location.hostname.toLowerCase();
+    const isLocalhost = hn === 'localhost' || hn.endsWith('.localhost');
+    if (sub && !isLocalhost) {
       window.location.href = buildTenantUrl(sub, '/dashboard');
     } else {
       window.location.href = '/dashboard';

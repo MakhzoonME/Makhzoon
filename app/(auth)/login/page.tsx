@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
-import { buildTenantUrl, buildRootUrl } from '@/lib/utils/tenant-url';
+import { buildOrgPath, buildSuperAdminPath } from '@/lib/utils/tenant-url';
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 const EASE_SPRING = [0.34, 1.56, 0.64, 1] as const;
@@ -41,13 +41,13 @@ export default function LoginPage() {
         throw new Error(body.error || `Session creation failed (HTTP ${res.status})`);
       }
 
-      const { role, subdomain } = await res.json();
+      const { role, orgSlug } = await res.json();
       if (role === 'super_admin') {
-        window.location.href = buildRootUrl('/super-admin');
-      } else if (subdomain) {
-        window.location.href = buildTenantUrl(subdomain, '/dashboard');
+        router.push(buildSuperAdminPath('/dashboard'));
+      } else if (orgSlug) {
+        router.push(buildOrgPath(orgSlug, '/dashboard'));
       } else {
-        router.push('/dashboard');
+        router.push('/');
       }
     } catch (err: unknown) {
       console.error('[login] sign-in failed:', err);

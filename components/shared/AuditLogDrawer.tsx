@@ -105,7 +105,7 @@ export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
 
           <div className="border-t border-gray-200 px-5 py-3">
             <Link
-              href="/super-admin/audit-logs"
+              href="/superadmin/audit-logs"
               onClick={() => onOpenChange(false)}
               className="text-xs text-indigo-600 hover:underline font-medium"
             >

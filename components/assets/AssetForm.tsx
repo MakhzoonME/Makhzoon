@@ -2,6 +2,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
+import { useOrgSlug } from '@/hooks/useOrgSlug';
 import { assetSchema, AssetFormData } from '@/lib/validations/asset.schema';
 import { Asset } from '@/types';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -20,6 +21,7 @@ interface AssetFormProps {
 
 export function AssetForm({ asset }: AssetFormProps) {
   const router = useRouter();
+  const orgSlug = useOrgSlug();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
   const { data: categories = [] } = useAssetCategories();
@@ -63,7 +65,7 @@ export function AssetForm({ asset }: AssetFormProps) {
       const result = await res.json();
       toast.success(asset ? 'Asset updated' : 'Asset added successfully');
       qc.invalidateQueries({ queryKey: ['assets'] });
-      router.push(`/assets/${asset?.id ?? result.id}`);
+      router.push(`/${orgSlug}/assets/${asset?.id ?? result.id}`);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong');
     } finally {

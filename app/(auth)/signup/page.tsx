@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Building2, Loader2, AlertCircle } from 'lucide-react';
-import { buildTenantUrl } from '@/lib/utils/tenant-url';
+import { buildOrgPath } from '@/lib/utils/tenant-url';
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 const EASE_SPRING = [0.34, 1.56, 0.64, 1] as const;
@@ -57,7 +57,7 @@ export default function SignupPage() {
         body: JSON.stringify({ idToken: token }),
       });
       if (!sessionRes.ok) throw new Error('Session creation failed');
-      window.location.href = buildTenantUrl(subdomain, '/dashboard');
+      window.location.href = buildOrgPath(subdomain, '/dashboard');
     } catch (err) {
       console.error('[signup] failed:', err);
       setError(err instanceof Error ? err.message : 'Signup failed');
@@ -142,7 +142,7 @@ export default function SignupPage() {
                     maxLength={40}
                     className="flex-1 px-3 py-2 text-sm outline-none bg-white"
                   />
-                  <span className="px-3 py-2 text-xs text-gray-500 bg-gray-50 border-l border-gray-200">.yourapp.com</span>
+                  <span className="px-3 py-2 text-xs text-gray-500 bg-gray-50 border-l border-gray-200">.makhzoon.me</span>
                 </div>
               </motion.div>
 

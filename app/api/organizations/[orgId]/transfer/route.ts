@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { writeAuditLog } from '@/lib/audit/logger';
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { adminDb } from '@/lib/firebase/admin';
-import { getCookieDomain } from '@/lib/subdomain';
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   try {
@@ -18,14 +17,11 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ or
     const subdomain = (orgDoc.data()?.subdomain as string) ?? null;
     const name = (orgDoc.data()?.name as string) ?? null;
 
-    const hdrs = await headers();
-    const cookieDomain = getCookieDomain(hdrs.get('host'));
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     cookieStore.set('transferOrgId', orgId, {
       httpOnly: true,
       path: '/',
       sameSite: 'lax',
-      ...(cookieDomain ? { domain: cookieDomain } : {}),
     });
 
     await writeAuditLog({

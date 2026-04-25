@@ -1,39 +1,23 @@
 import { adminAuth } from './admin';
 import { AuthUser, UserRole } from '@/types';
 import { cookies } from 'next/headers';
-import { getRequestSubdomain } from '@/lib/subdomain';
-import { getOrganizationBySubdomain } from '@/lib/firestore/organizations';
 import { getCachedSession, setCachedSession } from './session-cache';
 
 export async function verifySessionCookie(): Promise<AuthUser | null> {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const session = cookieStore.get('session')?.value;
     if (!session) return null;
 
     const cached = getCachedSession(session);
     const decoded = cached ?? await adminAuth.verifySessionCookie(session, true);
     if (!cached) setCachedSession(session, decoded);
-    const role = decoded.role as UserRole;
-    const claimOrgId = (decoded.organizationId as string | undefined) ?? null;
-    let organizationId = claimOrgId;
 
-    // Subdomain takes precedence over transferOrgId cookie when present.
-    // - super_admin: subdomain acts as implicit transfer mode
-    // - members: must belong to the subdomain's org
-    const subdomain = await getRequestSubdomain();
-    if (subdomain) {
-      const org = await getOrganizationBySubdomain(subdomain);
-      if (!org) return null;
-      if (role === 'super_admin') {
-        organizationId = org.id;
-      } else if (claimOrgId === org.id) {
-        organizationId = org.id;
-      } else {
-        // Signed in but not a member of this tenant
-        return null;
-      }
-    } else if (role === 'super_admin') {
+    const role = decoded.role as UserRole;
+    let organizationId = (decoded.organizationId as string | undefined) ?? null;
+
+    // Super admin may use the transferOrgId cookie to act as a tenant admin
+    if (role === 'super_admin') {
       const transferOrgId = cookieStore.get('transferOrgId')?.value;
       if (transferOrgId) organizationId = transferOrgId;
     }

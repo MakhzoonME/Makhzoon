@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -47,6 +47,8 @@ export const SIDEBAR_WIDTH_COLLAPSED = 68;
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const params = useParams();
+  const orgSlug = (params?.orgSlug as string) ?? '';
   const { user } = useAuthStore();
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
   const features = useSubscriptionFeatures();
@@ -71,10 +73,11 @@ export function AppSidebar() {
       >
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto overflow-x-hidden">
           {visibleItems.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href || pathname.startsWith(href + '/');
+            const fullHref = orgSlug ? `/${orgSlug}${href}` : href;
+            const active = pathname === fullHref || pathname.startsWith(fullHref + '/');
             const link = (
               <Link
-                href={href}
+                href={fullHref}
                 aria-label={label}
                 className={cn(
                   'group relative flex items-center gap-3 rounded-lg text-sm transition-colors duration-150',

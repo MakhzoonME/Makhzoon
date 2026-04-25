@@ -1,23 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const SKIP_PREFIXES = ['/api/', '/invites/', '/_next/'];
+const PUBLIC_PAGES = new Set(['/login', '/signup']);
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Always allow API routes, static files, etc.
-  if (pathname.startsWith('/api/') || pathname.startsWith('/invites/')) {
+  if (SKIP_PREFIXES.some((p) => pathname.startsWith(p)) || pathname === '/favicon.ico') {
     return NextResponse.next();
   }
 
   const session = req.cookies.get('session')?.value;
 
-  // Logged-in users hitting /login or / → send to dashboard
-  // (the app layout will further redirect super_admin to /super-admin)
-  if (session && (pathname === '/login' || pathname === '/signup' || pathname === '/')) {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
+  // Authenticated users hitting public pages → root (page.tsx resolves the destination)
+  if (session && PUBLIC_PAGES.has(pathname)) {
+    return NextResponse.redirect(new URL('/', req.url));
   }
 
-  // Unauthenticated users trying to reach any protected page → login
-  if (!session && !pathname.startsWith('/login') && !pathname.startsWith('/signup')) {
+  // Unauthenticated users trying to access protected pages → login
+  if (!session && !PUBLIC_PAGES.has(pathname) && pathname !== '/') {
     return NextResponse.redirect(new URL('/login', req.url));
   }
 

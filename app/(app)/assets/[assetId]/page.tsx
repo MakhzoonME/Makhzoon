@@ -42,9 +42,11 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
   async function handleRetire() {
     setRetiring(true);
     try {
-      await fetch(`/api/assets/${assetId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/assets/${assetId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed');
       toast.success(isRetired ? 'Asset permanently deleted' : 'Asset retired');
-      qc.invalidateQueries({ queryKey: ['assets'] });
+      qc.removeQueries({ queryKey: ['assets'] });
+      qc.removeQueries({ queryKey: ['asset', assetId] });
       router.push('/assets');
     } catch { toast.error(isRetired ? 'Failed to delete asset' : 'Failed to retire asset'); }
     finally { setRetiring(false); setShowRetire(false); }

@@ -16,8 +16,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'Office Asset System',
-  description: 'Office asset and warranty visibility platform',
+  title: 'Makhzoon',
+  description: 'Multi-tenant asset and warranty management platform',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

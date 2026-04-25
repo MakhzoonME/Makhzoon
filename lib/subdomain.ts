@@ -2,7 +2,7 @@ import { headers } from 'next/headers';
 
 const RESERVED = new Set(['', 'www', 'app', 'admin', 'api', 'static']);
 
-// Platform hosts where the apex (e.g. my-app.vercel.app) is the app itself, not a subdomain.
+// Platform hosts where the apex (e.g. makhzoon.vercel.app) is the app itself, not a subdomain.
 // Any host ending in one of these is treated as "no subdomain" regardless of label count.
 const PLATFORM_SUFFIXES = ['.vercel.app', '.netlify.app', '.pages.dev', '.onrender.com', '.fly.dev'];
 

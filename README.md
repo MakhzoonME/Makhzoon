@@ -1,6 +1,6 @@
-# Office Asset System
+# Makhzoon
 
-Multi-tenant SaaS for office asset and warranty tracking. Built on **Next.js 14 (App Router)**, **TypeScript**, **Firebase (Auth + Firestore)**, **Tailwind**, **shadcn/ui**, **Zustand**, **TanStack Query**, and **React Hook Form + Zod**.
+Multi-tenant SaaS for asset and warranty management. Built on **Next.js 14 (App Router)**, **TypeScript**, **Firebase (Auth + Firestore)**, **Tailwind**, **shadcn/ui**, **Zustand**, **TanStack Query**, and **React Hook Form + Zod**.
 
 ## Roles
 

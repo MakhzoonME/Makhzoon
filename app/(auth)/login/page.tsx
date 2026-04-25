@@ -100,10 +100,10 @@ export default function LoginPage() {
             transition={{ duration: 0.55, ease: EASE_SPRING }}
             className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-indigo-600 shadow-lg shadow-indigo-600/25 mb-4"
           >
-            <span className="text-white text-lg font-bold">OA</span>
+            <span className="text-white text-lg font-bold">M</span>
           </motion.div>
           <motion.h1 variants={item} className="text-2xl font-bold text-gray-900">
-            Office Asset System
+            Makhzoon
           </motion.h1>
           <motion.p variants={item} className="text-sm text-gray-500 mt-1">
             Sign in to your account
@@ -203,7 +203,7 @@ export default function LoginPage() {
         </motion.div>
 
         <motion.p variants={item} className="text-center text-sm text-gray-500 mt-6">
-          New to Office Assets?{' '}
+          New to Makhzoon?{' '}
           <a href="/signup" className="font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
             Create a workspace
           </a>

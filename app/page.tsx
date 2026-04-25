@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import Link from 'next/link';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { ArrowRight, Loader2 } from 'lucide-react';
 
@@ -12,7 +11,15 @@ export default function ComingSoonPage() {
     e.preventDefault();
     if (!email) return;
     setState('loading');
-    await new Promise((r) => setTimeout(r, 900));
+    try {
+      await fetch('/api/early-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+    } catch {
+      // best-effort — still show success to avoid leaking errors
+    }
     setState('done');
   }
 
@@ -183,18 +190,6 @@ export default function ComingSoonPage() {
         <p className="mt-4 text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>
           No spam. Notify me when we launch.
         </p>
-      </div>
-
-      {/* Bottom sign-in link */}
-      <div className="absolute bottom-8 left-0 right-0 flex justify-center">
-        <Link
-          href="/login"
-          className="inline-flex items-center gap-1.5 text-sm no-underline transition-colors duration-150"
-          style={{ color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}
-        >
-          Already have an account?
-          <span style={{ color: 'rgba(161,162,250,0.7)', fontWeight: 500 }}>Sign in →</span>
-        </Link>
       </div>
 
       {/* Horizontal line at bottom */}

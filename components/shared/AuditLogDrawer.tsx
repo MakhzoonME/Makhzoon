@@ -2,7 +2,7 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X, Activity } from 'lucide-react';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
-import { AuditLog } from '@/types';
+
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 
@@ -40,8 +40,8 @@ const MODULE_HREF: Record<string, (id: string) => string> = {
 };
 
 export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { data: logs = [], isLoading } = useAuditLogs();
-  const recent = (logs as AuditLog[]).slice(0, 30);
+  const { data, isLoading } = useAuditLogs();
+  const recent = (data?.logs ?? []).slice(0, 30);
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>

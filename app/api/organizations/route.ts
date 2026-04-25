@@ -1,17 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getOrganizations, createOrganization, subdomainExists } from '@/lib/firestore/organizations';
+import {
+  getOrganizationsWithSearch,
+  createOrganization,
+  subdomainExists,
+} from '@/lib/firestore/organizations';
 import { createSubscription } from '@/lib/firestore/subscriptions';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { organizationSchema } from '@/lib/validations/organization.schema';
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (user.role !== 'super_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const orgs = await getOrganizations();
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get('search') ?? undefined;
+    const category = searchParams.get('category') ?? undefined;
+
+    const orgs = await getOrganizationsWithSearch({ search, category });
     return NextResponse.json(orgs);
   } catch (err) {
     console.error('[GET /api/organizations]', err);
@@ -37,6 +45,8 @@ export async function POST(req: NextRequest) {
       name: data.name,
       subdomain: data.subdomain,
       contactEmail: data.contactEmail,
+      description: data.description ?? null,
+      category: data.category ?? null,
       packageDetails: data.packageDetails,
       createdBy: user.uid,
       updatedBy: user.uid,

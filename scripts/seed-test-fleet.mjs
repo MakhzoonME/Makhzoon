@@ -81,11 +81,25 @@ async function ensureOrganization({ name, subdomain, contactEmail }) {
   return ref.id;
 }
 
-async function ensureSubscription(orgId) {
+async function ensureSubscription(orgId, packageId, features) {
   const existing = await db.collection('subscriptions').where('organizationId', '==', orgId).limit(1).get();
-  if (!existing.empty) return;
-  await db.collection('subscriptions').add({
+  if (!existing.empty) {
+    await existing.docs[0].ref.set(
+      {
+        packageId: packageId ?? null,
+        features: features ?? {},
+        updatedAt: FieldValue.serverTimestamp(),
+        updatedBy: 'seed-fleet',
+      },
+      { merge: true },
+    );
+    return existing.docs[0].id;
+  }
+  const ref = await db.collection('subscriptions').add({
     organizationId: orgId,
+    packageId: packageId ?? null,
+    features: features ?? {},
+    notes: null,
     packageDetails: { plan: 'pro', seats: 10 },
     startDate: daysFromNow(-30),
     endDate: daysFromNow(335),
@@ -95,10 +109,73 @@ async function ensureSubscription(orgId) {
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   });
+  return ref.id;
+}
+
+const PACKAGE_DEFS = [
+  {
+    name: 'Starter',
+    description: 'Small teams. Core asset tracking only.',
+    isActive: true,
+    limits: { maxAssets: 100, maxUsers: 5, maxWarranties: 50, maxRequests: 20 },
+    features: {
+      warranties: true, requests: true, reports: false, maintenance: false,
+      assetCheckouts: false, assetNotes: true, support: true,
+    },
+  },
+  {
+    name: 'Pro',
+    description: 'Growing companies. Full feature set with sensible limits.',
+    isActive: true,
+    limits: { maxAssets: 1000, maxUsers: 25, maxWarranties: 1000, maxRequests: 200 },
+    features: {
+      warranties: true, requests: true, reports: true, maintenance: true,
+      assetCheckouts: true, assetNotes: true, support: true,
+    },
+  },
+  {
+    name: 'Enterprise',
+    description: 'Large fleets. No usage caps.',
+    isActive: true,
+    limits: { maxAssets: -1, maxUsers: -1, maxWarranties: -1, maxRequests: -1 },
+    features: {
+      warranties: true, requests: true, reports: true, maintenance: true,
+      assetCheckouts: true, assetNotes: true, support: true,
+    },
+  },
+];
+
+async function ensurePackages() {
+  const existing = await db.collection('packages').get();
+  const byName = new Map(existing.docs.map((d) => [d.data().name, d]));
+  const result = [];
+  for (const def of PACKAGE_DEFS) {
+    const found = byName.get(def.name);
+    if (found) {
+      await found.ref.set(
+        { ...def, updatedBy: 'seed-fleet', updatedAt: FieldValue.serverTimestamp() },
+        { merge: true },
+      );
+      result.push({ id: found.id, ...def });
+    } else {
+      const ref = await db.collection('packages').add({
+        ...def,
+        createdBy: 'seed-fleet',
+        updatedBy: 'seed-fleet',
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      result.push({ id: ref.id, ...def });
+    }
+  }
+  return result;
 }
 
 async function wipeOrgCollections(orgId) {
-  const collections = ['assets', 'warranties', 'requests', 'assetNotes', 'maintenanceRecords', 'assetCheckouts', 'invites'];
+  const collections = [
+    'assets', 'warranties', 'requests', 'assetNotes', 'maintenanceRecords', 'assetCheckouts', 'invites',
+    'paymentLogs', 'supportTickets',
+  ];
   for (const c of collections) {
     const snap = await db.collection(c).where('organizationId', '==', orgId).get();
     if (snap.empty) continue;
@@ -112,10 +189,17 @@ async function wipeOrgCollections(orgId) {
   }
 }
 
-async function seedOrg(cfg) {
+async function seedOrg(cfg, packagesByName) {
   console.log(`\n=== ${cfg.name} (${cfg.subdomain}) ===`);
   const orgId = await ensureOrganization({ name: cfg.name, subdomain: cfg.subdomain, contactEmail: cfg.contactEmail });
-  await ensureSubscription(orgId);
+  if (cfg.description !== undefined || cfg.category !== undefined) {
+    await db.collection('organizations').doc(orgId).set(
+      { description: cfg.description ?? null, category: cfg.category ?? null, updatedAt: FieldValue.serverTimestamp() },
+      { merge: true },
+    );
+  }
+  const pkg = cfg.packageName ? packagesByName.get(cfg.packageName) : null;
+  const subscriptionId = await ensureSubscription(orgId, pkg?.id ?? null, pkg?.features ?? {});
 
   const adminUid = await ensureUser({ email: cfg.admin.email, displayName: cfg.admin.name, role: 'admin', organizationId: orgId });
   const staffUids = [];
@@ -245,7 +329,64 @@ async function seedOrg(cfg) {
   });
 
   await batch.commit();
-  console.log(`  seeded: ${assetIds.length} assets, ${cfg.warranties.length} warranties, ${cfg.requests.length} requests, ${cfg.notes.length} notes, ${cfg.maintenance.length} maintenance, ${cfg.checkouts.length} checkouts, ${cfg.invites.length} invites`);
+
+  // Payments + support tickets — separate batch so the size cap doesn't bite.
+  const extraBatch = db.batch();
+  const payments = cfg.payments ?? [];
+  const tickets = cfg.tickets ?? [];
+
+  payments.forEach((p) => {
+    const ref = db.collection('paymentLogs').doc();
+    extraBatch.set(ref, {
+      organizationId: orgId,
+      subscriptionId,
+      amount: p.amount,
+      currency: p.currency ?? 'USD',
+      method: p.method ?? 'BANK_TRANSFER',
+      reference: p.reference ?? null,
+      paidAt: p.paidAt,
+      notes: p.notes ?? null,
+      createdBy: 'seed-fleet',
+      updatedBy: 'seed-fleet',
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+
+  const ticketDocs = [];
+  tickets.forEach((t) => {
+    const ref = db.collection('supportTickets').doc();
+    ticketDocs.push({ ref, replies: t.replies ?? [] });
+    extraBatch.set(ref, {
+      organizationId: orgId,
+      subject: t.subject,
+      description: t.description,
+      status: t.status ?? 'OPEN',
+      priority: t.priority ?? 'MEDIUM',
+      createdBy: staffUids[t.staffIdx ?? 0],
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+
+  await extraBatch.commit();
+
+  // Reply messages must be added after the parent ticket exists.
+  for (const td of ticketDocs) {
+    for (const reply of td.replies) {
+      await td.ref.collection('messages').add({
+        body: reply.body,
+        authorId: reply.role === 'SUPER_ADMIN' ? 'seed-fleet' : staffUids[reply.staffIdx ?? 0],
+        authorName: reply.role === 'SUPER_ADMIN' ? 'Super Admin' : cfg.staff[reply.staffIdx ?? 0].name,
+        authorRole: reply.role,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
+  console.log(
+    `  seeded: ${assetIds.length} assets, ${cfg.warranties.length} warranties, ${cfg.requests.length} requests, ${cfg.notes.length} notes, ${cfg.maintenance.length} maintenance, ${cfg.checkouts.length} checkouts, ${cfg.invites.length} invites, ${payments.length} payments, ${tickets.length} tickets`,
+  );
 }
 
 const orgs = [
@@ -253,6 +394,9 @@ const orgs = [
     name: 'Acme Corp',
     subdomain: 'acme',
     contactEmail: 'it@acme.test',
+    description: 'Mid-size electronics distributor — primary US fleet.',
+    category: 'Technology',
+    packageName: 'Pro',
     admin: { email: 'admin@acme.test', name: 'Alice Reed' },
     staff: [
       { email: 'bob@acme.test',    name: 'Bob Martin'  },
@@ -294,11 +438,37 @@ const orgs = [
     invites: [
       { email: 'new.hire@acme.test', name: 'New Hire',   role: 'staff' },
     ],
+    payments: [
+      { amount: 199.0, currency: 'USD', method: 'CARD', reference: 'INV-2026-001', paidAt: daysFromNow(-30), notes: 'Q1 renewal' },
+      { amount: 199.0, currency: 'USD', method: 'CARD', reference: 'INV-2026-002', paidAt: daysFromNow(-1),  notes: 'Q2 renewal' },
+    ],
+    tickets: [
+      {
+        subject: 'Cannot import CSV with > 500 rows',
+        description: 'Trying to bulk-import the entire HQ inventory but the upload spinner hangs at ~80%. We have 612 rows.',
+        status: 'OPEN', priority: 'HIGH', staffIdx: 0,
+        replies: [
+          { role: 'SUPER_ADMIN', body: 'Looking into the timeout. Could you try splitting into batches of 250 as a workaround?' },
+          { role: 'ORG_USER',    body: 'That worked, thanks. Still want a proper fix though.', staffIdx: 0 },
+        ],
+      },
+      {
+        subject: 'Where do I find depreciation reports?',
+        description: 'Trying to find a way to see depreciation by category — is that under Reports?',
+        status: 'RESOLVED', priority: 'LOW', staffIdx: 1,
+        replies: [
+          { role: 'SUPER_ADMIN', body: 'Yes — Reports → Depreciation. Filter by category at the top of the page.' },
+        ],
+      },
+    ],
   },
   {
     name: 'Globex Inc',
     subdomain: 'globex',
     contactEmail: 'ops@globex.test',
+    description: 'Healthcare logistics provider with mostly remote staff.',
+    category: 'Healthcare',
+    packageName: 'Starter',
     admin: { email: 'admin@globex.test', name: 'George Okafor' },
     staff: [
       { email: 'hannah@globex.test', name: 'Hannah Liu'   },
@@ -330,11 +500,27 @@ const orgs = [
       { assetIdx: 4, to: 'Ian Torres', staffIdx: 1, at: daysFromNow(-60), due: daysFromNow(-5), notes: 'WFH equipment.' }, // overdue
     ],
     invites: [],
+    payments: [
+      { amount: 49.0, currency: 'USD', method: 'BANK_TRANSFER', reference: 'WIRE-22-09', paidAt: daysFromNow(-25), notes: null },
+    ],
+    tickets: [
+      {
+        subject: 'Need to add a custom asset category',
+        description: 'Our medical fridges don\'t fit any of the default categories. Can we have "Medical Equipment"?',
+        status: 'IN_PROGRESS', priority: 'MEDIUM', staffIdx: 0,
+        replies: [
+          { role: 'SUPER_ADMIN', body: 'Custom categories are on the roadmap for Q3. For now you can use Notes to flag the type.' },
+        ],
+      },
+    ],
   },
   {
     name: 'Stark Industries',
     subdomain: 'stark',
     contactEmail: 'jarvis@stark.test',
+    description: 'R&D-heavy manufacturer with bespoke labs across two coasts.',
+    category: 'Manufacturing',
+    packageName: 'Enterprise',
     admin: { email: 'admin@stark.test', name: 'Pepper Potts' },
     staff: [
       { email: 'tony@stark.test',    name: 'Tony Stark'    },
@@ -380,11 +566,43 @@ const orgs = [
       { email: 'peter@stark.test', name: 'Peter Parker', role: 'staff' },
       { email: 'hank@stark.test',  name: 'Hank Pym',     role: 'admin' },
     ],
+    payments: [
+      { amount: 4999.0, currency: 'USD', method: 'BANK_TRANSFER', reference: 'STK-WIRE-44', paidAt: daysFromNow(-90), notes: 'Annual contract — year 1' },
+      { amount: 4999.0, currency: 'USD', method: 'BANK_TRANSFER', reference: 'STK-WIRE-78', paidAt: daysFromNow(-7),  notes: 'Annual contract — year 2' },
+    ],
+    tickets: [
+      {
+        subject: 'API rate limit increase request',
+        description: 'JARVIS is hitting the 600 rpm cap during peak inventory sync. Need bump to 2000 rpm.',
+        status: 'OPEN', priority: 'URGENT', staffIdx: 0,
+        replies: [],
+      },
+      {
+        subject: 'SSO/SAML setup help',
+        description: 'Trying to wire up Okta. Where do I get the SP metadata XML?',
+        status: 'RESOLVED', priority: 'HIGH', staffIdx: 2,
+        replies: [
+          { role: 'SUPER_ADMIN', body: 'Generated SP metadata for your tenant. Sent over secure email; let me know once SSO is enforced.' },
+          { role: 'ORG_USER',    body: 'Got it, working now. Closing.', staffIdx: 2 },
+        ],
+      },
+      {
+        subject: 'Bulk retire helper',
+        description: 'Need a way to mark 200+ assets as Retired in one shot.',
+        status: 'IN_PROGRESS', priority: 'MEDIUM', staffIdx: 1,
+        replies: [],
+      },
+    ],
   },
 ];
 
+console.log('=== Packages ===');
+const seededPackages = await ensurePackages();
+const packagesByName = new Map(seededPackages.map((p) => [p.name, p]));
+console.log(`  ensured: ${seededPackages.map((p) => p.name).join(', ')}`);
+
 for (const o of orgs) {
-  await seedOrg(o);
+  await seedOrg(o, packagesByName);
 }
 
 console.log('\nDone. Sign in with any of:');

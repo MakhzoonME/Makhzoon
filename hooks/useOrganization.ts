@@ -1,11 +1,14 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 
-export function useOrganizations() {
+export function useOrganizations(filters?: { search?: string; category?: string }) {
+  const params = new URLSearchParams();
+  if (filters?.search) params.set('search', filters.search);
+  if (filters?.category) params.set('category', filters.category);
   return useQuery({
-    queryKey: ['organizations'],
+    queryKey: ['organizations', filters],
     queryFn: async () => {
-      const res = await fetch('/api/organizations');
+      const res = await fetch(`/api/organizations?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch organizations');
       return res.json();
     },

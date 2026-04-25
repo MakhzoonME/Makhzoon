@@ -26,7 +26,15 @@ function getAdminApp(): App {
 export function getAdminDb(): Firestore {
   if (!_db) {
     _db = getFirestore(getAdminApp());
-    _db.settings({ ignoreUndefinedProperties: true });
+    // settings() can only be called once per Firestore instance. Under Next.js HMR the
+    // module-scope `_db` cache resets, but the underlying instance from firebase-admin
+    // is cached at the App level, so a re-init throws. Swallowing is safe — settings
+    // were already applied on first init.
+    try {
+      _db.settings({ ignoreUndefinedProperties: true });
+    } catch (err) {
+      if (!(err instanceof Error) || !/already.*initialized|once/i.test(err.message)) throw err;
+    }
   }
   return _db;
 }

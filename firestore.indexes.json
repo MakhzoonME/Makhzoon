@@ -19,7 +19,13 @@
     { "collectionGroup": "assetCheckouts", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "checkedOutAt", "order": "DESCENDING" }] },
     { "collectionGroup": "assetCheckouts", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "assetId", "order": "ASCENDING" }, { "fieldPath": "checkedOutAt", "order": "DESCENDING" }] },
     { "collectionGroup": "invites", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
-    { "collectionGroup": "invites", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "email", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }] }
+    { "collectionGroup": "invites", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "email", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }] },
+    { "collectionGroup": "supportTickets", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "supportTickets", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "supportTickets", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "supportTickets", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "priority", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "paymentLogs", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "paidAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "packages", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "isActive", "order": "ASCENDING" }, { "fieldPath": "name", "order": "ASCENDING" }] }
   ],
   "fieldOverrides": []
 }

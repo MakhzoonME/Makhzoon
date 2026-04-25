@@ -45,3 +45,19 @@ export async function updateSubscription(id: string, data: Partial<Subscription>
     updatedAt: FieldValue.serverTimestamp(),
   });
 }
+
+export async function getSubscriptionsByOrgs(orgIds: string[]): Promise<Subscription[]> {
+  if (orgIds.length === 0) return [];
+  const unique = Array.from(new Set(orgIds));
+  const chunks: string[][] = [];
+  for (let i = 0; i < unique.length; i += 10) chunks.push(unique.slice(i, i + 10));
+  const results: Subscription[] = [];
+  for (const chunk of chunks) {
+    const snap = await adminDb
+      .collection('subscriptions')
+      .where('organizationId', 'in', chunk)
+      .get();
+    results.push(...snap.docs.map((d) => toSubscription(d.id, d.data())));
+  }
+  return results;
+}

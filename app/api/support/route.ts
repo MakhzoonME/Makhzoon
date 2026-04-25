@@ -1,19 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getSupportTickets, createSupportTicket } from '@/lib/firestore/support-tickets';
+import {
+  getSupportTickets,
+  getAllSupportTickets,
+  createSupportTicket,
+} from '@/lib/firestore/support-tickets';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { supportTicketCreateSchema } from '@/lib/validations/support-ticket.schema';
-import { TicketStatus } from '@/types';
+import { TicketStatus, TicketPriority } from '@/types';
 
 export async function GET(req: NextRequest) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!user.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { searchParams } = new URL(req.url);
     const status = (searchParams.get('status') ?? undefined) as TicketStatus | undefined;
+    const priority = (searchParams.get('priority') ?? undefined) as TicketPriority | undefined;
+    const orgIdFilter = searchParams.get('orgId') ?? undefined;
 
+    if (user.role === 'super_admin') {
+      if (orgIdFilter) {
+        const tickets = await getSupportTickets(orgIdFilter, status ? { status } : undefined);
+        return NextResponse.json(tickets);
+      }
+      const tickets = await getAllSupportTickets({ status, priority });
+      return NextResponse.json(tickets);
+    }
+
+    if (!user.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const tickets = await getSupportTickets(user.organizationId, status ? { status } : undefined);
     return NextResponse.json(tickets);
   } catch (err) {

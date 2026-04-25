@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { SuperAdminBanner } from '@/components/layout/SuperAdminBanner';
-import { Building2, FileText, LogOut } from 'lucide-react';
+import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
@@ -11,7 +11,10 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
 
 const navItems = [
+  { href: '/super-admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/super-admin', label: 'Organizations', icon: Building2 },
+  { href: '/super-admin/support', label: 'Support', icon: MessageSquare },
+  { href: '/super-admin/configuration', label: 'Configuration', icon: Settings },
   { href: '/super-admin/audit-logs', label: 'Audit Logs', icon: FileText },
 ];
 

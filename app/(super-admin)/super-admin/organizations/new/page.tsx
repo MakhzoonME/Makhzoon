@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { ORG_CATEGORIES } from '@/types';
 
 export default function NewOrganizationPage() {
   const router = useRouter();
@@ -19,7 +20,16 @@ export default function NewOrganizationPage() {
 
   const form = useForm<OrganizationFormData>({
     resolver: zodResolver(organizationSchema),
-    defaultValues: { name: '', subdomain: '', contactEmail: '', packageDetails: '', subscriptionStartDate: '', subscriptionEndDate: '' },
+    defaultValues: {
+      name: '',
+      subdomain: '',
+      contactEmail: '',
+      description: '',
+      category: null,
+      packageDetails: '',
+      subscriptionStartDate: '',
+      subscriptionEndDate: '',
+    },
   });
 
   async function onSubmit(data: OrganizationFormData) {
@@ -75,6 +85,33 @@ export default function NewOrganizationPage() {
               <FormItem>
                 <FormLabel>Contact Email *</FormLabel>
                 <FormControl><Input type="email" {...field} placeholder="admin@acme.com" /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="category" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Category</FormLabel>
+                <FormControl>
+                  <select
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                    className="flex h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                  >
+                    <option value="">— None —</option>
+                    {ORG_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="description" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl><Textarea {...field} value={field.value ?? ''} rows={3} maxLength={500} placeholder="Short description of the organization..." /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />

@@ -30,9 +30,26 @@ export default function AuditLogsPage() {
     },
   ];
 
+  function buildExportUrl() {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v) params.set(k, v);
+    });
+    return `/api/audit-logs/export?${params.toString()}`;
+  }
+
   return (
     <div>
-      <PageHeader title="Audit Logs" />
+      <PageHeader
+        title="Audit Logs"
+        actions={
+          <Button size="sm" variant="outline" asChild>
+            <a href={buildExportUrl()} download>
+              Export CSV
+            </a>
+          </Button>
+        }
+      />
 
       <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getOrganizationById } from '@/lib/firestore/organizations';
+import { getOrganizationById, updateOrganization } from '@/lib/firestore/organizations';
 import { getSubscriptionByOrg } from '@/lib/firestore/subscriptions';
+import { writeAuditLog } from '@/lib/audit/logger';
+import { organizationUpdateSchema } from '@/lib/validations/organization.schema';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   try {
@@ -17,6 +19,43 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ org
     return NextResponse.json({ ...org, subscription });
   } catch (err) {
     console.error('[GET /api/organizations/[orgId]]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
+  try {
+    const user = await verifySessionCookie();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (user.role !== 'super_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    const { orgId } = await params;
+    const existing = await getOrganizationById(orgId);
+    if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    const body = await req.json();
+    const parsed = organizationUpdateSchema.safeParse(body);
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
+
+    await updateOrganization(orgId, {
+      ...parsed.data,
+      updatedBy: user.uid,
+    });
+
+    await writeAuditLog({
+      organizationId: orgId,
+      userId: user.uid,
+      role: user.role,
+      action: 'ORGANIZATION_UPDATED',
+      module: 'organizations',
+      recordId: orgId,
+      oldValue: { name: existing.name, category: existing.category },
+      newValue: parsed.data as Record<string, unknown>,
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('[PUT /api/organizations/[orgId]]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

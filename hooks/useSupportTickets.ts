@@ -1,10 +1,16 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { SupportTicket, TicketMessage, TicketStatus } from '@/types';
+import { SupportTicket, TicketMessage, TicketStatus, TicketPriority } from '@/types';
 
-export function useSupportTickets(filters?: { status?: TicketStatus }) {
+export function useSupportTickets(filters?: {
+  status?: TicketStatus;
+  priority?: TicketPriority;
+  orgId?: string;
+}) {
   const params = new URLSearchParams();
   if (filters?.status) params.set('status', filters.status);
+  if (filters?.priority) params.set('priority', filters.priority);
+  if (filters?.orgId) params.set('orgId', filters.orgId);
   return useQuery<SupportTicket[]>({
     queryKey: ['support-tickets', filters],
     queryFn: async () => {
@@ -58,7 +64,7 @@ export function useCreateTicket() {
 export function useUpdateTicket(ticketId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (updates: { status?: TicketStatus }) => {
+    mutationFn: async (updates: { status?: TicketStatus; priority?: TicketPriority }) => {
       const res = await fetch(`/api/support/${ticketId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

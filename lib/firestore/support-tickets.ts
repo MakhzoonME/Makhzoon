@@ -42,6 +42,66 @@ export async function getSupportTickets(
   return snap.docs.map((d) => toTicket(d.id, d.data()));
 }
 
+export async function getAllSupportTickets(filters?: {
+  status?: TicketStatus;
+  priority?: TicketPriority;
+}): Promise<SupportTicket[]> {
+  let q = adminDb.collection('supportTickets').orderBy('createdAt', 'desc') as FirebaseFirestore.Query;
+  if (filters?.status) q = q.where('status', '==', filters.status);
+  if (filters?.priority) q = q.where('priority', '==', filters.priority);
+  const snap = await q.get();
+  return snap.docs.map((d) => toTicket(d.id, d.data()));
+}
+
+export async function getSupportTicketByIdAny(ticketId: string): Promise<SupportTicket | null> {
+  const doc = await adminDb.collection('supportTickets').doc(ticketId).get();
+  if (!doc.exists) return null;
+  return toTicket(doc.id, doc.data()!);
+}
+
+export async function updateSupportTicketAdmin(
+  ticketId: string,
+  userId: string,
+  updates: { status?: TicketStatus; priority?: TicketPriority },
+): Promise<void> {
+  const patch: Record<string, unknown> = {
+    ...updates,
+    updatedBy: userId,
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+  if (updates.status === 'RESOLVED' || updates.status === 'CLOSED') {
+    patch.resolvedAt = FieldValue.serverTimestamp();
+    patch.resolvedBy = userId;
+  }
+  await adminDb.collection('supportTickets').doc(ticketId).update(patch);
+}
+
+export async function getTicketMessagesAny(ticketId: string): Promise<TicketMessage[]> {
+  const snap = await adminDb
+    .collection('supportTickets')
+    .doc(ticketId)
+    .collection('messages')
+    .orderBy('createdAt', 'asc')
+    .get();
+  return snap.docs.map((d) => toMessage(d.id, ticketId, d.data()));
+}
+
+export async function addTicketMessageAny(
+  ticketId: string,
+  authorId: string,
+  authorName: string,
+  authorRole: string,
+  body: string,
+): Promise<TicketMessage> {
+  const ticket = await adminDb.collection('supportTickets').doc(ticketId).get();
+  if (!ticket.exists) throw new Error('Not found');
+  const ref = adminDb.collection('supportTickets').doc(ticketId).collection('messages').doc();
+  await ref.set({ body, authorId, authorName, authorRole, createdAt: FieldValue.serverTimestamp() });
+  await adminDb.collection('supportTickets').doc(ticketId).update({ updatedAt: FieldValue.serverTimestamp() });
+  const doc = await ref.get();
+  return toMessage(doc.id, ticketId, doc.data()!);
+}
+
 export async function getSupportTicketById(ticketId: string, orgId: string): Promise<SupportTicket | null> {
   const doc = await adminDb.collection('supportTickets').doc(ticketId).get();
   if (!doc.exists) return null;

@@ -13,3 +13,5 @@ export * from './invite.types';
 export * from './report.types';
 export * from './usage.types';
 export * from './support-ticket.types';
+export * from './package.types';
+export * from './payment-log.types';

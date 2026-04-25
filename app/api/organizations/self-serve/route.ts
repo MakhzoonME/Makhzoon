@@ -36,6 +36,8 @@ export async function POST(req: NextRequest) {
       name: orgName,
       subdomain: normalizedSub,
       contactEmail: email,
+      description: null,
+      category: null,
       packageDetails: 'trial',
       createdBy: newUser.uid,
       updatedBy: newUser.uid,

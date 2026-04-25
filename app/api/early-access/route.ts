@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   }
 
   await sendEmail({
-    to: 'info@makhzoon.me',
+    to: 'info@makhzoon.com',
     subject: 'New early-access request',
     html: `<p>A new visitor requested early access.</p><p><strong>Email:</strong> ${email}</p>`,
     text: `New early-access request\nEmail: ${email}`,

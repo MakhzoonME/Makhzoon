@@ -9,6 +9,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
+import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 
 const navItems = [
   { href: '/superadmin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -47,10 +48,8 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
         <aside className="fixed left-0 top-8 bottom-0 w-60 flex flex-col" style={{ background: '#0F2440' }}>
           <div className="px-4 py-4 border-b border-blue-900">
             <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-md bg-blue-500 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">MM</span>
-              </div>
-              <span className="text-sm font-semibold text-blue-100">Makhzoon ME</span>
+              <MakhzoonMark size={28} fill="#FFFFFF" glyphFill="#1E3A5F" />
+              <span className="text-sm font-semibold text-blue-100">Makhzoon</span>
             </div>
           </div>
           <nav className="flex-1 p-3 space-y-0.5">

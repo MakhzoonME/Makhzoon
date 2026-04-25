@@ -10,6 +10,7 @@ import { ChevronDown, LogOut, Search, Activity, PanelLeftClose, PanelLeftOpen } 
 import { CommandPalette, useCommandPalette } from '@/components/shared/CommandPalette';
 import { AuditLogDrawer } from '@/components/shared/AuditLogDrawer';
 import { useUiStore } from '@/store/ui.store';
+import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 
 const roleConfig = {
   super_admin: { variant: 'blue' as const, label: 'Super Admin' },
@@ -59,10 +60,8 @@ export function AppHeader({ orgName }: { orgName?: string }) {
         </button>
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-md bg-indigo-600 flex items-center justify-center">
-              <span className="text-white text-xs font-bold">MM</span>
-            </div>
-            <span className="text-sm font-semibold text-gray-900 hidden sm:block">Makhzoon ME</span>
+            <MakhzoonMark size={28} />
+            <span className="text-sm font-semibold text-gray-900 hidden sm:block">Makhzoon</span>
           </div>
           {orgName && (
             <>

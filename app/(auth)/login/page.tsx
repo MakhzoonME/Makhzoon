@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
+import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { buildOrgPath, buildSuperAdminPath } from '@/lib/utils/tenant-url';
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
@@ -98,15 +99,15 @@ export default function LoginPage() {
             initial={{ opacity: 0, scale: 0.85, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.55, ease: EASE_SPRING }}
-            className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-indigo-600 shadow-lg shadow-indigo-600/25 mb-4"
+            className="inline-flex justify-center mb-4"
           >
-            <span className="text-white text-lg font-bold">M</span>
+            <MakhzoonMark size={48} />
           </motion.div>
           <motion.h1 variants={item} className="text-2xl font-bold text-gray-900">
-            Makhzoon
+            Sign in to your workspace
           </motion.h1>
           <motion.p variants={item} className="text-sm text-gray-500 mt-1">
-            Sign in to your account
+            Welcome back to Makhzoon.
           </motion.p>
         </div>
 
@@ -202,12 +203,6 @@ export default function LoginPage() {
           </motion.div>
         </motion.div>
 
-        <motion.p variants={item} className="text-center text-sm text-gray-500 mt-6">
-          New to Makhzoon?{' '}
-          <a href="/signup" className="font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
-            Create a workspace
-          </a>
-        </motion.p>
       </motion.div>
     </div>
   );

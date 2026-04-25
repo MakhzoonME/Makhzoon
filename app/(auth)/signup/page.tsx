@@ -1,19 +1,31 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Building2, Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { buildOrgPath } from '@/lib/utils/tenant-url';
+import { useAuthStore } from '@/store/auth.store';
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 const EASE_SPRING = [0.34, 1.56, 0.64, 1] as const;
 
 export default function SignupPage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuthStore();
+
+  useEffect(() => {
+    if (!authLoading && user?.role !== 'super_admin') {
+      router.replace(user ? '/' : '/login');
+    }
+  }, [user, authLoading, router]);
+
   const [orgName, setOrgName] = useState('');
   const [subdomain, setSubdomain] = useState('');
   const [subdomainTouched, setSubdomainTouched] = useState(false);
@@ -105,9 +117,9 @@ export default function SignupPage() {
             initial={{ opacity: 0, scale: 0.85, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.55, ease: EASE_SPRING }}
-            className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-indigo-600 shadow-lg shadow-indigo-600/25 mb-4"
+            className="mb-4"
           >
-            <Building2 className="text-white h-6 w-6" />
+            <MakhzoonMark size={48} />
           </motion.div>
           <motion.h1 variants={item} className="text-2xl font-bold text-gray-900">
             Create your workspace

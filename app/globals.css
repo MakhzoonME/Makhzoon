@@ -43,13 +43,31 @@
   --red-100: #FEE2E2;
   --red-50: #FEF2F2;
 
+  --blue-700: #1D4ED8;
   --blue-600: #2563EB;
   --blue-100: #DBEAFE;
   --blue-50: #EFF6FF;
 
+  /* Aspirational accents */
+  --amber-500: #F59E0B;
+  --violet-600: #7C3AED;
+
   /* Super Admin */
   --super-admin-bg: #1E3A5F;
   --super-admin-text: #BFDBFE;
+  --sa-bg: #1E3A5F;
+  --sa-text: #BFDBFE;
+
+  /* Radii */
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 10px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.10), 0 4px 6px -4px rgb(0 0 0 / 0.08);
 
   /* Surface */
   --surface-page: #F8FAFC;
@@ -66,6 +84,7 @@
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-in: cubic-bezier(0.7, 0, 1, 0.6);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-smooth: cubic-bezier(0.65, 0, 0.35, 1);
 
   /* Motion — durations */
   --dur-micro: 120ms;

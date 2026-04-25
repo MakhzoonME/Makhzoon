@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const SKIP_PREFIXES = ['/api/', '/invites/', '/_next/'];
-const PUBLIC_PAGES = new Set(['/login', '/signup']);
+
+// Marketing pages and auth pages are public — no session required
+const PUBLIC_PATHS = new Set([
+  '/', '/home', '/product', '/pricing', '/customers', '/security', '/about', '/contact', '/login',
+]);
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -12,13 +16,18 @@ export async function middleware(req: NextRequest) {
 
   const session = req.cookies.get('session')?.value;
 
-  // Authenticated users hitting public pages → root (page.tsx resolves the destination)
-  if (session && PUBLIC_PAGES.has(pathname)) {
+  // Logged-in users hitting /login → root (marketing home, which shows a "Go to app" button)
+  if (session && pathname === '/login') {
     return NextResponse.redirect(new URL('/', req.url));
   }
 
-  // Unauthenticated users trying to access protected pages → login
-  if (!session && !PUBLIC_PAGES.has(pathname) && pathname !== '/') {
+  // Marketing and auth pages are always accessible without a session
+  if (PUBLIC_PATHS.has(pathname)) {
+    return NextResponse.next();
+  }
+
+  // Everything else (/superadmin/*, /[orgSlug]/*, /signup) requires a session
+  if (!session) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
 

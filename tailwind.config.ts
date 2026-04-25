@@ -23,6 +23,12 @@ const config: Config = {
           card: '#FFFFFF',
           sidebar: '#FFFFFF',
         },
+        amber: {
+          500: '#F59E0B',
+        },
+        violet: {
+          600: '#7C3AED',
+        },
       },
       fontFamily: {
         sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
@@ -30,6 +36,9 @@ const config: Config = {
       },
       boxShadow: {
         xs: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+        sm: '0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.06)',
+        md: '0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06)',
+        lg: '0 10px 15px -3px rgb(0 0 0 / 0.10), 0 4px 6px -4px rgb(0 0 0 / 0.08)',
       },
       borderRadius: {
         lg: 'var(--radius)',

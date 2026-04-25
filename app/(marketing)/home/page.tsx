@@ -136,7 +136,7 @@ export default function HomePage() {
           <div style={{ marginBottom: 56, maxWidth: 760 }}>
             <div style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--primary-600)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 14 }}>Workflow</div>
             <h2 style={{ fontSize: 40, fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', margin: '0 0 14px', color: 'var(--gray-900)' }}>One source of truth, three roles.</h2>
-            <p style={{ fontSize: 18, lineHeight: 1.55, color: 'var(--gray-600)', margin: 0 }}>From the IT manager filing audit reports to the field tech logging a repair — everyone sees what they need, nothing they don't.</p>
+            <p style={{ fontSize: 18, lineHeight: 1.55, color: 'var(--gray-600)', margin: 0 }}>From the IT manager filing audit reports to the field tech logging a repair — everyone sees what they need, nothing they don&apos;t.</p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
             {ROLES.map(({ role, tone, desc, items }) => (
@@ -189,7 +189,7 @@ export default function HomePage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
             {QUOTES.map(({ name, role, org, quote }) => (
               <div key={name} style={{ background: '#fff', border: '1px solid var(--border-default)', borderRadius: 'var(--r-lg)', padding: 32, display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-xs)' }}>
-                <div style={{ fontSize: 32, color: 'var(--primary-400)', lineHeight: 0, marginBottom: 12, fontFamily: 'serif' }}>"</div>
+                <div style={{ fontSize: 32, color: 'var(--primary-400)', lineHeight: 0, marginBottom: 12, fontFamily: 'serif' }}>&ldquo;</div>
                 <p style={{ fontSize: 16, lineHeight: 1.55, color: 'var(--gray-800)', flex: 1, marginBottom: 24 }}>{quote}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 18, borderTop: '1px solid var(--border-default)' }}>
                   <div style={{ width: 36, height: 36, borderRadius: 999, background: 'var(--primary-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: 'var(--primary-700)', flexShrink: 0 }}>

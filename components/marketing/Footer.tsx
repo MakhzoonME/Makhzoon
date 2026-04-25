@@ -60,7 +60,7 @@ export function MarketingFooter() {
         </div>
 
         <div style={{ paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>© 2026 Makhzoon, Inc. مخزون · "stored"</div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>© 2026 Makhzoon, Inc. مخزون · &ldquo;stored&rdquo;</div>
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-geist-mono, monospace)' }}>Built in Amman · Trusted globally</div>
         </div>
       </div>

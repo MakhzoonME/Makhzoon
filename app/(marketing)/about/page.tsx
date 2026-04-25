@@ -29,8 +29,8 @@ export default function AboutPage() {
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 64, alignItems: 'center' }}>
           <div>
             <div style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--primary-600)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 18 }}>About</div>
-            <h1 style={{ fontSize: 56, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.1, margin: '0 0 22px', color: 'var(--gray-900)' }}>We named the company "stored" — and meant it.</h1>
-            <p style={{ fontSize: 18, color: 'var(--gray-600)', lineHeight: 1.55, margin: 0 }}>Makhzoon (مخزون) is the Arabic word for "stored" or "inventoried." It carries connotations of custody, stewardship, and reliable record-keeping — the three things every operations team needs from their asset platform, and the three things spreadsheets can't deliver.</p>
+            <h1 style={{ fontSize: 56, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.1, margin: '0 0 22px', color: 'var(--gray-900)' }}>We named the company &ldquo;stored&rdquo; — and meant it.</h1>
+            <p style={{ fontSize: 18, color: 'var(--gray-600)', lineHeight: 1.55, margin: 0 }}>Makhzoon (مخزون) is the Arabic word for &ldquo;stored&rdquo; or &ldquo;inventoried.&rdquo; It carries connotations of custody, stewardship, and reliable record-keeping — the three things every operations team needs from their asset platform, and the three things spreadsheets can&apos;t deliver.</p>
           </div>
           <div style={{ background: 'radial-gradient(at 30% 30%, rgba(99,102,241,0.18), transparent 60%), radial-gradient(at 70% 70%, rgba(124,58,237,0.16), transparent 60%), #fff', border: '1px solid var(--border-default)', borderRadius: 'var(--r-lg)', padding: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 380 }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
@@ -84,7 +84,7 @@ export default function AboutPage() {
           {/* Hiring band */}
           <div style={{ padding: 32, background: 'var(--gray-50)', border: '1px solid var(--border-default)', borderRadius: 'var(--r-lg)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 4, color: 'var(--gray-900)' }}>We're hiring across engineering, design, and customer success.</div>
+              <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 4, color: 'var(--gray-900)' }}>We&apos;re hiring across engineering, design, and customer success.</div>
               <div style={{ fontSize: 14, color: 'var(--gray-600)' }}>Remote-first across MENA + EU. Equity for everyone.</div>
             </div>
             <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 'var(--r-md)', background: 'var(--primary-600)', color: '#fff', border: 'none', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>

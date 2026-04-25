@@ -11,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
-import { Warranty } from '@/types';
+import { Asset, Warranty } from '@/types';
 import { Edit, Plus } from 'lucide-react';
 import { RequestActionPanel } from '@/components/assets/RequestActionPanel';
 import { AssetNotesSection } from '@/components/assets/AssetNotesSection';
@@ -45,8 +45,12 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
       const res = await fetch(`/api/assets/${assetId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed');
       toast.success(isRetired ? 'Asset permanently deleted' : 'Asset retired');
-      qc.removeQueries({ queryKey: ['assets'] });
-      qc.removeQueries({ queryKey: ['asset', assetId] });
+      // Optimistically remove from every cached list so the deleted record never appears on navigation
+      qc.setQueriesData<{ items: Asset[]; nextCursor: string | null }>(
+        { queryKey: ['assets'] },
+        (old) => old?.items ? { ...old, items: old.items.filter((a) => a.id !== assetId) } : old,
+      );
+      qc.removeQueries({ queryKey: ['assets', assetId] });
       router.push('/assets');
     } catch { toast.error(isRetired ? 'Failed to delete asset' : 'Failed to retire asset'); }
     finally { setRetiring(false); setShowRetire(false); }

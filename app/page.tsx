@@ -117,7 +117,7 @@ export default function ComingSoonPage() {
             direction: 'rtl',
           }}
         >
-          مخزون — &ldquo;stored&rdquo;
+          مخزون — &ldquo;Makhzoon&rdquo;
         </div>
 
         {/* Sub */}

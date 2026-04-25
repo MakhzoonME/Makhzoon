@@ -60,9 +60,9 @@ export function AppHeader({ orgName }: { orgName?: string }) {
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex items-center gap-2">
             <div className="h-7 w-7 rounded-md bg-indigo-600 flex items-center justify-center">
-              <span className="text-white text-xs font-bold">OA</span>
+              <span className="text-white text-xs font-bold">MM</span>
             </div>
-            <span className="text-sm font-semibold text-gray-900 hidden sm:block">Office Assets</span>
+            <span className="text-sm font-semibold text-gray-900 hidden sm:block">Makhzoon ME</span>
           </div>
           {orgName && (
             <>

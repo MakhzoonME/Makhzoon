@@ -48,9 +48,9 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
           <div className="px-4 py-4 border-b border-blue-900">
             <div className="flex items-center gap-2">
               <div className="h-7 w-7 rounded-md bg-blue-500 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">OA</span>
+                <span className="text-white text-xs font-bold">MM</span>
               </div>
-              <span className="text-sm font-semibold text-blue-100">Office Assets</span>
+              <span className="text-sm font-semibold text-blue-100">Makhzoon ME</span>
             </div>
           </div>
           <nav className="flex-1 p-3 space-y-0.5">

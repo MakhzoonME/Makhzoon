@@ -1,7 +1,6 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
-import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { cn } from '@/lib/utils/cn';
 

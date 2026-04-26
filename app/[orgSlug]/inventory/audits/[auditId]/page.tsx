@@ -1,8 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useInventoryAudit } from '@/hooks/useInventoryAudits';
-import { useOrgSlug } from '@/hooks/useOrgSlug';
+
 import { PageHeader } from '@/components/shared/PageHeader';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
@@ -88,8 +88,6 @@ function ItemRow({ item, auditId, completed }: { item: InventoryAuditItem; audit
 
 export default function AuditDetailPage() {
   const { auditId } = useParams<{ auditId: string }>();
-  const router = useRouter();
-  const orgSlug = useOrgSlug();
   const qc = useQueryClient();
   const { data, isLoading } = useInventoryAudit(auditId);
   const [completing, setCompleting] = useState(false);

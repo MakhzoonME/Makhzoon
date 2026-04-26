@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
 import { useOrgSlug } from '@/hooks/useOrgSlug';
@@ -144,7 +145,7 @@ export default function ProfilePage() {
               onClick={() => fileInputRef.current?.click()}
             >
               {photoURL ? (
-                <img src={photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                <Image src={photoURL} alt="Avatar" fill className="object-cover" unoptimized />
               ) : (
                 <span className="text-indigo-700 font-semibold text-lg">{initials}</span>
               )}

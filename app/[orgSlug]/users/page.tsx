@@ -12,6 +12,7 @@ import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils/cn';
+import { apiFetch } from '@/lib/utils/api-fetch';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
@@ -112,7 +113,7 @@ export default function UsersPage() {
   async function handleRevoke(invite: Invite) {
     setRevoking(invite.token);
     try {
-      const res = await fetch(`/api/invites/${invite.token}/revoke`, { method: 'POST' });
+      const res = await apiFetch(`/api/invites/${invite.token}/revoke`, { method: 'POST' });
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error ?? 'Failed to revoke invite');
@@ -135,7 +136,7 @@ export default function UsersPage() {
     if (!editTarget) return;
     setSavingRole(true);
     try {
-      const res = await fetch(`/api/users/${editTarget.id}`, {
+      const res = await apiFetch(`/api/users/${editTarget.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: editRole }),
@@ -162,7 +163,7 @@ export default function UsersPage() {
       const url = permanent
         ? `/api/users/${target.id}?permanent=true`
         : `/api/users/${target.id}`;
-      const res = await fetch(url, { method: 'DELETE' });
+      const res = await apiFetch(url, { method: 'DELETE' });
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error ?? (permanent ? 'Failed to delete user' : 'Failed to deactivate user'));

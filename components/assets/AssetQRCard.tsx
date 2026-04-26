@@ -1,7 +1,35 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { QrCode, Download, Printer } from 'lucide-react';
+function QrCodeSVG() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <rect x="1.5" y="1.5" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" />
+      <rect x="3" y="3" width="2" height="2" fill="currentColor" />
+      <rect x="9.5" y="1.5" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" />
+      <rect x="11" y="3" width="2" height="2" fill="currentColor" />
+      <rect x="1.5" y="9.5" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" />
+      <rect x="3" y="11" width="2" height="2" fill="currentColor" />
+      <path d="M9.5 9.5h2M9.5 11.5h1.5M11.5 11.5v1M11.5 13h3M9.5 13v1.5M13 9.5v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+function DownloadSVG() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M7 2v7M4.5 6.5l2.5 2.5 2.5-2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2 11h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+function PrinterSVG() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M3.5 4V1.5h7V4M1.5 9.5h11V4h-11v5.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" />
+      <path d="M3.5 12.5h7v-4h-7v4z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" />
+    </svg>
+  );
+}
 
 type QRResponse = { dataUrl: string; url: string };
 
@@ -57,7 +85,7 @@ export function AssetQRCard({ assetId, assetName }: { assetId: string; assetName
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-2">
-        <QrCode className="h-4 w-4 text-gray-400" />
+        <QrCodeSVG />
         <h2 className="text-sm font-semibold text-gray-900">QR label</h2>
       </div>
       <div className="px-5 py-4 flex flex-col items-center">
@@ -72,10 +100,10 @@ export function AssetQRCard({ assetId, assetName }: { assetId: string; assetName
             <p className="text-[11px] text-gray-500 mt-2 text-center break-all max-w-full">{data.url}</p>
             <div className="flex gap-2 mt-3">
               <Button size="sm" variant="outline" onClick={handleDownload}>
-                <Download className="h-3.5 w-3.5 mr-1" /> Download
+                <DownloadSVG /> <span className="ml-1">Download</span>
               </Button>
               <Button size="sm" variant="outline" onClick={handlePrint}>
-                <Printer className="h-3.5 w-3.5 mr-1" /> Print
+                <PrinterSVG /> <span className="ml-1">Print</span>
               </Button>
             </div>
           </>

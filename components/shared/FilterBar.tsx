@@ -1,7 +1,15 @@
 'use client';
 import React from 'react';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+
+function SearchSVG() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 interface FilterBarProps {
   searchPlaceholder?: string;
@@ -16,7 +24,9 @@ export function FilterBar({ searchPlaceholder = 'Search...', searchValue, onSear
     <div className="flex items-center gap-3 mb-4">
       {onSearchChange && (
         <div className="relative max-w-xs w-full">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+            <SearchSVG />
+          </span>
           <Input
             className="pl-8"
             placeholder={searchPlaceholder}

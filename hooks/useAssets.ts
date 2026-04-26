@@ -21,14 +21,14 @@ export function useAssets(params?: { status?: string; category?: string; search?
       if (!res.ok) throw new Error('Failed to fetch assets');
       return res.json() as Promise<AssetsResponse>;
     },
-    staleTime: 60_000,
+    staleTime: 0,
     gcTime: 5 * 60_000,
     placeholderData: keepPreviousData,
   });
 }
 
 export function useAsset(id: string) {
-  return useQuery({
+  return useQuery<Asset>({
     queryKey: ['assets', id],
     queryFn: async () => {
       const res = await fetch(`/api/assets/${id}`);
@@ -36,7 +36,7 @@ export function useAsset(id: string) {
       return res.json();
     },
     enabled: !!id,
-    staleTime: 60_000,
+    staleTime: 0,
     gcTime: 5 * 60_000,
   });
 }
@@ -50,6 +50,6 @@ export function useAssetCategories() {
       const data = await res.json();
       return data.categories ?? [];
     },
-    staleTime: 10 * 60_000,
+    staleTime: 5 * 60_000,
   });
 }

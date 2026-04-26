@@ -13,12 +13,16 @@ import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
 import { Asset, Warranty } from '@/types';
-import { Edit, Plus } from 'lucide-react';
+function EditSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /></svg>; }
+function PlusSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>; }
 import { RequestActionPanel } from '@/components/assets/RequestActionPanel';
 import { AssetNotesSection } from '@/components/assets/AssetNotesSection';
 import { MaintenanceSection } from '@/components/assets/MaintenanceSection';
 import { CheckoutSection } from '@/components/assets/CheckoutSection';
 import { AssetQRCard } from '@/components/assets/AssetQRCard';
+import { FormDrawer } from '@/components/shared/FormDrawer';
+import { AssetForm } from '@/components/assets/AssetForm';
+import { WarrantyForm } from '@/components/warranties/WarrantyForm';
 import { useState } from 'react';
 import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -35,6 +39,9 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
   const { data: warranties = [], isLoading: wLoading } = useWarranties({ assetId });
   const [showRetire, setShowRetire] = useState(false);
   const [retiring, setRetiring] = useState(false);
+  const [editAssetOpen, setEditAssetOpen] = useState(false);
+  const [editWarrantyTarget, setEditWarrantyTarget] = useState<Warranty | null>(null);
+  const [addWarrantyOpen, setAddWarrantyOpen] = useState(false);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
   const isStaff = user?.role === 'staff';
@@ -67,8 +74,8 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
     {
       key: 'actions', header: 'Actions',
       render: (w) => isAdmin ? (
-        <Button size="sm" variant="ghost" onClick={() => router.push(`/${orgSlug}/warranties/${w.id}/edit`)}>
-          <Edit className="h-3.5 w-3.5" />
+        <Button size="sm" variant="ghost" onClick={() => setEditWarrantyTarget(w)}>
+          <EditSVG />
         </Button>
       ) : null
     },
@@ -85,8 +92,8 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
         actions={isAdmin ? (
           <div className="flex gap-2">
             {asset.status !== 'Retired' && (
-              <Button variant="outline" size="sm" onClick={() => router.push(`/${orgSlug}/assets/${assetId}/edit`)}>
-                <Edit className="h-4 w-4 mr-1" /> Edit
+              <Button variant="outline" size="sm" onClick={() => setEditAssetOpen(true)}>
+                <EditSVG /><span className="ml-1">Edit</span>
               </Button>
             )}
             {asset.status === 'Active' && (
@@ -160,8 +167,8 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
             const now = new Date();
             const hasActiveWarranty = (warranties as Warranty[]).some((w) => new Date(w.endDate) >= now);
             return !hasActiveWarranty && (
-              <Button size="sm" onClick={() => router.push(`/${orgSlug}/warranties/new?assetId=${assetId}`)}>
-                <Plus className="h-4 w-4 mr-1" />Add Warranty
+              <Button size="sm" onClick={() => setAddWarrantyOpen(true)}>
+                <PlusSVG /><span className="ml-1">Add Warranty</span>
               </Button>
             );
           })()}
@@ -192,6 +199,30 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
         onConfirm={handleRetire}
         loading={retiring}
       />
+
+      {/* Edit asset drawer */}
+      <FormDrawer open={editAssetOpen} onOpenChange={setEditAssetOpen} title="Edit Asset">
+        <AssetForm asset={asset} onSuccess={() => setEditAssetOpen(false)} />
+      </FormDrawer>
+
+      {/* Edit warranty drawer */}
+      <FormDrawer
+        open={!!editWarrantyTarget}
+        onOpenChange={(o) => { if (!o) setEditWarrantyTarget(null); }}
+        title="Edit Warranty"
+      >
+        {editWarrantyTarget && (
+          <WarrantyForm warranty={editWarrantyTarget} onSuccess={() => setEditWarrantyTarget(null)} />
+        )}
+      </FormDrawer>
+
+      {/* Add warranty drawer */}
+      <FormDrawer open={addWarrantyOpen} onOpenChange={setAddWarrantyOpen} title="Add Warranty">
+        <WarrantyForm
+          defaultAssetId={assetId}
+          onSuccess={() => setAddWarrantyOpen(false)}
+        />
+      </FormDrawer>
     </div>
   );
 }

@@ -17,11 +17,27 @@ import { useState, useMemo } from 'react';
 import { useAssets } from '@/hooks/useAssets';
 import { useWarranties } from '@/hooks/useWarranties';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, ShieldOff } from 'lucide-react';
+import { DatePicker } from '@/components/ui/date-picker';
+function AlertTriangleSVG() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M8 2L1.5 13h13L8 2z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" fill="none" />
+      <path d="M8 6.5v3M8 11v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+function ShieldOffSVG() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden>
+      <path d="M14 3L4 7v7c0 5.5 4.5 10.5 10 12 5.5-1.5 10-6.5 10-12V7L14 3z" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinejoin="round" />
+      <path d="M4 4l20 20" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
 
-interface WarrantyFormProps { warranty?: Warranty; }
+interface WarrantyFormProps { warranty?: Warranty; onSuccess?: () => void; defaultAssetId?: string; }
 
-export function WarrantyForm({ warranty }: WarrantyFormProps) {
+export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFormProps) {
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const searchParams = useSearchParams();
@@ -53,7 +69,7 @@ export function WarrantyForm({ warranty }: WarrantyFormProps) {
   const form = useForm<WarrantyFormData>({
     resolver: zodResolver(warrantySchema),
     defaultValues: {
-      assetId: warranty?.assetId ?? searchParams.get('assetId') ?? '',
+      assetId: warranty?.assetId ?? defaultAssetId ?? searchParams.get('assetId') ?? '',
       vendor: warranty?.vendor ?? '',
       startDate: warranty?.startDate ? new Date(warranty.startDate).toISOString().slice(0, 10) : '',
       endDate: warranty?.endDate ? new Date(warranty.endDate).toISOString().slice(0, 10) : '',
@@ -83,7 +99,11 @@ export function WarrantyForm({ warranty }: WarrantyFormProps) {
       }
       toast.success(warranty ? 'Warranty updated' : 'Warranty added');
       qc.invalidateQueries({ queryKey: ['warranties'] });
-      router.back();
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.back();
+      }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -96,7 +116,7 @@ export function WarrantyForm({ warranty }: WarrantyFormProps) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-6 text-center max-w-sm mx-auto">
         <div className="h-14 w-14 rounded-full bg-amber-50 flex items-center justify-center mb-4">
-          <ShieldOff className="h-7 w-7 text-amber-500" />
+          <ShieldOffSVG />
         </div>
         <h3 className="text-base font-semibold text-gray-900 mb-1">No assets available</h3>
         <p className="text-sm text-gray-500 mb-6">
@@ -131,7 +151,7 @@ export function WarrantyForm({ warranty }: WarrantyFormProps) {
               <SelectContent>
                 {availableAssets.length === 0 ? (
                   <div className="flex items-center gap-2 px-3 py-4 text-sm text-gray-500">
-                    <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0" />
+                    <AlertTriangleSVG />
                     No assets available
                   </div>
                 ) : (
@@ -157,14 +177,18 @@ export function WarrantyForm({ warranty }: WarrantyFormProps) {
           <FormField control={form.control} name="startDate" render={({ field }) => (
             <FormItem>
               <FormLabel>Start Date *</FormLabel>
-              <FormControl><Input type="date" {...field} /></FormControl>
+              <FormControl>
+                <DatePicker value={field.value} onChange={field.onChange} placeholder="Select start date" />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )} />
           <FormField control={form.control} name="endDate" render={({ field }) => (
             <FormItem>
               <FormLabel>End Date *</FormLabel>
-              <FormControl><Input type="date" {...field} /></FormControl>
+              <FormControl>
+                <DatePicker value={field.value} onChange={field.onChange} placeholder="Select end date" />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )} />

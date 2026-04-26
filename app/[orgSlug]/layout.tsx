@@ -11,6 +11,8 @@ import {
 import { TransferModeBanner } from '@/components/layout/TransferModeBanner';
 import { ExpiryWarningBanner } from '@/components/shared/ExpiryWarningBanner';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { BottomNav } from '@/components/layout/BottomNav';
+import { MobileDrawer } from '@/components/layout/MobileDrawer';
 import { useTransferStore } from '@/store/transfer.store';
 import { useUiStore } from '@/store/ui.store';
 
@@ -54,12 +56,14 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-surface-page">
       <AppHeader orgName={orgName ?? undefined} />
       {showBanner && <TransferModeBanner />}
-      <ExpiryWarningBanner />
       <AppSidebar />
+      <MobileDrawer />
+      <BottomNav />
       <main
-        className={`pt-14 ${showBanner ? 'mt-10' : ''} min-h-screen transition-[margin-left] duration-350 ease-out-expo`}
-        style={{ marginLeft: sidebarWidth }}
+        className={`pt-14 ${showBanner ? 'mt-10' : ''} min-h-screen transition-[margin-left] duration-350 ease-out-expo pb-16 md:pb-0 [margin-left:0] md:[margin-left:var(--sidebar-w)]`}
+        style={{ '--sidebar-w': `${sidebarWidth}px` } as React.CSSProperties}
       >
+        <ExpiryWarningBanner />
         <div className="px-6 py-6 max-w-7xl">
           <PageTransition>{children}</PageTransition>
         </div>

@@ -9,11 +9,18 @@ import { FilterBar } from '@/components/shared/FilterBar';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ExportButton } from '@/components/shared/ExportButton';
+import { FormDrawer } from '@/components/shared/FormDrawer';
+import { AssetForm } from '@/components/assets/AssetForm';
+import { ImportAssetsDrawer } from '@/components/assets/ImportAssetsDrawer';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Asset } from '@/types';
 import { formatDate } from '@/lib/utils/date';
-import { Plus, Edit, ArchiveX, Upload } from 'lucide-react';
+function PlusSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>; }
+function EditSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /></svg>; }
+function ArchiveXSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><rect x="1" y="1.5" width="12" height="3" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M2 4.5v7a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-7" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M5.5 7l3 3M8.5 7l-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
+function Trash2SVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M2 3.5h10M5.5 3.5V2.5h3v1M4 3.5l.75 8h4.5L10 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
+function UploadSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 10V3M5 6l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M2 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>; }
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -29,8 +36,11 @@ export default function AssetsPage() {
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState(searchParams.get('status') ?? '');
-  const [retireTarget, setRetireTarget] = useState<Asset | null>(null);
-  const [retiring, setRetiring] = useState(false);
+  const [actionTarget, setActionTarget] = useState<Asset | null>(null);
+  const [actioning, setActioning] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<Asset | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const debouncedSearch = useDebounce(search, 400);
   const { data: assetsData, isLoading } = useAssets({ status: status || undefined, search: debouncedSearch });
@@ -55,12 +65,21 @@ export default function AssetsPage() {
         <div className="flex items-center gap-1">
           {isAdmin ? (
             <>
-              <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); router.push(`/${orgSlug}/assets/${a.id}/edit`); }}>
-                <Edit className="h-3.5 w-3.5" />
-              </Button>
+              {a.status !== 'Retired' && (
+                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditTarget(a); setDrawerOpen(true); }}>
+                  <EditSVG />
+                </Button>
+              )}
               {a.status === 'Active' && (
-                <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setRetireTarget(a); }}>
-                  <ArchiveX className="h-3.5 w-3.5" />
+                <Button size="sm" variant="ghost" className="text-amber-500 hover:text-amber-600 hover:bg-amber-50" onClick={(e) => { e.stopPropagation(); setActionTarget(a); }}
+                  title="Retire asset">
+                  <ArchiveXSVG />
+                </Button>
+              )}
+              {a.status === 'Retired' && (
+                <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setActionTarget(a); }}
+                  title="Delete permanently">
+                  <Trash2SVG />
                 </Button>
               )}
             </>
@@ -72,18 +91,21 @@ export default function AssetsPage() {
     },
   ];
 
-  async function handleRetire() {
-    if (!retireTarget) return;
-    setRetiring(true);
+  async function handleAction() {
+    if (!actionTarget) return;
+    setActioning(true);
+    const isRetired = actionTarget.status === 'Retired';
     try {
-      await fetch(`/api/assets/${retireTarget.id}`, { method: 'DELETE' });
-      toast.success('Asset retired');
+      await fetch(`/api/assets/${actionTarget.id}`, { method: 'DELETE' });
+      toast.success(isRetired ? 'Asset deleted' : 'Asset retired');
       qc.invalidateQueries({ queryKey: ['assets'] });
-      setRetireTarget(null);
+      qc.removeQueries({ queryKey: ['assets', actionTarget.id] });
+
+      setActionTarget(null);
     } catch {
-      toast.error('Failed to retire asset');
+      toast.error(isRetired ? 'Failed to delete asset' : 'Failed to retire asset');
     } finally {
-      setRetiring(false);
+      setActioning(false);
     }
   }
 
@@ -93,11 +115,11 @@ export default function AssetsPage() {
         title="Assets"
         actions={isAdmin ? (
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => router.push(`/${orgSlug}/assets/import`)}>
-              <Upload className="h-4 w-4 mr-1" /> Import CSV
+            <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+              <UploadSVG /><span className="ml-1">Import CSV</span>
             </Button>
-            <Button size="sm" onClick={() => router.push(`/${orgSlug}/assets/new`)}>
-              <Plus className="h-4 w-4 mr-1" /> Add Asset
+            <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
+              <PlusSVG /><span className="ml-1">Add Asset</span>
             </Button>
           </div>
         ) : undefined}
@@ -132,14 +154,29 @@ export default function AssetsPage() {
       </div>
 
       <ConfirmDialog
-        open={!!retireTarget}
-        onOpenChange={(o) => !o && setRetireTarget(null)}
-        title="Retire Asset"
-        description={`Are you sure you want to retire "${retireTarget?.name}"? This will mark it as inactive.`}
-        confirmLabel="Retire"
-        onConfirm={handleRetire}
-        loading={retiring}
+        open={!!actionTarget}
+        onOpenChange={(o) => !o && setActionTarget(null)}
+        title={actionTarget?.status === 'Retired' ? 'Delete Asset Permanently' : 'Retire Asset'}
+        description={actionTarget?.status === 'Retired'
+          ? `Permanently delete "${actionTarget?.name}"? This cannot be undone.`
+          : `Are you sure you want to retire "${actionTarget?.name}"? This will mark it as inactive.`}
+        confirmLabel={actionTarget?.status === 'Retired' ? 'Delete Permanently' : 'Retire'}
+        onConfirm={handleAction}
+        loading={actioning}
       />
+
+      <FormDrawer
+        open={drawerOpen}
+        onOpenChange={(o) => { setDrawerOpen(o); if (!o) setEditTarget(null); }}
+        title={editTarget ? 'Edit Asset' : 'Add Asset'}
+      >
+        <AssetForm
+          asset={editTarget ?? undefined}
+          onSuccess={() => setDrawerOpen(false)}
+        />
+      </FormDrawer>
+
+      <ImportAssetsDrawer open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }

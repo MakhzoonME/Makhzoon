@@ -1,14 +1,22 @@
 'use client';
 import { useReports } from '@/hooks/useReports';
 import { PageHeader } from '@/components/shared/PageHeader';
-import { Package, PackageCheck, PackageX, Wallet, UserCheck, AlertTriangle, ShieldCheck, ClipboardList, Wrench } from 'lucide-react';
-import { LucideIcon } from 'lucide-react';
+
+function PackageSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M13 4.5L8 2 3 4.5v7L8 14l5-2.5v-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /><path d="M8 2v12M3 4.5l5 2.5 5-2.5" stroke="currentColor" strokeWidth="1.3" /></svg>; }
+function PackageCheckSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M10 4.5L8 2 3 4.5v7L8 14l5-2.5V8" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /><path d="M8 2v8M3 4.5l5 2.5" stroke="currentColor" strokeWidth="1.3" /><path d="M10 8l2 2 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
+function PackageXSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M10 4.5L8 2 3 4.5v7L8 14l5-2.5V8" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /><path d="M8 2v8M3 4.5l5 2.5" stroke="currentColor" strokeWidth="1.3" /><path d="M11 9l3 3M14 9l-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
+function WalletSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><rect x="1.5" y="3.5" width="13" height="9" rx="1" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M1.5 6.5h13" stroke="currentColor" strokeWidth="1.3" /><circle cx="11.5" cy="9.5" r="1" fill="currentColor" /></svg>; }
+function UserCheckSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><circle cx="6.5" cy="5" r="3" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M1 14c0-3 2.5-4.5 5.5-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /><path d="M10 12l1.5 1.5 2.5-2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
+function AlertTriangleSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 2L1.5 13h13L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /><path d="M8 6.5v3M8 11v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>; }
+function ShieldCheckSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 1.5L2 4v5.5C2 12.5 4.7 15 8 15.5c3.3-.5 6-3 6-6V4L8 1.5z" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M5.5 8l2 2 3-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
+function ClipboardListSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><rect x="3" y="2" width="10" height="12" rx="1" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M6 2v1.5h4V2M5.5 7h5M5.5 9.5h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
+function WrenchSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M10.5 2a3.5 3.5 0 0 0-3.4 4.3L2 11.5 2.5 13.5l2 .5 5.2-5.1A3.5 3.5 0 0 0 10.5 2z" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinejoin="round" /><circle cx="10.5" cy="5.5" r="1" fill="currentColor" /></svg>; }
 
 function formatCurrency(n: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
 }
 
-function Stat({ label, value, icon: Icon, tone = 'gray' }: { label: string; value: string | number; icon: LucideIcon; tone?: 'gray' | 'indigo' | 'green' | 'amber' | 'red' }) {
+function Stat({ label, value, icon: Icon, tone = 'gray' }: { label: string; value: string | number; icon: React.FC; tone?: 'gray' | 'indigo' | 'green' | 'amber' | 'red' }) {
   const tones: Record<string, string> = {
     gray: 'bg-gray-50 text-gray-700',
     indigo: 'bg-indigo-50 text-indigo-700',
@@ -21,7 +29,7 @@ function Stat({ label, value, icon: Icon, tone = 'gray' }: { label: string; valu
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
         <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${tones[tone]}`}>
-          <Icon className="h-4 w-4" />
+          <Icon />
         </div>
       </div>
       <p className="text-2xl font-bold text-gray-900 tabular-nums">{value}</p>
@@ -59,28 +67,28 @@ export default function ReportsPage() {
       <section className="mb-6">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Inventory</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label="Total assets" value={summary.totalAssets} icon={Package} tone="indigo" />
-          <Stat label="Active" value={summary.activeAssets} icon={PackageCheck} tone="green" />
-          <Stat label="Retired" value={summary.retiredAssets} icon={PackageX} />
-          <Stat label="Total value" value={formatCurrency(summary.totalValue)} icon={Wallet} tone="indigo" />
+          <Stat label="Total assets" value={summary.totalAssets} icon={PackageSVG} tone="indigo" />
+          <Stat label="Active" value={summary.activeAssets} icon={PackageCheckSVG} tone="green" />
+          <Stat label="Retired" value={summary.retiredAssets} icon={PackageXSVG} />
+          <Stat label="Total value" value={formatCurrency(summary.totalValue)} icon={WalletSVG} tone="indigo" />
         </div>
       </section>
 
       <section className="mb-6">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Activity</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label="Checked out" value={summary.activeCheckouts} icon={UserCheck} tone="amber" />
-          <Stat label="Overdue" value={summary.overdueCheckouts} icon={AlertTriangle} tone="red" />
-          <Stat label="Expiring warranties" value={summary.warrantiesExpiringSoon} icon={ShieldCheck} tone="amber" />
-          <Stat label="Open requests" value={summary.openRequests} icon={ClipboardList} />
+          <Stat label="Checked out" value={summary.activeCheckouts} icon={UserCheckSVG} tone="amber" />
+          <Stat label="Overdue" value={summary.overdueCheckouts} icon={AlertTriangleSVG} tone="red" />
+          <Stat label="Expiring warranties" value={summary.warrantiesExpiringSoon} icon={ShieldCheckSVG} tone="amber" />
+          <Stat label="Open requests" value={summary.openRequests} icon={ClipboardListSVG} />
         </div>
       </section>
 
       <section className="mb-6">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Maintenance</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label="Total cost" value={formatCurrency(summary.maintenanceCost)} icon={Wrench} tone="indigo" />
-          <Stat label="Records" value={summary.maintenanceCount} icon={Wrench} />
+          <Stat label="Total cost" value={formatCurrency(summary.maintenanceCost)} icon={WrenchSVG} tone="indigo" />
+          <Stat label="Records" value={summary.maintenanceCount} icon={WrenchSVG} />
         </div>
       </section>
 

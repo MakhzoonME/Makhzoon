@@ -1,7 +1,15 @@
 'use client';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+
+function DownloadSVG() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 interface ExportButtonProps {
   exportUrl: string;
@@ -31,7 +39,7 @@ export function ExportButton({ exportUrl, filename = 'export.csv', label = 'Expo
 
   return (
     <Button variant="outline" size="sm" onClick={handleExport} disabled={loading}>
-      <Download className="h-4 w-4 mr-1" />
+      <DownloadSVG />
       {loading ? 'Preparing...' : label}
     </Button>
   );

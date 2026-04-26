@@ -6,9 +6,31 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 import { formatDate } from '@/lib/utils/date';
 import { toast } from '@/hooks/useToast';
-import { Trash2, Wrench, Plus } from 'lucide-react';
+function Trash2SVG() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M2 3.5h10M5.5 3.5V2.5h3v1M4 3.5l.75 8h4.5L10 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function WrenchSVG() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M10.5 2a3.5 3.5 0 0 0-3.4 4.3L2 11.5 2.5 13.5l2 .5 5.2-5.1A3.5 3.5 0 0 0 10.5 2z" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinejoin="round" />
+      <circle cx="10.5" cy="5.5" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+function PlusSVG() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
 import { MAINTENANCE_TYPES, MaintenanceType } from '@/types';
 
 const TYPE_BG: Record<MaintenanceType, string> = {
@@ -73,7 +95,7 @@ export function MaintenanceSection({ assetId }: { assetId: string }) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-2">
-        <Wrench className="h-4 w-4 text-gray-400" />
+        <WrenchSVG />
         <h2 className="text-sm font-semibold text-gray-900">Maintenance</h2>
         <div className="ml-auto flex items-center gap-3">
           <span className="text-xs text-gray-400">
@@ -82,7 +104,7 @@ export function MaintenanceSection({ assetId }: { assetId: string }) {
           </span>
           {isAdmin && (
             <Button size="sm" variant="outline" onClick={() => setShowForm((v) => !v)}>
-              <Plus className="h-3.5 w-3.5 mr-1" />{showForm ? 'Cancel' : 'Add'}
+              <PlusSVG /><span className="ml-1">{showForm ? 'Cancel' : 'Add'}</span>
             </Button>
           )}
         </div>
@@ -104,7 +126,7 @@ export function MaintenanceSection({ assetId }: { assetId: string }) {
             </div>
             <div>
               <label className="text-xs text-gray-500 mb-1 block">Date</label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+              <DatePicker value={date} onChange={(v) => setDate(v)} placeholder="Select date" />
             </div>
           </div>
           <div>
@@ -162,7 +184,7 @@ export function MaintenanceSection({ assetId }: { assetId: string }) {
                       className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0"
                       title="Delete record"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2SVG />
                     </button>
                   )}
                 </div>

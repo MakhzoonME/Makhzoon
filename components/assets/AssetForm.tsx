@@ -7,6 +7,7 @@ import { assetSchema, AssetFormData } from '@/lib/validations/asset.schema';
 import { Asset } from '@/types';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,9 +18,10 @@ import { useAssetCategories } from '@/hooks/useAssets';
 
 interface AssetFormProps {
   asset?: Asset;
+  onSuccess?: () => void;
 }
 
-export function AssetForm({ asset }: AssetFormProps) {
+export function AssetForm({ asset, onSuccess }: AssetFormProps) {
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const qc = useQueryClient();
@@ -64,8 +66,14 @@ export function AssetForm({ asset }: AssetFormProps) {
       }
       const result = await res.json();
       toast.success(asset ? 'Asset updated' : 'Asset added successfully');
+
       qc.invalidateQueries({ queryKey: ['assets'] });
-      router.push(`/${orgSlug}/assets/${asset?.id ?? result.id}`);
+
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(`/${orgSlug}/assets/${asset?.id ?? result.id}`);
+      }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -123,7 +131,9 @@ export function AssetForm({ asset }: AssetFormProps) {
           <FormField control={form.control} name="purchaseDate" render={({ field }) => (
             <FormItem>
               <FormLabel>Purchase Date</FormLabel>
-              <FormControl><Input type="date" {...field} /></FormControl>
+              <FormControl>
+                <DatePicker value={field.value} onChange={field.onChange} placeholder="Select purchase date" />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )} />

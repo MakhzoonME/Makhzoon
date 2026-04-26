@@ -1,5 +1,12 @@
-import { ChevronRight } from 'lucide-react';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
+
+function ChevronRightSVG({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 12 12" fill="none" aria-hidden>
+      <path d="M4 2.5l3.5 3.5L4 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 import { CTABand } from '@/components/marketing/CTABand';
 
 const VALUES = [
@@ -88,7 +95,7 @@ export default function AboutPage() {
               <div style={{ fontSize: 14, color: 'var(--gray-600)' }}>Remote-first across MENA + EU. Equity for everyone.</div>
             </div>
             <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 'var(--r-md)', background: 'var(--primary-600)', color: '#fff', border: 'none', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
-              View open roles <ChevronRight size={16} />
+              View open roles <ChevronRightSVG size={16} />
             </button>
           </div>
         </div>

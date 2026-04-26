@@ -6,7 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from '@/hooks/useToast';
-import { Trash2, MessageSquare } from 'lucide-react';
+
+function Trash2SVG() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M2 3.5h10M5.5 3.5V2.5h3v1M4 3.5l.75 8h4.5L10 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function MessageSquareSVG() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M2 2.5h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5l-3 2V3.5a1 1 0 0 1 1-1z" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 export function AssetNotesSection({ assetId }: { assetId: string }) {
   const { user } = useAuthStore();
@@ -42,7 +56,7 @@ export function AssetNotesSection({ assetId }: { assetId: string }) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-2">
-        <MessageSquare className="h-4 w-4 text-gray-400" />
+        <MessageSquareSVG />
         <h2 className="text-sm font-semibold text-gray-900">Notes</h2>
         <span className="text-xs text-gray-400 ml-auto">{notes.length} total</span>
       </div>
@@ -88,7 +102,7 @@ export function AssetNotesSection({ assetId }: { assetId: string }) {
                         className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0"
                         title="Delete note"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2SVG />
                       </button>
                     )}
                   </div>

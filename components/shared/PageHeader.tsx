@@ -1,6 +1,13 @@
 import React from 'react';
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+
+function ChevronRightSVG() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 12 12" fill="none" aria-hidden>
+      <path d="M4 2.5l3.5 3.5L4 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 interface BreadcrumbItem {
   label: string;
@@ -22,7 +29,7 @@ export function PageHeader({ title, description, actions, breadcrumb }: PageHead
           <nav className="flex items-center gap-1 text-sm text-gray-500 mb-1">
             {breadcrumb.map((item, i) => (
               <React.Fragment key={item.href}>
-                {i > 0 && <ChevronRight className="h-3.5 w-3.5" />}
+                {i > 0 && <ChevronRightSVG />}
                 <Link href={item.href} className="hover:text-gray-700 transition-colors">
                   {item.label}
                 </Link>

@@ -3,29 +3,39 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Command } from 'cmdk';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { LayoutDashboard, Package, ShieldCheck, ClipboardList, Users, CreditCard, FileText, Search, Plus, Upload } from 'lucide-react';
 import { useAssets } from '@/hooks/useAssets';
 import { useAuthStore } from '@/store/auth.store';
 import { Asset } from '@/types';
 import { cn } from '@/lib/utils/cn';
 
+function DashboardSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><rect x="1.5" y="1.5" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="9.5" y="1.5" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="1.5" y="9.5" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="9.5" y="9.5" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" /></svg>; }
+function PackageSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M13 4.5L8 2 3 4.5v7L8 14l5-2.5v-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /><path d="M8 2v12M3 4.5l5 2.5 5-2.5" stroke="currentColor" strokeWidth="1.3" /></svg>; }
+function ShieldCheckSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 1.5L2 4v5.5C2 12.5 4.7 15 8 15.5c3.3-.5 6-3 6-6V4L8 1.5z" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M5.5 8l2 2 3-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
+function ClipboardListSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><rect x="3" y="2" width="10" height="12" rx="1" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M6 2v1.5h4V2M5.5 7h5M5.5 9.5h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
+function UsersSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><circle cx="6" cy="5.5" r="2.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M1 14c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /><path d="M11.5 4a2.5 2.5 0 0 1 0 4.5M13.5 14c0-1.7-1-3-2.5-3.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
+function CreditCardSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><rect x="1.5" y="3.5" width="13" height="9" rx="1" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M1.5 6.5h13M4.5 10h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
+function FileTextSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M4 1.5h6l3.5 3.5v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1z" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M10 1.5v4h3.5M5.5 8h5M5.5 10.5h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
+function SearchSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.4" /><path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>; }
+function PlusSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>; }
+function UploadSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 10V3M5 6l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M2 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>; }
+
 const NAV_GROUPS = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/assets', label: 'Assets', icon: Package },
-  { href: '/warranties', label: 'Warranties', icon: ShieldCheck },
-  { href: '/requests', label: 'Requests', icon: ClipboardList },
+  { href: '/dashboard', label: 'Dashboard', icon: DashboardSVG },
+  { href: '/assets', label: 'Assets', icon: PackageSVG },
+  { href: '/warranties', label: 'Warranties', icon: ShieldCheckSVG },
+  { href: '/requests', label: 'Requests', icon: ClipboardListSVG },
 ];
 
 const ADMIN_NAV = [
-  { href: '/users', label: 'Users', icon: Users },
-  { href: '/subscription', label: 'Subscription', icon: CreditCard },
-  { href: '/reports', label: 'Reports', icon: FileText },
+  { href: '/users', label: 'Users', icon: UsersSVG },
+  { href: '/subscription', label: 'Subscription', icon: CreditCardSVG },
+  { href: '/reports', label: 'Reports', icon: FileTextSVG },
 ];
 
 const ACTIONS = [
-  { href: '/assets/new', label: 'Create asset', icon: Plus },
-  { href: '/assets/import', label: 'Import assets from CSV', icon: Upload },
-  { href: '/warranties/new', label: 'Add warranty', icon: Plus },
+  { href: '/assets/new', label: 'Create asset', icon: PlusSVG },
+  { href: '/assets/import', label: 'Import assets from CSV', icon: UploadSVG },
+  { href: '/warranties/new', label: 'Add warranty', icon: PlusSVG },
 ];
 
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
@@ -57,7 +67,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
           <DialogPrimitive.Title className="sr-only">Command palette</DialogPrimitive.Title>
           <Command shouldFilter className="flex flex-col">
             <div className="flex items-center gap-2 border-b border-gray-200 px-4">
-              <Search className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              <SearchSVG />
               <Command.Input
                 value={search}
                 onValueChange={setSearch}
@@ -99,7 +109,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                         'data-[selected=true]:bg-indigo-50 data-[selected=true]:text-indigo-700'
                       )}
                     >
-                      <Package className="h-4 w-4 text-gray-400" />
+                      <PackageSVG />
                       <span className="flex-1 truncate">{asset.name}</span>
                       <span className="text-xs text-gray-400">{asset.category}</span>
                     </Command.Item>
@@ -114,7 +124,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
   );
 }
 
-function PaletteItem({ onSelect, icon: Icon, label }: { onSelect: () => void; icon: React.ElementType; label: string }) {
+function PaletteItem({ onSelect, icon: Icon, label }: { onSelect: () => void; icon: React.FC; label: string }) {
   return (
     <Command.Item
       value={label}
@@ -124,7 +134,7 @@ function PaletteItem({ onSelect, icon: Icon, label }: { onSelect: () => void; ic
         'data-[selected=true]:bg-indigo-50 data-[selected=true]:text-indigo-700'
       )}
     >
-      <Icon className="h-4 w-4 text-gray-400" />
+      <Icon />
       <span>{label}</span>
     </Command.Item>
   );

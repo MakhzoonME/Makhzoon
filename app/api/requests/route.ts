@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
       type: data.type,
       assetId: data.assetId || undefined,
       warrantyId: data.warrantyId || undefined,
+      inventoryItemId: data.inventoryItemId || undefined,
       description: data.description,
       status: 'PENDING',
       createdBy: user.uid,

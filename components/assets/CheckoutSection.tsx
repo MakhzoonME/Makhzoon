@@ -4,9 +4,41 @@ import { useCheckouts, useCheckoutAsset, useReturnAsset } from '@/hooks/useCheck
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { DatePicker } from '@/components/ui/date-picker';
 import { formatDate } from '@/lib/utils/date';
 import { toast } from '@/hooks/useToast';
-import { ArrowUpRight, ArrowDownLeft, UserCheck, History } from 'lucide-react';
+
+function ArrowUpRightSVG() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M4 10L10 4M10 4H5M10 4v5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function ArrowDownLeftSVG() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M10 4L4 10M4 10H9M4 10V5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function UserCheckSVG() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <circle cx="6.5" cy="5" r="3" stroke="currentColor" strokeWidth="1.3" fill="none" />
+      <path d="M1 14c0-3 2.5-4.5 5.5-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" fill="none" />
+      <path d="M10 12l1.5 1.5 2.5-2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function HistorySVG() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M2.5 7a4.5 4.5 0 1 0 .8-2.6M2.5 2v2.4H4.9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 5v2.5l1.5 1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export function CheckoutSection({ assetId, assetName }: { assetId: string; assetName: string }) {
   const { data: checkouts = [], isLoading } = useCheckouts(assetId);
@@ -55,7 +87,7 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-2">
-        <UserCheck className="h-4 w-4 text-gray-400" />
+        <UserCheckSVG />
         <h2 className="text-sm font-semibold text-gray-900">Checkout</h2>
         {active && (
           <span className={`text-[11px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-full ml-auto ${overdue ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
@@ -82,8 +114,8 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
           </div>
           <div className="flex justify-end mt-3">
             <Button size="sm" variant="outline" onClick={handleReturn} disabled={returnMut.isPending}>
-              <ArrowDownLeft className="h-3.5 w-3.5 mr-1" />
-              {returnMut.isPending ? 'Returning…' : 'Mark returned'}
+              <ArrowDownLeftSVG />
+              <span className="ml-1">{returnMut.isPending ? 'Returning…' : 'Mark returned'}</span>
             </Button>
           </div>
         </div>
@@ -100,7 +132,7 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
           </div>
           <div>
             <label className="text-xs text-gray-500 mb-1 block">Due date (optional)</label>
-            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            <DatePicker value={dueDate} onChange={(v) => setDueDate(v)} placeholder="Select due date (optional)" />
           </div>
           <div>
             <label className="text-xs text-gray-500 mb-1 block">Notes (optional)</label>
@@ -117,7 +149,7 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
         <div className="px-5 py-4 flex items-center justify-between">
           <p className="text-sm text-gray-500">Not currently checked out.</p>
           <Button size="sm" onClick={() => setShowForm(true)}>
-            <ArrowUpRight className="h-3.5 w-3.5 mr-1" />Check out
+            <ArrowUpRightSVG /><span className="ml-1">Check out</span>
           </Button>
         </div>
       )}
@@ -125,7 +157,7 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
       {history.length > 0 && (
         <div className="border-t border-gray-100 px-5 py-3">
           <div className="flex items-center gap-1.5 mb-2">
-            <History className="h-3.5 w-3.5 text-gray-400" />
+            <HistorySVG />
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Recent history</p>
           </div>
           <ul className="space-y-1.5">

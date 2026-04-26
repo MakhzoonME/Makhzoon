@@ -15,3 +15,5 @@ export * from './usage.types';
 export * from './support-ticket.types';
 export * from './package.types';
 export * from './payment-log.types';
+export * from './inventory.types';
+export * from './inventory-audit.types';

@@ -64,7 +64,15 @@ export async function POST(req: NextRequest) {
     acceptUrl,
     role,
   });
-  const sendResult = await sendEmail({ to: email, subject: `You're invited to ${org?.name ?? 'a workspace'}`, html, text });
+  let emailSent = false;
+  try {
+    const sendResult = await sendEmail({ to: email, subject: `You're invited to ${org?.name ?? 'a workspace'}`, html, text });
+    emailSent = !sendResult.skipped;
+  } catch (err) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[invite] Email send failed:', err);
+    }
+  }
 
   await writeAuditLog({
     organizationId: user.organizationId,
@@ -73,8 +81,8 @@ export async function POST(req: NextRequest) {
     action: 'INVITE_SENT',
     module: 'users',
     recordId: id,
-    newValue: { email, role, emailSent: !sendResult.skipped },
+    newValue: { email, role, emailSent },
   });
 
-  return NextResponse.json({ id, acceptUrl, emailSent: !sendResult.skipped }, { status: 201 });
+  return NextResponse.json({ id, acceptUrl, emailSent }, { status: 201 });
 }

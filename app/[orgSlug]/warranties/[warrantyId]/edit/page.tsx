@@ -1,20 +1,5 @@
-'use client';
-import { useWarranty } from '@/hooks/useWarranties';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { WarrantyForm } from '@/components/warranties/WarrantyForm';
-import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
+import { redirect } from 'next/navigation';
 
-export default function EditWarrantyPage({ params }: { params: { warrantyId: string } }) {
-  const { warrantyId } = params;
-  const { data: warranty, isLoading } = useWarranty(warrantyId);
-
-  if (isLoading) return <LoadingSkeleton />;
-  return (
-    <div>
-      <PageHeader title="Edit Warranty" breadcrumb={[{ label: 'Warranties', href: '/warranties' }, { label: 'Edit', href: '' }]} />
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        {warranty && <WarrantyForm warranty={warranty} />}
-      </div>
-    </div>
-  );
+export default function EditWarrantyPage({ params }: { params: { orgSlug: string; warrantyId: string } }) {
+  redirect(`/${params.orgSlug}/warranties`);
 }

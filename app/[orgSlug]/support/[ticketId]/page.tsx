@@ -14,11 +14,11 @@ import {
   useAddTicketMessage,
 } from '@/hooks/useSupportTickets';
 import { formatDate, formatDateTime } from '@/lib/utils/date';
+import { toast } from '@/hooks/useToast';
 
 export default function TicketDetailPage() {
   const { ticketId } = useParams<{ ticketId: string }>();
   const [replyBody, setReplyBody] = useState('');
-  const [replyError, setReplyError] = useState('');
 
   const { data: ticket, isLoading: ticketLoading } = useSupportTicket(ticketId);
   const { data: messages = [], isLoading: messagesLoading } = useTicketMessages(ticketId);
@@ -28,17 +28,22 @@ export default function TicketDetailPage() {
   const isClosed = ticket?.status === 'CLOSED' || ticket?.status === 'RESOLVED';
 
   async function handleClose() {
-    await updateMutation.mutateAsync({ status: 'CLOSED' });
+    try {
+      await updateMutation.mutateAsync({ status: 'CLOSED' });
+      toast.success('Ticket closed.');
+    } catch {
+      toast.error('Failed to close ticket. Please try again.');
+    }
   }
 
   async function handleReply(e: React.FormEvent) {
     e.preventDefault();
-    setReplyError('');
     try {
       await addMessageMutation.mutateAsync(replyBody);
       setReplyBody('');
+      toast.success('Reply sent.');
     } catch {
-      setReplyError('Failed to send reply. Please try again.');
+      toast.error('Failed to send reply. Please try again.');
     }
   }
 
@@ -128,7 +133,6 @@ export default function TicketDetailPage() {
             maxLength={2000}
             disabled={addMessageMutation.isPending}
           />
-          {replyError && <p className="text-sm text-red-600">{replyError}</p>}
           <div className="flex justify-end">
             <Button type="submit" size="sm" disabled={addMessageMutation.isPending || !replyBody.trim()}>
               {addMessageMutation.isPending ? 'Sending…' : 'Send Reply'}

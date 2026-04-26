@@ -8,7 +8,22 @@ import { auth } from '@/lib/firebase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Loader2, AlertCircle } from 'lucide-react';
+function Loader2SVG() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden className="animate-spin">
+      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2" />
+      <path d="M8 2a6 6 0 0 1 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+function AlertCircleSVG() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.4" fill="none" />
+      <path d="M8 5v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { buildOrgPath } from '@/lib/utils/tenant-url';
 import { useAuthStore } from '@/store/auth.store';
@@ -185,7 +200,7 @@ export default function SignupPage() {
                     transition={{ duration: 0.22, ease: EASE_OUT }}
                     className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2"
                   >
-                    <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                    <AlertCircleSVG />
                     <span>{error}</span>
                   </motion.div>
                 )}
@@ -203,7 +218,7 @@ export default function SignupPage() {
                         transition={{ duration: 0.15 }}
                         className="inline-flex items-center gap-2"
                       >
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Loader2SVG />
                         Creating your workspace…
                       </motion.span>
                     ) : (

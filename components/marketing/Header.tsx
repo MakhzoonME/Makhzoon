@@ -5,11 +5,11 @@ import { usePathname } from 'next/navigation';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 
 const NAV = [
-  { label: 'Product', href: '/product' },
+  { label: 'Product',   href: '/product'   },
   { label: 'Customers', href: '/customers' },
-  { label: 'Pricing', href: '/pricing' },
-  { label: 'Security', href: '/security' },
-  { label: 'About', href: '/about' },
+  { label: 'Pricing',   href: '/pricing'   },
+  { label: 'Security',  href: '/security'  },
+  { label: 'About',     href: '/about'     },
 ];
 
 export function MarketingHeader() {
@@ -25,34 +25,47 @@ export function MarketingHeader() {
 
   return (
     <header
-      className="sticky top-0 z-50 transition-all duration-250"
+      className="sticky top-0 z-50 transition-all duration-200"
       style={{
-        background: scrolled ? 'rgba(255,255,255,0.85)' : 'transparent',
-        backdropFilter: scrolled ? 'saturate(180%) blur(14px)' : 'none',
-        WebkitBackdropFilter: scrolled ? 'saturate(180%) blur(14px)' : 'none',
-        borderBottom: scrolled ? '1px solid var(--border-default)' : '1px solid transparent',
+        background:      scrolled ? 'rgba(255,255,255,0.88)' : 'transparent',
+        backdropFilter:  scrolled ? 'saturate(180%) blur(16px)' : 'none',
+        WebkitBackdropFilter: scrolled ? 'saturate(180%) blur(16px)' : 'none',
+        borderBottom:    scrolled ? '1px solid var(--border-default)' : '1px solid transparent',
       }}
     >
       <div className="mx-auto flex items-center gap-2 px-8 h-[68px]" style={{ maxWidth: 1280 }}>
-        <Link href="/home" className="inline-flex items-center gap-2.5 mr-8 no-underline" style={{ textDecoration: 'none' }}>
-          <MakhzoonMark size={30} />
-          <span className="font-semibold text-gray-900" style={{ fontSize: 16, letterSpacing: '0.01em' }}>Makhzoon</span>
+        {/* Brand */}
+        <Link
+          href="/home"
+          className="inline-flex items-center gap-2.5 mr-8 no-underline group"
+          style={{ textDecoration: 'none' }}
+        >
+          <MakhzoonMark size={28} />
+          <span
+            className="font-semibold text-gray-900 transition-opacity duration-150 group-hover:opacity-80"
+            style={{ fontSize: 15.5, letterSpacing: '0.01em' }}
+          >
+            Makhzoon
+          </span>
         </Link>
 
-        <nav className="flex gap-1 flex-1">
+        {/* Nav */}
+        <nav className="flex gap-0.5 flex-1">
           {NAV.map(({ label, href }) => {
             const active = pathname === href;
             return (
               <Link
                 key={href}
                 href={href}
-                className="px-3 py-2 rounded-lg text-sm font-medium no-underline transition-colors duration-150"
+                className="px-3 py-2 rounded-lg text-sm font-medium no-underline transition-all duration-150"
                 style={{
-                  color: active ? 'var(--gray-900)' : 'var(--gray-600)',
+                  color:      active ? 'var(--gray-900)' : 'var(--gray-600)',
                   background: active ? 'var(--gray-100)' : 'transparent',
                   fontWeight: active ? 600 : 500,
                   textDecoration: 'none',
                 }}
+                onMouseEnter={e => { if (!active) (e.currentTarget as HTMLAnchorElement).style.background = 'var(--gray-50)'; (e.currentTarget as HTMLAnchorElement).style.color = 'var(--gray-900)'; }}
+                onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'; (e.currentTarget as HTMLAnchorElement).style.color = 'var(--gray-600)'; } }}
               >
                 {label}
               </Link>
@@ -60,17 +73,18 @@ export function MarketingHeader() {
           })}
         </nav>
 
-        <div className="flex items-center gap-3">
+        {/* CTAs */}
+        <div className="flex items-center gap-2.5">
           <Link
             href="/login"
-            className="text-sm font-medium no-underline"
+            className="text-sm font-medium no-underline transition-colors duration-150"
             style={{ color: 'var(--gray-700)', textDecoration: 'none' }}
           >
             Sign in
           </Link>
           <Link
             href="/login"
-            className="inline-flex items-center justify-center px-4 h-9 rounded-lg text-sm font-medium text-white no-underline transition-colors duration-150"
+            className="inline-flex items-center justify-center px-4 h-9 rounded-lg text-sm font-semibold text-white no-underline transition-opacity duration-150 hover:opacity-90"
             style={{ background: 'var(--primary-600)', textDecoration: 'none' }}
           >
             Start free trial

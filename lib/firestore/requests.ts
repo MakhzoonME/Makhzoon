@@ -9,6 +9,8 @@ function toRequest(id: string, data: FirebaseFirestore.DocumentData): Request {
     type: data.type,
     assetId: data.assetId,
     warrantyId: data.warrantyId,
+    inventoryItemId: data.inventoryItemId,
+    inventoryItemName: data.inventoryItemName,
     description: data.description,
     status: data.status,
     decisionBy: data.decisionBy,
@@ -23,13 +25,16 @@ function toRequest(id: string, data: FirebaseFirestore.DocumentData): Request {
 async function enrichRequests(requests: Request[]): Promise<Request[]> {
   if (requests.length === 0) return requests;
 
-  // Batch-fetch asset names
   const assetIds = Array.from(new Set(requests.map((r) => r.assetId).filter(Boolean) as string[]));
+  const inventoryItemIds = Array.from(new Set(requests.map((r) => r.inventoryItemId).filter(Boolean) as string[]));
   const userIds = Array.from(new Set(requests.map((r) => r.createdBy).filter(Boolean)));
 
-  const [assetDocs, userDocs] = await Promise.all([
+  const [assetDocs, inventoryDocs, userDocs] = await Promise.all([
     assetIds.length > 0
       ? adminDb.getAll(...assetIds.map((id) => adminDb.collection('assets').doc(id)))
+      : Promise.resolve([]),
+    inventoryItemIds.length > 0
+      ? adminDb.getAll(...inventoryItemIds.map((id) => adminDb.collection('inventoryItems').doc(id)))
       : Promise.resolve([]),
     userIds.length > 0
       ? adminDb.getAll(...userIds.map((id) => adminDb.collection('users').doc(id)))
@@ -39,6 +44,11 @@ async function enrichRequests(requests: Request[]): Promise<Request[]> {
   const assetNameMap = new Map<string, string>();
   assetDocs.forEach((doc) => {
     if (doc.exists) assetNameMap.set(doc.id, (doc.data() as { name: string }).name);
+  });
+
+  const inventoryNameMap = new Map<string, string>();
+  inventoryDocs.forEach((doc) => {
+    if (doc.exists) inventoryNameMap.set(doc.id, (doc.data() as { name: string }).name);
   });
 
   const userMap = new Map<string, { name?: string; email?: string }>();
@@ -52,6 +62,7 @@ async function enrichRequests(requests: Request[]): Promise<Request[]> {
   return requests.map((r) => ({
     ...r,
     assetName: r.assetId ? assetNameMap.get(r.assetId) : undefined,
+    inventoryItemName: r.inventoryItemId ? inventoryNameMap.get(r.inventoryItemId) : undefined,
     createdByName: userMap.get(r.createdBy)?.name,
     createdByEmail: userMap.get(r.createdBy)?.email,
   }));

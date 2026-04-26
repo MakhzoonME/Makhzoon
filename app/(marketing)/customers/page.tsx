@@ -1,5 +1,12 @@
-import { ChevronRight } from 'lucide-react';
 import { CTABand } from '@/components/marketing/CTABand';
+
+function ChevronRightSVG() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
+      <path d="M4.5 3l4 3.5-4 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 const CASES = [
   { org: 'Cirrus Manufacturing', industry: 'Manufacturing', desc: 'Multi-tenant for 7 plants. HQ visibility, plant autonomy.', scale: '8,400 assets' },
@@ -35,7 +42,7 @@ export default function CustomersPage() {
                 ))}
               </div>
               <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 'var(--r-md)', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
-                Read case study <ChevronRight size={14} />
+                Read case study <ChevronRightSVG />
               </button>
             </div>
             {/* Northwind */}

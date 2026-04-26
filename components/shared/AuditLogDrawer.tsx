@@ -1,10 +1,23 @@
 'use client';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { X, Activity } from 'lucide-react';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
-
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
+
+function XSVGIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+function ActivitySVGIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M1.5 8h2.5l2-5 3 10 2-5.5 1.5 0.5H14.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 const ACTION_LABEL: Record<string, string> = {
   ASSET_CREATED: 'Created asset',
@@ -53,11 +66,11 @@ export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
         >
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
             <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-gray-400" />
+              <ActivitySVGIcon />
               <DialogPrimitive.Title className="text-sm font-semibold text-gray-900">Recent activity</DialogPrimitive.Title>
             </div>
             <DialogPrimitive.Close className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100">
-              <X className="h-4 w-4" />
+              <XSVGIcon />
               <span className="sr-only">Close</span>
             </DialogPrimitive.Close>
           </div>

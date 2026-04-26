@@ -8,6 +8,8 @@ export interface Request {
   assetId?: string;
   assetName?: string;
   warrantyId?: string;
+  inventoryItemId?: string;
+  inventoryItemName?: string;
   description: string;
   status: RequestStatus;
   decisionBy?: string;

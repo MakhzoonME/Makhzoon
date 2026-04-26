@@ -13,7 +13,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { useSupportTickets, useCreateTicket } from '@/hooks/useSupportTickets';
 import { SupportTicket } from '@/types';
 import { formatDate } from '@/lib/utils/date';
-import { Plus } from 'lucide-react';
+import { toast } from '@/hooks/useToast';
+function PlusSVG() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export default function SupportPage() {
   const router = useRouter();
@@ -21,21 +28,20 @@ export default function SupportPage() {
   const [showNew, setShowNew] = useState(false);
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
-  const [error, setError] = useState('');
 
   const { data: tickets = [], isLoading } = useSupportTickets();
   const createMutation = useCreateTicket();
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
     try {
       await createMutation.mutateAsync({ subject, description });
+      toast.success('Ticket submitted successfully. Our team will respond shortly.');
       setShowNew(false);
       setSubject('');
       setDescription('');
     } catch {
-      setError('Failed to create ticket. Please try again.');
+      toast.error('Failed to submit ticket. Please try again.');
     }
   }
 
@@ -60,7 +66,7 @@ export default function SupportPage() {
         title="Support Tickets"
         actions={
           <Button size="sm" onClick={() => setShowNew(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Submit Ticket
+            <PlusSVG /><span className="ml-1">Submit Ticket</span>
           </Button>
         }
       />
@@ -76,7 +82,7 @@ export default function SupportPage() {
         />
       </div>
 
-      <Dialog open={showNew} onOpenChange={(o) => { setShowNew(o); setError(''); }}>
+      <Dialog open={showNew} onOpenChange={setShowNew}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Submit New Ticket</DialogTitle>
@@ -90,7 +96,7 @@ export default function SupportPage() {
               <Label htmlFor="description">Description</Label>
               <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Please describe your issue in detail…" rows={5} required minLength={20} maxLength={5000} />
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowNew(false)}>Cancel</Button>
               <Button type="submit" disabled={createMutation.isPending}>

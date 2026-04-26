@@ -19,11 +19,8 @@ export const metadata: Metadata = {
   title: 'Makhzoon',
   description: 'Multi-tenant asset and warranty management platform',
   icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
-    ],
-    shortcut: '/favicon.ico',
+    icon: { url: '/icon.svg', type: 'image/svg+xml' },
+    shortcut: '/icon.svg',
     apple: '/icon.svg',
   },
 };

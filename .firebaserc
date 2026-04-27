@@ -1,5 +1,9 @@
 {
   "projects": {
-    "default": "office-asset-system"
+    "default": "makhzoon-dev",
+    "dev": "makhzoon-dev",
+    "staging": "makhzoon-staging",
+    "prod": "makhzoon-prod",
+    "legacy": "office-asset-system"
   }
 }

@@ -28,6 +28,12 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# real env files for any environment (only commit .env*.example)
+.env
+.env.development
+.env.staging
+.env.production
+
 # vercel
 .vercel
 

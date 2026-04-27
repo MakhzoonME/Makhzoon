@@ -22,8 +22,6 @@ function EditSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill
 function Trash2SVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M2 3.5h10M5.5 3.5V2.5h3v1M4 3.5l.75 8h4.5L10 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
 function AlertTriangleSVG({ size = 16 }: { size?: number }) { return <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 2L1.5 13h13L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /><path d="M8 6.5v3M8 11v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>; }
 function ClipboardCheckSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><rect x="3" y="2" width="10" height="12" rx="1" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M6 2v1.5h4V2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /><path d="M5.5 8.5l2 2 3.5-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
-function PlusCircleSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M7 4.5v5M4.5 7h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
-function MinusCircleSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M4.5 7h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
 function RequestSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><rect x="2" y="2" width="10" height="10" rx="1" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M4 5h6M4 7.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
 import { cn } from '@/lib/utils/cn';
 
@@ -56,7 +54,6 @@ export default function InventoryPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<InventoryItem | null>(null);
   const [reqTarget, setReqTarget] = useState<InventoryItem | null>(null);
-  const [adjusting, setAdjusting] = useState<Map<string, 'in' | 'out'>>(new Map());
 
   const debouncedSearch = useDebounce(search, 400);
   const { data, isLoading } = useInventoryItems({ category: category || undefined, stockStatus: stockFilter || undefined, search: debouncedSearch });
@@ -97,12 +94,6 @@ export default function InventoryPage() {
               <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setDeleteTarget(i); }}>
                 <Trash2SVG />
               </Button>
-              <Button size="sm" variant="ghost" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" disabled={adjusting.has(i.id)} onClick={(e) => { e.stopPropagation(); quickAdjust(i.id, 'in'); }}>
-                {adjusting.get(i.id) === 'in' ? <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" /> : <PlusCircleSVG />}
-              </Button>
-              <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-500 hover:bg-red-50" disabled={adjusting.has(i.id)} onClick={(e) => { e.stopPropagation(); quickAdjust(i.id, 'out'); }}>
-                {adjusting.get(i.id) === 'out' ? <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" /> : <MinusCircleSVG />}
-              </Button>
             </>
           )}
           <Button size="sm" variant="ghost" className="text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50" onClick={(e) => { e.stopPropagation(); setReqTarget(i); }}>
@@ -112,23 +103,6 @@ export default function InventoryPage() {
       ),
     },
   ];
-
-  async function quickAdjust(itemId: string, type: 'in' | 'out') {
-    setAdjusting((prev) => new Map(prev).set(itemId, type));
-    try {
-      const res = await fetch(`/api/inventory/${itemId}/transactions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, quantity: 1, reason: 'Quick adjustment' }),
-      });
-      if (!res.ok) throw new Error();
-      qc.invalidateQueries({ queryKey: ['inventory'] });
-    } catch {
-      toast.error('Failed to adjust stock');
-    } finally {
-      setAdjusting((prev) => { const n = new Map(prev); n.delete(itemId); return n; });
-    }
-  }
 
   async function handleDelete() {
     if (!deleteTarget) return;

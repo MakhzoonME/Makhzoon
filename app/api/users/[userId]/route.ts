@@ -44,6 +44,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { userId: s
 
   if (permanent) {
     try {
+      await adminAuth.revokeRefreshTokens(userId);
+    } catch { /* ignore if already deleted */ }
+    try {
       await adminAuth.deleteUser(userId);
     } catch (err: unknown) {
       if ((err as { code?: string }).code !== 'auth/user-not-found') throw err;
@@ -61,6 +64,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { userId: s
     });
   } else {
     await adminAuth.updateUser(userId, { disabled: true });
+    await adminAuth.revokeRefreshTokens(userId);
     await adminDb.collection('users').doc(userId).update({
       status: 'deactivated',
       updatedBy: caller.uid,

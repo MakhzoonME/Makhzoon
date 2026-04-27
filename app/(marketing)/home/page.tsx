@@ -1,3 +1,4 @@
+'use client';
 import Link from 'next/link';
 import { CTABand } from '@/components/marketing/CTABand';
 import { DashboardMock } from '@/components/marketing/DashboardMock';

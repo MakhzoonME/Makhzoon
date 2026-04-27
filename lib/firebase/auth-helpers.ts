@@ -11,7 +11,12 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
 
     const cached = getCachedSession(session);
     const decoded = cached ?? await adminAuth.verifySessionCookie(session, true);
-    if (!cached) setCachedSession(session, decoded);
+    if (!cached) {
+      // Verify the user is still active (not disabled/deleted) before caching
+      const firebaseUser = await adminAuth.getUser(decoded.uid);
+      if (firebaseUser.disabled) return null;
+      setCachedSession(session, decoded);
+    }
 
     const role = decoded.role as UserRole;
     let organizationId = (decoded.organizationId as string | undefined) ?? null;

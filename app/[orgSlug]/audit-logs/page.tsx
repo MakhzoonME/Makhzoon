@@ -5,11 +5,33 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { AuditLog } from '@/types';
 import { formatDateTime } from '@/lib/utils/date';
-import { truncate } from '@/lib/utils/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { formatActionLabel, formatKeyLabel } from '@/lib/utils/audit-labels';
+
+function ChangesTable({ label, value }: { label: string; value: Record<string, unknown> }) {
+  const entries = Object.entries(value).filter(([, v]) => v !== undefined && v !== null && v !== '');
+  if (!entries.length) return null;
+  return (
+    <div>
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{label}</p>
+      <div className="rounded-lg border border-gray-200 overflow-hidden">
+        {entries.map(([k, v], i) => (
+          <div key={k} className={`flex text-xs ${i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+            <span className="w-40 flex-shrink-0 px-3 py-2 text-gray-500 font-medium border-r border-gray-200">
+              {formatKeyLabel(k)}
+            </span>
+            <span className="px-3 py-2 text-gray-800 break-all">
+              {typeof v === 'boolean' ? (v ? 'Yes' : 'No') : String(v ?? '')}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function OrgAuditLogsPage() {
   const [filters, setFilters] = useState({ userId: '', action: '', dateFrom: '', dateTo: '' });
@@ -26,30 +48,30 @@ export default function OrgAuditLogsPage() {
     {
       key: 'userId',
       header: 'User',
-      render: (l) => <span className="text-xs">{l.userId}</span>,
+      render: (l) => (
+        <span className="text-xs">{l.userDisplayName ?? l.userId}</span>
+      ),
     },
     {
       key: 'action',
       header: 'Action',
       render: (l) => (
-        <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">{l.action}</span>
+        <span className="text-xs font-medium">{formatActionLabel(l.action)}</span>
       ),
     },
-    { key: 'module', header: 'Module', render: (l) => l.module },
+    { key: 'module', header: 'Module', render: (l) => <span className="text-xs capitalize">{l.module}</span> },
     {
       key: 'recordId',
-      header: 'Record ID',
-      render: (l) => <span className="font-mono text-xs text-gray-500">{truncate(l.recordId, 12)}</span>,
+      header: 'Record',
+      render: (l) => (
+        <span className="text-xs text-gray-700">{l.recordName ?? l.recordId}</span>
+      ),
     },
     {
       key: 'details',
       header: '',
       render: (l) => (
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={(e) => { e.stopPropagation(); setSelectedLog(l); }}
-        >
+        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setSelectedLog(l); }}>
           Details
         </Button>
       ),
@@ -92,39 +114,31 @@ export default function OrgAuditLogsPage() {
       </div>
 
       <Dialog open={!!selectedLog} onOpenChange={(o) => !o && setSelectedLog(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Audit Log Detail</DialogTitle>
           </DialogHeader>
           {selectedLog && (
-            <div className="space-y-3 text-sm">
-              {([
-                ['Action', selectedLog.action],
-                ['Module', selectedLog.module],
-                ['Record ID', selectedLog.recordId],
-                ['User ID', selectedLog.userId],
-                ['Timestamp', formatDateTime(selectedLog.timestamp)],
-              ] as [string, string][]).map(([k, v]) => (
-                <div key={k} className="flex gap-2">
-                  <span className="text-gray-500 w-28 flex-shrink-0">{k}</span>
-                  <span className="font-medium font-mono text-xs">{v}</span>
-                </div>
-              ))}
+            <div className="space-y-4 text-sm">
+              <div className="rounded-lg border border-gray-200 overflow-hidden">
+                {[
+                  ['Action', formatActionLabel(selectedLog.action)],
+                  ['Module', selectedLog.module],
+                  ['Record', selectedLog.recordName ?? selectedLog.recordId],
+                  ['User', selectedLog.userDisplayName ?? selectedLog.userId],
+                  ['Timestamp', formatDateTime(selectedLog.timestamp)],
+                ].filter(([, v]) => v).map(([k, v], i) => (
+                  <div key={String(k)} className={`flex text-xs ${i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                    <span className="w-28 flex-shrink-0 px-3 py-2 text-gray-500 font-medium border-r border-gray-200">{k}</span>
+                    <span className="px-3 py-2 text-gray-800">{String(v)}</span>
+                  </div>
+                ))}
+              </div>
               {selectedLog.oldValue && (
-                <div>
-                  <p className="text-gray-500 mb-1 font-semibold text-xs uppercase">Old Value</p>
-                  <pre className="bg-gray-50 border border-gray-200 rounded p-2 text-xs overflow-auto">
-                    {JSON.stringify(selectedLog.oldValue, null, 2)}
-                  </pre>
-                </div>
+                <ChangesTable label="Previous Values" value={selectedLog.oldValue} />
               )}
               {selectedLog.newValue && (
-                <div>
-                  <p className="text-gray-500 mb-1 font-semibold text-xs uppercase">New Value</p>
-                  <pre className="bg-gray-50 border border-gray-200 rounded p-2 text-xs overflow-auto">
-                    {JSON.stringify(selectedLog.newValue, null, 2)}
-                  </pre>
-                </div>
+                <ChangesTable label="New Values" value={selectedLog.newValue} />
               )}
             </div>
           )}

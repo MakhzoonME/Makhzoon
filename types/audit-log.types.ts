@@ -12,4 +12,8 @@ export interface AuditLog {
   newValue?: Record<string, unknown>;
   timestamp: Date;
   transferMode?: boolean;
+  // enriched fields
+  userDisplayName?: string;
+  recordName?: string;
+  orgName?: string;
 }

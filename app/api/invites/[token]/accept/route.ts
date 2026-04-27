@@ -21,24 +21,45 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     const parsed = acceptInviteSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
-    const existing = await adminAuth.getUserByEmail(invite.email).catch(() => null);
-    if (existing) return NextResponse.json({ error: 'An account already exists for this email' }, { status: 409 });
+    let uid: string;
 
-    const newUser = await adminAuth.createUser({
-      email: invite.email,
-      displayName: invite.displayName,
-      password: parsed.data.password,
-      emailVerified: true,
-    });
+    if (parsed.data.method === 'password') {
+      // Email invite: create user with email + password
+      if (!invite.email) {
+        return NextResponse.json({ error: 'This invite requires phone verification' }, { status: 400 });
+      }
+      const existing = await adminAuth.getUserByEmail(invite.email).catch(() => null);
+      if (existing) {
+        return NextResponse.json({ error: 'An account already exists for this email' }, { status: 409 });
+      }
+      const newUser = await adminAuth.createUser({
+        email: invite.email,
+        displayName: invite.displayName,
+        password: parsed.data.password,
+        emailVerified: true,
+      });
+      uid = newUser.uid;
+    } else {
+      // Phone invite: verify the Firebase ID token from OTP sign-in
+      if (!invite.phone) {
+        return NextResponse.json({ error: 'This invite requires email/password setup' }, { status: 400 });
+      }
+      const decoded = await adminAuth.verifyIdToken(parsed.data.idToken);
+      if (!decoded.phone_number || decoded.phone_number !== invite.phone) {
+        return NextResponse.json({ error: 'Phone number does not match this invitation' }, { status: 403 });
+      }
+      uid = decoded.uid;
+    }
 
-    await adminAuth.setCustomUserClaims(newUser.uid, {
+    await adminAuth.setCustomUserClaims(uid, {
       role: invite.role,
       organizationId: invite.organizationId,
     });
 
-    await createUser(newUser.uid, {
+    await createUser(uid, {
       organizationId: invite.organizationId,
       email: invite.email,
+      phone: invite.phone,
       displayName: invite.displayName,
       role: invite.role,
       status: 'active',
@@ -46,16 +67,16 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       updatedBy: invite.invitedBy,
     });
 
-    await markInviteAccepted(invite.id, newUser.uid);
+    await markInviteAccepted(invite.id, uid);
 
     await writeAuditLog({
       organizationId: invite.organizationId,
-      userId: newUser.uid,
+      userId: uid,
       role: invite.role,
       action: 'INVITE_ACCEPTED',
       module: 'users',
       recordId: invite.id,
-      newValue: { email: invite.email, role: invite.role },
+      newValue: { email: invite.email, phone: invite.phone, role: invite.role },
     });
 
     return NextResponse.json({ success: true, email: invite.email });

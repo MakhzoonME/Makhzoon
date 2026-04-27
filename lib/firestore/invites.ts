@@ -8,6 +8,8 @@ function toInvite(id: string, data: FirebaseFirestore.DocumentData): Invite {
     id,
     organizationId: data.organizationId,
     email: data.email,
+    phone: data.phone,
+    channel: data.channel ?? 'email',
     displayName: data.displayName,
     role: data.role,
     token: data.token,
@@ -29,7 +31,8 @@ export function generateInviteToken(): string {
 }
 
 export async function getInvites(orgId: string): Promise<Invite[]> {
-  const snap = await adminDb.collection('invites')
+  const snap = await adminDb
+    .collection('invites')
     .where('organizationId', '==', orgId)
     .orderBy('createdAt', 'desc')
     .limit(50)
@@ -50,7 +53,8 @@ export async function getInviteById(id: string): Promise<Invite | null> {
 }
 
 export async function getPendingInviteForEmail(orgId: string, email: string): Promise<Invite | null> {
-  const snap = await adminDb.collection('invites')
+  const snap = await adminDb
+    .collection('invites')
     .where('organizationId', '==', orgId)
     .where('email', '==', email.toLowerCase())
     .where('status', '==', 'pending')
@@ -60,10 +64,35 @@ export async function getPendingInviteForEmail(orgId: string, email: string): Pr
   return toInvite(snap.docs[0].id, snap.docs[0].data());
 }
 
-export async function createInvite(data: Omit<Invite, 'id' | 'createdAt' | 'status' | 'acceptedAt' | 'acceptedBy' | 'revokedAt' | 'revokedBy'>): Promise<string> {
+export async function getPendingInviteForPhone(orgId: string, phone: string): Promise<Invite | null> {
+  const snap = await adminDb
+    .collection('invites')
+    .where('organizationId', '==', orgId)
+    .where('phone', '==', phone)
+    .where('status', '==', 'pending')
+    .limit(1)
+    .get();
+  if (snap.empty) return null;
+  return toInvite(snap.docs[0].id, snap.docs[0].data());
+}
+
+export async function getAnyPendingInviteByPhone(phone: string): Promise<Invite | null> {
+  const snap = await adminDb
+    .collection('invites')
+    .where('phone', '==', phone)
+    .where('status', '==', 'pending')
+    .limit(1)
+    .get();
+  if (snap.empty) return null;
+  return toInvite(snap.docs[0].id, snap.docs[0].data());
+}
+
+export async function createInvite(
+  data: Omit<Invite, 'id' | 'createdAt' | 'status' | 'acceptedAt' | 'acceptedBy' | 'revokedAt' | 'revokedBy'>
+): Promise<string> {
   const ref = await adminDb.collection('invites').add({
     ...data,
-    email: data.email.toLowerCase(),
+    email: data.email ? data.email.toLowerCase() : undefined,
     status: 'pending' as InviteStatus,
     expiresAt: data.expiresAt,
     createdAt: FieldValue.serverTimestamp(),

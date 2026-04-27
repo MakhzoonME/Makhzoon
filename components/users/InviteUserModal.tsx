@@ -1,4 +1,5 @@
 'use client';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { inviteUserSchema, InviteUserFormData } from '@/lib/validations/user.schema';
@@ -10,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { cn } from '@/lib/utils/cn';
 
 function CopySVG() {
   return (
@@ -20,6 +22,8 @@ function CopySVG() {
   );
 }
 
+type Channel = 'email' | 'sms' | 'whatsapp';
+
 interface InviteUserModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -29,17 +33,48 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [inviteChannel, setInviteChannel] = useState<string>('email');
   const [copied, setCopied] = useState(false);
 
   const form = useForm<InviteUserFormData>({
     resolver: zodResolver(inviteUserSchema),
-    defaultValues: { email: '', displayName: '', role: 'staff' },
+    defaultValues: { email: '', phone: '', channel: 'email', displayName: '', role: 'staff' },
   });
+
+  const email = form.watch('email') ?? '';
+  const phone = form.watch('phone') ?? '';
+  const channel = form.watch('channel');
+
+  const hasEmail = email.trim().length > 0;
+  const hasPhone = phone.trim().length > 0;
+
+  // Auto-select channel based on filled fields
+  useEffect(() => {
+    if (hasEmail && !hasPhone) {
+      form.setValue('channel', 'email', { shouldValidate: false });
+    } else if (!hasEmail && hasPhone) {
+      // Auto-select whatsapp when phone is entered and email is empty
+      if (channel === 'email') {
+        form.setValue('channel', 'whatsapp', { shouldValidate: false });
+      }
+    } else if (hasEmail && hasPhone) {
+      // Both filled: if currently on a phone-only channel and email just got filled, switch to email
+      if (channel === 'sms' || channel === 'whatsapp') {
+        form.setValue('channel', 'email', { shouldValidate: false });
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasEmail, hasPhone]);
+
+  // Per-channel disabled state
+  const emailDisabled = !hasEmail;
+  const smsDisabled = !hasPhone;
+  const whatsappDisabled = !hasPhone;
 
   function handleClose() {
     setInviteLink(null);
     setCopied(false);
-    form.reset();
+    form.reset({ email: '', phone: '', channel: 'email', displayName: '', role: 'staff' });
     onOpenChange(false);
   }
 
@@ -52,23 +87,33 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
   async function onSubmit(data: InviteUserFormData) {
     setLoading(true);
     try {
+      const payload = {
+        email: data.email?.trim() || undefined,
+        phone: data.phone?.trim() || undefined,
+        channel: data.channel,
+        displayName: data.displayName,
+        role: data.role,
+      };
       const res = await fetch('/api/invites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const e = await res.json();
-        throw new Error(e.error ?? 'Failed to invite user');
+        throw new Error(typeof e.error === 'string' ? e.error : 'Failed to invite user');
       }
       const result = await res.json();
       qc.invalidateQueries({ queryKey: ['users'] });
       qc.invalidateQueries({ queryKey: ['invites'] });
-      if (result.emailSent) {
-        toast.success('Invite email sent successfully.');
+      if (result.messageSent) {
+        const label =
+          result.channel === 'whatsapp' ? 'WhatsApp' : result.channel === 'sms' ? 'SMS' : 'email';
+        toast.success(`Invite sent via ${label}.`);
         handleClose();
       } else {
         setInviteLink(result.acceptUrl);
+        setInviteChannel(result.channel);
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to invite user');
@@ -76,6 +121,13 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
       setLoading(false);
     }
   }
+
+  const fallbackLabel =
+    inviteChannel === 'whatsapp'
+      ? 'WhatsApp delivery failed'
+      : inviteChannel === 'sms'
+      ? 'SMS delivery failed'
+      : 'Email delivery is not configured';
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
@@ -91,7 +143,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                 <path d="M8 2L1.5 13h13L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" />
                 <path d="M8 6.5v3M8 11v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
               </svg>
-              <p>Email delivery is not configured. Share this invite link manually.</p>
+              <p>{fallbackLabel}. Share this invite link manually.</p>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Invite Link</label>
@@ -116,13 +168,71 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+
+              {/* Email */}
               <FormField control={form.control} name="email" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email address *</FormLabel>
-                  <FormControl><Input type="email" {...field} placeholder="member@company.com" /></FormControl>
+                  <FormLabel>
+                    Email address
+                    <span className="ml-1 text-gray-400 font-normal text-xs">(required if no phone)</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input type="email" {...field} placeholder="member@company.com" />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
+
+              {/* Phone */}
+              <FormField control={form.control} name="phone" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Phone number
+                    <span className="ml-1 text-gray-400 font-normal text-xs">(required if no email)</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input type="tel" {...field} placeholder="+966501234567" />
+                  </FormControl>
+                  <p className="text-xs text-gray-400 mt-0.5">Include country code (e.g. +966 for Saudi Arabia)</p>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              {/* Channel selector */}
+              <FormField control={form.control} name="channel" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Send invite via</FormLabel>
+                  <div className="flex rounded-lg border border-gray-200 p-1 gap-1 bg-gray-50">
+                    {(
+                      [
+                        { value: 'email', label: 'Email', disabled: emailDisabled },
+                        { value: 'sms', label: 'SMS', disabled: smsDisabled },
+                        { value: 'whatsapp', label: 'WhatsApp', disabled: whatsappDisabled },
+                      ] as { value: Channel; label: string; disabled: boolean }[]
+                    ).map(({ value, label, disabled }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => !disabled && field.onChange(value)}
+                        className={cn(
+                          'flex-1 py-1.5 px-2 rounded-md text-sm font-medium transition-colors',
+                          field.value === value && !disabled
+                            ? 'bg-white text-indigo-700 shadow-sm'
+                            : disabled
+                            ? 'text-gray-300 cursor-not-allowed'
+                            : 'text-gray-500 hover:text-gray-700 cursor-pointer'
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              {/* Display name */}
               <FormField control={form.control} name="displayName" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Full Name *</FormLabel>
@@ -130,6 +240,8 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                   <FormMessage />
                 </FormItem>
               )} />
+
+              {/* Role */}
               <FormField control={form.control} name="role" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role *</FormLabel>
@@ -143,9 +255,12 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                   <FormMessage />
                 </FormItem>
               )} />
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>Cancel</Button>
-                <Button type="submit" disabled={loading}>{loading ? 'Inviting...' : 'Send Invite'}</Button>
+                <Button type="submit" disabled={loading || (!hasEmail && !hasPhone)}>
+                  {loading ? 'Inviting...' : 'Send Invite'}
+                </Button>
               </DialogFooter>
             </form>
           </Form>

@@ -169,8 +169,8 @@ export default function UsersPage() {
         throw new Error(e.error ?? (permanent ? 'Failed to delete user' : 'Failed to deactivate user'));
       }
       toast.success(permanent
-        ? `${target.displayName || target.email} deleted permanently`
-        : `${target.displayName || target.email} deactivated`
+        ? `${target.displayName || target.email || target.phone} deleted permanently`
+        : `${target.displayName || target.email || target.phone} deactivated`
       );
       qc.invalidateQueries({ queryKey: ['users'] });
       setDeleteTarget(null);
@@ -223,7 +223,7 @@ export default function UsersPage() {
                   return (
                     <tr key={`user-${u.id}`} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 font-medium text-gray-900">{u.displayName || '—'}</td>
-                      <td className="px-4 py-3 text-gray-600">{u.email}</td>
+                      <td className="px-4 py-3 text-gray-600">{u.email || u.phone || '—'}</td>
                       <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
                       <td className="px-4 py-3"><StatusBadge status={u.status} /></td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(u.createdAt)}</td>
@@ -274,7 +274,7 @@ export default function UsersPage() {
                 return (
                   <tr key={`invite-${inv.id}`} className="hover:bg-gray-50 transition-colors bg-amber-50/30">
                     <td className="px-4 py-3 font-medium text-gray-700">{inv.displayName || '—'}</td>
-                    <td className="px-4 py-3 text-gray-500">{inv.email}</td>
+                    <td className="px-4 py-3 text-gray-500">{inv.email || inv.phone || '—'}</td>
                     <td className="px-4 py-3"><RoleBadge role={inv.role} /></td>
                     <td className="px-4 py-3"><StatusBadge status="pending" /></td>
                     <td className="px-4 py-3 text-gray-400 text-xs">Expires {formatDate(inv.expiresAt)}</td>
@@ -309,7 +309,7 @@ export default function UsersPage() {
           <div className="space-y-4 py-2">
             <div>
               <p className="text-sm text-gray-600 mb-1">
-                User: <span className="font-medium text-gray-900">{editTarget?.displayName || editTarget?.email}</span>
+                User: <span className="font-medium text-gray-900">{editTarget?.displayName || editTarget?.email || editTarget?.phone}</span>
               </p>
             </div>
             <div>
@@ -342,7 +342,7 @@ export default function UsersPage() {
         title={deleteTarget?.permanent ? 'Delete User Permanently' : 'Deactivate User'}
         description={deleteTarget?.permanent
           ? `Permanently delete "${deleteTarget.user.displayName || deleteTarget.user.email}"? This cannot be undone.`
-          : `Deactivate "${deleteTarget?.user.displayName || deleteTarget?.user.email}"? They will lose access immediately.`
+          : `Deactivate "${deleteTarget?.user.displayName || deleteTarget?.user.email || deleteTarget?.user.phone}"? They will lose access immediately.`
         }
         confirmLabel={deleteTarget?.permanent ? 'Delete Permanently' : 'Deactivate'}
         onConfirm={handleDelete}

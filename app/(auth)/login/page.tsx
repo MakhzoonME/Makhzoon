@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { buildOrgPath, buildSuperAdminPath } from '@/lib/utils/tenant-url';
+import { getFirstAccessiblePath } from '@/lib/utils/nav-config';
 import { cn } from '@/lib/utils/cn';
 
 /* ── Icons ────────────────────────────────────────────────────── */
@@ -126,11 +127,12 @@ export default function LoginPage() {
       return;
     }
 
-    const { role, orgSlug } = body;
+    const { role, orgSlug, features = {} } = body;
     if (role === 'super_admin') {
       router.push(buildSuperAdminPath('/dashboard'));
     } else if (orgSlug) {
-      router.push(buildOrgPath(orgSlug, '/dashboard'));
+      const firstPath = getFirstAccessiblePath({ role, features });
+      router.push(buildOrgPath(orgSlug, firstPath));
     } else {
       router.push('/');
     }

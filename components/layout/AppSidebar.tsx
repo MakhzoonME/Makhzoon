@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { useSubscriptionFeatures } from '@/hooks/useSubscriptionFeatures';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ORG_NAV_ITEMS } from '@/lib/utils/nav-config';
 
 /* ── Inline SVG nav icons ─────────────────────────────────────── */
 function DashboardSVG() {
@@ -113,26 +114,18 @@ function ChevronRightSVG() {
   );
 }
 
-interface NavItem {
-  href: string;
-  label: string;
-  Icon: React.FC;
-  adminOnly?: boolean;
-  featureKey?: string;
-}
-
-const navItems: NavItem[] = [
-  { href: '/dashboard',    label: 'Dashboard',    Icon: DashboardSVG,                              featureKey: 'dashboard' },
-  { href: '/assets',       label: 'Assets',        Icon: AssetsSVG,                                featureKey: 'assets' },
-  { href: '/inventory',    label: 'Inventory',     Icon: InventorySVG,                             featureKey: 'inventory' },
-  { href: '/warranties',   label: 'Warranties',    Icon: WarrantySVG,      featureKey: 'warranties' },
-  { href: '/requests',     label: 'Requests',      Icon: RequestsSVG,      featureKey: 'requests' },
-  { href: '/reports',      label: 'Reports',       Icon: ReportsSVG,       adminOnly: true,        featureKey: 'reports' },
-  { href: '/users',        label: 'Users',         Icon: UsersSVG,         adminOnly: true },
-  { href: '/subscription', label: 'Subscription',  Icon: SubscriptionSVG,  adminOnly: true },
-  { href: '/support',      label: 'Support',       Icon: SupportSVG,       featureKey: 'support' },
-  { href: '/audit-logs',   label: 'Audit Logs',    Icon: AuditSVG,         adminOnly: true,        featureKey: 'auditLogs' },
-];
+const NAV_ICONS: Record<string, React.FC> = {
+  '/dashboard':    DashboardSVG,
+  '/assets':       AssetsSVG,
+  '/inventory':    InventorySVG,
+  '/warranties':   WarrantySVG,
+  '/requests':     RequestsSVG,
+  '/reports':      ReportsSVG,
+  '/users':        UsersSVG,
+  '/subscription': SubscriptionSVG,
+  '/support':      SupportSVG,
+  '/audit-logs':   AuditSVG,
+};
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 export const SIDEBAR_WIDTH_EXPANDED  = 240;
@@ -148,7 +141,7 @@ export function AppSidebar() {
 
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
-  const visibleItems = navItems.filter((item) => {
+  const visibleItems = ORG_NAV_ITEMS.filter((item) => {
     if (item.adminOnly && !canSeeAdmin) return false;
     if (item.featureKey && features[item.featureKey] === false) return false;
     return true;
@@ -177,7 +170,8 @@ export function AppSidebar() {
         </button>
 
         <nav className="flex-1 p-2.5 space-y-0.5 overflow-y-auto overflow-x-hidden">
-          {visibleItems.map(({ href, label, Icon }) => {
+          {visibleItems.map(({ href, label }) => {
+            const Icon = NAV_ICONS[href] ?? DashboardSVG;
             const fullHref = orgSlug ? `/${orgSlug}${href}` : href;
             const active   = pathname === fullHref || pathname.startsWith(fullHref + '/');
 

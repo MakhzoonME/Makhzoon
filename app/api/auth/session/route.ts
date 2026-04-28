@@ -3,6 +3,7 @@ import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { cookies } from 'next/headers';
 import { getAnyPendingInviteByPhone } from '@/lib/firestore/invites';
 import { getOrganizationById } from '@/lib/firestore/organizations';
+import { getSubscriptionByOrg } from '@/lib/firestore/subscriptions';
 
 async function verifyWithRetry(idToken: string, attempt = 0) {
   try {
@@ -58,13 +59,18 @@ export async function POST(req: NextRequest) {
     });
 
     let orgSlug: string | null = null;
+    let features: Record<string, boolean> = {};
     const orgId = decoded.organizationId as string | undefined;
     if (orgId) {
-      const doc = await adminDb.collection('organizations').doc(orgId).get();
-      if (doc.exists) orgSlug = (doc.data()?.subdomain as string) ?? null;
+      const [orgDoc, subscription] = await Promise.all([
+        adminDb.collection('organizations').doc(orgId).get(),
+        getSubscriptionByOrg(orgId),
+      ]);
+      if (orgDoc.exists) orgSlug = (orgDoc.data()?.subdomain as string) ?? null;
+      if (subscription?.features) features = subscription.features as Record<string, boolean>;
     }
 
-    return NextResponse.json({ role: decoded.role ?? 'staff', orgSlug });
+    return NextResponse.json({ role: decoded.role ?? 'staff', orgSlug, features });
   } catch (err) {
     console.error('Session creation error:', err);
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

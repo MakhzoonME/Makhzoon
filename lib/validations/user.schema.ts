@@ -9,7 +9,7 @@ export const inviteUserSchema = z
     phone: z.string().optional().or(z.literal('')),
     channel: z.enum(['email', 'sms', 'whatsapp']),
     displayName: z.string().min(2, 'Name must be at least 2 characters'),
-    role: z.enum(['admin', 'staff']),
+    role: z.enum(['org_owner', 'admin', 'staff']),
   })
   .superRefine((d, ctx) => {
     const hasEmail = !!d.email?.trim();

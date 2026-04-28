@@ -49,6 +49,15 @@ const ACTION_LABELS: Record<string, string> = {
   INVENTORY_TRANSACTION_CREATED: 'Inventory Transaction',
   INVENTORY_AUDIT_STARTED: 'Inventory Audit Started',
   INVENTORY_AUDIT_COMPLETED: 'Inventory Audit Completed',
+  CONFIG_STATUS_CREATED: 'Status Created',
+  CONFIG_STATUS_UPDATED: 'Status Updated',
+  CONFIG_STATUS_DELETED: 'Status Deleted',
+  CONFIG_LOCATION_CREATED: 'Location Created',
+  CONFIG_LOCATION_UPDATED: 'Location Updated',
+  CONFIG_LOCATION_DELETED: 'Location Deleted',
+  CONFIG_CATEGORY_CREATED: 'Category Created',
+  CONFIG_CATEGORY_UPDATED: 'Category Updated',
+  CONFIG_CATEGORY_DELETED: 'Category Deleted',
 };
 
 export function formatActionLabel(action: string): string {

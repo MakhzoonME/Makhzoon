@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { formatDate } from '@/lib/utils/date';
-import { Plus, ArrowRight, Search, Edit2, CreditCard } from 'lucide-react';
+import { Plus, ArrowRight, Search, Edit2, CreditCard, Settings } from 'lucide-react';
 import { useTransferMode } from '@/hooks/useTransferMode';
 import { useDebounce } from '@/hooks/useDebounce';
 import { ORG_CATEGORIES, type OrgWithUsage } from '@/types';
@@ -101,6 +101,17 @@ export default function SuperAdminPage() {
             title="Subscription"
           >
             <CreditCard className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/superadmin/organizations/${r.organization.id}/configuration`);
+            }}
+            title="Configuration"
+          >
+            <Settings className="h-3.5 w-3.5" />
           </Button>
           <Button
             size="sm"

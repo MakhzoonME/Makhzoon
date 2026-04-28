@@ -60,7 +60,7 @@ export default function InventoryPage() {
   const { data: categories } = useInventoryCategories();
   const items = data?.items ?? [];
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const columns: ColumnDef<InventoryItem>[] = [
     {

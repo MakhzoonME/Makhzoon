@@ -23,7 +23,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'admin' && user.role !== 'super_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const item = await getInventoryItemById(params.itemId);
     if (!item || item.organizationId !== user.organizationId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -64,7 +64,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'admin' && user.role !== 'super_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const item = await getInventoryItemById(params.itemId);
     if (!item || item.organizationId !== user.organizationId) return NextResponse.json({ error: 'Not found' }, { status: 404 });

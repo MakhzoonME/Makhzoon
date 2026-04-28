@@ -53,7 +53,7 @@ export function MaintenanceSection({ assetId }: { assetId: string }) {
   const [cost, setCost] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
   const totalCost = records.reduce((sum, r) => sum + (r.cost ?? 0), 0);
 
   function reset() {

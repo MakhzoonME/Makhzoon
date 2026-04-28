@@ -13,3 +13,13 @@ export async function generateAssetQRDataUrl(assetId: string, baseUrl: string): 
 export function assetUrl(assetId: string, baseUrl: string): string {
   return `${baseUrl.replace(/\/$/, '')}/assets/${assetId}`;
 }
+
+// QR encodes the raw acceptance URL — scanners open it directly in a browser.
+export async function generateInviteQRDataUrl(acceptUrl: string): Promise<string> {
+  return QRCode.toDataURL(acceptUrl, {
+    width: 320,
+    margin: 1,
+    color: { dark: '#111827', light: '#ffffff' },
+    errorCorrectionLevel: 'H',
+  });
+}

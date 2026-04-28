@@ -34,7 +34,7 @@ export default function WarrantiesPage() {
   const [editTarget, setEditTarget] = useState<Warranty | null>(null);
 
   const { data: warranties = [], isLoading } = useWarranties();
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const columns: ColumnDef<Warranty>[] = [
     { key: 'assetId', header: 'Asset', render: (w) => <button className="text-indigo-600 hover:underline" onClick={() => router.push(`/${orgSlug}/assets/${w.assetId}`)}>{w.assetName ?? w.assetId}</button> },

@@ -4,7 +4,7 @@ export interface OrgUser {
   email?: string;
   phone?: string;
   displayName: string;
-  role: 'admin' | 'staff';
+  role: 'org_owner' | 'admin' | 'staff';
   status: 'active' | 'deactivated';
   createdAt: Date;
   createdBy: string;

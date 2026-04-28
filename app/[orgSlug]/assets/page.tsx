@@ -46,7 +46,7 @@ export default function AssetsPage() {
   const { data: assetsData, isLoading } = useAssets({ status: status || undefined, search: debouncedSearch });
   const assets = assetsData?.items ?? [];
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const columns: ColumnDef<Asset>[] = [
     {

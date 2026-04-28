@@ -40,7 +40,7 @@ export default function RequestsPage() {
   const orgSlug = useOrgSlug();
   const { user } = useAuthStore();
   const qc = useQueryClient();
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
   const { data: requests = [], isLoading } = useRequests();
   const [processing, setProcessing] = useState<string | null>(null);
 

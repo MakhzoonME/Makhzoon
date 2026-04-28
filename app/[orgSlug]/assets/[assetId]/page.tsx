@@ -43,7 +43,7 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
   const [editWarrantyTarget, setEditWarrantyTarget] = useState<Warranty | null>(null);
   const [addWarrantyOpen, setAddWarrantyOpen] = useState(false);
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
   const isStaff = user?.role === 'staff';
   const isRetired = asset?.status === 'Retired';
 

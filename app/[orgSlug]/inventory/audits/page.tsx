@@ -28,7 +28,7 @@ export default function InventoryAuditsPage() {
   const { user } = useAuthStore();
   const { data: auditsData, isLoading } = useInventoryAudits();
   const audits = auditsData?.audits ?? [];
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   if (isLoading) return <LoadingSkeleton rows={4} />;
 

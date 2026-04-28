@@ -68,7 +68,7 @@ type InviteInfo = {
   phoneDisplay?: string;
   channel: string;
   displayName: string;
-  role: 'admin' | 'staff';
+  role: 'org_owner' | 'admin' | 'staff';
   orgName: string;
   invitedByName: string;
 };
@@ -259,11 +259,21 @@ export default function AcceptInvitePage({ params }: { params: { token: string }
               <span
                 className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full"
                 style={{
-                  background: info.role === 'admin' ? 'var(--primary-100)' : 'var(--gray-100)',
-                  color: info.role === 'admin' ? 'var(--primary-700)' : 'var(--gray-600)',
+                  background:
+                    info.role === 'org_owner'
+                      ? '#ede9fe'
+                      : info.role === 'admin'
+                      ? 'var(--primary-100)'
+                      : 'var(--gray-100)',
+                  color:
+                    info.role === 'org_owner'
+                      ? '#6d28d9'
+                      : info.role === 'admin'
+                      ? 'var(--primary-700)'
+                      : 'var(--gray-600)',
                 }}
               >
-                {info.role}
+                {info.role === 'org_owner' ? 'Org Owner' : info.role}
               </span>
             </div>
           </div>

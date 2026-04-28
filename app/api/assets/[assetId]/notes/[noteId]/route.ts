@@ -14,7 +14,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { assetId:
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    const isAdmin = user.role === 'admin' || user.role === 'super_admin';
+    const isAdmin = user.role === 'admin' || user.role === 'super_admin' || user.role === 'org_owner';
     if (!isAdmin && note.createdBy !== user.uid) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

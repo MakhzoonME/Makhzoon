@@ -29,7 +29,7 @@ export function AssetNotesSection({ assetId }: { assetId: string }) {
   const deleteMut = useDeleteAssetNote(assetId);
   const [text, setText] = useState('');
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

@@ -12,7 +12,7 @@ export const createInviteSchema = z
       .or(z.literal('')),
     channel: z.enum(['email', 'sms', 'whatsapp']).optional(),
     displayName: z.string().min(2, 'Name must be at least 2 characters').max(100),
-    role: z.enum(['admin', 'staff']),
+    role: z.enum(['org_owner', 'admin', 'staff']),
   })
   .refine((d) => d.email || d.phone, {
     message: 'Either email or phone number is required',

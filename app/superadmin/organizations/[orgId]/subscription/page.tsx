@@ -77,8 +77,10 @@ export default function OrgSubscriptionPage({ params }: { params: { orgId: strin
     setEndDate(sub.endDate ? new Date(sub.endDate).toISOString().slice(0, 10) : '');
     setStatus(sub.status);
     setPackageId(sub.packageId ?? '');
+    // Default missing keys to true so a newly added FEATURE_KEY doesn't
+    // silently disable the feature for orgs that pre-date the key.
     const merged = FEATURE_KEYS.reduce(
-      (acc, k) => ({ ...acc, [k]: sub.features?.[k] ?? false }),
+      (acc, k) => ({ ...acc, [k]: sub.features?.[k] ?? true }),
       {} as Record<FeatureKey, boolean>,
     );
     setFeatures(merged);

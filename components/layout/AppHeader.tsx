@@ -55,6 +55,7 @@ function LogOutSVG() {
 
 const roleConfig = {
   super_admin: { variant: 'blue' as const, label: 'Super Admin' },
+  org_owner:   { variant: 'blue' as const, label: 'Org Owner' },
   admin:       { variant: 'blue' as const, label: 'Admin' },
   staff:       { variant: 'default' as const, label: 'Staff' },
 };

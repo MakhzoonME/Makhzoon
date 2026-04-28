@@ -15,6 +15,8 @@ import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useAssetCategories } from '@/hooks/useAssets';
+import { useOrgConfig } from '@/hooks/useOrgConfig';
+import { useAuthStore } from '@/store/auth.store';
 
 interface AssetFormProps {
   asset?: Asset;
@@ -26,7 +28,18 @@ export function AssetForm({ asset, onSuccess }: AssetFormProps) {
   const orgSlug = useOrgSlug();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const { data: categories = [] } = useAssetCategories();
+  const { user } = useAuthStore();
+  const { data: usedCategories = [] } = useAssetCategories();
+  const { data: orgConfig } = useOrgConfig(user?.organizationId ?? undefined);
+
+  // Merge categories from org config with categories already in use, dedupe.
+  const categoryOptions = Array.from(
+    new Set([
+      ...(orgConfig?.categories.map((c) => c.name) ?? []),
+      ...(usedCategories as string[]),
+    ]),
+  ).sort((a, b) => a.localeCompare(b));
+  const locationOptions = orgConfig?.locations.map((l) => l.name) ?? [];
 
   const form = useForm<AssetFormData>({
     resolver: zodResolver(assetSchema),
@@ -100,7 +113,7 @@ export function AssetForm({ asset, onSuccess }: AssetFormProps) {
                 <Input {...field} list="categories" placeholder="e.g. Devices" />
               </FormControl>
               <datalist id="categories">
-                {categories.map((c: string) => <option key={c} value={c} />)}
+                {categoryOptions.map((c) => <option key={c} value={c} />)}
               </datalist>
               <FormMessage />
             </FormItem>
@@ -157,7 +170,12 @@ export function AssetForm({ asset, onSuccess }: AssetFormProps) {
           <FormField control={form.control} name="location" render={({ field }) => (
             <FormItem>
               <FormLabel>Location</FormLabel>
-              <FormControl><Input {...field} placeholder="Office 1, Floor 2..." /></FormControl>
+              <FormControl>
+                <Input {...field} list="locations" placeholder="Office 1, Floor 2..." />
+              </FormControl>
+              <datalist id="locations">
+                {locationOptions.map((l) => <option key={l} value={l} />)}
+              </datalist>
               <FormMessage />
             </FormItem>
           )} />

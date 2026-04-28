@@ -8,17 +8,18 @@ service cloud.firestore {
     function isAdmin() {
       return request.auth != null && request.auth.token.role == 'admin';
     }
+    function isOrgOwner() {
+      return request.auth != null && request.auth.token.role == 'org_owner';
+    }
     function isStaff() {
       return request.auth != null && request.auth.token.role == 'staff';
-    }
-    function isAuthenticated() {
-      return request.auth != null;
     }
     function belongsToOrg(orgId) {
       return request.auth.token.organizationId == orgId;
     }
-    function isAdminOfOrg(orgId) {
-      return isAdmin() && belongsToOrg(orgId);
+    // Admin-or-stronger: anyone with manage rights inside an org.
+    function isOrgManager(orgId) {
+      return (isAdmin() || isOrgOwner()) && belongsToOrg(orgId);
     }
 
     match /organizations/{orgId} {
@@ -27,34 +28,35 @@ service cloud.firestore {
 
     match /subscriptions/{subId} {
       allow read, write: if isSuperAdmin();
-      allow read: if isAdminOfOrg(resource.data.organizationId);
+      allow read: if isOrgManager(resource.data.organizationId);
     }
 
     match /users/{userId} {
       allow read, write: if isSuperAdmin();
-      allow read, write: if isAdminOfOrg(resource.data.organizationId);
+      allow read, write: if isOrgManager(resource.data.organizationId);
       allow read: if isStaff() && belongsToOrg(resource.data.organizationId);
     }
 
     match /assets/{assetId} {
       allow read, write: if isSuperAdmin();
-      allow read, write: if isAdminOfOrg(resource.data.organizationId);
+      allow read, write: if isOrgManager(resource.data.organizationId);
       allow read: if isStaff() && belongsToOrg(resource.data.organizationId);
     }
 
     match /warranties/{warrantyId} {
       allow read, write: if isSuperAdmin();
-      allow read, write: if isAdminOfOrg(resource.data.organizationId);
+      allow read, write: if isOrgManager(resource.data.organizationId);
       allow read: if isStaff() && belongsToOrg(resource.data.organizationId);
     }
 
     match /requests/{requestId} {
       allow read, write: if isSuperAdmin();
-      allow read, write: if isAdminOfOrg(resource.data.organizationId);
+      allow read, write: if isOrgManager(resource.data.organizationId);
       allow read, create: if isStaff() && belongsToOrg(resource.data.organizationId);
     }
 
     match /auditLogs/{logId} {
+      // Org Owner is intentionally excluded from audit logs per role spec.
       allow read: if isSuperAdmin();
       allow read: if isAdmin() && belongsToOrg(resource.data.organizationId);
       allow write: if false;
@@ -62,26 +64,34 @@ service cloud.firestore {
 
     match /assetNotes/{noteId} {
       allow read, write: if isSuperAdmin();
-      allow read, write: if isAdminOfOrg(resource.data.organizationId);
+      allow read, write: if isOrgManager(resource.data.organizationId);
       allow read, create: if isStaff() && belongsToOrg(resource.data.organizationId);
       allow delete: if isStaff() && belongsToOrg(resource.data.organizationId) && resource.data.createdBy == request.auth.uid;
     }
 
     match /maintenanceRecords/{recordId} {
       allow read, write: if isSuperAdmin();
-      allow read, write: if isAdminOfOrg(resource.data.organizationId);
+      allow read, write: if isOrgManager(resource.data.organizationId);
       allow read: if isStaff() && belongsToOrg(resource.data.organizationId);
     }
 
     match /assetCheckouts/{checkoutId} {
       allow read, write: if isSuperAdmin();
-      allow read, write: if isAdminOfOrg(resource.data.organizationId);
+      allow read, write: if isOrgManager(resource.data.organizationId);
       allow read, create, update: if isStaff() && belongsToOrg(resource.data.organizationId);
     }
 
     match /invites/{inviteId} {
       allow read, write: if isSuperAdmin();
-      allow read, write: if isAdminOfOrg(resource.data.organizationId);
+      allow read, write: if isOrgManager(resource.data.organizationId);
+    }
+
+    // Per-org dropdown configuration (statuses, locations, categories).
+    // Doc id is the organization id, so guard on the path id rather than data.
+    match /organizationConfigs/{orgId} {
+      allow read, write: if isSuperAdmin();
+      allow read, write: if isOrgManager(orgId);
+      allow read: if isStaff() && belongsToOrg(orgId);
     }
   }
 }

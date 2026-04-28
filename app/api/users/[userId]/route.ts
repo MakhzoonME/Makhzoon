@@ -8,12 +8,17 @@ import { FieldValue } from 'firebase-admin/firestore';
 export async function PATCH(req: NextRequest, { params }: { params: { userId: string } }) {
   const caller = await verifySessionCookie();
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (caller.role !== 'admin' && caller.role !== 'super_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (caller.role !== 'admin' && caller.role !== 'super_admin' && caller.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { userId } = params;
+  if (userId === caller.uid) return NextResponse.json({ error: 'You cannot change your own role' }, { status: 400 });
   const body = await req.json();
   const { role } = body;
-  if (!['admin', 'staff'].includes(role)) return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+  if (!['org_owner', 'admin', 'staff'].includes(role)) return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+  // Only super_admin or org_owner may grant the org_owner role
+  if (role === 'org_owner' && caller.role !== 'super_admin' && caller.role !== 'org_owner') {
+    return NextResponse.json({ error: 'Only an Org Owner or Super Admin can grant the Org Owner role' }, { status: 403 });
+  }
 
   await updateUser(userId, { role, updatedBy: caller.uid });
   const existingClaims = (await adminAuth.getUser(userId)).customClaims ?? {};
@@ -35,7 +40,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { userId: st
 export async function DELETE(req: NextRequest, { params }: { params: { userId: string } }) {
   const caller = await verifySessionCookie();
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (caller.role !== 'admin' && caller.role !== 'super_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (caller.role !== 'admin' && caller.role !== 'super_admin' && caller.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { userId } = params;
   if (userId === caller.uid) return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });

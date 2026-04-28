@@ -12,6 +12,7 @@ import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { cn } from '@/lib/utils/cn';
+import { useAuthStore } from '@/store/auth.store';
 
 function CopySVG() {
   return (
@@ -31,9 +32,14 @@ interface InviteUserModalProps {
 
 export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
   const qc = useQueryClient();
+  const { user: currentUser } = useAuthStore();
+  const canInviteOwner = currentUser?.role === 'super_admin' || currentUser?.role === 'org_owner';
   const [loading, setLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [inviteQR, setInviteQR] = useState<string | null>(null);
   const [inviteChannel, setInviteChannel] = useState<string>('email');
+  const [inviteDelivered, setInviteDelivered] = useState(false);
+  const [inviteExpiresAt, setInviteExpiresAt] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const form = useForm<InviteUserFormData>({
@@ -73,9 +79,30 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
 
   function handleClose() {
     setInviteLink(null);
+    setInviteQR(null);
+    setInviteDelivered(false);
+    setInviteExpiresAt(null);
     setCopied(false);
     form.reset({ email: '', phone: '', channel: 'email', displayName: '', role: 'staff' });
     onOpenChange(false);
+  }
+
+  function handleInviteAnother() {
+    setInviteLink(null);
+    setInviteQR(null);
+    setInviteDelivered(false);
+    setInviteExpiresAt(null);
+    setCopied(false);
+    form.reset({ email: '', phone: '', channel: 'email', displayName: '', role: 'staff' });
+  }
+
+  function downloadQR(dataUrl: string) {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `makhzoon-invite-qr-${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
 
   async function copyLink(url: string) {
@@ -110,11 +137,13 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
         const label =
           result.channel === 'whatsapp' ? 'WhatsApp' : result.channel === 'sms' ? 'SMS' : 'email';
         toast.success(`Invite sent via ${label}.`);
-        handleClose();
-      } else {
-        setInviteLink(result.acceptUrl);
-        setInviteChannel(result.channel);
       }
+      // Always show the confirmation screen with QR + link, regardless of delivery success.
+      setInviteLink(result.acceptUrl);
+      setInviteQR(result.qrDataUrl ?? null);
+      setInviteChannel(result.channel);
+      setInviteDelivered(!!result.messageSent);
+      setInviteExpiresAt(result.expiresAt ?? null);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to invite user');
     } finally {
@@ -138,30 +167,60 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
 
         {inviteLink ? (
           <div className="space-y-4">
-            <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5" aria-hidden>
-                <path d="M8 2L1.5 13h13L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" />
-                <path d="M8 6.5v3M8 11v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              </svg>
-              <p>{fallbackLabel}. Share this invite link manually.</p>
-            </div>
+            {inviteDelivered ? (
+              <div className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-800">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5" aria-hidden>
+                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.3" fill="none" />
+                  <path d="M5 8.2l2 2 4-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <p>Invitation sent. You can also share the link or QR code below.</p>
+              </div>
+            ) : (
+              <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5" aria-hidden>
+                  <path d="M8 2L1.5 13h13L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" />
+                  <path d="M8 6.5v3M8 11v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                </svg>
+                <p>{fallbackLabel}. Share the link or QR code below manually.</p>
+              </div>
+            )}
+
+            {inviteQR && (
+              <div className="flex flex-col items-center gap-3 py-2">
+                <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={inviteQR} alt="Invitation QR code" width={200} height={200} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" onClick={() => downloadQR(inviteQR)}>
+                    Download QR
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => copyLink(inviteLink)} className="gap-1.5">
+                    <CopySVG />
+                    {copied ? 'Copied!' : 'Copy Link'}
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-400 text-center">Scan with a phone camera to open the invitation.</p>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Invite Link</label>
-              <div className="flex items-center gap-2">
-                <input
-                  readOnly
-                  value={inviteLink}
-                  className="flex-1 text-xs font-mono bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-700 truncate focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  onClick={(e) => (e.target as HTMLInputElement).select()}
-                />
-                <Button size="sm" variant="outline" onClick={() => copyLink(inviteLink)} className="flex-shrink-0 gap-1.5">
-                  <CopySVG />
-                  {copied ? 'Copied!' : 'Copy'}
-                </Button>
-              </div>
-              <p className="text-xs text-gray-400 mt-1.5">This link expires in 7 days.</p>
+              <input
+                readOnly
+                value={inviteLink}
+                className="w-full text-xs font-mono bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-700 truncate focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+              />
+              <p className="text-xs text-gray-400 mt-1.5">
+                {inviteExpiresAt
+                  ? `Expires ${new Date(inviteExpiresAt).toLocaleDateString()}.`
+                  : 'This link expires in 7 days.'}
+              </p>
             </div>
+
             <DialogFooter>
+              <Button variant="outline" onClick={handleInviteAnother}>Invite Another</Button>
               <Button onClick={handleClose}>Done</Button>
             </DialogFooter>
           </div>
@@ -248,6 +307,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
+                      {canInviteOwner && <SelectItem value="org_owner">Org Owner</SelectItem>}
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="staff">Staff</SelectItem>
                     </SelectContent>

@@ -122,16 +122,16 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/dashboard',    label: 'Dashboard',    Icon: DashboardSVG },
-  { href: '/assets',       label: 'Assets',        Icon: AssetsSVG },
-  { href: '/inventory',    label: 'Inventory',     Icon: InventorySVG },
+  { href: '/dashboard',    label: 'Dashboard',    Icon: DashboardSVG,                              featureKey: 'dashboard' },
+  { href: '/assets',       label: 'Assets',        Icon: AssetsSVG,                                featureKey: 'assets' },
+  { href: '/inventory',    label: 'Inventory',     Icon: InventorySVG,                             featureKey: 'inventory' },
   { href: '/warranties',   label: 'Warranties',    Icon: WarrantySVG,      featureKey: 'warranties' },
   { href: '/requests',     label: 'Requests',      Icon: RequestsSVG,      featureKey: 'requests' },
-  { href: '/reports',      label: 'Reports',       Icon: ReportsSVG,       adminOnly: true },
+  { href: '/reports',      label: 'Reports',       Icon: ReportsSVG,       adminOnly: true,        featureKey: 'reports' },
   { href: '/users',        label: 'Users',         Icon: UsersSVG,         adminOnly: true },
   { href: '/subscription', label: 'Subscription',  Icon: SubscriptionSVG,  adminOnly: true },
   { href: '/support',      label: 'Support',       Icon: SupportSVG,       featureKey: 'support' },
-  { href: '/audit-logs',   label: 'Audit Logs',    Icon: AuditSVG,         adminOnly: true },
+  { href: '/audit-logs',   label: 'Audit Logs',    Icon: AuditSVG,         adminOnly: true,        featureKey: 'auditLogs' },
 ];
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
@@ -146,7 +146,7 @@ export function AppSidebar() {
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
   const features  = useSubscriptionFeatures();
 
-  const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const visibleItems = navItems.filter((item) => {
     if (item.adminOnly && !canSeeAdmin) return false;

@@ -14,11 +14,12 @@ import { sendEmail } from '@/lib/email/resend';
 import { inviteEmail } from '@/lib/email/templates';
 import { sendInviteMessage } from '@/lib/sms/provider';
 import { writeAuditLog } from '@/lib/audit/logger';
+import { generateInviteQRDataUrl } from '@/lib/qr';
 
 export async function GET() {
   const user = await verifySessionCookie();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (user.role !== 'admin' && user.role !== 'super_admin')
+  if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
 
@@ -29,7 +30,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const user = await verifySessionCookie();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (user.role !== 'admin' && user.role !== 'super_admin')
+  if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
 
@@ -122,5 +123,10 @@ export async function POST(req: NextRequest) {
     newValue: { email: normalizedEmail, phone: normalizedPhone, channel: deliveryChannel, role, messageSent },
   });
 
-  return NextResponse.json({ id, acceptUrl, messageSent, channel: deliveryChannel }, { status: 201 });
+  const qrDataUrl = await generateInviteQRDataUrl(acceptUrl);
+
+  return NextResponse.json(
+    { id, acceptUrl, qrDataUrl, expiresAt, messageSent, channel: deliveryChannel },
+    { status: 201 },
+  );
 }

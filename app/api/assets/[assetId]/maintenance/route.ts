@@ -28,7 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: { assetId: st
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'admin' && user.role !== 'super_admin') {
+    if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 400 });

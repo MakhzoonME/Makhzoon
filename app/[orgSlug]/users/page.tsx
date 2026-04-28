@@ -58,7 +58,15 @@ type Row =
 const ROLE_STYLE: Record<string, string> = {
   admin:       'bg-indigo-50 text-indigo-700',
   super_admin: 'bg-violet-50 text-violet-700',
+  org_owner:   'bg-purple-50 text-purple-700',
   staff:       'bg-gray-100 text-gray-600',
+};
+
+const ROLE_LABEL: Record<string, string> = {
+  admin: 'Admin',
+  super_admin: 'Super Admin',
+  org_owner: 'Org Owner',
+  staff: 'Staff',
 };
 
 const STATUS_STYLE: Record<string, string> = {
@@ -71,8 +79,8 @@ const STATUS_STYLE: Record<string, string> = {
 
 function RoleBadge({ role }: { role: string }) {
   return (
-    <span className={cn('inline-block px-2 py-0.5 rounded-full text-xs font-semibold capitalize', ROLE_STYLE[role] ?? 'bg-gray-100 text-gray-600')}>
-      {role.replace('_', ' ')}
+    <span className={cn('inline-block px-2 py-0.5 rounded-full text-xs font-semibold', ROLE_STYLE[role] ?? 'bg-gray-100 text-gray-600')}>
+      {ROLE_LABEL[role] ?? role.replace('_', ' ')}
     </span>
   );
 }
@@ -99,7 +107,7 @@ export default function UsersPage() {
   const qc = useQueryClient();
 
   const isLoading = usersLoading || invitesLoading;
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'org_owner';
 
   const pendingInvites = invites.filter(
     (i) => i.status === 'pending' && new Date(i.expiresAt).getTime() > Date.now()
@@ -319,6 +327,9 @@ export default function UsersPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  {(currentUser?.role === 'super_admin' || currentUser?.role === 'org_owner') && (
+                    <SelectItem value="org_owner">Org Owner</SelectItem>
+                  )}
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="staff">Staff</SelectItem>
                 </SelectContent>

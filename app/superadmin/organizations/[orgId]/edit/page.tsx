@@ -81,6 +81,15 @@ export default function EditOrganizationPage({ params }: { params: { orgId: stri
           { label: 'Organizations', href: '/superadmin' },
           { label: 'Edit', href: '' },
         ]}
+        actions={
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => router.push(`/superadmin/organizations/${orgId}/configuration`)}
+          >
+            Configuration
+          </Button>
+        }
       />
 
       <Card className="max-w-2xl">

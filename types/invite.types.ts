@@ -1,5 +1,5 @@
 export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired';
-export type InviteRole = 'admin' | 'staff';
+export type InviteRole = 'org_owner' | 'admin' | 'staff';
 export type InviteChannel = 'email' | 'sms' | 'whatsapp';
 
 export interface Invite {

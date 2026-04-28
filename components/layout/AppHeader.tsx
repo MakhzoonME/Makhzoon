@@ -53,11 +53,13 @@ function LogOutSVG() {
   );
 }
 
-const roleConfig = {
-  super_admin: { variant: 'blue' as const, label: 'Super Admin' },
-  org_owner:   { variant: 'blue' as const, label: 'Org Owner' },
-  admin:       { variant: 'blue' as const, label: 'Admin' },
-  staff:       { variant: 'default' as const, label: 'Staff' },
+const roleConfig: Record<string, { variant: 'blue' | 'default'; label: string }> = {
+  super_admin:       { variant: 'blue', label: 'Super Admin' },
+  makhzoon_admin:    { variant: 'blue', label: 'Makhzoon Admin' },
+  makhzoon_support:  { variant: 'blue', label: 'Makhzoon Support' },
+  org_owner:         { variant: 'blue', label: 'Owner' },
+  admin:             { variant: 'blue', label: 'Admin' },
+  staff:             { variant: 'default', label: 'Staff' },
 };
 
 export function AppHeader({ orgName }: { orgName?: string }) {

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { withLogging } from '@/lib/logging/with-logging';
 import {
   getInvites,
   getPendingInviteForEmail,
-  getPendingInviteForPhone,
+  getPendingInviteForUsername,
   createInvite,
   generateInviteToken,
 } from '@/lib/firestore/invites';
@@ -12,11 +13,10 @@ import { createInviteSchema } from '@/lib/validations/invite.schema';
 import { adminAuth } from '@/lib/firebase/admin';
 import { sendEmail } from '@/lib/email/resend';
 import { inviteEmail } from '@/lib/email/templates';
-import { sendInviteMessage } from '@/lib/sms/provider';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { generateInviteQRDataUrl } from '@/lib/qr';
 
-export async function GET() {
+async function _GET(_req: NextRequest) {
   const user = await verifySessionCookie();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner')
@@ -27,7 +27,7 @@ export async function GET() {
   return NextResponse.json(invites);
 }
 
-export async function POST(req: NextRequest) {
+async function _POST(req: NextRequest) {
   const user = await verifySessionCookie();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner')
@@ -38,11 +38,9 @@ export async function POST(req: NextRequest) {
   const parsed = createInviteSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
-  const { email, phone, channel, displayName, role } = parsed.data;
+  const { email, username, displayName, role, permissions } = parsed.data as typeof parsed.data & { permissions?: unknown };
   const normalizedEmail = email || undefined;
-  const normalizedPhone = phone || undefined;
-
-  const deliveryChannel = normalizedEmail && !normalizedPhone ? 'email' : (channel ?? 'sms');
+  const normalizedUsername = username ? username.toLowerCase() : undefined;
 
   if (normalizedEmail) {
     const existing = await adminAuth.getUserByEmail(normalizedEmail).catch(() => null);
@@ -50,13 +48,12 @@ export async function POST(req: NextRequest) {
     const pending = await getPendingInviteForEmail(user.organizationId, normalizedEmail);
     if (pending) return NextResponse.json({ error: 'An invite is already pending for this email' }, { status: 409 });
   }
-  if (normalizedPhone) {
-    const existing = await adminAuth.getUserByPhoneNumber(normalizedPhone).catch(() => null);
-    if (existing)
-      return NextResponse.json({ error: 'A user with this phone number already exists' }, { status: 409 });
-    const pending = await getPendingInviteForPhone(user.organizationId, normalizedPhone);
-    if (pending)
-      return NextResponse.json({ error: 'An invite is already pending for this phone number' }, { status: 409 });
+  if (normalizedUsername) {
+    const syntheticEmail = `${normalizedUsername}@makhzoon.local`;
+    const existing = await adminAuth.getUserByEmail(syntheticEmail).catch(() => null);
+    if (existing) return NextResponse.json({ error: 'This username is already taken' }, { status: 409 });
+    const pending = await getPendingInviteForUsername(user.organizationId, normalizedUsername);
+    if (pending) return NextResponse.json({ error: 'An invite is already pending for this username' }, { status: 409 });
   }
 
   const token = generateInviteToken();
@@ -65,8 +62,7 @@ export async function POST(req: NextRequest) {
   const id = await createInvite({
     organizationId: user.organizationId,
     email: normalizedEmail,
-    phone: normalizedPhone,
-    channel: deliveryChannel as 'email' | 'sms' | 'whatsapp',
+    username: normalizedUsername,
     displayName,
     role,
     token,
@@ -74,6 +70,7 @@ export async function POST(req: NextRequest) {
     invitedByEmail: user.email,
     invitedByName: user.displayName,
     expiresAt,
+    permissions: (role === 'staff' ? permissions ?? null : null) as import('@/types').UserPermissions | null,
   });
 
   const org = await getOrganizationById(user.organizationId);
@@ -81,7 +78,7 @@ export async function POST(req: NextRequest) {
   const acceptUrl = `${baseUrl}/invites/${token}`;
   let messageSent = false;
 
-  if (deliveryChannel === 'email' && normalizedEmail) {
+  if (normalizedEmail) {
     const { html, text } = inviteEmail({
       orgName: org?.name ?? 'your organization',
       inviterName: user.displayName || user.email,
@@ -99,18 +96,6 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       if (process.env.NODE_ENV !== 'production') console.warn('[invite] Email send failed:', err);
     }
-  } else if ((deliveryChannel === 'sms' || deliveryChannel === 'whatsapp') && normalizedPhone) {
-    try {
-      messageSent = await sendInviteMessage(
-        deliveryChannel,
-        normalizedPhone,
-        org?.name ?? 'your organization',
-        user.displayName || user.email,
-        acceptUrl
-      );
-    } catch (err) {
-      if (process.env.NODE_ENV !== 'production') console.warn('[invite] SMS/WhatsApp send failed:', err);
-    }
   }
 
   await writeAuditLog({
@@ -120,13 +105,16 @@ export async function POST(req: NextRequest) {
     action: 'INVITE_SENT',
     module: 'users',
     recordId: id,
-    newValue: { email: normalizedEmail, phone: normalizedPhone, channel: deliveryChannel, role, messageSent },
+    newValue: { email: normalizedEmail, username: normalizedUsername, role, messageSent },
   });
 
   const qrDataUrl = await generateInviteQRDataUrl(acceptUrl);
 
   return NextResponse.json(
-    { id, acceptUrl, qrDataUrl, expiresAt, messageSent, channel: deliveryChannel },
+    { id, acceptUrl, qrDataUrl, expiresAt, messageSent, username: normalizedUsername },
     { status: 201 },
   );
 }
+
+export const GET  = withLogging(_GET);
+export const POST = withLogging(_POST);

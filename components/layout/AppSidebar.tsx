@@ -5,9 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
-import { useSubscriptionFeatures } from '@/hooks/useSubscriptionFeatures';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ORG_NAV_ITEMS } from '@/lib/utils/nav-config';
+import { hasModuleAccess } from '@/lib/utils/permissions';
+import { UserPermissions } from '@/types';
 
 /* ── Inline SVG nav icons ─────────────────────────────────────── */
 function DashboardSVG() {
@@ -137,13 +138,17 @@ export function AppSidebar() {
   const orgSlug   = (params?.orgSlug as string) ?? '';
   const { user }  = useAuthStore();
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
-  const features  = useSubscriptionFeatures();
 
+  const features  = user?.features ?? {};
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const visibleItems = ORG_NAV_ITEMS.filter((item) => {
     if (item.adminOnly && !canSeeAdmin) return false;
     if (item.featureKey && features[item.featureKey] === false) return false;
+    if (user?.role === 'staff' && item.featureKey) {
+      const module = item.featureKey as keyof UserPermissions;
+      if (!hasModuleAccess({ ...user, organizationId: user.organizationId ?? null }, module)) return false;
+    }
     return true;
   });
 

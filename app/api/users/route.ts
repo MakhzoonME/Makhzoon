@@ -4,8 +4,9 @@ import { getUsers, createUser } from '@/lib/firestore/users';
 import { adminAuth } from '@/lib/firebase/admin';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { inviteUserSchema } from '@/lib/validations/user.schema';
+import { withLogging } from '@/lib/logging/with-logging';
 
-export async function GET(_req: NextRequest) {
+async function _GET(_req: NextRequest) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -24,7 +25,7 @@ export async function GET(_req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+async function _POST(req: NextRequest) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -77,3 +78,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET  = withLogging(_GET);
+export const POST = withLogging(_POST);

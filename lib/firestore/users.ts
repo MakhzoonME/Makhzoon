@@ -1,5 +1,5 @@
 import { adminDb } from '@/lib/firebase/admin';
-import { OrgUser } from '@/types';
+import { OrgUser, UserPermissions } from '@/types';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
 function toUser(id: string, data: FirebaseFirestore.DocumentData): OrgUser {
@@ -7,9 +7,11 @@ function toUser(id: string, data: FirebaseFirestore.DocumentData): OrgUser {
     id,
     organizationId: data.organizationId,
     email: data.email,
+    username: data.username,
     displayName: data.displayName,
     role: data.role,
     status: data.status ?? 'active',
+    permissions: (data.permissions ?? null) as UserPermissions | null,
     createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
     createdBy: data.createdBy,
     updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),

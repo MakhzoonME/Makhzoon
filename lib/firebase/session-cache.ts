@@ -1,15 +1,24 @@
-// Cache decoded session tokens for 60s to avoid repeated Firebase Auth calls.
-// Safe because session cookies are rotated on sign-out, and 60s staleness is acceptable.
+// Short-lived server-side cache to prevent hammering Firebase Auth on every request.
+// TTL is intentionally short so role/permission changes take effect quickly.
 
 import type { DecodedIdToken } from 'firebase-admin/auth';
+import type { UserPermissions } from '@/types/user-permissions.types';
 
 interface CacheEntry {
   decoded: DecodedIdToken;
   expiresAt: number;
 }
 
-const TTL = 60_000; // 60 seconds
+interface PermissionsCacheEntry {
+  permissions: UserPermissions | null;
+  expiresAt: number;
+}
+
+const SESSION_TTL = 5_000;     // 5 seconds — keeps Firebase load low without hiding stale state
+const PERMISSIONS_TTL = 10_000; // 10 seconds
+
 const cache = new Map<string, CacheEntry>();
+const permissionsCache = new Map<string, PermissionsCacheEntry>();
 
 export function getCachedSession(token: string): DecodedIdToken | null {
   const entry = cache.get(token);
@@ -22,16 +31,33 @@ export function getCachedSession(token: string): DecodedIdToken | null {
 }
 
 export function setCachedSession(token: string, decoded: DecodedIdToken): void {
-  // Evict stale entries periodically to avoid memory leaks
   if (cache.size > 5000) {
     const now = Date.now();
     Array.from(cache.entries()).forEach(([k, v]) => {
       if (now > v.expiresAt) cache.delete(k);
     });
   }
-  cache.set(token, { decoded, expiresAt: Date.now() + TTL });
+  cache.set(token, { decoded, expiresAt: Date.now() + SESSION_TTL });
 }
 
 export function invalidateCachedSession(token: string): void {
   cache.delete(token);
+}
+
+export function getCachedPermissions(uid: string): UserPermissions | null | undefined {
+  const entry = permissionsCache.get(uid);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) {
+    permissionsCache.delete(uid);
+    return undefined;
+  }
+  return entry.permissions;
+}
+
+export function setCachedPermissions(uid: string, permissions: UserPermissions | null): void {
+  permissionsCache.set(uid, { permissions, expiresAt: Date.now() + PERMISSIONS_TTL });
+}
+
+export function invalidateCachedPermissions(uid: string): void {
+  permissionsCache.delete(uid);
 }

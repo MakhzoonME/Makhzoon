@@ -1,8 +1,8 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
-import { signInWithEmailAndPassword, signInWithPhoneNumber, RecaptchaVerifier, ConfirmationResult } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -52,18 +52,11 @@ function MailSVG() {
     </svg>
   );
 }
-function PhoneSVG() {
+function UserSVG() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-      <path d="M4 1.5h2.5l1 2.5-1.5 1a8 8 0 0 0 3 3l1-1.5 2.5 1V10a1 1 0 0 1-1 1C4.716 11 1 7.284 1 2.5a1 1 0 0 1 1-1h2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" />
-    </svg>
-  );
-}
-function CheckCircleSVG() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
-      <circle cx="10" cy="10" r="10" fill="white" fillOpacity="0.18" />
-      <path d="M6 10l3 3 5-5.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="7" cy="5" r="3" stroke="currentColor" strokeWidth="1.3" fill="none" />
+      <path d="M1.5 13c0-3.038 2.462-5 5.5-5s5.5 1.962 5.5 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" fill="none" />
     </svg>
   );
 }
@@ -71,42 +64,27 @@ function CheckCircleSVG() {
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 const EASE_SPRING = [0.34, 1.56, 0.64, 1] as const;
 
-type PendingInvite = {
-  inviteToken: string;
-  orgName: string;
-  role: string;
-  displayName: string;
-  invitedByName: string;
-};
+const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
 export default function LoginPage() {
   const router = useRouter();
   const shakeControls = useAnimation();
 
-  const [tab, setTab] = useState<'email' | 'phone'>('email');
+  const [tab, setTab] = useState<'email' | 'username'>('email');
 
   // Email/password
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [emailPassword, setEmailPassword] = useState('');
+  const [showEmailPassword, setShowEmailPassword] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
 
-  // Phone OTP
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [phoneStep, setPhoneStep] = useState<'enter' | 'verify'>('enter');
-  const [sendingOtp, setSendingOtp] = useState(false);
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
-  const [phoneError, setPhoneError] = useState('');
-  const confirmationRef = useRef<ConfirmationResult | null>(null);
-  const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
-  const idTokenRef = useRef<string | null>(null);
-
-  // Pending invite (lazy acceptance)
-  const [pendingInvite, setPendingInvite] = useState<PendingInvite | null>(null);
-  const [acceptingInvite, setAcceptingInvite] = useState(false);
-  const [acceptError, setAcceptError] = useState('');
+  // Username/password
+  const [username, setUsername] = useState('');
+  const [usernamePassword, setUsernamePassword] = useState('');
+  const [showUsernamePassword, setShowUsernamePassword] = useState(false);
+  const [usernameLoading, setUsernameLoading] = useState(false);
+  const [usernameError, setUsernameError] = useState('');
 
   function shake() {
     shakeControls.start({ x: [0, -6, 6, -4, 4, 0], transition: { duration: 0.4, ease: 'easeInOut' } });
@@ -121,17 +99,11 @@ export default function LoginPage() {
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || 'Session creation failed');
 
-    // Server detected this is a first-time phone user with a pending invite
-    if (body.needsInviteAccept) {
-      setPendingInvite(body as PendingInvite);
-      return;
-    }
-
-    const { role, orgSlug, features = {} } = body;
-    if (role === 'super_admin') {
+    const { role, orgSlug, features = {}, permissions = null } = body;
+    if (SUPERADMIN_ROLES.has(role)) {
       router.push(buildSuperAdminPath('/dashboard'));
     } else if (orgSlug) {
-      const firstPath = getFirstAccessiblePath({ role, features });
+      const firstPath = getFirstAccessiblePath({ role, features, permissions });
       router.push(buildOrgPath(orgSlug, firstPath));
     } else {
       router.push('/');
@@ -144,7 +116,7 @@ export default function LoginPage() {
     setEmailError('');
     setEmailLoading(true);
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email, emailPassword);
       const token = await cred.user.getIdToken();
       await redirectFromSession(token);
     } catch (err: unknown) {
@@ -156,75 +128,27 @@ export default function LoginPage() {
     }
   }
 
-  /* ── Phone: send OTP ─────────────────────────────────────────── */
-  async function handleSendOtp(e: React.FormEvent) {
+  /* ── Username/password submit ────────────────────────────────── */
+  async function handleUsernameSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setPhoneError('');
-    if (!phone.startsWith('+')) {
-      setPhoneError('Include your country code, e.g. +966501234567');
+    setUsernameError('');
+    if (!username.trim()) {
+      setUsernameError('Username is required');
       shake();
       return;
     }
-    setSendingOtp(true);
+    setUsernameLoading(true);
     try {
-      if (!recaptchaRef.current) {
-        recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha-login', { size: 'invisible' });
-        await recaptchaRef.current.render();
-      }
-      confirmationRef.current = await signInWithPhoneNumber(auth, phone, recaptchaRef.current);
-      setPhoneStep('verify');
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to send code';
-      setPhoneError(/auth\/invalid-phone-number/.test(msg) ? 'Invalid phone number format.' : msg);
-      shake();
-      recaptchaRef.current = null;
-    } finally {
-      setSendingOtp(false);
-    }
-  }
-
-  /* ── Phone: verify OTP ───────────────────────────────────────── */
-  async function handleVerifyOtp(e: React.FormEvent) {
-    e.preventDefault();
-    if (!confirmationRef.current) return;
-    setPhoneError('');
-    setVerifyingOtp(true);
-    try {
-      const cred = await confirmationRef.current.confirm(otp);
-      const token = await cred.user.getIdToken(true);
-      idTokenRef.current = token;
+      const syntheticEmail = `${username.trim().toLowerCase()}@makhzoon.local`;
+      const cred = await signInWithEmailAndPassword(auth, syntheticEmail, usernamePassword);
+      const token = await cred.user.getIdToken();
       await redirectFromSession(token);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Verification failed';
-      setPhoneError(/invalid-verification-code/.test(msg) ? 'Incorrect code. Try again.' : msg);
+      const msg = err instanceof Error ? err.message : 'Invalid username or password';
+      const isFirebaseAuth = msg.startsWith('Firebase') || /auth\//.test(msg);
+      setUsernameError(isFirebaseAuth ? 'Invalid username or password' : msg);
       shake();
-    } finally {
-      setVerifyingOtp(false);
-    }
-  }
-
-  /* ── Accept pending invite (lazy flow) ──────────────────────── */
-  async function handleAcceptInvite() {
-    if (!pendingInvite || !idTokenRef.current) return;
-    setAcceptingInvite(true);
-    setAcceptError('');
-    try {
-      const res = await fetch(`/api/invites/${pendingInvite.inviteToken}/accept`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method: 'phone', idToken: idTokenRef.current }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Failed to accept invitation');
-
-      // Re-fetch token with fresh custom claims then create session
-      const { currentUser } = auth;
-      if (!currentUser) throw new Error('Authentication lost. Please sign in again.');
-      const freshToken = await currentUser.getIdToken(true);
-      await redirectFromSession(freshToken);
-    } catch (err: unknown) {
-      setAcceptError(err instanceof Error ? err.message : 'Failed to accept invitation');
-      setAcceptingInvite(false);
+      setUsernameLoading(false);
     }
   }
 
@@ -237,93 +161,8 @@ export default function LoginPage() {
     show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE_OUT } },
   };
 
-  /* ── Pending invite screen ───────────────────────────────────── */
-  if (pendingInvite) {
-    return (
-      <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden bg-gray-50">
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 opacity-70"
-          style={{
-            background:
-              'radial-gradient(1200px 600px at 10% -10%, rgba(99,102,241,0.18), transparent 60%), radial-gradient(900px 500px at 110% 10%, rgba(129,140,248,0.22), transparent 55%)',
-          }}
-        />
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: EASE_OUT }}
-          className="w-full max-w-md"
-        >
-          {/* Header card */}
-          <div
-            className="rounded-2xl p-7 mb-4 text-white text-center"
-            style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)' }}
-          >
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl mb-4" style={{ background: 'rgba(255,255,255,0.15)' }}>
-              <CheckCircleSVG />
-            </div>
-            <h1 className="text-xl font-bold mb-1">You&apos;re invited!</h1>
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.78)' }}>
-              {pendingInvite.invitedByName} invited you to join{' '}
-              <strong>{pendingInvite.orgName}</strong>.
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
-            <div className="text-sm text-gray-700 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-xs">Name</span>
-                <span className="font-medium">{pendingInvite.displayName}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-xs">Role</span>
-                <span className="capitalize font-medium">{pendingInvite.role}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-xs">Workspace</span>
-                <span className="font-medium">{pendingInvite.orgName}</span>
-              </div>
-            </div>
-
-            {acceptError && (
-              <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2">
-                <AlertCircleSVG /><span>{acceptError}</span>
-              </div>
-            )}
-
-            <Button className="w-full h-11" onClick={handleAcceptInvite} disabled={acceptingInvite}>
-              {acceptingInvite ? (
-                <span className="inline-flex items-center gap-2"><Loader2SVG />Joining workspace…</span>
-              ) : (
-                `Accept & Join ${pendingInvite.orgName}`
-              )}
-            </Button>
-            <button
-              type="button"
-              className="w-full text-sm text-gray-500 hover:text-gray-700"
-              onClick={() => { setPendingInvite(null); setPhoneStep('enter'); setOtp(''); }}
-            >
-              Not you? Go back
-            </button>
-          </div>
-
-          <div className="mt-4 text-center">
-            <div className="inline-flex items-center gap-2">
-              <MakhzoonMark size={20} />
-              <span className="text-xs text-gray-500">Makhzoon · Secure invitation</span>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden bg-gray-50">
-      {/* Invisible reCAPTCHA anchor */}
-      <div id="recaptcha-login" />
-
       <div
         aria-hidden
         className="absolute inset-0 -z-10 opacity-70"
@@ -360,7 +199,7 @@ export default function LoginPage() {
             <div className="flex rounded-lg border border-gray-200 p-1 gap-1 bg-gray-50 mb-6">
               <button
                 type="button"
-                onClick={() => { setTab('email'); setEmailError(''); setPhoneError(''); }}
+                onClick={() => { setTab('email'); setEmailError(''); setUsernameError(''); }}
                 className={cn(
                   'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-sm font-medium transition-colors',
                   tab === 'email' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
@@ -370,13 +209,13 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setTab('phone'); setEmailError(''); setPhoneError(''); }}
+                onClick={() => { setTab('username'); setEmailError(''); setUsernameError(''); }}
                 className={cn(
                   'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-sm font-medium transition-colors',
-                  tab === 'phone' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  tab === 'username' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                 )}
               >
-                <PhoneSVG /> Phone
+                <UserSVG /> Username
               </button>
             </div>
 
@@ -405,25 +244,25 @@ export default function LoginPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="email-password">Password</Label>
                     <div className="relative">
                       <Input
-                        id="password"
-                        type={showPassword ? 'text' : 'password'}
+                        id="email-password"
+                        type={showEmailPassword ? 'text' : 'password'}
                         autoComplete="current-password"
                         placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        value={emailPassword}
+                        onChange={(e) => setEmailPassword(e.target.value)}
                         required
                         className="pr-10"
                       />
                       <button
                         type="button"
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                        onClick={() => setShowPassword(!showPassword)}
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        onClick={() => setShowEmailPassword(!showEmailPassword)}
+                        aria-label={showEmailPassword ? 'Hide password' : 'Show password'}
                       >
-                        {showPassword ? <EyeOffSVG /> : <EyeSVG />}
+                        {showEmailPassword ? <EyeOffSVG /> : <EyeSVG />}
                       </button>
                     </div>
                   </div>
@@ -457,117 +296,82 @@ export default function LoginPage() {
                 </motion.form>
               )}
 
-              {/* ── Phone tab ─────────────────────────────────── */}
-              {tab === 'phone' && (
-                <motion.div
-                  key="phone"
+              {/* ── Username tab ──────────────────────────────── */}
+              {tab === 'username' && (
+                <motion.form
+                  key="username"
+                  onSubmit={handleUsernameSubmit}
                   className="space-y-4"
                   initial={{ opacity: 0, x: 12 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -12 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <AnimatePresence mode="wait" initial={false}>
-                    {phoneStep === 'enter' ? (
-                      <motion.form
-                        key="phone-enter"
-                        onSubmit={handleSendOtp}
-                        className="space-y-4"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15 }}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      type="text"
+                      autoComplete="username"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      placeholder="your_username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="username-password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="username-password"
+                        type={showUsernamePassword ? 'text' : 'password'}
+                        autoComplete="current-password"
+                        placeholder="••••••••"
+                        value={usernamePassword}
+                        onChange={(e) => setUsernamePassword(e.target.value)}
+                        required
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                        onClick={() => setShowUsernamePassword(!showUsernamePassword)}
+                        aria-label={showUsernamePassword ? 'Hide password' : 'Show password'}
                       >
-                        <div className="space-y-1.5">
-                          <Label htmlFor="phone">Phone number</Label>
-                          <Input
-                            id="phone"
-                            type="tel"
-                            autoComplete="tel"
-                            placeholder="+966501234567"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            required
-                          />
-                          <p className="text-xs text-gray-400">Include country code (e.g. +966 for Saudi Arabia)</p>
-                        </div>
-                        <AnimatePresence initial={false}>
-                          {phoneError && (
-                            <motion.div
-                              key="phone-err"
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.2 }}
-                              className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2"
-                            >
-                              <AlertCircleSVG /><span>{phoneError}</span>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                        <Button type="submit" className="w-full" disabled={sendingOtp}>
-                          {sendingOtp ? (
-                            <span className="inline-flex items-center gap-2"><Loader2SVG />Sending code…</span>
-                          ) : 'Send verification code'}
-                        </Button>
-                      </motion.form>
-                    ) : (
-                      <motion.form
-                        key="phone-verify"
-                        onSubmit={handleVerifyOtp}
-                        className="space-y-4"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15 }}
+                        {showUsernamePassword ? <EyeOffSVG /> : <EyeSVG />}
+                      </button>
+                    </div>
+                  </div>
+                  <AnimatePresence initial={false}>
+                    {usernameError && (
+                      <motion.div
+                        key="username-err"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2"
                       >
-                        <p className="text-sm text-gray-600">
-                          Enter the 6-digit code sent to <strong>{phone}</strong>.
-                        </p>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="otp">Verification code</Label>
-                          <Input
-                            id="otp"
-                            type="text"
-                            inputMode="numeric"
-                            autoComplete="one-time-code"
-                            placeholder="123456"
-                            maxLength={6}
-                            value={otp}
-                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                            required
-                          />
-                        </div>
-                        <AnimatePresence initial={false}>
-                          {phoneError && (
-                            <motion.div
-                              key="otp-err"
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.2 }}
-                              className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2"
-                            >
-                              <AlertCircleSVG /><span>{phoneError}</span>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                        <Button type="submit" className="w-full" disabled={verifyingOtp || otp.length < 6}>
-                          {verifyingOtp ? (
-                            <span className="inline-flex items-center gap-2"><Loader2SVG />Verifying…</span>
-                          ) : 'Sign in'}
-                        </Button>
-                        <button
-                          type="button"
-                          className="w-full text-sm text-gray-500 hover:text-indigo-600 transition-colors"
-                          onClick={() => { setPhoneStep('enter'); setOtp(''); setPhoneError(''); confirmationRef.current = null; recaptchaRef.current = null; }}
-                        >
-                          Didn&apos;t receive a code? Try again
-                        </button>
-                      </motion.form>
+                        <AlertCircleSVG /><span>{usernameError}</span>
+                      </motion.div>
                     )}
                   </AnimatePresence>
-                </motion.div>
+                  <Button type="submit" className="w-full" disabled={usernameLoading}>
+                    <AnimatePresence mode="wait" initial={false}>
+                      {usernameLoading ? (
+                        <motion.span key="l" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="inline-flex items-center gap-2">
+                          <Loader2SVG />Signing in…
+                        </motion.span>
+                      ) : (
+                        <motion.span key="i" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                          Sign In
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </Button>
+                </motion.form>
               )}
             </AnimatePresence>
           </motion.div>

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { inviteUserSchema, InviteUserFormData } from '@/lib/validations/user.schema';
@@ -10,9 +10,11 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
+import { useSubscriptionFeatures } from '@/hooks/useSubscriptionFeatures';
+import { PermissionsEditor, DEFAULT_STAFF_PERMISSIONS } from './PermissionsEditor';
+import { UserPermissions } from '@/types';
 
 function CopySVG() {
   return (
@@ -23,8 +25,6 @@ function CopySVG() {
   );
 }
 
-type Channel = 'email' | 'sms' | 'whatsapp';
-
 interface InviteUserModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -33,57 +33,35 @@ interface InviteUserModalProps {
 export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
   const qc = useQueryClient();
   const { user: currentUser } = useAuthStore();
+  const features = useSubscriptionFeatures();
   const canInviteOwner = currentUser?.role === 'super_admin' || currentUser?.role === 'org_owner';
   const [loading, setLoading] = useState(false);
+  const [permissions, setPermissions] = useState<UserPermissions>(DEFAULT_STAFF_PERMISSIONS);
+  const [showPermissions, setShowPermissions] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [inviteQR, setInviteQR] = useState<string | null>(null);
-  const [inviteChannel, setInviteChannel] = useState<string>('email');
   const [inviteDelivered, setInviteDelivered] = useState(false);
   const [inviteExpiresAt, setInviteExpiresAt] = useState<string | null>(null);
+  const [inviteUsername, setInviteUsername] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [inviteMode, setInviteMode] = useState<'email' | 'username'>('email');
 
   const form = useForm<InviteUserFormData>({
     resolver: zodResolver(inviteUserSchema),
-    defaultValues: { email: '', phone: '', channel: 'email', displayName: '', role: 'staff' },
+    defaultValues: { email: '', username: '', displayName: '', role: 'staff' },
   });
-
-  const email = form.watch('email') ?? '';
-  const phone = form.watch('phone') ?? '';
-  const channel = form.watch('channel');
-
-  const hasEmail = email.trim().length > 0;
-  const hasPhone = phone.trim().length > 0;
-
-  // Auto-select channel based on filled fields
-  useEffect(() => {
-    if (hasEmail && !hasPhone) {
-      form.setValue('channel', 'email', { shouldValidate: false });
-    } else if (!hasEmail && hasPhone) {
-      // Auto-select whatsapp when phone is entered and email is empty
-      if (channel === 'email') {
-        form.setValue('channel', 'whatsapp', { shouldValidate: false });
-      }
-    } else if (hasEmail && hasPhone) {
-      // Both filled: if currently on a phone-only channel and email just got filled, switch to email
-      if (channel === 'sms' || channel === 'whatsapp') {
-        form.setValue('channel', 'email', { shouldValidate: false });
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasEmail, hasPhone]);
-
-  // Per-channel disabled state
-  const emailDisabled = !hasEmail;
-  const smsDisabled = !hasPhone;
-  const whatsappDisabled = !hasPhone;
 
   function handleClose() {
     setInviteLink(null);
     setInviteQR(null);
     setInviteDelivered(false);
     setInviteExpiresAt(null);
+    setInviteUsername(null);
     setCopied(false);
-    form.reset({ email: '', phone: '', channel: 'email', displayName: '', role: 'staff' });
+    setPermissions(DEFAULT_STAFF_PERMISSIONS);
+    setShowPermissions(false);
+    setInviteMode('email');
+    form.reset({ email: '', username: '', displayName: '', role: 'staff' });
     onOpenChange(false);
   }
 
@@ -92,8 +70,9 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
     setInviteQR(null);
     setInviteDelivered(false);
     setInviteExpiresAt(null);
+    setInviteUsername(null);
     setCopied(false);
-    form.reset({ email: '', phone: '', channel: 'email', displayName: '', role: 'staff' });
+    form.reset({ email: '', username: '', displayName: '', role: 'staff' });
   }
 
   function downloadQR(dataUrl: string) {
@@ -111,15 +90,24 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  function switchMode(mode: 'email' | 'username') {
+    setInviteMode(mode);
+    if (mode === 'email') {
+      form.setValue('username', '');
+    } else {
+      form.setValue('email', '');
+    }
+  }
+
   async function onSubmit(data: InviteUserFormData) {
     setLoading(true);
     try {
       const payload = {
-        email: data.email?.trim() || undefined,
-        phone: data.phone?.trim() || undefined,
-        channel: data.channel,
+        email: inviteMode === 'email' ? data.email?.trim() || undefined : undefined,
+        username: inviteMode === 'username' ? data.username?.trim() || undefined : undefined,
         displayName: data.displayName,
         role: data.role,
+        permissions: data.role === 'staff' ? permissions : null,
       };
       const res = await fetch('/api/invites', {
         method: 'POST',
@@ -134,16 +122,13 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
       qc.invalidateQueries({ queryKey: ['users'] });
       qc.invalidateQueries({ queryKey: ['invites'] });
       if (result.messageSent) {
-        const label =
-          result.channel === 'whatsapp' ? 'WhatsApp' : result.channel === 'sms' ? 'SMS' : 'email';
-        toast.success(`Invite sent via ${label}.`);
+        toast.success('Invite sent via email.');
       }
-      // Always show the confirmation screen with QR + link, regardless of delivery success.
       setInviteLink(result.acceptUrl);
       setInviteQR(result.qrDataUrl ?? null);
-      setInviteChannel(result.channel);
       setInviteDelivered(!!result.messageSent);
       setInviteExpiresAt(result.expiresAt ?? null);
+      setInviteUsername(result.username ?? null);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to invite user');
     } finally {
@@ -151,12 +136,9 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
     }
   }
 
-  const fallbackLabel =
-    inviteChannel === 'whatsapp'
-      ? 'WhatsApp delivery failed'
-      : inviteChannel === 'sms'
-      ? 'SMS delivery failed'
-      : 'Email delivery is not configured';
+  const emailValue = form.watch('email') ?? '';
+  const usernameValue = form.watch('username') ?? '';
+  const canSubmit = inviteMode === 'email' ? emailValue.trim().length > 0 : usernameValue.trim().length > 0;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
@@ -173,15 +155,24 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                   <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.3" fill="none" />
                   <path d="M5 8.2l2 2 4-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <p>Invitation sent. You can also share the link or QR code below.</p>
+                <p>Invitation sent via email. You can also share the link or QR code below.</p>
               </div>
             ) : (
-              <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+              <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5" aria-hidden>
-                  <path d="M8 2L1.5 13h13L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" />
-                  <path d="M8 6.5v3M8 11v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.3" fill="none" />
+                  <path d="M8 5v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
-                <p>{fallbackLabel}. Share the link or QR code below manually.</p>
+                <div>
+                  {inviteUsername ? (
+                    <p>
+                      Username invite created. Share the link or QR code with{' '}
+                      <strong>{inviteUsername}</strong> so they can set their password.
+                    </p>
+                  ) : (
+                    <p>Email delivery is not configured. Share the link or QR code below manually.</p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -228,68 +219,62 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
-              {/* Email */}
-              <FormField control={form.control} name="email" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Email address
-                    <span className="ml-1 text-gray-400 font-normal text-xs">(required if no phone)</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input type="email" {...field} placeholder="member@company.com" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              {/* Invite mode toggle */}
+              <div className="flex rounded-lg border border-gray-200 p-1 gap-1 bg-gray-50">
+                <button
+                  type="button"
+                  onClick={() => switchMode('email')}
+                  className={cn(
+                    'flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors',
+                    inviteMode === 'email'
+                      ? 'bg-white text-indigo-700 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700 cursor-pointer'
+                  )}
+                >
+                  Email invite
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchMode('username')}
+                  className={cn(
+                    'flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors',
+                    inviteMode === 'username'
+                      ? 'bg-white text-indigo-700 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700 cursor-pointer'
+                  )}
+                >
+                  Username invite
+                </button>
+              </div>
 
-              {/* Phone */}
-              <FormField control={form.control} name="phone" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Phone number
-                    <span className="ml-1 text-gray-400 font-normal text-xs">(required if no email)</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input type="tel" {...field} placeholder="+966501234567" />
-                  </FormControl>
-                  <p className="text-xs text-gray-400 mt-0.5">Include country code (e.g. +966 for Saudi Arabia)</p>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              {/* Email field */}
+              {inviteMode === 'email' && (
+                <FormField control={form.control} name="email" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email address *</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} placeholder="member@company.com" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              )}
 
-              {/* Channel selector */}
-              <FormField control={form.control} name="channel" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Send invite via</FormLabel>
-                  <div className="flex rounded-lg border border-gray-200 p-1 gap-1 bg-gray-50">
-                    {(
-                      [
-                        { value: 'email', label: 'Email', disabled: emailDisabled },
-                        { value: 'sms', label: 'SMS', disabled: smsDisabled },
-                        { value: 'whatsapp', label: 'WhatsApp', disabled: whatsappDisabled },
-                      ] as { value: Channel; label: string; disabled: boolean }[]
-                    ).map(({ value, label, disabled }) => (
-                      <button
-                        key={value}
-                        type="button"
-                        disabled={disabled}
-                        onClick={() => !disabled && field.onChange(value)}
-                        className={cn(
-                          'flex-1 py-1.5 px-2 rounded-md text-sm font-medium transition-colors',
-                          field.value === value && !disabled
-                            ? 'bg-white text-indigo-700 shadow-sm'
-                            : disabled
-                            ? 'text-gray-300 cursor-not-allowed'
-                            : 'text-gray-500 hover:text-gray-700 cursor-pointer'
-                        )}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              {/* Username field */}
+              {inviteMode === 'username' && (
+                <FormField control={form.control} name="username" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="jane_smith" autoCapitalize="none" autoCorrect="off" />
+                    </FormControl>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      3–30 lowercase letters, numbers, or underscores. The user will sign in with this username.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              )}
 
               {/* Display name */}
               <FormField control={form.control} name="displayName" render={({ field }) => (
@@ -304,10 +289,16 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
               <FormField control={form.control} name="role" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={(v) => {
+                      field.onChange(v);
+                      if (v !== 'staff') setShowPermissions(false);
+                    }}
+                    defaultValue={field.value}
+                  >
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
-                      {canInviteOwner && <SelectItem value="org_owner">Org Owner</SelectItem>}
+                      {canInviteOwner && <SelectItem value="org_owner">Owner</SelectItem>}
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="staff">Staff</SelectItem>
                     </SelectContent>
@@ -316,9 +307,38 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                 </FormItem>
               )} />
 
+              {/* Permissions — staff only */}
+              {form.watch('role') === 'staff' && (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowPermissions((v) => !v)}
+                    className="flex items-center gap-2 text-sm font-medium text-indigo-700 hover:text-indigo-800"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+                      <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none" />
+                      <path d="M4 7h6M7 4v6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                    </svg>
+                    {showPermissions ? 'Hide Access Permissions' : 'Set Access Permissions'}
+                  </button>
+                  {showPermissions && (
+                    <PermissionsEditor
+                      value={permissions}
+                      onChange={setPermissions}
+                      availableFeatures={features}
+                    />
+                  )}
+                  {!showPermissions && (
+                    <p className="text-xs text-gray-400">
+                      Default: view-only access. Click above to customise.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>Cancel</Button>
-                <Button type="submit" disabled={loading || (!hasEmail && !hasPhone)}>
+                <Button type="submit" disabled={loading || !canSubmit}>
                   {loading ? 'Inviting...' : 'Send Invite'}
                 </Button>
               </DialogFooter>
@@ -329,3 +349,5 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
     </Dialog>
   );
 }
+
+export { DEFAULT_STAFF_PERMISSIONS };

@@ -4,8 +4,10 @@ import { getAssets, createAsset, getAssetCategories } from '@/lib/firestore/asse
 import { getSubscriptionByOrg } from '@/lib/firestore/subscriptions';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { assetSchema } from '@/lib/validations/asset.schema';
+import { hasPermission } from '@/lib/utils/permissions';
+import { withLogging } from '@/lib/logging/with-logging';
 
-export async function GET(req: NextRequest) {
+async function _GET(req: NextRequest) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -37,11 +39,11 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+async function _POST(req: NextRequest) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!hasPermission(user, 'assets', 'create')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const orgId = user.organizationId;
     if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
@@ -91,3 +93,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET  = withLogging(_GET);
+export const POST = withLogging(_POST);

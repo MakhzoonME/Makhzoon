@@ -65,7 +65,7 @@ const ROLE_STYLE: Record<string, string> = {
 const ROLE_LABEL: Record<string, string> = {
   admin: 'Admin',
   super_admin: 'Super Admin',
-  org_owner: 'Org Owner',
+  org_owner: 'Owner',
   staff: 'Staff',
 };
 
@@ -107,7 +107,10 @@ export default function UsersPage() {
   const qc = useQueryClient();
 
   const isLoading = usersLoading || invitesLoading;
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'org_owner';
+  const currentRole = currentUser?.role ?? '';
+  const isOwnerOrSuperAdmin = currentRole === 'org_owner' || currentRole === 'super_admin';
+  const isAdmin = currentRole === 'admin' || isOwnerOrSuperAdmin;
+  const canInvite = isAdmin; // staff cannot invite
 
   const pendingInvites = invites.filter(
     (i) => i.status === 'pending' && new Date(i.expiresAt).getTime() > Date.now()
@@ -118,6 +121,13 @@ export default function UsersPage() {
     ...pendingInvites.map((i): Row => ({ _type: 'invite', data: i })),
   ];
 
+  function canEditUser(target: OrgUser): boolean {
+    if (target.id === currentUser?.uid) return false;
+    // Admin cannot edit owners; only owner/super_admin can
+    if (target.role === 'org_owner' && !isOwnerOrSuperAdmin) return false;
+    return isAdmin;
+  }
+
   async function handleRevoke(invite: Invite) {
     setRevoking(invite.token);
     try {
@@ -126,7 +136,7 @@ export default function UsersPage() {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error ?? 'Failed to revoke invite');
       }
-      toast.success(`Invite for ${invite.email} revoked.`);
+      toast.success(`Invite for ${invite.email ?? invite.username} revoked.`);
       qc.invalidateQueries({ queryKey: ['invites'] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to revoke invite');
@@ -177,8 +187,8 @@ export default function UsersPage() {
         throw new Error(e.error ?? (permanent ? 'Failed to delete user' : 'Failed to deactivate user'));
       }
       toast.success(permanent
-        ? `${target.displayName || target.email || target.phone} deleted permanently`
-        : `${target.displayName || target.email || target.phone} deactivated`
+        ? `${target.displayName || target.email} deleted permanently`
+        : `${target.displayName || target.email} deactivated`
       );
       qc.invalidateQueries({ queryKey: ['users'] });
       setDeleteTarget(null);
@@ -193,7 +203,11 @@ export default function UsersPage() {
     <div className="space-y-6">
       <PageHeader
         title="Users"
-        actions={<Button size="sm" onClick={() => setShowInvite(true)}><PlusSVG /><span className="ml-1">Invite User</span></Button>}
+        actions={
+          canInvite
+            ? <Button size="sm" onClick={() => setShowInvite(true)}><PlusSVG /><span className="ml-1">Invite User</span></Button>
+            : undefined
+        }
       />
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -201,7 +215,7 @@ export default function UsersPage() {
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email / Username</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Role</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Joined / Expires</th>
@@ -227,16 +241,16 @@ export default function UsersPage() {
               rows.map((row) => {
                 if (row._type === 'user') {
                   const u = row.data;
-                  const isSelf = u.id === currentUser?.uid;
+                  const editable = canEditUser(u);
                   return (
                     <tr key={`user-${u.id}`} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 font-medium text-gray-900">{u.displayName || '—'}</td>
-                      <td className="px-4 py-3 text-gray-600">{u.email || u.phone || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600">{u.email || (u.username ? `@${u.username}` : '—')}</td>
                       <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
                       <td className="px-4 py-3"><StatusBadge status={u.status} /></td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(u.createdAt)}</td>
                       <td className="px-4 py-3 text-right">
-                        {isAdmin && !isSelf && (
+                        {editable && (
                           <div className="flex items-center justify-end gap-1">
                             {u.status !== 'deactivated' && (
                               <>
@@ -282,21 +296,23 @@ export default function UsersPage() {
                 return (
                   <tr key={`invite-${inv.id}`} className="hover:bg-gray-50 transition-colors bg-amber-50/30">
                     <td className="px-4 py-3 font-medium text-gray-700">{inv.displayName || '—'}</td>
-                    <td className="px-4 py-3 text-gray-500">{inv.email || inv.phone || '—'}</td>
+                    <td className="px-4 py-3 text-gray-500">{inv.email || (inv.username ? `@${inv.username}` : '—')}</td>
                     <td className="px-4 py-3"><RoleBadge role={inv.role} /></td>
                     <td className="px-4 py-3"><StatusBadge status="pending" /></td>
                     <td className="px-4 py-3 text-gray-400 text-xs">Expires {formatDate(inv.expiresAt)}</td>
                     <td className="px-4 py-3 text-right">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-500 hover:text-red-600 hover:bg-red-50 gap-1"
-                        disabled={revoking === inv.token}
-                        onClick={() => handleRevoke(inv)}
-                      >
-                        <MailXSVG />
-                        {revoking === inv.token ? 'Revoking…' : 'Revoke'}
-                      </Button>
+                      {isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50 gap-1"
+                          disabled={revoking === inv.token}
+                          onClick={() => handleRevoke(inv)}
+                        >
+                          <MailXSVG />
+                          {revoking === inv.token ? 'Revoking…' : 'Revoke'}
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -306,7 +322,7 @@ export default function UsersPage() {
         </table>
       </div>
 
-      <InviteUserModal open={showInvite} onOpenChange={setShowInvite} />
+      {canInvite && <InviteUserModal open={showInvite} onOpenChange={setShowInvite} />}
 
       {/* Edit role dialog */}
       <Dialog open={!!editTarget} onOpenChange={(o) => !o && setEditTarget(null)}>
@@ -317,7 +333,7 @@ export default function UsersPage() {
           <div className="space-y-4 py-2">
             <div>
               <p className="text-sm text-gray-600 mb-1">
-                User: <span className="font-medium text-gray-900">{editTarget?.displayName || editTarget?.email || editTarget?.phone}</span>
+                User: <span className="font-medium text-gray-900">{editTarget?.displayName || editTarget?.email}</span>
               </p>
             </div>
             <div>
@@ -327,8 +343,8 @@ export default function UsersPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(currentUser?.role === 'super_admin' || currentUser?.role === 'org_owner') && (
-                    <SelectItem value="org_owner">Org Owner</SelectItem>
+                  {isOwnerOrSuperAdmin && (
+                    <SelectItem value="org_owner">Owner</SelectItem>
                   )}
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="staff">Staff</SelectItem>
@@ -353,7 +369,7 @@ export default function UsersPage() {
         title={deleteTarget?.permanent ? 'Delete User Permanently' : 'Deactivate User'}
         description={deleteTarget?.permanent
           ? `Permanently delete "${deleteTarget.user.displayName || deleteTarget.user.email}"? This cannot be undone.`
-          : `Deactivate "${deleteTarget?.user.displayName || deleteTarget?.user.email || deleteTarget?.user.phone}"? They will lose access immediately.`
+          : `Deactivate "${deleteTarget?.user.displayName || deleteTarget?.user.email}"? They will lose access immediately.`
         }
         confirmLabel={deleteTarget?.permanent ? 'Delete Permanently' : 'Deactivate'}
         onConfirm={handleDelete}

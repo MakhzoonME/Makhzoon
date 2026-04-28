@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ org
 
     const subscription = await getSubscriptionByOrg(orgId);
     if (!subscription) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    return NextResponse.json(subscription);
+    return NextResponse.json(subscription, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {
     console.error('[GET /api/organizations/[orgId]/subscription]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -6,8 +6,12 @@ import {
   subdomainExists,
 } from '@/lib/firestore/organizations';
 import { createSubscription } from '@/lib/firestore/subscriptions';
+import { createInvite, generateInviteToken } from '@/lib/firestore/invites';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { organizationSchema } from '@/lib/validations/organization.schema';
+import { sendEmail } from '@/lib/email/resend';
+import { inviteEmail } from '@/lib/email/templates';
+import { generateInviteQRDataUrl } from '@/lib/qr';
 
 export async function GET(req: NextRequest) {
   try {
@@ -74,6 +78,57 @@ export async function POST(req: NextRequest) {
       recordId: orgId,
       newValue: { name: data.name, subdomain: data.subdomain },
     });
+
+    // Auto-invite the contact email as Owner
+    if (data.contactEmail) {
+      try {
+        const token = generateInviteToken();
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30-day invite for owner
+        const inviteId = await createInvite({
+          organizationId: orgId,
+          email: data.contactEmail,
+          displayName: data.name + ' Owner',
+          role: 'org_owner',
+          token,
+          invitedBy: user.uid,
+          invitedByEmail: user.email,
+          invitedByName: user.displayName || 'Makhzoon',
+          expiresAt,
+          permissions: null,
+        });
+
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? req.nextUrl.origin;
+        const acceptUrl = `${baseUrl}/invites/${token}`;
+
+        const { html, text } = inviteEmail({
+          orgName: data.name,
+          inviterName: 'Makhzoon',
+          acceptUrl,
+          role: 'org_owner',
+        });
+
+        await sendEmail({
+          to: data.contactEmail,
+          subject: `You've been invited as Owner of ${data.name} on Makhzoon`,
+          html,
+          text,
+        }).catch((err) => {
+          if (process.env.NODE_ENV !== 'production') console.warn('[org-create] Owner invite email failed:', err);
+        });
+
+        await writeAuditLog({
+          organizationId: orgId,
+          userId: user.uid,
+          role: user.role,
+          action: 'INVITE_SENT',
+          module: 'users',
+          recordId: inviteId,
+          newValue: { email: data.contactEmail, role: 'org_owner' },
+        });
+      } catch (err) {
+        if (process.env.NODE_ENV !== 'production') console.warn('[org-create] Failed to create owner invite:', err);
+      }
+    }
 
     return NextResponse.json({ id: orgId }, { status: 201 });
   } catch (err) {

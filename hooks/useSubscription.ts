@@ -11,6 +11,7 @@ export function useSubscription(orgId: string | null | undefined) {
       return res.json();
     },
     enabled: !!orgId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }

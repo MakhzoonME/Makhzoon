@@ -1,5 +1,5 @@
 import { adminDb } from '@/lib/firebase/admin';
-import { Invite, InviteStatus } from '@/types';
+import { Invite, InviteStatus, UserPermissions } from '@/types';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { randomBytes } from 'crypto';
 
@@ -8,8 +8,7 @@ function toInvite(id: string, data: FirebaseFirestore.DocumentData): Invite {
     id,
     organizationId: data.organizationId,
     email: data.email,
-    phone: data.phone,
-    channel: data.channel ?? 'email',
+    username: data.username,
     displayName: data.displayName,
     role: data.role,
     token: data.token,
@@ -23,6 +22,7 @@ function toInvite(id: string, data: FirebaseFirestore.DocumentData): Invite {
     revokedAt: data.revokedAt instanceof Timestamp ? data.revokedAt.toDate() : undefined,
     revokedBy: data.revokedBy,
     createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+    permissions: (data.permissions ?? null) as UserPermissions | null,
   };
 }
 
@@ -64,22 +64,11 @@ export async function getPendingInviteForEmail(orgId: string, email: string): Pr
   return toInvite(snap.docs[0].id, snap.docs[0].data());
 }
 
-export async function getPendingInviteForPhone(orgId: string, phone: string): Promise<Invite | null> {
+export async function getPendingInviteForUsername(orgId: string, username: string): Promise<Invite | null> {
   const snap = await adminDb
     .collection('invites')
     .where('organizationId', '==', orgId)
-    .where('phone', '==', phone)
-    .where('status', '==', 'pending')
-    .limit(1)
-    .get();
-  if (snap.empty) return null;
-  return toInvite(snap.docs[0].id, snap.docs[0].data());
-}
-
-export async function getAnyPendingInviteByPhone(phone: string): Promise<Invite | null> {
-  const snap = await adminDb
-    .collection('invites')
-    .where('phone', '==', phone)
+    .where('username', '==', username.toLowerCase())
     .where('status', '==', 'pending')
     .limit(1)
     .get();
@@ -93,6 +82,7 @@ export async function createInvite(
   const ref = await adminDb.collection('invites').add({
     ...data,
     email: data.email ? data.email.toLowerCase() : undefined,
+    username: data.username ? data.username.toLowerCase() : undefined,
     status: 'pending' as InviteStatus,
     expiresAt: data.expiresAt,
     createdAt: FieldValue.serverTimestamp(),

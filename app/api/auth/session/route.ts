@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { cookies } from 'next/headers';
-import { getAnyPendingInviteByPhone } from '@/lib/firestore/invites';
 import { getOrganizationById } from '@/lib/firestore/organizations';
 import { getSubscriptionByOrg } from '@/lib/firestore/subscriptions';
 
@@ -24,24 +23,6 @@ export async function POST(req: NextRequest) {
 
     const decoded = await verifyWithRetry(idToken);
 
-    // Phone user with no org/role claims — check for a pending invite
-    if (!decoded.role && decoded.phone_number) {
-      const invite = await getAnyPendingInviteByPhone(decoded.phone_number);
-      if (!invite) {
-        return NextResponse.json({ error: 'No account found for this phone number' }, { status: 403 });
-      }
-      const org = await getOrganizationById(invite.organizationId);
-      return NextResponse.json({
-        needsInviteAccept: true,
-        inviteToken: invite.token,
-        orgName: org?.name ?? 'your workspace',
-        role: invite.role,
-        displayName: invite.displayName,
-        invitedByName: invite.invitedByName ?? invite.invitedByEmail,
-      });
-    }
-
-    // Normal sign-in: user has claims
     if (!decoded.role) {
       return NextResponse.json({ error: 'No account found' }, { status: 403 });
     }
@@ -70,7 +51,16 @@ export async function POST(req: NextRequest) {
       if (subscription?.features) features = subscription.features as Record<string, boolean>;
     }
 
-    return NextResponse.json({ role: decoded.role ?? 'staff', orgSlug, features });
+    let permissions = null;
+    if (decoded.role === 'staff' && orgId) {
+      const userDoc = await adminDb.collection('users').doc(decoded.uid).get();
+      permissions = userDoc.exists ? (userDoc.data()?.permissions ?? null) : null;
+    }
+
+    return NextResponse.json(
+      { role: decoded.role ?? 'staff', orgSlug, features, permissions },
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
   } catch (err) {
     console.error('Session creation error:', err);
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

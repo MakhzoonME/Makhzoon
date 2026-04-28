@@ -21,13 +21,12 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     const parsed = acceptInviteSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
-    let uid: string;
+    const { password } = parsed.data;
 
-    if (parsed.data.method === 'password') {
-      // Email invite: create user with email + password
-      if (!invite.email) {
-        return NextResponse.json({ error: 'This invite requires phone verification' }, { status: 400 });
-      }
+    let uid: string;
+    let userEmail: string;
+
+    if (invite.email) {
       const existing = await adminAuth.getUserByEmail(invite.email).catch(() => null);
       if (existing) {
         return NextResponse.json({ error: 'An account already exists for this email' }, { status: 409 });
@@ -35,20 +34,27 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       const newUser = await adminAuth.createUser({
         email: invite.email,
         displayName: invite.displayName,
-        password: parsed.data.password,
+        password,
         emailVerified: true,
       });
       uid = newUser.uid;
+      userEmail = invite.email;
+    } else if (invite.username) {
+      const syntheticEmail = `${invite.username}@makhzoon.local`;
+      const existing = await adminAuth.getUserByEmail(syntheticEmail).catch(() => null);
+      if (existing) {
+        return NextResponse.json({ error: 'This username is already taken' }, { status: 409 });
+      }
+      const newUser = await adminAuth.createUser({
+        email: syntheticEmail,
+        displayName: invite.displayName,
+        password,
+        emailVerified: true,
+      });
+      uid = newUser.uid;
+      userEmail = syntheticEmail;
     } else {
-      // Phone invite: verify the Firebase ID token from OTP sign-in
-      if (!invite.phone) {
-        return NextResponse.json({ error: 'This invite requires email/password setup' }, { status: 400 });
-      }
-      const decoded = await adminAuth.verifyIdToken(parsed.data.idToken);
-      if (!decoded.phone_number || decoded.phone_number !== invite.phone) {
-        return NextResponse.json({ error: 'Phone number does not match this invitation' }, { status: 403 });
-      }
-      uid = decoded.uid;
+      return NextResponse.json({ error: 'Invite has no email or username' }, { status: 400 });
     }
 
     await adminAuth.setCustomUserClaims(uid, {
@@ -59,10 +65,11 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     await createUser(uid, {
       organizationId: invite.organizationId,
       email: invite.email,
-      phone: invite.phone,
+      username: invite.username,
       displayName: invite.displayName,
       role: invite.role,
       status: 'active',
+      permissions: invite.permissions ?? null,
       createdBy: invite.invitedBy,
       updatedBy: invite.invitedBy,
     });
@@ -76,10 +83,10 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       action: 'INVITE_ACCEPTED',
       module: 'users',
       recordId: invite.id,
-      newValue: { email: invite.email, phone: invite.phone, role: invite.role },
+      newValue: { email: invite.email, username: invite.username, role: invite.role },
     });
 
-    return NextResponse.json({ success: true, email: invite.email });
+    return NextResponse.json({ success: true, email: userEmail });
   } catch (err) {
     console.error('[POST /api/invites/[token]/accept]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -1,7 +1,13 @@
 'use client';
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { RefreshCw, Search, X } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 
 interface BackendLog {
   id: string;
@@ -45,7 +51,10 @@ function statusColor(code: number) {
 
 function fmt(ts: string) {
   const d = new Date(ts);
-  return d.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  return d.toLocaleString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  });
 }
 
 export default function BackendLogsPage() {
@@ -53,28 +62,29 @@ export default function BackendLogsPage() {
   const [loading, setLoading] = useState(false);
   const [level, setLevel] = useState<string>('all');
   const [orgId, setOrgId] = useState('');
-  const [userId, setUserId] = useState('');
-  const [limit, setLimit] = useState(200);
+  const [limit, setLimit] = useState('200');
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Client-side filters
+  const [userSearch, setUserSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ limit: String(limit), level });
+      const params = new URLSearchParams({ limit, level });
       if (orgId.trim()) params.set('orgId', orgId.trim());
-      if (userId.trim()) params.set('userId', userId.trim());
       const res = await fetch(`/api/superadmin/backend-logs?${params}`);
       if (res.ok) setLogs(await res.json());
     } finally {
       setLoading(false);
     }
-  }, [level, orgId, userId, limit]);
+  }, [level, orgId, limit]);
 
-  useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
+  useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -82,13 +92,44 @@ export default function BackendLogsPage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [autoRefresh, fetchLogs]);
 
+  const filteredLogs = useMemo(() => {
+    let result = logs;
+    if (userSearch.trim()) {
+      const q = userSearch.trim().toLowerCase();
+      result = result.filter(
+        (l) =>
+          l.userDisplayName?.toLowerCase().includes(q) ||
+          l.userId?.toLowerCase().includes(q)
+      );
+    }
+    if (dateFrom) {
+      const from = new Date(dateFrom).getTime();
+      result = result.filter((l) => new Date(l.timestamp).getTime() >= from);
+    }
+    if (dateTo) {
+      const to = new Date(dateTo).getTime();
+      result = result.filter((l) => new Date(l.timestamp).getTime() <= to);
+    }
+    return result;
+  }, [logs, userSearch, dateFrom, dateTo]);
+
   const levels = ['all', 'success', 'warning', 'error', 'info'];
 
+  function clearFilters() {
+    setUserSearch('');
+    setDateFrom('');
+    setDateTo('');
+    setOrgId('');
+    setLevel('all');
+  }
+
+  const hasActiveFilters = userSearch || dateFrom || dateTo || orgId || level !== 'all';
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Backend Logs</h1>
+          <h1 className="text-xl font-bold text-gray-900">Backend Logs</h1>
           <p className="text-sm text-gray-500 mt-0.5">Monitor API requests, responses, and errors in real time</p>
         </div>
         <div className="flex items-center gap-3">
@@ -101,22 +142,19 @@ export default function BackendLogsPage() {
             />
             Auto-refresh (10s)
           </label>
-          <button
-            onClick={fetchLogs}
-            disabled={loading}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
+          <Button size="sm" variant="outline" onClick={fetchLogs} disabled={loading}>
+            <RefreshCw className={cn('h-4 w-4 mr-1.5', loading && 'animate-spin')} />
             Refresh
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 flex flex-wrap gap-4 items-end">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Level</label>
-          <div className="flex gap-1">
+      <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
+        {/* Level pills */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <Label className="text-xs text-gray-500 shrink-0">Level</Label>
+          <div className="flex gap-1 flex-wrap">
             {levels.map((l) => (
               <button
                 key={l}
@@ -133,43 +171,93 @@ export default function BackendLogsPage() {
             ))}
           </div>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Org ID</label>
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-            <input
-              value={orgId}
-              onChange={(e) => setOrgId(e.target.value)}
-              placeholder="Filter by org"
-              className="pl-7 pr-6 py-1.5 text-xs border border-gray-200 rounded w-44 focus:outline-none focus:ring-1 focus:ring-blue-500"
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {/* User Name */}
+          <div className="space-y-1">
+            <Label className="text-xs">User Name</Label>
+            <div className="relative">
+              <Input
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                placeholder="Search user…"
+                className="h-8 text-xs pr-7"
+              />
+              {userSearch && (
+                <button onClick={() => setUserSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2">
+                  <X className="h-3 w-3 text-gray-400" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Org ID */}
+          <div className="space-y-1">
+            <Label className="text-xs">Organization ID</Label>
+            <div className="relative">
+              <Input
+                value={orgId}
+                onChange={(e) => setOrgId(e.target.value)}
+                placeholder="Filter by org…"
+                className="h-8 text-xs pr-7"
+              />
+              {orgId && (
+                <button onClick={() => setOrgId('')} className="absolute right-2 top-1/2 -translate-y-1/2">
+                  <X className="h-3 w-3 text-gray-400" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Date From */}
+          <div className="space-y-1">
+            <Label className="text-xs">Date & Time From</Label>
+            <Input
+              type="datetime-local"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="h-8 text-xs"
             />
-            {orgId && <button onClick={() => setOrgId('')} className="absolute right-1.5 top-1/2 -translate-y-1/2"><X className="h-3 w-3 text-gray-400" /></button>}
+          </div>
+
+          {/* Date To */}
+          <div className="space-y-1">
+            <Label className="text-xs">Date & Time To</Label>
+            <Input
+              type="datetime-local"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="h-8 text-xs"
+            />
+          </div>
+
+          {/* Limit */}
+          <div className="space-y-1">
+            <Label className="text-xs">Limit</Label>
+            <Select value={limit} onValueChange={setLimit}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {['50', '100', '200', '500'].map((n) => (
+                  <SelectItem key={n} value={n}>{n} records</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">User ID</label>
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-            <input
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              placeholder="Filter by user"
-              className="pl-7 pr-6 py-1.5 text-xs border border-gray-200 rounded w-44 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            {userId && <button onClick={() => setUserId('')} className="absolute right-1.5 top-1/2 -translate-y-1/2"><X className="h-3 w-3 text-gray-400" /></button>}
-          </div>
+
+        <div className="flex items-center justify-between pt-0.5">
+          <span className="text-xs text-gray-400">
+            {filteredLogs.length} of {logs.length} records
+          </span>
+          {hasActiveFilters && (
+            <Button size="sm" variant="ghost" onClick={clearFilters} className="h-7 text-xs text-gray-500">
+              <X className="h-3 w-3 mr-1" />
+              Clear filters
+            </Button>
+          )}
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Limit</label>
-          <select
-            value={limit}
-            onChange={(e) => setLimit(Number(e.target.value))}
-            className="py-1.5 px-2 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            {[50, 100, 200, 500].map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
-        </div>
-        <div className="ml-auto text-xs text-gray-400 self-end pb-1.5">{logs.length} records</div>
       </div>
 
       {/* Table */}
@@ -191,14 +279,14 @@ export default function BackendLogsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {logs.length === 0 && (
+              {filteredLogs.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-gray-400">
+                  <td colSpan={10} className="px-4 py-10 text-center text-gray-400">
                     {loading ? 'Loading…' : 'No logs found'}
                   </td>
                 </tr>
               )}
-              {logs.map((log) => (
+              {filteredLogs.map((log) => (
                 <>
                   <tr
                     key={log.id}
@@ -219,25 +307,28 @@ export default function BackendLogsPage() {
                       </span>
                     </td>
                     <td className="px-3 py-2 text-gray-600 whitespace-nowrap">{log.durationMs}ms</td>
-                    <td className="px-3 py-2 text-gray-700 max-w-[140px] truncate" title={log.userDisplayName ?? log.userId}>
-                      {log.userDisplayName ?? log.userId ?? <span className="text-gray-300">—</span>}
+                    <td className="px-3 py-2 text-gray-700 max-w-[150px] truncate" title={log.userDisplayName ?? log.userId}>
+                      {log.userDisplayName ?? (log.userId ? <span className="font-mono text-gray-400 text-[10px]">{log.userId.slice(0, 10)}…</span> : <span className="text-gray-300">—</span>)}
                     </td>
                     <td className="px-3 py-2 text-gray-700 max-w-[140px] truncate" title={log.organizationName ?? log.organizationId}>
-                      {log.organizationName ?? (log.organizationId ? <span className="font-mono text-gray-400">{log.organizationId.slice(0, 8)}…</span> : <span className="text-gray-300">—</span>)}
+                      {log.organizationName ?? (log.organizationId ? <span className="font-mono text-gray-400 text-[10px]">{log.organizationId.slice(0, 8)}…</span> : <span className="text-gray-300">—</span>)}
                     </td>
-                    <td className="px-3 py-2 text-gray-500 capitalize">{log.role?.replace(/_/g, ' ') ?? <span className="text-gray-300">—</span>}</td>
+                    <td className="px-3 py-2 text-gray-500 capitalize whitespace-nowrap">{log.role?.replace(/_/g, ' ') ?? <span className="text-gray-300">—</span>}</td>
                     <td className="px-3 py-2 text-red-600 max-w-[180px] truncate" title={log.errorMessage}>{log.errorMessage ?? ''}</td>
                   </tr>
                   {expanded === log.id && (
-                    <tr key={`${log.id}-expanded`} className="bg-blue-50">
+                    <tr key={`${log.id}-detail`} className="bg-blue-50">
                       <td colSpan={10} className="px-4 py-3">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="font-semibold text-gray-600 mb-1">Details</p>
-                            <dl className="space-y-0.5 text-xs">
-                              <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">Log ID</dt><dd className="font-mono text-gray-600">{log.id}</dd></div>
-                              <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">User ID</dt><dd className="font-mono text-gray-600">{log.userId ?? '—'}</dd></div>
-                              <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">Org ID</dt><dd className="font-mono text-gray-600">{log.organizationId ?? '—'}</dd></div>
+                            <p className="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wide">Details</p>
+                            <dl className="space-y-1 text-xs">
+                              <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">Log ID</dt><dd className="font-mono text-gray-600 break-all">{log.id}</dd></div>
+                              <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">User</dt><dd className="text-gray-600">{log.userDisplayName ?? log.userId ?? '—'}</dd></div>
+                              {log.userDisplayName && log.userId && (
+                                <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">User ID</dt><dd className="font-mono text-gray-400 text-[11px] break-all">{log.userId}</dd></div>
+                              )}
+                              <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">Org ID</dt><dd className="font-mono text-gray-600 break-all">{log.organizationId ?? '—'}</dd></div>
                               <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">Duration</dt><dd className="text-gray-600">{log.durationMs}ms</dd></div>
                               {log.errorMessage && <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">Error</dt><dd className="text-red-600">{log.errorMessage}</dd></div>}
                             </dl>
@@ -245,13 +336,13 @@ export default function BackendLogsPage() {
                           <div className="space-y-2">
                             {log.requestSummary && (
                               <div>
-                                <p className="font-semibold text-gray-600 mb-1">Request</p>
+                                <p className="font-semibold text-gray-600 mb-1 text-xs uppercase tracking-wide">Request</p>
                                 <pre className="bg-white border border-gray-200 rounded p-2 text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap">{log.requestSummary}</pre>
                               </div>
                             )}
                             {log.responseSummary && (
                               <div>
-                                <p className="font-semibold text-gray-600 mb-1">Response</p>
+                                <p className="font-semibold text-gray-600 mb-1 text-xs uppercase tracking-wide">Response</p>
                                 <pre className="bg-white border border-gray-200 rounded p-2 text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap">{log.responseSummary}</pre>
                               </div>
                             )}

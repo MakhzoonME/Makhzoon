@@ -17,14 +17,35 @@ const createMemberSchema = z.object({
 });
 
 const ALLOWED_CALLER_ROLES = new Set(['super_admin', 'makhzoon_admin']);
+const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
 export async function GET() {
   const caller = await verifySessionCookie();
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!ALLOWED_CALLER_ROLES.has(caller.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const members = await getSuperAdminUsers();
-  return NextResponse.json(members);
+  // Get all Firestore-tracked members
+  const firestoreMembers = await getSuperAdminUsers();
+  const firestoreIds = new Set(firestoreMembers.map((m) => m.id));
+
+  // List Firebase Auth users and find superadmin-role ones not yet in Firestore
+  const { users: authUsers } = await adminAuth.listUsers(1000);
+  const missing = authUsers.filter(
+    (u) => SUPERADMIN_ROLES.has(u.customClaims?.role) && !firestoreIds.has(u.uid)
+  );
+
+  const syntheticMembers = missing.map((u) => ({
+    id: u.uid,
+    email: u.email ?? '',
+    displayName: u.displayName ?? u.email ?? u.uid,
+    role: (u.customClaims?.role ?? 'super_admin') as 'super_admin' | 'makhzoon_admin' | 'makhzoon_support',
+    status: u.disabled ? 'deactivated' : 'active',
+    createdAt: u.metadata.creationTime ?? new Date().toISOString(),
+    createdBy: 'system',
+    updatedAt: u.metadata.lastRefreshTime ?? new Date().toISOString(),
+  }));
+
+  return NextResponse.json([...syntheticMembers, ...firestoreMembers]);
 }
 
 export async function POST(req: NextRequest) {

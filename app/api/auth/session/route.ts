@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { cookies } from 'next/headers';
-import { getOrganizationById } from '@/lib/firestore/organizations';
 import { getSubscriptionByOrg } from '@/lib/firestore/subscriptions';
 
 async function verifyWithRetry(idToken: string, attempt = 0) {

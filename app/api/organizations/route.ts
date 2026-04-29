@@ -11,7 +11,7 @@ import { writeAuditLog } from '@/lib/audit/logger';
 import { organizationSchema } from '@/lib/validations/organization.schema';
 import { sendEmail } from '@/lib/email/resend';
 import { inviteEmail } from '@/lib/email/templates';
-import { generateInviteQRDataUrl } from '@/lib/qr';
+
 
 export async function GET(req: NextRequest) {
   try {

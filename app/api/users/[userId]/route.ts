@@ -3,7 +3,7 @@ import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { getUserById, updateUser } from '@/lib/firestore/users';
 import { writeAuditLog } from '@/lib/audit/logger';
-import { invalidateCachedPermissions, invalidateCachedSession } from '@/lib/firebase/session-cache';
+import { invalidateCachedPermissions } from '@/lib/firebase/session-cache';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export async function PATCH(req: NextRequest, { params }: { params: { userId: string } }) {

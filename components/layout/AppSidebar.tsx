@@ -146,8 +146,8 @@ export function AppSidebar() {
     if (item.adminOnly && !canSeeAdmin) return false;
     if (item.featureKey && features[item.featureKey] === false) return false;
     if (user?.role === 'staff' && item.featureKey) {
-      const module = item.featureKey as keyof UserPermissions;
-      if (!hasModuleAccess({ ...user, organizationId: user.organizationId ?? null }, module)) return false;
+      const moduleKey = item.featureKey as keyof UserPermissions;
+      if (!hasModuleAccess({ ...user, organizationId: user.organizationId ?? null }, moduleKey)) return false;
     }
     return true;
   });

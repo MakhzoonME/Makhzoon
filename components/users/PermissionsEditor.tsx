@@ -111,7 +111,7 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
 
             {/* Operations */}
             {isExpanded && (
-              <div className="border-t border-gray-100 px-3 py-2 grid grid-cols-2 gap-x-4 gap-y-1.5">
+              <div className="border-t border-gray-100 px-3 py-2 flex flex-col gap-1.5">
                 {mod.operations.map((op) => {
                   const checked = modulePerms?.[op.key] === true;
                   const disabled = op.requiresView && modulePerms?.view !== true;

@@ -15,7 +15,18 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { SuperAdminPermissionsEditor } from '@/components/super-admin/SuperAdminPermissionsEditor';
-import { SuperAdminPermissions, DEFAULT_SUPPORT_PERMISSIONS } from '@/types';
+import {
+  SuperAdminPermissions,
+  DEFAULT_SUPER_ADMIN_PERMISSIONS,
+  DEFAULT_MAKHZOON_ADMIN_PERMISSIONS,
+  DEFAULT_SUPPORT_PERMISSIONS,
+} from '@/types';
+
+function defaultPermsForRole(role: MakhzoonRole): SuperAdminPermissions {
+  if (role === 'super_admin') return DEFAULT_SUPER_ADMIN_PERMISSIONS;
+  if (role === 'makhzoon_admin') return DEFAULT_MAKHZOON_ADMIN_PERMISSIONS;
+  return DEFAULT_SUPPORT_PERMISSIONS;
+}
 
 type MakhzoonRole = 'super_admin' | 'makhzoon_admin' | 'makhzoon_support';
 
@@ -107,7 +118,7 @@ export default function SuperAdminTeamPage() {
   function openEdit(m: TeamMember) {
     setEditTarget(m);
     setEditForm({ displayName: m.displayName, role: m.role });
-    setEditPermissions(m.permissions ?? DEFAULT_SUPPORT_PERMISSIONS);
+    setEditPermissions(m.permissions ?? defaultPermsForRole(m.role));
     setShowEditPerms(false);
     setSaving(false);
   }
@@ -116,8 +127,7 @@ export default function SuperAdminTeamPage() {
     e.preventDefault();
     setAdding(true);
     try {
-      const body: Record<string, unknown> = { ...addForm };
-      if (addForm.role === 'makhzoon_support') body.permissions = addPermissions;
+      const body: Record<string, unknown> = { ...addForm, permissions: addPermissions };
       const res = await fetch('/api/superadmin/team', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -139,11 +149,9 @@ export default function SuperAdminTeamPage() {
     if (!editTarget) return;
     setSaving(true);
     try {
-      const body: Record<string, unknown> = { updatedBy: currentUser?.uid };
+      const body: Record<string, unknown> = { updatedBy: currentUser?.uid, permissions: editPermissions };
       if (editForm.displayName !== editTarget.displayName) body.displayName = editForm.displayName;
       if (editForm.role !== editTarget.role) body.role = editForm.role;
-      if (editForm.role === 'makhzoon_support') body.permissions = editPermissions;
-      else body.permissions = null;
 
       const res = await fetch(`/api/superadmin/team/${editTarget.id}`, {
         method: 'PATCH',
@@ -344,8 +352,10 @@ export default function SuperAdminTeamPage() {
               <Select
                 value={addForm.role}
                 onValueChange={(v) => {
-                  setAddForm((f) => ({ ...f, role: v as MakhzoonRole }));
-                  if (v !== 'makhzoon_support') setShowAddPerms(false);
+                  const role = v as MakhzoonRole;
+                  setAddForm((f) => ({ ...f, role }));
+                  setAddPermissions(defaultPermsForRole(role));
+                  setShowAddPerms(false);
                 }}
               >
                 <SelectTrigger>
@@ -362,28 +372,29 @@ export default function SuperAdminTeamPage() {
               )}
             </div>
 
-            {/* Permissions for makhzoon_support */}
-            {addForm.role === 'makhzoon_support' && (
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddPerms((v) => !v)}
-                  className="flex items-center gap-2 text-sm font-medium text-violet-700 hover:text-violet-800"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-                    <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none" />
-                    <path d="M4 7h6M7 4v6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-                  </svg>
-                  {showAddPerms ? 'Hide Access Permissions' : 'Set Access Permissions'}
-                </button>
-                {showAddPerms && (
-                  <SuperAdminPermissionsEditor value={addPermissions} onChange={setAddPermissions} />
-                )}
-                {!showAddPerms && (
-                  <p className="text-xs text-gray-400">Default: limited view-only access. Click above to customise.</p>
-                )}
-              </div>
-            )}
+            {/* Access permissions — all roles */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setShowAddPerms((v) => !v)}
+                className="flex items-center gap-2 text-sm font-medium text-violet-700 hover:text-violet-800"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+                  <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none" />
+                  <path d="M4 7h6M7 4v6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                </svg>
+                {showAddPerms ? 'Hide Access Permissions' : 'Set Access Permissions'}
+              </button>
+              {showAddPerms ? (
+                <SuperAdminPermissionsEditor value={addPermissions} onChange={setAddPermissions} />
+              ) : (
+                <p className="text-xs text-gray-400">
+                  {addForm.role === 'makhzoon_support'
+                    ? 'Default: limited view-only access. Click above to customise.'
+                    : 'Default: broad access enabled. Click above to customise.'}
+                </p>
+              )}
+            </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="tm-password">Temporary Password *</Label>
@@ -441,8 +452,10 @@ export default function SuperAdminTeamPage() {
               <Select
                 value={editForm.role}
                 onValueChange={(v) => {
-                  setEditForm((f) => ({ ...f, role: v as MakhzoonRole }));
-                  if (v !== 'makhzoon_support') setShowEditPerms(false);
+                  const role = v as MakhzoonRole;
+                  setEditForm((f) => ({ ...f, role }));
+                  setEditPermissions(defaultPermsForRole(role));
+                  setShowEditPerms(false);
                 }}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -457,25 +470,23 @@ export default function SuperAdminTeamPage() {
               )}
             </div>
 
-            {/* Permissions for makhzoon_support */}
-            {editForm.role === 'makhzoon_support' && (
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => setShowEditPerms((v) => !v)}
-                  className="flex items-center gap-2 text-sm font-medium text-violet-700 hover:text-violet-800"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-                    <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none" />
-                    <path d="M4 7h6M7 4v6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-                  </svg>
-                  {showEditPerms ? 'Hide Access Permissions' : 'Edit Access Permissions'}
-                </button>
-                {showEditPerms && (
-                  <SuperAdminPermissionsEditor value={editPermissions} onChange={setEditPermissions} />
-                )}
-              </div>
-            )}
+            {/* Access permissions — all roles */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setShowEditPerms((v) => !v)}
+                className="flex items-center gap-2 text-sm font-medium text-violet-700 hover:text-violet-800"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+                  <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none" />
+                  <path d="M4 7h6M7 4v6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                </svg>
+                {showEditPerms ? 'Hide Access Permissions' : 'Edit Access Permissions'}
+              </button>
+              {showEditPerms && (
+                <SuperAdminPermissionsEditor value={editPermissions} onChange={setEditPermissions} />
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditTarget(null)} disabled={saving}>Cancel</Button>

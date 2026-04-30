@@ -25,7 +25,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { userId: st
   }
 
   const body = await req.json();
-  const { role } = body;
+  const { role, permissions } = body;
   if (!['org_owner', 'admin', 'staff'].includes(role)) return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
 
   // Only org_owner or super_admin may grant the org_owner role
@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { userId: st
     return NextResponse.json({ error: 'Only an Owner or Super Admin can grant the Owner role' }, { status: 403 });
   }
 
-  await updateUser(userId, { role, updatedBy: caller.uid });
+  await updateUser(userId, { role, permissions: permissions ?? undefined, updatedBy: caller.uid });
   const existingClaims = (await adminAuth.getUser(userId)).customClaims ?? {};
   await adminAuth.setCustomUserClaims(userId, { ...existingClaims, role });
   // Bust server-side caches so the change takes effect on the user's next request

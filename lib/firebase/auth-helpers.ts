@@ -27,9 +27,10 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
       if (transferOrgId) organizationId = transferOrgId;
     }
 
-    // Fetch permissions for staff from Firestore (cached for 60s)
+    // Fetch stored permissions for all org-level roles so explicit customisation works
+    const ORG_ROLES = new Set(['org_owner', 'admin', 'staff']);
     let permissions: UserPermissions | null = null;
-    if (role === 'staff') {
+    if (ORG_ROLES.has(role) && organizationId) {
       const cachedPerms = getCachedPermissions(decoded.uid);
       if (cachedPerms !== undefined) {
         permissions = cachedPerms;

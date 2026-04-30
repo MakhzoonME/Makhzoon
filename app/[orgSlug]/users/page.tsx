@@ -19,6 +19,9 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { PermissionsEditor } from '@/components/users/PermissionsEditor';
+import { useSubscriptionFeatures } from '@/hooks/useSubscriptionFeatures';
+import { UserPermissions, DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from '@/types';
 
 function PlusSVG() {
   return (
@@ -101,7 +104,10 @@ export default function UsersPage() {
   const [revoking, setRevoking] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<OrgUser | null>(null);
   const [editRole, setEditRole] = useState<string>('');
+  const [editPermissions, setEditPermissions] = useState<UserPermissions>(DEFAULT_STAFF_PERMISSIONS);
+  const [showEditPerms, setShowEditPerms] = useState(false);
   const [savingRole, setSavingRole] = useState(false);
+  const features = useSubscriptionFeatures();
   const [deleteTarget, setDeleteTarget] = useState<{ user: OrgUser; permanent: boolean } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const qc = useQueryClient();
@@ -145,9 +151,15 @@ export default function UsersPage() {
     }
   }
 
+  function defaultPermsForRole(role: string): UserPermissions {
+    return role === 'staff' ? DEFAULT_STAFF_PERMISSIONS : DEFAULT_ADMIN_PERMISSIONS;
+  }
+
   function openEditRole(u: OrgUser) {
     setEditTarget(u);
     setEditRole(u.role);
+    setEditPermissions(u.permissions ?? defaultPermsForRole(u.role));
+    setShowEditPerms(false);
   }
 
   async function handleSaveRole() {
@@ -157,7 +169,7 @@ export default function UsersPage() {
       const res = await apiFetch(`/api/users/${editTarget.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: editRole }),
+        body: JSON.stringify({ role: editRole, permissions: editPermissions }),
       });
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
@@ -324,40 +336,61 @@ export default function UsersPage() {
 
       {canInvite && <InviteUserModal open={showInvite} onOpenChange={setShowInvite} />}
 
-      {/* Edit role dialog */}
+      {/* Edit user dialog */}
       <Dialog open={!!editTarget} onOpenChange={(o) => !o && setEditTarget(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Role</DialogTitle>
+            <DialogTitle>Edit User</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">
-                User: <span className="font-medium text-gray-900">{editTarget?.displayName || editTarget?.email}</span>
-              </p>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Role</label>
-              <Select value={editRole} onValueChange={setEditRole}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+            <p className="text-xs text-gray-500">
+              Editing <span className="font-medium text-gray-900">{editTarget?.displayName || editTarget?.email}</span>
+            </p>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-gray-700">Role</label>
+              <Select
+                value={editRole}
+                onValueChange={(v) => {
+                  setEditRole(v);
+                  setEditPermissions(defaultPermsForRole(v));
+                  setShowEditPerms(false);
+                }}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {isOwnerOrSuperAdmin && (
-                    <SelectItem value="org_owner">Owner</SelectItem>
-                  )}
+                  {isOwnerOrSuperAdmin && <SelectItem value="org_owner">Owner</SelectItem>}
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="staff">Staff</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Access permissions */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setShowEditPerms((v) => !v)}
+                className="flex items-center gap-2 text-sm font-medium text-indigo-700 hover:text-indigo-800"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+                  <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none" />
+                  <path d="M4 7h6M7 4v6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                </svg>
+                {showEditPerms ? 'Hide Access Permissions' : 'Edit Access Permissions'}
+              </button>
+              {showEditPerms && (
+                <PermissionsEditor
+                  value={editPermissions}
+                  onChange={setEditPermissions}
+                  availableFeatures={features}
+                />
+              )}
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditTarget(null)} disabled={savingRole}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveRole} disabled={savingRole || editRole === editTarget?.role}>
-              {savingRole ? 'Saving...' : 'Save'}
+            <Button variant="outline" onClick={() => setEditTarget(null)} disabled={savingRole}>Cancel</Button>
+            <Button onClick={handleSaveRole} disabled={savingRole}>
+              {savingRole ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>
         </DialogContent>

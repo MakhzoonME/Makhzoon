@@ -8,13 +8,15 @@ export function hasPermission(
   module: keyof UserPermissions,
   operation: string
 ): boolean {
-  if (ADMIN_ROLES.has(user.role)) return true;
-  if (!user.permissions) {
-    return operation === 'view';
+  // Stored permissions always take precedence — enables restriction of any role
+  if (user.permissions) {
+    const mod = user.permissions[module] as unknown as Record<string, boolean> | undefined;
+    if (!mod) return false;
+    return mod[operation] === true;
   }
-  const mod = user.permissions[module] as unknown as Record<string, boolean> | undefined;
-  if (!mod) return false;
-  return mod[operation] === true;
+  // No stored permissions: admin/owner get full access, staff get view-only fallback
+  if (ADMIN_ROLES.has(user.role)) return true;
+  return operation === 'view';
 }
 
 export function hasModuleAccess(user: AuthUser, module: keyof UserPermissions): boolean {

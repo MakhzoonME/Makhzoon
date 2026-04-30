@@ -70,7 +70,7 @@ async function _POST(req: NextRequest) {
     invitedByEmail: user.email,
     invitedByName: user.displayName,
     expiresAt,
-    permissions: (role === 'staff' ? permissions ?? null : null) as import('@/types').UserPermissions | null,
+    permissions: (permissions ?? null) as import('@/types').UserPermissions | null,
   });
 
   const org = await getOrganizationById(user.organizationId);

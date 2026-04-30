@@ -13,8 +13,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { useSubscriptionFeatures } from '@/hooks/useSubscriptionFeatures';
-import { PermissionsEditor, DEFAULT_STAFF_PERMISSIONS } from './PermissionsEditor';
-import { UserPermissions } from '@/types';
+import { PermissionsEditor } from './PermissionsEditor';
+import { UserPermissions, DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from '@/types';
 
 function CopySVG() {
   return (
@@ -23,6 +23,11 @@ function CopySVG() {
       <path d="M2.5 9.5H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h6.5a1 1 0 0 1 1 1v.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
     </svg>
   );
+}
+
+function defaultPermissionsForRole(role: string): UserPermissions {
+  if (role === 'org_owner' || role === 'admin') return DEFAULT_ADMIN_PERMISSIONS;
+  return DEFAULT_STAFF_PERMISSIONS;
 }
 
 interface InviteUserModalProps {
@@ -73,6 +78,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
     setInviteUsername(null);
     setCopied(false);
     form.reset({ email: '', username: '', displayName: '', role: 'staff' });
+    setPermissions(DEFAULT_STAFF_PERMISSIONS);
   }
 
   function downloadQR(dataUrl: string) {
@@ -99,6 +105,12 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
     }
   }
 
+  function handleRoleChange(role: string) {
+    form.setValue('role', role as InviteUserFormData['role']);
+    setPermissions(defaultPermissionsForRole(role));
+    setShowPermissions(false);
+  }
+
   async function onSubmit(data: InviteUserFormData) {
     setLoading(true);
     try {
@@ -107,7 +119,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
         username: inviteMode === 'username' ? data.username?.trim() || undefined : undefined,
         displayName: data.displayName,
         role: data.role,
-        permissions: data.role === 'staff' ? permissions : null,
+        permissions,
       };
       const res = await fetch('/api/invites', {
         method: 'POST',
@@ -138,11 +150,16 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
 
   const emailValue = form.watch('email') ?? '';
   const usernameValue = form.watch('username') ?? '';
+  const selectedRole = form.watch('role');
   const canSubmit = inviteMode === 'email' ? emailValue.trim().length > 0 : usernameValue.trim().length > 0;
+
+  const permissionsLabel = selectedRole === 'staff'
+    ? 'Staff has limited default access — customise below.'
+    : 'All permissions enabled by default — customise below.';
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Invite Team Member</DialogTitle>
         </DialogHeader>
@@ -165,10 +182,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                 </svg>
                 <div>
                   {inviteUsername ? (
-                    <p>
-                      Username invite created. Share the link or QR code with{' '}
-                      <strong>{inviteUsername}</strong> so they can set their password.
-                    </p>
+                    <p>Username invite created. Share the link or QR code with <strong>{inviteUsername}</strong> so they can set their password.</p>
                   ) : (
                     <p>Email delivery is not configured. Share the link or QR code below manually.</p>
                   )}
@@ -183,9 +197,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                   <img src={inviteQR} alt="Invitation QR code" width={200} height={200} />
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" onClick={() => downloadQR(inviteQR)}>
-                    Download QR
-                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => downloadQR(inviteQR)}>Download QR</Button>
                   <Button size="sm" variant="outline" onClick={() => copyLink(inviteLink)} className="gap-1.5">
                     <CopySVG />
                     {copied ? 'Copied!' : 'Copy Link'}
@@ -221,62 +233,35 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
 
               {/* Invite mode toggle */}
               <div className="flex rounded-lg border border-gray-200 p-1 gap-1 bg-gray-50">
-                <button
-                  type="button"
-                  onClick={() => switchMode('email')}
-                  className={cn(
-                    'flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors',
-                    inviteMode === 'email'
-                      ? 'bg-white text-indigo-700 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700 cursor-pointer'
-                  )}
-                >
+                <button type="button" onClick={() => switchMode('email')} className={cn('flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors', inviteMode === 'email' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700 cursor-pointer')}>
                   Email invite
                 </button>
-                <button
-                  type="button"
-                  onClick={() => switchMode('username')}
-                  className={cn(
-                    'flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors',
-                    inviteMode === 'username'
-                      ? 'bg-white text-indigo-700 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700 cursor-pointer'
-                  )}
-                >
+                <button type="button" onClick={() => switchMode('username')} className={cn('flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors', inviteMode === 'username' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700 cursor-pointer')}>
                   Username invite
                 </button>
               </div>
 
-              {/* Email field */}
               {inviteMode === 'email' && (
                 <FormField control={form.control} name="email" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email address *</FormLabel>
-                    <FormControl>
-                      <Input type="email" {...field} placeholder="member@company.com" />
-                    </FormControl>
+                    <FormControl><Input type="email" {...field} placeholder="member@company.com" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
               )}
 
-              {/* Username field */}
               {inviteMode === 'username' && (
                 <FormField control={form.control} name="username" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Username *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="jane_smith" autoCapitalize="none" autoCorrect="off" />
-                    </FormControl>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      3–30 lowercase letters, numbers, or underscores. The user will sign in with this username.
-                    </p>
+                    <FormControl><Input {...field} placeholder="jane_smith" autoCapitalize="none" autoCorrect="off" /></FormControl>
+                    <p className="text-xs text-gray-400 mt-0.5">3–30 lowercase letters, numbers, or underscores.</p>
                     <FormMessage />
                   </FormItem>
                 )} />
               )}
 
-              {/* Display name */}
               <FormField control={form.control} name="displayName" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Full Name *</FormLabel>
@@ -285,17 +270,10 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                 </FormItem>
               )} />
 
-              {/* Role */}
               <FormField control={form.control} name="role" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role *</FormLabel>
-                  <Select
-                    onValueChange={(v) => {
-                      field.onChange(v);
-                      if (v !== 'staff') setShowPermissions(false);
-                    }}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={handleRoleChange} defaultValue={field.value}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
                       {canInviteOwner && <SelectItem value="org_owner">Owner</SelectItem>}
@@ -307,34 +285,29 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                 </FormItem>
               )} />
 
-              {/* Permissions — staff only */}
-              {form.watch('role') === 'staff' && (
-                <div className="space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowPermissions((v) => !v)}
-                    className="flex items-center gap-2 text-sm font-medium text-indigo-700 hover:text-indigo-800"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-                      <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none" />
-                      <path d="M4 7h6M7 4v6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-                    </svg>
-                    {showPermissions ? 'Hide Access Permissions' : 'Set Access Permissions'}
-                  </button>
-                  {showPermissions && (
-                    <PermissionsEditor
-                      value={permissions}
-                      onChange={setPermissions}
-                      availableFeatures={features}
-                    />
-                  )}
-                  {!showPermissions && (
-                    <p className="text-xs text-gray-400">
-                      Default: view-only access. Click above to customise.
-                    </p>
-                  )}
-                </div>
-              )}
+              {/* Access permissions — shown for all roles */}
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPermissions((v) => !v)}
+                  className="flex items-center gap-2 text-sm font-medium text-indigo-700 hover:text-indigo-800"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+                    <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none" />
+                    <path d="M4 7h6M7 4v6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                  </svg>
+                  {showPermissions ? 'Hide Access Permissions' : 'Set Access Permissions'}
+                </button>
+                {showPermissions ? (
+                  <PermissionsEditor
+                    value={permissions}
+                    onChange={setPermissions}
+                    availableFeatures={features}
+                  />
+                ) : (
+                  <p className="text-xs text-gray-400">{permissionsLabel}</p>
+                )}
+              </div>
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>Cancel</Button>

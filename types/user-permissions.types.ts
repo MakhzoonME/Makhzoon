@@ -54,6 +54,16 @@ export interface UserPermissions {
   auditLogs: AuditLogsPermissions;
 }
 
+export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
+  assets:    { view: true,  create: true,  update: true,  delete: true,  import: true,  checkout: true,  maintenance: true,  notes: true  },
+  inventory: { view: true,  create: true,  update: true,  delete: true,  transactions: true,  audits: true  },
+  warranties:{ view: true,  create: true,  update: true,  delete: true  },
+  requests:  { view: true,  create: true,  approve: true  },
+  reports:   { view: true  },
+  support:   { view: true,  create: true  },
+  auditLogs: { view: true  },
+};
+
 export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   assets:    { view: true,  create: false, update: false, delete: false, import: false, checkout: false, maintenance: false, notes: false },
   inventory: { view: true,  create: false, update: false, delete: false, transactions: false, audits: false },

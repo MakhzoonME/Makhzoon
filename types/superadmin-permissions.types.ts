@@ -38,6 +38,24 @@ export interface SuperAdminPermissions {
   backendLogs: BackendLogsPermissions;
 }
 
+export const DEFAULT_SUPER_ADMIN_PERMISSIONS: SuperAdminPermissions = {
+  organizations: { view: true,  create: true,  update: true,  delete: true  },
+  support:       { view: true,  respond: true,  close: true  },
+  configuration: { view: true,  edit: true  },
+  auditLogs:     { view: true  },
+  team:          { view: true,  manage: true  },
+  backendLogs:   { view: true  },
+};
+
+export const DEFAULT_MAKHZOON_ADMIN_PERMISSIONS: SuperAdminPermissions = {
+  organizations: { view: true,  create: true,  update: true,  delete: false },
+  support:       { view: true,  respond: true,  close: true  },
+  configuration: { view: true,  edit: false },
+  auditLogs:     { view: true  },
+  team:          { view: true,  manage: false },
+  backendLogs:   { view: true  },
+};
+
 export const DEFAULT_SUPPORT_PERMISSIONS: SuperAdminPermissions = {
   organizations: { view: true,  create: false, update: false, delete: false },
   support:       { view: true,  respond: true,  close: false },

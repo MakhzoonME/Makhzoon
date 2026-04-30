@@ -2,14 +2,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useOrgSlug } from '@/hooks/useOrgSlug';
+import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { Button } from '@/components/ui/button';
 import { formatDate, daysUntil } from '@/lib/utils/date';
-import { Asset, Warranty } from '@/types';
+import { Asset, Warranty, Request } from '@/types';
 
-/* ── Inline stat-card SVG icons ─────────────────────────────────── */
+/* ── Inline SVG icons ───────────────────────────────────────────── */
 function ActiveIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -45,26 +47,89 @@ function TotalIcon() {
     </svg>
   );
 }
+function InboxIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+      <path d="M16 9h-4l-1.5 2.5h-3L6 9H2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 4.5l-2 4.5v5a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 16 14V9l-2-4.5a1.5 1.5 0 0 0-1.35-.85H5.35A1.5 1.5 0 0 0 4 4.5z" stroke="currentColor" strokeWidth="1.4" fill="none" />
+    </svg>
+  );
+}
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M2.5 7l3 3 6-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function XIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+function ArrowRightIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function PlusSVG() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
 
+/* ── Greeting helper ─────────────────────────────────────────────── */
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+/* ── Data fetcher ────────────────────────────────────────────────── */
 function useDashboard() {
   return useQuery({
     queryKey: ['dashboard'],
     queryFn: async () => {
-      const [assetsRes, warrantiesRes] = await Promise.all([
+      const [assetsRes, warrantiesRes, requestsRes, auditRes] = await Promise.all([
         fetch('/api/assets'),
         fetch('/api/warranties?expiringSoon=true'),
+        fetch('/api/requests?status=PENDING&limit=5'),
+        fetch('/api/audit-logs?limit=4'),
       ]);
       const assetsBody = assetsRes.ok ? await assetsRes.json() : { items: [] };
       const warrantiesBody = warrantiesRes.ok ? await warrantiesRes.json() : [];
+      const requestsBody = requestsRes.ok ? await requestsRes.json() : [];
+      const auditBody = auditRes.ok ? await auditRes.json() : [];
       const assets: Asset[] = Array.isArray(assetsBody?.items) ? assetsBody.items : [];
       const warranties: Warranty[] = Array.isArray(warrantiesBody) ? warrantiesBody : [];
-      return { assets, warranties };
+      const requests: Request[] = Array.isArray(requestsBody) ? requestsBody : (Array.isArray(requestsBody?.items) ? requestsBody.items : []);
+      const auditLogs: AuditEntry[] = Array.isArray(auditBody) ? auditBody : (Array.isArray(auditBody?.items) ? auditBody.items : []);
+      return { assets, warranties, requests, auditLogs };
     },
     staleTime: 30_000,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
   });
 }
 
+/* ── Types ───────────────────────────────────────────────────────── */
+type AuditEntry = {
+  id: string;
+  actorName?: string;
+  actorEmail?: string;
+  action: string;
+  module?: string;
+  targetId?: string;
+  createdAt: string | number;
+};
+
+/* ── StatCard ────────────────────────────────────────────────────── */
 type StatCardProps = {
   icon: React.ReactNode;
   iconBg: string;
@@ -78,12 +143,11 @@ type StatCardProps = {
 function StatCard({ icon, iconBg, iconColor, label, value, sub, onClick }: StatCardProps) {
   return (
     <Card
-      className="transition-all duration-150"
-      style={{ cursor: onClick ? 'pointer' : 'default' }}
+      className={`transition-all duration-150 ${onClick ? 'cursor-pointer hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600' : ''}`}
       onClick={onClick}
     >
       <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
           <div
             className="p-2 rounded-lg flex-shrink-0"
             style={{ background: iconBg, color: iconColor }}
@@ -91,9 +155,9 @@ function StatCard({ icon, iconBg, iconColor, label, value, sub, onClick }: StatC
             {icon}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">{label}</p>
             {value}
-            {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+            {sub && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{sub}</p>}
           </div>
         </div>
       </CardContent>
@@ -102,38 +166,279 @@ function StatCard({ icon, iconBg, iconColor, label, value, sub, onClick }: StatC
 }
 
 function SkeletonValue() {
-  return <div className="h-7 w-14 bg-gray-200 rounded animate-pulse" />;
+  return <div className="h-7 w-14 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />;
 }
 
+/* ── AssetBreakdownBar ───────────────────────────────────────────── */
+function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: boolean }) {
+  const categories: Record<string, number> = {};
+  for (const a of assets) {
+    if (a.status === 'Retired') continue;
+    categories[a.category] = (categories[a.category] ?? 0) + 1;
+  }
+  const total = Object.values(categories).reduce((s, n) => s + n, 0) || 1;
+  const sorted = Object.entries(categories).sort((a, b) => b[1] - a[1]).slice(0, 4);
+
+  const TONES: Record<number, { bar: string; text: string }> = {
+    0: { bar: 'bg-indigo-500', text: 'text-indigo-700 dark:text-indigo-400' },
+    1: { bar: 'bg-emerald-500', text: 'text-emerald-700 dark:text-emerald-400' },
+    2: { bar: 'bg-amber-400', text: 'text-amber-700 dark:text-amber-400' },
+    3: { bar: 'bg-gray-400', text: 'text-gray-600 dark:text-gray-400' },
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="grid grid-cols-[130px_1fr_64px] gap-3 items-center">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+            <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (sorted.length === 0) {
+    return <p className="text-sm text-gray-400 dark:text-gray-500 py-4 text-center">No assets to display.</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {sorted.map(([cat, count], i) => {
+        const pct = Math.round((count / total) * 100);
+        const tone = TONES[i] ?? TONES[3];
+        return (
+          <div key={cat} className="grid grid-cols-[130px_1fr_64px] gap-3 items-center py-1 border-b border-gray-100 dark:border-gray-800 last:border-0">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{cat}</span>
+            <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+              <div
+                className={`h-full rounded-full ${tone.bar} transition-all duration-500`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className={`text-xs font-medium tabular-nums text-right ${tone.text}`}>
+              {count} · {pct}%
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── ActivityFeed ────────────────────────────────────────────────── */
+function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: boolean }) {
+  function getInitials(name?: string, email?: string): string {
+    const src = name || email || '?';
+    return src.split(/[\s@]/).map((s: string) => s[0]).slice(0, 2).join('').toUpperCase();
+  }
+
+  function formatRelative(ts: string | number): string {
+    const d = typeof ts === 'string' ? new Date(ts) : new Date(ts);
+    const diffMs = Date.now() - d.getTime();
+    const diffMin = Math.floor(diffMs / 60_000);
+    const diffH   = Math.floor(diffMs / 3_600_000);
+    const diffD   = Math.floor(diffMs / 86_400_000);
+    if (diffMin < 2) return 'just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffH < 24) return `${diffH}h ago`;
+    if (diffD === 1) return 'Yesterday';
+    return formatDate(d);
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="flex gap-3 items-start">
+            <div className="h-7 w-7 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse flex-shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-3.5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4" />
+              <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded animate-pulse w-1/3" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (logs.length === 0) {
+    return <p className="text-sm text-gray-400 dark:text-gray-500 py-4 text-center">No recent activity.</p>;
+  }
+
+  const ACTION_COLOR: Record<string, string> = {
+    approved: 'text-emerald-600 dark:text-emerald-400',
+    rejected: 'text-red-500 dark:text-red-400',
+    deleted: 'text-red-500 dark:text-red-400',
+    created: 'text-indigo-600 dark:text-indigo-400',
+    updated: 'text-indigo-600 dark:text-indigo-400',
+  };
+
+  return (
+    <div className="space-y-4">
+      {logs.map((log) => {
+        const actor = log.actorName || log.actorEmail || 'System';
+        const initials = getInitials(log.actorName, log.actorEmail);
+        const actionColor = ACTION_COLOR[log.action?.toLowerCase()] ?? 'text-gray-600 dark:text-gray-400';
+        return (
+          <div key={log.id} className="flex gap-3 items-start">
+            <div className="h-7 w-7 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-[10px] font-semibold text-indigo-700 dark:text-indigo-300 flex-shrink-0">
+              {initials}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-gray-800 dark:text-gray-200 leading-snug">
+                <span className="font-semibold">{actor}</span>
+                {' '}
+                <span className={actionColor}>{log.action}</span>
+                {log.module && (
+                  <> <span className="text-gray-500 dark:text-gray-400">{log.module}</span></>
+                )}
+                {log.targetId && (
+                  <> <span className="font-mono text-xs text-gray-400 dark:text-gray-500">{log.targetId}</span></>
+                )}
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatRelative(log.createdAt)}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── PendingRequestsTable (admin only) ───────────────────────────── */
+const typeLabels: Record<string, string> = {
+  REFILL: 'Refill',
+  RETIRE: 'Retire',
+  BUY_NEW: 'Buy New',
+  EXTEND_WARRANTY: 'Extend Warranty',
+};
+
+const typeTones: Record<string, string> = {
+  REFILL: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300',
+  RETIRE: 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300',
+  BUY_NEW: 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
+  EXTEND_WARRANTY: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
+};
+
+function PendingRequestsTable({
+  requests,
+  isLoading,
+  orgSlug,
+  onApprove,
+  onReject,
+}: {
+  requests: Request[];
+  isLoading: boolean;
+  orgSlug: string;
+  onApprove: (id: string) => void;
+  onReject: (id: string) => void;
+}) {
+  const router = useRouter();
+  const columns: ColumnDef<Request>[] = [
+    {
+      key: 'type',
+      header: 'Type',
+      render: (r) => (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${typeTones[r.type] ?? 'bg-gray-100 text-gray-700'}`}>
+          {typeLabels[r.type] ?? r.type}
+        </span>
+      ),
+    },
+    {
+      key: 'asset',
+      header: 'Asset',
+      render: (r) => (
+        <span className="font-medium text-gray-900 dark:text-gray-100 text-sm">
+          {r.assetName ?? r.inventoryItemName ?? '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'by',
+      header: 'Requested by',
+      render: (r) => (
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          {r.createdByName ?? r.createdByEmail ?? r.createdBy}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      render: (r) =>
+        r.status === 'PENDING' ? (
+          <div className="flex items-center gap-1 justify-end">
+            <button
+              onClick={(e) => { e.stopPropagation(); onApprove(r.id); }}
+              aria-label="Approve request"
+              className="h-7 w-7 rounded-md flex items-center justify-center text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors duration-150"
+            >
+              <CheckIcon />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onReject(r.id); }}
+              aria-label="Reject request"
+              className="h-7 w-7 rounded-md flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors duration-150"
+            >
+              <XIcon />
+            </button>
+          </div>
+        ) : null,
+    },
+  ];
+
+  return (
+    <DataTable
+      data={requests}
+      columns={columns}
+      isLoading={isLoading}
+      emptyMessage="No pending requests."
+      onRowClick={() => router.push(`/${orgSlug}/requests`)}
+      keyExtractor={(r) => r.id}
+    />
+  );
+}
+
+/* ── Page ────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const { user } = useAuthStore();
   const { data, isLoading } = useDashboard();
 
-  const activeAssets    = data?.assets.filter((a) => a.status === 'Active')   ?? [];
-  const retiredAssets   = data?.assets.filter((a) => a.status === 'Retired')  ?? [];
-  const totalAssets     = data?.assets ?? [];
-  const expiringWarranties = data?.warranties ?? [];
-  const recentAssets    = totalAssets.slice(0, 10);
+  const firstName = (user?.displayName ?? user?.email ?? 'there').split(/[\s@]/)[0];
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
-  const assetColumns: ColumnDef<Asset>[] = [
-    { key: 'name',      header: 'Name',     render: (a) => <span className="font-medium text-gray-900">{a.name}</span> },
-    { key: 'category',  header: 'Category', render: (a) => a.category },
-    { key: 'status',    header: 'Status',   render: (a) => <StatusBadge status={a.status} /> },
-    { key: 'createdBy', header: 'Added By', render: (a) => a.createdByName ?? a.createdByEmail ?? a.createdBy },
-    { key: 'createdAt', header: 'Date',     render: (a) => formatDate(a.createdAt) },
-  ];
+  const activeAssets       = data?.assets.filter((a) => a.status === 'Active')  ?? [];
+  const retiredAssets      = data?.assets.filter((a) => a.status === 'Retired') ?? [];
+  const totalAssets        = data?.assets ?? [];
+  const expiringWarranties = data?.warranties ?? [];
+  const pendingRequests    = data?.requests ?? [];
+  const auditLogs          = data?.auditLogs ?? [];
+
+  async function handleDecision(requestId: string, action: 'approve' | 'reject') {
+    try {
+      await fetch(`/api/requests/${requestId}/${action}`, { method: 'POST' });
+    } catch {
+      // Silent fail — full handling in the Requests page
+    }
+  }
 
   const warrantyColumns: ColumnDef<Warranty>[] = [
-    { key: 'assetId', header: 'Asset',  render: (w) => w.assetName ?? w.assetId },
-    { key: 'vendor',  header: 'Vendor', render: (w) => w.vendor },
-    { key: 'endDate', header: 'Expiry', render: (w) => <span className="text-red-600 font-medium">{formatDate(w.endDate)}</span> },
+    { key: 'assetId', header: 'Asset',  render: (w) => <span className="font-medium text-sm">{w.assetName ?? w.assetId}</span> },
+    { key: 'vendor',  header: 'Vendor', render: (w) => <span className="text-sm text-gray-600 dark:text-gray-400">{w.vendor}</span> },
+    { key: 'endDate', header: 'Expiry', render: (w) => <span className="text-red-600 dark:text-red-400 font-medium text-sm tabular-nums">{formatDate(w.endDate)}</span> },
     {
-      key: 'days', header: 'Remaining', render: (w) => {
+      key: 'days',
+      header: 'Left',
+      render: (w) => {
         const d = daysUntil(w.endDate);
         return (
-          <span className={`font-semibold tabular-nums ${d < 7 ? 'text-red-600' : 'text-yellow-700'}`}>
-            {d < 0 ? `Expired ${Math.abs(d)}d ago` : `${d}d`}
+          <span className={`font-semibold tabular-nums text-sm ${d < 7 ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'}`}>
+            {d < 0 ? `${Math.abs(d)}d ago` : `${d}d`}
           </span>
         );
       },
@@ -141,17 +446,37 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div>
-      <PageHeader title="Dashboard" />
+    <div className="space-y-6">
+      {/* ── Page header ──────────────────────────────────────────────── */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+            {greeting()}, {firstName}
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+            Here&apos;s what&apos;s happening across your workspace today.
+          </p>
+        </div>
+        {isAdmin && (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => router.push(`/${orgSlug}/assets/new`)}
+            >
+              <PlusSVG /><span className="ml-1.5">New asset</span>
+            </Button>
+          </div>
+        )}
+      </div>
 
-      {/* ── Stat cards ──────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* ── Stat cards ───────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={<TotalIcon />}
           iconBg="var(--primary-50)"
           iconColor="var(--primary-600)"
           label="Total Assets"
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{totalAssets.length}</p>}
+          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{totalAssets.length}</p>}
           onClick={() => router.push(`/${orgSlug}/assets`)}
         />
         <StatCard
@@ -159,17 +484,18 @@ export default function DashboardPage() {
           iconBg="var(--green-50)"
           iconColor="var(--green-600)"
           label="Active"
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{activeAssets.length}</p>}
+          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{activeAssets.length}</p>}
           sub={!isLoading && totalAssets.length > 0 ? `${Math.round((activeAssets.length / totalAssets.length) * 100)}% of total` : undefined}
           onClick={() => router.push(`/${orgSlug}/assets?status=Active`)}
         />
         <StatCard
-          icon={<RetiredIcon />}
-          iconBg="var(--gray-100)"
-          iconColor="var(--gray-500)"
-          label="Retired"
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{retiredAssets.length}</p>}
-          onClick={() => router.push(`/${orgSlug}/assets?status=Retired`)}
+          icon={<InboxIcon />}
+          iconBg="var(--yellow-50)"
+          iconColor="var(--yellow-600)"
+          label="Pending Requests"
+          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{pendingRequests.length}</p>}
+          sub={!isLoading && pendingRequests.length > 0 ? 'need review' : undefined}
+          onClick={() => router.push(`/${orgSlug}/requests`)}
         />
         <StatCard
           icon={<WarningIcon />}
@@ -178,9 +504,9 @@ export default function DashboardPage() {
           label="Warranties Expiring"
           value={
             isLoading ? <SkeletonValue /> : (
-              <p className="text-2xl font-bold text-gray-900 tabular-nums">
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">
                 {expiringWarranties.length}
-                <span className="text-sm font-normal text-gray-500 ml-1">soon</span>
+                <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-1">soon</span>
               </p>
             )
           }
@@ -188,43 +514,57 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* ── Data tables ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardContent className="p-0">
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-900">Recent Assets</h2>
+      {/* ── Middle row: asset breakdown + activity feed ───────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        {/* Asset breakdown — takes 3 of 5 columns */}
+        <Card className="lg:col-span-3">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Asset breakdown</h2>
               <button
                 onClick={() => router.push(`/${orgSlug}/assets`)}
-                className="text-xs text-indigo-600 font-medium hover:text-indigo-700 transition-colors"
+                className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
               >
-                View all →
+                View all <ArrowRightIcon />
               </button>
             </div>
-            <DataTable
-              data={recentAssets}
-              columns={assetColumns}
-              isLoading={isLoading}
-              emptyMessage="No assets added yet."
-              onRowClick={(a) => router.push(`/${orgSlug}/assets/${a.id}`)}
-              keyExtractor={(a) => a.id}
-            />
+            <AssetBreakdownBar assets={totalAssets} isLoading={isLoading} />
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Recent activity — takes 2 of 5 columns */}
+        <Card className="lg:col-span-2">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recent activity</h2>
+              <button
+                onClick={() => router.push(`/${orgSlug}/audit-logs`)}
+                className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
+              >
+                View all <ArrowRightIcon />
+              </button>
+            </div>
+            <ActivityFeed logs={auditLogs} isLoading={isLoading} />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── Bottom row: expiring warranties + pending requests ───────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        {/* Expiring warranties — takes 2 of 5 columns */}
+        <Card className="lg:col-span-2">
           <CardContent className="p-0">
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-900">Expiring Warranties</h2>
+            <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Expiring warranties</h2>
               <button
                 onClick={() => router.push(`/${orgSlug}/warranties`)}
-                className="text-xs text-indigo-600 font-medium hover:text-indigo-700 transition-colors"
+                className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
               >
-                View all →
+                View all <ArrowRightIcon />
               </button>
             </div>
             <DataTable
-              data={expiringWarranties}
+              data={expiringWarranties.slice(0, 5)}
               columns={warrantyColumns}
               isLoading={isLoading}
               emptyMessage="No warranties expiring soon."
@@ -232,6 +572,37 @@ export default function DashboardPage() {
             />
           </CardContent>
         </Card>
+
+        {/* Pending requests (admin only) — takes 3 of 5 columns */}
+        {isAdmin && (
+          <Card className="lg:col-span-3">
+            <CardContent className="p-0">
+              <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Pending requests</h2>
+                  {!isLoading && pendingRequests.length > 0 && (
+                    <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[11px] font-semibold tabular-nums">
+                      {pendingRequests.length}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => router.push(`/${orgSlug}/requests`)}
+                  className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
+                >
+                  Open queue <ArrowRightIcon />
+                </button>
+              </div>
+              <PendingRequestsTable
+                requests={pendingRequests}
+                isLoading={isLoading}
+                orgSlug={orgSlug}
+                onApprove={(id) => handleDecision(id, 'approve')}
+                onReject={(id) => handleDecision(id, 'reject')}
+              />
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

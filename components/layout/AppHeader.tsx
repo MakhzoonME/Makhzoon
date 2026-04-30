@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Badge } from '@/components/ui/badge';
 import { CommandPalette, useCommandPalette } from '@/components/shared/CommandPalette';
 import { useUiStore } from '@/store/ui.store';
+import { useTransferStore } from '@/store/transfer.store';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { useOrgSlug } from '@/hooks/useOrgSlug';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
@@ -83,7 +84,9 @@ export function AppHeader({ orgName }: { orgName?: string }) {
   async function handleLogout() {
     await fetch('/api/auth/session', { method: 'DELETE' });
     await signOut(auth);
+    useTransferStore.getState().clearTransfer();
     router.push('/login');
+    router.refresh();
   }
 
   const role = user?.role ?? 'staff';

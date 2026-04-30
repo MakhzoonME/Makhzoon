@@ -16,12 +16,8 @@ export async function middleware(req: NextRequest) {
 
   const session = req.cookies.get('session')?.value;
 
-  // Logged-in users hitting /login → superadmin dashboard
-  if (session && pathname === '/login') {
-    return NextResponse.redirect(new URL('/superadmin', req.url));
-  }
-
-  // Marketing and auth pages are always accessible without a session
+  // Marketing and auth pages are always accessible — let the login page
+  // itself route already-signed-in users based on their role.
   if (PUBLIC_PATHS.has(pathname)) {
     return NextResponse.next();
   }

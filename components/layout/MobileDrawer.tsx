@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
+import { useTransferStore } from '@/store/transfer.store';
 import { useSubscriptionFeatures } from '@/hooks/useSubscriptionFeatures';
 import { auth } from '@/lib/firebase/client';
 import { signOut } from 'firebase/auth';
@@ -62,7 +63,9 @@ export function MobileDrawer() {
     setMobileMenuOpen(false);
     await fetch('/api/auth/session', { method: 'DELETE' });
     await signOut(auth);
+    useTransferStore.getState().clearTransfer();
     router.push('/login');
+    router.refresh();
   }
 
   return (

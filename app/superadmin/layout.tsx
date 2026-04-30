@@ -9,6 +9,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
+import { useTransferStore } from '@/store/transfer.store';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
@@ -42,7 +43,9 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   async function handleLogout() {
     await fetch('/api/auth/session', { method: 'DELETE' });
     await signOut(auth);
+    useTransferStore.getState().clearTransfer();
     router.push('/login');
+    router.refresh();
   }
 
   if (loading || !user) return (

@@ -9,6 +9,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ORG_NAV_ITEMS } from '@/lib/utils/nav-config';
 import { hasModuleAccess } from '@/lib/utils/permissions';
 import { UserPermissions } from '@/types';
+import { useT } from '@/hooks/useT';
+import type { MessageKey } from '@/locales/messages';
 
 /* ── Inline SVG nav icons ─────────────────────────────────────── */
 function DashboardSVG() {
@@ -138,6 +140,8 @@ export function AppSidebar() {
   const orgSlug   = (params?.orgSlug as string) ?? '';
   const { user }  = useAuthStore();
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
+  const { t, dir } = useT();
+  const isRtl = dir === 'rtl';
 
   const features  = user?.features ?? {};
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
@@ -158,44 +162,54 @@ export function AppSidebar() {
         initial={false}
         animate={{ width: sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED }}
         transition={{ duration: 0.3, ease: EASE_OUT }}
-        className="hidden md:flex fixed left-0 top-14 bottom-0 bg-white border-r border-gray-200 flex-col z-30"
+        className={cn(
+          'hidden md:flex fixed top-14 bottom-0 bg-surface-sidebar border-gray-200 dark:border-gray-800 flex-col z-30',
+          isRtl ? 'right-0 border-l' : 'left-0 border-r',
+        )}
         style={{ overflow: 'visible', contain: 'layout style' }}
       >
-        {/* Collapse toggle — right edge, vertically centered */}
+        {/* Collapse toggle — outer edge, vertically centered */}
         <button
           onClick={toggleSidebar}
           aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="absolute -right-3 top-1/2 -translate-y-1/2 z-20
-            h-6 w-6 rounded-full bg-white border border-gray-200 shadow-sm
-            flex items-center justify-center text-gray-400
-            hover:text-gray-700 hover:border-gray-300 hover:shadow-md
-            transition-all duration-200"
+          className={cn(
+            'absolute top-1/2 -translate-y-1/2 z-20',
+            'h-6 w-6 rounded-full bg-surface-sidebar border border-gray-200 dark:border-gray-700 shadow-sm',
+            'flex items-center justify-center text-gray-400 dark:text-gray-500',
+            'hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 hover:shadow-md',
+            'transition-all duration-200',
+            isRtl ? '-left-3' : '-right-3',
+          )}
         >
-          {sidebarCollapsed ? <ChevronRightSVG /> : <ChevronLeftSVG />}
+          {isRtl
+            ? (sidebarCollapsed ? <ChevronLeftSVG /> : <ChevronRightSVG />)
+            : (sidebarCollapsed ? <ChevronRightSVG /> : <ChevronLeftSVG />)
+          }
         </button>
 
         <nav className="flex-1 p-2.5 space-y-0.5 overflow-y-auto overflow-x-hidden">
-          {visibleItems.map(({ href, label }) => {
+          {visibleItems.map(({ href, label, labelKey }) => {
             const Icon = NAV_ICONS[href] ?? DashboardSVG;
             const fullHref = orgSlug ? `/${orgSlug}${href}` : href;
             const active   = pathname === fullHref || pathname.startsWith(fullHref + '/');
+            const translatedLabel = t(labelKey as MessageKey, label);
 
             const link = (
               <Link
                 href={fullHref}
-                aria-label={label}
+                aria-label={translatedLabel}
                 className={cn(
                   'group relative flex items-center gap-2.5 rounded-lg text-sm transition-colors duration-150',
                   sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2',
                   active
-                    ? 'text-indigo-700 font-semibold'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                    ? 'text-indigo-700 dark:text-indigo-400 font-semibold'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100',
                 )}
               >
                 {active && (
                   <motion.span
                     layoutId="sidebar-active-pill"
-                    className="absolute inset-0 rounded-lg bg-indigo-50"
+                    className="absolute inset-0 rounded-lg bg-indigo-50 dark:bg-indigo-950/50"
                     transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                   />
                 )}
@@ -203,7 +217,7 @@ export function AppSidebar() {
                   className={cn(
                     'relative z-10 flex-shrink-0 transition-transform duration-200 ease-out',
                     'group-hover:scale-110',
-                    active ? 'text-indigo-700' : '',
+                    active ? 'text-indigo-700 dark:text-indigo-400' : '',
                   )}
                 >
                   <Icon />
@@ -212,13 +226,13 @@ export function AppSidebar() {
                   {!sidebarCollapsed && (
                     <motion.span
                       key="label"
-                      initial={{ opacity: 0, x: -5 }}
+                      initial={{ opacity: 0, x: isRtl ? 5 : -5 }}
                       animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -5 }}
+                      exit={{ opacity: 0, x: isRtl ? 5 : -5 }}
                       transition={{ duration: 0.16, ease: EASE_OUT }}
                       className="relative z-10 whitespace-nowrap"
                     >
-                      {label}
+                      {translatedLabel}
                     </motion.span>
                   )}
                 </AnimatePresence>
@@ -230,7 +244,7 @@ export function AppSidebar() {
             return (
               <Tooltip key={href}>
                 <TooltipTrigger asChild>{link}</TooltipTrigger>
-                <TooltipContent side="right">{label}</TooltipContent>
+                <TooltipContent side={isRtl ? 'left' : 'right'}>{translatedLabel}</TooltipContent>
               </Tooltip>
             );
           })}
@@ -238,23 +252,23 @@ export function AppSidebar() {
 
         {/* User info */}
         {user && (
-          <div className="p-3 border-t border-gray-100">
+          <div className="p-3 border-t border-gray-100 dark:border-gray-800">
             <div className={cn('flex items-center gap-2 px-1 py-1', sidebarCollapsed && 'justify-center')}>
-              <div className="h-7 w-7 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-semibold text-indigo-700 flex-shrink-0">
+              <div className="h-7 w-7 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-xs font-semibold text-indigo-700 dark:text-indigo-300 flex-shrink-0">
                 {user.displayName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase()}
               </div>
               <AnimatePresence initial={false}>
                 {!sidebarCollapsed && (
                   <motion.div
                     key="user-meta"
-                    initial={{ opacity: 0, x: -5 }}
+                    initial={{ opacity: 0, x: isRtl ? 5 : -5 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -5 }}
+                    exit={{ opacity: 0, x: isRtl ? 5 : -5 }}
                     transition={{ duration: 0.16, ease: EASE_OUT }}
                     className="flex-1 min-w-0"
                   >
-                    <p className="text-xs font-medium text-gray-900 truncate">{user.displayName || user.email}</p>
-                    <p className="text-[11px] text-gray-500 capitalize">{user.role?.replace('_', ' ')}</p>
+                    <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">{user.displayName || user.email}</p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 capitalize">{user.role?.replace('_', ' ')}</p>
                   </motion.div>
                 )}
               </AnimatePresence>

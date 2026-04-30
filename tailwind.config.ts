@@ -19,9 +19,9 @@ const config: Config = {
           700: '#4338CA',
         },
         surface: {
-          page: '#F8FAFC',
-          card: '#FFFFFF',
-          sidebar: '#FFFFFF',
+          page:    'var(--surface-page)',
+          card:    'var(--surface-card)',
+          sidebar: 'var(--surface-sidebar)',
         },
         amber: {
           500: '#F59E0B',

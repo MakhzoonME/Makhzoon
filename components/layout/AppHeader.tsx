@@ -10,6 +10,9 @@ import { CommandPalette, useCommandPalette } from '@/components/shared/CommandPa
 import { useUiStore } from '@/store/ui.store';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { useOrgSlug } from '@/hooks/useOrgSlug';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
+import { LanguageToggle } from '@/components/shared/LanguageToggle';
+import { useT } from '@/hooks/useT';
 
 /* ── Inline SVG icons ───────────────────────────────────────────── */
 function BurgerSVG() {
@@ -69,6 +72,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
   const { setMobileMenuOpen } = useUiStore();
   const [shortcutLabel, setShortcutLabel] = useState('Ctrl+K');
+  const { t } = useT();
 
   useEffect(() => {
     if (typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)) {
@@ -87,13 +91,13 @@ export function AppHeader({ orgName }: { orgName?: string }) {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-gray-200 flex items-center px-4 gap-4 z-40">
+      <header className="fixed top-0 left-0 right-0 h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-4 gap-4 z-40">
         {/* Burger menu — mobile only */}
         <button
           type="button"
           onClick={() => setMobileMenuOpen(true)}
           aria-label="Open menu"
-          className="md:hidden p-1.5 -ml-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95 transition-all duration-150"
+          className="md:hidden p-1.5 -ml-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800 active:scale-95 transition-all duration-150"
         >
           <BurgerSVG />
         </button>
@@ -102,12 +106,12 @@ export function AppHeader({ orgName }: { orgName?: string }) {
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex items-center gap-2">
             <MakhzoonMark size={26} />
-            <span className="text-sm font-semibold text-gray-900 hidden sm:block">Makhzoon</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 hidden sm:block">Makhzoon</span>
           </div>
           {orgName && (
             <>
-              <span className="text-gray-300 select-none">/</span>
-              <span className="text-sm text-gray-600 truncate max-w-[160px]">{orgName}</span>
+              <span className="text-gray-300 dark:text-gray-600 select-none">/</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[160px]">{orgName}</span>
             </>
           )}
         </div>
@@ -116,11 +120,11 @@ export function AppHeader({ orgName }: { orgName?: string }) {
         <div className="flex-1 flex justify-center">
           <button
             onClick={() => setPaletteOpen(true)}
-            className="hidden md:flex items-center gap-2 w-full max-w-md rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:border-gray-300 transition-colors duration-150"
+            className="hidden md:flex items-center gap-2 w-full max-w-md rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-750 hover:border-gray-300 dark:hover:border-gray-600 transition-colors duration-150"
           >
             <SearchSVG />
-            <span className="flex-1 text-left">Search…</span>
-            <kbd className="inline-flex h-5 items-center rounded border border-gray-200 bg-white px-1.5 text-[10px] font-mono text-gray-400">{shortcutLabel}</kbd>
+            <span className="flex-1 text-left">{t('common.search')}</span>
+            <kbd className="inline-flex h-5 items-center rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-1.5 text-[10px] font-mono text-gray-400 dark:text-gray-500">{shortcutLabel}</kbd>
           </button>
         </div>
 
@@ -129,33 +133,36 @@ export function AppHeader({ orgName }: { orgName?: string }) {
           {/* Mobile search */}
           <button
             onClick={() => setPaletteOpen(true)}
-            className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-            aria-label="Search"
+            className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
+            aria-label={t('common.search')}
           >
             <SearchSVG />
           </button>
+
+          <ThemeToggle />
+          <LanguageToggle />
 
           <Badge variant={rc.variant}>{rc.label}</Badge>
 
           {/* User menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-gray-700 hover:text-gray-900 focus:outline-none px-1 py-1 rounded-md hover:bg-gray-50 transition-colors ml-1">
+            <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none px-1 py-1 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ml-1">
               <span className="hidden sm:block max-w-[140px] truncate">{user?.displayName || user?.email}</span>
               <ChevronDownSVG />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-48 dark:bg-gray-800 dark:border-gray-700">
               <DropdownMenuLabel className="font-normal">
-                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push(`/${orgSlug}/profile`)} className="gap-2">
+              <DropdownMenuSeparator className="dark:bg-gray-700" />
+              <DropdownMenuItem onClick={() => router.push(`/${orgSlug}/profile`)} className="gap-2 dark:text-gray-200 dark:focus:bg-gray-700">
                 <UserSVG />
-                Profile
+                {t('common.profile')}
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 gap-2">
+              <DropdownMenuSeparator className="dark:bg-gray-700" />
+              <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400 dark:focus:bg-gray-700 gap-2">
                 <LogOutSVG />
-                Sign out
+                {t('common.signOut')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

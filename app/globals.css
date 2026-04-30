@@ -93,9 +93,39 @@
   --dur-slow: 450ms;
 }
 
+/* ── Dark mode overrides ──────────────────────────────────────────── */
+.dark {
+  --surface-page:    #0F172A;
+  --surface-card:    #1E293B;
+  --surface-sidebar: #1E293B;
+  --border-default:  #334155;
+  --border-strong:   #475569;
+  --background:      #0F172A;
+  --foreground:      #E2E8F0;
+
+  /* Superadmin sidebar gets slightly darker in dark mode */
+  --sa-sidebar-bg: #07111F;
+  --sa-sidebar-border: rgba(59, 130, 246, 0.15);
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
+}
+
+/* ── Arabic / RTL font stack ─────────────────────────────────────── */
+html[lang="ar"] body {
+  font-family: 'Tahoma', 'Arial', system-ui, sans-serif;
+}
+
+/* ── RTL layout helpers ──────────────────────────────────────────── */
+[dir="rtl"] .sidebar-left {
+  left:  auto;
+  right: 0;
+}
+[dir="rtl"] .main-with-sidebar {
+  margin-left:  0;
+  margin-right: var(--sidebar-w, 0px);
 }
 
 @layer utilities {

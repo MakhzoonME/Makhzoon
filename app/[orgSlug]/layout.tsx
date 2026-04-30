@@ -8,6 +8,7 @@ import {
   SIDEBAR_WIDTH_COLLAPSED,
   SIDEBAR_WIDTH_EXPANDED,
 } from '@/components/layout/AppSidebar';
+import { useT } from '@/hooks/useT';
 import { TransferModeBanner } from '@/components/layout/TransferModeBanner';
 import { ExpiryWarningBanner } from '@/components/shared/ExpiryWarningBanner';
 import { PageTransition } from '@/components/layout/PageTransition';
@@ -23,6 +24,8 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   const orgSlug = params.orgSlug as string;
   const { active, orgName, setTransfer } = useTransferStore();
   const { sidebarCollapsed } = useUiStore();
+  const { dir } = useT();
+  const isRtl = dir === 'rtl';
 
   useEffect(() => {
     if (loading) return;
@@ -60,7 +63,11 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
       <MobileDrawer />
       <BottomNav />
       <main
-        className={`pt-14 ${showBanner ? 'mt-10' : ''} min-h-screen transition-[margin-left] duration-350 ease-out-expo pb-16 md:pb-0 [margin-left:0] md:[margin-left:var(--sidebar-w)]`}
+        className={`pt-14 ${showBanner ? 'mt-10' : ''} min-h-screen duration-350 ease-out-expo pb-16 md:pb-0 ${
+          isRtl
+            ? '[margin-right:0] md:[margin-right:var(--sidebar-w)] transition-[margin-right]'
+            : '[margin-left:0]  md:[margin-left:var(--sidebar-w)]  transition-[margin-left]'
+        }`}
         style={{ '--sidebar-w': `${sidebarWidth}px` } as React.CSSProperties}
       >
         <ExpiryWarningBanner />

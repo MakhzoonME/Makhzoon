@@ -1,28 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
-import { updateUser } from '@/lib/firestore/users';
+import { getUserById, updateUser } from '@/lib/firestore/users';
 import { writeAuditLog } from '@/lib/audit/logger';
+import { invalidateCachedPermissions } from '@/lib/firebase/session-cache';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export async function PATCH(req: NextRequest, { params }: { params: { userId: string } }) {
   const caller = await verifySessionCookie();
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (caller.role !== 'admin' && caller.role !== 'super_admin' && caller.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (caller.role !== 'admin' && caller.role !== 'super_admin' && caller.role !== 'org_owner')
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { userId } = params;
   if (userId === caller.uid) return NextResponse.json({ error: 'You cannot change your own role' }, { status: 400 });
-  const body = await req.json();
-  const { role } = body;
-  if (!['org_owner', 'admin', 'staff'].includes(role)) return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
-  // Only super_admin or org_owner may grant the org_owner role
-  if (role === 'org_owner' && caller.role !== 'super_admin' && caller.role !== 'org_owner') {
-    return NextResponse.json({ error: 'Only an Org Owner or Super Admin can grant the Org Owner role' }, { status: 403 });
+
+  // Fetch target user to enforce role hierarchy
+  const targetUser = await getUserById(userId);
+  if (!targetUser) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+  // Admin cannot modify owners — only org_owner or super_admin can
+  if (targetUser.role === 'org_owner' && caller.role === 'admin') {
+    return NextResponse.json({ error: 'Admins cannot modify Owner accounts' }, { status: 403 });
   }
 
-  await updateUser(userId, { role, updatedBy: caller.uid });
+  const body = await req.json();
+  const { role, permissions } = body;
+  if (!['org_owner', 'admin', 'staff'].includes(role)) return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+
+  // Only org_owner or super_admin may grant the org_owner role
+  if (role === 'org_owner' && caller.role !== 'super_admin' && caller.role !== 'org_owner') {
+    return NextResponse.json({ error: 'Only an Owner or Super Admin can grant the Owner role' }, { status: 403 });
+  }
+
+  await updateUser(userId, { role, permissions: permissions ?? undefined, updatedBy: caller.uid });
   const existingClaims = (await adminAuth.getUser(userId)).customClaims ?? {};
   await adminAuth.setCustomUserClaims(userId, { ...existingClaims, role });
+  // Bust server-side caches so the change takes effect on the user's next request
+  await adminAuth.revokeRefreshTokens(userId);
+  invalidateCachedPermissions(userId);
 
   await writeAuditLog({
     organizationId: caller.organizationId!,
@@ -40,12 +56,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { userId: st
 export async function DELETE(req: NextRequest, { params }: { params: { userId: string } }) {
   const caller = await verifySessionCookie();
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (caller.role !== 'admin' && caller.role !== 'super_admin' && caller.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (caller.role !== 'admin' && caller.role !== 'super_admin' && caller.role !== 'org_owner')
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { userId } = params;
   if (userId === caller.uid) return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });
 
+  // Fetch target user to enforce role hierarchy
+  const targetUser = await getUserById(userId);
+  if (!targetUser) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+  // Admin cannot delete owners
+  if (targetUser.role === 'org_owner' && caller.role === 'admin') {
+    return NextResponse.json({ error: 'Admins cannot remove Owner accounts' }, { status: 403 });
+  }
+
   const permanent = new URL(req.url).searchParams.get('permanent') === 'true';
+
+  invalidateCachedPermissions(userId);
 
   if (permanent) {
     try {

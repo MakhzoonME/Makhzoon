@@ -1,7 +1,7 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, signInWithPhoneNumber, RecaptchaVerifier, ConfirmationResult } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -33,10 +33,11 @@ function UserSVG() {
     </svg>
   );
 }
-function ContactSVG({ isPhone }: { isPhone: boolean }) {
-  return isPhone ? (
+function ContactSVG({ isUsername }: { isUsername: boolean }) {
+  return isUsername ? (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-      <path d="M4 1.5h2.5l1 2.5-1.5 1a8 8 0 0 0 3 3l1-1.5 2.5 1V10a1 1 0 0 1-1 1C4.716 11 1 7.284 1 2.5a1 1 0 0 1 1-1h2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" />
+      <circle cx="7" cy="4.5" r="2.5" stroke="currentColor" strokeWidth="1.3" fill="none" />
+      <path d="M2 12.5c0-2.485 2.239-4.5 5-4.5s5 2.015 5 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" fill="none" />
     </svg>
   ) : (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
@@ -64,13 +65,17 @@ function SpinnerSVG() {
 
 type InviteInfo = {
   email?: string;
-  phone?: string;
-  phoneDisplay?: string;
-  channel: string;
+  username?: string;
   displayName: string;
   role: 'org_owner' | 'admin' | 'staff';
   orgName: string;
   invitedByName: string;
+};
+
+const ROLE_LABEL: Record<string, string> = {
+  org_owner: 'Owner',
+  admin: 'Admin',
+  staff: 'Staff',
 };
 
 export default function AcceptInvitePage({ params }: { params: { token: string } }) {
@@ -81,16 +86,8 @@ export default function AcceptInvitePage({ params }: { params: { token: string }
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Email/password fields
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-
-  // Phone OTP fields
-  const [otpStep, setOtpStep] = useState<'send' | 'verify'>('send');
-  const [otp, setOtp] = useState('');
-  const [sendingOtp, setSendingOtp] = useState(false);
-  const confirmationRef = useRef<ConfirmationResult | null>(null);
-  const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
 
   useEffect(() => {
     fetch(`/api/invites/${params.token}`)
@@ -106,21 +103,21 @@ export default function AcceptInvitePage({ params }: { params: { token: string }
       .finally(() => setLoading(false));
   }, [params.token]);
 
-  async function finishSession(idToken: string) {
+  async function finishSession(signInEmail: string, signInPassword: string) {
+    const cred = await signInWithEmailAndPassword(auth, signInEmail, signInPassword);
+    const token = await cred.user.getIdToken(true);
     const sessionRes = await fetch('/api/auth/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken }),
+      body: JSON.stringify({ idToken: token }),
     });
     if (!sessionRes.ok) throw new Error('Session creation failed');
     const { orgSlug } = await sessionRes.json();
     router.push(orgSlug ? `/${orgSlug}/dashboard` : '/login');
   }
 
-  /* ── Email + password flow ──────────────────────────────────── */
-  async function handleEmailAccept(e: React.FormEvent) {
+  async function handleAccept(e: React.FormEvent) {
     e.preventDefault();
-    if (!info?.email) return;
     setFormError('');
     if (password.length < 8) return setFormError('Password must be at least 8 characters.');
     if (password !== confirm) return setFormError('Passwords do not match.');
@@ -130,63 +127,16 @@ export default function AcceptInvitePage({ params }: { params: { token: string }
       const res = await fetch(`/api/invites/${params.token}/accept`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method: 'password', password }),
+        body: JSON.stringify({ password }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Failed to accept invite');
 
-      const cred = await signInWithEmailAndPassword(auth, info.email, password);
-      const token = await cred.user.getIdToken(true);
-      await finishSession(token);
+      // Sign in with email or synthetic username email
+      const signInEmail = info?.email ?? (info?.username ? `${info.username}@makhzoon.local` : '');
+      await finishSession(signInEmail, password);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Failed to accept invite');
-      setSubmitting(false);
-    }
-  }
-
-  /* ── Phone OTP flow ─────────────────────────────────────────── */
-  async function handleSendOtp() {
-    if (!info?.phone) return;
-    setSendingOtp(true);
-    setFormError('');
-    try {
-      if (!recaptchaRef.current) {
-        recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha-anchor', { size: 'invisible' });
-        await recaptchaRef.current.render();
-      }
-      confirmationRef.current = await signInWithPhoneNumber(auth, info.phone, recaptchaRef.current);
-      setOtpStep('verify');
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Failed to send verification code');
-      recaptchaRef.current = null;
-    } finally {
-      setSendingOtp(false);
-    }
-  }
-
-  async function handleVerifyOtp(e: React.FormEvent) {
-    e.preventDefault();
-    if (!confirmationRef.current) return;
-    setFormError('');
-    setSubmitting(true);
-    try {
-      const cred = await confirmationRef.current.confirm(otp);
-      const idToken = await cred.user.getIdToken();
-
-      const res = await fetch(`/api/invites/${params.token}/accept`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method: 'phone', idToken }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Failed to accept invite');
-
-      // Re-fetch token with fresh custom claims
-      const freshToken = await cred.user.getIdToken(true);
-      await finishSession(freshToken);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Verification failed';
-      setFormError(msg.includes('invalid-verification-code') ? 'Incorrect code. Please try again.' : msg);
       setSubmitting(false);
     }
   }
@@ -219,13 +169,10 @@ export default function AcceptInvitePage({ params }: { params: { token: string }
     );
   }
 
-  const isPhoneInvite = !info.email && !!info.phone;
+  const isUsernameInvite = !info.email && !!info.username;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ background: 'var(--surface-page)' }}>
-      {/* Invisible reCAPTCHA anchor for Firebase Phone Auth */}
-      <div id="recaptcha-anchor" />
-
       <div className="w-full max-w-md">
         {/* Header card */}
         <div
@@ -250,12 +197,11 @@ export default function AcceptInvitePage({ params }: { params: { token: string }
               <span className="font-medium">{info.displayName}</span>
             </div>
             <div className="flex items-center gap-2.5 text-gray-700">
-              <span className="text-gray-400"><ContactSVG isPhone={isPhoneInvite} /></span>
-              <span>{isPhoneInvite ? info.phoneDisplay : info.email}</span>
+              <span className="text-gray-400"><ContactSVG isUsername={isUsernameInvite} /></span>
+              <span>{isUsernameInvite ? `@${info.username}` : info.email}</span>
             </div>
             <div className="flex items-center gap-2.5 text-gray-700">
               <span className="text-gray-400"><ShieldSVG /></span>
-              <span className="capitalize">{info.role}</span>
               <span
                 className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full"
                 style={{
@@ -273,108 +219,52 @@ export default function AcceptInvitePage({ params }: { params: { token: string }
                       : 'var(--gray-600)',
                 }}
               >
-                {info.role === 'org_owner' ? 'Org Owner' : info.role}
+                {ROLE_LABEL[info.role] ?? info.role}
               </span>
             </div>
           </div>
 
-          {/* Email/password form */}
-          {!isPhoneInvite && (
-            <form onSubmit={handleEmailAccept} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="password">Create a password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="At least 8 characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={8}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="confirm">Confirm password</Label>
-                <Input
-                  id="confirm"
-                  type="password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  required
-                  minLength={8}
-                />
-              </div>
-              {formError && (
-                <div className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-red-700 bg-red-50 border border-red-100">
-                  <AlertCircleSVG />
-                  {formError}
-                </div>
-              )}
-              <Button type="submit" className="w-full h-11" disabled={submitting}>
-                {submitting ? <span className="inline-flex items-center gap-2"><SpinnerSVG />Setting up account…</span> : 'Accept invitation'}
-              </Button>
-            </form>
-          )}
-
-          {/* Phone OTP form */}
-          {isPhoneInvite && (
-            <div className="space-y-4">
-              {otpStep === 'send' ? (
-                <>
-                  <p className="text-sm text-gray-600">
-                    We&apos;ll send a verification code to your phone number ending in{' '}
-                    <strong>{info.phoneDisplay?.slice(-4)}</strong>.
-                  </p>
-                  {formError && (
-                    <div className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-red-700 bg-red-50 border border-red-100">
-                      <AlertCircleSVG />
-                      {formError}
-                    </div>
-                  )}
-                  <Button className="w-full h-11" onClick={handleSendOtp} disabled={sendingOtp}>
-                    {sendingOtp ? <span className="inline-flex items-center gap-2"><SpinnerSVG />Sending code…</span> : 'Send verification code'}
-                  </Button>
-                </>
-              ) : (
-                <form onSubmit={handleVerifyOtp} className="space-y-4">
-                  <p className="text-sm text-gray-600">
-                    Enter the 6-digit code sent to{' '}
-                    <strong>{info.phoneDisplay}</strong>.
-                  </p>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="otp">Verification code</Label>
-                    <Input
-                      id="otp"
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      placeholder="123456"
-                      maxLength={6}
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                      required
-                    />
-                  </div>
-                  {formError && (
-                    <div className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-red-700 bg-red-50 border border-red-100">
-                      <AlertCircleSVG />
-                      {formError}
-                    </div>
-                  )}
-                  <Button type="submit" className="w-full h-11" disabled={submitting || otp.length < 6}>
-                    {submitting ? <span className="inline-flex items-center gap-2"><SpinnerSVG />Verifying…</span> : 'Verify & join workspace'}
-                  </Button>
-                  <button
-                    type="button"
-                    className="w-full text-sm text-gray-500 hover:text-indigo-600 transition-colors"
-                    onClick={() => { setOtpStep('send'); setOtp(''); setFormError(''); confirmationRef.current = null; recaptchaRef.current = null; }}
-                  >
-                    Didn&apos;t receive a code? Try again
-                  </button>
-                </form>
-              )}
+          {isUsernameInvite && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700">
+              You&apos;ll sign in with username <strong>{info.username}</strong> and the password you set below.
             </div>
           )}
+
+          {/* Password form */}
+          <form onSubmit={handleAccept} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="password">Create a password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="At least 8 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="confirm">Confirm password</Label>
+              <Input
+                id="confirm"
+                type="password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                required
+                minLength={8}
+              />
+            </div>
+            {formError && (
+              <div className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-red-700 bg-red-50 border border-red-100">
+                <AlertCircleSVG />
+                {formError}
+              </div>
+            )}
+            <Button type="submit" className="w-full h-11" disabled={submitting}>
+              {submitting ? <span className="inline-flex items-center gap-2"><SpinnerSVG />Setting up account…</span> : 'Accept invitation'}
+            </Button>
+          </form>
         </div>
 
         <div className="mt-4 text-center">

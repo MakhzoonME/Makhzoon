@@ -3,12 +3,13 @@ import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getRequestById, updateRequest } from '@/lib/firestore/requests';
 import { updateAsset } from '@/lib/firestore/assets';
 import { writeAuditLog } from '@/lib/audit/logger';
+import { hasPermission } from '@/lib/utils/permissions';
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ requestId: string }> }) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!hasPermission(user, 'requests', 'approve')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { requestId } = await params;
     const request = await getRequestById(requestId);

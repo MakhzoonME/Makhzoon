@@ -1,4 +1,6 @@
-export type UserRole = 'super_admin' | 'org_owner' | 'admin' | 'staff';
+import { UserPermissions } from './user-permissions.types';
+
+export type UserRole = 'super_admin' | 'makhzoon_admin' | 'makhzoon_support' | 'org_owner' | 'admin' | 'staff';
 
 export interface AuthUser {
   uid: string;
@@ -6,4 +8,6 @@ export interface AuthUser {
   displayName: string;
   role: UserRole;
   organizationId: string | null;
+  permissions?: UserPermissions | null;
+  features?: Record<string, boolean>;
 }

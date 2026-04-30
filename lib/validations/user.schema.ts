@@ -1,39 +1,32 @@
 import { z } from 'zod';
 
-const phoneRegex = /^\+[1-9]\d{7,14}$/;
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const usernameRegex = /^[a-z0-9_]{3,30}$/;
 
 export const inviteUserSchema = z
   .object({
     email: z.string().optional().or(z.literal('')),
-    phone: z.string().optional().or(z.literal('')),
-    channel: z.enum(['email', 'sms', 'whatsapp']),
+    username: z.string().optional().or(z.literal('')),
     displayName: z.string().min(2, 'Name must be at least 2 characters'),
     role: z.enum(['org_owner', 'admin', 'staff']),
   })
   .superRefine((d, ctx) => {
     const hasEmail = !!d.email?.trim();
-    const hasPhone = !!d.phone?.trim();
+    const hasUsername = !!d.username?.trim();
 
-    if (!hasEmail && !hasPhone) {
-      ctx.addIssue({ code: 'custom', path: ['email'], message: 'Email or phone number is required' });
+    if (!hasEmail && !hasUsername) {
+      ctx.addIssue({ code: 'custom', path: ['email'], message: 'Email or username is required' });
       return;
     }
     if (hasEmail && !emailRegex.test(d.email!)) {
       ctx.addIssue({ code: 'custom', path: ['email'], message: 'Invalid email address' });
     }
-    if (hasPhone && !phoneRegex.test(d.phone!)) {
+    if (hasUsername && !usernameRegex.test(d.username!)) {
       ctx.addIssue({
         code: 'custom',
-        path: ['phone'],
-        message: 'Phone must be in E.164 format (e.g. +966501234567)',
+        path: ['username'],
+        message: 'Username must be 3-30 lowercase letters, numbers, or underscores',
       });
-    }
-    if (d.channel === 'email' && !hasEmail) {
-      ctx.addIssue({ code: 'custom', path: ['channel'], message: 'Email required for email channel' });
-    }
-    if ((d.channel === 'sms' || d.channel === 'whatsapp') && !hasPhone) {
-      ctx.addIssue({ code: 'custom', path: ['channel'], message: 'Phone required for this channel' });
     }
   });
 

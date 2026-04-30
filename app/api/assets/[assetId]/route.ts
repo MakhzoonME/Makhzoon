@@ -3,6 +3,7 @@ import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getAssetById, updateAsset, deleteAsset } from '@/lib/firestore/assets';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { assetSchema } from '@/lib/validations/asset.schema';
+import { hasPermission } from '@/lib/utils/permissions';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   try {
@@ -29,7 +30,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ asse
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!hasPermission(user, 'assets', 'update')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { assetId } = await params;
     const asset = await getAssetById(assetId);
@@ -82,7 +83,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!hasPermission(user, 'assets', 'delete')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { assetId } = await params;
     const asset = await getAssetById(assetId);

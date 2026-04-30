@@ -58,8 +58,9 @@ async function enrichLogs(logs: AuditLog[]): Promise<AuditLog[]> {
     package: { col: 'packages', field: 'name' },
   };
 
-  const [userNames, orgNames, recordMaps] = await Promise.all([
+  const [userNamesOrg, userNamesSuperAdmin, orgNames, recordMaps] = await Promise.all([
     batchGetNames('users', 'displayName', userIds),
+    batchGetNames('superadminUsers', 'displayName', userIds),
     batchGetNames('organizations', 'name', orgIds),
     Promise.all(
       Object.entries(moduleGroups).map(async ([mod, ids]) => {
@@ -76,9 +77,13 @@ async function enrichLogs(logs: AuditLog[]): Promise<AuditLog[]> {
     map.forEach((name, id) => recordNameByModuleAndId.set(`${mod}:${id}`, name));
   }
 
+  const userNames = new Map<string, string>();
+  userNamesOrg.forEach((v, k) => userNames.set(k, v));
+  userNamesSuperAdmin.forEach((v, k) => { if (!userNames.has(k)) userNames.set(k, v); });
+
   return logs.map((l) => ({
     ...l,
-    userDisplayName: userNames.get(l.userId),
+    userDisplayName: userNames.get(l.userId) as string | undefined,
     orgName: orgNames.get(l.organizationId),
     recordName: recordNameByModuleAndId.get(`${l.module?.toLowerCase() ?? ''}:${l.recordId}`),
   }));

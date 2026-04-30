@@ -1,7 +1,7 @@
-import { adminAuth } from './admin';
-import { AuthUser, UserRole } from '@/types';
+import { adminAuth, adminDb } from './admin';
+import { AuthUser, UserRole, UserPermissions } from '@/types';
 import { cookies } from 'next/headers';
-import { getCachedSession, setCachedSession } from './session-cache';
+import { getCachedSession, setCachedSession, getCachedPermissions, setCachedPermissions } from './session-cache';
 
 export async function verifySessionCookie(): Promise<AuthUser | null> {
   try {
@@ -27,12 +27,27 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
       if (transferOrgId) organizationId = transferOrgId;
     }
 
+    // Fetch stored permissions for all org-level roles so explicit customisation works
+    const ORG_ROLES = new Set(['org_owner', 'admin', 'staff']);
+    let permissions: UserPermissions | null = null;
+    if (ORG_ROLES.has(role) && organizationId) {
+      const cachedPerms = getCachedPermissions(decoded.uid);
+      if (cachedPerms !== undefined) {
+        permissions = cachedPerms;
+      } else {
+        const userDoc = await adminDb.collection('users').doc(decoded.uid).get();
+        permissions = (userDoc.exists ? (userDoc.data()?.permissions ?? null) : null) as UserPermissions | null;
+        setCachedPermissions(decoded.uid, permissions);
+      }
+    }
+
     return {
       uid: decoded.uid,
       email: decoded.email ?? '',
       displayName: decoded.name ?? '',
       role,
       organizationId,
+      permissions,
     };
   } catch {
     return null;

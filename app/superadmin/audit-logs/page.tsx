@@ -101,8 +101,8 @@ export default function AuditLogsPage() {
       <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {[
-            { key: 'orgId', label: 'Organization ID' },
-            { key: 'userId', label: 'User ID' },
+            { key: 'orgId', label: 'Organization' },
+            { key: 'userId', label: 'User' },
             { key: 'action', label: 'Action' },
             { key: 'dateFrom', label: 'Date From', type: 'date' },
             { key: 'dateTo', label: 'Date To', type: 'date' },

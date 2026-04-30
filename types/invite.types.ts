@@ -1,13 +1,13 @@
+import { UserPermissions } from './user-permissions.types';
+
 export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired';
 export type InviteRole = 'org_owner' | 'admin' | 'staff';
-export type InviteChannel = 'email' | 'sms' | 'whatsapp';
 
 export interface Invite {
   id: string;
   organizationId: string;
   email?: string;
-  phone?: string;
-  channel: InviteChannel;
+  username?: string;
   displayName: string;
   role: InviteRole;
   token: string;
@@ -21,4 +21,5 @@ export interface Invite {
   revokedAt?: Date;
   revokedBy?: string;
   createdAt: Date;
+  permissions?: UserPermissions | null;
 }

@@ -3,10 +3,12 @@ import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getInventoryItemById, updateInventoryItem, deleteInventoryItem } from '@/lib/firestore/inventory';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { inventoryItemSchema } from '@/lib/validations/inventory.schema';
+import { hasPermission } from '@/lib/utils/permissions';
+import { withLogging } from '@/lib/logging/with-logging';
 
 interface Params { params: { itemId: string } }
 
-export async function GET(_req: NextRequest, { params }: Params) {
+async function _GET(_req: NextRequest, { params }: Params) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -19,11 +21,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: Params) {
+async function _PATCH(req: NextRequest, { params }: Params) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!hasPermission(user, 'inventory', 'update')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const item = await getInventoryItemById(params.itemId);
     if (!item || item.organizationId !== user.organizationId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -60,11 +62,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+async function _DELETE(_req: NextRequest, { params }: Params) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!hasPermission(user, 'inventory', 'delete')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const item = await getInventoryItemById(params.itemId);
     if (!item || item.organizationId !== user.organizationId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -87,3 +89,10 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const GET    = withLogging(_GET as any);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const PATCH  = withLogging(_PATCH as any);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const DELETE = withLogging(_DELETE as any);

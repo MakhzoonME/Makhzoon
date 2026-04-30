@@ -5,6 +5,7 @@ import { getAssetById } from '@/lib/firestore/assets';
 import { getSubscriptionByOrg } from '@/lib/firestore/subscriptions';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { warrantySchema } from '@/lib/validations/warranty.schema';
+import { hasPermission } from '@/lib/utils/permissions';
 
 export async function GET(req: NextRequest) {
   try {
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!hasPermission(user, 'warranties', 'create')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const orgId = user.organizationId;
     if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });

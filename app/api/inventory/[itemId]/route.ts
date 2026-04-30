@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getInventoryItemById, updateInventoryItem, deleteInventoryItem } from '@/lib/firestore/inventory';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { writeAuditLog, queueAuditLog } from '@/lib/audit/logger';
 import { inventoryItemSchema } from '@/lib/validations/inventory.schema';
 import { hasPermission } from '@/lib/utils/permissions';
 import { withLogging } from '@/lib/logging/with-logging';
@@ -73,7 +73,7 @@ async function _DELETE(_req: NextRequest, { params }: Params) {
 
     await deleteInventoryItem(params.itemId);
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: user.organizationId!,
       userId: user.uid,
       role: user.role,

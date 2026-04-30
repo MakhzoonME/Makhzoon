@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getAssetById, updateAsset, deleteAsset } from '@/lib/firestore/assets';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { writeAuditLog, queueAuditLog } from '@/lib/audit/logger';
 import { assetSchema } from '@/lib/validations/asset.schema';
 import { hasPermission } from '@/lib/utils/permissions';
 
@@ -92,7 +92,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     if (asset.status === 'Retired') {
       // Hard-delete already-retired assets
       await deleteAsset(assetId);
-      await writeAuditLog({
+      queueAuditLog({
         organizationId: asset.organizationId,
         userId: user.uid,
         role: user.role,
@@ -105,7 +105,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     } else {
       // Retire active assets
       await updateAsset(assetId, { status: 'Retired', updatedBy: user.uid });
-      await writeAuditLog({
+      queueAuditLog({
         organizationId: asset.organizationId,
         userId: user.uid,
         role: user.role,

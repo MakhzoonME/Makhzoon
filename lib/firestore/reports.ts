@@ -29,12 +29,16 @@ export async function getReportsForOrg(orgId: string): Promise<ReportsResponse> 
   let totalValue = 0;
   const categoryMap = new Map<string, { count: number; value: number }>();
   const locationMap = new Map<string, number>();
+  const activeAssetIds = new Set<string>();
 
   assetsSnap.docs.forEach((d) => {
     const a = d.data();
     totalAssets++;
     if (a.status === 'Retired') retiredAssets++;
-    else activeAssets++;
+    else {
+      activeAssets++;
+      activeAssetIds.add(d.id);
+    }
     const cost = Number(a.purchaseCost) || 0;
     totalValue += cost;
 
@@ -54,6 +58,7 @@ export async function getReportsForOrg(orgId: string): Promise<ReportsResponse> 
   let overdueCheckouts = 0;
   checkoutsSnap.docs.forEach((d) => {
     const c = d.data();
+    if (!activeAssetIds.has(c.assetId)) return;
     if (c.returnedAt) return;
     activeCheckouts++;
     const due = toDate(c.dueDate);
@@ -68,12 +73,14 @@ export async function getReportsForOrg(orgId: string): Promise<ReportsResponse> 
   });
 
   let maintenanceCost = 0;
-  const maintenanceCount = maintenanceSnap.size;
+  let maintenanceCount = 0;
   const monthMap = new Map<string, { cost: number; count: number }>();
   maintenanceSnap.docs.forEach((d) => {
     const m = d.data();
+    if (!activeAssetIds.has(m.assetId)) return;
     const cost = Number(m.cost) || 0;
     maintenanceCost += cost;
+    maintenanceCount++;
     const date = toDate(m.date) ?? toDate(m.createdAt) ?? new Date();
     const key = monthKey(date);
     const entry = monthMap.get(key) ?? { cost: 0, count: 0 };

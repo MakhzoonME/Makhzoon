@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useOrgSlug } from '@/hooks/useOrgSlug';
 import { useAssets } from '@/hooks/useAssets';
 import { useAuthStore } from '@/store/auth.store';
+import { useT } from '@/hooks/useT';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { FilterBar } from '@/components/shared/FilterBar';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
@@ -33,6 +34,7 @@ export default function AssetsPage() {
   const searchParams = useSearchParams();
   const { user } = useAuthStore();
   const qc = useQueryClient();
+  const { t } = useT();
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState(searchParams.get('status') ?? '');
@@ -50,17 +52,17 @@ export default function AssetsPage() {
 
   const columns: ColumnDef<Asset>[] = [
     {
-      key: 'name', header: 'Name',
+      key: 'name', header: t('col.name'),
       render: (a) => <button className="font-medium text-indigo-600 hover:text-indigo-700 hover:underline text-left" onClick={() => router.push(`/${orgSlug}/assets/${a.id}`)}>{a.name}</button>
     },
-    { key: 'category', header: 'Category', render: (a) => a.category },
-    { key: 'status', header: 'Status', render: (a) => <StatusBadge status={a.status} /> },
-    { key: 'serial', header: 'Serial Number', render: (a) => a.serialNumber ? <span className="font-mono text-xs text-gray-600">{a.serialNumber}</span> : <span className="text-gray-400">—</span> },
-    { key: 'assignedTo', header: 'Assigned To', render: (a) => a.assignedTo || <span className="text-gray-400">—</span> },
-    { key: 'location', header: 'Location', render: (a) => a.location || <span className="text-gray-400">—</span> },
-    { key: 'purchaseDate', header: 'Purchase Date', render: (a) => a.purchaseDate ? formatDate(a.purchaseDate) : <span className="text-gray-400">—</span> },
+    { key: 'category', header: t('col.category'), render: (a) => a.category },
+    { key: 'status', header: t('col.status'), render: (a) => <StatusBadge status={a.status} /> },
+    { key: 'serial', header: t('col.serialNumber'), render: (a) => a.serialNumber ? <span className="font-mono text-xs text-gray-600 dark:text-gray-400">{a.serialNumber}</span> : <span className="text-gray-400">—</span> },
+    { key: 'assignedTo', header: t('col.assignedTo'), render: (a) => a.assignedTo || <span className="text-gray-400">—</span> },
+    { key: 'location', header: t('col.location'), render: (a) => a.location || <span className="text-gray-400">—</span> },
+    { key: 'purchaseDate', header: t('col.purchaseDate'), render: (a) => a.purchaseDate ? formatDate(a.purchaseDate) : <span className="text-gray-400">—</span> },
     {
-      key: 'actions', header: 'Actions',
+      key: 'actions', header: t('col.actions'),
       render: (a) => (
         <div className="flex items-center gap-1">
           {isAdmin ? (
@@ -72,19 +74,19 @@ export default function AssetsPage() {
               )}
               {a.status === 'Active' && (
                 <Button size="sm" variant="ghost" className="text-amber-500 hover:text-amber-600 hover:bg-amber-50" onClick={(e) => { e.stopPropagation(); setActionTarget(a); }}
-                  title="Retire asset">
+                  title={t('assets.retire')}>
                   <ArchiveXSVG />
                 </Button>
               )}
               {a.status === 'Retired' && (
                 <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setActionTarget(a); }}
-                  title="Delete permanently">
+                  title={t('assets.deleteBtn')}>
                   <Trash2SVG />
                 </Button>
               )}
             </>
           ) : (
-            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); router.push(`/${orgSlug}/assets/${a.id}`); }}>View</Button>
+            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); router.push(`/${orgSlug}/assets/${a.id}`); }}>{t('assets.view')}</Button>
           )}
         </div>
       )
@@ -97,13 +99,12 @@ export default function AssetsPage() {
     const isRetired = actionTarget.status === 'Retired';
     try {
       await fetch(`/api/assets/${actionTarget.id}`, { method: 'DELETE' });
-      toast.success(isRetired ? 'Asset deleted' : 'Asset retired');
+      toast.success(isRetired ? t('assets.deleteDone') : t('assets.retireDone'));
       qc.invalidateQueries({ queryKey: ['assets'] });
       qc.removeQueries({ queryKey: ['assets', actionTarget.id] });
-
       setActionTarget(null);
     } catch {
-      toast.error(isRetired ? 'Failed to delete asset' : 'Failed to retire asset');
+      toast.error(isRetired ? t('assets.deleteFail') : t('assets.retireFail'));
     } finally {
       setActioning(false);
     }
@@ -112,30 +113,30 @@ export default function AssetsPage() {
   return (
     <div>
       <PageHeader
-        title="Assets"
+        title={t('nav.assets')}
         actions={isAdmin ? (
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
-              <UploadSVG /><span className="ml-1">Import CSV</span>
+              <UploadSVG /><span className="ms-1">{t('assets.importCsv')}</span>
             </Button>
             <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
-              <PlusSVG /><span className="ml-1">Add Asset</span>
+              <PlusSVG /><span className="ms-1">{t('assets.addAsset')}</span>
             </Button>
           </div>
         ) : undefined}
       />
 
       <FilterBar
-        searchPlaceholder="Search by name..."
+        searchPlaceholder={t('assets.searchPlaceholder')}
         searchValue={search}
         onSearchChange={setSearch}
         filters={
           <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : v)}>
-            <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectTrigger className="w-36"><SelectValue placeholder={t('col.status')} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="Active">Active</SelectItem>
-              <SelectItem value="Retired">Retired</SelectItem>
+              <SelectItem value="all">{t('assets.allStatuses')}</SelectItem>
+              <SelectItem value="Active">{t('val.active')}</SelectItem>
+              <SelectItem value="Retired">{t('assets.retired')}</SelectItem>
             </SelectContent>
           </Select>
         }
@@ -147,7 +148,7 @@ export default function AssetsPage() {
           data={assets}
           columns={columns}
           isLoading={isLoading}
-          emptyMessage="No assets found."
+          emptyMessage={t('assets.noAssets')}
           onRowClick={(a) => router.push(`/${orgSlug}/assets/${a.id}`)}
           keyExtractor={(a) => a.id}
         />
@@ -156,11 +157,11 @@ export default function AssetsPage() {
       <ConfirmDialog
         open={!!actionTarget}
         onOpenChange={(o) => !o && setActionTarget(null)}
-        title={actionTarget?.status === 'Retired' ? 'Delete Asset Permanently' : 'Retire Asset'}
+        title={actionTarget?.status === 'Retired' ? t('assets.deleteConfirmTitle') : t('assets.retireConfirmTitle')}
         description={actionTarget?.status === 'Retired'
-          ? `Permanently delete "${actionTarget?.name}"? This cannot be undone.`
-          : `Are you sure you want to retire "${actionTarget?.name}"? This will mark it as inactive.`}
-        confirmLabel={actionTarget?.status === 'Retired' ? 'Delete Permanently' : 'Retire'}
+          ? `${t('assets.deleteConfirmDesc').replace('this asset', `"${actionTarget?.name}"`)}`
+          : `${t('assets.retireConfirmDesc').replace('this asset', `"${actionTarget?.name}"`)}`}
+        confirmLabel={actionTarget?.status === 'Retired' ? t('assets.deleteBtn') : t('assets.retireBtn')}
         onConfirm={handleAction}
         loading={actioning}
       />
@@ -168,7 +169,7 @@ export default function AssetsPage() {
       <FormDrawer
         open={drawerOpen}
         onOpenChange={(o) => { setDrawerOpen(o); if (!o) setEditTarget(null); }}
-        title={editTarget ? 'Edit Asset' : 'Add Asset'}
+        title={editTarget ? t('common.edit') : t('assets.addAsset')}
       >
         <AssetForm
           asset={editTarget ?? undefined}

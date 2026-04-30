@@ -9,6 +9,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { UsageBar } from '@/components/shared/UsageBar';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { formatDate, daysUntil } from '@/lib/utils/date';
+import { useT } from '@/hooks/useT';
 
 const FEATURE_LABELS: Record<string, string> = {
   warranties: 'Warranties',
@@ -21,6 +22,7 @@ const FEATURE_LABELS: Record<string, string> = {
 };
 
 export default function SubscriptionPage() {
+  const { t } = useT();
   const { user } = useAuthStore();
   const { active, orgId: transferOrgId } = useTransferStore();
 
@@ -42,41 +44,41 @@ export default function SubscriptionPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Subscription" />
+      <PageHeader title={t('nav.subscription')} />
 
       {/* Status */}
       <Card className="max-w-2xl">
         <CardContent className="p-6">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            Subscription Details
+          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4 dark:text-gray-300">
+            {t('subscription.details')}
           </h2>
           {sub ? (
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between py-2 border-b border-gray-100">
-                <dt className="text-gray-500">Status</dt>
+                <dt className="text-gray-500 dark:text-gray-300">{t('subscription.status')}</dt>
                 <dd><StatusBadge status={sub.status} /></dd>
               </div>
               <div className="flex justify-between py-2 border-b border-gray-100">
-                <dt className="text-gray-500">Start Date</dt>
+                <dt className="text-gray-500 dark:text-gray-300">{t('subscription.startDate')}</dt>
                 <dd className="font-medium">{formatDate(new Date(sub.startDate))}</dd>
               </div>
               <div className="flex justify-between py-2 border-b border-gray-100">
-                <dt className="text-gray-500">End Date</dt>
+                <dt className="text-gray-500 dark:text-gray-300">{t('subscription.endDate')}</dt>
                 <dd className="font-medium">{formatDate(new Date(sub.endDate))}</dd>
               </div>
               <div className="flex justify-between py-2">
-                <dt className="text-gray-500">Days Remaining</dt>
+                <dt className="text-gray-500 dark:text-gray-300">{t('subscription.daysRemaining')}</dt>
                 <dd className="font-medium">
                   {days > 0 ? (
-                    <span className="text-green-700">{days} days</span>
+                    <span className="text-green-700">{days} {t('subscription.days').replace('{days}', String(days))}</span>
                   ) : (
-                    <span className="text-red-600">Expired</span>
+                    <span className="text-red-600">{t('subscription.expired')}</span>
                   )}
                 </dd>
               </div>
             </dl>
           ) : (
-            <p className="text-sm text-gray-500">No subscription found.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300">{t('subscription.noSub')}</p>
           )}
         </CardContent>
       </Card>
@@ -84,20 +86,20 @@ export default function SubscriptionPage() {
       {/* Usage */}
       <Card className="max-w-2xl">
         <CardContent className="p-6">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            Usage
+          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4 dark:text-gray-300">
+            {t('subscription.usage')}
           </h2>
           {usageLoading ? (
             <LoadingSkeleton rows={4} columns={1} />
           ) : usage ? (
             <div className="space-y-4">
-              <UsageBar label="Assets" current={usage.assets} max={-1} />
-              <UsageBar label="Users" current={usage.users} max={-1} />
-              <UsageBar label="Warranties" current={usage.warranties} max={-1} />
-              <UsageBar label="Requests" current={usage.requests} max={-1} />
+              <UsageBar label={t('subscription.assets')} current={usage.assets} max={-1} />
+              <UsageBar label={t('subscription.users')} current={usage.users} max={-1} />
+              <UsageBar label={t('subscription.warranties')} current={usage.warranties} max={-1} />
+              <UsageBar label={t('subscription.requests')} current={usage.requests} max={-1} />
             </div>
           ) : (
-            <p className="text-sm text-gray-500">Usage data unavailable.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300">{t('subscription.usageUnavailable')}</p>
           )}
         </CardContent>
       </Card>
@@ -106,22 +108,22 @@ export default function SubscriptionPage() {
       {sub && Object.keys(sub.features ?? {}).length > 0 && (
         <Card className="max-w-2xl">
           <CardContent className="p-6">
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">
-              Features
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4 dark:text-gray-300">
+              {t('subscription.features')}
             </h2>
             <div className="space-y-2 text-sm">
               {enabledFeatures.map(([key]) => (
                 <div key={key} className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-green-500" />
-                  <span className="text-gray-800">{FEATURE_LABELS[key] ?? key}</span>
-                  <span className="text-xs text-green-600 ml-auto">Enabled</span>
+                  <span className="text-gray-800 dark:text-gray-100">{FEATURE_LABELS[key] ?? key}</span>
+                  <span className="text-xs text-green-600 ml-auto">{t('subscription.enabled')}</span>
                 </div>
               ))}
               {disabledFeatures.map(([key]) => (
                 <div key={key} className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-gray-300" />
                   <span className="text-gray-400">{FEATURE_LABELS[key] ?? key}</span>
-                  <span className="text-xs text-gray-400 ml-auto">Disabled</span>
+                  <span className="text-xs text-gray-400 ml-auto">{t('subscription.disabled')}</span>
                 </div>
               ))}
             </div>

@@ -13,6 +13,7 @@ import { formatDate } from '@/lib/utils/date';
 import { truncate } from '@/lib/utils/format';
 import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
+import { useT } from '@/hooks/useT';
 function CheckSVG() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -36,6 +37,7 @@ const typeLabels: Record<string, string> = {
 };
 
 export default function RequestsPage() {
+  const { t } = useT();
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const { user } = useAuthStore();
@@ -52,7 +54,7 @@ export default function RequestsPage() {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error ?? `Failed to ${action} request`);
       }
-      toast.success(action === 'approve' ? 'Request approved successfully' : 'Request rejected');
+      toast.success(action === 'approve' ? t('requests.approved') : t('requests.rejected'));
       qc.invalidateQueries({ queryKey: ['requests'] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : `Failed to ${action} request`);
@@ -62,21 +64,21 @@ export default function RequestsPage() {
   }
 
   const columns: ColumnDef<Request>[] = [
-    { key: 'type', header: 'Type', render: (r) => <span className="font-medium text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">{typeLabels[r.type] ?? r.type}</span> },
+    { key: 'type', header: t('requests.type'), render: (r) => <span className="font-medium text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">{typeLabels[r.type] ?? r.type}</span> },
     {
-      key: 'assetId', header: 'Reference',
+      key: 'assetId', header: t('requests.reference'),
       render: (r) => {
         if (r.assetId) return <button className="text-indigo-600 hover:underline" onClick={() => router.push(`/${orgSlug}/assets/${r.assetId}`)}>{r.assetName ?? r.assetId}</button>;
         if (r.inventoryItemId) return <button className="text-indigo-600 hover:underline" onClick={() => router.push(`/${orgSlug}/inventory/${r.inventoryItemId}`)}>{r.inventoryItemName ?? r.inventoryItemId}</button>;
         return <span className="text-gray-400">—</span>;
       }
     },
-    { key: 'createdBy', header: 'Submitted By', render: (r) => r.createdByName ?? r.createdByEmail ?? r.createdBy },
-    { key: 'createdAt', header: 'Date', render: (r) => formatDate(r.createdAt) },
-    { key: 'description', header: 'Description', render: (r) => <span className="text-gray-600">{truncate(r.description, 60)}</span> },
-    { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
+    { key: 'createdBy', header: t('requests.submittedBy'), render: (r) => r.createdByName ?? r.createdByEmail ?? r.createdBy },
+    { key: 'createdAt', header: t('col.date'), render: (r) => formatDate(r.createdAt) },
+    { key: 'description', header: t('requests.description'), render: (r) => <span className="text-gray-600 dark:text-gray-300">{truncate(r.description, 60)}</span> },
+    { key: 'status', header: t('col.status'), render: (r) => <StatusBadge status={r.status} /> },
     {
-      key: 'actions', header: 'Actions',
+      key: 'actions', header: t('col.actions'),
       render: (r) => isAdmin && r.status === 'PENDING' ? (
         <div className="flex gap-1">
           <Button size="sm" variant="ghost" className="text-green-600 hover:bg-green-50" disabled={processing === r.id} onClick={(e) => { e.stopPropagation(); handleDecision(r.id, 'approve'); }}>
@@ -92,9 +94,9 @@ export default function RequestsPage() {
 
   return (
     <div>
-      <PageHeader title="Requests" />
+      <PageHeader title={t('nav.requests')} />
       <div className="bg-white rounded-lg border border-gray-200">
-        <DataTable data={requests} columns={columns} isLoading={isLoading} emptyMessage="No requests found." keyExtractor={(r) => r.id} />
+        <DataTable data={requests} columns={columns} isLoading={isLoading} emptyMessage={t('requests.noRequests')} keyExtractor={(r) => r.id} />
       </div>
     </div>
   );

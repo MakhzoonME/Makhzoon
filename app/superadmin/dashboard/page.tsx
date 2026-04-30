@@ -13,6 +13,7 @@ import { useTransferMode } from '@/hooks/useTransferMode';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils/date';
 import type { OrgWithUsage } from '@/types';
+import { useT } from '@/hooks/useT';
 
 function daysUntil(d: Date | string): number {
   const target = typeof d === 'string' ? new Date(d) : d;
@@ -41,8 +42,8 @@ function StatCard({ label, value, icon: Icon, tone = 'indigo' }: StatCardProps) 
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
-          <p className="text-2xl font-semibold text-gray-900 leading-tight">{value}</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide dark:text-gray-300">{label}</p>
+          <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100 leading-tight">{value}</p>
         </div>
       </CardContent>
     </Card>
@@ -50,6 +51,7 @@ function StatCard({ label, value, icon: Icon, tone = 'indigo' }: StatCardProps) 
 }
 
 export default function SuperAdminDashboardPage() {
+  const { t } = useT();
   const { data: rows = [], isLoading } = useAllOrgsUsage();
   const { data: openTickets = [] } = useSupportTickets({ status: 'OPEN' });
   const { enterTransferMode } = useTransferMode();
@@ -68,30 +70,30 @@ export default function SuperAdminDashboardPage() {
   const columns: ColumnDef<OrgWithUsage>[] = [
     {
       key: 'name',
-      header: 'Organization',
+      header: t('superDash.organization'),
       render: (r) => (
         <div>
-          <p className="font-medium text-gray-900">{r.organization.name}</p>
-          <p className="text-xs text-gray-500">{r.organization.subdomain}</p>
+          <p className="font-medium text-gray-900 dark:text-gray-100">{r.organization.name}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-300">{r.organization.subdomain}</p>
         </div>
       ),
     },
     {
       key: 'package',
-      header: 'Package',
+      header: t('superDash.package'),
       render: (r) => (
         <span className="text-sm">{r.package?.name ?? <span className="text-gray-400">—</span>}</span>
       ),
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('superDash.status'),
       render: (r) =>
         r.subscription ? <StatusBadge status={r.subscription.status} /> : <span className="text-gray-400">—</span>,
     },
     {
       key: 'endDate',
-      header: 'End Date',
+      header: t('superDash.endDate'),
       render: (r) => {
         if (!r.subscription) return <span className="text-gray-400">—</span>;
         const d = daysUntil(r.subscription.endDate);
@@ -100,7 +102,9 @@ export default function SuperAdminDashboardPage() {
           <div>
             <p className="text-sm">{formatDate(new Date(r.subscription.endDate))}</p>
             <p className={`text-xs ${tone}`}>
-              {d < 0 ? `${Math.abs(d)}d overdue` : `${d}d remaining`}
+              {d < 0
+                ? t('superDash.dOverdue').replace('{days}', String(Math.abs(d)))
+                : t('superDash.dRemaining').replace('{days}', String(d))}
             </p>
           </div>
         );
@@ -108,17 +112,17 @@ export default function SuperAdminDashboardPage() {
     },
     {
       key: 'assets',
-      header: 'Assets',
+      header: t('superDash.assets'),
       render: (r) => <UsageBar label="" current={r.usage.assets} max={r.package?.limits.maxAssets ?? -1} />,
     },
     {
       key: 'users',
-      header: 'Users',
+      header: t('superDash.users'),
       render: (r) => <UsageBar label="" current={r.usage.users} max={r.package?.limits.maxUsers ?? -1} />,
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('superDash.actions'),
       render: (r) => (
         <div className="flex items-center gap-1">
           <Button
@@ -129,10 +133,10 @@ export default function SuperAdminDashboardPage() {
               enterTransferMode(r.organization.id, r.organization.name);
             }}
           >
-            <ArrowRight className="h-3.5 w-3.5 mr-1" /> Enter
+            <ArrowRight className="h-3.5 w-3.5 mr-1" /> {t('superDash.enter')}
           </Button>
           <Link href={`/superadmin/organizations/${r.organization.id}/edit`}>
-            <Button size="sm" variant="ghost">Edit</Button>
+            <Button size="sm" variant="ghost">{t('superDash.edit')}</Button>
           </Link>
         </div>
       ),
@@ -141,13 +145,13 @@ export default function SuperAdminDashboardPage() {
 
   return (
     <div>
-      <PageHeader title="Dashboard" description="Platform-wide usage, subscriptions, and support state." />
+      <PageHeader title={t('nav.dashboard')} description={t('superDash.description')} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-        <StatCard label="Total Organizations" value={stats.totalOrgs} icon={Building2} tone="indigo" />
-        <StatCard label="Active Subscriptions" value={stats.activeSubs} icon={BadgeCheck} tone="green" />
-        <StatCard label="Expiring (30d)" value={stats.expiringSoon} icon={AlertTriangle} tone="amber" />
-        <StatCard label="Open Tickets" value={stats.openTickets} icon={MessageSquare} tone="red" />
+        <StatCard label={t('superDash.totalOrgs')} value={stats.totalOrgs} icon={Building2} tone="indigo" />
+        <StatCard label={t('superDash.activeSubs')} value={stats.activeSubs} icon={BadgeCheck} tone="green" />
+        <StatCard label={t('superDash.expiring')} value={stats.expiringSoon} icon={AlertTriangle} tone="amber" />
+        <StatCard label={t('superDash.openTickets')} value={stats.openTickets} icon={MessageSquare} tone="red" />
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200">
@@ -155,7 +159,7 @@ export default function SuperAdminDashboardPage() {
           data={rows}
           columns={columns}
           isLoading={isLoading}
-          emptyMessage="No organizations yet."
+          emptyMessage={t('superDash.noOrgs')}
           keyExtractor={(r) => r.organization.id}
         />
       </div>

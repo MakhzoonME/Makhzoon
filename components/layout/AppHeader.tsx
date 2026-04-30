@@ -106,7 +106,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex items-center gap-2">
             <MakhzoonMark size={26} />
-            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 hidden sm:block">Makhzoon</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 hidden sm:block">{t('brand.name')}</span>
           </div>
           {orgName && (
             <>

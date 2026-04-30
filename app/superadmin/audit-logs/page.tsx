@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatActionLabel, formatKeyLabel } from '@/lib/utils/audit-labels';
+import { useT } from '@/hooks/useT';
 
 function ChangesTable({ label, value }: { label: string; value: Record<string, unknown> }) {
   const entries = Object.entries(value).filter(([, v]) => v !== undefined && v !== null && v !== '');
@@ -34,48 +35,57 @@ function ChangesTable({ label, value }: { label: string; value: Record<string, u
 }
 
 export default function AuditLogsPage() {
+  const { t } = useT();
   const [filters, setFilters] = useState({ orgId: '', userId: '', action: '', dateFrom: '', dateTo: '' });
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const { data, isLoading } = useAuditLogs(filters);
   const logs = data?.logs ?? [];
 
+  const filterFields = [
+    { key: 'orgId', label: t('auditLogs.orgId') },
+    { key: 'userId', label: t('auditLogs.user') },
+    { key: 'action', label: t('auditLogs.action') },
+    { key: 'dateFrom', label: t('auditLogs.dateFrom'), type: 'date' },
+    { key: 'dateTo', label: t('auditLogs.dateTo'), type: 'date' },
+  ];
+
   const columns: ColumnDef<AuditLog>[] = [
     {
       key: 'timestamp',
-      header: 'Timestamp',
+      header: t('auditLogs.timestamp'),
       render: (l) => <span className="font-mono text-xs">{formatDateTime(l.timestamp)}</span>,
     },
     {
       key: 'orgId',
-      header: 'Organization',
+      header: t('auditLogs.organization'),
       render: (l) => <span className="text-xs">{l.orgName ?? l.organizationId}</span>,
     },
     {
       key: 'userId',
-      header: 'User',
+      header: t('auditLogs.user'),
       render: (l) => <span className="text-xs">{l.userDisplayName ?? l.userId}</span>,
     },
     {
       key: 'action',
-      header: 'Action',
+      header: t('auditLogs.action'),
       render: (l) => <span className="text-xs font-medium">{formatActionLabel(l.action)}</span>,
     },
     {
       key: 'module',
-      header: 'Module',
+      header: t('auditLogs.module'),
       render: (l) => <span className="text-xs capitalize">{l.module}</span>,
     },
     {
       key: 'recordId',
-      header: 'Record',
-      render: (l) => <span className="text-xs text-gray-700">{l.recordName ?? l.recordId}</span>,
+      header: t('auditLogs.record'),
+      render: (l) => <span className="text-xs text-gray-700 dark:text-gray-300">{l.recordName ?? l.recordId}</span>,
     },
     {
       key: 'details',
       header: '',
       render: (l) => (
         <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setSelectedLog(l); }}>
-          Details
+          {t('auditLogs.details')}
         </Button>
       ),
     },
@@ -87,26 +97,30 @@ export default function AuditLogsPage() {
     return `/api/audit-logs/export?${params.toString()}`;
   }
 
+  const detailRows = selectedLog ? [
+    [t('auditLogs.action'), formatActionLabel(selectedLog.action)],
+    [t('auditLogs.module'), selectedLog.module],
+    [t('auditLogs.record'), selectedLog.recordName ?? selectedLog.recordId],
+    [t('auditLogs.user'), selectedLog.userDisplayName ?? selectedLog.userId],
+    [t('auditLogs.organization'), selectedLog.orgName ?? selectedLog.organizationId],
+    [t('auditLogs.timestamp'), formatDateTime(selectedLog.timestamp)],
+    ...(selectedLog.transferMode ? [[t('auditLogs.transferMode'), 'Yes']] : []),
+  ] : [];
+
   return (
     <div>
       <PageHeader
-        title="Audit Logs"
+        title={t('nav.auditLogs')}
         actions={
           <Button size="sm" variant="outline" asChild>
-            <a href={buildExportUrl()} download>Export CSV</a>
+            <a href={buildExportUrl()} download>{t('auditLogs.exportCsv')}</a>
           </Button>
         }
       />
 
       <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {[
-            { key: 'orgId', label: 'Organization' },
-            { key: 'userId', label: 'User' },
-            { key: 'action', label: 'Action' },
-            { key: 'dateFrom', label: 'Date From', type: 'date' },
-            { key: 'dateTo', label: 'Date To', type: 'date' },
-          ].map(({ key, label, type }) => (
+          {filterFields.map(({ key, label, type }) => (
             <div key={key} className="space-y-1">
               <Label className="text-xs">{label}</Label>
               <Input
@@ -125,7 +139,7 @@ export default function AuditLogsPage() {
           data={logs}
           columns={columns}
           isLoading={isLoading}
-          emptyMessage="No audit logs found."
+          emptyMessage={t('auditLogs.noLogs')}
           keyExtractor={(l) => l.id}
         />
       </div>
@@ -133,22 +147,12 @@ export default function AuditLogsPage() {
       <Dialog open={!!selectedLog} onOpenChange={(o) => !o && setSelectedLog(null)}>
         <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Audit Log Detail</DialogTitle>
+            <DialogTitle>{t('auditLogs.detail')}</DialogTitle>
           </DialogHeader>
           {selectedLog && (
             <div className="space-y-4 text-sm">
               <div className="rounded-lg border border-gray-200 overflow-hidden">
-                {(
-                  [
-                    ['Action', formatActionLabel(selectedLog.action)],
-                    ['Module', selectedLog.module],
-                    ['Record', selectedLog.recordName ?? selectedLog.recordId],
-                    ['User', selectedLog.userDisplayName ?? selectedLog.userId],
-                    ['Organization', selectedLog.orgName ?? selectedLog.organizationId],
-                    ['Timestamp', formatDateTime(selectedLog.timestamp)],
-                    ...(selectedLog.transferMode ? [['Transfer Mode', 'Yes']] : []),
-                  ] as [string, string][]
-                ).filter(([, v]) => v).map(([k, v], i) => (
+                {(detailRows as [string, string][]).filter(([, v]) => v).map(([k, v], i) => (
                   <div key={String(k)} className={`flex text-xs ${i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
                     <span className="w-32 flex-shrink-0 px-3 py-2 text-gray-500 font-medium border-r border-gray-200">{k}</span>
                     <span className="px-3 py-2 text-gray-800">{String(v)}</span>
@@ -156,10 +160,10 @@ export default function AuditLogsPage() {
                 ))}
               </div>
               {selectedLog.oldValue && (
-                <ChangesTable label="Previous Values" value={selectedLog.oldValue} />
+                <ChangesTable label={t('auditLogs.previousValues')} value={selectedLog.oldValue} />
               )}
               {selectedLog.newValue && (
-                <ChangesTable label="New Values" value={selectedLog.newValue} />
+                <ChangesTable label={t('auditLogs.newValues')} value={selectedLog.newValue} />
               )}
             </div>
           )}

@@ -22,6 +22,7 @@ import {
 import { PermissionsEditor } from '@/components/users/PermissionsEditor';
 import { useSubscriptionFeatures } from '@/hooks/useSubscriptionFeatures';
 import { UserPermissions, DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from '@/types';
+import { useT } from '@/hooks/useT';
 
 function PlusSVG() {
   return (
@@ -97,6 +98,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function UsersPage() {
+  const { t } = useT();
   const { data: users = [], isLoading: usersLoading } = useUsers();
   const { data: invites = [], isLoading: invitesLoading } = useInvites();
   const { user: currentUser } = useAuthStore();
@@ -214,10 +216,10 @@ export default function UsersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Users"
+        title={t('users.title')}
         actions={
           canInvite
-            ? <Button size="sm" onClick={() => setShowInvite(true)}><PlusSVG /><span className="ml-1">Invite User</span></Button>
+            ? <Button size="sm" onClick={() => setShowInvite(true)}><PlusSVG /><span className="ml-1">{t('users.inviteUser')}</span></Button>
             : undefined
         }
       />
@@ -226,11 +228,11 @@ export default function UsersPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email / Username</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Role</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Joined / Expires</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.name')}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.emailUsername')}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.role')}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.status')}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.joined')}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -247,7 +249,7 @@ export default function UsersPage() {
               ))
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-gray-400">No users found.</td>
+                <td colSpan={6} className="px-4 py-12 text-center text-sm text-gray-400">{t('users.noResults')}</td>
               </tr>
             ) : (
               rows.map((row) => {
@@ -256,8 +258,8 @@ export default function UsersPage() {
                   const editable = canEditUser(u);
                   return (
                     <tr key={`user-${u.id}`} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-medium text-gray-900">{u.displayName || '—'}</td>
-                      <td className="px-4 py-3 text-gray-600">{u.email || (u.username ? `@${u.username}` : '—')}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{u.displayName || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{u.email || (u.username ? `@${u.username}` : '—')}</td>
                       <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
                       <td className="px-4 py-3"><StatusBadge status={u.status} /></td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(u.createdAt)}</td>
@@ -271,7 +273,7 @@ export default function UsersPage() {
                                   variant="ghost"
                                   className="text-gray-500 hover:text-indigo-600 hover:bg-indigo-50"
                                   onClick={() => openEditRole(u)}
-                                  title="Edit role"
+                                  title={t('users.editUser')}
                                 >
                                   <EditSVG />
                                 </Button>
@@ -280,7 +282,7 @@ export default function UsersPage() {
                                   variant="ghost"
                                   className="text-amber-500 hover:text-amber-600 hover:bg-amber-50"
                                   onClick={() => setDeleteTarget({ user: u, permanent: false })}
-                                  title="Deactivate user"
+                                  title={t('users.deactivate')}
                                 >
                                   <Trash2SVG />
                                 </Button>
@@ -292,7 +294,7 @@ export default function UsersPage() {
                                 variant="ghost"
                                 className="text-red-500 hover:text-red-600 hover:bg-red-50"
                                 onClick={() => setDeleteTarget({ user: u, permanent: true })}
-                                title="Delete permanently"
+                                title={t('users.deleteUser')}
                               >
                                 <Trash2SVG />
                               </Button>
@@ -307,11 +309,11 @@ export default function UsersPage() {
                 const inv = row.data;
                 return (
                   <tr key={`invite-${inv.id}`} className="hover:bg-gray-50 transition-colors bg-amber-50/30">
-                    <td className="px-4 py-3 font-medium text-gray-700">{inv.displayName || '—'}</td>
-                    <td className="px-4 py-3 text-gray-500">{inv.email || (inv.username ? `@${inv.username}` : '—')}</td>
+                    <td className="px-4 py-3 font-medium text-gray-700 dark:text-gray-100">{inv.displayName || '—'}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-300">{inv.email || (inv.username ? `@${inv.username}` : '—')}</td>
                     <td className="px-4 py-3"><RoleBadge role={inv.role} /></td>
                     <td className="px-4 py-3"><StatusBadge status="pending" /></td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">Expires {formatDate(inv.expiresAt)}</td>
+                    <td className="px-4 py-3 text-gray-400 text-xs">{t('users.expires')} {formatDate(inv.expiresAt)}</td>
                     <td className="px-4 py-3 text-right">
                       {isAdmin && (
                         <Button
@@ -322,7 +324,7 @@ export default function UsersPage() {
                           onClick={() => handleRevoke(inv)}
                         >
                           <MailXSVG />
-                          {revoking === inv.token ? 'Revoking…' : 'Revoke'}
+                          {revoking === inv.token ? t('users.revoking') : t('users.revokeInvite')}
                         </Button>
                       )}
                     </td>
@@ -340,14 +342,14 @@ export default function UsersPage() {
       <Dialog open={!!editTarget} onOpenChange={(o) => !o && setEditTarget(null)}>
         <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
+            <DialogTitle>{t('users.editUser')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <p className="text-xs text-gray-500">
-              Editing <span className="font-medium text-gray-900">{editTarget?.displayName || editTarget?.email}</span>
+            <p className="text-xs text-gray-500 dark:text-gray-300">
+              {t('users.editing')} <span className="font-medium text-gray-900 dark:text-gray-100">{editTarget?.displayName || editTarget?.email}</span>
             </p>
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-gray-700">Role</label>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">{t('users.role')}</label>
               <Select
                 value={editRole}
                 onValueChange={(v) => {
@@ -358,9 +360,9 @@ export default function UsersPage() {
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {isOwnerOrSuperAdmin && <SelectItem value="org_owner">Owner</SelectItem>}
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
+                  {isOwnerOrSuperAdmin && <SelectItem value="org_owner">{t('role.orgOwner')}</SelectItem>}
+                  <SelectItem value="admin">{t('role.admin')}</SelectItem>
+                  <SelectItem value="staff">{t('role.staff')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -376,7 +378,7 @@ export default function UsersPage() {
                   <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none" />
                   <path d="M4 7h6M7 4v6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
                 </svg>
-                {showEditPerms ? 'Hide Access Permissions' : 'Edit Access Permissions'}
+                {showEditPerms ? t('permissions.hideAccess') : t('permissions.editAccess')}
               </button>
               {showEditPerms && (
                 <PermissionsEditor
@@ -388,9 +390,9 @@ export default function UsersPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditTarget(null)} disabled={savingRole}>Cancel</Button>
+            <Button variant="outline" onClick={() => setEditTarget(null)} disabled={savingRole}>{t('common.cancel')}</Button>
             <Button onClick={handleSaveRole} disabled={savingRole}>
-              {savingRole ? 'Saving...' : 'Save Changes'}
+              {savingRole ? t('users.saving') : t('users.saveChanges')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -399,12 +401,12 @@ export default function UsersPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
-        title={deleteTarget?.permanent ? 'Delete User Permanently' : 'Deactivate User'}
+        title={deleteTarget?.permanent ? t('users.deleteUser') : t('users.deactivateUser')}
         description={deleteTarget?.permanent
-          ? `Permanently delete "${deleteTarget.user.displayName || deleteTarget.user.email}"? This cannot be undone.`
-          : `Deactivate "${deleteTarget?.user.displayName || deleteTarget?.user.email}"? They will lose access immediately.`
+          ? t('users.deleteDesc').replace('{name}', deleteTarget.user.displayName || deleteTarget.user.email || '')
+          : t('users.deactivateDesc').replace('{name}', deleteTarget?.user.displayName || deleteTarget?.user.email || '')
         }
-        confirmLabel={deleteTarget?.permanent ? 'Delete Permanently' : 'Deactivate'}
+        confirmLabel={deleteTarget?.permanent ? t('users.deletePermanently') : t('users.deactivate')}
         onConfirm={handleDelete}
         loading={deleting}
       />

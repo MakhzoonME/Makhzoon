@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { useT } from '@/hooks/useT';
 
 interface BackendLog {
   id: string;
@@ -58,6 +59,7 @@ function fmt(ts: string) {
 }
 
 export default function BackendLogsPage() {
+  const { t } = useT();
   const [logs, setLogs] = useState<BackendLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [level, setLevel] = useState<string>('all');
@@ -129,22 +131,22 @@ export default function BackendLogsPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Backend Logs</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Monitor API requests, responses, and errors in real time</p>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('backendLogs.title')}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-300 mt-0.5">{t('backendLogs.description')}</p>
         </div>
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={autoRefresh}
               onChange={(e) => setAutoRefresh(e.target.checked)}
               className="rounded border-gray-300"
             />
-            Auto-refresh (10s)
+            {t('backendLogs.autoRefresh')}
           </label>
           <Button size="sm" variant="outline" onClick={fetchLogs} disabled={loading}>
             <RefreshCw className={cn('h-4 w-4 mr-1.5', loading && 'animate-spin')} />
-            Refresh
+            {t('backendLogs.refresh')}
           </Button>
         </div>
       </div>
@@ -153,7 +155,7 @@ export default function BackendLogsPage() {
       <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
         {/* Level pills */}
         <div className="flex items-center gap-3 flex-wrap">
-          <Label className="text-xs text-gray-500 shrink-0">Level</Label>
+          <Label className="text-xs text-gray-500 shrink-0">{t('backendLogs.level')}</Label>
           <div className="flex gap-1 flex-wrap">
             {levels.map((l) => (
               <button
@@ -175,12 +177,12 @@ export default function BackendLogsPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* User Name */}
           <div className="space-y-1">
-            <Label className="text-xs">User Name</Label>
+            <Label className="text-xs">{t('backendLogs.userName')}</Label>
             <div className="relative">
               <Input
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
-                placeholder="Search user…"
+                placeholder={t('backendLogs.searchUser')}
                 className="h-8 text-xs pr-7"
               />
               {userSearch && (
@@ -193,12 +195,12 @@ export default function BackendLogsPage() {
 
           {/* Org ID */}
           <div className="space-y-1">
-            <Label className="text-xs">Organization ID</Label>
+            <Label className="text-xs">{t('backendLogs.orgId')}</Label>
             <div className="relative">
               <Input
                 value={orgId}
                 onChange={(e) => setOrgId(e.target.value)}
-                placeholder="Filter by org…"
+                placeholder={t('backendLogs.filterOrg')}
                 className="h-8 text-xs pr-7"
               />
               {orgId && (
@@ -211,7 +213,7 @@ export default function BackendLogsPage() {
 
           {/* Date From */}
           <div className="space-y-1">
-            <Label className="text-xs">Date & Time From</Label>
+            <Label className="text-xs">{t('backendLogs.dateFrom')}</Label>
             <Input
               type="datetime-local"
               value={dateFrom}
@@ -222,7 +224,7 @@ export default function BackendLogsPage() {
 
           {/* Date To */}
           <div className="space-y-1">
-            <Label className="text-xs">Date & Time To</Label>
+            <Label className="text-xs">{t('backendLogs.dateTo')}</Label>
             <Input
               type="datetime-local"
               value={dateTo}
@@ -233,14 +235,14 @@ export default function BackendLogsPage() {
 
           {/* Limit */}
           <div className="space-y-1">
-            <Label className="text-xs">Limit</Label>
+            <Label className="text-xs">{t('backendLogs.limit')}</Label>
             <Select value={limit} onValueChange={setLimit}>
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {['50', '100', '200', '500'].map((n) => (
-                  <SelectItem key={n} value={n}>{n} records</SelectItem>
+                  <SelectItem key={n} value={n}>{n} {t('backendLogs.records').replace('{count}', '').replace('{total}', '').replace(' of ', '').trim() || 'records'}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -254,7 +256,7 @@ export default function BackendLogsPage() {
           {hasActiveFilters && (
             <Button size="sm" variant="ghost" onClick={clearFilters} className="h-7 text-xs text-gray-500">
               <X className="h-3 w-3 mr-1" />
-              Clear filters
+              {t('backendLogs.clearFilters')}
             </Button>
           )}
         </div>
@@ -266,23 +268,23 @@ export default function BackendLogsPage() {
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 uppercase tracking-wide">
-                <th className="px-3 py-2.5 text-left font-medium">Time</th>
-                <th className="px-3 py-2.5 text-left font-medium">Method</th>
-                <th className="px-3 py-2.5 text-left font-medium">Path</th>
-                <th className="px-3 py-2.5 text-left font-medium">Status</th>
-                <th className="px-3 py-2.5 text-left font-medium">Level</th>
-                <th className="px-3 py-2.5 text-left font-medium">Duration</th>
-                <th className="px-3 py-2.5 text-left font-medium">User</th>
-                <th className="px-3 py-2.5 text-left font-medium">Organization</th>
-                <th className="px-3 py-2.5 text-left font-medium">Role</th>
-                <th className="px-3 py-2.5 text-left font-medium">Error</th>
+                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.time')}</th>
+                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.method')}</th>
+                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.path')}</th>
+                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.status')}</th>
+                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.level')}</th>
+                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.duration')}</th>
+                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.user')}</th>
+                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.organization')}</th>
+                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.role')}</th>
+                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.error')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredLogs.length === 0 && (
                 <tr>
                   <td colSpan={10} className="px-4 py-10 text-center text-gray-400">
-                    {loading ? 'Loading…' : 'No logs found'}
+                    {loading ? t('common.loading') : t('backendLogs.noLogs')}
                   </td>
                 </tr>
               )}
@@ -321,28 +323,28 @@ export default function BackendLogsPage() {
                       <td colSpan={10} className="px-4 py-3">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wide">Details</p>
+                            <p className="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wide">{t('backendLogs.details')}</p>
                             <dl className="space-y-1 text-xs">
-                              <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">Log ID</dt><dd className="font-mono text-gray-600 break-all">{log.id}</dd></div>
-                              <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">User</dt><dd className="text-gray-600">{log.userDisplayName ?? log.userId ?? '—'}</dd></div>
+                              <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">{t('backendLogs.logId')}</dt><dd className="font-mono text-gray-600 break-all">{log.id}</dd></div>
+                              <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">{t('backendLogs.user')}</dt><dd className="text-gray-600">{log.userDisplayName ?? log.userId ?? '—'}</dd></div>
                               {log.userDisplayName && log.userId && (
-                                <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">User ID</dt><dd className="font-mono text-gray-400 text-[11px] break-all">{log.userId}</dd></div>
+                                <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">{t('backendLogs.userId')}</dt><dd className="font-mono text-gray-400 text-[11px] break-all">{log.userId}</dd></div>
                               )}
-                              <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">Org ID</dt><dd className="font-mono text-gray-600 break-all">{log.organizationId ?? '—'}</dd></div>
-                              <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">Duration</dt><dd className="text-gray-600">{log.durationMs}ms</dd></div>
-                              {log.errorMessage && <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">Error</dt><dd className="text-red-600">{log.errorMessage}</dd></div>}
+                              <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">{t('backendLogs.orgIdDetail')}</dt><dd className="font-mono text-gray-600 break-all">{log.organizationId ?? '—'}</dd></div>
+                              <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">{t('backendLogs.duration')}</dt><dd className="text-gray-600">{log.durationMs}ms</dd></div>
+                              {log.errorMessage && <div className="flex gap-2"><dt className="text-gray-400 w-28 shrink-0">{t('backendLogs.error')}</dt><dd className="text-red-600">{log.errorMessage}</dd></div>}
                             </dl>
                           </div>
                           <div className="space-y-2">
                             {log.requestSummary && (
                               <div>
-                                <p className="font-semibold text-gray-600 mb-1 text-xs uppercase tracking-wide">Request</p>
+                                <p className="font-semibold text-gray-600 mb-1 text-xs uppercase tracking-wide">{t('backendLogs.request')}</p>
                                 <pre className="bg-white border border-gray-200 rounded p-2 text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap">{log.requestSummary}</pre>
                               </div>
                             )}
                             {log.responseSummary && (
                               <div>
-                                <p className="font-semibold text-gray-600 mb-1 text-xs uppercase tracking-wide">Response</p>
+                                <p className="font-semibold text-gray-600 mb-1 text-xs uppercase tracking-wide">{t('backendLogs.response')}</p>
                                 <pre className="bg-white border border-gray-200 rounded p-2 text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap">{log.responseSummary}</pre>
                               </div>
                             )}

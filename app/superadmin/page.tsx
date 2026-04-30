@@ -12,6 +12,7 @@ import { Plus, ArrowRight, Search, Edit2, CreditCard, Settings } from 'lucide-re
 import { useTransferMode } from '@/hooks/useTransferMode';
 import { useDebounce } from '@/hooks/useDebounce';
 import { ORG_CATEGORIES, type OrgWithUsage } from '@/types';
+import { useT } from '@/hooks/useT';
 
 function daysUntil(d: Date | string): number {
   const target = typeof d === 'string' ? new Date(d) : d;
@@ -19,6 +20,7 @@ function daysUntil(d: Date | string): number {
 }
 
 export default function SuperAdminPage() {
+  const { t } = useT();
   const router = useRouter();
   const { enterTransferMode } = useTransferMode();
 
@@ -34,29 +36,29 @@ export default function SuperAdminPage() {
   const columns: ColumnDef<OrgWithUsage>[] = [
     {
       key: 'name',
-      header: 'Name',
+      header: t('orgs.name'),
       render: (r) => (
         <div>
-          <p className="font-medium text-gray-900">{r.organization.name}</p>
-          <p className="text-xs text-gray-500">{r.organization.contactEmail}</p>
+          <p className="font-medium text-gray-900 dark:text-gray-100">{r.organization.name}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-300">{r.organization.contactEmail}</p>
         </div>
       ),
     },
     {
       key: 'subdomain',
-      header: 'Subdomain',
+      header: t('orgs.subdomain'),
       render: (r) => (
         <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">{r.organization.subdomain}</span>
       ),
     },
     {
       key: 'category',
-      header: 'Category',
+      header: t('orgs.category'),
       render: (r) => r.organization.category ?? <span className="text-gray-400">—</span>,
     },
     {
       key: 'subscription',
-      header: 'Subscription',
+      header: t('orgs.subscription'),
       render: (r) => {
         if (!r.subscription) return <span className="text-gray-400 text-sm">—</span>;
         const d = daysUntil(r.subscription.endDate);
@@ -65,7 +67,9 @@ export default function SuperAdminPage() {
           <div className="space-y-1">
             <StatusBadge status={r.subscription.status} />
             <p className={`text-[11px] ${tone}`}>
-              {d < 0 ? `Expired ${Math.abs(d)}d ago` : `${d}d remaining`}
+              {d < 0
+                ? t('orgs.expiredAgo').replace('{days}', String(Math.abs(d)))
+                : t('orgs.daysRemaining').replace('{days}', String(d))}
             </p>
           </div>
         );
@@ -73,12 +77,12 @@ export default function SuperAdminPage() {
     },
     {
       key: 'created',
-      header: 'Created',
+      header: t('orgs.created'),
       render: (r) => formatDate(r.organization.createdAt),
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('orgs.actions'),
       render: (r) => (
         <div className="flex gap-1">
           <Button
@@ -89,7 +93,7 @@ export default function SuperAdminPage() {
               enterTransferMode(r.organization.id, r.organization.name);
             }}
           >
-            <ArrowRight className="h-3.5 w-3.5 mr-1" /> Enter
+            <ArrowRight className="h-3.5 w-3.5 mr-1" /> {t('orgs.enter')}
           </Button>
           <Button
             size="sm"
@@ -98,7 +102,7 @@ export default function SuperAdminPage() {
               e.stopPropagation();
               router.push(`/superadmin/organizations/${r.organization.id}/subscription`);
             }}
-            title="Subscription"
+            title={t('nav.subscription')}
           >
             <CreditCard className="h-3.5 w-3.5" />
           </Button>
@@ -109,7 +113,7 @@ export default function SuperAdminPage() {
               e.stopPropagation();
               router.push(`/superadmin/organizations/${r.organization.id}/configuration`);
             }}
-            title="Configuration"
+            title={t('nav.configuration')}
           >
             <Settings className="h-3.5 w-3.5" />
           </Button>
@@ -120,7 +124,7 @@ export default function SuperAdminPage() {
               e.stopPropagation();
               router.push(`/superadmin/organizations/${r.organization.id}/edit`);
             }}
-            title="Edit"
+            title={t('common.edit')}
           >
             <Edit2 className="h-3.5 w-3.5" />
           </Button>
@@ -132,11 +136,11 @@ export default function SuperAdminPage() {
   return (
     <div>
       <PageHeader
-        title="Organizations"
+        title={t('nav.organizations')}
         actions={
           <Button size="sm" onClick={() => router.push('/superadmin/organizations/new')}>
             <Plus className="h-4 w-4 mr-1" />
-            Create Organization
+            {t('orgs.createOrg')}
           </Button>
         }
       />
@@ -147,7 +151,7 @@ export default function SuperAdminPage() {
           <Input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search name, subdomain, email…"
+            placeholder={t('orgs.searchPlaceholder')}
             className="pl-8"
           />
         </div>
@@ -156,7 +160,7 @@ export default function SuperAdminPage() {
           onChange={(e) => setCategory(e.target.value)}
           className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm"
         >
-          <option value="">All categories</option>
+          <option value="">{t('orgs.allCategories')}</option>
           {ORG_CATEGORIES.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
@@ -170,7 +174,7 @@ export default function SuperAdminPage() {
               setCategory('');
             }}
           >
-            Clear
+            {t('orgs.clear')}
           </Button>
         )}
       </div>
@@ -180,7 +184,7 @@ export default function SuperAdminPage() {
           data={rows}
           columns={columns}
           isLoading={isLoading}
-          emptyMessage="No organizations match the filters."
+          emptyMessage={t('orgs.noMatch')}
           keyExtractor={(r) => r.organization.id}
         />
       </div>

@@ -14,6 +14,7 @@ import { useSupportTickets, useCreateTicket } from '@/hooks/useSupportTickets';
 import { SupportTicket } from '@/types';
 import { formatDate } from '@/lib/utils/date';
 import { toast } from '@/hooks/useToast';
+import { useT } from '@/hooks/useT';
 function PlusSVG() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -23,6 +24,7 @@ function PlusSVG() {
 }
 
 export default function SupportPage() {
+  const { t } = useT();
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const [showNew, setShowNew] = useState(false);
@@ -36,25 +38,25 @@ export default function SupportPage() {
     e.preventDefault();
     try {
       await createMutation.mutateAsync({ subject, description });
-      toast.success('Ticket submitted successfully. Our team will respond shortly.');
+      toast.success(t('support.submitted'));
       setShowNew(false);
       setSubject('');
       setDescription('');
     } catch {
-      toast.error('Failed to submit ticket. Please try again.');
+      toast.error(t('support.submitFailed'));
     }
   }
 
   const columns: ColumnDef<SupportTicket>[] = [
-    { key: 'subject', header: 'Subject', render: (t) => <span className="font-medium text-gray-900">{t.subject}</span> },
-    { key: 'status', header: 'Status', render: (t) => <StatusBadge status={t.status} /> },
-    { key: 'priority', header: 'Priority', render: (t) => <StatusBadge status={t.priority} /> },
-    { key: 'createdAt', header: 'Created', render: (t) => formatDate(new Date(t.createdAt)) },
+    { key: 'subject', header: t('support.subject'), render: (ticket) => <span className="font-medium text-gray-900 dark:text-gray-100">{ticket.subject}</span> },
+    { key: 'status', header: t('support.status'), render: (ticket) => <StatusBadge status={ticket.status} /> },
+    { key: 'priority', header: t('support.priority'), render: (ticket) => <StatusBadge status={ticket.priority} /> },
+    { key: 'createdAt', header: t('support.created'), render: (ticket) => formatDate(new Date(ticket.createdAt)) },
     {
       key: 'actions', header: '',
-      render: (t) => (
-        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); router.push(`/${orgSlug}/support/${t.id}`); }}>
-          View
+      render: (ticket) => (
+        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); router.push(`/${orgSlug}/support/${ticket.id}`); }}>
+          {t('support.view')}
         </Button>
       ),
     },
@@ -63,10 +65,10 @@ export default function SupportPage() {
   return (
     <div>
       <PageHeader
-        title="Support Tickets"
+        title={t('nav.support')}
         actions={
           <Button size="sm" onClick={() => setShowNew(true)}>
-            <PlusSVG /><span className="ml-1">Submit Ticket</span>
+            <PlusSVG /><span className="ml-1">{t('support.submitTicket')}</span>
           </Button>
         }
       />
@@ -76,31 +78,31 @@ export default function SupportPage() {
           data={tickets}
           columns={columns}
           isLoading={isLoading}
-          emptyMessage="No support tickets yet."
-          keyExtractor={(t) => t.id}
-          onRowClick={(t) => router.push(`/${orgSlug}/support/${t.id}`)}
+          emptyMessage={t('support.noTickets')}
+          keyExtractor={(ticket) => ticket.id}
+          onRowClick={(ticket) => router.push(`/${orgSlug}/support/${ticket.id}`)}
         />
       </div>
 
       <Dialog open={showNew} onOpenChange={setShowNew}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Submit New Ticket</DialogTitle>
+            <DialogTitle>{t('support.newTicket')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="subject">Subject</Label>
-              <Input id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Brief description of your issue" required minLength={5} maxLength={200} />
+              <Label htmlFor="subject">{t('support.subject')}</Label>
+              <Input id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={t('support.subjectPlaceholder')} required minLength={5} maxLength={200} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Please describe your issue in detail…" rows={5} required minLength={20} maxLength={5000} />
+              <Label htmlFor="description">{t('support.description')}</Label>
+              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('support.descPlaceholder')} rows={5} required minLength={20} maxLength={5000} />
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowNew(false)}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setShowNew(false)}>{t('common.cancel')}</Button>
               <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? 'Submitting…' : 'Submit Ticket'}
+                {createMutation.isPending ? t('support.submitting') : t('support.submitTicket')}
               </Button>
             </DialogFooter>
           </form>

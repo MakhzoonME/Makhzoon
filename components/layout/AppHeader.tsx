@@ -72,6 +72,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
   const { setMobileMenuOpen } = useUiStore();
   const [shortcutLabel, setShortcutLabel] = useState('Ctrl+K');
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { t } = useT();
 
   useEffect(() => {
@@ -81,9 +82,14 @@ export function AppHeader({ orgName }: { orgName?: string }) {
   }, []);
 
   async function handleLogout() {
-    await fetch('/api/auth/session', { method: 'DELETE' });
-    await signOut(auth);
-    router.push('/login');
+    setIsLoggingOut(true);
+    try {
+      await fetch('/api/auth/session', { method: 'DELETE' });
+      await signOut(auth);
+    } catch {
+      // ignore — always redirect regardless of errors
+    }
+    window.location.href = '/login';
   }
 
   const role = user?.role ?? 'staff';
@@ -160,9 +166,9 @@ export function AppHeader({ orgName }: { orgName?: string }) {
                 {t('common.profile')}
               </DropdownMenuItem>
               <DropdownMenuSeparator className="dark:bg-gray-700" />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400 dark:focus:bg-gray-700 gap-2">
+              <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut} className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400 dark:focus:bg-gray-700 gap-2">
                 <LogOutSVG />
-                {t('common.signOut')}
+                {isLoggingOut ? '…' : t('common.signOut')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

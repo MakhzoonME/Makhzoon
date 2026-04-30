@@ -8,6 +8,7 @@ export interface AuthUser {
   displayName: string;
   role: UserRole;
   organizationId: string | null;
+  orgSlug?: string | null;
   permissions?: UserPermissions | null;
   features?: Record<string, boolean>;
 }

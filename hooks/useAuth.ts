@@ -1,6 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
+import * as Sentry from '@sentry/nextjs';
 import { auth } from '@/lib/firebase/client';
 import { useAuthStore } from '@/store/auth.store';
 import { AuthUser, UserRole } from '@/types';
@@ -22,6 +23,8 @@ export function useAuth() {
         let permissions = null;
 
         // For org users: fetch features + permissions from API
+        let orgSlug: string | null = null;
+
         if (ORG_ROLES.has(role)) {
           try {
             const res = await fetch('/api/auth/me', {
@@ -31,6 +34,7 @@ export function useAuth() {
               const data = await res.json();
               features = data.features ?? {};
               permissions = data.permissions ?? null;
+              orgSlug = data.orgSlug ?? null;
             }
           } catch {
             // non-critical
@@ -43,12 +47,15 @@ export function useAuth() {
           displayName: firebaseUser.displayName ?? '',
           role,
           organizationId: tokenResult.claims.organizationId as string | null,
+          orgSlug,
           permissions,
           features,
         };
         setUser(authUser);
+        Sentry.setUser({ id: authUser.uid, email: authUser.email ?? undefined, username: authUser.displayName ?? undefined });
       } else {
         setUser(null);
+        Sentry.setUser(null);
       }
       setLoading(false);
     });

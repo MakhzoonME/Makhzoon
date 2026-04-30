@@ -1,8 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+// TODO: Re-enable when Cloudflare Turnstile is ready for production
+// import { Turnstile } from '@marsidev/react-turnstile';
 import { auth } from '@/lib/firebase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -71,6 +73,19 @@ export default function LoginPage() {
   const shakeControls = useAnimation();
 
   const [tab, setTab] = useState<'email' | 'username'>('email');
+  const [globalError, setGlobalError] = useState('');
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('auth.session_expired')) {
+        setGlobalError('Your session expired. Please sign in again.');
+        sessionStorage.removeItem('auth.session_expired');
+      }
+    } catch { /* sessionStorage unavailable */ }
+  }, []);
+
+  // TODO: Re-enable when Cloudflare Turnstile is ready for production
+  // const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   // Email/password
   const [email, setEmail] = useState('');
@@ -90,11 +105,11 @@ export default function LoginPage() {
     shakeControls.start({ x: [0, -6, 6, -4, 4, 0], transition: { duration: 0.4, ease: 'easeInOut' } });
   }
 
-  async function redirectFromSession(idToken: string) {
+  async function redirectFromSession(idToken: string, token: string | null) {
     const res = await fetch('/api/auth/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken }),
+      body: JSON.stringify({ idToken, turnstileToken: token ?? '' }),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || 'Session creation failed');
@@ -106,7 +121,7 @@ export default function LoginPage() {
       const firstPath = getFirstAccessiblePath({ role, features, permissions });
       router.push(buildOrgPath(orgSlug, firstPath));
     } else {
-      router.push('/');
+      throw new Error('Your workspace could not be found. Please contact support.');
     }
   }
 
@@ -117,8 +132,8 @@ export default function LoginPage() {
     setEmailLoading(true);
     try {
       const cred = await signInWithEmailAndPassword(auth, email, emailPassword);
-      const token = await cred.user.getIdToken();
-      await redirectFromSession(token);
+      const idToken = await cred.user.getIdToken();
+      await redirectFromSession(idToken, null);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Invalid email or password';
       const isFirebaseAuth = msg.startsWith('Firebase') || /auth\//.test(msg);
@@ -141,8 +156,8 @@ export default function LoginPage() {
     try {
       const syntheticEmail = `${username.trim().toLowerCase()}@makhzoon.local`;
       const cred = await signInWithEmailAndPassword(auth, syntheticEmail, usernamePassword);
-      const token = await cred.user.getIdToken();
-      await redirectFromSession(token);
+      const idToken = await cred.user.getIdToken();
+      await redirectFromSession(idToken, null);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Invalid username or password';
       const isFirebaseAuth = msg.startsWith('Firebase') || /auth\//.test(msg);
@@ -189,6 +204,21 @@ export default function LoginPage() {
             Welcome back to Makhzoon.
           </motion.p>
         </div>
+
+        <AnimatePresence>
+          {globalError && (
+            <motion.div
+              key="global-err"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="flex items-start gap-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4"
+            >
+              <AlertCircleSVG /><span>{globalError}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <motion.div animate={shakeControls}>
           <motion.div
@@ -374,6 +404,13 @@ export default function LoginPage() {
                 </motion.form>
               )}
             </AnimatePresence>
+            {/* TODO: Re-enable when Cloudflare Turnstile is ready for production */}
+            {/* <Turnstile
+              siteKey={process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY!}
+              onSuccess={(token) => setTurnstileToken(token)}
+              onExpire={() => setTurnstileToken(null)}
+              options={{ size: 'invisible' }}
+            /> */}
           </motion.div>
         </motion.div>
       </motion.div>

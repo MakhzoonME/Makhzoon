@@ -5,9 +5,8 @@ import { auth } from '@/lib/firebase/client';
 import { signOut } from 'firebase/auth';
 
 async function handleUnauthorized() {
-  try {
-    await signOut(auth);
-  } catch { /* ignore */ }
+  try { sessionStorage.setItem('auth.session_expired', '1'); } catch { /* ignore */ }
+  try { await signOut(auth); } catch { /* ignore */ }
   await fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
   window.location.href = '/login';
 }

@@ -30,7 +30,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      router.push('/login');
+      router.replace('/login');
       return;
     }
     // Super admin visiting an org path without an active transfer → auto-enter transfer mode

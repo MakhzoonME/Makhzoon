@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { cookies } from 'next/headers';
 import { getSubscriptionByOrg } from '@/lib/firestore/subscriptions';
+import { invalidateCachedSession } from '@/lib/firebase/session-cache';
 
 async function verifyWithRetry(idToken: string, attempt = 0) {
   try {
@@ -17,8 +18,26 @@ async function verifyWithRetry(idToken: string, attempt = 0) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { idToken } = await req.json();
+    const body = await req.json();
+    const { idToken, turnstileToken: _turnstileToken } = body; // _turnstileToken reserved for Turnstile re-enable
     if (!idToken) return NextResponse.json({ error: 'Missing token' }, { status: 400 });
+
+    // TODO: Re-enable when Cloudflare Turnstile is ready for production
+    // const turnstileSecret = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY;
+    // if (turnstileSecret && process.env.NODE_ENV === 'production') {
+    //   if (!turnstileToken) {
+    //     return NextResponse.json({ error: 'Bot verification failed' }, { status: 400 });
+    //   }
+    //   const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({ secret: turnstileSecret, response: turnstileToken }),
+    //   });
+    //   const verifyData = await verifyRes.json();
+    //   if (!verifyData.success) {
+    //     return NextResponse.json({ error: 'Bot verification failed' }, { status: 400 });
+    //   }
+    // }
 
     const decoded = await verifyWithRetry(idToken);
 
@@ -68,7 +87,14 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE() {
   const cookieStore = cookies();
+  const sessionToken = cookieStore.get('session')?.value;
+
   cookieStore.set('session', '', { maxAge: 0, path: '/' });
   cookieStore.set('transferOrgId', '', { maxAge: 0, path: '/' });
+
+  if (sessionToken) {
+    invalidateCachedSession(sessionToken);
+  }
+
   return NextResponse.json({ success: true });
 }

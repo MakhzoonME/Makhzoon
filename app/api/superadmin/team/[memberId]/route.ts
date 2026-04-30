@@ -4,13 +4,16 @@ import { adminAuth } from '@/lib/firebase/admin';
 import {
   updateSuperAdminUser,
   deleteSuperAdminUser,
+  getSuperAdminUsers,
   MakhzoonRole,
 } from '@/lib/firestore/superadmin-users';
 import { z } from 'zod';
 
 const patchSchema = z.object({
-  role: z.enum(['makhzoon_admin', 'makhzoon_support']).optional(),
+  role: z.enum(['super_admin', 'makhzoon_admin', 'makhzoon_support']).optional(),
   status: z.enum(['active', 'deactivated']).optional(),
+  permissions: z.record(z.unknown()).optional().nullable(),
+  displayName: z.string().min(2).max(100).optional(),
 });
 
 export async function PATCH(req: NextRequest, { params }: { params: { memberId: string } }) {
@@ -25,16 +28,36 @@ export async function PATCH(req: NextRequest, { params }: { params: { memberId: 
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
+  // Resolve target member's current role
+  const allMembers = await getSuperAdminUsers();
+  const target = allMembers.find((m) => m.id === params.memberId);
+  const targetRole = target?.role ?? (await adminAuth.getUser(params.memberId)).customClaims?.role;
+
+  // makhzoon_admin cannot touch super_admin members
+  if (caller.role === 'makhzoon_admin' && targetRole === 'super_admin') {
+    return NextResponse.json({ error: 'Makhzoon Admins cannot modify Super Admin accounts' }, { status: 403 });
+  }
+
+  // Only super_admin can assign super_admin role
+  if (parsed.data.role === 'super_admin' && caller.role !== 'super_admin') {
+    return NextResponse.json({ error: 'Only Super Admins can grant the Super Admin role' }, { status: 403 });
+  }
+
   // makhzoon_admin cannot promote to makhzoon_admin
   if (caller.role === 'makhzoon_admin' && parsed.data.role === 'makhzoon_admin') {
     return NextResponse.json({ error: 'Makhzoon Admins cannot grant the Makhzoon Admin role' }, { status: 403 });
   }
 
-  const update: Record<string, unknown> = { updatedBy: caller.uid };
-  if (parsed.data.role) update.role = parsed.data.role;
-  if (parsed.data.status) update.status = parsed.data.status;
+  await updateSuperAdminUser(params.memberId, {
+    role: parsed.data.role as MakhzoonRole | undefined,
+    status: parsed.data.status,
+    permissions: parsed.data.permissions as never,
+    updatedBy: caller.uid,
+  });
 
-  await updateSuperAdminUser(params.memberId, update as Parameters<typeof updateSuperAdminUser>[1]);
+  if (parsed.data.displayName) {
+    await adminAuth.updateUser(params.memberId, { displayName: parsed.data.displayName });
+  }
 
   if (parsed.data.role) {
     const existingClaims = (await adminAuth.getUser(params.memberId)).customClaims ?? {};

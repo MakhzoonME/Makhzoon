@@ -12,8 +12,9 @@ import { z } from 'zod';
 const createMemberSchema = z.object({
   email: z.string().email('Invalid email address'),
   displayName: z.string().min(2, 'Name must be at least 2 characters').max(100),
-  role: z.enum(['makhzoon_admin', 'makhzoon_support']),
+  role: z.enum(['super_admin', 'makhzoon_admin', 'makhzoon_support']),
   password: z.string().min(8, 'Password must be at least 8 characters').max(128),
+  permissions: z.record(z.unknown()).optional().nullable(),
 });
 
 const ALLOWED_CALLER_ROLES = new Set(['super_admin', 'makhzoon_admin']);
@@ -24,11 +25,9 @@ export async function GET() {
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!ALLOWED_CALLER_ROLES.has(caller.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  // Get all Firestore-tracked members
   const firestoreMembers = await getSuperAdminUsers();
   const firestoreIds = new Set(firestoreMembers.map((m) => m.id));
 
-  // List Firebase Auth users and find superadmin-role ones not yet in Firestore
   const { users: authUsers } = await adminAuth.listUsers(1000);
   const missing = authUsers.filter(
     (u) => SUPERADMIN_ROLES.has(u.customClaims?.role) && !firestoreIds.has(u.uid)
@@ -38,7 +37,7 @@ export async function GET() {
     id: u.uid,
     email: u.email ?? '',
     displayName: u.displayName ?? u.email ?? u.uid,
-    role: (u.customClaims?.role ?? 'super_admin') as 'super_admin' | 'makhzoon_admin' | 'makhzoon_support',
+    role: (u.customClaims?.role ?? 'super_admin') as MakhzoonRole,
     status: u.disabled ? 'deactivated' : 'active',
     createdAt: u.metadata.creationTime ?? new Date().toISOString(),
     createdBy: 'system',
@@ -53,13 +52,18 @@ export async function POST(req: NextRequest) {
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!ALLOWED_CALLER_ROLES.has(caller.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  // makhzoon_admin can only create makhzoon_support (not other makhzoon_admin)
   const body = await req.json();
   const parsed = createMemberSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
-  const { email, displayName, role, password } = parsed.data;
+  const { email, displayName, role, password, permissions } = parsed.data;
 
+  // Only super_admin can create super_admin accounts
+  if (role === 'super_admin' && caller.role !== 'super_admin') {
+    return NextResponse.json({ error: 'Only Super Admins can create Super Admin accounts' }, { status: 403 });
+  }
+
+  // makhzoon_admin can only create makhzoon_support accounts
   if (caller.role === 'makhzoon_admin' && role !== 'makhzoon_support') {
     return NextResponse.json({ error: 'Makhzoon Admins can only create Support accounts' }, { status: 403 });
   }
@@ -81,9 +85,9 @@ export async function POST(req: NextRequest) {
     displayName,
     role: role as MakhzoonRole,
     createdBy: caller.uid,
+    permissions: role === 'makhzoon_support' && permissions ? permissions as never : undefined,
   });
 
-  // Send welcome email with credentials
   await sendEmail({
     to: email,
     subject: 'Your Makhzoon team account',

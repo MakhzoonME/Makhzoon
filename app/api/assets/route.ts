@@ -4,7 +4,7 @@ import { getAssets, createAsset, getAssetCategories } from '@/lib/firestore/asse
 import { getSubscriptionByOrg } from '@/lib/firestore/subscriptions';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { assetSchema } from '@/lib/validations/asset.schema';
-import { hasPermission } from '@/lib/utils/permissions';
+import { hasPermission } from '@/lib/permissions';
 import { withLogging } from '@/lib/logging/with-logging';
 
 async function _GET(req: NextRequest) {

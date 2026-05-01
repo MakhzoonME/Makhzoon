@@ -11,15 +11,18 @@ import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { formatDate, daysUntil } from '@/lib/utils/date';
 import { useT } from '@/hooks/useT';
 
-const FEATURE_LABELS: Record<string, string> = {
-  warranties: 'Warranties',
-  requests: 'Requests',
-  reports: 'Reports',
-  maintenance: 'Maintenance Records',
-  checkouts: 'Asset Checkouts',
-  notes: 'Asset Notes',
-  support: 'Support Tickets',
-};
+function getFeatureLabelKey(feature: string): string {
+  const keyMap: Record<string, string> = {
+    warranties: 'subscription.warranties',
+    requests: 'subscription.requests',
+    reports: 'subscription.feature.reports',
+    maintenance: 'subscription.feature.maintenance',
+    checkouts: 'subscription.feature.checkouts',
+    notes: 'subscription.feature.notes',
+    support: 'subscription.feature.support',
+  };
+  return keyMap[feature] || feature;
+}
 
 export default function SubscriptionPage() {
   const { t } = useT();
@@ -70,7 +73,7 @@ export default function SubscriptionPage() {
                 <dt className="text-gray-500 dark:text-gray-300">{t('subscription.daysRemaining')}</dt>
                 <dd className="font-medium">
                   {days > 0 ? (
-                    <span className="text-green-700">{days} {t('subscription.days').replace('{days}', String(days))}</span>
+                    <span className="text-green-700">{t('subscription.days').replace('{days}', String(days))}</span>
                   ) : (
                     <span className="text-red-600">{t('subscription.expired')}</span>
                   )}
@@ -112,20 +115,30 @@ export default function SubscriptionPage() {
               {t('subscription.features')}
             </h2>
             <div className="space-y-2 text-sm">
-              {enabledFeatures.map(([key]) => (
-                <div key={key} className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-green-500" />
-                  <span className="text-gray-800 dark:text-gray-100">{FEATURE_LABELS[key] ?? key}</span>
-                  <span className="text-xs text-green-600 ml-auto">{t('subscription.enabled')}</span>
-                </div>
-              ))}
-              {disabledFeatures.map(([key]) => (
-                <div key={key} className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-gray-300" />
-                  <span className="text-gray-400">{FEATURE_LABELS[key] ?? key}</span>
-                  <span className="text-xs text-gray-400 ml-auto">{t('subscription.disabled')}</span>
-                </div>
-              ))}
+              {enabledFeatures.map(([key]) => {
+                const featureLabelKey = getFeatureLabelKey(key);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const label = t(featureLabelKey as any);
+                return (
+                  <div key={key} className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-green-500" />
+                    <span className="text-gray-800 dark:text-gray-100">{label}</span>
+                    <span className="text-xs text-green-600 ml-auto">{t('subscription.enabled')}</span>
+                  </div>
+                );
+              })}
+              {disabledFeatures.map(([key]) => {
+                const featureLabelKey = getFeatureLabelKey(key);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const label = t(featureLabelKey as any);
+                return (
+                  <div key={key} className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-gray-300" />
+                    <span className="text-gray-400">{label}</span>
+                    <span className="text-xs text-gray-400 ml-auto">{t('subscription.disabled')}</span>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

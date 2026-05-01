@@ -3,7 +3,7 @@ import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getInventoryItems, createInventoryItem, getInventoryCategories } from '@/lib/firestore/inventory';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { inventoryItemSchema } from '@/lib/validations/inventory.schema';
-import { hasPermission } from '@/lib/utils/permissions';
+import { hasPermission } from '@/lib/permissions';
 import { withLogging } from '@/lib/logging/with-logging';
 
 async function _GET(req: NextRequest) {

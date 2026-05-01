@@ -27,6 +27,8 @@ export async function middleware(req: NextRequest) {
   }
 
   // Everything else (/superadmin/*, /[orgSlug]/*, /signup) requires a session
+  // Note: Actual JWT verification happens in route handlers via verifySessionCookie()
+  // Middleware is just a gate-check at Edge Runtime (can't run Firebase Admin SDK here)
   if (!session) {
     return NextResponse.redirect(new URL('/login', req.url));
   }

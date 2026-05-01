@@ -145,7 +145,7 @@ export default function ProfilePage() {
               onClick={() => fileInputRef.current?.click()}
             >
               {photoURL ? (
-                <Image src={photoURL} alt="Avatar" fill className="object-cover" unoptimized />
+                <Image src={photoURL} alt="Avatar" fill className="object-cover" />
               ) : (
                 <span className="text-indigo-700 font-semibold text-lg">{initials}</span>
               )}

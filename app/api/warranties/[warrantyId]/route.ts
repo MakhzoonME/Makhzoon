@@ -3,7 +3,7 @@ import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getWarrantyById, updateWarranty, deleteWarranty } from '@/lib/firestore/warranties';
 import { writeAuditLog, queueAuditLog } from '@/lib/audit/logger';
 import { warrantySchema } from '@/lib/validations/warranty.schema';
-import { hasPermission } from '@/lib/utils/permissions';
+import { hasPermission } from '@/lib/permissions';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ warrantyId: string }> }) {
   try {

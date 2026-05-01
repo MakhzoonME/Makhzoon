@@ -103,14 +103,23 @@ export async function createInventoryItem(
 
 export async function updateInventoryItem(id: string, data: Partial<InventoryItem>): Promise<void> {
   const update: Record<string, unknown> = { ...data, updatedAt: FieldValue.serverTimestamp() };
-  // Recompute stockStatus if qty or threshold changed
+
+  // Recompute stockStatus if qty or threshold changed (use transaction to avoid N+1)
   if (data.quantityOnHand !== undefined || data.minimumThreshold !== undefined) {
-    const current = await getInventoryItemById(id);
-    const qty = data.quantityOnHand ?? current?.quantityOnHand ?? 0;
-    const threshold = data.minimumThreshold ?? current?.minimumThreshold ?? 0;
-    update.stockStatus = stockStatus(qty, threshold);
+    await adminDb.runTransaction(async (transaction) => {
+      const doc = await transaction.get(adminDb.collection('inventoryItems').doc(id));
+      if (!doc.exists) throw new Error(`Inventory item ${id} not found`);
+
+      const current = doc.data()!;
+      const qty = data.quantityOnHand ?? current.quantityOnHand ?? 0;
+      const threshold = data.minimumThreshold ?? current.minimumThreshold ?? 0;
+      update.stockStatus = stockStatus(qty, threshold);
+
+      transaction.update(doc.ref, update);
+    });
+  } else {
+    await adminDb.collection('inventoryItems').doc(id).update(update);
   }
-  await adminDb.collection('inventoryItems').doc(id).update(update);
 }
 
 export async function deleteInventoryItem(id: string): Promise<void> {

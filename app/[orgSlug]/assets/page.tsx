@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Plus, Pencil, ArchiveX, Trash2, Upload } from 'lucide-react';
 import { useOrgSlug } from '@/hooks/useOrgSlug';
 import { useAssets } from '@/hooks/useAssets';
 import { useAuthStore } from '@/store/auth.store';
@@ -17,11 +18,6 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Asset } from '@/types';
 import { formatDate } from '@/lib/utils/date';
-function PlusSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>; }
-function EditSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /></svg>; }
-function ArchiveXSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><rect x="1" y="1.5" width="12" height="3" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M2 4.5v7a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-7" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M5.5 7l3 3M8.5 7l-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
-function Trash2SVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M2 3.5h10M5.5 3.5V2.5h3v1M4 3.5l.75 8h4.5L10 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
-function UploadSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 10V3M5 6l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M2 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>; }
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -69,19 +65,19 @@ export default function AssetsPage() {
             <>
               {a.status !== 'Retired' && (
                 <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditTarget(a); setDrawerOpen(true); }}>
-                  <EditSVG />
+                  <Pencil className="w-3.5 h-3.5" />
                 </Button>
               )}
               {a.status === 'Active' && (
                 <Button size="sm" variant="ghost" className="text-amber-500 hover:text-amber-600 hover:bg-amber-50" onClick={(e) => { e.stopPropagation(); setActionTarget(a); }}
                   title={t('assets.retire')}>
-                  <ArchiveXSVG />
+                  <ArchiveX className="w-3.5 h-3.5" />
                 </Button>
               )}
               {a.status === 'Retired' && (
                 <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setActionTarget(a); }}
                   title={t('assets.deleteBtn')}>
-                  <Trash2SVG />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </Button>
               )}
             </>
@@ -117,10 +113,10 @@ export default function AssetsPage() {
         actions={isAdmin ? (
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
-              <UploadSVG /><span className="ms-1">{t('assets.importCsv')}</span>
+              <Upload className="w-4 h-4" /><span className="ms-1">{t('assets.importCsv')}</span>
             </Button>
             <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
-              <PlusSVG /><span className="ms-1">{t('assets.addAsset')}</span>
+              <Plus className="w-4 h-4" /><span className="ms-1">{t('assets.addAsset')}</span>
             </Button>
           </div>
         ) : undefined}

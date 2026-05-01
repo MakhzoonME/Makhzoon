@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { buildOrgPath, buildSuperAdminPath } from '@/lib/utils/tenant-url';
-import { getFirstAccessiblePath } from '@/lib/utils/nav-config';
+import { getFirstAccessiblePath } from '@/lib/nav';
 import { cn } from '@/lib/utils/cn';
 
 /* ── Icons ────────────────────────────────────────────────────── */

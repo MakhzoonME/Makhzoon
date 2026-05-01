@@ -3,7 +3,7 @@ import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getAssetById, updateAsset, deleteAsset } from '@/lib/firestore/assets';
 import { writeAuditLog, queueAuditLog } from '@/lib/audit/logger';
 import { assetSchema } from '@/lib/validations/asset.schema';
-import { hasPermission } from '@/lib/utils/permissions';
+import { hasPermission } from '@/lib/permissions';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   try {

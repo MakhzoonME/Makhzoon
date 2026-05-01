@@ -351,6 +351,11 @@ const en = {
   'subscription.users':        'Users',
   'subscription.warranties':   'Warranties',
   'subscription.requests':     'Requests',
+  'subscription.feature.reports': 'Reports',
+  'subscription.feature.maintenance': 'Maintenance Records',
+  'subscription.feature.checkouts': 'Asset Checkouts',
+  'subscription.feature.notes': 'Asset Notes',
+  'subscription.feature.support': 'Support Tickets',
 
   // ── Superadmin organizations ──────────────────────────────────────
   'orgs.createOrg':            'Create Organization',
@@ -807,6 +812,11 @@ const ar: Record<keyof typeof en, string> = {
   'subscription.users':        'المستخدمون',
   'subscription.warranties':   'الضمانات',
   'subscription.requests':     'الطلبات',
+  'subscription.feature.reports': 'التقارير',
+  'subscription.feature.maintenance': 'سجلات الصيانة',
+  'subscription.feature.checkouts': 'الأصول المستأجرة',
+  'subscription.feature.notes': 'ملاحظات الأصول',
+  'subscription.feature.support': 'تذاكر الدعم',
 
   // ── Superadmin organizations ──────────────────────────────────────
   'orgs.createOrg':            'إنشاء منظمة',

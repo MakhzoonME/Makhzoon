@@ -3,7 +3,7 @@ import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getRequestById, updateRequest } from '@/lib/firestore/requests';
 import { updateAsset } from '@/lib/firestore/assets';
 import { writeAuditLog } from '@/lib/audit/logger';
-import { hasPermission } from '@/lib/utils/permissions';
+import { hasPermission } from '@/lib/permissions';
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ requestId: string }> }) {
   try {

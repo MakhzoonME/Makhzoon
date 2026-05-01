@@ -5,7 +5,7 @@ import { getAssetById } from '@/lib/firestore/assets';
 import { getSubscriptionByOrg } from '@/lib/firestore/subscriptions';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { warrantySchema } from '@/lib/validations/warranty.schema';
-import { hasPermission } from '@/lib/utils/permissions';
+import { hasPermission } from '@/lib/permissions';
 
 export async function GET(req: NextRequest) {
   try {

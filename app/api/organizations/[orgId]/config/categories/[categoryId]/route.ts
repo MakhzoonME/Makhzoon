@@ -3,7 +3,7 @@ import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { updateCategory, deleteCategory } from '@/lib/db/organization-configs';
 import { getOrganizationById } from '@/lib/db/organizations';
 import { categoryPatchSchema } from '@/lib/validations/organization-config.schema';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 
 interface Params { params: { orgId: string; categoryId: string } }
 
@@ -23,7 +23,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     try {
       const { category, categories } = await updateCategory(params.orgId, params.categoryId, parsed.data, user.uid);
       if (!category) return NextResponse.json({ error: 'Category not found' }, { status: 404 });
-      await writeAuditLog({
+      queueAuditLog({
         organizationId: params.orgId,
         userId: user.uid,
         role: user.role,
@@ -56,7 +56,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     try {
       const { removed, categories } = await deleteCategory(params.orgId, params.categoryId, user.uid);
       if (!removed) return NextResponse.json({ error: 'Category not found' }, { status: 404 });
-      await writeAuditLog({
+      queueAuditLog({
         organizationId: params.orgId,
         userId: user.uid,
         role: user.role,

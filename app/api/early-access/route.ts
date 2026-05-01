@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/email/resend';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { checkOrigin } from '@/lib/csrf';
 
 const notifyHtml = (email: string) => `
 <!DOCTYPE html>
@@ -61,6 +62,10 @@ export async function POST(req: NextRequest) {
     { action: 'request early access' }
   );
   if (rateLimitIp) return rateLimitIp;
+
+  // SECURITY: Validate origin to prevent CSRF
+  const originCheck = checkOrigin(req);
+  if (originCheck) return originCheck;
 
   const body = await req.json().catch(() => null);
   const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';

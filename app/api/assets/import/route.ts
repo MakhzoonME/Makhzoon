@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { createAsset } from '@/lib/db/assets';
-import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { assetSchema } from '@/lib/validations/asset.schema';
+import { requireActiveSubscription } from '@/lib/services/base.service';
 import { z } from 'zod';
 
 const importBodySchema = z.object({
@@ -13,6 +14,16 @@ const importBodySchema = z.object({
 type RowError = { row: number; errors: string[] };
 
 export async function POST(req: NextRequest) {
+  // SECURITY: Rate limit bulk imports (3 per IP per hour)
+  const clientIp = getClientIp(req);
+  const rateLimitResult = checkRateLimit(
+    `import:${clientIp}`,
+    3,
+    60 * 60 * 1000,
+    { action: 'import assets' }
+  );
+  if (rateLimitResult) return rateLimitResult;
+
   const user = await verifySessionCookie();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') {
@@ -20,10 +31,7 @@ export async function POST(req: NextRequest) {
   }
   if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
 
-  const sub = await getSubscriptionByOrg(user.organizationId);
-  if (sub && sub.status !== 'ACTIVE') {
-    return NextResponse.json({ error: 'Subscription expired' }, { status: 403 });
-  }
+  await requireActiveSubscription(user.organizationId, user);
 
   const body = await req.json().catch(() => null);
   const parsed = importBodySchema.safeParse(body);
@@ -76,7 +84,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: user.uid,
     role: user.role,

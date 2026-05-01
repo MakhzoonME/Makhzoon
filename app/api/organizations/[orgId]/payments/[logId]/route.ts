@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getPaymentLogById, deletePaymentLog } from '@/lib/db/payment-logs';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 
 export async function DELETE(
   _req: NextRequest,
@@ -20,7 +20,7 @@ export async function DELETE(
 
     await deletePaymentLog(logId);
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: orgId,
       userId: user.uid,
       role: user.role,

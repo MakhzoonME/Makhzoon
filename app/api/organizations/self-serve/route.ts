@@ -4,7 +4,7 @@ import { createOrganization, subdomainExists } from '@/lib/db/organizations';
 import { createSubscription } from '@/lib/db/subscriptions';
 import { createUser } from '@/lib/db/users';
 import { selfServeSignupSchema } from '@/lib/validations/signup.schema';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 const TRIAL_DAYS = 14;
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     updatedBy: newUser.uid,
   });
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId,
     userId: newUser.uid,
     role: 'admin',

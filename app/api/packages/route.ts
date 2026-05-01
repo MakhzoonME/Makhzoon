@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getPackages, createPackage } from '@/lib/db/packages';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { packageSchema } from '@/lib/validations/package.schema';
 
 export async function GET(req: NextRequest) {
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     const pkg = await createPackage(user.uid, parsed.data);
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: '',
       userId: user.uid,
       role: user.role,

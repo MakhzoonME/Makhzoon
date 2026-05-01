@@ -8,7 +8,7 @@ import {
   getInviteByToken,
   revokeInvite as dbRevokeInvite,
 } from '@/lib/db/users';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { requirePermission, getUserContext } from './base.service';
 
 export interface UpdateUserInput {
@@ -50,7 +50,7 @@ export async function updateUserWithAudit(
   const userContext = getUserContext(user);
   await dbUpdateUser(userId, data);
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,
@@ -73,7 +73,7 @@ export async function deactivateUserWithAudit(user: AuthUser, userId: string) {
   const userContext = getUserContext(user);
   await dbDeactivateUser(userId);
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,
@@ -96,7 +96,7 @@ export async function createUserInviteWithAudit(user: AuthUser, data: CreateInvi
     createdBy: userContext.uid,
   });
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,
@@ -119,7 +119,7 @@ export async function revokeUserInviteWithAudit(user: AuthUser, token: string) {
   const userContext = getUserContext(user);
   await dbRevokeInvite(token);
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,

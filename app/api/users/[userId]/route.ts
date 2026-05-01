@@ -2,15 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { getUserById, updateUser } from '@/lib/db/users';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { invalidateCachedPermissions } from '@/lib/firebase/session-cache';
 import { FieldValue } from 'firebase-admin/firestore';
+import { requireActiveSubscription } from '@/lib/services/base.service';
 
 export async function PATCH(req: NextRequest, { params }: { params: { userId: string } }) {
   const caller = await verifySessionCookie();
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (caller.role !== 'admin' && caller.role !== 'super_admin' && caller.role !== 'org_owner')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const orgId = caller.organizationId;
+  if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+  await requireActiveSubscription(orgId, caller);
 
   const { userId } = params;
   if (userId === caller.uid) return NextResponse.json({ error: 'You cannot change your own role' }, { status: 400 });
@@ -40,7 +45,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { userId: st
   await adminAuth.revokeRefreshTokens(userId);
   invalidateCachedPermissions(userId);
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: caller.organizationId!,
     userId: caller.uid,
     role: caller.role,
@@ -58,6 +63,10 @@ export async function DELETE(req: NextRequest, { params }: { params: { userId: s
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (caller.role !== 'admin' && caller.role !== 'super_admin' && caller.role !== 'org_owner')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const orgId = caller.organizationId;
+  if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+  await requireActiveSubscription(orgId, caller);
 
   const { userId } = params;
   if (userId === caller.uid) return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });
@@ -86,7 +95,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { userId: s
     }
     await adminDb.collection('users').doc(userId).delete();
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: caller.organizationId!,
       userId: caller.uid,
       role: caller.role,
@@ -104,7 +113,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { userId: s
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: caller.organizationId!,
       userId: caller.uid,
       role: caller.role,

@@ -39,8 +39,10 @@ export async function requirePermission(
 /**
  * Verify organization subscription is active.
  * Throws 403 if subscription is not active.
+ * Skips check if user is a super_admin (they can act on any org).
  */
-export async function requireActiveSubscription(orgId: string): Promise<void> {
+export async function requireActiveSubscription(orgId: string, user?: AuthUser): Promise<void> {
+  if (user?.role === 'super_admin') return;
   const sub = await getSubscriptionByOrg(orgId);
   if (sub && sub.status !== 'ACTIVE') {
     throw NextResponse.json(

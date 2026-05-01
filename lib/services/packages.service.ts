@@ -6,7 +6,7 @@ import {
   updatePackage as dbUpdatePackage,
   deletePackage as dbDeletePackage,
 } from '@/lib/db/packages';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { getUserContext } from './base.service';
 
 export interface CreatePackageInput {
@@ -34,24 +34,31 @@ export async function getPackageDetails(packageId: string) {
 
 export async function createPackageWithAudit(user: AuthUser, data: CreatePackageInput) {
   const userContext = getUserContext(user);
-  const id = await dbCreatePackage({
-    ...data,
+  const limits = data.limits ?? { maxAssets: -1, maxUsers: -1, maxWarranties: -1, maxRequests: -1 };
+  const pkg = await dbCreatePackage(userContext.uid, {
+    name: data.name,
+    description: data.description,
     isActive: true,
-    createdBy: userContext.uid,
-    updatedBy: userContext.uid,
+    limits: {
+      maxAssets: limits.maxAssets ?? -1,
+      maxUsers: limits.maxUsers ?? -1,
+      maxWarranties: limits.maxWarranties ?? -1,
+      maxRequests: limits.maxRequests ?? -1,
+    },
+    features: data.features ?? {},
   });
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: 'system',
     userId: userContext.uid,
     role: userContext.role,
     action: 'PACKAGE_CREATED',
     module: 'packages',
-    recordId: id,
-    newValue: data,
+    recordId: pkg.id,
+    newValue: data as unknown as Record<string, unknown>,
   });
 
-  return { id };
+  return { id: pkg.id };
 }
 
 export async function updatePackageWithAudit(
@@ -63,17 +70,28 @@ export async function updatePackageWithAudit(
   if (!pkg) throw new Error('Package not found');
 
   const userContext = getUserContext(user);
-  await dbUpdatePackage(packageId, data);
+  const updates = {
+    ...data,
+    ...(data.limits && {
+      limits: {
+        maxAssets: data.limits.maxAssets ?? -1,
+        maxUsers: data.limits.maxUsers ?? -1,
+        maxWarranties: data.limits.maxWarranties ?? -1,
+        maxRequests: data.limits.maxRequests ?? -1,
+      },
+    }),
+  };
+  await dbUpdatePackage(packageId, userContext.uid, updates as never);
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: 'system',
     userId: userContext.uid,
     role: userContext.role,
     action: 'PACKAGE_UPDATED',
     module: 'packages',
     recordId: packageId,
-    oldValue: pkg,
-    newValue: data,
+    oldValue: pkg as unknown as Record<string, unknown>,
+    newValue: data as unknown as Record<string, unknown>,
   });
 }
 
@@ -82,15 +100,15 @@ export async function deletePackageWithAudit(user: AuthUser, packageId: string) 
   if (!pkg) throw new Error('Package not found');
 
   const userContext = getUserContext(user);
-  await dbDeletePackage(packageId);
+  await dbDeletePackage(packageId, userContext.uid);
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: 'system',
     userId: userContext.uid,
     role: userContext.role,
     action: 'PACKAGE_DELETED',
     module: 'packages',
     recordId: packageId,
-    oldValue: pkg,
+    oldValue: pkg as unknown as Record<string, unknown>,
   });
 }

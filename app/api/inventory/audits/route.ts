@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getInventoryAudits, createInventoryAudit } from '@/lib/db/inventory-audits';
 import { getAssets } from '@/lib/db/assets';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { inventoryAuditSchema } from '@/lib/validations/inventory.schema';
 
 export async function GET() {
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       })),
     });
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: orgId,
       userId: user.uid,
       role: user.role,

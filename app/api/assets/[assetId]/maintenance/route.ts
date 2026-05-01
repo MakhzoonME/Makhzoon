@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getAssetById } from '@/lib/db/assets';
 import { getMaintenanceRecords, createMaintenanceRecord } from '@/lib/db/maintenance-records';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { maintenanceRecordSchema } from '@/lib/validations/maintenance-record.schema';
 
 export async function GET(_req: NextRequest, { params }: { params: { assetId: string } }) {
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest, { params }: { params: { assetId: st
       createdByEmail: user.email,
     });
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: user.organizationId,
       userId: user.uid,
       role: user.role,

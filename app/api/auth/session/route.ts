@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     const expiresIn = 60 * 60 * 24 * 1 * 1000; // 1 day
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
 
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     // Set secure flag in all non-development environments
     const isSecure = process.env.NODE_ENV !== 'development';
     cookieStore.set('session', sessionCookie, {
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       httpOnly: true,
       secure: isSecure,
       path: '/',
-      sameSite: 'lax',
+      sameSite: 'strict',
     });
 
     let orgSlug: string | null = null;
@@ -102,12 +102,13 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const sessionToken = cookieStore.get('session')?.value;
 
-  // Clear cookies immediately
-  cookieStore.set('session', '', { maxAge: 0, path: '/' });
-  cookieStore.set('transferOrgId', '', { maxAge: 0, path: '/' });
+  // Clear cookies immediately (flags must match original set call)
+  const isSecure = process.env.NODE_ENV !== 'development';
+  cookieStore.set('session', '', { maxAge: 0, path: '/', httpOnly: true, secure: isSecure, sameSite: 'strict' });
+  cookieStore.set('transferOrgId', '', { maxAge: 0, path: '/', httpOnly: true, secure: isSecure, sameSite: 'strict' });
 
   // Revoke the session token server-side so it can't be reused
   if (sessionToken) {

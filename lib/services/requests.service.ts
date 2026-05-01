@@ -6,7 +6,7 @@ import {
   approveRequest as dbApproveRequest,
   rejectRequest as dbRejectRequest,
 } from '@/lib/db/requests';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { requirePermission, requireActiveSubscription, getUserContext } from './base.service';
 
 export interface CreateRequestInput {
@@ -45,7 +45,7 @@ export async function createRequestWithAudit(user: AuthUser, data: CreateRequest
     updatedBy: userContext.uid,
   });
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,
@@ -69,7 +69,7 @@ export async function approveRequestWithAudit(user: AuthUser, requestId: string)
   const userContext = getUserContext(user);
   await dbApproveRequest(requestId, userContext.uid);
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,
@@ -92,7 +92,7 @@ export async function rejectRequestWithAudit(user: AuthUser, requestId: string) 
   const userContext = getUserContext(user);
   await dbRejectRequest(requestId, userContext.uid);
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,

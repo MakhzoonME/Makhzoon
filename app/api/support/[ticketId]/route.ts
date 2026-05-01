@@ -6,7 +6,7 @@ import {
   updateSupportTicket,
   updateSupportTicketAdmin,
 } from '@/lib/db/support-tickets';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import {
   supportTicketAdminUpdateSchema,
   supportTicketOrgUpdateSchema,
@@ -59,7 +59,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
           ? 'TICKET_CLOSED'
           : 'TICKET_UPDATED';
 
-      await writeAuditLog({
+      queueAuditLog({
         organizationId: ticket.organizationId,
         userId: user.uid,
         role: user.role,
@@ -79,7 +79,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
 
     await updateSupportTicket(ticketId, user.organizationId, parsed.data);
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: user.organizationId,
       userId: user.uid,
       role: user.role,

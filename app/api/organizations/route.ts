@@ -7,7 +7,7 @@ import {
 } from '@/lib/db/organizations';
 import { createSubscription } from '@/lib/db/subscriptions';
 import { createInvite, generateInviteToken } from '@/lib/db/invites';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { organizationSchema } from '@/lib/validations/organization.schema';
 import { sendEmail } from '@/lib/email/resend';
 import { inviteEmail } from '@/lib/email/templates';
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       updatedBy: user.uid,
     });
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: orgId,
       userId: user.uid,
       role: user.role,
@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
           if (process.env.NODE_ENV !== 'production') console.warn('[org-create] Owner invite email failed:', err);
         });
 
-        await writeAuditLog({
+        queueAuditLog({
           organizationId: orgId,
           userId: user.uid,
           role: user.role,

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getRequests, createRequest } from '@/lib/db/requests';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { requestSchema } from '@/lib/validations/request.schema';
+import { requireActiveSubscription } from '@/lib/services/base.service';
 
 export async function GET(req: NextRequest) {
   try {
@@ -32,6 +33,8 @@ export async function POST(req: NextRequest) {
     const orgId = user.organizationId;
     if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
 
+    await requireActiveSubscription(orgId, user);
+
     const body = await req.json();
     const parsed = requestSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
@@ -51,7 +54,7 @@ export async function POST(req: NextRequest) {
       updatedBy: user.uid,
     });
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: orgId,
       userId: user.uid,
       role: user.role,

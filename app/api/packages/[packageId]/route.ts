@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getPackageById, updatePackage, deletePackage } from '@/lib/db/packages';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { packageUpdateSchema } from '@/lib/validations/package.schema';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ packageId: string }> }) {
@@ -37,7 +37,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ pack
 
     await updatePackage(packageId, user.uid, parsed.data);
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: '',
       userId: user.uid,
       role: user.role,
@@ -67,7 +67,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
     await deletePackage(packageId, user.uid);
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: '',
       userId: user.uid,
       role: user.role,

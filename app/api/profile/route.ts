@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
 export async function PATCH(req: NextRequest) {
+  // SECURITY: Rate limit profile updates (20 per IP per hour)
+  const clientIp = getClientIp(req);
+  const rateLimitResult = checkRateLimit(
+    `profile:${clientIp}`,
+    20,
+    60 * 60 * 1000,
+    { action: 'update profile' }
+  );
+  if (rateLimitResult) return rateLimitResult;
+
   const user = await verifySessionCookie();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 

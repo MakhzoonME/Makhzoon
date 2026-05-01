@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getSubscriptionByOrg, updateSubscription } from '@/lib/db/subscriptions';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { subscriptionUpdateSchema } from '@/lib/validations/subscription.schema';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
@@ -40,6 +40,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ orgI
 
     const data = parsed.data;
 
+    // Auto-compute status based on endDate if not explicitly set
+    if (data.status === undefined) {
+      const now = new Date();
+      const resolvedEndDate = data.endDate ?? subscription.endDate;
+      if (resolvedEndDate < now) {
+        data.status = 'EXPIRED';
+      } else if (resolvedEndDate >= now && subscription.status === 'EXPIRED') {
+        data.status = 'ACTIVE';
+      }
+    }
+
     await updateSubscription(subscription.id, {
       ...data,
       updatedBy: user.uid,
@@ -54,7 +65,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ orgI
       action = 'SUBSCRIPTION_FEATURE_UPDATED';
     }
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: orgId,
       userId: user.uid,
       role: user.role,

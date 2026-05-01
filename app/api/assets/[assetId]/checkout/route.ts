@@ -3,12 +3,13 @@ import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { checkoutSchema } from '@/lib/validations/asset-checkout.schema';
 import * as assetsService from '@/lib/services/assets.service';
 
-export async function GET(_req: NextRequest, { params }: { params: { assetId: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   try {
+    const { assetId } = await params;
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const checkouts = await assetsService.getAssetCheckouts(user, params.assetId);
+    const checkouts = await assetsService.getAssetCheckouts(user, assetId);
     return NextResponse.json(checkouts);
   } catch (err) {
     const message = err instanceof Error ? err.message : '';
@@ -18,8 +19,9 @@ export async function GET(_req: NextRequest, { params }: { params: { assetId: st
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { assetId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   try {
+    const { assetId } = await params;
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -27,7 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: { assetId: st
     const parsed = checkoutSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
-    const result = await assetsService.createAssetCheckout(user, params.assetId, parsed.data);
+    const result = await assetsService.createAssetCheckout(user, assetId, parsed.data);
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : '';

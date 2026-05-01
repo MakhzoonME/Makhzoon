@@ -6,7 +6,7 @@ import { isSessionRevoked } from './session-revocation';
 
 export async function verifySessionCookie(): Promise<AuthUser | null> {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const session = cookieStore.get('session')?.value;
     if (!session) return null;
 

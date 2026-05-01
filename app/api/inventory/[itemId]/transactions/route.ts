@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getInventoryItemById, getInventoryTransactions, applyInventoryTransaction } from '@/lib/db/inventory';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { inventoryTransactionSchema } from '@/lib/validations/inventory.schema';
 
 interface Params { params: { itemId: string } }
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       note
     );
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: user.organizationId!,
       userId: user.uid,
       role: user.role,

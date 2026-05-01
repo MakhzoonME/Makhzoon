@@ -22,7 +22,7 @@ import {
   createAssetNote as dbCreateAssetNote,
   deleteAssetNote as dbDeleteAssetNote,
 } from '@/lib/db/asset-notes';
-import { writeAuditLog, queueAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { requirePermission, requireActiveSubscription, getUserContext } from './base.service';
 
 export interface CreateAssetInput {
@@ -80,7 +80,7 @@ export async function createAssetWithAudit(
   data: CreateAssetInput
 ) {
   await requirePermission(user, 'assets', 'create');
-  await requireActiveSubscription(user.organizationId!);
+  await requireActiveSubscription(user.organizationId!, user);
 
   const userContext = getUserContext(user);
   const id = await dbCreateAsset(
@@ -99,7 +99,7 @@ export async function createAssetWithAudit(
     } as any
   );
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -121,6 +121,7 @@ export async function updateAssetWithAudit(
   data: UpdateAssetInput
 ) {
   await requirePermission(user, 'assets', 'update');
+  await requireActiveSubscription(user.organizationId!, user);
 
   // Verify asset belongs to user's org
   const asset = await getAssetById(assetId);
@@ -144,7 +145,7 @@ export async function updateAssetWithAudit(
   const isRetirement = data.status === 'Retired' && asset.status !== 'Retired';
   const action = isRetirement ? 'ASSET_RETIRED' : 'ASSET_UPDATED';
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -162,6 +163,7 @@ export async function updateAssetWithAudit(
  */
 export async function deleteAssetWithAudit(user: AuthUser, assetId: string) {
   await requirePermission(user, 'assets', 'delete');
+  await requireActiveSubscription(user.organizationId!, user);
 
   // Verify asset belongs to user's org
   const asset = await getAssetById(assetId);
@@ -228,6 +230,7 @@ export async function createAssetCheckout(
   data: { checkedOutTo: string; dueDate?: string; notes?: string }
 ) {
   await requirePermission(user, 'assets', 'update');
+  await requireActiveSubscription(user.organizationId!, user);
 
   const asset = await getAssetById(assetId);
   if (!asset || asset.organizationId !== user.organizationId!) {
@@ -255,7 +258,7 @@ export async function createAssetCheckout(
 
   await dbUpdateAsset(assetId, { assignedTo: data.checkedOutTo.trim(), updatedBy: userContext.uid });
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -277,6 +280,7 @@ export async function returnAssetCheckout(
   checkoutId: string
 ) {
   await requirePermission(user, 'assets', 'update');
+  await requireActiveSubscription(user.organizationId!, user);
 
   const asset = await getAssetById(assetId);
   if (!asset || asset.organizationId !== user.organizationId!) {
@@ -290,7 +294,7 @@ export async function returnAssetCheckout(
   });
   await dbUpdateAsset(assetId, { assignedTo: undefined, updatedBy: userContext.uid });
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -321,6 +325,7 @@ export async function createAssetMaintenance(
   data: { type: string; description: string; cost?: number; performedBy?: string; date?: string }
 ) {
   await requirePermission(user, 'assets', 'update');
+  await requireActiveSubscription(user.organizationId!, user);
 
   const asset = await getAssetById(assetId);
   if (!asset || asset.organizationId !== user.organizationId!) {
@@ -344,7 +349,7 @@ export async function createAssetMaintenance(
     } as any
   );
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -377,6 +382,7 @@ export async function createAssetNoteWithAudit(
   data: { note: string }
 ) {
   await requirePermission(user, 'assets', 'update');
+  await requireActiveSubscription(user.organizationId!, user);
 
   const asset = await getAssetById(assetId);
   if (!asset || asset.organizationId !== user.organizationId!) {
@@ -394,7 +400,7 @@ export async function createAssetNoteWithAudit(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any);
 
-  await queueAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -412,6 +418,7 @@ export async function createAssetNoteWithAudit(
  */
 export async function deleteAssetNoteWithAudit(user: AuthUser, assetId: string, noteId: string) {
   await requirePermission(user, 'assets', 'update');
+  await requireActiveSubscription(user.organizationId!, user);
 
   const asset = await getAssetById(assetId);
   if (!asset || asset.organizationId !== user.organizationId!) {
@@ -421,7 +428,7 @@ export async function deleteAssetNoteWithAudit(user: AuthUser, assetId: string, 
   const userContext = getUserContext(user);
   await dbDeleteAssetNote(noteId);
 
-  await queueAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,

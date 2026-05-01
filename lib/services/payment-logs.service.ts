@@ -4,7 +4,7 @@ import {
   createPaymentLog as dbCreatePaymentLog,
   deletePaymentLog as dbDeletePaymentLog,
 } from '@/lib/db/payment-logs';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { getUserContext } from './base.service';
 
 export interface CreatePaymentLogInput {
@@ -15,6 +15,7 @@ export interface CreatePaymentLogInput {
 }
 
 export async function getOrgPaymentLogs(user: AuthUser) {
+  if (!user.organizationId) throw new Error('User has no organization');
   return getPaymentLogs(user.organizationId);
 }
 
@@ -22,27 +23,33 @@ export async function createPaymentLogWithAudit(
   user: AuthUser,
   data: CreatePaymentLogInput
 ) {
+  if (!user.organizationId) throw new Error('User has no organization');
   const userContext = getUserContext(user);
-  const id = await dbCreatePaymentLog({
+  const result = await dbCreatePaymentLog(userContext.uid, {
     organizationId: user.organizationId,
-    ...data,
-    createdBy: userContext.uid,
+    subscriptionId: '',
+    amount: data.amount,
+    currency: data.currency,
+    method: data.method,
+    notes: data.notes,
+    paidAt: new Date(),
   });
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,
     action: 'PAYMENT_LOG_CREATED',
     module: 'payment-logs',
-    recordId: id,
+    recordId: result.id,
     newValue: data,
   });
 
-  return { id };
+  return { id: result.id };
 }
 
 export async function deletePaymentLogWithAudit(user: AuthUser, logId: string) {
+  if (!user.organizationId) throw new Error('User has no organization');
   const userContext = getUserContext(user);
   const log = await getPaymentLogs(user.organizationId);
   const target = log.find((l) => l.id === logId);
@@ -50,7 +57,7 @@ export async function deletePaymentLogWithAudit(user: AuthUser, logId: string) {
 
   await dbDeletePaymentLog(logId);
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,

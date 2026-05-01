@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { checkOrigin } from '@/lib/csrf';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
@@ -37,6 +38,10 @@ export async function POST(req: NextRequest) {
       { action: 'submit contact form' }
     );
     if (rateLimitIp) return rateLimitIp;
+
+    // SECURITY: Validate origin to prevent CSRF
+    const originCheck = checkOrigin(req);
+    if (originCheck) return originCheck;
 
     const body = await req.json();
 

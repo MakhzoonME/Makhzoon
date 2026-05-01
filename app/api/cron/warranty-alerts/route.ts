@@ -3,7 +3,7 @@ import { adminDb } from '@/lib/firebase/admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import { sendEmail } from '@/lib/email/resend';
 import { warrantyAlertEmail } from '@/lib/email/templates';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
         if (!res.skipped) sent++;
       }
 
-      await writeAuditLog({
+      queueAuditLog({
         organizationId: orgId,
         userId: 'system',
         role: 'super_admin',

@@ -6,7 +6,7 @@ import {
   updateWarranty as dbUpdateWarranty,
   deleteWarranty as dbDeleteWarranty,
 } from '@/lib/db/warranties';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { requirePermission, requireActiveSubscription, getUserContext } from './base.service';
 
 export interface CreateWarrantyInput {
@@ -55,7 +55,7 @@ export async function createWarrantyWithAudit(
     updatedBy: userContext.uid,
   });
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,
@@ -83,7 +83,7 @@ export async function updateWarrantyWithAudit(
   const userContext = getUserContext(user);
   await dbUpdateWarranty(warrantyId, data);
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,
@@ -106,7 +106,7 @@ export async function deleteWarrantyWithAudit(user: AuthUser, warrantyId: string
   const userContext = getUserContext(user);
   await dbDeleteWarranty(warrantyId);
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,

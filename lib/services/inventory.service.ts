@@ -8,7 +8,7 @@ import {
   getInventoryCategories,
   applyInventoryTransaction,
 } from '@/lib/db/inventory';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { requirePermission, requireActiveSubscription, getUserContext } from './base.service';
 
 export interface CreateInventoryItemInput {
@@ -70,7 +70,7 @@ export async function createInventoryItemWithAudit(
   data: CreateInventoryItemInput
 ) {
   await requirePermission(user, 'inventory', 'create');
-  await requireActiveSubscription(user.organizationId!);
+  await requireActiveSubscription(user.organizationId!, user);
 
   const userContext = getUserContext(user);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -88,7 +88,7 @@ export async function createInventoryItemWithAudit(
     } as any
   );
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -110,6 +110,7 @@ export async function updateInventoryItemWithAudit(
   data: UpdateInventoryItemInput
 ) {
   await requirePermission(user, 'inventory', 'update');
+  await requireActiveSubscription(user.organizationId!, user);
 
   // Verify item belongs to user's org
   const item = await getInventoryItemById(itemId);
@@ -128,15 +129,15 @@ export async function updateInventoryItemWithAudit(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await dbUpdateInventoryItem(itemId, updateData as unknown as Partial<any>);
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
     action: 'INVENTORY_ITEM_UPDATED',
     module: 'inventory',
     recordId: itemId,
-    oldValue: item,
-    newValue: data,
+    oldValue: item as unknown as Record<string, unknown>,
+    newValue: data as unknown as Record<string, unknown>,
   });
 }
 
@@ -145,6 +146,7 @@ export async function updateInventoryItemWithAudit(
  */
 export async function deleteInventoryItemWithAudit(user: AuthUser, itemId: string) {
   await requirePermission(user, 'inventory', 'delete');
+  await requireActiveSubscription(user.organizationId!, user);
 
   // Verify item belongs to user's org
   const item = await getInventoryItemById(itemId);
@@ -155,14 +157,14 @@ export async function deleteInventoryItemWithAudit(user: AuthUser, itemId: strin
   const userContext = getUserContext(user);
   await dbDeleteInventoryItem(itemId);
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
     action: 'INVENTORY_ITEM_DELETED',
     module: 'inventory',
     recordId: itemId,
-    oldValue: item,
+    oldValue: item as unknown as Record<string, unknown>,
   });
 }
 
@@ -186,6 +188,7 @@ export async function applyInventoryTransactionWithAudit(
   note?: string
 ) {
   await requirePermission(user, 'inventory', 'update');
+  await requireActiveSubscription(user.organizationId!, user);
 
   // Verify item belongs to user's org
   const item = await getInventoryItemById(itemId);
@@ -208,11 +211,11 @@ export async function applyInventoryTransactionWithAudit(
     note
   );
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
-    action: 'INVENTORY_TRANSACTION_RECORDED',
+    action: 'INVENTORY_TRANSACTION_CREATED',
     module: 'inventory',
     recordId: itemId,
     newValue: {

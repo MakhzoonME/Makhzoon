@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getWarrantyById, updateWarranty, deleteWarranty } from '@/lib/db/warranties';
-import { writeAuditLog, queueAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { warrantySchema } from '@/lib/validations/warranty.schema';
 import { hasPermission } from '@/lib/permissions';
+import { requireActiveSubscription } from '@/lib/services/base.service';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ warrantyId: string }> }) {
   try {
@@ -25,6 +26,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ warr
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!hasPermission(user, 'warranties', 'update')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+    const orgId = user.organizationId;
+    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+    await requireActiveSubscription(orgId, user);
+
     const { warrantyId } = await params;
     const existing = await getWarrantyById(warrantyId);
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -43,7 +48,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ warr
       updatedBy: user.uid,
     });
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: existing.organizationId,
       userId: user.uid,
       role: user.role,
@@ -66,6 +71,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!hasPermission(user, 'warranties', 'delete')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    const orgId = user.organizationId;
+    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+    await requireActiveSubscription(orgId, user);
 
     const { warrantyId } = await params;
     const existing = await getWarrantyById(warrantyId);

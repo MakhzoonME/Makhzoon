@@ -3,7 +3,7 @@ import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { addStatus } from '@/lib/db/organization-configs';
 import { getOrganizationById } from '@/lib/db/organizations';
 import { statusInputSchema } from '@/lib/validations/organization-config.schema';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 
 export async function POST(req: NextRequest, { params }: { params: { orgId: string } }) {
   try {
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest, { params }: { params: { orgId: stri
 
     try {
       const { status, statuses } = await addStatus(orgId, parsed.data, user.uid);
-      await writeAuditLog({
+      queueAuditLog({
         organizationId: orgId,
         userId: user.uid,
         role: user.role,

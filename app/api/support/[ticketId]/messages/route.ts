@@ -7,7 +7,7 @@ import {
   addTicketMessageAny,
   getSupportTicketByIdAny,
 } from '@/lib/db/support-tickets';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { ticketMessageSchema } from '@/lib/validations/support-ticket.schema';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ ticketId: string }> }) {
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tic
         parsed.data.body,
       );
 
-      await writeAuditLog({
+      queueAuditLog({
         organizationId: ticket.organizationId,
         userId: user.uid,
         role: user.role,
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tic
       parsed.data.body,
     );
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: user.organizationId,
       userId: user.uid,
       role: user.role,

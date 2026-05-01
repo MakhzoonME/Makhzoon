@@ -30,7 +30,7 @@ export function TransferModeBanner() {
     >
       <AlertTriangleSVG />
       <p className="text-sm text-amber-800 flex-1">
-        You are acting as Admin of: <span className="font-semibold">{orgName}</span>
+        You are acting as owner of: <span className="font-semibold">{orgName}</span>
       </p>
       <Button size="sm" variant="outline" className="border-amber-300 text-amber-800 hover:bg-amber-100" onClick={exitTransferMode}>
         Exit Transfer Mode

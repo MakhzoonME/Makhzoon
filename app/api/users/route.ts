@@ -3,9 +3,10 @@ import { randomBytes } from 'crypto';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getUsers, createUser } from '@/lib/db/users';
 import { adminAuth } from '@/lib/firebase/admin';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { inviteUserSchema } from '@/lib/validations/user.schema';
 import { withLogging } from '@/lib/logging/with-logging';
+import { requireActiveSubscription } from '@/lib/services/base.service';
 
 async function _GET(_req: NextRequest) {
   try {
@@ -34,6 +35,8 @@ async function _POST(req: NextRequest) {
 
     const orgId = user.organizationId;
     if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+
+    await requireActiveSubscription(orgId, user);
 
     const body = await req.json();
     const parsed = inviteUserSchema.safeParse(body);
@@ -67,7 +70,7 @@ async function _POST(req: NextRequest) {
       updatedBy: user.uid,
     });
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: orgId,
       userId: user.uid,
       role: user.role,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getMaintenanceRecordById, deleteMaintenanceRecord } from '@/lib/db/maintenance-records';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 
 export async function DELETE(_req: NextRequest, { params }: { params: { assetId: string; recordId: string } }) {
   try {
@@ -19,7 +19,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { assetId:
 
     await deleteMaintenanceRecord(params.recordId);
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: user.organizationId,
       userId: user.uid,
       role: user.role,

@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getWarranties, createWarranty, getExpiringWarranties } from '@/lib/db/warranties';
 import { getAssetById } from '@/lib/db/assets';
-import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { warrantySchema } from '@/lib/validations/warranty.schema';
 import { hasPermission } from '@/lib/permissions';
+import { requireActiveSubscription } from '@/lib/services/base.service';
 
 export async function GET(req: NextRequest) {
   try {
@@ -41,8 +41,7 @@ export async function POST(req: NextRequest) {
     const orgId = user.organizationId;
     if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
 
-    const sub = await getSubscriptionByOrg(orgId);
-    if (sub && sub.status !== 'ACTIVE') return NextResponse.json({ error: 'Subscription expired' }, { status: 403 });
+    await requireActiveSubscription(orgId, user);
 
     const body = await req.json();
     const parsed = warrantySchema.safeParse(body);
@@ -65,7 +64,7 @@ export async function POST(req: NextRequest) {
       updatedBy: user.uid,
     });
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: orgId,
       userId: user.uid,
       role: user.role,

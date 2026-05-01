@@ -1,12 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase/admin';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { checkOrigin } from '@/lib/csrf';
 import { getInviteByToken, markInviteAccepted } from '@/lib/db/invites';
 import { createUser } from '@/lib/db/users';
 import { acceptInviteSchema } from '@/lib/validations/invite.schema';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 
 export async function POST(req: NextRequest, { params }: { params: { token: string } }) {
   try {
+    // SECURITY: Rate limit invite acceptance (5 per IP per hour)
+    const clientIp = getClientIp(req);
+    const rateLimitResult = checkRateLimit(
+      `invite-accept:${clientIp}`,
+      5,
+      60 * 60 * 1000,
+      { action: 'accept invites' }
+    );
+    if (rateLimitResult) return rateLimitResult;
+
+    // SECURITY: Validate origin to prevent CSRF
+    const originCheck = checkOrigin(req);
+    if (originCheck) return originCheck;
+
     const invite = await getInviteByToken(params.token);
     if (!invite) return NextResponse.json({ error: 'Invite not found' }, { status: 404 });
 
@@ -76,7 +92,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
 
     await markInviteAccepted(invite.id, uid);
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: invite.organizationId,
       userId: uid,
       role: invite.role,

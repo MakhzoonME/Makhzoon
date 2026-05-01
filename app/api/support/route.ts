@@ -5,7 +5,7 @@ import {
   getAllSupportTickets,
   createSupportTicket,
 } from '@/lib/db/support-tickets';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { supportTicketCreateSchema } from '@/lib/validations/support-ticket.schema';
 import { TicketStatus, TicketPriority } from '@/types';
 
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     const ticket = await createSupportTicket(user.organizationId, user.uid, parsed.data);
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: user.organizationId,
       userId: user.uid,
       role: user.role,

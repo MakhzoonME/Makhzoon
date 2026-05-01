@@ -6,7 +6,7 @@ import {
   updateTicket as dbUpdateTicket,
   addTicketMessage as dbAddTicketMessage,
 } from '@/lib/db/support-tickets';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { requirePermission, getUserContext } from './base.service';
 
 export interface CreateTicketInput {
@@ -48,7 +48,7 @@ export async function createSupportTicketWithAudit(user: AuthUser, data: CreateT
     updatedBy: userContext.uid,
   });
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,
@@ -76,7 +76,7 @@ export async function updateSupportTicketWithAudit(
   const userContext = getUserContext(user);
   await dbUpdateTicket(ticketId, data);
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,
@@ -108,7 +108,7 @@ export async function addSupportTicketMessageWithAudit(
     authorRole: userContext.role || 'user',
   });
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,

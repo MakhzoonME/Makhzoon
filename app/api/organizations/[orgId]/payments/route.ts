@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getPaymentLogs, createPaymentLog } from '@/lib/db/payment-logs';
 import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { paymentLogSchema } from '@/lib/validations/payment-log.schema';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ org
       subscriptionId: sub.id,
     });
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: orgId,
       userId: user.uid,
       role: user.role,

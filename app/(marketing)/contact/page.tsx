@@ -27,7 +27,7 @@ export default function ContactPage() {
         body: JSON.stringify(formData),
       });
       if (!res.ok) throw new Error('Failed to send message');
-      toast.success('Message sent! We'll be in touch soon.');
+      toast.success('Message sent! We will be in touch soon.');
       setFormData({ firstName: '', lastName: '', email: '', organization: '', assetCount: '', message: '' });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to send message');

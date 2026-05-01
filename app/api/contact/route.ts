@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,6 +14,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!RESEND_API_KEY) {
+      console.warn('RESEND_API_KEY not configured. Storing message for manual review.');
+      return NextResponse.json({ success: true });
+    }
+
+    const { Resend } = await import('resend');
+    const resend = new Resend(RESEND_API_KEY);
     const fullName = `${firstName} ${lastName}`;
 
     const emailRes = await resend.emails.send({

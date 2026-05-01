@@ -20,15 +20,9 @@ const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseCon
 let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
-try {
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-} catch {
-  auth = null as unknown as Auth;
-  db = null as unknown as Firestore;
-  storage = null as unknown as FirebaseStorage;
-}
+try { auth = getAuth(app); } catch { auth = null as unknown as Auth; }
+try { db = getFirestore(app); } catch { db = null as unknown as Firestore; }
+try { storage = getStorage(app); } catch { storage = null as unknown as FirebaseStorage; }
 
 export { auth, db, storage };
 export default app;

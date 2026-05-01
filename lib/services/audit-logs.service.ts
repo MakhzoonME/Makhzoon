@@ -11,7 +11,7 @@ export interface AuditLogsParams {
 }
 
 export async function getOrgAuditLogs(user: AuthUser) {
-  await requirePermission(user, 'audit-logs', 'view');
-  return getAuditLogs(user.organizationId!);
+  await requirePermission(user, 'auditLogs', 'view');
+  return getAuditLogs({ orgId: user.organizationId! });
 }
 

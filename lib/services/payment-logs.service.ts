@@ -42,7 +42,7 @@ export async function createPaymentLogWithAudit(
     action: 'PAYMENT_LOG_CREATED',
     module: 'payment-logs',
     recordId: result.id,
-    newValue: data,
+    newValue: data as unknown as Record<string, unknown>,
   });
 
   return { id: result.id };

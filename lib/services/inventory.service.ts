@@ -125,7 +125,8 @@ export async function updateInventoryItemWithAudit(
     updatedByName: userContext.displayName,
   };
 
-  await dbUpdateInventoryItem(itemId, updateData);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await dbUpdateInventoryItem(itemId, updateData as unknown as Partial<any>);
 
   await writeAuditLog({
     organizationId: user.organizationId!,

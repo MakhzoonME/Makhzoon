@@ -687,11 +687,15 @@ organizationConfigs/{orgId}
 **Track 3 (Performance):**
 - Fixed N+1 query in inventory.updateInventoryItem using Firestore transaction
 
-**Track 4 (Architecture):**
-- Added barrel exports: components/ui/index.ts, components/shared/index.ts, hooks/index.ts
-- Split lib/utils: moved permissions.ts → lib/permissions/, nav-config.ts → lib/nav/
-- Created .env.example documenting all 19 environment variables
-- Updated 11 files with new import paths
+**Track 4 (Architecture) — 5/8 items complete:**
+- ✅ T4-8: Created .env.example documenting all 19 environment variables
+- ✅ T4-7: Added barrel exports (components/ui, components/shared, hooks)
+- ✅ T4-6: Split lib/utils → lib/permissions/, lib/nav/ (11 files updated)
+- ✅ T4-5: Moved domain-specific components → components/features/ (4 files)
+- ✅ T4-4: Reorganized hooks by domain (27 hooks into 9 subfolders, 150+ imports updated)
+- ✅ T4-2: Renamed lib/firestore/ → lib/db/ (84 imports updated)
+- ⏳ T4-3: Create lib/services/ layer (deferred — requires refactoring 67 API routes)
+- ⏳ T4-1: Already done in earlier audit (deleted 14 duplicate route folders)
 
 **Earlier Fixes (Tasks A, B, C):**
 - Fixed logout handlers to use hard redirect (`window.location.href`)
@@ -752,8 +756,8 @@ organizationConfigs/{orgId}
   useAssets.ts, useInventory.ts, etc. — Data fetching hooks by domain
 
 /lib                       — Utility functions and services
+  /db                      — Database access layer (22 files, one per collection/entity)
   /firebase                — Firebase client/admin initialization
-  /firestore               — Database queries (one file per collection/entity)
   /permissions             — Permission utilities (hasPermission, hasModuleAccess)
   /nav                     — Navigation config (ORG_NAV_ITEMS, getFirstAccessiblePath)
   /oidc                    — OIDC/PKCE helpers (commented out)
@@ -761,9 +765,10 @@ organizationConfigs/{orgId}
   /audit                   — Audit logging
   /middleware              — Auth, role-based middleware
   /validations             — Zod schemas for form/API validation
-  /utils                   — Pure utilities (formatting, cn, date, tenant-url, api-fetch, etc.)
+  /utils                   — Pure utilities (cn, date, format, tenant-url, api-fetch, etc.)
   /export                  — CSV export
   /logging                 — Backend logging
+  /services                — (proposed, not yet created) — Business logic layer extracted from API routes
 
 /store                     — Zustand state stores
   auth.store.ts            — Auth user + loading

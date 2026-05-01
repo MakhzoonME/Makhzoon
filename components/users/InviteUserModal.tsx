@@ -8,11 +8,11 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
-import { useSubscriptionFeatures } from '@/hooks/useSubscriptionFeatures';
+import { useSubscriptionFeatures } from '@/hooks/org';
 import { PermissionsEditor } from './PermissionsEditor';
 import { UserPermissions, DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from '@/types';
 

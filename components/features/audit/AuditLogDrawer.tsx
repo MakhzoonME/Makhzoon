@@ -1,6 +1,6 @@
 'use client';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { useAuditLogs } from '@/hooks/useAuditLogs';
+import { useAuditLogs } from '@/hooks/org';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 

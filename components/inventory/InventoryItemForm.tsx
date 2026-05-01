@@ -2,7 +2,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/useOrgSlug';
+import { useOrgSlug } from '@/hooks/ui';
 import { inventoryItemSchema, InventoryItemFormData, INVENTORY_UNITS } from '@/lib/validations/inventory.schema';
 import { InventoryItem } from '@/types';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -10,10 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useInventoryCategories } from '@/hooks/useInventory';
+import { useInventoryCategories } from '@/hooks/inventory';
 
 interface Props { item?: InventoryItem; onSuccess?: () => void; }
 

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 
 interface BackendLog {
   id: string;

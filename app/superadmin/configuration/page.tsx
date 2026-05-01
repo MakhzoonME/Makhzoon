@@ -19,8 +19,8 @@ import {
   useCreatePackage,
   useUpdatePackage,
   useDeletePackage,
-} from '@/hooks/usePackages';
-import { toast } from '@/hooks/useToast';
+} from '@/hooks/superadmin';
+import { toast } from '@/hooks/ui';
 import {
   FEATURE_KEYS,
   FEATURE_LABELS,
@@ -29,7 +29,7 @@ import {
   type FeatureKey,
 } from '@/types';
 import type { PackageFormData } from '@/lib/validations/package.schema';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 
 type Tab = 'packages' | 'features';
 

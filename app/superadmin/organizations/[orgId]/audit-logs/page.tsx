@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { useAuditLogs } from '@/hooks/useAuditLogs';
+import { useAuditLogs } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { AuditLog } from '@/types';

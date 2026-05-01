@@ -1,7 +1,7 @@
 'use client';
 import { useAuthStore } from '@/store/auth.store';
 import { useTransferStore } from '@/store/transfer.store';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useSubscription } from '@/hooks/org';
 import { daysUntil } from '@/lib/utils/date';
 import { formatDate } from '@/lib/utils/date';
 

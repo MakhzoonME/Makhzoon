@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
-import { useSubscriptionFeatures } from '@/hooks/useSubscriptionFeatures';
+import { useSubscriptionFeatures } from '@/hooks/org';
 import { auth } from '@/lib/firebase/client';
 import { signOut } from 'firebase/auth';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';

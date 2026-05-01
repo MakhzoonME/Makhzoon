@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAllOrgsUsage } from '@/hooks/useAllOrgsUsage';
+import { useAllOrgsUsage } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
@@ -9,10 +9,10 @@ import { Input } from '@/components/ui/input';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { formatDate } from '@/lib/utils/date';
 import { Plus, ArrowRight, Search, Edit2, CreditCard, Settings } from 'lucide-react';
-import { useTransferMode } from '@/hooks/useTransferMode';
-import { useDebounce } from '@/hooks/useDebounce';
+import { useTransferMode } from '@/hooks/ui';
+import { useDebounce } from '@/hooks/ui';
 import { ORG_CATEGORIES, type OrgWithUsage } from '@/types';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 
 function daysUntil(d: Date | string): number {
   const target = typeof d === 'string' ? new Date(d) : d;

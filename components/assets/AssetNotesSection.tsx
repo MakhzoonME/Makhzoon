@@ -1,11 +1,11 @@
 'use client';
 import { useState } from 'react';
-import { useAssetNotes, useCreateAssetNote, useDeleteAssetNote } from '@/hooks/useAssetNotes';
+import { useAssetNotes, useCreateAssetNote, useDeleteAssetNote } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDistanceToNow } from 'date-fns';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 
 function Trash2SVG() {
   return (

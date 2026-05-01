@@ -1,13 +1,13 @@
 'use client';
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { useInventoryAudit } from '@/hooks/useInventoryAudits';
+import { useInventoryAudit } from '@/hooks/inventory';
 
 import { PageHeader } from '@/components/shared/PageHeader';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { InventoryAuditItem } from '@/types';
 function CheckCircle2SVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.4" fill="none" /><path d="M5 8l2.5 2.5 4-4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>; }

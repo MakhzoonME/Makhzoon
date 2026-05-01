@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/useOrgSlug';
-import { useInventoryAudits } from '@/hooks/useInventoryAudits';
+import { useOrgSlug } from '@/hooks/ui';
+import { useInventoryAudits } from '@/hooks/inventory';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';

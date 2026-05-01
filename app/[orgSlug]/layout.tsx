@@ -1,16 +1,16 @@
 'use client';
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/ui';
 import { AppHeader } from '@/components/layout/AppHeader';
 import {
   AppSidebar,
   SIDEBAR_WIDTH_COLLAPSED,
   SIDEBAR_WIDTH_EXPANDED,
 } from '@/components/layout/AppSidebar';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 import { TransferModeBanner } from '@/components/layout/TransferModeBanner';
-import { ExpiryWarningBanner } from '@/components/shared/ExpiryWarningBanner';
+import { ExpiryWarningBanner } from '@/components/features/subscription';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { MobileDrawer } from '@/components/layout/MobileDrawer';

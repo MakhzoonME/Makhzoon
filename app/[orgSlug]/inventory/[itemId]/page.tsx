@@ -1,15 +1,15 @@
 'use client';
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useInventoryItem, useInventoryTransactions } from '@/hooks/useInventory';
+import { useInventoryItem, useInventoryTransactions } from '@/hooks/inventory';
 import { useAuthStore } from '@/store/auth.store';
-import { useOrgSlug } from '@/hooks/useOrgSlug';
+import { useOrgSlug } from '@/hooks/ui';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { InventoryTransaction } from '@/types';
 import { FormDrawer } from '@/components/shared/FormDrawer';

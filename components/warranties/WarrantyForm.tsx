@@ -2,7 +2,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/useOrgSlug';
+import { useOrgSlug } from '@/hooks/ui';
 import { warrantySchema, WarrantyFormData } from '@/lib/validations/warranty.schema';
 import { Warranty } from '@/types';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -11,11 +11,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
-import { useAssets } from '@/hooks/useAssets';
-import { useWarranties } from '@/hooks/useWarranties';
+import { useAssets } from '@/hooks/assets';
+import { useWarranties } from '@/hooks/warranties';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 function AlertTriangleSVG() {

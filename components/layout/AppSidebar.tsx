@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ORG_NAV_ITEMS } from '@/lib/nav';
 import { hasModuleAccess } from '@/lib/permissions';
 import { UserPermissions } from '@/types';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 import type { MessageKey } from '@/locales/messages';
 
 /* ── Inline SVG nav icons ─────────────────────────────────────── */

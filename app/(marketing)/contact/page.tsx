@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 
 export default function ContactPage() {
   const contacts = [

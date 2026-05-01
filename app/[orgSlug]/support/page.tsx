@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/useOrgSlug';
+import { useOrgSlug } from '@/hooks/ui';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -10,11 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { useSupportTickets, useCreateTicket } from '@/hooks/useSupportTickets';
+import { useSupportTickets, useCreateTicket } from '@/hooks/support';
 import { SupportTicket } from '@/types';
 import { formatDate } from '@/lib/utils/date';
-import { toast } from '@/hooks/useToast';
-import { useT } from '@/hooks/useT';
+import { toast } from '@/hooks/ui';
+import { useT } from '@/hooks/ui';
 function PlusSVG() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>

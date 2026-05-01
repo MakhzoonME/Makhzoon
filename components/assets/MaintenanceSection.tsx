@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { useMaintenance, useCreateMaintenance, useDeleteMaintenance } from '@/hooks/useMaintenance';
+import { useMaintenance, useCreateMaintenance, useDeleteMaintenance } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { formatDate } from '@/lib/utils/date';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 function Trash2SVG() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>

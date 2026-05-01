@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { useAuditLogs } from '@/hooks/useAuditLogs';
+import { useAuditLogs } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { AuditLog } from '@/types';
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatActionLabel, formatKeyLabel } from '@/lib/utils/audit-labels';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 
 function ChangesTable({ label, value }: { label: string; value: Record<string, unknown> }) {
   const entries = Object.entries(value).filter(([, v]) => v !== undefined && v !== null && v !== '');

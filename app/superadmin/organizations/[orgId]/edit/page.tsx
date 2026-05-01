@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 import { ORG_CATEGORIES, type Organization, type OrgCategory } from '@/types';
 
 interface OrgWithSub extends Organization {

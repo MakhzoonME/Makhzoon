@@ -5,11 +5,11 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
-import { useSupportTickets } from '@/hooks/useSupportTickets';
-import { useAllOrgsUsage } from '@/hooks/useAllOrgsUsage';
+import { useSupportTickets } from '@/hooks/support';
+import { useAllOrgsUsage } from '@/hooks/org';
 import { formatDate } from '@/lib/utils/date';
 import type { SupportTicket, TicketStatus, TicketPriority } from '@/types';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 
 const STATUSES: TicketStatus[] = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 const PRIORITIES: TicketPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];

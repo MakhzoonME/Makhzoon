@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { useUsers } from '@/hooks/useUsers';
-import { useInvites } from '@/hooks/useInvites';
+import { useUsers } from '@/hooks/users';
+import { useInvites } from '@/hooks/users';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { OrgUser, Invite } from '@/types';
 import { formatDate } from '@/lib/utils/date';
 import { InviteUserModal } from '@/components/users/InviteUserModal';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils/cn';
 import { apiFetch } from '@/lib/utils/api-fetch';
@@ -20,9 +20,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { PermissionsEditor } from '@/components/users/PermissionsEditor';
-import { useSubscriptionFeatures } from '@/hooks/useSubscriptionFeatures';
+import { useSubscriptionFeatures } from '@/hooks/org';
 import { UserPermissions, DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from '@/types';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 
 function PlusSVG() {
   return (

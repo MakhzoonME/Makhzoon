@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils/cn';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 import { formatDate } from '@/lib/utils/date';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -21,7 +21,7 @@ import {
   DEFAULT_MAKHZOON_ADMIN_PERMISSIONS,
   DEFAULT_SUPPORT_PERMISSIONS,
 } from '@/types';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 
 function defaultPermsForRole(role: MakhzoonRole): SuperAdminPermissions {
   if (role === 'super_admin') return DEFAULT_SUPER_ADMIN_PERMISSIONS;

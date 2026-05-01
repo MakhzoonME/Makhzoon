@@ -1,8 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/useOrgSlug';
-import { useRequests } from '@/hooks/useRequests';
+import { useOrgSlug } from '@/hooks/ui';
+import { useRequests } from '@/hooks/requests';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
@@ -11,9 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Request } from '@/types';
 import { formatDate } from '@/lib/utils/date';
 import { truncate } from '@/lib/utils/format';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 function CheckSVG() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>

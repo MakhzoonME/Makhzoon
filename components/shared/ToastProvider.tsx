@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { ToastProvider, ToastViewport, Toast, ToastTitle, ToastClose } from '@/components/ui/toast';
-import { useToastListener } from '@/hooks/useToast';
+import { useToastListener } from '@/hooks/ui';
 
 interface ToastItem {
   id: string;

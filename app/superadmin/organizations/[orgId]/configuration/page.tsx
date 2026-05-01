@@ -14,8 +14,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { toast } from '@/hooks/useToast';
-import { useOrgConfig } from '@/hooks/useOrgConfig';
+import { toast } from '@/hooks/ui';
+import { useOrgConfig } from '@/hooks/org';
 import type {
   ConfigCategory,
   ConfigLocation,

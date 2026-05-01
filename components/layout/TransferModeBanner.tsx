@@ -1,6 +1,6 @@
 'use client';
 import { useTransferStore } from '@/store/transfer.store';
-import { useTransferMode } from '@/hooks/useTransferMode';
+import { useTransferMode } from '@/hooks/ui';
 import { useUiStore } from '@/store/ui.store';
 import { SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from '@/components/layout/AppSidebar';
 import { Button } from '@/components/ui/button';

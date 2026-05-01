@@ -1,6 +1,6 @@
 'use client';
 import { useLocaleStore } from '@/store/locale.store';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils/cn';
 import type { Locale } from '@/locales/messages';

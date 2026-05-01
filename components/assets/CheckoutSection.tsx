@@ -1,12 +1,12 @@
 'use client';
 import { useState } from 'react';
-import { useCheckouts, useCheckoutAsset, useReturnAsset } from '@/hooks/useCheckouts';
+import { useCheckouts, useCheckoutAsset, useReturnAsset } from '@/hooks/assets';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { DatePicker } from '@/components/ui/date-picker';
 import { formatDate } from '@/lib/utils/date';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 
 function ArrowUpRightSVG() {
   return (

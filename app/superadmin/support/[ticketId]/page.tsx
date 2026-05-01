@@ -11,8 +11,8 @@ import {
   useTicketMessages,
   useUpdateTicket,
   useAddTicketMessage,
-} from '@/hooks/useSupportTickets';
-import { toast } from '@/hooks/useToast';
+} from '@/hooks/support';
+import { toast } from '@/hooks/ui';
 import { formatDate } from '@/lib/utils/date';
 import type { TicketStatus, TicketPriority } from '@/types';
 

@@ -1,7 +1,7 @@
 'use client';
-import { useReports } from '@/hooks/useReports';
+import { useReports } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 
 function PackageSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M13 4.5L8 2 3 4.5v7L8 14l5-2.5v-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /><path d="M8 2v12M3 4.5l5 2.5 5-2.5" stroke="currentColor" strokeWidth="1.3" /></svg>; }
 function PackageCheckSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M10 4.5L8 2 3 4.5v7L8 14l5-2.5V8" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /><path d="M8 2v8M3 4.5l5 2.5" stroke="currentColor" strokeWidth="1.3" /><path d="M10 8l2 2 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }

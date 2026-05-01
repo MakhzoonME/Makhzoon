@@ -2,7 +2,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/useOrgSlug';
+import { useOrgSlug } from '@/hooks/ui';
 import { assetSchema, AssetFormData } from '@/lib/validations/asset.schema';
 import { Asset } from '@/types';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -11,11 +11,11 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useAssetCategories } from '@/hooks/useAssets';
-import { useOrgConfig } from '@/hooks/useOrgConfig';
+import { useAssetCategories } from '@/hooks/assets';
+import { useOrgConfig } from '@/hooks/org';
 import { useAuthStore } from '@/store/auth.store';
 
 interface AssetFormProps {

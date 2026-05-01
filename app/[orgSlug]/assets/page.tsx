@@ -2,10 +2,10 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus, Pencil, ArchiveX, Trash2, Upload } from 'lucide-react';
-import { useOrgSlug } from '@/hooks/useOrgSlug';
-import { useAssets } from '@/hooks/useAssets';
+import { useOrgSlug } from '@/hooks/ui';
+import { useAssets } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { FilterBar } from '@/components/shared/FilterBar';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
@@ -19,10 +19,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Asset } from '@/types';
 import { formatDate } from '@/lib/utils/date';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { useDebounce } from '@/hooks/useDebounce';
+import { useDebounce } from '@/hooks/ui';
 
 export default function AssetsPage() {
   const router = useRouter();

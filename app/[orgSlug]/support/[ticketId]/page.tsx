@@ -12,9 +12,9 @@ import {
   useTicketMessages,
   useUpdateTicket,
   useAddTicketMessage,
-} from '@/hooks/useSupportTickets';
+} from '@/hooks/support';
 import { formatDate, formatDateTime } from '@/lib/utils/date';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 
 export default function TicketDetailPage() {
   const { ticketId } = useParams<{ ticketId: string }>();

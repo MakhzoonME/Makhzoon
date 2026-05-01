@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 
 function SendSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M12.5 1.5L1 5.5l4.5 2 2 4.5 5-10.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /><path d="M5.5 7.5L8.5 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
 

@@ -16,17 +16,17 @@ import {
 } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { UsageBar } from '@/components/shared/UsageBar';
+import { UsageBar } from '@/components/features/subscription';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { PaymentLogForm, type PaymentLogFormPayload } from '@/components/super-admin/PaymentLogForm';
-import { usePackages } from '@/hooks/usePackages';
+import { usePackages } from '@/hooks/superadmin';
 import {
   usePaymentLogs,
   useCreatePaymentLog,
   useDeletePaymentLog,
-} from '@/hooks/usePaymentLogs';
-import { useOrgUsage } from '@/hooks/useOrgUsage';
-import { toast } from '@/hooks/useToast';
+} from '@/hooks/superadmin';
+import { useOrgUsage } from '@/hooks/org';
+import { toast } from '@/hooks/ui';
 import { formatDate } from '@/lib/utils/date';
 import {
   FEATURE_KEYS,

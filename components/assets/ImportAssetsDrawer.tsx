@@ -4,7 +4,7 @@ import Papa from 'papaparse';
 import { useQueryClient } from '@tanstack/react-query';
 import { FormDrawer } from '@/components/shared/FormDrawer';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 
 function UploadCloudSVG() {
   return (

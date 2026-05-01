@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Command } from 'cmdk';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { useAssets } from '@/hooks/useAssets';
+import { useAssets } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
 import { Asset } from '@/types';
 import { cn } from '@/lib/utils/cn';

@@ -1,12 +1,12 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/useOrgSlug';
+import { useOrgSlug } from '@/hooks/ui';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 function ClipboardCheckSVG() { return <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden><rect x="4" y="3" width="12" height="14" rx="1" stroke="currentColor" strokeWidth="1.4" fill="none" /><path d="M7 3v2h6V3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><path d="M7 10l2.5 2.5 4-4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
 

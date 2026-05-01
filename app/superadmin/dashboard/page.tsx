@@ -6,14 +6,14 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { UsageBar } from '@/components/shared/UsageBar';
-import { useAllOrgsUsage } from '@/hooks/useAllOrgsUsage';
-import { useSupportTickets } from '@/hooks/useSupportTickets';
-import { useTransferMode } from '@/hooks/useTransferMode';
+import { UsageBar } from '@/components/features/subscription';
+import { useAllOrgsUsage } from '@/hooks/org';
+import { useSupportTickets } from '@/hooks/support';
+import { useTransferMode } from '@/hooks/ui';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils/date';
 import type { OrgWithUsage } from '@/types';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 
 function daysUntil(d: Date | string): number {
   const target = typeof d === 'string' ? new Date(d) : d;

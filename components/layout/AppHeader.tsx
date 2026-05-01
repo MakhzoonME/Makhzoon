@@ -9,10 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { CommandPalette, useCommandPalette } from '@/components/shared/CommandPalette';
 import { useUiStore } from '@/store/ui.store';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
-import { useOrgSlug } from '@/hooks/useOrgSlug';
+import { useOrgSlug } from '@/hooks/ui';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 
 /* ── Inline SVG icons ───────────────────────────────────────────── */
 function BurgerSVG() {

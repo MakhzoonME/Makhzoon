@@ -44,16 +44,27 @@ async function _POST(req: NextRequest) {
 
   if (normalizedEmail) {
     const existing = await adminAuth.getUserByEmail(normalizedEmail).catch(() => null);
-    if (existing) return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
+    if (existing) {
+      // SECURITY: Don't reveal if user exists (prevents user enumeration)
+      // Return same generic error regardless
+      return NextResponse.json({ error: 'This email cannot be invited' }, { status: 409 });
+    }
     const pending = await getPendingInviteForEmail(user.organizationId, normalizedEmail);
-    if (pending) return NextResponse.json({ error: 'An invite is already pending for this email' }, { status: 409 });
+    if (pending) {
+      return NextResponse.json({ error: 'This email cannot be invited' }, { status: 409 });
+    }
   }
   if (normalizedUsername) {
     const syntheticEmail = `${normalizedUsername}@makhzoon.local`;
     const existing = await adminAuth.getUserByEmail(syntheticEmail).catch(() => null);
-    if (existing) return NextResponse.json({ error: 'This username is already taken' }, { status: 409 });
+    if (existing) {
+      // SECURITY: Don't reveal if username exists
+      return NextResponse.json({ error: 'This username cannot be invited' }, { status: 409 });
+    }
     const pending = await getPendingInviteForUsername(user.organizationId, normalizedUsername);
-    if (pending) return NextResponse.json({ error: 'An invite is already pending for this username' }, { status: 409 });
+    if (pending) {
+      return NextResponse.json({ error: 'This username cannot be invited' }, { status: 409 });
+    }
   }
 
   const token = generateInviteToken();

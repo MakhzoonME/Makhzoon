@@ -5,10 +5,21 @@ import { createSubscription } from '@/lib/db/subscriptions';
 import { createUser } from '@/lib/db/users';
 import { selfServeSignupSchema } from '@/lib/validations/signup.schema';
 import { writeAuditLog } from '@/lib/audit/logger';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 const TRIAL_DAYS = 14;
 
 export async function POST(req: NextRequest) {
+  // SECURITY: Rate limit signup (3 orgs per IP per 24 hours)
+  const clientIp = getClientIp(req);
+  const rateLimitResult = checkRateLimit(
+    `signup:${clientIp}`,
+    3,
+    24 * 60 * 60 * 1000,
+    { action: 'create new organizations' }
+  );
+  if (rateLimitResult) return rateLimitResult;
+
   const body = await req.json().catch(() => null);
   const parsed = selfServeSignupSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });

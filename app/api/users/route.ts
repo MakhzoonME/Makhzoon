@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomBytes } from 'crypto';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getUsers, createUser } from '@/lib/db/users';
 import { adminAuth } from '@/lib/firebase/admin';
@@ -39,12 +40,16 @@ async function _POST(req: NextRequest) {
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
     const data = parsed.data;
-    const tempPassword = Math.random().toString(36).slice(-8) + 'Aa1!';
+
+    // Generate a temporary password (used only internally for creation, not returned to API)
+    // User will receive password reset email instead
+    const tempPassword = randomBytes(16).toString('base64');
 
     const newUser = await adminAuth.createUser({
       email: data.email,
       displayName: data.displayName,
       password: tempPassword,
+      emailVerified: false, // User must verify email before full access
     });
 
     await adminAuth.setCustomUserClaims(newUser.uid, {
@@ -72,7 +77,16 @@ async function _POST(req: NextRequest) {
       newValue: { email: data.email, role: data.role },
     });
 
-    return NextResponse.json({ id: newUser.uid, tempPassword }, { status: 201 });
+    // SECURITY: Do NOT return tempPassword in response
+    // Client should send password reset email instead via separate endpoint
+    // This prevents credentials from being exposed in logs/CDN/proxies
+    return NextResponse.json({
+      id: newUser.uid,
+      email: data.email,
+      displayName: data.displayName,
+      role: data.role,
+      message: 'User created. They will receive an email to set their password.'
+    }, { status: 201 });
   } catch (err) {
     console.error('[POST /api/users]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

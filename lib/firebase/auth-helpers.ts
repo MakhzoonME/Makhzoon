@@ -2,12 +2,17 @@ import { adminAuth, adminDb } from './admin';
 import { AuthUser, UserRole, UserPermissions } from '@/types';
 import { cookies } from 'next/headers';
 import { getCachedSession, setCachedSession, getCachedPermissions, setCachedPermissions } from './session-cache';
+import { isSessionRevoked } from './session-revocation';
 
 export async function verifySessionCookie(): Promise<AuthUser | null> {
   try {
     const cookieStore = cookies();
     const session = cookieStore.get('session')?.value;
     if (!session) return null;
+
+    // Check if session has been explicitly revoked
+    const revoked = await isSessionRevoked(session);
+    if (revoked) return null;
 
     const cached = getCachedSession(session);
     const decoded = cached ?? await adminAuth.verifySessionCookie(session, true);

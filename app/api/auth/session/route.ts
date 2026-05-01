@@ -3,6 +3,8 @@ import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { cookies } from 'next/headers';
 import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
 import { invalidateCachedSession } from '@/lib/firebase/session-cache';
+import { revokeSession } from '@/lib/firebase/session-revocation';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 async function verifyWithRetry(idToken: string, attempt = 0) {
   try {
@@ -18,6 +20,16 @@ async function verifyWithRetry(idToken: string, attempt = 0) {
 
 export async function POST(req: NextRequest) {
   try {
+    // SECURITY: Rate limit session creation (5 per IP per 15 minutes)
+    const clientIp = getClientIp(req);
+    const rateLimitResult = checkRateLimit(
+      `session:${clientIp}`,
+      5,
+      15 * 60 * 1000,
+      { action: 'sign in' }
+    );
+    if (rateLimitResult) return rateLimitResult;
+
     const body = await req.json();
     const { idToken, turnstileToken: _turnstileToken } = body; // _turnstileToken reserved for Turnstile re-enable
     if (!idToken) return NextResponse.json({ error: 'Missing token' }, { status: 400 });
@@ -46,14 +58,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No account found' }, { status: 403 });
     }
 
-    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+    // 24-hour session (reduced from 5 days for better security)
+    const expiresIn = 60 * 60 * 24 * 1 * 1000; // 1 day
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
 
     const cookieStore = cookies();
+    // Set secure flag in all non-development environments
+    const isSecure = process.env.NODE_ENV !== 'development';
     cookieStore.set('session', sessionCookie, {
       maxAge: expiresIn / 1000,
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isSecure,
       path: '/',
       sameSite: 'lax',
     });
@@ -90,11 +105,25 @@ export async function DELETE() {
   const cookieStore = cookies();
   const sessionToken = cookieStore.get('session')?.value;
 
+  // Clear cookies immediately
   cookieStore.set('session', '', { maxAge: 0, path: '/' });
   cookieStore.set('transferOrgId', '', { maxAge: 0, path: '/' });
 
+  // Revoke the session token server-side so it can't be reused
   if (sessionToken) {
     invalidateCachedSession(sessionToken);
+    try {
+      // Decode token to get userId for audit purposes
+      const decoded = await adminAuth.verifySessionCookie(sessionToken, false).catch(() => null);
+      const userId = decoded?.uid;
+      if (userId) {
+        // Token expires in 1 day (matches session duration)
+        const expiresAt = new Date(Date.now() + 60 * 60 * 24 * 1000);
+        await revokeSession(sessionToken, userId, expiresAt);
+      }
+    } catch {
+      // If we can't decode, still clear the cookie
+    }
   }
 
   return NextResponse.json({ success: true });

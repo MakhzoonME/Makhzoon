@@ -11,6 +11,7 @@ import { writeAuditLog } from '@/lib/audit/logger';
 import { organizationSchema } from '@/lib/validations/organization.schema';
 import { sendEmail } from '@/lib/email/resend';
 import { inviteEmail } from '@/lib/email/templates';
+import { logError } from '@/lib/logging/safe-error';
 
 
 export async function GET(req: NextRequest) {
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
     const orgs = await getOrganizationsWithSearch({ search, category });
     return NextResponse.json(orgs);
   } catch (err) {
-    console.error('[GET /api/organizations]', err);
+    logError('[GET /api/organizations]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -132,7 +133,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ id: orgId }, { status: 201 });
   } catch (err) {
-    console.error('[POST /api/organizations]', err);
+    logError('[POST /api/organizations]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

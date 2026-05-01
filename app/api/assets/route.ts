@@ -3,6 +3,7 @@ import { assetSchema } from '@/lib/validations/asset.schema';
 import { withLogging } from '@/lib/logging/with-logging';
 import { requireAuth } from '@/lib/services/base.service';
 import * as assetsService from '@/lib/services/assets.service';
+import { logError } from '@/lib/logging/safe-error';
 
 async function _GET(req: NextRequest) {
   try {
@@ -27,7 +28,7 @@ async function _GET(req: NextRequest) {
     });
   } catch (err) {
     if (err instanceof NextResponse) return err;
-    console.error('[GET /api/assets]', err);
+    logError('[GET /api/assets]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -56,7 +57,7 @@ async function _POST(req: NextRequest) {
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
     if (err instanceof NextResponse) return err;
-    console.error('[POST /api/assets]', err);
+    logError('[POST /api/assets]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -47,7 +47,7 @@ export async function getOrgInventoryItems(
   filters?: { category?: string; stockStatus?: string; search?: string }
 ) {
   await requirePermission(user, 'inventory', 'view');
-  return getInventoryItems(user.organizationId, filters);
+  return getInventoryItems(user.organizationId!, filters);
 }
 
 /**
@@ -56,7 +56,7 @@ export async function getOrgInventoryItems(
 export async function getOrgInventoryItem(user: AuthUser, itemId: string) {
   await requirePermission(user, 'inventory', 'view');
   const item = await getInventoryItemById(itemId);
-  if (!item || item.organizationId !== user.organizationId) {
+  if (!item || item.organizationId !== user.organizationId!) {
     throw new Error('Inventory item not found');
   }
   return item;
@@ -70,11 +70,11 @@ export async function createInventoryItemWithAudit(
   data: CreateInventoryItemInput
 ) {
   await requirePermission(user, 'inventory', 'create');
-  await requireActiveSubscription(user.organizationId);
+  await requireActiveSubscription(user.organizationId!);
 
   const userContext = getUserContext(user);
   const id = await dbCreateInventoryItem({
-    organizationId: user.organizationId,
+    organizationId: user.organizationId!,
     ...data,
     createdBy: userContext.uid,
     createdByEmail: userContext.email,
@@ -85,7 +85,7 @@ export async function createInventoryItemWithAudit(
   });
 
   await writeAuditLog({
-    organizationId: user.organizationId,
+    organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
     action: 'INVENTORY_ITEM_CREATED',
@@ -109,7 +109,7 @@ export async function updateInventoryItemWithAudit(
 
   // Verify item belongs to user's org
   const item = await getInventoryItemById(itemId);
-  if (!item || item.organizationId !== user.organizationId) {
+  if (!item || item.organizationId !== user.organizationId!) {
     throw new Error('Inventory item not found');
   }
 
@@ -124,7 +124,7 @@ export async function updateInventoryItemWithAudit(
   await dbUpdateInventoryItem(itemId, updateData);
 
   await writeAuditLog({
-    organizationId: user.organizationId,
+    organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
     action: 'INVENTORY_ITEM_UPDATED',
@@ -143,7 +143,7 @@ export async function deleteInventoryItemWithAudit(user: AuthUser, itemId: strin
 
   // Verify item belongs to user's org
   const item = await getInventoryItemById(itemId);
-  if (!item || item.organizationId !== user.organizationId) {
+  if (!item || item.organizationId !== user.organizationId!) {
     throw new Error('Inventory item not found');
   }
 
@@ -151,7 +151,7 @@ export async function deleteInventoryItemWithAudit(user: AuthUser, itemId: strin
   await dbDeleteInventoryItem(itemId);
 
   await writeAuditLog({
-    organizationId: user.organizationId,
+    organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
     action: 'INVENTORY_ITEM_DELETED',
@@ -166,7 +166,7 @@ export async function deleteInventoryItemWithAudit(user: AuthUser, itemId: strin
  */
 export async function getOrgInventoryCategories(user: AuthUser) {
   await requirePermission(user, 'inventory', 'view');
-  return getInventoryCategories(user.organizationId);
+  return getInventoryCategories(user.organizationId!);
 }
 
 /**
@@ -184,7 +184,7 @@ export async function applyInventoryTransactionWithAudit(
 
   // Verify item belongs to user's org
   const item = await getInventoryItemById(itemId);
-  if (!item || item.organizationId !== user.organizationId) {
+  if (!item || item.organizationId !== user.organizationId!) {
     throw new Error('Inventory item not found');
   }
 
@@ -204,7 +204,7 @@ export async function applyInventoryTransactionWithAudit(
   );
 
   await writeAuditLog({
-    organizationId: user.organizationId,
+    organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
     action: 'INVENTORY_TRANSACTION_RECORDED',

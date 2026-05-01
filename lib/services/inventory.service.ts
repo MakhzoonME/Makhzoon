@@ -95,7 +95,7 @@ export async function createInventoryItemWithAudit(
     action: 'INVENTORY_ITEM_CREATED',
     module: 'inventory',
     recordId: id,
-    newValue: data,
+    newValue: data as unknown as Record<string, unknown>,
   });
 
   return { id };

@@ -73,16 +73,20 @@ export async function createInventoryItemWithAudit(
   await requireActiveSubscription(user.organizationId!);
 
   const userContext = getUserContext(user);
-  const id = await dbCreateInventoryItem({
-    organizationId: user.organizationId!,
-    ...data,
-    createdBy: userContext.uid,
-    createdByEmail: userContext.email,
-    createdByName: userContext.displayName,
-    updatedBy: userContext.uid,
-    updatedByEmail: userContext.email,
-    updatedByName: userContext.displayName,
-  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const id = await dbCreateInventoryItem(
+    {
+      organizationId: user.organizationId!,
+      ...data,
+      createdBy: userContext.uid,
+      createdByEmail: userContext.email,
+      createdByName: userContext.displayName,
+      updatedBy: userContext.uid,
+      updatedByEmail: userContext.email,
+      updatedByName: userContext.displayName,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any
+  );
 
   await writeAuditLog({
     organizationId: user.organizationId!,

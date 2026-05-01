@@ -64,6 +64,6 @@ export async function deletePaymentLogWithAudit(user: AuthUser, logId: string) {
     action: 'PAYMENT_LOG_DELETED',
     module: 'payment-logs',
     recordId: logId,
-    oldValue: target,
+    oldValue: target as unknown as Record<string, unknown>,
   });
 }

@@ -28,7 +28,10 @@ export async function requirePermission(
   module: 'assets' | 'inventory' | 'warranties' | 'requests' | 'support' | 'reports' | 'audit-logs' | 'users',
   action: 'view' | 'create' | 'update' | 'delete'
 ): Promise<void> {
-  if (!hasPermission(user, module, action)) {
+  // Convert kebab-case to camelCase for auditLogs
+  const camelCaseModule = module === 'audit-logs' ? 'auditLogs' : module;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (!hasPermission(user, camelCaseModule as any, action)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 }

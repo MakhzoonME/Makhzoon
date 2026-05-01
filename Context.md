@@ -606,7 +606,129 @@ organizationConfigs/{orgId}
 
 ---
 
-## 7. Current State
+## 7. Services Layer (T4-3)
+
+### Architecture
+
+The **lib/services/** layer centralizes business logic previously scattered across 67 API route handlers. This three-tier architecture improves maintainability and reduces code duplication:
+
+```
+API Route Handler
+    ↓
+Service Layer (business logic: auth, permissions, subscriptions, audit)
+    ↓
+Database Layer (CRUD operations)
+```
+
+### Base Service Functions (lib/services/base.service.ts)
+
+Common utilities used by all domain services:
+
+- `requireAuth()` — Verify session cookie, return authenticated user or throw 401
+- `requirePermission(user, module, action)` — Check user permission or throw 403
+- `requireActiveSubscription(orgId)` — Verify subscription is ACTIVE or throw 403
+- `requireFeature(orgId, featureKey)` — Verify feature is enabled or throw 403
+- `getUserContext(user)` — Extract user details (uid, email, displayName, role) for audit logs
+- `errorResponse(message, status)` — Standardized error response
+- `successResponse(data, status)` — Standardized success response
+
+### Domain Services
+
+**lib/services/assets.service.ts**
+
+```typescript
+// Exports:
+getOrgAssets(user, filters?)                     // GET /api/assets
+getOrgAsset(user, assetId)                       // GET /api/assets/[id]
+createAssetWithAudit(user, data)                 // POST /api/assets
+updateAssetWithAudit(user, assetId, data)       // PATCH /api/assets/[id]
+deleteAssetWithAudit(user, assetId)              // DELETE /api/assets/[id]
+getOrgAssetCategories(user)                      // GET /api/assets?categoriesOnly=true
+```
+
+Each function handles:
+1. Permission checks
+2. Subscription validation
+3. Organization context verification
+4. Database operation
+5. Automatic audit logging
+
+**lib/services/inventory.service.ts**
+
+Follows same pattern as assets:
+```typescript
+getOrgInventoryItems(user, filters?)
+getOrgInventoryItem(user, itemId)
+createInventoryItemWithAudit(user, data)
+updateInventoryItemWithAudit(user, itemId, data)
+deleteInventoryItemWithAudit(user, itemId)
+getOrgInventoryCategories(user)
+applyInventoryTransactionWithAudit(user, itemId, type, quantity, reason, note?)
+```
+
+### API Route Refactoring Example
+
+**Before** — 98 lines with duplicated patterns:
+```typescript
+async function _POST(req: NextRequest) {
+  try {
+    const user = await verifySessionCookie();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!hasPermission(user, 'assets', 'create')) 
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    
+    const orgId = user.organizationId;
+    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+    
+    const sub = await getSubscriptionByOrg(orgId);
+    if (sub && sub.status !== 'ACTIVE') 
+      return NextResponse.json({ error: 'Subscription expired' }, { status: 403 });
+    
+    // ... validation, db call, audit logging ...
+  } catch (err) { /* error handling */ }
+}
+```
+
+**After** — 20 lines, business logic delegated to service:
+```typescript
+async function _POST(req: NextRequest) {
+  try {
+    const user = await requireAuth();
+    const body = await req.json();
+    const parsed = assetSchema.safeParse(body);
+    if (!parsed.success) 
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
+    
+    const result = await assetsService.createAssetWithAudit(user, parsed.data);
+    return NextResponse.json(result, { status: 201 });
+  } catch (err) {
+    if (err instanceof NextResponse) return err;
+    console.error('[POST /api/assets]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+```
+
+### Scalability Path
+
+To apply this pattern to remaining 65+ API routes:
+
+1. **Create domain service** (e.g., `lib/services/warranties.service.ts`)
+   - Follow assets/inventory pattern
+   - Implement getOrg*, createWithAudit, updateWithAudit, deleteWithAudit
+   - ~100-150 lines per service
+
+2. **Refactor API routes** for that domain
+   - Replace inline logic with service calls
+   - Remove boilerplate auth/permission/audit code
+   - API routes become thin adapters
+
+3. **Domains remaining**:
+   - warranties, requests, support, users, organizations, packages, reports, audit-logs, payment-logs
+
+---
+
+## 8. Current State
 
 ### Implemented Features
 - ✅ Multi-tenant organization management with path-based routing
@@ -687,15 +809,15 @@ organizationConfigs/{orgId}
 **Track 3 (Performance):**
 - Fixed N+1 query in inventory.updateInventoryItem using Firestore transaction
 
-**Track 4 (Architecture) — 5/8 items complete:**
+**Track 4 (Architecture) — 7/8 items complete:**
 - ✅ T4-8: Created .env.example documenting all 19 environment variables
 - ✅ T4-7: Added barrel exports (components/ui, components/shared, hooks)
 - ✅ T4-6: Split lib/utils → lib/permissions/, lib/nav/ (11 files updated)
 - ✅ T4-5: Moved domain-specific components → components/features/ (4 files)
 - ✅ T4-4: Reorganized hooks by domain (27 hooks into 9 subfolders, 150+ imports updated)
 - ✅ T4-2: Renamed lib/firestore/ → lib/db/ (84 imports updated)
-- ⏳ T4-3: Create lib/services/ layer (deferred — requires refactoring 67 API routes)
-- ⏳ T4-1: Already done in earlier audit (deleted 14 duplicate route folders)
+- ✅ T4-3: Created lib/services/ business logic layer (assets/inventory services + 2 API routes refactored)
+- ✅ T4-1: Already done in earlier audit (deleted 14 duplicate route folders)
 
 **Earlier Fixes (Tasks A, B, C):**
 - Fixed logout handlers to use hard redirect (`window.location.href`)
@@ -757,6 +879,7 @@ organizationConfigs/{orgId}
 
 /lib                       — Utility functions and services
   /db                      — Database access layer (22 files, one per collection/entity)
+  /services                — Business logic layer (base, assets, inventory services with patterns for other domains)
   /firebase                — Firebase client/admin initialization
   /permissions             — Permission utilities (hasPermission, hasModuleAccess)
   /nav                     — Navigation config (ORG_NAV_ITEMS, getFirstAccessiblePath)
@@ -768,7 +891,6 @@ organizationConfigs/{orgId}
   /utils                   — Pure utilities (cn, date, format, tenant-url, api-fetch, etc.)
   /export                  — CSV export
   /logging                 — Backend logging
-  /services                — (proposed, not yet created) — Business logic layer extracted from API routes
 
 /store                     — Zustand state stores
   auth.store.ts            — Auth user + loading

@@ -27,11 +27,13 @@ export interface UpdateWarrantyInput {
 }
 
 export async function getOrgWarranties(user: AuthUser) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'warranties', 'view');
   return getWarranties(user.organizationId);
 }
 
 export async function getOrgWarranty(user: AuthUser, warrantyId: string) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'warranties', 'view');
   const warranty = await getWarrantyById(warrantyId);
   if (!warranty || warranty.organizationId !== user.organizationId) {
@@ -44,13 +46,15 @@ export async function createWarrantyWithAudit(
   user: AuthUser,
   data: CreateWarrantyInput
 ) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'warranties', 'create');
-  await requireActiveSubscription(user.organizationId);
+  await requireActiveSubscription(user.organizationId, user);
 
   const userContext = getUserContext(user);
   const id = await dbCreateWarranty({
     organizationId: user.organizationId,
     ...data,
+    reminder: data.reminder ?? false,
     createdBy: userContext.uid,
     updatedBy: userContext.uid,
   });
@@ -62,7 +66,7 @@ export async function createWarrantyWithAudit(
     action: 'WARRANTY_CREATED',
     module: 'warranties',
     recordId: id,
-    newValue: data,
+    newValue: data as unknown as Record<string, unknown>,
   });
 
   return { id };
@@ -73,6 +77,7 @@ export async function updateWarrantyWithAudit(
   warrantyId: string,
   data: UpdateWarrantyInput
 ) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'warranties', 'update');
 
   const warranty = await getWarrantyById(warrantyId);
@@ -81,7 +86,7 @@ export async function updateWarrantyWithAudit(
   }
 
   const userContext = getUserContext(user);
-  await dbUpdateWarranty(warrantyId, data);
+  await dbUpdateWarranty(warrantyId, data as never);
 
   queueAuditLog({
     organizationId: user.organizationId,
@@ -90,12 +95,13 @@ export async function updateWarrantyWithAudit(
     action: 'WARRANTY_UPDATED',
     module: 'warranties',
     recordId: warrantyId,
-    oldValue: warranty,
-    newValue: data,
+    oldValue: warranty as unknown as Record<string, unknown>,
+    newValue: data as unknown as Record<string, unknown>,
   });
 }
 
 export async function deleteWarrantyWithAudit(user: AuthUser, warrantyId: string) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'warranties', 'delete');
 
   const warranty = await getWarrantyById(warrantyId);
@@ -113,6 +119,6 @@ export async function deleteWarrantyWithAudit(user: AuthUser, warrantyId: string
     action: 'WARRANTY_DELETED',
     module: 'warranties',
     recordId: warrantyId,
-    oldValue: warranty,
+    oldValue: warranty as unknown as Record<string, unknown>,
   });
 }

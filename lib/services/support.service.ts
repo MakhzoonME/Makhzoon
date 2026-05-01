@@ -2,8 +2,8 @@ import { AuthUser } from '@/types/auth.types';
 import {
   getSupportTickets,
   getSupportTicketById,
-  createTicket as dbCreateTicket,
-  updateTicket as dbUpdateTicket,
+  createSupportTicket as dbCreateTicket,
+  updateSupportTicket as dbUpdateTicket,
   addTicketMessage as dbAddTicketMessage,
 } from '@/lib/db/support-tickets';
 import { queueAuditLog } from '@/lib/audit/logger';
@@ -12,53 +12,47 @@ import { requirePermission, getUserContext } from './base.service';
 export interface CreateTicketInput {
   subject: string;
   description: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 }
 
 export interface UpdateTicketInput {
   status?: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
-  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 }
 
 export async function getOrgSupportTickets(
   user: AuthUser,
-  filters?: { status?: string; priority?: string }
+  filters?: { status?: string }
 ) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'support', 'view');
-  return getSupportTickets(user.organizationId, filters);
+  return getSupportTickets(user.organizationId, filters as { status?: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' });
 }
 
 export async function getOrgSupportTicket(user: AuthUser, ticketId: string) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'support', 'view');
-  const ticket = await getSupportTicketById(ticketId);
-  if (!ticket || ticket.organizationId !== user.organizationId) {
-    throw new Error('Support ticket not found');
-  }
+  const ticket = await getSupportTicketById(ticketId, user.organizationId);
+  if (!ticket) throw new Error('Support ticket not found');
   return ticket;
 }
 
 export async function createSupportTicketWithAudit(user: AuthUser, data: CreateTicketInput) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'support', 'create');
 
   const userContext = getUserContext(user);
-  const id = await dbCreateTicket({
-    organizationId: user.organizationId,
-    ...data,
-    createdBy: userContext.uid,
-    updatedBy: userContext.uid,
-  });
+  const ticket = await dbCreateTicket(user.organizationId, userContext.uid, data);
 
   queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,
-    action: 'SUPPORT_TICKET_CREATED',
+    action: 'TICKET_CREATED',
     module: 'support',
-    recordId: id,
-    newValue: data,
+    recordId: ticket.id,
+    newValue: data as unknown as Record<string, unknown>,
   });
 
-  return { id };
+  return { id: ticket.id };
 }
 
 export async function updateSupportTicketWithAudit(
@@ -66,25 +60,28 @@ export async function updateSupportTicketWithAudit(
   ticketId: string,
   data: UpdateTicketInput
 ) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'support', 'update');
 
-  const ticket = await getSupportTicketById(ticketId);
-  if (!ticket || ticket.organizationId !== user.organizationId) {
-    throw new Error('Support ticket not found');
-  }
+  const ticket = await getSupportTicketById(ticketId, user.organizationId);
+  if (!ticket) throw new Error('Support ticket not found');
 
   const userContext = getUserContext(user);
-  await dbUpdateTicket(ticketId, data);
+  await dbUpdateTicket(ticketId, user.organizationId, data);
+
+  const action = data.status === 'RESOLVED' ? 'TICKET_RESOLVED'
+    : data.status === 'CLOSED' ? 'TICKET_CLOSED'
+    : 'TICKET_UPDATED';
 
   queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,
-    action: 'SUPPORT_TICKET_UPDATED',
+    action,
     module: 'support',
     recordId: ticketId,
-    oldValue: { status: ticket.status, priority: ticket.priority },
-    newValue: data,
+    oldValue: { status: ticket.status },
+    newValue: data as unknown as Record<string, unknown>,
   });
 }
 
@@ -93,30 +90,31 @@ export async function addSupportTicketMessageWithAudit(
   ticketId: string,
   message: string
 ) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'support', 'create');
 
-  const ticket = await getSupportTicketById(ticketId);
-  if (!ticket || ticket.organizationId !== user.organizationId) {
-    throw new Error('Support ticket not found');
-  }
+  const ticket = await getSupportTicketById(ticketId, user.organizationId);
+  if (!ticket) throw new Error('Support ticket not found');
 
   const userContext = getUserContext(user);
-  const messageId = await dbAddTicketMessage(ticketId, {
-    body: message,
-    authorId: userContext.uid,
-    authorName: userContext.displayName || 'Unknown',
-    authorRole: userContext.role || 'user',
-  });
+  const ticketMessage = await dbAddTicketMessage(
+    ticketId,
+    user.organizationId,
+    userContext.uid,
+    userContext.displayName || 'Unknown',
+    userContext.role || 'user',
+    message,
+  );
 
   queueAuditLog({
     organizationId: user.organizationId,
     userId: userContext.uid,
     role: userContext.role,
-    action: 'SUPPORT_TICKET_MESSAGE_ADDED',
+    action: 'TICKET_REPLIED',
     module: 'support',
     recordId: ticketId,
-    newValue: { messageId, body: message },
+    newValue: { messageId: ticketMessage.id, body: message },
   });
 
-  return { messageId };
+  return { messageId: ticketMessage.id };
 }

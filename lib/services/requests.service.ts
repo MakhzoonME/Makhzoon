@@ -3,8 +3,7 @@ import {
   getRequests,
   getRequestById,
   createRequest as dbCreateRequest,
-  approveRequest as dbApproveRequest,
-  rejectRequest as dbRejectRequest,
+  updateRequest as dbUpdateRequest,
 } from '@/lib/db/requests';
 import { queueAuditLog } from '@/lib/audit/logger';
 import { requirePermission, requireActiveSubscription, getUserContext } from './base.service';
@@ -18,11 +17,13 @@ export interface CreateRequestInput {
 }
 
 export async function getOrgRequests(user: AuthUser, filters?: { status?: string; type?: string }) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'requests', 'view');
   return getRequests(user.organizationId, filters);
 }
 
 export async function getOrgRequest(user: AuthUser, requestId: string) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'requests', 'view');
   const request = await getRequestById(requestId);
   if (!request || request.organizationId !== user.organizationId) {
@@ -32,13 +33,15 @@ export async function getOrgRequest(user: AuthUser, requestId: string) {
 }
 
 export async function createRequestWithAudit(user: AuthUser, data: CreateRequestInput) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'requests', 'create');
-  await requireActiveSubscription(user.organizationId);
+  await requireActiveSubscription(user.organizationId, user);
 
   const userContext = getUserContext(user);
   const id = await dbCreateRequest({
     organizationId: user.organizationId,
     ...data,
+    status: 'PENDING',
     createdBy: userContext.uid,
     createdByName: userContext.displayName,
     createdByEmail: userContext.email,
@@ -52,13 +55,14 @@ export async function createRequestWithAudit(user: AuthUser, data: CreateRequest
     action: 'REQUEST_SUBMITTED',
     module: 'requests',
     recordId: id,
-    newValue: data,
+    newValue: data as unknown as Record<string, unknown>,
   });
 
   return { id };
 }
 
 export async function approveRequestWithAudit(user: AuthUser, requestId: string) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'requests', 'update');
 
   const request = await getRequestById(requestId);
@@ -67,7 +71,7 @@ export async function approveRequestWithAudit(user: AuthUser, requestId: string)
   }
 
   const userContext = getUserContext(user);
-  await dbApproveRequest(requestId, userContext.uid);
+  await dbUpdateRequest(requestId, { status: 'APPROVED', updatedBy: userContext.uid });
 
   queueAuditLog({
     organizationId: user.organizationId,
@@ -82,6 +86,7 @@ export async function approveRequestWithAudit(user: AuthUser, requestId: string)
 }
 
 export async function rejectRequestWithAudit(user: AuthUser, requestId: string) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'requests', 'update');
 
   const request = await getRequestById(requestId);
@@ -90,7 +95,7 @@ export async function rejectRequestWithAudit(user: AuthUser, requestId: string) 
   }
 
   const userContext = getUserContext(user);
-  await dbRejectRequest(requestId, userContext.uid);
+  await dbUpdateRequest(requestId, { status: 'REJECTED', updatedBy: userContext.uid });
 
   queueAuditLog({
     organizationId: user.organizationId,

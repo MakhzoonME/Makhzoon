@@ -3,11 +3,11 @@ import {
   getUsers,
   getUserById,
   updateUser as dbUpdateUser,
-  deactivateUser as dbDeactivateUser,
-  createInvite as dbCreateInvite,
+} from '@/lib/db/users';
+import {
   getInviteByToken,
   revokeInvite as dbRevokeInvite,
-} from '@/lib/db/users';
+} from '@/lib/db/invites';
 import { queueAuditLog } from '@/lib/audit/logger';
 import { requirePermission, getUserContext } from './base.service';
 
@@ -16,17 +16,14 @@ export interface UpdateUserInput {
   permissions?: Record<string, Record<string, boolean>> | null;
 }
 
-export interface CreateInviteInput {
-  email: string;
-  role: 'admin' | 'staff';
-}
-
 export async function getOrgUsers(user: AuthUser) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'users', 'view');
   return getUsers(user.organizationId);
 }
 
 export async function getOrgUser(user: AuthUser, userId: string) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'users', 'view');
   const target = await getUserById(userId);
   if (!target || target.organizationId !== user.organizationId) {
@@ -40,6 +37,7 @@ export async function updateUserWithAudit(
   userId: string,
   data: UpdateUserInput
 ) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'users', 'update');
 
   const target = await getUserById(userId);
@@ -48,7 +46,7 @@ export async function updateUserWithAudit(
   }
 
   const userContext = getUserContext(user);
-  await dbUpdateUser(userId, data);
+  await dbUpdateUser(userId, data as never);
 
   queueAuditLog({
     organizationId: user.organizationId,
@@ -57,12 +55,13 @@ export async function updateUserWithAudit(
     action: 'USER_UPDATED',
     module: 'users',
     recordId: userId,
-    oldValue: { displayName: target.displayName, permissions: target.permissions },
-    newValue: data,
+    oldValue: { displayName: target.displayName, permissions: target.permissions } as Record<string, unknown>,
+    newValue: data as unknown as Record<string, unknown>,
   });
 }
 
 export async function deactivateUserWithAudit(user: AuthUser, userId: string) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'users', 'delete');
 
   const target = await getUserById(userId);
@@ -71,7 +70,7 @@ export async function deactivateUserWithAudit(user: AuthUser, userId: string) {
   }
 
   const userContext = getUserContext(user);
-  await dbDeactivateUser(userId);
+  await dbUpdateUser(userId, { status: 'deactivated' } as never);
 
   queueAuditLog({
     organizationId: user.organizationId,
@@ -85,30 +84,8 @@ export async function deactivateUserWithAudit(user: AuthUser, userId: string) {
   });
 }
 
-export async function createUserInviteWithAudit(user: AuthUser, data: CreateInviteInput) {
-  await requirePermission(user, 'users', 'create');
-
-  const userContext = getUserContext(user);
-  const token = await dbCreateInvite({
-    organizationId: user.organizationId,
-    email: data.email,
-    role: data.role,
-    createdBy: userContext.uid,
-  });
-
-  queueAuditLog({
-    organizationId: user.organizationId,
-    userId: userContext.uid,
-    role: userContext.role,
-    action: 'USER_INVITED',
-    module: 'users',
-    newValue: { email: data.email, role: data.role },
-  });
-
-  return { token };
-}
-
 export async function revokeUserInviteWithAudit(user: AuthUser, token: string) {
+  if (!user.organizationId) throw new Error('User has no organization');
   await requirePermission(user, 'users', 'delete');
 
   const invite = await getInviteByToken(token);
@@ -117,7 +94,7 @@ export async function revokeUserInviteWithAudit(user: AuthUser, token: string) {
   }
 
   const userContext = getUserContext(user);
-  await dbRevokeInvite(token);
+  await dbRevokeInvite(invite.id, userContext.uid);
 
   queueAuditLog({
     organizationId: user.organizationId,

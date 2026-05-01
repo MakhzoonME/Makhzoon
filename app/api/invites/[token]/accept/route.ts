@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase/admin';
-import { getInviteByToken, markInviteAccepted } from '@/lib/firestore/invites';
-import { createUser } from '@/lib/firestore/users';
+import { getInviteByToken, markInviteAccepted } from '@/lib/db/invites';
+import { createUser } from '@/lib/db/users';
 import { acceptInviteSchema } from '@/lib/validations/invite.schema';
 import { writeAuditLog } from '@/lib/audit/logger';
 

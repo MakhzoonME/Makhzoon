@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getWarrantyById, updateWarranty, deleteWarranty } from '@/lib/firestore/warranties';
+import { getWarrantyById, updateWarranty, deleteWarranty } from '@/lib/db/warranties';
 import { writeAuditLog, queueAuditLog } from '@/lib/audit/logger';
 import { warrantySchema } from '@/lib/validations/warranty.schema';
 import { hasPermission } from '@/lib/permissions';

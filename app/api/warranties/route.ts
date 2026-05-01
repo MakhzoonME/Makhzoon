@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getWarranties, createWarranty, getExpiringWarranties } from '@/lib/firestore/warranties';
-import { getAssetById } from '@/lib/firestore/assets';
-import { getSubscriptionByOrg } from '@/lib/firestore/subscriptions';
+import { getWarranties, createWarranty, getExpiringWarranties } from '@/lib/db/warranties';
+import { getAssetById } from '@/lib/db/assets';
+import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { warrantySchema } from '@/lib/validations/warranty.schema';
 import { hasPermission } from '@/lib/permissions';

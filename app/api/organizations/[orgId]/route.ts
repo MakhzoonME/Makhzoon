@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getOrganizationById, updateOrganization } from '@/lib/firestore/organizations';
-import { getSubscriptionByOrg } from '@/lib/firestore/subscriptions';
+import { getOrganizationById, updateOrganization } from '@/lib/db/organizations';
+import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { organizationUpdateSchema } from '@/lib/validations/organization.schema';
 

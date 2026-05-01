@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getRequestById, updateRequest } from '@/lib/firestore/requests';
+import { getRequestById, updateRequest } from '@/lib/db/requests';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { hasPermission } from '@/lib/permissions';
 

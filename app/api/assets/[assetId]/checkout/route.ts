@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getAssetById, updateAsset } from '@/lib/firestore/assets';
-import { getCheckouts, getActiveCheckoutForAsset, createCheckout } from '@/lib/firestore/asset-checkouts';
+import { getAssetById, updateAsset } from '@/lib/db/assets';
+import { getCheckouts, getActiveCheckoutForAsset, createCheckout } from '@/lib/db/asset-checkouts';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { checkoutSchema } from '@/lib/validations/asset-checkout.schema';
 

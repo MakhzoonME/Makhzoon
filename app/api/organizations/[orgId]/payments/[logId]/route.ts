@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getPaymentLogById, deletePaymentLog } from '@/lib/firestore/payment-logs';
+import { getPaymentLogById, deletePaymentLog } from '@/lib/db/payment-logs';
 import { writeAuditLog } from '@/lib/audit/logger';
 
 export async function DELETE(

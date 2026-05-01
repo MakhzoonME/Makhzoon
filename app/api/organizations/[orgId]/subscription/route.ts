@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getSubscriptionByOrg, updateSubscription } from '@/lib/firestore/subscriptions';
+import { getSubscriptionByOrg, updateSubscription } from '@/lib/db/subscriptions';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { subscriptionUpdateSchema } from '@/lib/validations/subscription.schema';
 

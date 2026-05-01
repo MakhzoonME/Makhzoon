@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getRequestById, updateRequest } from '@/lib/firestore/requests';
-import { updateAsset } from '@/lib/firestore/assets';
+import { getRequestById, updateRequest } from '@/lib/db/requests';
+import { updateAsset } from '@/lib/db/assets';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { hasPermission } from '@/lib/permissions';
 

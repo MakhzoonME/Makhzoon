@@ -4,7 +4,7 @@ import {
   getSupportTickets,
   getAllSupportTickets,
   createSupportTicket,
-} from '@/lib/firestore/support-tickets';
+} from '@/lib/db/support-tickets';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { supportTicketCreateSchema } from '@/lib/validations/support-ticket.schema';
 import { TicketStatus, TicketPriority } from '@/types';

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { addLocation } from '@/lib/firestore/organization-configs';
-import { getOrganizationById } from '@/lib/firestore/organizations';
+import { addLocation } from '@/lib/db/organization-configs';
+import { getOrganizationById } from '@/lib/db/organizations';
 import { locationInputSchema } from '@/lib/validations/organization-config.schema';
 import { writeAuditLog } from '@/lib/audit/logger';
 

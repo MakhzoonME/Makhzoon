@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase/admin';
-import { createOrganization, subdomainExists } from '@/lib/firestore/organizations';
-import { createSubscription } from '@/lib/firestore/subscriptions';
-import { createUser } from '@/lib/firestore/users';
+import { createOrganization, subdomainExists } from '@/lib/db/organizations';
+import { createSubscription } from '@/lib/db/subscriptions';
+import { createUser } from '@/lib/db/users';
 import { selfServeSignupSchema } from '@/lib/validations/signup.schema';
 import { writeAuditLog } from '@/lib/audit/logger';
 

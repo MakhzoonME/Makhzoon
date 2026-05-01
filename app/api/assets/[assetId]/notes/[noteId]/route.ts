@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getAssetNoteById, deleteAssetNote } from '@/lib/firestore/asset-notes';
+import { getAssetNoteById, deleteAssetNote } from '@/lib/db/asset-notes';
 import { writeAuditLog } from '@/lib/audit/logger';
 
 export async function DELETE(_req: NextRequest, { params }: { params: { assetId: string; noteId: string } }) {

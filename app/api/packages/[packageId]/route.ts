@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getPackageById, updatePackage, deletePackage } from '@/lib/firestore/packages';
+import { getPackageById, updatePackage, deletePackage } from '@/lib/db/packages';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { packageUpdateSchema } from '@/lib/validations/package.schema';
 

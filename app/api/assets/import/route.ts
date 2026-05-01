@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { createAsset } from '@/lib/firestore/assets';
-import { getSubscriptionByOrg } from '@/lib/firestore/subscriptions';
+import { createAsset } from '@/lib/db/assets';
+import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { assetSchema } from '@/lib/validations/asset.schema';
 import { z } from 'zod';

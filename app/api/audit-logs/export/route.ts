@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getAuditLogs } from '@/lib/firestore/audit-logs';
+import { getAuditLogs } from '@/lib/db/audit-logs';
 
 function csvEscape(v: unknown): string {
   if (v === null || v === undefined) return '';

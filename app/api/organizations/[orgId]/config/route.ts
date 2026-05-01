@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getOrCreateOrganizationConfig } from '@/lib/firestore/organization-configs';
-import { getOrganizationById } from '@/lib/firestore/organizations';
+import { getOrCreateOrganizationConfig } from '@/lib/db/organization-configs';
+import { getOrganizationById } from '@/lib/db/organizations';
 
 export async function GET(_req: NextRequest, { params }: { params: { orgId: string } }) {
   try {

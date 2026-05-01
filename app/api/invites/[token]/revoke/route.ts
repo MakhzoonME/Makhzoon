@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getInviteByToken, revokeInvite } from '@/lib/firestore/invites';
+import { getInviteByToken, revokeInvite } from '@/lib/db/invites';
 import { writeAuditLog } from '@/lib/audit/logger';
 
 export async function POST(_req: NextRequest, { params }: { params: { token: string } }) {

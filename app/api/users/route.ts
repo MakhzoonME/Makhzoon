@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getUsers, createUser } from '@/lib/firestore/users';
+import { getUsers, createUser } from '@/lib/db/users';
 import { adminAuth } from '@/lib/firebase/admin';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { inviteUserSchema } from '@/lib/validations/user.schema';

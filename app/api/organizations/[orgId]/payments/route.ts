@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getPaymentLogs, createPaymentLog } from '@/lib/firestore/payment-logs';
-import { getSubscriptionByOrg } from '@/lib/firestore/subscriptions';
+import { getPaymentLogs, createPaymentLog } from '@/lib/db/payment-logs';
+import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { paymentLogSchema } from '@/lib/validations/payment-log.schema';
 

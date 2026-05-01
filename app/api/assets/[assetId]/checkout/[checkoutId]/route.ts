@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getCheckoutById, markReturned } from '@/lib/firestore/asset-checkouts';
-import { updateAsset } from '@/lib/firestore/assets';
+import { getCheckoutById, markReturned } from '@/lib/db/asset-checkouts';
+import { updateAsset } from '@/lib/db/assets';
 import { writeAuditLog } from '@/lib/audit/logger';
 
 export async function PATCH(_req: NextRequest, { params }: { params: { assetId: string; checkoutId: string } }) {

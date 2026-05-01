@@ -6,7 +6,7 @@ import {
   addTicketMessage,
   addTicketMessageAny,
   getSupportTicketByIdAny,
-} from '@/lib/firestore/support-tickets';
+} from '@/lib/db/support-tickets';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { ticketMessageSchema } from '@/lib/validations/support-ticket.schema';
 

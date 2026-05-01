@@ -7,8 +7,8 @@ import {
   getPendingInviteForUsername,
   createInvite,
   generateInviteToken,
-} from '@/lib/firestore/invites';
-import { getOrganizationById } from '@/lib/firestore/organizations';
+} from '@/lib/db/invites';
+import { getOrganizationById } from '@/lib/db/organizations';
 import { createInviteSchema } from '@/lib/validations/invite.schema';
 import { adminAuth } from '@/lib/firebase/admin';
 import { sendEmail } from '@/lib/email/resend';

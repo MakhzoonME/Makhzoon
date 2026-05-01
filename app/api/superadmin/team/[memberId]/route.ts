@@ -6,7 +6,7 @@ import {
   deleteSuperAdminUser,
   getSuperAdminUsers,
   MakhzoonRole,
-} from '@/lib/firestore/superadmin-users';
+} from '@/lib/db/superadmin-users';
 import { z } from 'zod';
 
 const patchSchema = z.object({

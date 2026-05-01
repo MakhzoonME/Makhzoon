@@ -5,7 +5,7 @@ import {
   getSuperAdminUsers,
   createSuperAdminUser,
   MakhzoonRole,
-} from '@/lib/firestore/superadmin-users';
+} from '@/lib/db/superadmin-users';
 import { sendEmail } from '@/lib/email/resend';
 import { z } from 'zod';
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getBackendLogs } from '@/lib/firestore/backend-logs';
+import { getBackendLogs } from '@/lib/db/backend-logs';
 import type { LogLevel } from '@/lib/logging/backend-logger';
 
 const ALLOWED_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);

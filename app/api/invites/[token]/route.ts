@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getInviteByToken } from '@/lib/firestore/invites';
-import { getOrganizationById } from '@/lib/firestore/organizations';
+import { getInviteByToken } from '@/lib/db/invites';
+import { getOrganizationById } from '@/lib/db/organizations';
 
 export async function GET(_req: NextRequest, { params }: { params: { token: string } }) {
   try {

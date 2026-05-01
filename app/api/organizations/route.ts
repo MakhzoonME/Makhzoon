@@ -4,9 +4,9 @@ import {
   getOrganizationsWithSearch,
   createOrganization,
   subdomainExists,
-} from '@/lib/firestore/organizations';
-import { createSubscription } from '@/lib/firestore/subscriptions';
-import { createInvite, generateInviteToken } from '@/lib/firestore/invites';
+} from '@/lib/db/organizations';
+import { createSubscription } from '@/lib/db/subscriptions';
+import { createInvite, generateInviteToken } from '@/lib/db/invites';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { organizationSchema } from '@/lib/validations/organization.schema';
 import { sendEmail } from '@/lib/email/resend';

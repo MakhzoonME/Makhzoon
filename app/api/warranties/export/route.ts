@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getWarranties } from '@/lib/firestore/warranties';
+import { getWarranties } from '@/lib/db/warranties';
 import { exportWarrantiesToCSV } from '@/lib/export/csv';
 import { format } from 'date-fns';
 

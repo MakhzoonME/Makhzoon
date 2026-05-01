@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getAssetById } from '@/lib/firestore/assets';
+import { getAssetById } from '@/lib/db/assets';
 import { generateAssetQRDataUrl, assetUrl } from '@/lib/qr';
 
 export async function GET(req: NextRequest, { params }: { params: { assetId: string } }) {

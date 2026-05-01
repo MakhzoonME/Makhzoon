@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getMaintenanceRecordById, deleteMaintenanceRecord } from '@/lib/firestore/maintenance-records';
+import { getMaintenanceRecordById, deleteMaintenanceRecord } from '@/lib/db/maintenance-records';
 import { writeAuditLog } from '@/lib/audit/logger';
 
 export async function DELETE(_req: NextRequest, { params }: { params: { assetId: string; recordId: string } }) {

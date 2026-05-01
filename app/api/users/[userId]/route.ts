@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
-import { getUserById, updateUser } from '@/lib/firestore/users';
+import { getUserById, updateUser } from '@/lib/db/users';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { invalidateCachedPermissions } from '@/lib/firebase/session-cache';
 import { FieldValue } from 'firebase-admin/firestore';

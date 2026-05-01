@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { updateCategory, deleteCategory } from '@/lib/firestore/organization-configs';
-import { getOrganizationById } from '@/lib/firestore/organizations';
+import { updateCategory, deleteCategory } from '@/lib/db/organization-configs';
+import { getOrganizationById } from '@/lib/db/organizations';
 import { categoryPatchSchema } from '@/lib/validations/organization-config.schema';
 import { writeAuditLog } from '@/lib/audit/logger';
 

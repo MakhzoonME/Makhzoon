@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getAssets } from '@/lib/firestore/assets';
+import { getAssets } from '@/lib/db/assets';
 import { exportAssetsToCSV } from '@/lib/export/csv';
 import { format } from 'date-fns';
 

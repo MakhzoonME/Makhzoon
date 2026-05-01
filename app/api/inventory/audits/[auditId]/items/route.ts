@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getInventoryAuditById, updateAuditItem } from '@/lib/firestore/inventory-audits';
+import { getInventoryAuditById, updateAuditItem } from '@/lib/db/inventory-audits';
 
 interface Params { params: { auditId: string } }
 

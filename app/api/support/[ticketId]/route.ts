@@ -5,7 +5,7 @@ import {
   getSupportTicketByIdAny,
   updateSupportTicket,
   updateSupportTicketAdmin,
-} from '@/lib/firestore/support-tickets';
+} from '@/lib/db/support-tickets';
 import { writeAuditLog } from '@/lib/audit/logger';
 import {
   supportTicketAdminUpdateSchema,

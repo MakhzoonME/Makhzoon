@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getAssetById } from '@/lib/firestore/assets';
-import { getAssetNotes, createAssetNote } from '@/lib/firestore/asset-notes';
+import { getAssetById } from '@/lib/db/assets';
+import { getAssetNotes, createAssetNote } from '@/lib/db/asset-notes';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { assetNoteSchema } from '@/lib/validations/asset-note.schema';
 

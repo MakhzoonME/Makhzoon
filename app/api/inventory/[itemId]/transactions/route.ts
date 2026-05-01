@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getInventoryItemById, getInventoryTransactions, applyInventoryTransaction } from '@/lib/firestore/inventory';
+import { getInventoryItemById, getInventoryTransactions, applyInventoryTransaction } from '@/lib/db/inventory';
 import { writeAuditLog } from '@/lib/audit/logger';
 import { inventoryTransactionSchema } from '@/lib/validations/inventory.schema';
 

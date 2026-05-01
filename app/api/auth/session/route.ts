@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { cookies } from 'next/headers';
-import { getSubscriptionByOrg } from '@/lib/firestore/subscriptions';
+import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
 import { invalidateCachedSession } from '@/lib/firebase/session-cache';
 
 async function verifyWithRetry(idToken: string, attempt = 0) {

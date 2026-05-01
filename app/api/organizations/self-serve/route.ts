@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
   await createSubscription({
     organizationId,
     packageId: null,
-    features: {},
+    features: { pos: false },
     notes: null,
     packageDetails: { tier: 'trial', trialDays: TRIAL_DAYS },
     startDate: now,

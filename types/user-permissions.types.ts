@@ -44,6 +44,16 @@ export interface AuditLogsPermissions {
   view: boolean;
 }
 
+export interface PosPermissions {
+  open_session: boolean;
+  close_session: boolean;
+  process_sale: boolean;
+  apply_discount: boolean;
+  issue_refund: boolean;
+  void_transaction: boolean;
+  view_reports: boolean;
+}
+
 export interface UserPermissions {
   assets: AssetPermissions;
   inventory: InventoryPermissions;
@@ -52,6 +62,7 @@ export interface UserPermissions {
   reports: ReportsPermissions;
   support: SupportPermissions;
   auditLogs: AuditLogsPermissions;
+  pos?: PosPermissions;
 }
 
 export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
@@ -160,6 +171,20 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     featureKey: 'auditLogs',
     operations: [
       { key: 'view', label: 'View Audit Logs' },
+    ],
+  },
+  {
+    key: 'pos',
+    label: 'Point of Sale',
+    featureKey: 'pos',
+    operations: [
+      { key: 'open_session',      label: 'Open Session' },
+      { key: 'close_session',     label: 'Close Session' },
+      { key: 'process_sale',      label: 'Process Sales' },
+      { key: 'apply_discount',    label: 'Apply Discounts', requiresView: true },
+      { key: 'issue_refund',      label: 'Issue Refunds', requiresView: true },
+      { key: 'void_transaction',  label: 'Void Transactions', requiresView: true },
+      { key: 'view_reports',      label: 'View Reports' },
     ],
   },
 ];

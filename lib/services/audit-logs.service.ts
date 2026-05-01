@@ -10,8 +10,8 @@ export interface AuditLogsParams {
   offset?: number;
 }
 
-export async function getOrgAuditLogs(user: AuthUser, params?: AuditLogsParams) {
+export async function getOrgAuditLogs(user: AuthUser) {
   await requirePermission(user, 'audit-logs', 'view');
-  return getAuditLogs(user.organizationId, params);
+  return getAuditLogs(user.organizationId!);
 }
 

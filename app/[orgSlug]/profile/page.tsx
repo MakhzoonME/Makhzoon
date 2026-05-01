@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
 import { useOrgSlug } from '@/hooks/useOrgSlug';
+import { useT } from '@/hooks/useT';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -132,9 +133,11 @@ export default function ProfilePage() {
 
   const photoURL = (user as (typeof user & { photoURL?: string }) | null)?.photoURL;
 
+  const { t } = useT();
+
   return (
     <div>
-      <PageHeader title="Profile" />
+      <PageHeader title={t('nav.profile')} />
 
       <div className="max-w-2xl space-y-6">
         <div className="bg-white rounded-lg border border-gray-200 p-6">

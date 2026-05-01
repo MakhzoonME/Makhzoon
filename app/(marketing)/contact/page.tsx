@@ -1,3 +1,7 @@
+'use client';
+import { useState } from 'react';
+import { toast } from '@/hooks/useToast';
+
 export default function ContactPage() {
   const contacts = [
     { label: 'Sales', email: 'sales@makhzoon.com', desc: 'Pricing, demos, procurement questions' },
@@ -5,6 +9,32 @@ export default function ContactPage() {
     { label: 'Security', email: 'security@makhzoon.com', desc: 'Vulnerability disclosure, compliance docs' },
     { label: 'Press', email: 'press@makhzoon.com', desc: 'Media inquiries and press kit' },
   ];
+
+  const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', organization: '', assetCount: '', message: '' });
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.message) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error('Failed to send message');
+      toast.success('Message sent! We'll be in touch soon.');
+      setFormData({ firstName: '', lastName: '', email: '', organization: '', assetCount: '', message: '' });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send message');
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <section style={{ padding: '80px 32px' }}>
@@ -37,26 +67,29 @@ export default function ContactPage() {
         <div style={{ background: '#fff', border: '1px solid var(--border-default)', borderRadius: 'var(--r-lg)', padding: 32, height: 'fit-content', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 6, color: 'var(--gray-900)' }}>Send a message</div>
           <div style={{ fontSize: 13.5, color: 'var(--gray-500)', marginBottom: 22 }}>One business day, usually faster.</div>
-          <form style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <label style={{ fontSize: 12.5, fontWeight: 500, marginBottom: 6, display: 'block', color: 'var(--gray-700)' }}>First name</label>
-                <input placeholder="Layla" style={{ width: '100%', height: 36, border: '1px solid var(--border-default)', borderRadius: 'var(--r-md)', padding: '0 12px', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                <input required placeholder="Layla" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} style={{ width: '100%', height: 36, border: '1px solid var(--border-default)', borderRadius: 'var(--r-md)', padding: '0 12px', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
               </div>
               <div>
                 <label style={{ fontSize: 12.5, fontWeight: 500, marginBottom: 6, display: 'block', color: 'var(--gray-700)' }}>Last name</label>
-                <input placeholder="Hadid" style={{ width: '100%', height: 36, border: '1px solid var(--border-default)', borderRadius: 'var(--r-md)', padding: '0 12px', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                <input required placeholder="Hadid" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} style={{ width: '100%', height: 36, border: '1px solid var(--border-default)', borderRadius: 'var(--r-md)', padding: '0 12px', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
               </div>
             </div>
-            {[['Work email', 'layla@acme.com'], ['Organization', 'Acme Corp']].map(([label, ph]) => (
-              <div key={label}>
-                <label style={{ fontSize: 12.5, fontWeight: 500, marginBottom: 6, display: 'block', color: 'var(--gray-700)' }}>{label}</label>
-                <input placeholder={ph} style={{ width: '100%', height: 36, border: '1px solid var(--border-default)', borderRadius: 'var(--r-md)', padding: '0 12px', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
-              </div>
-            ))}
+            <div>
+              <label style={{ fontSize: 12.5, fontWeight: 500, marginBottom: 6, display: 'block', color: 'var(--gray-700)' }}>Work email</label>
+              <input required type="email" placeholder="layla@acme.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} style={{ width: '100%', height: 36, border: '1px solid var(--border-default)', borderRadius: 'var(--r-md)', padding: '0 12px', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 12.5, fontWeight: 500, marginBottom: 6, display: 'block', color: 'var(--gray-700)' }}>Organization</label>
+              <input placeholder="Acme Corp" value={formData.organization} onChange={(e) => setFormData({ ...formData, organization: e.target.value })} style={{ width: '100%', height: 36, border: '1px solid var(--border-default)', borderRadius: 'var(--r-md)', padding: '0 12px', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+            </div>
             <div>
               <label style={{ fontSize: 12.5, fontWeight: 500, marginBottom: 6, display: 'block', color: 'var(--gray-700)' }}>Approximate asset count</label>
-              <select style={{ width: '100%', height: 36, border: '1px solid var(--border-default)', borderRadius: 'var(--r-md)', padding: '0 12px', fontSize: 14, fontFamily: 'inherit', background: '#fff', color: 'var(--gray-700)', outline: 'none' }}>
+              <select value={formData.assetCount} onChange={(e) => setFormData({ ...formData, assetCount: e.target.value })} style={{ width: '100%', height: 36, border: '1px solid var(--border-default)', borderRadius: 'var(--r-md)', padding: '0 12px', fontSize: 14, fontFamily: 'inherit', background: '#fff', color: 'var(--gray-700)', outline: 'none' }}>
+                <option value="">Select...</option>
                 <option>Less than 250</option>
                 <option>250 – 1,000</option>
                 <option>1,000 – 5,000</option>
@@ -66,13 +99,13 @@ export default function ContactPage() {
             </div>
             <div>
               <label style={{ fontSize: 12.5, fontWeight: 500, marginBottom: 6, display: 'block', color: 'var(--gray-700)' }}>Message</label>
-              <textarea rows={4} placeholder="What problem are you trying to solve?" style={{ width: '100%', border: '1px solid var(--border-default)', borderRadius: 'var(--r-md)', padding: 12, fontSize: 14, fontFamily: 'inherit', resize: 'vertical', outline: 'none', color: 'var(--gray-900)', boxSizing: 'border-box' }} />
+              <textarea required rows={4} placeholder="What problem are you trying to solve?" value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })} style={{ width: '100%', border: '1px solid var(--border-default)', borderRadius: 'var(--r-md)', padding: 12, fontSize: 14, fontFamily: 'inherit', resize: 'vertical', outline: 'none', color: 'var(--gray-900)', boxSizing: 'border-box' }} />
             </div>
-            <button type="submit" style={{ width: '100%', height: 44, borderRadius: 'var(--r-md)', background: 'var(--primary-600)', color: '#fff', border: 'none', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginTop: 6 }}>
-              Send message
+            <button type="submit" disabled={submitting} style={{ width: '100%', height: 44, borderRadius: 'var(--r-md)', background: 'var(--primary-600)', color: '#fff', border: 'none', fontSize: 15, fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer', marginTop: 6, opacity: submitting ? 0.6 : 1 }}>
+              {submitting ? 'Sending...' : 'Send message'}
             </button>
             <div style={{ fontSize: 11.5, color: 'var(--gray-500)', textAlign: 'center' }}>
-              By submitting, you agree to our <a href="#" style={{ color: 'var(--primary-600)' }}>Privacy Policy</a>.
+              By submitting, you agree to our <a href="/privacy" style={{ color: 'var(--primary-600)', textDecoration: 'none' }}>Privacy Policy</a>.
             </div>
           </form>
         </div>

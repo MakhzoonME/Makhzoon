@@ -3,8 +3,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-// TODO: Re-enable when Cloudflare Turnstile is ready for production
-// import { Turnstile } from '@marsidev/react-turnstile';
 import { auth } from '@/lib/firebase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -84,8 +82,6 @@ export default function LoginPage() {
     } catch { /* sessionStorage unavailable */ }
   }, []);
 
-  // TODO: Re-enable when Cloudflare Turnstile is ready for production
-  // const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   // Email/password
   const [email, setEmail] = useState('');
@@ -404,13 +400,6 @@ export default function LoginPage() {
                 </motion.form>
               )}
             </AnimatePresence>
-            {/* TODO: Re-enable when Cloudflare Turnstile is ready for production */}
-            {/* <Turnstile
-              siteKey={process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY!}
-              onSuccess={(token) => setTurnstileToken(token)}
-              onExpire={() => setTurnstileToken(null)}
-              options={{ size: 'invisible' }}
-            /> */}
           </motion.div>
         </motion.div>
       </motion.div>

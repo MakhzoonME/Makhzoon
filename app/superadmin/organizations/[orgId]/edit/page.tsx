@@ -85,6 +85,7 @@ export default function EditOrganizationPage({ params }: { params: { orgId: stri
       qc.invalidateQueries({ queryKey: ['org', orgId] });
       qc.invalidateQueries({ queryKey: ['organizations'] });
       qc.invalidateQueries({ queryKey: ['all-orgs-usage'] });
+      qc.invalidateQueries({ queryKey: ['org-info-self'] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to update');
     } finally {

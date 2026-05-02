@@ -92,7 +92,7 @@ export default function RequestsPage() {
     if (urlPageSize !== pageSize) setPageSize(urlPageSize);
     if (urlSortBy !== sortBy) setSortBy(urlSortBy);
     if (urlSortDir !== sortDir) setSortDir(urlSortDir);
-  }, [searchParams]);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleDecision(requestId: string, action: 'approve' | 'reject') {
     setProcessing(requestId);

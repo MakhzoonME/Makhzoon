@@ -110,7 +110,7 @@ export default function SupportPage() {
     if (urlPageSize !== pageSize) setPageSize(urlPageSize);
     if (urlSortBy !== sortBy) setSortBy(urlSortBy);
     if (urlSortDir !== sortDir) setSortDir(urlSortDir);
-  }, [searchParams]);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function syncAllToUrl(next: Partial<Record<'orgId' | 'status' | 'priority' | 'page' | 'pageSize' | 'sortBy' | 'sortDir', string>>) {
     updateUrl({

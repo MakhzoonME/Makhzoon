@@ -127,7 +127,7 @@ export default function SuperAdminPage() {
     if (urlPageSize !== pageSize) setPageSize(urlPageSize);
     if (urlSortBy !== sortBy) setSortBy(urlSortBy);
     if (urlSortDir !== sortDir) setSortDir(urlSortDir);
-  }, [searchParams]);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function syncAllToUrl(next: Partial<Record<'search' | 'category' | 'page' | 'pageSize' | 'sortBy' | 'sortDir', string>>) {
     updateUrl({

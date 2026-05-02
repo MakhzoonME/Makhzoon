@@ -75,7 +75,7 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
   }, [availableAssets, warranty]);
 
   const isLoadingData = assetsLoading || warrantiesLoading;
-  const noAssetsAvailable = !isLoadingData && availableAssets.length === 0 && !warranty;
+  const noAssetsAvailable = !isLoadingData && assetOptions.length === 0 && !warranty;
 
   const form = useForm<WarrantyFormData>({
     resolver: zodResolver(warrantySchema),
@@ -172,13 +172,13 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {availableAssets.length === 0 ? (
+                {assetOptions.length === 0 ? (
                   <div className="flex items-center gap-2 px-3 py-4 text-sm text-gray-500">
                     <AlertTriangleSVG />
                     No assets available
                   </div>
                 ) : (
-                  availableAssets.map((a) => (
+                  assetOptions.map((a) => (
                     <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                   ))
                 )}

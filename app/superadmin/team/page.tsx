@@ -172,7 +172,7 @@ export default function SuperAdminTeamPage() {
     if (urlSearch !== searchInput) setSearchInput(urlSearch);
     if (urlSortBy !== sortBy) setSortBy(urlSortBy);
     if (urlSortDir !== sortDir) setSortDir(urlSortDir);
-  }, [searchParams]);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function syncAllToUrl(next: Partial<Record<'search' | 'sortBy' | 'sortDir', string>>) {
     updateUrl({

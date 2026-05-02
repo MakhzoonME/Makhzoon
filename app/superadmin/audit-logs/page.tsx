@@ -91,7 +91,7 @@ export default function AuditLogsPage() {
     if (urlDateFrom !== dateFrom) setDateFrom(urlDateFrom);
     if (urlDateTo !== dateTo) setDateTo(urlDateTo);
     if (urlPage !== page) setPage(urlPage);
-  }, [searchParams]);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function syncAllToUrl(next: Partial<Record<'orgId' | 'userId' | 'action' | 'dateFrom' | 'dateTo' | 'page', string>>) {
     updateUrl({
@@ -105,19 +105,15 @@ export default function AuditLogsPage() {
   }
 
   function goToPage(newPage: number) {
-    setPage(newPage);
-    syncAllToUrl({ page: String(newPage) });
-  }
-
-  function handleNext() {
-    if (nextCursor) {
+    if (newPage > page && nextCursor) {
       setCursors((prev) => {
         const next = [...prev];
         next[page] = nextCursor;
         return next;
       });
-      goToPage(page + 1);
     }
+    setPage(newPage);
+    syncAllToUrl({ page: String(newPage) });
   }
 
   function handlePrev() {

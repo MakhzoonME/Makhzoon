@@ -104,7 +104,7 @@ export default function InventoryPage() {
     if (urlPageSize !== pageSize) setPageSize(urlPageSize);
     if (urlSortBy !== sortBy) setSortBy(urlSortBy);
     if (urlSortDir !== sortDir) setSortDir(urlSortDir);
-  }, [searchParams]);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 

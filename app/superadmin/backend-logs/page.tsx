@@ -120,7 +120,7 @@ export default function BackendLogsPage() {
     if (urlUserSearch !== userSearch) setUserSearch(urlUserSearch);
     if (urlDateFrom !== dateFrom) setDateFrom(urlDateFrom);
     if (urlDateTo !== dateTo) setDateTo(urlDateTo);
-  }, [searchParams]);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateUrl = useCallback((params: Record<string, string>) => {
     const url = syncFiltersToUrl(pathname, params);

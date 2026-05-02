@@ -98,7 +98,7 @@ export default function EditOrganizationPage({ params }: { params: { orgId: stri
     <div>
       <PageHeader
         title="Edit Organization"
-        description={org?.subdomain ?? '—'}
+        description={`ID: ${org?.subdomain ?? '—'}`}
         breadcrumb={[
           { label: 'Organizations', href: '/superadmin' },
           { label: 'Edit', href: '' },

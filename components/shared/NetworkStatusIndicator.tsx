@@ -33,10 +33,10 @@ function isSlowConnection(): boolean {
 
 async function pingServer(): Promise<boolean> {
   try {
-    const res = await fetch('/api/ping', {
+    const res = await fetch(`/api/ping?_=${Date.now()}`, {
       method: 'GET',
       cache: 'no-store',
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(3000),
     });
     return res.ok;
   } catch {
@@ -143,11 +143,9 @@ export function NetworkStatusIndicator({ variant = 'ghost-light', className }: P
   useEffect(() => {
     async function checkConnectivity() {
       if (typeof navigator === 'undefined') return;
-      if (!navigator.onLine) {
-        setStatus('offline');
-        return;
-      }
+
       const reachable = await pingServer();
+
       if (!reachable) {
         setStatus('offline');
       } else if (isSlowConnection()) {

@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
 
     let orgSlug: string | null = null;
     let features: Record<string, boolean> = {};
+    let orgSuspended = false;
     const orgId = decoded.organizationId as string | undefined;
     if (orgId) {
       const [orgDoc, subscription] = await Promise.all([
@@ -83,6 +84,16 @@ export async function POST(req: NextRequest) {
       ]);
       if (orgDoc.exists) orgSlug = (orgDoc.data()?.subdomain as string) ?? null;
       if (subscription?.features) features = subscription.features as Record<string, boolean>;
+      if (subscription?.status === 'SUSPENDED' && decoded.role !== 'super_admin') {
+        orgSuspended = true;
+      }
+    }
+
+    if (orgSuspended) {
+      return NextResponse.json(
+        { error: 'Organization suspended', orgSuspended: true },
+        { status: 403 }
+      );
     }
 
     let permissions = null;

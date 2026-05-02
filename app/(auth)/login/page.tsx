@@ -11,6 +11,7 @@ import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { buildOrgPath, buildSuperAdminPath } from '@/lib/utils/tenant-url';
 import { getFirstAccessiblePath } from '@/lib/nav';
 import { cn } from '@/lib/utils/cn';
+import { toast } from '@/hooks/ui';
 
 /* ── Icons ────────────────────────────────────────────────────── */
 function EyeSVG() {
@@ -108,7 +109,12 @@ export default function LoginPage() {
       body: JSON.stringify({ idToken, turnstileToken: token ?? '' }),
     });
     const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(body.error || 'Session creation failed');
+    if (!res.ok) {
+      if (body.orgSuspended) {
+        toast.error('This workspace is suspended. Please contact support to restore access.');
+      }
+      throw new Error(body.error || 'Session creation failed');
+    }
 
     const { role, orgSlug, features = {}, permissions = null } = body;
     if (SUPERADMIN_ROLES.has(role)) {

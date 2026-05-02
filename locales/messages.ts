@@ -367,12 +367,12 @@ const en = {
 
   // ── Superadmin organizations ──────────────────────────────────────
   'orgs.createOrg':            'Create Organization',
-  'orgs.searchPlaceholder':    'Search name, subdomain, email…',
+  'orgs.searchPlaceholder':    'Search name, workspace ID, email…',
   'orgs.allCategories':        'All categories',
   'orgs.clear':                'Clear',
   'orgs.noMatch':              'No organizations match the filters.',
   'orgs.name':                 'Name',
-  'orgs.subdomain':            'Subdomain',
+  'orgs.workspaceId':          'Workspace ID',
   'orgs.category':             'Category',
   'orgs.subscription':         'Subscription',
   'orgs.created':              'Created',
@@ -467,7 +467,7 @@ const en = {
 
   // ── Settings page ────────────────────────────────────────────────
   'settings.orgName':          'Organization Name',
-  'settings.subdomain':        'Subdomain',
+  'settings.workspaceId':      'Workspace ID',
   'settings.contactEmail':     'Contact Email',
   'settings.description':      'Description',
   'settings.category':         'Category',
@@ -846,12 +846,12 @@ const ar: Record<keyof typeof en, string> = {
 
   // ── Superadmin organizations ──────────────────────────────────────
   'orgs.createOrg':            'إنشاء منظمة',
-  'orgs.searchPlaceholder':    'بحث بالاسم أو النطاق أو البريد...',
+  'orgs.searchPlaceholder':    'بحث بالاسم أو معرف مساحة العمل أو البريد...',
   'orgs.allCategories':        'جميع الفئات',
   'orgs.clear':                'مسح',
   'orgs.noMatch':              'لا توجد منظمات تطابق الفلاتر.',
   'orgs.name':                 'الاسم',
-  'orgs.subdomain':            'النطاق الفرعي',
+  'orgs.workspaceId':          'معرف مساحة العمل',
   'orgs.category':             'الفئة',
   'orgs.subscription':         'الاشتراك',
   'orgs.created':              'تاريخ الإنشاء',
@@ -946,7 +946,7 @@ const ar: Record<keyof typeof en, string> = {
 
   // ── Settings page ────────────────────────────────────────────────
   'settings.orgName':        'اسم المنظمة',
-  'settings.subdomain':      'النطاق الفرعي',
+  'settings.workspaceId':    'معرف مساحة العمل',
   'settings.contactEmail':   'البريد الإلكتروني للتواصل',
   'settings.description':    'الوصف',
   'settings.category':       'الفئة',

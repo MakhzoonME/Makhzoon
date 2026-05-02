@@ -13,6 +13,7 @@ export { LocaleProvider } from './LocaleProvider';
 export { PageHeader } from './PageHeader';
 export { QueryProvider } from './QueryProvider';
 export { StatusBadge } from './StatusBadge';
+export { SubscriptionGate, useIsSubscriptionRestricted } from './SubscriptionGate';
 export { ThemeProvider } from './ThemeProvider';
 export { ThemeToggle } from './ThemeToggle';
 export { AppToastProvider as ToastProvider } from './ToastProvider';

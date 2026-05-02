@@ -31,7 +31,7 @@ export default function OrganizationInfoPage() {
         <CardContent className="p-6">
           <dl className="space-y-0">
             <InfoRow label={t('settings.orgName')}        value={org?.name} />
-            <InfoRow label={t('settings.subdomain')}      value={org?.subdomain} />
+            <InfoRow label={t('settings.workspaceId')}    value={org?.subdomain} />
             <InfoRow label={t('settings.contactEmail')}   value={org?.contactEmail} />
             <InfoRow label={t('settings.description')}    value={org?.description} />
             <InfoRow label={t('settings.category')}       value={org?.category} />

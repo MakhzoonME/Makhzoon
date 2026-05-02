@@ -164,7 +164,7 @@ export default function SignupPage() {
               </motion.div>
 
               <motion.div variants={item} className="space-y-1.5">
-                <Label htmlFor="subdomain">Workspace URL</Label>
+                <Label htmlFor="subdomain">Workspace ID</Label>
                 <div className="flex items-center rounded-md border border-gray-300 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 overflow-hidden transition-colors">
                   <input
                     id="subdomain"
@@ -177,7 +177,6 @@ export default function SignupPage() {
                     maxLength={40}
                     className="flex-1 px-3 py-2 text-sm outline-none bg-white"
                   />
-                  <span className="px-3 py-2 text-xs text-gray-500 bg-gray-50 border-l border-gray-200">.makhzoon.me</span>
                 </div>
               </motion.div>
 

@@ -65,7 +65,7 @@ export default function SuperAdminPage() {
     },
     {
       key: 'subdomain',
-      header: t('orgs.subdomain'),
+      header: t('orgs.workspaceId'),
       render: (r) => (
         <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">{r.organization.subdomain}</span>
       ),

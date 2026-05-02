@@ -6,7 +6,7 @@ import { useRequests } from '@/hooks/requests';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
-import { StatusBadge } from '@/components/shared/StatusBadge';
+import { StatusBadge, SubscriptionGate } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Request } from '@/types';
 import { formatDate } from '@/lib/utils/date';
@@ -81,12 +81,16 @@ export default function RequestsPage() {
       key: 'actions', header: t('col.actions'),
       render: (r) => isAdmin && r.status === 'PENDING' ? (
         <div className="flex gap-1">
-          <Button size="sm" variant="ghost" className="text-green-600 hover:bg-green-50" disabled={processing === r.id} onClick={(e) => { e.stopPropagation(); handleDecision(r.id, 'approve'); }}>
-            <CheckSVG />
-          </Button>
-          <Button size="sm" variant="ghost" className="text-red-500 hover:bg-red-50" disabled={processing === r.id} onClick={(e) => { e.stopPropagation(); handleDecision(r.id, 'reject'); }}>
-            <XSVG />
-          </Button>
+          <SubscriptionGate>
+            <Button size="sm" variant="ghost" className="text-green-600 hover:bg-green-50" disabled={processing === r.id} onClick={(e) => { e.stopPropagation(); handleDecision(r.id, 'approve'); }}>
+              <CheckSVG />
+            </Button>
+          </SubscriptionGate>
+          <SubscriptionGate>
+            <Button size="sm" variant="ghost" className="text-red-500 hover:bg-red-50" disabled={processing === r.id} onClick={(e) => { e.stopPropagation(); handleDecision(r.id, 'reject'); }}>
+              <XSVG />
+            </Button>
+          </SubscriptionGate>
         </div>
       ) : null
     },

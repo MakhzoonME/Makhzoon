@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Asset } from '@/types';
 import { formatDate } from '@/lib/utils/date';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { ConfirmDialog, SubscriptionGate } from '@/components/shared';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -64,21 +64,27 @@ export default function AssetsPage() {
           {isAdmin ? (
             <>
               {a.status !== 'Retired' && (
-                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditTarget(a); setDrawerOpen(true); }}>
-                  <Pencil className="w-3.5 h-3.5" />
-                </Button>
+                <SubscriptionGate>
+                  <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditTarget(a); setDrawerOpen(true); }}>
+                    <Pencil className="w-3.5 h-3.5" />
+                  </Button>
+                </SubscriptionGate>
               )}
               {a.status === 'Active' && (
-                <Button size="sm" variant="ghost" className="text-amber-500 hover:text-amber-600 hover:bg-amber-50" onClick={(e) => { e.stopPropagation(); setActionTarget(a); }}
-                  title={t('assets.retire')}>
-                  <ArchiveX className="w-3.5 h-3.5" />
-                </Button>
+                <SubscriptionGate>
+                  <Button size="sm" variant="ghost" className="text-amber-500 hover:text-amber-600 hover:bg-amber-50" onClick={(e) => { e.stopPropagation(); setActionTarget(a); }}
+                    title={t('assets.retire')}>
+                    <ArchiveX className="w-3.5 h-3.5" />
+                  </Button>
+                </SubscriptionGate>
               )}
               {a.status === 'Retired' && (
-                <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setActionTarget(a); }}
-                  title={t('assets.deleteBtn')}>
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
+                <SubscriptionGate>
+                  <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setActionTarget(a); }}
+                    title={t('assets.deleteBtn')}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </SubscriptionGate>
               )}
             </>
           ) : (
@@ -112,12 +118,16 @@ export default function AssetsPage() {
         title={t('nav.assets')}
         actions={isAdmin ? (
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
-              <Upload className="w-4 h-4" /><span className="ms-1">{t('assets.importCsv')}</span>
-            </Button>
-            <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
-              <Plus className="w-4 h-4" /><span className="ms-1">{t('assets.addAsset')}</span>
-            </Button>
+            <SubscriptionGate>
+              <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+                <Upload className="w-4 h-4" /><span className="ms-1">{t('assets.importCsv')}</span>
+              </Button>
+            </SubscriptionGate>
+            <SubscriptionGate>
+              <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
+                <Plus className="w-4 h-4" /><span className="ms-1">{t('assets.addAsset')}</span>
+              </Button>
+            </SubscriptionGate>
           </div>
         ) : undefined}
       />
@@ -136,7 +146,11 @@ export default function AssetsPage() {
             </SelectContent>
           </Select>
         }
-        actions={isAdmin ? <ExportButton exportUrl="/api/assets/export" filename={`assets-${format(new Date(), 'yyyy-MM-dd')}.csv`} /> : undefined}
+        actions={isAdmin ? (
+          <SubscriptionGate>
+            <ExportButton exportUrl="/api/assets/export" filename={`assets-${format(new Date(), 'yyyy-MM-dd')}.csv`} />
+          </SubscriptionGate>
+        ) : undefined}
       />
 
       <div className="bg-white rounded-lg border border-gray-200">

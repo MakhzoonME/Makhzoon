@@ -5,6 +5,7 @@ import { useInvites } from '@/hooks/users';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
+import { SubscriptionGate } from '@/components/shared';
 import { OrgUser, Invite } from '@/types';
 import { formatDate } from '@/lib/utils/date';
 import { InviteUserModal } from '@/components/users/InviteUserModal';
@@ -222,7 +223,11 @@ export default function UsersPage() {
         title={t('users.title')}
         actions={
           canInvite
-            ? <Button size="sm" onClick={() => setShowInvite(true)}><PlusSVG /><span className="ml-1">{t('users.inviteUser')}</span></Button>
+            ? (
+              <SubscriptionGate>
+                <Button size="sm" onClick={() => setShowInvite(true)}><PlusSVG /><span className="ml-1">{t('users.inviteUser')}</span></Button>
+              </SubscriptionGate>
+            )
             : undefined
         }
       />
@@ -271,36 +276,42 @@ export default function UsersPage() {
                           <div className="flex items-center justify-end gap-1">
                             {u.status !== 'deactivated' && (
                               <>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-gray-500 hover:text-indigo-600 hover:bg-indigo-50"
-                                  onClick={() => openEditRole(u)}
-                                  title={t('users.editUser')}
-                                >
-                                  <EditSVG />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-amber-500 hover:text-amber-600 hover:bg-amber-50"
-                                  onClick={() => setDeleteTarget({ user: u, permanent: false })}
-                                  title={t('users.deactivate')}
-                                >
-                                  <Trash2SVG />
-                                </Button>
+                                <SubscriptionGate>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-gray-500 hover:text-indigo-600 hover:bg-indigo-50"
+                                    onClick={() => openEditRole(u)}
+                                    title={t('users.editUser')}
+                                  >
+                                    <EditSVG />
+                                  </Button>
+                                </SubscriptionGate>
+                                <SubscriptionGate>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-amber-500 hover:text-amber-600 hover:bg-amber-50"
+                                    onClick={() => setDeleteTarget({ user: u, permanent: false })}
+                                    title={t('users.deactivate')}
+                                  >
+                                    <Trash2SVG />
+                                  </Button>
+                                </SubscriptionGate>
                               </>
                             )}
                             {u.status === 'deactivated' && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                                onClick={() => setDeleteTarget({ user: u, permanent: true })}
-                                title={t('users.deleteUser')}
-                              >
-                                <Trash2SVG />
-                              </Button>
+                              <SubscriptionGate>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                  onClick={() => setDeleteTarget({ user: u, permanent: true })}
+                                  title={t('users.deleteUser')}
+                                >
+                                  <Trash2SVG />
+                                </Button>
+                              </SubscriptionGate>
                             )}
                           </div>
                         )}
@@ -319,16 +330,18 @@ export default function UsersPage() {
                     <td className="px-4 py-3 text-gray-400 text-xs">{t('users.expires')} {formatDate(inv.expiresAt)}</td>
                     <td className="px-4 py-3 text-right">
                       {isAdmin && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-500 hover:text-red-600 hover:bg-red-50 gap-1"
-                          disabled={revoking === inv.token}
-                          onClick={() => handleRevoke(inv)}
-                        >
-                          <MailXSVG />
-                          {revoking === inv.token ? t('users.revoking') : t('users.revokeInvite')}
-                        </Button>
+                        <SubscriptionGate>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-500 hover:text-red-600 hover:bg-red-50 gap-1"
+                            disabled={revoking === inv.token}
+                            onClick={() => handleRevoke(inv)}
+                          >
+                            <MailXSVG />
+                            {revoking === inv.token ? t('users.revoking') : t('users.revokeInvite')}
+                          </Button>
+                        </SubscriptionGate>
                       )}
                     </td>
                   </tr>

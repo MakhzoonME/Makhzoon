@@ -6,9 +6,9 @@ export const organizationSchema = z
     name: z.string().min(2, 'Name must be at least 2 characters'),
     subdomain: z
       .string()
-      .min(2, 'Subdomain must be at least 2 characters')
-      .max(50, 'Subdomain must be at most 50 characters')
-      .regex(/^[a-z0-9-]+$/, 'Subdomain can only contain lowercase letters, numbers, and hyphens'),
+      .min(2, 'Workspace ID must be at least 2 characters')
+      .max(50, 'Workspace ID must be at most 50 characters')
+      .regex(/^[a-z0-9-]+$/, 'Workspace ID can only contain lowercase letters, numbers, and hyphens'),
     contactEmail: z.string().email('Invalid email address'),
     description: z.string().max(500).nullable().optional(),
     category: z.enum(ORG_CATEGORIES).nullable().optional(),

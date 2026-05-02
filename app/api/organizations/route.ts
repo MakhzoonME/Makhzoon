@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     const data = parsed.data;
     const exists = await subdomainExists(data.subdomain);
-    if (exists) return NextResponse.json({ error: 'Subdomain already taken' }, { status: 409 });
+    if (exists) return NextResponse.json({ error: 'Workspace ID already taken' }, { status: 409 });
 
     const orgId = await createOrganization({
       name: data.name,

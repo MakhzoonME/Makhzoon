@@ -11,7 +11,7 @@ import { FormDrawer } from '@/components/shared/FormDrawer';
 import { InventoryItemForm } from '@/components/inventory/InventoryItemForm';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { ConfirmDialog, SubscriptionGate } from '@/components/shared';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/ui';
@@ -92,12 +92,16 @@ export default function InventoryPage() {
         <div className="flex items-center gap-1">
           {isAdmin && (
             <>
-              <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditTarget(i); setDrawerOpen(true); }}>
-                <EditSVG />
-              </Button>
-              <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setDeleteTarget(i); }}>
-                <Trash2SVG />
-              </Button>
+              <SubscriptionGate>
+                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditTarget(i); setDrawerOpen(true); }}>
+                  <EditSVG />
+                </Button>
+              </SubscriptionGate>
+              <SubscriptionGate>
+                <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setDeleteTarget(i); }}>
+                  <Trash2SVG />
+                </Button>
+              </SubscriptionGate>
             </>
           )}
           <Button size="sm" variant="ghost" className="text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50" onClick={(e) => { e.stopPropagation(); setReqTarget(i); }}>
@@ -136,9 +140,11 @@ export default function InventoryPage() {
             <Button size="sm" variant="outline" onClick={() => router.push(`/${orgSlug}/inventory/audits`)}>
               <ClipboardCheckSVG /> {t('inventory.audits')}
             </Button>
-            <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
-              <PlusSVG /><span className="ml-1">{t('inventory.addItem')}</span>
-            </Button>
+            <SubscriptionGate>
+              <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
+                <PlusSVG /><span className="ml-1">{t('inventory.addItem')}</span>
+              </Button>
+            </SubscriptionGate>
           </div>
         ) : (
           <Button size="sm" variant="outline" onClick={() => router.push(`/${orgSlug}/inventory/audits`)}>

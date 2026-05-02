@@ -69,7 +69,7 @@ export default function NewOrganizationPage() {
 
             <FormField control={form.control} name="subdomain" render={({ field }) => (
               <FormItem>
-                <FormLabel>Subdomain *</FormLabel>
+                <FormLabel>Workspace ID *</FormLabel>
                 <FormControl>
                   <Input
                     {...field}

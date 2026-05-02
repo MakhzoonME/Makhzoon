@@ -19,7 +19,7 @@ function Trash2SVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fi
 function CheckSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M3 8l4 4 6-7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
 import { FormDrawer } from '@/components/shared/FormDrawer';
 import { WarrantyForm } from '@/components/warranties/WarrantyForm';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { ConfirmDialog, SubscriptionGate } from '@/components/shared';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -51,8 +51,12 @@ export default function WarrantiesPage() {
         <div className="flex gap-1">
           {isAdmin ? (
             <>
-              <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditTarget(w); setDrawerOpen(true); }}><EditSVG /></Button>
-              <Button size="sm" variant="ghost" className="text-red-500 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setDeleteTarget(w); }}><Trash2SVG /></Button>
+              <SubscriptionGate>
+                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditTarget(w); setDrawerOpen(true); }}><EditSVG /></Button>
+              </SubscriptionGate>
+              <SubscriptionGate>
+                <Button size="sm" variant="ghost" className="text-red-500 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setDeleteTarget(w); }}><Trash2SVG /></Button>
+              </SubscriptionGate>
             </>
           ) : (
             <Button size="sm" variant="ghost" onClick={() => router.push(`/${orgSlug}/assets/${w.assetId}`)}>{t('warranties.viewAsset')}</Button>
@@ -78,10 +82,18 @@ export default function WarrantiesPage() {
     <div>
       <PageHeader
         title={t('nav.warranties')}
-        actions={isAdmin ? <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}><PlusSVG /><span className="ml-1">{t('warranties.addWarranty')}</span></Button> : undefined}
+        actions={isAdmin ? (
+          <SubscriptionGate>
+            <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}><PlusSVG /><span className="ml-1">{t('warranties.addWarranty')}</span></Button>
+          </SubscriptionGate>
+        ) : undefined}
       />
       <FilterBar
-        actions={isAdmin ? <ExportButton exportUrl="/api/warranties/export" filename={`warranties-${format(new Date(), 'yyyy-MM-dd')}.csv`} /> : undefined}
+        actions={isAdmin ? (
+          <SubscriptionGate>
+            <ExportButton exportUrl="/api/warranties/export" filename={`warranties-${format(new Date(), 'yyyy-MM-dd')}.csv`} />
+          </SubscriptionGate>
+        ) : undefined}
       />
       <div className="bg-white rounded-lg border border-gray-200">
         <DataTable data={warranties} columns={columns} isLoading={isLoading} emptyMessage={t('warranties.noWarranties')} keyExtractor={(w) => w.id} />

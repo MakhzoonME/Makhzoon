@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   if (existingAuth) return NextResponse.json({ error: 'An account already exists for this email' }, { status: 409 });
 
   if (await subdomainExists(normalizedSub)) {
-    return NextResponse.json({ error: 'That subdomain is already taken' }, { status: 409 });
+    return NextResponse.json({ error: 'That workspace ID is already taken' }, { status: 409 });
   }
 
   const newUser = await adminAuth.createUser({

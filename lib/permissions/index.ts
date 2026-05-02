@@ -22,3 +22,10 @@ export function hasPermission(
 export function hasModuleAccess(user: AuthUser, module: keyof UserPermissions): boolean {
   return hasPermission(user, module, 'view');
 }
+
+/** Resolve a dot-separated key like 'settings.orgInfo' against user.permissions */
+export function hasPermByKey(user: AuthUser, permissionKey: string): boolean {
+  const [module, operation] = permissionKey.split('.');
+  if (!module || !operation) return false;
+  return hasPermission(user, module as keyof UserPermissions, operation);
+}

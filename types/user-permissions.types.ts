@@ -54,6 +54,13 @@ export interface PosPermissions {
   view_reports: boolean;
 }
 
+export interface SettingsPermissions {
+  view: boolean;
+  orgInfo: boolean;
+  subscription: boolean;
+  users: boolean;
+}
+
 export interface UserPermissions {
   assets: AssetPermissions;
   inventory: InventoryPermissions;
@@ -63,6 +70,7 @@ export interface UserPermissions {
   support: SupportPermissions;
   auditLogs: AuditLogsPermissions;
   pos?: PosPermissions;
+  settings: SettingsPermissions;
 }
 
 export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
@@ -73,6 +81,7 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   reports:   { view: true  },
   support:   { view: true,  create: true  },
   auditLogs: { view: true  },
+  settings:  { view: true,  orgInfo: true,  subscription: true,  users: true  },
 };
 
 export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
@@ -83,6 +92,7 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   reports:   { view: false },
   support:   { view: true,  create: true },
   auditLogs: { view: false },
+  settings:  { view: false, orgInfo: false, subscription: false, users: false },
 };
 
 export interface ModuleOperationConfig {
@@ -185,6 +195,15 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'issue_refund',      label: 'Issue Refunds', requiresView: true },
       { key: 'void_transaction',  label: 'Void Transactions', requiresView: true },
       { key: 'view_reports',      label: 'View Reports' },
+    ],
+  },
+  {
+    key: 'settings',
+    label: 'Settings',
+    operations: [
+      { key: 'orgInfo',      label: 'Organization Info', requiresView: true },
+      { key: 'subscription', label: 'Subscription',      requiresView: true },
+      { key: 'users',        label: 'Users',             requiresView: true },
     ],
   },
 ];

@@ -12,6 +12,7 @@ import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { useOrgSlug } from '@/hooks/ui';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
+import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
 import { useT } from '@/hooks/ui';
 
 /* ── Inline SVG icons ───────────────────────────────────────────── */
@@ -145,6 +146,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
             <SearchSVG />
           </button>
 
+          <NetworkStatusIndicator />
           <ThemeToggle />
           <LanguageToggle />
 

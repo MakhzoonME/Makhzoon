@@ -80,3 +80,9 @@ export async function updateSuperAdminUser(
 export async function deleteSuperAdminUser(uid: string): Promise<void> {
   await adminDb.collection('superadminUsers').doc(uid).delete();
 }
+
+export async function getSuperAdminUserById(uid: string): Promise<SuperAdminUser | null> {
+  const doc = await adminDb.collection('superadminUsers').doc(uid).get();
+  if (!doc.exists) return null;
+  return toSuperAdminUser(doc.id, doc.data()!);
+}

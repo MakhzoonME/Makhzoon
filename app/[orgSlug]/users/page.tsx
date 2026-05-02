@@ -9,7 +9,7 @@ import { OrgUser, Invite } from '@/types';
 import { formatDate } from '@/lib/utils/date';
 import { InviteUserModal } from '@/components/users/InviteUserModal';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { toast } from '@/hooks/ui';
+import { toast, useAdminGuard } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils/cn';
 import { apiFetch } from '@/lib/utils/api-fetch';
@@ -99,6 +99,7 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function UsersPage() {
   const { t } = useT();
+  const { isAllowed } = useAdminGuard('settings.users');
   const { data: users = [], isLoading: usersLoading } = useUsers();
   const { data: invites = [], isLoading: invitesLoading } = useInvites();
   const { user: currentUser } = useAuthStore();
@@ -113,6 +114,8 @@ export default function UsersPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ user: OrgUser; permanent: boolean } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const qc = useQueryClient();
+
+  if (!isAllowed) return <div className="flex items-center justify-center h-48"><div className="h-7 w-7 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" /></div>;
 
   const isLoading = usersLoading || invitesLoading;
   const currentRole = currentUser?.role ?? '';

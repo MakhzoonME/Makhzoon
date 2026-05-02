@@ -9,7 +9,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { UsageBar } from '@/components/features/subscription';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { formatDate, daysUntil } from '@/lib/utils/date';
-import { useT } from '@/hooks/ui';
+import { useT, useAdminGuard } from '@/hooks/ui';
 
 function getFeatureLabelKey(feature: string): string {
   const keyMap: Record<string, string> = {
@@ -26,6 +26,7 @@ function getFeatureLabelKey(feature: string): string {
 
 export default function SubscriptionPage() {
   const { t } = useT();
+  const { isAllowed } = useAdminGuard('settings.subscription');
   const { user } = useAuthStore();
   const { active, orgId: transferOrgId } = useTransferStore();
 
@@ -39,6 +40,7 @@ export default function SubscriptionPage() {
   const { data: sub, isLoading: subLoading } = useSubscription(orgId);
   const { data: usage, isLoading: usageLoading } = useOrgUsage(orgId);
 
+  if (!isAllowed) return <div className="flex items-center justify-center h-48"><div className="h-7 w-7 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" /></div>;
   if (subLoading) return <LoadingSkeleton rows={4} columns={2} />;
 
   const days = sub ? daysUntil(new Date(sub.endDate)) : 0;

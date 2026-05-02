@@ -1,4 +1,5 @@
 export { useOrganizations, useOrganization } from './useOrganization';
+export { useOrgInfo } from './useOrgInfo';
 export { useOrgConfig } from './useOrgConfig';
 export { useOrgUsage } from './useOrgUsage';
 export { useSubscription } from './useSubscription';

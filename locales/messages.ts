@@ -23,6 +23,8 @@ const en = {
   'nav.configuration': 'Configuration',
   'nav.team':          'Team',
   'nav.backendLogs':   'Backend Logs',
+  'nav.settings':      'Settings',
+  'nav.orgInfo':       'Organization Info',
 
   // ── Common actions ───────────────────────────────────────────────
   'common.save':         'Save',
@@ -53,6 +55,11 @@ const en = {
   'lang.label':    'Language',
   'lang.en':       'English',
   'lang.ar':       'العربية',
+
+  // ── Network status ───────────────────────────────────────────────
+  'network.online':  'Connected',
+  'network.offline': 'No internet connection',
+  'network.slow':    'Slow connection',
 
   // ── Auth ─────────────────────────────────────────────────────────
   'auth.signIn':        'Sign in',
@@ -457,6 +464,15 @@ const en = {
   'config.active':             'Active',
   'config.inactive':           'Inactive',
 
+  // ── Settings page ────────────────────────────────────────────────
+  'settings.orgName':        'Organization Name',
+  'settings.subdomain':      'Subdomain',
+  'settings.contactEmail':   'Contact Email',
+  'settings.description':    'Description',
+  'settings.category':       'Category',
+  'settings.accountManager': 'Account Manager',
+  'settings.notSet':         '—',
+
   // ── Users page (extra) ────────────────────────────────────────────
   'users.expires':             'Expires',
   'users.editing':             'Editing',
@@ -484,6 +500,8 @@ const ar: Record<keyof typeof en, string> = {
   'nav.configuration': 'الإعدادات',
   'nav.team':          'الفريق',
   'nav.backendLogs':   'سجلات النظام',
+  'nav.settings':      'الإعدادات',
+  'nav.orgInfo':       'معلومات المنظمة',
 
   // ── Common actions ───────────────────────────────────────────────
   'common.save':         'حفظ',
@@ -514,6 +532,11 @@ const ar: Record<keyof typeof en, string> = {
   'lang.label':    'اللغة',
   'lang.en':       'English',
   'lang.ar':       'العربية',
+
+  // ── Network status ───────────────────────────────────────────────
+  'network.online':  'متصل',
+  'network.offline': 'لا يوجد اتصال',
+  'network.slow':    'اتصال بطيء',
 
   // ── Auth ─────────────────────────────────────────────────────────
   'auth.signIn':         'تسجيل الدخول',
@@ -917,6 +940,15 @@ const ar: Record<keyof typeof en, string> = {
   'config.none':               'لا شيء',
   'config.active':             'نشطة',
   'config.inactive':           'غير نشطة',
+
+  // ── Settings page ────────────────────────────────────────────────
+  'settings.orgName':        'اسم المنظمة',
+  'settings.subdomain':      'النطاق الفرعي',
+  'settings.contactEmail':   'البريد الإلكتروني للتواصل',
+  'settings.description':    'الوصف',
+  'settings.category':       'الفئة',
+  'settings.accountManager': 'مدير الحساب',
+  'settings.notSet':         '—',
 
   // ── Users page (extra) ────────────────────────────────────────────
   'users.expires':             'تنتهي',

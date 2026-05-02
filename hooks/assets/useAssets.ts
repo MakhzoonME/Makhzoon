@@ -55,7 +55,7 @@ export function useAsset(id: string) {
 }
 
 export function useAssetCategories() {
-  return useQuery({
+  return useQuery<string[]>({
     queryKey: ['asset-categories'],
     queryFn: async () => {
       const res = await fetch('/api/assets?categoriesOnly=true');

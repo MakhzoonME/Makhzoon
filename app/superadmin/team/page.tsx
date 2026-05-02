@@ -318,7 +318,7 @@ export default function SuperAdminTeamPage() {
           <Input
             value={searchInput}
             onChange={(e) => { setSearchInput(e.target.value); syncAllToUrl({ search: e.target.value }); }}
-            placeholder={t('team.searchPlaceholder') ?? 'Search by name or email'}
+            placeholder="Search by name or email"
             className="pl-8"
           />
         </div>

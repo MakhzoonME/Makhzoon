@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest) {
     const orgId = user.organizationId;
     if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
 
-    const { items: assets } = await getAssets(orgId, { limit: 1000 });
+    const { items: assets } = await getAssets(orgId, { pageSize: 1000 });
     const csv = exportAssetsToCSV(assets);
     const filename = `assets-${format(new Date(), 'yyyy-MM-dd')}.csv`;
 

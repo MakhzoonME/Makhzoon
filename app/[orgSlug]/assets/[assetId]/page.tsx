@@ -37,7 +37,7 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
   const qc = useQueryClient();
   const { data: asset, isLoading, error } = useAsset(assetId);
   const { data: warrantiesResponse, isLoading: wLoading } = useWarranties({ assetId });
-  const warranties = (warrantiesResponse as { items?: Warranty[] })?.items ?? [];
+  const warranties = warrantiesResponse?.items ?? [];
   const [showRetire, setShowRetire] = useState(false);
   const [retiring, setRetiring] = useState(false);
   const [editAssetOpen, setEditAssetOpen] = useState(false);

@@ -1,8 +1,9 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
+import { Warranty } from '@/types';
 
 interface WarrantiesResponse {
-  items: unknown[];
+  items: Warranty[];
   total: number;
   page: number;
   pageSize: number;

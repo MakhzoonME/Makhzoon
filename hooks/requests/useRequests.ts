@@ -1,8 +1,9 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
+import { Request } from '@/types';
 
 interface RequestsResponse {
-  items: unknown[];
+  items: Request[];
   total: number;
   page: number;
   pageSize: number;

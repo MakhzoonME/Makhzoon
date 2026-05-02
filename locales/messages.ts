@@ -283,8 +283,6 @@ const en = {
   'requests.reference':        'Reference',
   'requests.submittedBy':      'Submitted By',
   'requests.description':      'Description',
-  'requests.approved':         'Request approved successfully',
-  'requests.rejected':         'Request rejected',
 
   // ── Support page ──────────────────────────────────────────────────
   'support.title':             'Support Tickets',

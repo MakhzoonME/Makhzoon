@@ -55,7 +55,10 @@ export async function getOrgInventoryItems(
   }
 ) {
   await requirePermission(user, 'inventory', 'view');
-  return getInventoryItems(user.organizationId!, filters);
+  return getInventoryItems(user.organizationId!, {
+    ...filters,
+    sortBy: filters?.sortBy as never,
+  });
 }
 
 /**

@@ -35,6 +35,7 @@ export interface CreateAssetInput {
   assignedTo?: string;
   location?: string;
   notes?: string;
+  receiptUrl?: string;
 }
 
 export interface UpdateAssetInput {
@@ -47,6 +48,7 @@ export interface UpdateAssetInput {
   assignedTo?: string;
   location?: string;
   notes?: string;
+  receiptUrl?: string;
 }
 
 /**
@@ -65,7 +67,10 @@ export async function getOrgAssets(
   }
 ) {
   await requirePermission(user, 'assets', 'view');
-  return getAssets(user.organizationId!, filters);
+  return getAssets(user.organizationId!, {
+    ...filters,
+    sortBy: filters?.sortBy as never,
+  });
 }
 
 /**

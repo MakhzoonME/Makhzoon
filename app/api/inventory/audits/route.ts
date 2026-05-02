@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
     // Load all active assets to seed the audit
-    const { items: assets } = await getAssets(orgId, { status: 'Active', limit: 1000 });
+    const { items: assets } = await getAssets(orgId, { status: 'Active', pageSize: 1000 });
 
     const id = await createInventoryAudit({
       organizationId: orgId,

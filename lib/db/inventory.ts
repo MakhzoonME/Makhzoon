@@ -55,19 +55,33 @@ function toTransaction(id: string, d: FirebaseFirestore.DocumentData): Inventory
   };
 }
 
+type SortField = 'name' | 'category' | 'stockStatus' | 'quantityOnHand' | 'minimumThreshold' | 'location' | 'supplier' | 'unitCost' | 'createdAt';
+
 export async function getInventoryItems(
   orgId: string,
-  opts?: { category?: string; stockStatus?: string; search?: string }
-): Promise<InventoryItem[]> {
-  let q = adminDb.collection('inventoryItems')
+  opts?: {
+    category?: string;
+    stockStatus?: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+    sortBy?: SortField;
+    sortDir?: 'asc' | 'desc';
+  }
+): Promise<{ items: InventoryItem[]; total: number; page: number; pageSize: number; totalPages: number }> {
+  const page = opts?.page ?? 1;
+  const pageSize = opts?.pageSize ?? 10;
+  const sortBy = opts?.sortBy ?? 'createdAt';
+  const sortDir = opts?.sortDir ?? 'desc';
+
+  const snap = await adminDb.collection('inventoryItems')
     .where('organizationId', '==', orgId)
-    .orderBy('name', 'asc') as FirebaseFirestore.Query;
+    .get();
 
-  if (opts?.category) q = q.where('category', '==', opts.category);
-  if (opts?.stockStatus) q = q.where('stockStatus', '==', opts.stockStatus);
-
-  const snap = await q.get();
   let items = snap.docs.map((d) => toItem(d.id, d.data()));
+
+  if (opts?.category) items = items.filter((i) => i.category === opts.category);
+  if (opts?.stockStatus) items = items.filter((i) => i.stockStatus === opts.stockStatus);
 
   if (opts?.search) {
     const term = opts.search.toLowerCase();
@@ -79,7 +93,29 @@ export async function getInventoryItems(
     );
   }
 
-  return items;
+  const total = items.length;
+
+  items.sort((a, b) => {
+    const aVal = a[sortBy];
+    const bVal = b[sortBy];
+    const mult = sortDir === 'asc' ? 1 : -1;
+
+    if (aVal == null && bVal == null) return 0;
+    if (aVal == null) return mult;
+    if (bVal == null) return -mult;
+
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      return (aVal - bVal) * mult;
+    }
+    return String(aVal).localeCompare(String(bVal)) * mult;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * pageSize;
+  const pagedItems = items.slice(start, start + pageSize);
+
+  return { items: pagedItems, total, page: safePage, pageSize, totalPages };
 }
 
 export async function getInventoryItemById(id: string): Promise<InventoryItem | null> {
@@ -92,11 +128,12 @@ export async function createInventoryItem(
   data: Omit<InventoryItem, 'id' | 'stockStatus' | 'createdAt' | 'updatedAt'>
 ): Promise<string> {
   const status = stockStatus(data.quantityOnHand, data.minimumThreshold);
+  const now = new Date();
   const ref = await adminDb.collection('inventoryItems').add({
     ...data,
     stockStatus: status,
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
+    createdAt: now,
+    updatedAt: now,
   });
   return ref.id;
 }
@@ -104,7 +141,6 @@ export async function createInventoryItem(
 export async function updateInventoryItem(id: string, data: Partial<InventoryItem>): Promise<void> {
   const update: Record<string, unknown> = { ...data, updatedAt: FieldValue.serverTimestamp() };
 
-  // Recompute stockStatus if qty or threshold changed (use transaction to avoid N+1)
   if (data.quantityOnHand !== undefined || data.minimumThreshold !== undefined) {
     await adminDb.runTransaction(async (transaction) => {
       const doc = await transaction.get(adminDb.collection('inventoryItems').doc(id));
@@ -168,7 +204,7 @@ export async function applyInventoryTransaction(
   let newQty: number;
   if (type === 'in') newQty = item.quantityOnHand + quantity;
   else if (type === 'out') newQty = Math.max(0, item.quantityOnHand - quantity);
-  else newQty = quantity; // adjustment sets absolute value
+  else newQty = quantity;
 
   await adminDb.runTransaction(async (t) => {
     const ref = adminDb.collection('inventoryItems').doc(itemId);

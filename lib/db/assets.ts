@@ -35,62 +35,72 @@ const LIST_SELECT_FIELDS = [
   'updatedAt', 'updatedBy', 'updatedByEmail', 'updatedByName', 'updatedByRole',
 ];
 
+type SortField = 'name' | 'category' | 'status' | 'serialNumber' | 'assignedTo' | 'location' | 'purchaseDate' | 'purchaseCost' | 'createdAt' | 'updatedAt';
+
 export async function getAssets(
   orgId: string,
-  opts?: { status?: string; category?: string; search?: string; limit?: number; cursor?: string }
-): Promise<{ items: Asset[]; nextCursor: string | null }> {
-  const pageSize = opts?.limit ?? 50;
+  opts?: {
+    status?: string;
+    category?: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+    sortBy?: SortField;
+    sortDir?: 'asc' | 'desc';
+  }
+): Promise<{ items: Asset[]; total: number; page: number; pageSize: number; totalPages: number }> {
+  const page = opts?.page ?? 1;
+  const pageSize = opts?.pageSize ?? 10;
+  const sortBy = opts?.sortBy ?? 'createdAt';
+  const sortDir = opts?.sortDir ?? 'desc';
 
   let q = adminDb.collection('assets')
     .where('organizationId', '==', orgId)
-    .orderBy('createdAt', 'desc')
     .select(...LIST_SELECT_FIELDS);
 
   if (opts?.status) q = q.where('status', '==', opts.status) as typeof q;
   if (opts?.category) q = q.where('category', '==', opts.category) as typeof q;
 
-  // When searching, fetch all matching docs and filter in-memory
-  if (opts?.search) {
-    const snap = await q.get();
-    const term = opts.search.toLowerCase();
-    const all = snap.docs
-      .map((d) => toAsset(d.id, d.data()))
-      .filter((a) =>
-        (a.name ?? '').toLowerCase().includes(term) ||
-        (a.serialNumber ?? '').toLowerCase().includes(term) ||
-        (a.assignedTo ?? '').toLowerCase().includes(term) ||
-        (a.location ?? '').toLowerCase().includes(term) ||
-        (a.category ?? '').toLowerCase().includes(term)
-      );
-
-    // Manual cursor pagination over the filtered set
-    let startIdx = 0;
-    if (opts.cursor) {
-      const idx = all.findIndex((a) => a.id === opts.cursor);
-      if (idx !== -1) startIdx = idx + 1;
-    }
-    const page = all.slice(startIdx, startIdx + pageSize);
-    const nextCursor = page.length === pageSize && startIdx + pageSize < all.length
-      ? page[page.length - 1].id
-      : null;
-    return { items: page, nextCursor };
-  }
-
-  // Cursor-based pagination via Firestore startAfter
-  if (opts?.cursor) {
-    const cursorDoc = await adminDb.collection('assets').doc(opts.cursor).get();
-    if (cursorDoc.exists) {
-      q = q.startAfter(cursorDoc) as typeof q;
-    }
-  }
-
-  q = q.limit(pageSize + 1) as typeof q;
   const snap = await q.get();
-  const docs = snap.docs.slice(0, pageSize);
-  const hasMore = snap.docs.length > pageSize;
-  const items = docs.map((d) => toAsset(d.id, d.data()));
-  const nextCursor = hasMore ? docs[docs.length - 1].id : null;
-  return { items, nextCursor };
+  let items = snap.docs.map((d) => toAsset(d.id, d.data()));
+
+  if (opts?.search) {
+    const term = opts.search.toLowerCase();
+    items = items.filter((a) =>
+      (a.name ?? '').toLowerCase().includes(term) ||
+      (a.serialNumber ?? '').toLowerCase().includes(term) ||
+      (a.assignedTo ?? '').toLowerCase().includes(term) ||
+      (a.location ?? '').toLowerCase().includes(term) ||
+      (a.category ?? '').toLowerCase().includes(term)
+    );
+  }
+
+  const total = items.length;
+
+  items.sort((a, b) => {
+    const aVal = a[sortBy];
+    const bVal = b[sortBy];
+    const mult = sortDir === 'asc' ? 1 : -1;
+
+    if (aVal == null && bVal == null) return 0;
+    if (aVal == null) return mult;
+    if (bVal == null) return -mult;
+
+    if (aVal instanceof Date && bVal instanceof Date) {
+      return (aVal.getTime() - bVal.getTime()) * mult;
+    }
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      return (aVal - bVal) * mult;
+    }
+    return String(aVal).localeCompare(String(bVal)) * mult;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * pageSize;
+  const pagedItems = items.slice(start, start + pageSize);
+
+  return { items: pagedItems, total, page: safePage, pageSize, totalPages };
 }
 
 export async function getAssetById(id: string): Promise<Asset | null> {
@@ -100,10 +110,11 @@ export async function getAssetById(id: string): Promise<Asset | null> {
 }
 
 export async function createAsset(data: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  const now = new Date();
   const ref = await adminDb.collection('assets').add({
     ...data,
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
+    createdAt: now,
+    updatedAt: now,
   });
   return ref.id;
 }

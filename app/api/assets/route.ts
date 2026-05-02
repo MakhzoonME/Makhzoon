@@ -20,9 +20,14 @@ async function _GET(req: NextRequest) {
     const status = searchParams.get('status') ?? undefined;
     const category = searchParams.get('category') ?? undefined;
     const search = searchParams.get('search') ?? undefined;
-    const cursor = searchParams.get('cursor') ?? undefined;
+    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined;
+    const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined;
+    const sortBy = searchParams.get('sortBy') ?? undefined;
+    const sortDir = searchParams.get('sortDir') === 'asc' ? 'asc' as const : 'desc' as const;
 
-    const result = await assetsService.getOrgAssets(user, { status, category, search, cursor });
+    const result = await assetsService.getOrgAssets(user, {
+      status, category, search, page, pageSize, sortBy: sortBy as never, sortDir,
+    });
     return NextResponse.json(result, {
       headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
     });
@@ -52,6 +57,7 @@ async function _POST(req: NextRequest) {
       assignedTo: data.assignedTo || undefined,
       location: data.location || undefined,
       notes: data.notes || undefined,
+      receiptUrl: data.receiptUrl || undefined,
     });
 
     return NextResponse.json(result, { status: 201 });

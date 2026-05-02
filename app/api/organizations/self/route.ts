@@ -21,19 +21,11 @@ export async function GET() {
     const org = await getOrganizationById(orgId);
     if (!org) return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
 
-    let accountManager: { name: string; email: string } | null = null;
-    if (org.createdBy) {
-      const creator = await getSuperAdminUserById(org.createdBy);
-      if (creator) {
-        accountManager = { name: creator.displayName, email: creator.email };
-      }
-    }
-
-    let assignedMember: { id: string; name: string; email: string } | null = null;
+    let accountManager: { id: string; name: string; email: string } | null = null;
     if (org.assignedMemberId) {
       const member = await getSuperAdminUserById(org.assignedMemberId);
       if (member) {
-        assignedMember = { id: member.id, name: member.displayName, email: member.email };
+        accountManager = { id: member.id, name: member.displayName, email: member.email };
       }
     }
 
@@ -45,7 +37,6 @@ export async function GET() {
       description: org.description,
       category: org.category,
       accountManager,
-      assignedMember,
     });
   } catch (err) {
     console.error('[GET /api/organizations/self]', err);

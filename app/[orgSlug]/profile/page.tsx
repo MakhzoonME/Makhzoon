@@ -13,6 +13,12 @@ import { auth } from '@/lib/firebase/client';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 
+/** Display email/username without the synthetic @makhzoon.local suffix */
+function displayIdentity(email?: string | null): string {
+  if (!email) return '';
+  return email.replace(/@makhzoon\.local$/i, '');
+}
+
 function CameraSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><rect x="1" y="4" width="14" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><circle cx="8" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M5.5 4l1-2h3l1 2" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>; }
 function SaveSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><rect x="2" y="2" width="10" height="10" rx="1" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M5 2v3h4V2M4 9h6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
 function KeySVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><circle cx="5.5" cy="7" r="3" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M8 6.5h4.5M10.5 6.5v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
@@ -43,7 +49,7 @@ export default function ProfilePage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const initials = (user?.displayName || user?.email || '?').slice(0, 2).toUpperCase();
+  const initials = (user?.displayName || displayIdentity(user?.email) || '?').slice(0, 2).toUpperCase();
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -167,8 +173,8 @@ export default function ProfilePage() {
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Account Info</h2>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
-              <Input value={user?.email ?? ''} disabled className="bg-gray-50" />
+              <label className="block text-xs font-medium text-gray-500 mb-1">Username</label>
+              <Input value={displayIdentity(user?.email)} disabled className="bg-gray-50" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Company</label>

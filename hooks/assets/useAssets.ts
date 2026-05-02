@@ -1,18 +1,32 @@
 'use client';
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import type { Asset } from '@/types';
 
 interface AssetsResponse {
   items: Asset[];
-  nextCursor: string | null;
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
-export function useAssets(params?: { status?: string; category?: string; search?: string; cursor?: string }) {
+export function useAssets(params?: {
+  status?: string;
+  category?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+}) {
   const query = new URLSearchParams();
   if (params?.status) query.set('status', params.status);
   if (params?.category) query.set('category', params.category);
   if (params?.search) query.set('search', params.search);
-  if (params?.cursor) query.set('cursor', params.cursor);
+  if (params?.page) query.set('page', String(params.page));
+  if (params?.pageSize) query.set('pageSize', String(params.pageSize));
+  if (params?.sortBy) query.set('sortBy', params.sortBy);
+  if (params?.sortDir) query.set('sortDir', params.sortDir);
 
   return useQuery<AssetsResponse>({
     queryKey: ['assets', params],
@@ -23,7 +37,6 @@ export function useAssets(params?: { status?: string; category?: string; search?
     },
     staleTime: 0,
     gcTime: 5 * 60_000,
-    placeholderData: keepPreviousData,
   });
 }
 

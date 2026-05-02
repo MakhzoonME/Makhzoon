@@ -17,14 +17,22 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const expiringSoon = searchParams.get('expiringSoon') === 'true';
-    const assetId = searchParams.get('assetId') ?? undefined;
 
     if (expiringSoon) {
       const warranties = await getExpiringWarranties(orgId, 30);
       return NextResponse.json(warranties);
     }
 
-    const warranties = await getWarranties(orgId, { assetId });
+    const assetId = searchParams.get('assetId') ?? undefined;
+    const status = searchParams.get('status') ?? undefined;
+    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined;
+    const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined;
+    const sortBy = searchParams.get('sortBy') ?? undefined;
+    const sortDir = searchParams.get('sortDir') === 'asc' ? 'asc' as const : 'desc' as const;
+
+    const warranties = await getWarranties(orgId, {
+      assetId, status, page, pageSize, sortBy: sortBy as never, sortDir,
+    });
     return NextResponse.json(warranties);
   } catch (err) {
     console.error('[GET /api/warranties]', err);
@@ -60,6 +68,7 @@ export async function POST(req: NextRequest) {
       endDate: new Date(data.endDate),
       reminder: data.reminder,
       notes: data.notes || undefined,
+      receiptUrl: data.receiptUrl || undefined,
       createdBy: user.uid,
       updatedBy: user.uid,
     });

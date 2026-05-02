@@ -5,6 +5,7 @@ import { Command } from 'cmdk';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAssets } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
+import { useOrgSlug } from '@/hooks/ui';
 import { Asset } from '@/types';
 import { cn } from '@/lib/utils/cn';
 
@@ -40,6 +41,7 @@ const ACTIONS = [
 
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const router = useRouter();
+  const orgSlug = useOrgSlug();
   const { user } = useAuthStore();
   const [search, setSearch] = useState('');
   const { data: assetsData } = useAssets();
@@ -53,7 +55,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
 
   function go(href: string) {
     onOpenChange(false);
-    router.push(href);
+    router.push(`/${orgSlug}${href}`);
   }
 
   return (

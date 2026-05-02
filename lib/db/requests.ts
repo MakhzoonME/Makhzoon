@@ -68,18 +68,60 @@ async function enrichRequests(requests: Request[]): Promise<Request[]> {
   }));
 }
 
-export async function getRequests(orgId: string, opts?: { status?: string; type?: string; userId?: string }): Promise<Request[]> {
+type SortField = 'type' | 'status' | 'createdAt' | 'decisionAt';
+
+export async function getRequests(
+  orgId: string,
+  opts?: {
+    status?: string;
+    type?: string;
+    userId?: string;
+    page?: number;
+    pageSize?: number;
+    sortBy?: SortField;
+    sortDir?: 'asc' | 'desc';
+  }
+): Promise<{ items: Request[]; total: number; page: number; pageSize: number; totalPages: number }> {
+  const page = opts?.page ?? 1;
+  const pageSize = opts?.pageSize ?? 10;
+  const sortBy = opts?.sortBy ?? 'createdAt';
+  const sortDir = opts?.sortDir ?? 'desc';
+
   let q = adminDb.collection('requests')
-    .where('organizationId', '==', orgId)
-    .orderBy('createdAt', 'desc')
-    .limit(50);
+    .where('organizationId', '==', orgId);
 
   if (opts?.status) q = q.where('status', '==', opts.status) as typeof q;
+  if (opts?.type) q = q.where('type', '==', opts.type) as typeof q;
   if (opts?.userId) q = q.where('createdBy', '==', opts.userId) as typeof q;
 
   const snap = await q.get();
-  const requests = snap.docs.map((d) => toRequest(d.id, d.data()));
-  return enrichRequests(requests);
+  let requests = snap.docs.map((d) => toRequest(d.id, d.data()));
+
+  requests = await enrichRequests(requests);
+
+  const total = requests.length;
+
+  requests.sort((a, b) => {
+    const aVal = a[sortBy];
+    const bVal = b[sortBy];
+    const mult = sortDir === 'asc' ? 1 : -1;
+
+    if (aVal == null && bVal == null) return 0;
+    if (aVal == null) return mult;
+    if (bVal == null) return -mult;
+
+    if (aVal instanceof Date && bVal instanceof Date) {
+      return (aVal.getTime() - bVal.getTime()) * mult;
+    }
+    return String(aVal).localeCompare(String(bVal)) * mult;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * pageSize;
+  const pagedItems = requests.slice(start, start + pageSize);
+
+  return { items: pagedItems, total, page: safePage, pageSize, totalPages };
 }
 
 export async function getRequestById(id: string): Promise<Request | null> {
@@ -89,10 +131,11 @@ export async function getRequestById(id: string): Promise<Request | null> {
 }
 
 export async function createRequest(data: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  const now = new Date();
   const ref = await adminDb.collection('requests').add({
     ...data,
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
+    createdAt: now,
+    updatedAt: now,
   });
   return ref.id;
 }

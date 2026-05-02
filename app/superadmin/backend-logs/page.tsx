@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui/button';
@@ -58,21 +59,30 @@ function fmt(ts: string) {
   });
 }
 
+function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, v); });
+  return `${pathname}${qs.toString() ? '?' + qs.toString() : ''}`;
+}
+
 export default function BackendLogsPage() {
   const { t } = useT();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [logs, setLogs] = useState<BackendLog[]>([]);
   const [loading, setLoading] = useState(false);
-  const [level, setLevel] = useState<string>('all');
-  const [orgId, setOrgId] = useState('');
-  const [limit, setLimit] = useState('200');
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [level, setLevel] = useState(searchParams.get('level') ?? 'all');
+  const [orgId, setOrgId] = useState(searchParams.get('orgId') ?? '');
+  const [limit, setLimit] = useState(searchParams.get('limit') ?? '200');
+  const [autoRefresh, setAutoRefresh] = useState(searchParams.get('autoRefresh') === 'true');
   const [expanded, setExpanded] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Client-side filters
-  const [userSearch, setUserSearch] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [userSearch, setUserSearch] = useState(searchParams.get('userSearch') ?? '');
+  const [dateFrom, setDateFrom] = useState(searchParams.get('dateFrom') ?? '');
+  const [dateTo, setDateTo] = useState(searchParams.get('dateTo') ?? '');
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
@@ -93,6 +103,41 @@ export default function BackendLogsPage() {
     if (autoRefresh) intervalRef.current = setInterval(fetchLogs, 10_000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [autoRefresh, fetchLogs]);
+
+  useEffect(() => {
+    const urlLevel = searchParams.get('level') ?? 'all';
+    const urlOrgId = searchParams.get('orgId') ?? '';
+    const urlLimit = searchParams.get('limit') ?? '200';
+    const urlAutoRefresh = searchParams.get('autoRefresh') === 'true';
+    const urlUserSearch = searchParams.get('userSearch') ?? '';
+    const urlDateFrom = searchParams.get('dateFrom') ?? '';
+    const urlDateTo = searchParams.get('dateTo') ?? '';
+
+    if (urlLevel !== level) setLevel(urlLevel);
+    if (urlOrgId !== orgId) setOrgId(urlOrgId);
+    if (urlLimit !== limit) setLimit(urlLimit);
+    if (urlAutoRefresh !== autoRefresh) setAutoRefresh(urlAutoRefresh);
+    if (urlUserSearch !== userSearch) setUserSearch(urlUserSearch);
+    if (urlDateFrom !== dateFrom) setDateFrom(urlDateFrom);
+    if (urlDateTo !== dateTo) setDateTo(urlDateTo);
+  }, [searchParams]);
+
+  const updateUrl = useCallback((params: Record<string, string>) => {
+    const url = syncFiltersToUrl(pathname, params);
+    router.replace(url, { scroll: false });
+  }, [pathname, router]);
+
+  function syncAllToUrl(next: Partial<Record<'level' | 'orgId' | 'limit' | 'autoRefresh' | 'userSearch' | 'dateFrom' | 'dateTo', string>>) {
+    updateUrl({
+      level: next.level ?? level,
+      orgId: next.orgId ?? orgId,
+      limit: next.limit ?? limit,
+      autoRefresh: next.autoRefresh ?? String(autoRefresh),
+      userSearch: next.userSearch ?? userSearch,
+      dateFrom: next.dateFrom ?? dateFrom,
+      dateTo: next.dateTo ?? dateTo,
+    });
+  }
 
   const filteredLogs = useMemo(() => {
     let result = logs;
@@ -123,6 +168,7 @@ export default function BackendLogsPage() {
     setDateTo('');
     setOrgId('');
     setLevel('all');
+    syncAllToUrl({ userSearch: '', dateFrom: '', dateTo: '', orgId: '', level: 'all' });
   }
 
   const hasActiveFilters = userSearch || dateFrom || dateTo || orgId || level !== 'all';
@@ -139,7 +185,7 @@ export default function BackendLogsPage() {
             <input
               type="checkbox"
               checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
+              onChange={(e) => { setAutoRefresh(e.target.checked); syncAllToUrl({ autoRefresh: String(e.target.checked) }); }}
               className="rounded border-gray-300"
             />
             {t('backendLogs.autoRefresh')}
@@ -151,16 +197,14 @@ export default function BackendLogsPage() {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-        {/* Level pills */}
         <div className="flex items-center gap-3 flex-wrap">
           <Label className="text-xs text-gray-500 shrink-0">{t('backendLogs.level')}</Label>
           <div className="flex gap-1 flex-wrap">
             {levels.map((l) => (
               <button
                 key={l}
-                onClick={() => setLevel(l)}
+                onClick={() => { setLevel(l); syncAllToUrl({ level: l }); }}
                 className={cn(
                   'px-3 py-1 rounded text-xs font-medium capitalize transition-colors',
                   level === l
@@ -175,74 +219,69 @@ export default function BackendLogsPage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {/* User Name */}
           <div className="space-y-1">
             <Label className="text-xs">{t('backendLogs.userName')}</Label>
             <div className="relative">
               <Input
                 value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
+                onChange={(e) => { setUserSearch(e.target.value); syncAllToUrl({ userSearch: e.target.value }); }}
                 placeholder={t('backendLogs.searchUser')}
                 className="h-8 text-xs pr-7"
               />
               {userSearch && (
-                <button onClick={() => setUserSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2">
+                <button onClick={() => { setUserSearch(''); syncAllToUrl({ userSearch: '' }); }} className="absolute right-2 top-1/2 -translate-y-1/2">
                   <X className="h-3 w-3 text-gray-400" />
                 </button>
               )}
             </div>
           </div>
 
-          {/* Org ID */}
           <div className="space-y-1">
             <Label className="text-xs">{t('backendLogs.orgId')}</Label>
             <div className="relative">
               <Input
                 value={orgId}
-                onChange={(e) => setOrgId(e.target.value)}
+                onChange={(e) => { setOrgId(e.target.value); syncAllToUrl({ orgId: e.target.value }); }}
                 placeholder={t('backendLogs.filterOrg')}
                 className="h-8 text-xs pr-7"
               />
               {orgId && (
-                <button onClick={() => setOrgId('')} className="absolute right-2 top-1/2 -translate-y-1/2">
+                <button onClick={() => { setOrgId(''); syncAllToUrl({ orgId: '' }); }} className="absolute right-2 top-1/2 -translate-y-1/2">
                   <X className="h-3 w-3 text-gray-400" />
                 </button>
               )}
             </div>
           </div>
 
-          {/* Date From */}
           <div className="space-y-1">
             <Label className="text-xs">{t('backendLogs.dateFrom')}</Label>
             <Input
               type="datetime-local"
               value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
+              onChange={(e) => { setDateFrom(e.target.value); syncAllToUrl({ dateFrom: e.target.value }); }}
               className="h-8 text-xs"
             />
           </div>
 
-          {/* Date To */}
           <div className="space-y-1">
             <Label className="text-xs">{t('backendLogs.dateTo')}</Label>
             <Input
               type="datetime-local"
               value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
+              onChange={(e) => { setDateTo(e.target.value); syncAllToUrl({ dateTo: e.target.value }); }}
               className="h-8 text-xs"
             />
           </div>
 
-          {/* Limit */}
           <div className="space-y-1">
             <Label className="text-xs">{t('backendLogs.limit')}</Label>
-            <Select value={limit} onValueChange={setLimit}>
+            <Select value={limit} onValueChange={(v) => { setLimit(v); syncAllToUrl({ limit: v }); }}>
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {['50', '100', '200', '500'].map((n) => (
-                  <SelectItem key={n} value={n}>{n} {t('backendLogs.records').replace('{count}', '').replace('{total}', '').replace(' of ', '').trim() || 'records'}</SelectItem>
+                  <SelectItem key={n} value={n}>{n} records</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -262,7 +301,6 @@ export default function BackendLogsPage() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">

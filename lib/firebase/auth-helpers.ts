@@ -32,8 +32,21 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
       if (transferOrgId) organizationId = transferOrgId;
     }
 
-    // Fetch stored permissions for all org-level roles so explicit customisation works
+    // Fetch the authoritative role from Firestore so role changes take effect
+    // immediately without requiring re-authentication. Token custom claims
+    // are only refreshed on sign-in, but the Firestore user document is
+    // updated at the time of the role change.
     const ORG_ROLES = new Set(['org_owner', 'admin', 'staff']);
+    if (ORG_ROLES.has(role) && organizationId) {
+      const userDoc = await adminDb.collection('users').doc(decoded.uid).get();
+      if (userDoc.exists) {
+        const docData = userDoc.data();
+        role = (docData?.role as UserRole) ?? role;
+        organizationId = docData?.organizationId ?? organizationId;
+      }
+    }
+
+    // Fetch stored permissions for all org-level roles so explicit customisation works
     let permissions: UserPermissions | null = null;
     if (ORG_ROLES.has(role) && organizationId) {
       const cachedPerms = getCachedPermissions(decoded.uid);

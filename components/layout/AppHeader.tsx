@@ -55,6 +55,12 @@ function LogOutSVG() {
   );
 }
 
+/** Display email/username without the synthetic @makhzoon.local suffix */
+function displayIdentity(user: { email?: string | null } | null | undefined): string {
+  if (!user?.email) return '';
+  return user.email.replace(/@makhzoon\.local$/i, '');
+}
+
 const roleConfig: Record<string, { variant: 'blue' | 'default'; label: string }> = {
   super_admin:       { variant: 'blue', label: 'Super Admin' },
   makhzoon_admin:    { variant: 'blue', label: 'Makhzoon Admin' },
@@ -158,7 +164,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 dark:bg-gray-800 dark:border-gray-700">
               <DropdownMenuLabel className="font-normal">
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{displayIdentity(user)}</p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="dark:bg-gray-700" />
               <DropdownMenuItem onClick={() => router.push(`/${orgSlug}/profile`)} className="gap-2 dark:text-gray-200 dark:focus:bg-gray-700">

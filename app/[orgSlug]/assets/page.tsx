@@ -1,6 +1,6 @@
 'use client';
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Plus, Pencil, ArchiveX, Trash2, Upload } from 'lucide-react';
 import { useOrgSlug } from '@/hooks/ui';
 import { useAssets } from '@/hooks/assets';
@@ -23,17 +23,31 @@ import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { useDebounce } from '@/hooks/ui';
+import { useAssetCategories } from '@/hooks/assets';
+
+function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, v); });
+  return `${pathname}${qs.toString() ? '?' + qs.toString() : ''}`;
+}
 
 export default function AssetsPage() {
   const router = useRouter();
-  const orgSlug = useOrgSlug();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const orgSlug = useOrgSlug();
   const { user } = useAuthStore();
   const qc = useQueryClient();
   const { t } = useT();
 
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(searchParams.get('search') ?? '');
   const [status, setStatus] = useState(searchParams.get('status') ?? '');
+  const [category, setCategory] = useState(searchParams.get('category') ?? '');
+  const [page, setPage] = useState(searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1);
+  const [pageSize, setPageSize] = useState(searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10);
+  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') ?? 'createdAt');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc');
+
   const [actionTarget, setActionTarget] = useState<Asset | null>(null);
   const [actioning, setActioning] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -41,22 +55,51 @@ export default function AssetsPage() {
   const [importOpen, setImportOpen] = useState(false);
 
   const debouncedSearch = useDebounce(search, 400);
-  const { data: assetsData, isLoading } = useAssets({ status: status || undefined, search: debouncedSearch });
+  const { data: assetsData, isLoading } = useAssets({
+    status: status || undefined,
+    category: category || undefined,
+    search: debouncedSearch || undefined,
+    page,
+    pageSize,
+    sortBy,
+    sortDir,
+  });
+  const { data: categories = [] } = useAssetCategories();
   const assets = assetsData?.items ?? [];
+
+  const updateUrl = useCallback((params: Record<string, string>) => {
+    const url = syncFiltersToUrl(pathname, params);
+    router.replace(url, { scroll: false });
+  }, [pathname, router]);
+
+  useEffect(() => {
+    const urlSearch = searchParams.get('search') ?? '';
+    const urlStatus = searchParams.get('status') ?? '';
+    const urlCategory = searchParams.get('category') ?? '';
+    const urlPage = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
+    const urlPageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10;
+    const urlSortBy = searchParams.get('sortBy') ?? 'createdAt';
+    const urlSortDir = searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc';
+
+    if (urlSearch !== search) setSearch(urlSearch);
+    if (urlStatus !== status) setStatus(urlStatus);
+    if (urlCategory !== category) setCategory(urlCategory);
+    if (urlPage !== page) setPage(urlPage);
+    if (urlPageSize !== pageSize) setPageSize(urlPageSize);
+    if (urlSortBy !== sortBy) setSortBy(urlSortBy);
+    if (urlSortDir !== sortDir) setSortDir(urlSortDir);
+  }, [searchParams]);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const columns: ColumnDef<Asset>[] = [
-    {
-      key: 'name', header: t('col.name'),
-      render: (a) => <button className="font-medium text-indigo-600 hover:text-indigo-700 hover:underline text-left" onClick={() => router.push(`/${orgSlug}/assets/${a.id}`)}>{a.name}</button>
-    },
-    { key: 'category', header: t('col.category'), render: (a) => a.category },
-    { key: 'status', header: t('col.status'), render: (a) => <StatusBadge status={a.status} /> },
-    { key: 'serial', header: t('col.serialNumber'), render: (a) => a.serialNumber ? <span className="font-mono text-xs text-gray-600 dark:text-gray-400">{a.serialNumber}</span> : <span className="text-gray-400">—</span> },
-    { key: 'assignedTo', header: t('col.assignedTo'), render: (a) => a.assignedTo || <span className="text-gray-400">—</span> },
-    { key: 'location', header: t('col.location'), render: (a) => a.location || <span className="text-gray-400">—</span> },
-    { key: 'purchaseDate', header: t('col.purchaseDate'), render: (a) => a.purchaseDate ? formatDate(a.purchaseDate) : <span className="text-gray-400">—</span> },
+    { key: 'name', header: t('col.name'), sortable: true, render: (a) => <button className="font-medium text-indigo-600 hover:text-indigo-700 hover:underline text-left" onClick={() => router.push(`/${orgSlug}/assets/${a.id}`)}>{a.name}</button> },
+    { key: 'category', header: t('col.category'), sortable: true, render: (a) => a.category },
+    { key: 'status', header: t('col.status'), sortable: true, render: (a) => <StatusBadge status={a.status} /> },
+    { key: 'serialNumber', header: t('col.serialNumber'), sortable: true, render: (a) => a.serialNumber ? <span className="font-mono text-xs text-gray-600 dark:text-gray-400">{a.serialNumber}</span> : <span className="text-gray-400">—</span> },
+    { key: 'assignedTo', header: t('col.assignedTo'), sortable: true, render: (a) => a.assignedTo || <span className="text-gray-400">—</span> },
+    { key: 'location', header: t('col.location'), sortable: true, render: (a) => a.location || <span className="text-gray-400">—</span> },
+    { key: 'purchaseDate', header: t('col.purchaseDate'), sortable: true, render: (a) => a.purchaseDate ? formatDate(a.purchaseDate) : <span className="text-gray-400">—</span> },
     {
       key: 'actions', header: t('col.actions'),
       render: (a) => (
@@ -112,6 +155,44 @@ export default function AssetsPage() {
     }
   }
 
+  function syncAllToUrl(next: Partial<Record<'search' | 'status' | 'category' | 'page' | 'pageSize' | 'sortBy' | 'sortDir', string>>) {
+    updateUrl({
+      search: next.search ?? search,
+      status: next.status ?? status,
+      category: next.category ?? category,
+      page: next.page ?? String(page),
+      pageSize: next.pageSize ?? String(pageSize),
+      sortBy: next.sortBy ?? sortBy,
+      sortDir: next.sortDir ?? sortDir,
+    });
+  }
+
+  function handleStatusChange(v: string) {
+    const next = v === 'all' ? '' : v;
+    setStatus(next);
+    setPage(1);
+    syncAllToUrl({ status: next, page: '1' });
+  }
+
+  function handleCategoryChange(v: string) {
+    const next = v === 'all' ? '' : v;
+    setCategory(next);
+    setPage(1);
+    syncAllToUrl({ category: next, page: '1' });
+  }
+
+  function handleSearchChange(v: string) {
+    setSearch(v);
+    setPage(1);
+    syncAllToUrl({ search: v, page: '1' });
+  }
+
+  function handleSortChange(sortByField: string, dir: 'asc' | 'desc') {
+    setSortBy(sortByField);
+    setSortDir(dir);
+    syncAllToUrl({ sortBy: sortByField, sortDir: dir });
+  }
+
   return (
     <div>
       <PageHeader
@@ -135,16 +216,25 @@ export default function AssetsPage() {
       <FilterBar
         searchPlaceholder={t('assets.searchPlaceholder')}
         searchValue={search}
-        onSearchChange={setSearch}
+        onSearchChange={handleSearchChange}
         filters={
-          <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : v)}>
-            <SelectTrigger className="w-36"><SelectValue placeholder={t('col.status')} /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('assets.allStatuses')}</SelectItem>
-              <SelectItem value="Active">{t('val.active')}</SelectItem>
-              <SelectItem value="Retired">{t('assets.retired')}</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Select value={status || 'all'} onValueChange={handleStatusChange}>
+              <SelectTrigger className="w-36"><SelectValue placeholder={t('col.status')} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('assets.allStatuses')}</SelectItem>
+                <SelectItem value="Active">{t('val.active')}</SelectItem>
+                <SelectItem value="Retired">{t('assets.retired')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={category || 'all'} onValueChange={handleCategoryChange}>
+              <SelectTrigger className="w-36"><SelectValue placeholder={t('col.category')} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('assets.allCategories')}</SelectItem>
+                {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
         }
         actions={isAdmin ? (
           <SubscriptionGate>
@@ -161,6 +251,17 @@ export default function AssetsPage() {
           emptyMessage={t('assets.noAssets')}
           onRowClick={(a) => router.push(`/${orgSlug}/assets/${a.id}`)}
           keyExtractor={(a) => a.id}
+          pagination={assetsData ? {
+            page: assetsData.page,
+            pageSize: assetsData.pageSize,
+            total: assetsData.total,
+            totalPages: assetsData.totalPages,
+            onPageChange: (p) => { setPage(p); syncAllToUrl({ page: String(p) }); },
+            onPageSizeChange: (s) => { setPageSize(s); setPage(1); syncAllToUrl({ pageSize: String(s), page: '1' }); },
+            onSortChange: handleSortChange,
+            currentSortBy: sortBy,
+            currentSortDir: sortDir,
+          } : undefined}
         />
       </div>
 

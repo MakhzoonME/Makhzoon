@@ -1,6 +1,6 @@
 'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useAllOrgsUsage } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -26,16 +26,66 @@ function daysUntil(d: Date | string): number {
   return Math.ceil((target.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
 }
 
+function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, v); });
+  return `${pathname}${qs.toString() ? '?' + qs.toString() : ''}`;
+}
+
+function sortOrgs(rows: OrgWithUsage[], sortBy: string, sortDir: 'asc' | 'desc'): OrgWithUsage[] {
+  const sorted = [...rows].sort((a, b) => {
+    let aVal: string | number = '';
+    let bVal: string | number = '';
+    switch (sortBy) {
+      case 'name':
+        aVal = a.organization.name.toLowerCase();
+        bVal = b.organization.name.toLowerCase();
+        break;
+      case 'subdomain':
+        aVal = a.organization.subdomain.toLowerCase();
+        bVal = b.organization.subdomain.toLowerCase();
+        break;
+      case 'category':
+        aVal = (a.organization.category ?? '').toLowerCase();
+        bVal = (b.organization.category ?? '').toLowerCase();
+        break;
+      case 'subscription':
+        aVal = a.subscription?.status ?? '';
+        bVal = b.subscription?.status ?? '';
+        break;
+      case 'created':
+        aVal = new Date(a.organization.createdAt).getTime();
+        bVal = new Date(b.organization.createdAt).getTime();
+        break;
+      default:
+        aVal = new Date(a.organization.createdAt).getTime();
+        bVal = new Date(b.organization.createdAt).getTime();
+    }
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+    }
+    return sortDir === 'asc' ? String(aVal).localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal));
+  });
+  return sorted;
+}
+
 export default function SuperAdminPage() {
   const { t } = useT();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { enterTransferMode } = useTransferMode();
 
-  const [searchInput, setSearchInput] = useState('');
-  const [category, setCategory] = useState<string>('');
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') ?? '');
+  const [category, setCategory] = useState(searchParams.get('category') ?? '');
+  const [page, setPage] = useState(searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1);
+  const [pageSize, setPageSize] = useState(searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10);
+  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') ?? 'created');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc');
+
   const search = useDebounce(searchInput, 250);
 
-  const { data: rows = [], isLoading } = useAllOrgsUsage({
+  const { data: allRows = [], isLoading } = useAllOrgsUsage({
     search: search || undefined,
     category: category || undefined,
   });
@@ -50,12 +100,57 @@ export default function SuperAdminPage() {
     staleTime: 60_000,
   });
 
-  const memberById = Object.fromEntries(teamMembers.map((m) => [m.id, m]));
+  const memberById = Object.fromEntries(teamMembers.map((m) => [m.id, m.displayName]));
+
+  const sorted = sortOrgs(allRows, sortBy, sortDir);
+  const total = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const paginated = sorted.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  const updateUrl = useCallback((params: Record<string, string>) => {
+    const url = syncFiltersToUrl(pathname, params);
+    router.replace(url, { scroll: false });
+  }, [pathname, router]);
+
+  useEffect(() => {
+    const urlSearch = searchParams.get('search') ?? '';
+    const urlCategory = searchParams.get('category') ?? '';
+    const urlPage = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
+    const urlPageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10;
+    const urlSortBy = searchParams.get('sortBy') ?? 'created';
+    const urlSortDir = searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc';
+
+    if (urlSearch !== searchInput) setSearchInput(urlSearch);
+    if (urlCategory !== category) setCategory(urlCategory);
+    if (urlPage !== page) setPage(urlPage);
+    if (urlPageSize !== pageSize) setPageSize(urlPageSize);
+    if (urlSortBy !== sortBy) setSortBy(urlSortBy);
+    if (urlSortDir !== sortDir) setSortDir(urlSortDir);
+  }, [searchParams]);
+
+  function syncAllToUrl(next: Partial<Record<'search' | 'category' | 'page' | 'pageSize' | 'sortBy' | 'sortDir', string>>) {
+    updateUrl({
+      search: next.search ?? searchInput,
+      category: next.category ?? category,
+      page: next.page ?? String(page),
+      pageSize: next.pageSize ?? String(pageSize),
+      sortBy: next.sortBy ?? sortBy,
+      sortDir: next.sortDir ?? sortDir,
+    });
+  }
+
+  function handleSortChange(nextSortBy: string, nextSortDir: 'asc' | 'desc') {
+    setSortBy(nextSortBy);
+    setSortDir(nextSortDir);
+    syncAllToUrl({ sortBy: nextSortBy, sortDir: nextSortDir });
+  }
 
   const columns: ColumnDef<OrgWithUsage>[] = [
     {
       key: 'name',
       header: t('orgs.name'),
+      sortable: true,
       render: (r) => (
         <div>
           <p className="font-medium text-gray-900 dark:text-gray-100">{r.organization.name}</p>
@@ -66,6 +161,7 @@ export default function SuperAdminPage() {
     {
       key: 'subdomain',
       header: t('orgs.workspaceId'),
+      sortable: true,
       render: (r) => (
         <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">{r.organization.subdomain}</span>
       ),
@@ -73,18 +169,18 @@ export default function SuperAdminPage() {
     {
       key: 'category',
       header: t('orgs.category'),
+      sortable: true,
       render: (r) => r.organization.category ?? <span className="text-gray-400">—</span>,
     },
     {
       key: 'assignedMember',
-      header: t('settings.assignedMember'),
+      header: t('settings.accountManager'),
       render: (r) => {
-        const member = r.organization.assignedMemberId ? memberById[r.organization.assignedMemberId] : null;
-        if (!member) return <span className="text-gray-400 text-xs">—</span>;
+        const name = r.organization.assignedMemberId ? memberById[r.organization.assignedMemberId] : null;
+        if (!name) return <span className="text-gray-400 text-xs">—</span>;
         return (
           <div>
-            <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{member.displayName}</p>
-            <p className="text-xs text-gray-400">{member.email}</p>
+            <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{name}</p>
           </div>
         );
       },
@@ -92,6 +188,7 @@ export default function SuperAdminPage() {
     {
       key: 'subscription',
       header: t('orgs.subscription'),
+      sortable: true,
       render: (r) => {
         if (!r.subscription) return <span className="text-gray-400 text-sm">—</span>;
         const d = daysUntil(r.subscription.endDate);
@@ -111,6 +208,7 @@ export default function SuperAdminPage() {
     {
       key: 'created',
       header: t('orgs.created'),
+      sortable: true,
       render: (r) => formatDate(r.organization.createdAt),
     },
     {
@@ -183,14 +281,14 @@ export default function SuperAdminPage() {
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
+            onChange={(e) => { setSearchInput(e.target.value); setPage(1); syncAllToUrl({ search: e.target.value, page: '1' }); }}
             placeholder={t('orgs.searchPlaceholder')}
             className="pl-8"
           />
         </div>
         <select
           value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          onChange={(e) => { setCategory(e.target.value); setPage(1); syncAllToUrl({ category: e.target.value, page: '1' }); }}
           className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm"
         >
           <option value="">{t('orgs.allCategories')}</option>
@@ -205,6 +303,8 @@ export default function SuperAdminPage() {
             onClick={() => {
               setSearchInput('');
               setCategory('');
+              setPage(1);
+              syncAllToUrl({ search: '', category: '', page: '1' });
             }}
           >
             {t('orgs.clear')}
@@ -214,11 +314,22 @@ export default function SuperAdminPage() {
 
       <div className="bg-white rounded-lg border border-gray-200">
         <DataTable
-          data={rows}
+          data={paginated}
           columns={columns}
           isLoading={isLoading}
           emptyMessage={t('orgs.noMatch')}
           keyExtractor={(r) => r.organization.id}
+          pagination={{
+            page: safePage,
+            pageSize,
+            total,
+            totalPages,
+            onPageChange: (p) => { setPage(p); syncAllToUrl({ page: String(p) }); },
+            onPageSizeChange: (s) => { setPageSize(s); setPage(1); syncAllToUrl({ pageSize: String(s), page: '1' }); },
+            onSortChange: handleSortChange,
+            currentSortBy: sortBy,
+            currentSortDir: sortDir,
+          }}
         />
       </div>
     </div>

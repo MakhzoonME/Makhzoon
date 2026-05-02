@@ -54,7 +54,15 @@ export interface UpdateAssetInput {
  */
 export async function getOrgAssets(
   user: AuthUser,
-  filters?: { status?: string; category?: string; search?: string; cursor?: string }
+  filters?: {
+    status?: string;
+    category?: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+    sortBy?: string;
+    sortDir?: 'asc' | 'desc';
+  }
 ) {
   await requirePermission(user, 'assets', 'view');
   return getAssets(user.organizationId!, filters);

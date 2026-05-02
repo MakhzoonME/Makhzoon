@@ -189,6 +189,7 @@ const en = {
   'assets.exportCsv':  'Export CSV',
   'assets.searchPlaceholder': 'Search by name…',
   'assets.allStatuses':       'All Statuses',
+  'assets.allCategories':     'All Categories',
   'assets.noAssets':          'No assets found.',
   'assets.retire':            'Retire asset',
   'assets.retireConfirmTitle':'Retire Asset',
@@ -214,12 +215,19 @@ const en = {
   'warranties.addWarranty':  'Add Warranty',
   'warranties.searchPlaceholder': 'Search by asset or vendor…',
   'warranties.allStatuses':  'All Statuses',
+  'warranties.active':       'Active',
+  'warranties.expired':      'Expired',
   'warranties.noWarranties': 'No warranties found.',
 
   // ── Requests page ─────────────────────────────────────────────────
   'requests.addRequest':   'New Request',
   'requests.noRequests':   'No requests found.',
   'requests.searchPlaceholder': 'Search requests…',
+  'requests.allStatuses':  'All Statuses',
+  'requests.allTypes':     'All Types',
+  'requests.pending':      'Pending',
+  'requests.approved':     'Approved',
+  'requests.rejected':     'Rejected',
 
   // ── Users page ── (supplement existing keys) ─────────────────────
   'users.searchPlaceholder': 'Search users…',
@@ -472,7 +480,6 @@ const en = {
   'settings.description':      'Description',
   'settings.category':         'Category',
   'settings.accountManager':   'Account Manager',
-  'settings.assignedMember':   'Assigned Team Member',
   'settings.notSet':           '—',
 
   // ── Users page (extra) ────────────────────────────────────────────
@@ -668,6 +675,7 @@ const ar: Record<keyof typeof en, string> = {
   'assets.exportCsv':  'تصدير CSV',
   'assets.searchPlaceholder': 'بحث بالاسم...',
   'assets.allStatuses':       'جميع الحالات',
+  'assets.allCategories':     'جميع الفئات',
   'assets.noAssets':          'لا توجد أصول.',
   'assets.retire':            'إيقاف الأصل',
   'assets.retireConfirmTitle':'إيقاف الأصل',
@@ -693,12 +701,19 @@ const ar: Record<keyof typeof en, string> = {
   'warranties.addWarranty':  'إضافة ضمان',
   'warranties.searchPlaceholder': 'بحث بالأصل أو المورد...',
   'warranties.allStatuses':  'جميع الحالات',
+  'warranties.active':       'نشط',
+  'warranties.expired':      'منتهي',
   'warranties.noWarranties': 'لا توجد ضمانات.',
 
   // ── Requests page ─────────────────────────────────────────────────
   'requests.addRequest':   'طلب جديد',
   'requests.noRequests':   'لا توجد طلبات.',
   'requests.searchPlaceholder': 'بحث في الطلبات...',
+  'requests.allStatuses':  'جميع الحالات',
+  'requests.allTypes':     'جميع الأنواع',
+  'requests.pending':      'قيد الانتظار',
+  'requests.approved':     'موافق',
+  'requests.rejected':     'مرفوض',
 
   // ── Users page ── (supplement existing keys) ─────────────────────
   'users.searchPlaceholder': 'بحث المستخدمين...',
@@ -951,7 +966,6 @@ const ar: Record<keyof typeof en, string> = {
   'settings.description':    'الوصف',
   'settings.category':       'الفئة',
   'settings.accountManager':   'مدير الحساب',
-  'settings.assignedMember':   'عضو الفريق المخصص',
   'settings.notSet':           '—',
 
   // ── Users page (extra) ────────────────────────────────────────────

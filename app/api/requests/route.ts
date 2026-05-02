@@ -15,9 +15,16 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status') ?? undefined;
+    const type = searchParams.get('type') ?? undefined;
     const userId = user.role === 'staff' ? user.uid : undefined;
+    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined;
+    const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined;
+    const sortBy = searchParams.get('sortBy') ?? undefined;
+    const sortDir = searchParams.get('sortDir') === 'asc' ? 'asc' as const : 'desc' as const;
 
-    const requests = await getRequests(orgId, { status, userId });
+    const requests = await getRequests(orgId, {
+      status, type, userId, page, pageSize, sortBy: sortBy as never, sortDir,
+    });
     return NextResponse.json(requests);
   } catch (err) {
     console.error('[GET /api/requests]', err);

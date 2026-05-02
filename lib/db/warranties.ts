@@ -23,7 +23,6 @@ async function attachAssetNames(warranties: Warranty[]): Promise<Warranty[]> {
   const uniqueAssetIds = Array.from(new Set(warranties.map((w) => w.assetId)));
   if (uniqueAssetIds.length === 0) return warranties;
 
-  // Batch-fetch all asset docs in a single RPC
   const refs = uniqueAssetIds.map((id) => adminDb.collection('assets').doc(id));
   const assetDocs = await adminDb.getAll(...refs);
   const nameMap = new Map<string, string>();
@@ -34,17 +33,66 @@ async function attachAssetNames(warranties: Warranty[]): Promise<Warranty[]> {
   return warranties.map((w) => ({ ...w, assetName: nameMap.get(w.assetId) }));
 }
 
-export async function getWarranties(orgId: string, opts?: { status?: string; assetId?: string }): Promise<Warranty[]> {
+type SortField = 'vendor' | 'startDate' | 'endDate' | 'assetId' | 'createdAt';
+
+export async function getWarranties(
+  orgId: string,
+  opts?: {
+    status?: string;
+    assetId?: string;
+    page?: number;
+    pageSize?: number;
+    sortBy?: SortField;
+    sortDir?: 'asc' | 'desc';
+  }
+): Promise<{ items: Warranty[]; total: number; page: number; pageSize: number; totalPages: number }> {
+  const page = opts?.page ?? 1;
+  const pageSize = opts?.pageSize ?? 10;
+  const sortBy = opts?.sortBy ?? 'createdAt';
+  const sortDir = opts?.sortDir ?? 'desc';
+
   let q = adminDb.collection('warranties')
-    .where('organizationId', '==', orgId)
-    .orderBy('endDate', 'asc')
-    .limit(200);
+    .where('organizationId', '==', orgId);
 
   if (opts?.assetId) q = q.where('assetId', '==', opts.assetId) as typeof q;
 
   const snap = await q.get();
-  const warranties = snap.docs.map((d) => toWarranty(d.id, d.data()));
-  return attachAssetNames(warranties);
+  let warranties = snap.docs.map((d) => toWarranty(d.id, d.data()));
+
+  if (opts?.status) {
+    const now = new Date();
+    warranties = warranties.filter((w) => {
+      if (opts.status === 'active') return w.endDate >= now;
+      if (opts.status === 'expired') return w.endDate < now;
+      return true;
+    });
+  }
+
+  warranties = await attachAssetNames(warranties);
+
+  const total = warranties.length;
+
+  warranties.sort((a, b) => {
+    const aVal = a[sortBy];
+    const bVal = b[sortBy];
+    const mult = sortDir === 'asc' ? 1 : -1;
+
+    if (aVal == null && bVal == null) return 0;
+    if (aVal == null) return mult;
+    if (bVal == null) return -mult;
+
+    if (aVal instanceof Date && bVal instanceof Date) {
+      return (aVal.getTime() - bVal.getTime()) * mult;
+    }
+    return String(aVal).localeCompare(String(bVal)) * mult;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * pageSize;
+  const pagedItems = warranties.slice(start, start + pageSize);
+
+  return { items: pagedItems, total, page: safePage, pageSize, totalPages };
 }
 
 export async function getWarrantyById(id: string): Promise<Warranty | null> {
@@ -54,12 +102,13 @@ export async function getWarrantyById(id: string): Promise<Warranty | null> {
 }
 
 export async function createWarranty(data: Omit<Warranty, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  const now = new Date();
   const ref = await adminDb.collection('warranties').add({
     ...data,
     startDate: new Date(data.startDate),
     endDate: new Date(data.endDate),
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
+    createdAt: now,
+    updatedAt: now,
   });
   return ref.id;
 }

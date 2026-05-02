@@ -63,6 +63,17 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
     return allAssets.filter((a) => !assetIdsWithActiveWarranty.has(a.id));
   }, [assetsData, allWarranties, warranty]);
 
+  // When editing, ensure the current asset is in the options list even if not yet loaded
+  const assetOptions = useMemo(() => {
+    if (!warranty) return availableAssets;
+    const existing = availableAssets.find((a) => a.id === warranty.assetId);
+    if (existing) return availableAssets;
+    return [
+      { id: warranty.assetId, name: warranty.assetName ?? warranty.assetId },
+      ...availableAssets,
+    ];
+  }, [availableAssets, warranty]);
+
   const isLoadingData = assetsLoading || warrantiesLoading;
   const noAssetsAvailable = !isLoadingData && availableAssets.length === 0 && !warranty;
 
@@ -75,7 +86,19 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
       endDate: warranty?.endDate ? new Date(warranty.endDate).toISOString().slice(0, 10) : '',
       reminder: warranty?.reminder ?? true,
       notes: warranty?.notes ?? '',
+      receiptUrl: warranty?.receiptUrl ?? '',
     },
+    values: warranty
+      ? {
+          assetId: warranty.assetId,
+          vendor: warranty.vendor,
+          startDate: new Date(warranty.startDate).toISOString().slice(0, 10),
+          endDate: new Date(warranty.endDate).toISOString().slice(0, 10),
+          reminder: warranty.reminder ?? true,
+          notes: warranty.notes ?? '',
+          receiptUrl: warranty.receiptUrl ?? '',
+        }
+      : undefined,
   });
 
   async function onSubmit(data: WarrantyFormData) {
@@ -209,6 +232,14 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
           <FormItem>
             <FormLabel>Notes</FormLabel>
             <FormControl><Textarea {...field} rows={3} /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={form.control} name="receiptUrl" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Receipt URL</FormLabel>
+            <FormControl><Input {...field} placeholder="https://example.com/receipt.pdf" /></FormControl>
             <FormMessage />
           </FormItem>
         )} />

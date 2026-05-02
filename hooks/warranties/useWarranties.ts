@@ -1,21 +1,39 @@
 'use client';
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 
-export function useWarranties(params?: { status?: string; assetId?: string }) {
+interface WarrantiesResponse {
+  items: unknown[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export function useWarranties(params?: {
+  status?: string;
+  assetId?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+}) {
   const query = new URLSearchParams();
   if (params?.status) query.set('status', params.status);
   if (params?.assetId) query.set('assetId', params.assetId);
+  if (params?.page) query.set('page', String(params.page));
+  if (params?.pageSize) query.set('pageSize', String(params.pageSize));
+  if (params?.sortBy) query.set('sortBy', params.sortBy);
+  if (params?.sortDir) query.set('sortDir', params.sortDir);
 
-  return useQuery({
+  return useQuery<WarrantiesResponse>({
     queryKey: ['warranties', params],
     queryFn: async () => {
       const res = await fetch(`/api/warranties?${query.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch warranties');
       return res.json();
     },
-    staleTime: 60_000,
+    staleTime: 0,
     gcTime: 5 * 60_000,
-    placeholderData: keepPreviousData,
   });
 }
 

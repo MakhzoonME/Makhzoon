@@ -12,6 +12,7 @@ export interface Asset {
   assignedTo?: string;
   location?: string;
   notes?: string;
+  receiptUrl?: string;
   createdAt: Date;
   createdBy: string;
   createdByEmail?: string;

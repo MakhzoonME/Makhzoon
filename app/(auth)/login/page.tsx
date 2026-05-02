@@ -137,9 +137,7 @@ export default function LoginPage() {
       const idToken = await cred.user.getIdToken();
       await redirectFromSession(idToken, null);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Invalid email or password';
-      const isFirebaseAuth = msg.startsWith('Firebase') || /auth\//.test(msg);
-      setEmailError(isFirebaseAuth ? 'Invalid email or password' : msg);
+      setEmailError(getFirebaseAuthErrorMessage(err, 'email'));
       shake();
       setEmailLoading(false);
     }
@@ -161,12 +159,43 @@ export default function LoginPage() {
       const idToken = await cred.user.getIdToken();
       await redirectFromSession(idToken, null);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Invalid username or password';
-      const isFirebaseAuth = msg.startsWith('Firebase') || /auth\//.test(msg);
-      setUsernameError(isFirebaseAuth ? 'Invalid username or password' : msg);
+      setUsernameError(getFirebaseAuthErrorMessage(err, 'username'));
       shake();
       setUsernameLoading(false);
     }
+  }
+
+  function getFirebaseAuthErrorMessage(err: unknown, mode: 'email' | 'username'): string {
+    const code = (err as { code?: string } | null)?.code ?? '';
+
+    if (code === 'auth/user-disabled') {
+      return 'This account has been deactivated. Please contact support.';
+    }
+
+    if (code === 'auth/user-not-found') {
+      return mode === 'email'
+        ? 'No account is registered with this email address.'
+        : 'No account is registered with this username.';
+    }
+
+    if (code === 'auth/wrong-password') {
+      return mode === 'email' ? 'Invalid email or password.' : 'Invalid username or password.';
+    }
+
+    if (code === 'auth/too-many-requests') {
+      return 'Too many failed attempts. Please try again later or reset your password.';
+    }
+
+    if (code === 'auth/invalid-email') {
+      return 'Invalid email address format.';
+    }
+
+    if (/^auth\//.test(code)) {
+      return mode === 'email' ? 'Invalid email or password.' : 'Invalid username or password.';
+    }
+
+    if (err instanceof Error) return err.message;
+    return mode === 'email' ? 'Invalid email or password.' : 'Invalid username or password.';
   }
 
   const container = {

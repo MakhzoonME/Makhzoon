@@ -53,6 +53,7 @@ export function AssetForm({ asset, onSuccess }: AssetFormProps) {
       assignedTo: asset?.assignedTo ?? '',
       location: asset?.location ?? '',
       notes: asset?.notes ?? '',
+      receiptUrl: asset?.receiptUrl ?? '',
     },
   });
 
@@ -185,6 +186,14 @@ export function AssetForm({ asset, onSuccess }: AssetFormProps) {
           <FormItem>
             <FormLabel>Notes</FormLabel>
             <FormControl><Textarea {...field} rows={4} placeholder="Additional notes..." /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={form.control} name="receiptUrl" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Receipt URL</FormLabel>
+            <FormControl><Input {...field} placeholder="https://example.com/receipt.pdf" /></FormControl>
             <FormMessage />
           </FormItem>
         )} />

@@ -18,8 +18,12 @@ async function _GET(req: NextRequest) {
       category: searchParams.get('category') ?? undefined,
       stockStatus: searchParams.get('stockStatus') ?? undefined,
       search: searchParams.get('search') ?? undefined,
+      page: searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined,
+      pageSize: searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined,
+      sortBy: searchParams.get('sortBy') ?? undefined,
+      sortDir: searchParams.get('sortDir') === 'asc' ? 'asc' as const : 'desc' as const,
     });
-    return NextResponse.json({ items }, {
+    return NextResponse.json(items, {
       headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
     });
   } catch (err) {

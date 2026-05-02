@@ -1,6 +1,6 @@
 'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useOrgSlug } from '@/hooks/ui';
 import { useInventoryItems, useInventoryCategories } from '@/hooks/inventory';
 import { useAuthStore } from '@/store/auth.store';
@@ -21,10 +21,16 @@ import { useT } from '@/hooks/ui';
 function PlusSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>; }
 function EditSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /></svg>; }
 function Trash2SVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M2 3.5h10M5.5 3.5V2.5h3v1M4 3.5l.75 8h4.5L10 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
-function AlertTriangleSVG({ size = 16 }: { size?: number }) { return <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 2L1.5 13h13L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /><path d="M8 6.5v3M8 11v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>; }
+function AlertTriangleSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 2L1.5 13h13L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /><path d="M8 6.5v3M8 11v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>; }
 function ClipboardCheckSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><rect x="3" y="2" width="10" height="12" rx="1" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M6 2v1.5h4V2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /><path d="M5.5 8.5l2 2 3.5-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
 function RequestSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><rect x="2" y="2" width="10" height="10" rx="1" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M4 5h6M4 7.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
 import { cn } from '@/lib/utils/cn';
+
+function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, v); });
+  return `${pathname}${qs.toString() ? '?' + qs.toString() : ''}`;
+}
 
 function StockBadge({ status, qty, unit, labels }: { status: InventoryItem['stockStatus']; qty: number; unit: string; labels: { inStock: string; lowStock: string; outOfStock: string } }) {
   const map = {
@@ -35,7 +41,7 @@ function StockBadge({ status, qty, unit, labels }: { status: InventoryItem['stoc
   const label = { ok: labels.inStock, low: labels.lowStock, out: labels.outOfStock };
   return (
     <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs font-medium', map[status])}>
-      {status === 'low' && <AlertTriangleSVG size={12} />}
+      {status === 'low' && <AlertTriangleSVG />}
       {qty} {unit} · {label[status]}
     </span>
   );
@@ -44,13 +50,20 @@ function StockBadge({ status, qty, unit, labels }: { status: InventoryItem['stoc
 export default function InventoryPage() {
   const { t } = useT();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const orgSlug = useOrgSlug();
   const { user } = useAuthStore();
   const qc = useQueryClient();
 
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('');
-  const [stockFilter, setStockFilter] = useState('');
+  const [search, setSearch] = useState(searchParams.get('search') ?? '');
+  const [category, setCategory] = useState(searchParams.get('category') ?? '');
+  const [stockFilter, setStockFilter] = useState(searchParams.get('stockStatus') ?? '');
+  const [page, setPage] = useState(searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1);
+  const [pageSize, setPageSize] = useState(searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10);
+  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') ?? 'createdAt');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc');
+
   const [deleteTarget, setDeleteTarget] = useState<InventoryItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -58,9 +71,40 @@ export default function InventoryPage() {
   const [reqTarget, setReqTarget] = useState<InventoryItem | null>(null);
 
   const debouncedSearch = useDebounce(search, 400);
-  const { data, isLoading } = useInventoryItems({ category: category || undefined, stockStatus: stockFilter || undefined, search: debouncedSearch });
+  const { data: inventoryData, isLoading } = useInventoryItems({
+    category: category || undefined,
+    stockStatus: stockFilter || undefined,
+    search: debouncedSearch || undefined,
+    page,
+    pageSize,
+    sortBy,
+    sortDir,
+  });
   const { data: categories } = useInventoryCategories();
-  const items = data?.items ?? [];
+  const items = inventoryData?.items ?? [];
+
+  const updateUrl = useCallback((params: Record<string, string>) => {
+    const url = syncFiltersToUrl(pathname, params);
+    router.replace(url, { scroll: false });
+  }, [pathname, router]);
+
+  useEffect(() => {
+    const urlSearch = searchParams.get('search') ?? '';
+    const urlCategory = searchParams.get('category') ?? '';
+    const urlStock = searchParams.get('stockStatus') ?? '';
+    const urlPage = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
+    const urlPageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10;
+    const urlSortBy = searchParams.get('sortBy') ?? 'createdAt';
+    const urlSortDir = searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc';
+
+    if (urlSearch !== search) setSearch(urlSearch);
+    if (urlCategory !== category) setCategory(urlCategory);
+    if (urlStock !== stockFilter) setStockFilter(urlStock);
+    if (urlPage !== page) setPage(urlPage);
+    if (urlPageSize !== pageSize) setPageSize(urlPageSize);
+    if (urlSortBy !== sortBy) setSortBy(urlSortBy);
+    if (urlSortDir !== sortDir) setSortDir(urlSortDir);
+  }, [searchParams]);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
@@ -68,7 +112,7 @@ export default function InventoryPage() {
 
   const columns: ColumnDef<InventoryItem>[] = [
     {
-      key: 'name', header: t('inventory.item'),
+      key: 'name', header: t('inventory.item'), sortable: true,
       render: (i) => (
         <div>
           <button className="font-medium text-indigo-600 hover:underline text-left" onClick={() => router.push(`/${orgSlug}/inventory/${i.id}`)}>
@@ -78,14 +122,11 @@ export default function InventoryPage() {
         </div>
       ),
     },
-    { key: 'category', header: t('col.category'), render: (i) => i.category },
-    {
-      key: 'stock', header: t('inventory.stock'),
-      render: (i) => <StockBadge status={i.stockStatus} qty={i.quantityOnHand} unit={i.unit} labels={stockLabels} />,
-    },
-    { key: 'threshold', header: t('inventory.minThreshold'), render: (i) => <span className="text-sm text-gray-600">{i.minimumThreshold} {i.unit}</span> },
-    { key: 'location', header: t('col.location'), render: (i) => i.location || <span className="text-gray-400">—</span> },
-    { key: 'supplier', header: t('inventory.supplier'), render: (i) => i.supplier || <span className="text-gray-400">—</span> },
+    { key: 'category', header: t('col.category'), sortable: true, render: (i) => i.category },
+    { key: 'stockStatus', header: t('inventory.stock'), sortable: true, render: (i) => <StockBadge status={i.stockStatus} qty={i.quantityOnHand} unit={i.unit} labels={stockLabels} /> },
+    { key: 'quantityOnHand', header: t('inventory.minThreshold'), sortable: true, render: (i) => <span className="text-sm text-gray-600">{i.minimumThreshold} {i.unit}</span> },
+    { key: 'location', header: t('col.location'), sortable: true, render: (i) => i.location || <span className="text-gray-400">—</span> },
+    { key: 'supplier', header: t('inventory.supplier'), sortable: true, render: (i) => i.supplier || <span className="text-gray-400">—</span> },
     {
       key: 'actions', header: '',
       render: (i) => (
@@ -131,6 +172,44 @@ export default function InventoryPage() {
   const lowCount = items.filter((i) => i.stockStatus === 'low').length;
   const outCount = items.filter((i) => i.stockStatus === 'out').length;
 
+  function syncAllToUrl(next: Partial<Record<'search' | 'category' | 'stockStatus' | 'page' | 'pageSize' | 'sortBy' | 'sortDir', string>>) {
+    updateUrl({
+      search: next.search ?? search,
+      category: next.category ?? category,
+      stockStatus: next.stockStatus ?? stockFilter,
+      page: next.page ?? String(page),
+      pageSize: next.pageSize ?? String(pageSize),
+      sortBy: next.sortBy ?? sortBy,
+      sortDir: next.sortDir ?? sortDir,
+    });
+  }
+
+  function handleCategoryChange(v: string) {
+    const next = v === 'all' ? '' : v;
+    setCategory(next);
+    setPage(1);
+    syncAllToUrl({ category: next, page: '1' });
+  }
+
+  function handleStockChange(v: string) {
+    const next = v === 'all' ? '' : v;
+    setStockFilter(next);
+    setPage(1);
+    syncAllToUrl({ stockStatus: next, page: '1' });
+  }
+
+  function handleSearchChange(v: string) {
+    setSearch(v);
+    setPage(1);
+    syncAllToUrl({ search: v, page: '1' });
+  }
+
+  function handleSortChange(sortByField: string, dir: 'asc' | 'desc') {
+    setSortBy(sortByField);
+    setSortDir(dir);
+    syncAllToUrl({ sortBy: sortByField, sortDir: dir });
+  }
+
   return (
     <div>
       <PageHeader
@@ -173,17 +252,17 @@ export default function InventoryPage() {
       <FilterBar
         searchPlaceholder={t('inventory.searchPlaceholder')}
         searchValue={search}
-        onSearchChange={setSearch}
+        onSearchChange={handleSearchChange}
         filters={
           <div className="flex items-center gap-2">
-            <Select value={category || 'all'} onValueChange={(v) => setCategory(v === 'all' ? '' : v)}>
+            <Select value={category || 'all'} onValueChange={handleCategoryChange}>
               <SelectTrigger className="w-40"><SelectValue placeholder={t('inventory.allCategories')} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('inventory.allCategories')}</SelectItem>
                 {(categories ?? []).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={stockFilter || 'all'} onValueChange={(v) => setStockFilter(v === 'all' ? '' : v)}>
+            <Select value={stockFilter || 'all'} onValueChange={handleStockChange}>
               <SelectTrigger className="w-36"><SelectValue placeholder={t('inventory.allStock')} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('inventory.allStock')}</SelectItem>
@@ -204,6 +283,17 @@ export default function InventoryPage() {
           emptyMessage={t('inventory.noItems')}
           onRowClick={(i) => router.push(`/${orgSlug}/inventory/${i.id}`)}
           keyExtractor={(i) => i.id}
+          pagination={inventoryData ? {
+            page: inventoryData.page,
+            pageSize: inventoryData.pageSize,
+            total: inventoryData.total,
+            totalPages: inventoryData.totalPages,
+            onPageChange: (p) => { setPage(p); syncAllToUrl({ page: String(p) }); },
+            onPageSizeChange: (s) => { setPageSize(s); setPage(1); syncAllToUrl({ pageSize: String(s), page: '1' }); },
+            onSortChange: handleSortChange,
+            currentSortBy: sortBy,
+            currentSortDir: sortDir,
+          } : undefined}
         />
       </div>
 

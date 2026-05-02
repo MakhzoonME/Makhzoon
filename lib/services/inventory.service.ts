@@ -44,7 +44,15 @@ export interface UpdateInventoryItemInput {
  */
 export async function getOrgInventoryItems(
   user: AuthUser,
-  filters?: { category?: string; stockStatus?: string; search?: string }
+  filters?: {
+    category?: string;
+    stockStatus?: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+    sortBy?: string;
+    sortDir?: 'asc' | 'desc';
+  }
 ) {
   await requirePermission(user, 'inventory', 'view');
   return getInventoryItems(user.organizationId!, filters);

@@ -8,8 +8,7 @@ export interface OrgInfo {
   contactEmail: string;
   description: string | null;
   category: string | null;
-  accountManager: { name: string; email: string } | null;
-  assignedMember: { id: string; name: string; email: string } | null;
+  accountManager: { id: string; name: string; email: string } | null;
 }
 
 export function useOrgInfo() {

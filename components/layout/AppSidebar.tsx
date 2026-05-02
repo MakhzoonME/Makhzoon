@@ -13,6 +13,12 @@ import { UserPermissions } from '@/types';
 import { useT } from '@/hooks/ui';
 import type { MessageKey } from '@/locales/messages';
 
+/** Display email/username without the synthetic @makhzoon.local suffix */
+function displayIdentity(email?: string | null): string {
+  if (!email) return '';
+  return email.replace(/@makhzoon\.local$/i, '');
+}
+
 /* ── Inline SVG nav icons ─────────────────────────────────────── */
 function DashboardSVG() {
   return (
@@ -405,7 +411,7 @@ export function AppSidebar() {
           <div className="p-3 border-t border-gray-100 dark:border-gray-800">
             <div className={cn('flex items-center gap-2 px-1 py-1', sidebarCollapsed && 'justify-center')}>
               <div className="h-7 w-7 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-xs font-semibold text-indigo-700 dark:text-indigo-300 flex-shrink-0">
-                {user.displayName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase()}
+                {user.displayName?.[0]?.toUpperCase() ?? displayIdentity(user.email)?.[0]?.toUpperCase()}
               </div>
               <AnimatePresence initial={false}>
                 {!sidebarCollapsed && (
@@ -417,7 +423,7 @@ export function AppSidebar() {
                     transition={{ duration: 0.16, ease: EASE_OUT }}
                     className="flex-1 min-w-0"
                   >
-                    <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">{user.displayName || user.email}</p>
+                    <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">{user.displayName || displayIdentity(user.email)}</p>
                     <p className="text-[11px] text-gray-500 dark:text-gray-400 capitalize">{user.role?.replace('_', ' ')}</p>
                   </motion.div>
                 )}

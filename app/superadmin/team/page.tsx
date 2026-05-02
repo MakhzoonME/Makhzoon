@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ import {
   DEFAULT_SUPPORT_PERMISSIONS,
 } from '@/types';
 import { useT } from '@/hooks/ui';
+import { Search } from 'lucide-react';
 
 function defaultPermsForRole(role: MakhzoonRole): SuperAdminPermissions {
   if (role === 'super_admin') return DEFAULT_SUPER_ADMIN_PERMISSIONS;
@@ -59,14 +61,6 @@ const ROLE_DESCRIPTION: Record<string, string> = {
   makhzoon_support: 'Configurable access to specific portal features.',
 };
 
-function PlusSVG() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function generatePassword(): string {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
   let p = '';
@@ -74,13 +68,64 @@ function generatePassword(): string {
   return p;
 }
 
+function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, v); });
+  return `${pathname}${qs.toString() ? '?' + qs.toString() : ''}`;
+}
+
+function sortMembers(members: TeamMember[], sortBy: string, sortDir: 'asc' | 'desc'): TeamMember[] {
+  const sorted = [...members].sort((a, b) => {
+    let aVal: string | number = '';
+    let bVal: string | number = '';
+    switch (sortBy) {
+      case 'name':
+        aVal = a.displayName.toLowerCase();
+        bVal = b.displayName.toLowerCase();
+        break;
+      case 'email':
+        aVal = a.email.toLowerCase();
+        bVal = b.email.toLowerCase();
+        break;
+      case 'role': {
+        const order: Record<string, number> = { super_admin: 0, makhzoon_admin: 1, makhzoon_support: 2 };
+        aVal = order[a.role] ?? 99;
+        bVal = order[b.role] ?? 99;
+        break;
+      }
+      case 'status':
+        aVal = a.status === 'active' ? 0 : 1;
+        bVal = b.status === 'active' ? 0 : 1;
+        break;
+      case 'created':
+        aVal = new Date(a.createdAt).getTime();
+        bVal = new Date(b.createdAt).getTime();
+        break;
+      default:
+        aVal = new Date(a.createdAt).getTime();
+        bVal = new Date(b.createdAt).getTime();
+    }
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+    }
+    return sortDir === 'asc' ? String(aVal).localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal));
+  });
+  return sorted;
+}
+
 export default function SuperAdminTeamPage() {
   const { t } = useT();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user: currentUser } = useAuthStore();
   const qc = useQueryClient();
   const isSuperAdmin = currentUser?.role === 'super_admin';
 
-  // Add member dialog
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') ?? '');
+  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') ?? 'created');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc');
+
   const [showAdd, setShowAdd] = useState(false);
   const [adding, setAdding] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -93,14 +138,13 @@ export default function SuperAdminTeamPage() {
   });
   const [addPermissions, setAddPermissions] = useState<SuperAdminPermissions>(DEFAULT_SUPPORT_PERMISSIONS);
 
-  // Edit member dialog
   const [editTarget, setEditTarget] = useState<TeamMember | null>(null);
   const [editForm, setEditForm] = useState({ displayName: '', role: 'makhzoon_support' as MakhzoonRole });
   const [editPermissions, setEditPermissions] = useState<SuperAdminPermissions>(DEFAULT_SUPPORT_PERMISSIONS);
   const [showEditPerms, setShowEditPerms] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const { data: members = [], isLoading } = useQuery<TeamMember[]>({
+  const { data: allMembers = [], isLoading } = useQuery<TeamMember[]>({
     queryKey: ['superadmin-team'],
     queryFn: async () => {
       const res = await fetch('/api/superadmin/team');
@@ -108,6 +152,41 @@ export default function SuperAdminTeamPage() {
       return res.json();
     },
   });
+
+  const searchTerm = searchInput.toLowerCase();
+  const filtered = allMembers.filter(
+    (m) => !searchTerm || m.displayName.toLowerCase().includes(searchTerm) || m.email.toLowerCase().includes(searchTerm)
+  );
+  const sorted = sortMembers(filtered, sortBy, sortDir);
+
+  const updateUrl = useCallback((params: Record<string, string>) => {
+    const url = syncFiltersToUrl(pathname, params);
+    router.replace(url, { scroll: false });
+  }, [pathname, router]);
+
+  useEffect(() => {
+    const urlSearch = searchParams.get('search') ?? '';
+    const urlSortBy = searchParams.get('sortBy') ?? 'created';
+    const urlSortDir = searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc';
+
+    if (urlSearch !== searchInput) setSearchInput(urlSearch);
+    if (urlSortBy !== sortBy) setSortBy(urlSortBy);
+    if (urlSortDir !== sortDir) setSortDir(urlSortDir);
+  }, [searchParams]);
+
+  function syncAllToUrl(next: Partial<Record<'search' | 'sortBy' | 'sortDir', string>>) {
+    updateUrl({
+      search: next.search ?? searchInput,
+      sortBy: next.sortBy ?? sortBy,
+      sortDir: next.sortDir ?? sortDir,
+    });
+  }
+
+  function handleSortChange(nextSortBy: string, nextSortDir: 'asc' | 'desc') {
+    setSortBy(nextSortBy);
+    setSortDir(nextSortDir);
+    syncAllToUrl({ sortBy: nextSortBy, sortDir: nextSortDir });
+  }
 
   function openAdd() {
     setAddForm({ email: '', displayName: '', role: 'makhzoon_support', password: generatePassword() });
@@ -202,7 +281,6 @@ export default function SuperAdminTeamPage() {
     }
   }
 
-  // Can the current user edit this member?
   function canEdit(m: TeamMember) {
     if (m.id === currentUser?.uid) return false;
     if (!isSuperAdmin && m.role === 'super_admin') return false;
@@ -217,10 +295,14 @@ export default function SuperAdminTeamPage() {
           <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('team.title')}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-300 mt-0.5">{t('team.subtitle')}</p>
         </div>
-        <Button size="sm" onClick={openAdd}><PlusSVG /><span className="ml-1">{t('team.addMember')}</span></Button>
+        <Button size="sm" onClick={openAdd}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+            <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <span className="ml-1">{t('team.addMember')}</span>
+        </Button>
       </div>
 
-      {/* Role hierarchy info */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {(['super_admin', 'makhzoon_admin', 'makhzoon_support'] as MakhzoonRole[]).map((role) => (
           <div key={role} className={cn('rounded-lg border px-4 py-3', ROLE_STYLE[role].replace('text-', 'border-').replace('bg-', 'bg-'))}>
@@ -230,15 +312,65 @@ export default function SuperAdminTeamPage() {
         ))}
       </div>
 
+      <div className="bg-white border border-gray-200 rounded-lg p-3 flex flex-wrap gap-2">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            value={searchInput}
+            onChange={(e) => { setSearchInput(e.target.value); syncAllToUrl({ search: e.target.value }); }}
+            placeholder={t('team.searchPlaceholder') ?? 'Search by name or email'}
+            className="pl-8"
+          />
+        </div>
+        {searchInput && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => { setSearchInput(''); syncAllToUrl({ search: '' }); }}
+          >
+            {t('orgs.clear')}
+          </Button>
+        )}
+      </div>
+
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('team.fullName')}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('team.email')}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('team.role')}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('team.status')}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('team.added')}</th>
+              {[
+                { key: 'name', label: t('team.fullName'), width: '120px' },
+                { key: 'email', label: t('team.email'), width: '160px' },
+                { key: 'role', label: t('team.role'), width: '80px' },
+                { key: 'status', label: t('team.status'), width: '80px' },
+                { key: 'created', label: t('team.added'), width: '80px' },
+              ].map(({ key, label }) => {
+                const isCurrentSort = sortBy === key;
+                const nextDir = isCurrentSort && sortDir === 'asc' ? 'desc' : 'asc';
+                return (
+                  <th
+                    key={key}
+                    className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer select-none hover:text-gray-700"
+                    onClick={() => handleSortChange(key, nextDir)}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {label}
+                      {isCurrentSort ? (
+                        <svg className="w-3 h-3 text-indigo-600" viewBox="0 0 12 12" fill="none">
+                          {sortDir === 'asc'
+                            ? <path d="M6 2L9 5H3L6 2Z" fill="currentColor" />
+                            : <path d="M6 10L3 7H9L6 10Z" fill="currentColor" />
+                          }
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-gray-300" viewBox="0 0 12 12" fill="none">
+                          <path d="M6 2L9 5H3L6 2Z" fill="currentColor" />
+                          <path d="M6 10L3 7H9L6 10Z" fill="currentColor" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                );
+              })}
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -253,12 +385,12 @@ export default function SuperAdminTeamPage() {
                   ))}
                 </tr>
               ))
-            ) : members.length === 0 ? (
+            ) : sorted.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center text-sm text-gray-400">{t('team.noResults')}</td>
               </tr>
             ) : (
-              members.map((m) => {
+              sorted.map((m) => {
                 const isSelf = m.id === currentUser?.uid;
                 const editable = canEdit(m);
                 return (
@@ -321,7 +453,6 @@ export default function SuperAdminTeamPage() {
         </table>
       </div>
 
-      {/* Add member dialog */}
       <Dialog open={showAdd} onOpenChange={(o) => !o && setShowAdd(false)}>
         <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -374,7 +505,6 @@ export default function SuperAdminTeamPage() {
               )}
             </div>
 
-            {/* Access permissions — all roles */}
             <div className="space-y-2">
               <button
                 type="button"
@@ -428,7 +558,6 @@ export default function SuperAdminTeamPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit member dialog */}
       <Dialog open={!!editTarget} onOpenChange={(o) => !o && setEditTarget(null)}>
         <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -472,7 +601,6 @@ export default function SuperAdminTeamPage() {
               )}
             </div>
 
-            {/* Access permissions — all roles */}
             <div className="space-y-2">
               <button
                 type="button"

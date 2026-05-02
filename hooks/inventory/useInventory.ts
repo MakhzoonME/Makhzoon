@@ -1,15 +1,33 @@
 'use client';
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import type { InventoryItem, InventoryTransaction } from '@/types';
 
-interface InventoryResponse { items: InventoryItem[] }
+interface InventoryResponse {
+  items: InventoryItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
 interface TransactionsResponse { transactions: InventoryTransaction[] }
 
-export function useInventoryItems(params?: { category?: string; stockStatus?: string; search?: string }) {
+export function useInventoryItems(params?: {
+  category?: string;
+  stockStatus?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+}) {
   const query = new URLSearchParams();
   if (params?.category) query.set('category', params.category);
   if (params?.stockStatus) query.set('stockStatus', params.stockStatus);
   if (params?.search) query.set('search', params.search);
+  if (params?.page) query.set('page', String(params.page));
+  if (params?.pageSize) query.set('pageSize', String(params.pageSize));
+  if (params?.sortBy) query.set('sortBy', params.sortBy);
+  if (params?.sortDir) query.set('sortDir', params.sortDir);
 
   return useQuery<InventoryResponse>({
     queryKey: ['inventory', params],
@@ -19,7 +37,7 @@ export function useInventoryItems(params?: { category?: string; stockStatus?: st
       return res.json();
     },
     staleTime: 0,
-    placeholderData: keepPreviousData,
+    gcTime: 5 * 60_000,
   });
 }
 

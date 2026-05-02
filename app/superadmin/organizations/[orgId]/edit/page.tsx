@@ -157,7 +157,7 @@ export default function EditOrganizationPage({ params }: { params: { orgId: stri
                 <p className="text-xs text-gray-500">{description.length}/500</p>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="assignedMember">Assigned Team Member</Label>
+                <Label htmlFor="assignedMember">Account Manager</Label>
                 <select
                   id="assignedMember"
                   value={assignedMemberId}

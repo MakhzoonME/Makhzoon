@@ -23,7 +23,7 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
       setCachedSession(session, decoded);
     }
 
-    const role = decoded.role as UserRole;
+    let role = decoded.role as UserRole;
     let organizationId = (decoded.organizationId as string | undefined) ?? null;
 
     // Super admin may use the transferOrgId cookie to act as a tenant admin

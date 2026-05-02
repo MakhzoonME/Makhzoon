@@ -43,6 +43,14 @@ export default function OrganizationInfoPage() {
                   : null
               }
             />
+            <InfoRow
+              label={t('settings.assignedMember')}
+              value={
+                org?.assignedMember
+                  ? `${org.assignedMember.name} (${org.assignedMember.email})`
+                  : null
+              }
+            />
           </dl>
         </CardContent>
       </Card>

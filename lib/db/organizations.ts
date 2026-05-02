@@ -11,6 +11,7 @@ function toOrg(id: string, data: FirebaseFirestore.DocumentData): Organization {
     description: data.description ?? null,
     category: data.category ?? null,
     packageDetails: data.packageDetails,
+    assignedMemberId: data.assignedMemberId ?? null,
     createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
     createdBy: data.createdBy,
     updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),

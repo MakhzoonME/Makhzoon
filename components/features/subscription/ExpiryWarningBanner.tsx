@@ -1,9 +1,12 @@
 'use client';
+import { useEffect } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { useTransferStore } from '@/store/transfer.store';
 import { useSubscription } from '@/hooks/org';
 import { daysUntil } from '@/lib/utils/date';
 import { formatDate } from '@/lib/utils/date';
+
+const DAYS_UNTIL_SUSPENSION = 30;
 
 function AlertTriangleSVG() {
   return (
@@ -33,7 +36,22 @@ export function ExpiryWarningBanner() {
         : null
       : (user?.organizationId ?? null);
 
-  const { data: sub } = useSubscription(orgId);
+  const { data: sub, refetch } = useSubscription(orgId);
+
+  // Auto-suspend: if EXPIRED for ≥30 days, upgrade status to SUSPENDED server-side
+  useEffect(() => {
+    if (!sub || !orgId || sub.status !== 'EXPIRED') return;
+    const daysPastExpiry = -daysUntil(new Date(sub.endDate));
+    if (daysPastExpiry >= DAYS_UNTIL_SUSPENSION) {
+      fetch(`/api/organizations/${orgId}/subscription`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'SUSPENDED', endDate: new Date(sub.endDate).toISOString() }),
+      })
+        .then(() => refetch())
+        .catch(() => {});
+    }
+  }, [sub, orgId, refetch]);
 
   if (!sub) return null;
 
@@ -49,10 +67,14 @@ export function ExpiryWarningBanner() {
   }
 
   if (days <= 0) {
+    const suspensionDate = new Date(sub.endDate);
+    suspensionDate.setDate(suspensionDate.getDate() + DAYS_UNTIL_SUSPENSION);
     return (
       <div className="bg-red-50 border-b border-red-200 px-4 py-2 flex items-center gap-2 text-sm text-red-800">
         <XCircleSVG />
-        Your subscription has expired. Please renew to continue using the app.
+        Your subscription has expired. Access will be suspended on{' '}
+        <span className="font-semibold mx-1">{formatDate(suspensionDate)}</span>.
+        Please contact your administrator to renew.
       </div>
     );
   }
@@ -61,7 +83,8 @@ export function ExpiryWarningBanner() {
     return (
       <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2 text-sm text-amber-800">
         <AlertTriangleSVG />
-        Your subscription expires in <span className="font-semibold mx-1">{days} day{days !== 1 ? 's' : ''}</span>
+        Your subscription expires in{' '}
+        <span className="font-semibold mx-1">{days} day{days !== 1 ? 's' : ''}</span>
         on {formatDate(new Date(sub.endDate))}. Please contact your administrator to renew.
       </div>
     );

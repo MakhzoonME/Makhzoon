@@ -5,9 +5,14 @@ import {
   getAllSupportTickets,
   createSupportTicket,
 } from '@/lib/db/support-tickets';
+import { getOrganizationById } from '@/lib/db/organizations';
 import { queueAuditLog } from '@/lib/audit/logger';
 import { supportTicketCreateSchema } from '@/lib/validations/support-ticket.schema';
 import { TicketStatus, TicketPriority } from '@/types';
+import { sendEmail } from '@/lib/email/resend';
+import { supportTicketNotificationEmail } from '@/lib/email/templates';
+
+const SUPPORT_EMAILS = ['info@makhzoon.me', 'support@makhzoon.me'];
 
 export async function GET(req: NextRequest) {
   try {
@@ -58,6 +63,29 @@ export async function POST(req: NextRequest) {
       recordId: ticket.id,
       newValue: { subject: parsed.data.subject },
     });
+
+    // Send notification email asynchronously — don't block the response
+    (async () => {
+      try {
+        const org = await getOrganizationById(user.organizationId!);
+        const { html, text } = supportTicketNotificationEmail({
+          orgName: org?.name ?? user.organizationId!,
+          subject: parsed.data.subject,
+          description: parsed.data.description,
+          priority: parsed.data.priority ?? 'MEDIUM',
+          createdBy: user.email ?? user.uid,
+          ticketId: ticket.id,
+        });
+        await sendEmail({
+          to: SUPPORT_EMAILS,
+          subject: `[Support] ${parsed.data.subject} — ${org?.name ?? user.organizationId}`,
+          html,
+          text,
+        });
+      } catch (emailErr) {
+        console.error('[POST /api/support] email notification failed:', emailErr);
+      }
+    })();
 
     return NextResponse.json(ticket, { status: 201 });
   } catch (err) {

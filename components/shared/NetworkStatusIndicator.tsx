@@ -1,8 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
 import { useT } from '@/hooks/ui';
+import { toast } from '@/hooks/ui';
 import type { MessageKey } from '@/locales/messages';
 
 type NetworkStatus = 'online' | 'offline' | 'slow';
@@ -25,12 +26,22 @@ function getConnection(): NetworkInformation | undefined {
   return nav.connection ?? nav.mozConnection ?? nav.webkitConnection;
 }
 
-function resolveStatus(): NetworkStatus {
-  if (typeof navigator === 'undefined') return 'online';
-  if (!navigator.onLine) return 'offline';
+function isSlowConnection(): boolean {
   const conn = getConnection();
-  if (conn && (conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g')) return 'slow';
-  return 'online';
+  return !!conn && (conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g');
+}
+
+async function pingServer(): Promise<boolean> {
+  try {
+    const res = await fetch('/api/ping', {
+      method: 'GET',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 /* ── SVG icons ─────────────────────────────────────────────────────── */
@@ -94,6 +105,8 @@ const STATUS_KEY: Record<NetworkStatus, MessageKey> = {
   slow:    'network.slow',
 };
 
+const POLL_INTERVAL_MS = 15_000;
+
 /* ── Component ─────────────────────────────────────────────────────── */
 
 interface Props {
@@ -104,24 +117,64 @@ interface Props {
 
 export function NetworkStatusIndicator({ variant = 'ghost-light', className }: Props) {
   const [status, setStatus] = useState<NetworkStatus>('online');
+  const prevStatusRef = useRef<NetworkStatus | null>(null);
   const { t } = useT();
+  const tRef = useRef(t);
+  useEffect(() => { tRef.current = t; }, [t]);
 
   useEffect(() => {
-    setStatus(resolveStatus());
+    if (prevStatusRef.current === null) {
+      prevStatusRef.current = status;
+      return;
+    }
+    const prev = prevStatusRef.current;
+    if (prev === status) return;
+    prevStatusRef.current = status;
 
-    const handleOnline  = () => setStatus(resolveStatus());
+    if (status === 'offline') {
+      toast.error(tRef.current('network.offline'));
+    } else if (status === 'slow') {
+      toast(tRef.current('network.slow'), 'info');
+    } else if (prev !== 'online') {
+      toast.success(tRef.current('network.backOnline'));
+    }
+  }, [status]);
+
+  useEffect(() => {
+    async function checkConnectivity() {
+      if (typeof navigator === 'undefined') return;
+      if (!navigator.onLine) {
+        setStatus('offline');
+        return;
+      }
+      const reachable = await pingServer();
+      if (!reachable) {
+        setStatus('offline');
+      } else if (isSlowConnection()) {
+        setStatus('slow');
+      } else {
+        setStatus('online');
+      }
+    }
+
+    checkConnectivity();
+
     const handleOffline = () => setStatus('offline');
-    const handleChange  = () => setStatus(resolveStatus());
+    const handleOnline  = () => checkConnectivity();
+    const handleChange  = () => checkConnectivity();
 
-    window.addEventListener('online', handleOnline);
+    window.addEventListener('online',  handleOnline);
     window.addEventListener('offline', handleOffline);
     const conn = getConnection();
     conn?.addEventListener('change', handleChange);
 
+    const interval = setInterval(checkConnectivity, POLL_INTERVAL_MS);
+
     return () => {
-      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('online',  handleOnline);
       window.removeEventListener('offline', handleOffline);
       conn?.removeEventListener('change', handleChange);
+      clearInterval(interval);
     };
   }, []);
 

@@ -11,6 +11,14 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/ui';
 import { ORG_CATEGORIES, type Organization, type OrgCategory } from '@/types';
 
+interface TeamMember {
+  id: string;
+  displayName: string;
+  email: string;
+  role: string;
+  status: string;
+}
+
 interface OrgWithSub extends Organization {
   subscription?: unknown;
 }
@@ -29,10 +37,20 @@ export default function EditOrganizationPage({ params }: { params: { orgId: stri
     },
   });
 
+  const { data: teamMembers = [] } = useQuery<TeamMember[]>({
+    queryKey: ['superadmin-team'],
+    queryFn: async () => {
+      const res = await fetch('/api/superadmin/team');
+      if (!res.ok) throw new Error('Failed to load team');
+      return res.json();
+    },
+  });
+
   const [name, setName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<OrgCategory | ''>('');
+  const [assignedMemberId, setAssignedMemberId] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -41,6 +59,7 @@ export default function EditOrganizationPage({ params }: { params: { orgId: stri
     setContactEmail(org.contactEmail);
     setDescription(org.description ?? '');
     setCategory((org.category as OrgCategory | null) ?? '');
+    setAssignedMemberId(org.assignedMemberId ?? '');
   }, [org]);
 
   async function handleSave(e: React.FormEvent) {
@@ -55,6 +74,7 @@ export default function EditOrganizationPage({ params }: { params: { orgId: stri
           contactEmail,
           description: description || null,
           category: category || null,
+          assignedMemberId: assignedMemberId || null,
         }),
       });
       if (!res.ok) {
@@ -71,6 +91,8 @@ export default function EditOrganizationPage({ params }: { params: { orgId: stri
       setSaving(false);
     }
   }
+
+  const activeMembers = teamMembers.filter((m) => m.status === 'active');
 
   return (
     <div>
@@ -132,6 +154,23 @@ export default function EditOrganizationPage({ params }: { params: { orgId: stri
                   maxLength={500}
                 />
                 <p className="text-xs text-gray-500">{description.length}/500</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="assignedMember">Assigned Team Member</Label>
+                <select
+                  id="assignedMember"
+                  value={assignedMemberId}
+                  onChange={(e) => setAssignedMemberId(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                >
+                  <option value="">— Unassigned —</option>
+                  {activeMembers.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.displayName} ({m.email})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500">The Makhzoon team member responsible for this organization.</p>
               </div>
               <div className="flex gap-2 pt-2">
                 <Button type="submit" disabled={saving}>

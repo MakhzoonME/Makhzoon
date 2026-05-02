@@ -29,6 +29,7 @@ export const organizationUpdateSchema = z.object({
   contactEmail: z.string().email().optional(),
   description: z.string().max(500).nullable().optional(),
   category: z.enum(ORG_CATEGORIES).nullable().optional(),
+  assignedMemberId: z.string().nullable().optional(),
 });
 
 export type OrganizationUpdateFormData = z.infer<typeof organizationUpdateSchema>;

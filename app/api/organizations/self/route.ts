@@ -29,6 +29,14 @@ export async function GET() {
       }
     }
 
+    let assignedMember: { id: string; name: string; email: string } | null = null;
+    if (org.assignedMemberId) {
+      const member = await getSuperAdminUserById(org.assignedMemberId);
+      if (member) {
+        assignedMember = { id: member.id, name: member.displayName, email: member.email };
+      }
+    }
+
     return NextResponse.json({
       id: org.id,
       name: org.name,
@@ -37,6 +45,7 @@ export async function GET() {
       description: org.description,
       category: org.category,
       accountManager,
+      assignedMember,
     });
   } catch (err) {
     console.error('[GET /api/organizations/self]', err);

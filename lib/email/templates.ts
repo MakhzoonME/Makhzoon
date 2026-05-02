@@ -56,6 +56,52 @@ export function inviteEmail(params: { orgName: string; inviterName: string; acce
   return { html, text };
 }
 
+export function supportTicketNotificationEmail(params: {
+  orgName: string;
+  subject: string;
+  description: string;
+  priority: string;
+  createdBy: string;
+  ticketId: string;
+}) {
+  const { orgName, subject, description, priority, createdBy, ticketId } = params;
+  const html = `
+    <div style="font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111827;">
+      <h1 style="font-size:18px;margin:0 0 4px;">New Support Ticket</h1>
+      <p style="color:#6B7280;font-size:14px;margin:0 0 16px;">A new ticket was submitted from <strong>${escapeHtml(orgName)}</strong>.</p>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #E5E7EB;border-radius:8px;overflow:hidden;margin-bottom:16px;">
+        <tbody>
+          <tr style="background:#F9FAFB;">
+            <td style="padding:8px 12px;font-size:12px;font-weight:600;color:#6B7280;text-transform:uppercase;width:130px;">Ticket ID</td>
+            <td style="padding:8px 12px;font-size:13px;font-family:monospace;">${escapeHtml(ticketId)}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 12px;font-size:12px;font-weight:600;color:#6B7280;text-transform:uppercase;">Organization</td>
+            <td style="padding:8px 12px;font-size:13px;">${escapeHtml(orgName)}</td>
+          </tr>
+          <tr style="background:#F9FAFB;">
+            <td style="padding:8px 12px;font-size:12px;font-weight:600;color:#6B7280;text-transform:uppercase;">Subject</td>
+            <td style="padding:8px 12px;font-size:13px;font-weight:500;">${escapeHtml(subject)}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 12px;font-size:12px;font-weight:600;color:#6B7280;text-transform:uppercase;">Priority</td>
+            <td style="padding:8px 12px;font-size:13px;">${escapeHtml(priority)}</td>
+          </tr>
+          <tr style="background:#F9FAFB;">
+            <td style="padding:8px 12px;font-size:12px;font-weight:600;color:#6B7280;text-transform:uppercase;">Submitted By</td>
+            <td style="padding:8px 12px;font-size:13px;">${escapeHtml(createdBy)}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="border:1px solid #E5E7EB;border-radius:8px;padding:12px;">
+        <p style="font-size:12px;font-weight:600;color:#6B7280;text-transform:uppercase;margin:0 0 8px;">Description</p>
+        <p style="font-size:14px;color:#374151;margin:0;white-space:pre-wrap;">${escapeHtml(description)}</p>
+      </div>
+    </div>`;
+  const text = `New Support Ticket\n\nOrganization: ${orgName}\nTicket ID: ${ticketId}\nSubject: ${subject}\nPriority: ${priority}\nSubmitted By: ${createdBy}\n\nDescription:\n${description}`;
+  return { html, text };
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')

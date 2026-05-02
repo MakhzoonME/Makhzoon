@@ -57,9 +57,10 @@ const en = {
   'lang.ar':       'العربية',
 
   // ── Network status ───────────────────────────────────────────────
-  'network.online':  'Connected',
-  'network.offline': 'No internet connection',
-  'network.slow':    'Slow connection',
+  'network.online':      'Connected',
+  'network.offline':     'No internet connection',
+  'network.slow':        'Slow connection',
+  'network.backOnline':  'Connection restored',
 
   // ── Auth ─────────────────────────────────────────────────────────
   'auth.signIn':        'Sign in',
@@ -465,13 +466,14 @@ const en = {
   'config.inactive':           'Inactive',
 
   // ── Settings page ────────────────────────────────────────────────
-  'settings.orgName':        'Organization Name',
-  'settings.subdomain':      'Subdomain',
-  'settings.contactEmail':   'Contact Email',
-  'settings.description':    'Description',
-  'settings.category':       'Category',
-  'settings.accountManager': 'Account Manager',
-  'settings.notSet':         '—',
+  'settings.orgName':          'Organization Name',
+  'settings.subdomain':        'Subdomain',
+  'settings.contactEmail':     'Contact Email',
+  'settings.description':      'Description',
+  'settings.category':         'Category',
+  'settings.accountManager':   'Account Manager',
+  'settings.assignedMember':   'Assigned Team Member',
+  'settings.notSet':           '—',
 
   // ── Users page (extra) ────────────────────────────────────────────
   'users.expires':             'Expires',
@@ -534,9 +536,10 @@ const ar: Record<keyof typeof en, string> = {
   'lang.ar':       'العربية',
 
   // ── Network status ───────────────────────────────────────────────
-  'network.online':  'متصل',
-  'network.offline': 'لا يوجد اتصال',
-  'network.slow':    'اتصال بطيء',
+  'network.online':      'متصل',
+  'network.offline':     'لا يوجد اتصال',
+  'network.slow':        'اتصال بطيء',
+  'network.backOnline':  'تم استعادة الاتصال',
 
   // ── Auth ─────────────────────────────────────────────────────────
   'auth.signIn':         'تسجيل الدخول',
@@ -947,8 +950,9 @@ const ar: Record<keyof typeof en, string> = {
   'settings.contactEmail':   'البريد الإلكتروني للتواصل',
   'settings.description':    'الوصف',
   'settings.category':       'الفئة',
-  'settings.accountManager': 'مدير الحساب',
-  'settings.notSet':         '—',
+  'settings.accountManager':   'مدير الحساب',
+  'settings.assignedMember':   'عضو الفريق المخصص',
+  'settings.notSet':           '—',
 
   // ── Users page (extra) ────────────────────────────────────────────
   'users.expires':             'تنتهي',

@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { useAllOrgsUsage } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
@@ -13,6 +14,12 @@ import { useTransferMode } from '@/hooks/ui';
 import { useDebounce } from '@/hooks/ui';
 import { ORG_CATEGORIES, type OrgWithUsage } from '@/types';
 import { useT } from '@/hooks/ui';
+
+interface TeamMember {
+  id: string;
+  displayName: string;
+  email: string;
+}
 
 function daysUntil(d: Date | string): number {
   const target = typeof d === 'string' ? new Date(d) : d;
@@ -32,6 +39,18 @@ export default function SuperAdminPage() {
     search: search || undefined,
     category: category || undefined,
   });
+
+  const { data: teamMembers = [] } = useQuery<TeamMember[]>({
+    queryKey: ['superadmin-team'],
+    queryFn: async () => {
+      const res = await fetch('/api/superadmin/team');
+      if (!res.ok) throw new Error('Failed to load team');
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+
+  const memberById = Object.fromEntries(teamMembers.map((m) => [m.id, m]));
 
   const columns: ColumnDef<OrgWithUsage>[] = [
     {
@@ -55,6 +74,20 @@ export default function SuperAdminPage() {
       key: 'category',
       header: t('orgs.category'),
       render: (r) => r.organization.category ?? <span className="text-gray-400">—</span>,
+    },
+    {
+      key: 'assignedMember',
+      header: t('settings.assignedMember'),
+      render: (r) => {
+        const member = r.organization.assignedMemberId ? memberById[r.organization.assignedMemberId] : null;
+        if (!member) return <span className="text-gray-400 text-xs">—</span>;
+        return (
+          <div>
+            <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{member.displayName}</p>
+            <p className="text-xs text-gray-400">{member.email}</p>
+          </div>
+        );
+      },
     },
     {
       key: 'subscription',

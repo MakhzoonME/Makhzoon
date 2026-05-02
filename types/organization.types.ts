@@ -20,6 +20,7 @@ export interface Organization {
   description: string | null;
   category: OrgCategory | null;
   packageDetails?: string;
+  assignedMemberId: string | null;
   createdAt: Date;
   createdBy: string;
   updatedAt: Date;

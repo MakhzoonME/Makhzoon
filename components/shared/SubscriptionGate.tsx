@@ -7,11 +7,9 @@ import type { ReactNode } from 'react';
 interface Props {
   children: ReactNode;
   className?: string;
-  /** When true, always render children even if not restricted (useful for inline usage) */
-  asChild?: boolean;
 }
 
-export function SubscriptionGate({ children, className, asChild }: Props) {
+export function SubscriptionGate({ children, className }: Props) {
   const { restricted, tooltip } = useSubscriptionGate();
 
   if (!restricted) return <>{children}</>;

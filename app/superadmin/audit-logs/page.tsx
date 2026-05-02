@@ -116,12 +116,6 @@ export default function AuditLogsPage() {
     syncAllToUrl({ page: String(newPage) });
   }
 
-  function handlePrev() {
-    if (page > 1) {
-      goToPage(page - 1);
-    }
-  }
-
   function handleFilterChange(key: string, value: string) {
     setPage(1);
     setCursors(['']);

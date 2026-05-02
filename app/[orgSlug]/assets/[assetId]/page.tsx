@@ -36,7 +36,8 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
   const { user } = useAuthStore();
   const qc = useQueryClient();
   const { data: asset, isLoading, error } = useAsset(assetId);
-  const { data: warranties = [], isLoading: wLoading } = useWarranties({ assetId });
+  const { data: warrantiesResponse, isLoading: wLoading } = useWarranties({ assetId });
+  const warranties = (warrantiesResponse as { items?: Warranty[] })?.items ?? [];
   const [showRetire, setShowRetire] = useState(false);
   const [retiring, setRetiring] = useState(false);
   const [editAssetOpen, setEditAssetOpen] = useState(false);
@@ -165,7 +166,7 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
           <h2 className="text-sm font-semibold text-gray-900">WARRANTIES</h2>
           {isAdmin && (() => {
             const now = new Date();
-            const hasActiveWarranty = (warranties as Warranty[]).some((w) => new Date(w.endDate) >= now);
+            const hasActiveWarranty = warranties.some((w) => new Date(w.endDate) >= now);
             return !hasActiveWarranty && (
               <Button size="sm" onClick={() => setAddWarrantyOpen(true)}>
                 <PlusSVG /><span className="ml-1">Add Warranty</span>

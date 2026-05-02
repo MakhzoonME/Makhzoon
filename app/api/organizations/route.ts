@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
       description: data.description ?? null,
       category: data.category ?? null,
       packageDetails: data.packageDetails,
+      assignedMemberId: null,
       createdBy: user.uid,
       updatedBy: user.uid,
     });

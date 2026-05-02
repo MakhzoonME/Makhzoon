@@ -1,19 +1,17 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/auth.store';
-import { auth } from '@/lib/firebase/client';
-import { signOut } from 'firebase/auth';
+import { auth, signOut } from '@/lib/firebase/client';
 import { useRouter } from 'next/navigation';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { CommandPalette, useCommandPalette } from '@/components/shared/CommandPalette';
 import { useUiStore } from '@/store/ui.store';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
-import { useOrgSlug } from '@/hooks/ui';
+import { useOrgSlug, useT } from '@/hooks/ui';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
 import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
-import { useT } from '@/hooks/ui';
 
 /* ── Inline SVG icons ───────────────────────────────────────────── */
 function BurgerSVG() {

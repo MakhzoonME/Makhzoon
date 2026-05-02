@@ -156,7 +156,7 @@ export function MobileDrawer() {
                     <div key={group.href}>
                       <button
                         type="button"
-                        onClick={() => setOpenGroups((prev) => ({ ...prev, [group.href]: !prev[group.href] ?? !active }))}
+                        onClick={() => setOpenGroups((prev) => ({ ...prev, [group.href]: !prev[group.href] }))}
                         className={cn(
                           'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors duration-150',
                           active

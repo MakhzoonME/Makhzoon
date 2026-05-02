@@ -309,6 +309,8 @@ Generated from codebase on 2026-05-02
 | ORG-USER-022 | Deactivate user — unauthorized (staff) | Staff user | 1. DELETE `/api/users/{userId}` | Returns 403 Forbidden | Security | P1 |
 | ORG-USER-023 | Deactivate user — audit log | Admin deactivates user | 1. DELETE `/api/users/{userId}` | Audit log entry `USER_DEACTIVATED` created | Functional | P2 |
 | ORG-USER-024 | Deactivated user cannot login | User with `status: deactivated` | 1. Attempt login with deactivated user credentials | Login rejected; access denied | Security | P1 |
+| ORG-USER-025 | List org users — staff with settings.users permission | Staff user with `settings.users: true` | 1. GET `/api/users` | Returns 200 with list of org users | Functional | P1 |
+| ORG-USER-026 | List org users — staff without settings.users permission | Staff user with `settings.users: false` | 1. GET `/api/users` | Returns 403 Forbidden | Security | P1 |
 
 ---
 
@@ -397,6 +399,8 @@ Generated from codebase on 2026-05-02
 | ORG-SUB-005 | Expired subscription blocks access | Subscription status = EXPIRED | 1. Attempt to access any org feature API | Returns 403 subscription expired | Functional | P1 |
 | ORG-SUB-006 | Suspended subscription blocks access | Subscription status = SUSPENDED | 1. Attempt to access any org feature API | Returns 403 subscription suspended | Functional | P1 |
 | ORG-SUB-007 | Active subscription allows access | Subscription status = ACTIVE | 1. Access org feature | Returns 200 with data | Functional | P1 |
+| ORG-SUB-008 | View subscription page — staff with settings.subscription | Staff user with `settings.subscription: true` | 1. Navigate to `/{orgSlug}/subscription` | Subscription page renders; data visible | Functional | P1 |
+| ORG-SUB-009 | View subscription page — staff without settings.subscription | Staff user with `settings.subscription: false` | 1. Navigate to `/{orgSlug}/subscription` | Redirected to `/{orgSlug}/dashboard` | Security | P1 |
 
 ---
 
@@ -429,6 +433,99 @@ Generated from codebase on 2026-05-02
 | ORG-PROFILE-001 | View profile page — authenticated | User authenticated | 1. Navigate to `/{orgSlug}/profile` | Profile page renders with current display name | UI | P2 |
 | ORG-PROFILE-002 | Update display name — valid | User authenticated | 1. Update displayName on profile page | Display name updated; changes reflected in UI | Functional | P2 |
 | ORG-PROFILE-003 | Profile page — unauthenticated | No session | 1. Navigate to `/{orgSlug}/profile` | Redirected to `/login` | Security | P2 |
+
+---
+
+### Network Status Indicator
+
+| TC ID | Test Case Name | Preconditions | Steps | Expected Result | Type | Priority |
+|-------|---------------|---------------|-------|-----------------|------|----------|
+| ORG-NET-001 | Online indicator shows in org top bar | User authenticated, browser online | 1. Navigate to any org page | Green wifi icon visible in the top-right header area | UI | P2 |
+| ORG-NET-002 | Offline icon shown when browser goes offline | User authenticated, online | 1. Disable network connection 2. Observe header icon | Icon changes to disconnected/broken wifi icon (red or gray) | UI | P1 |
+| ORG-NET-003 | Slow connection icon shown for 2G/3G | Browser Network Information API reports `effectiveType` of `2g` or `3g` | 1. Simulate slow network in DevTools 2. Observe header icon | Icon changes to a slow-connection warning variant | UI | P2 |
+| ORG-NET-004 | Tooltip shows "Connected" when online | User authenticated, online | 1. Hover over the network indicator icon | Tooltip displays connected/online status text | UI | P2 |
+| ORG-NET-005 | Tooltip shows offline status when disconnected | Network is offline | 1. Go offline 2. Hover over the icon | Tooltip displays "No internet connection" (or equivalent) | UI | P1 |
+| ORG-NET-006 | Tooltip shows slow connection status | Network is slow (2G/3G) | 1. Simulate slow network 2. Hover over icon | Tooltip displays "Slow connection" (or equivalent) | UI | P2 |
+| ORG-NET-007 | Pulsing badge shown for non-online states | Network is offline or slow | 1. Observe indicator icon while offline or slow | A pulsing dot badge overlaid on the icon | UI | P2 |
+| ORG-NET-008 | Status updates dynamically on reconnect | Start offline, then restore network | 1. Go offline (icon changes) 2. Restore network connection | Icon reverts to online/green variant without page reload | UI | P1 |
+| ORG-NET-009 | Network indicator visible in superadmin banner | Superadmin authenticated, transfer banner active | 1. Navigate to any superadmin or transfer-mode page | Network indicator icon visible on the right side of the blue superadmin banner | UI | P2 |
+| ORG-NET-010 | Superadmin banner indicator uses light icon style | Superadmin banner (dark background) | 1. View superadmin banner while online | Icon uses ghost-dark variant (white/light coloring matching banner background) | UI | P2 |
+| ORG-NET-011 | Network indicator is keyboard accessible | User navigating by keyboard | 1. Tab to the network status icon button 2. Check aria-label | Button is focusable; `aria-label` reflects current connection status | UI | P3 |
+
+---
+
+### Settings Navigation Group
+
+| TC ID | Test Case Name | Preconditions | Steps | Expected Result | Type | Priority |
+|-------|---------------|---------------|-------|-----------------|------|----------|
+| ORG-SETNAV-001 | Settings group shown in sidebar for admin | Authenticated admin | 1. Navigate to any org page | "Settings" group entry visible in the sidebar | UI | P1 |
+| ORG-SETNAV-002 | Settings group hidden for staff with no settings permissions | Staff with all `settings.*` = false | 1. Login as staff 2. Observe sidebar | Settings group is not shown in the sidebar | UI | P1 |
+| ORG-SETNAV-003 | Settings group shows all 3 sub-items for admin | Admin authenticated | 1. Click "Settings" group to expand | Three sub-items visible: Organization Info, Subscription, Users | UI | P1 |
+| ORG-SETNAV-004 | Settings group expands and collapses on click | Admin authenticated, group visible | 1. Click "Settings" group once 2. Click again | First click expands sub-items; second click collapses them | UI | P2 |
+| ORG-SETNAV-005 | Chevron icon rotates on group open/close | Settings group in sidebar | 1. Open group (chevron rotates 180°) 2. Close group | Chevron rotates from pointing down to pointing up when open | UI | P2 |
+| ORG-SETNAV-006 | Settings group auto-opens on settings sub-page | Admin navigates directly to `/settings/organization` | 1. Navigate to `/{orgSlug}/settings/organization` | Settings group is pre-expanded; "Organization Info" sub-item is highlighted as active | UI | P2 |
+| ORG-SETNAV-007 | Active sub-item shows indigo active style | Admin on `/settings/organization` | 1. Observe sidebar while on org info page | "Organization Info" sub-item has indigo text and background pill | UI | P2 |
+| ORG-SETNAV-008 | Group header shows active style when child is active | Admin on any settings sub-page | 1. Navigate to any settings sub-page | Settings group button has indigo background highlight | UI | P2 |
+| ORG-SETNAV-009 | Collapsed sidebar — clicking Settings expands sidebar then opens group | Sidebar is collapsed | 1. Click the Settings icon in collapsed sidebar | Sidebar expands and Settings group opens in one action | UI | P2 |
+| ORG-SETNAV-010 | Collapsed sidebar — Settings icon shows tooltip | Sidebar is collapsed | 1. Hover over Settings icon | Tooltip shows "Settings" (or translated equivalent) | UI | P2 |
+| ORG-SETNAV-011 | Settings group visible in mobile drawer for admin | Admin authenticated, mobile viewport | 1. Open mobile navigation drawer | Settings group entry visible in drawer | UI | P1 |
+| ORG-SETNAV-012 | Mobile drawer Settings group expands and collapses | Admin opens mobile drawer | 1. Click Settings group 2. Click again | Sub-items expand then collapse with animation | UI | P2 |
+| ORG-SETNAV-013 | Staff with settings.orgInfo sees only Org Info sub-item | Staff with only `settings.orgInfo: true` | 1. Login as staff 2. Open Settings group | Only "Organization Info" is shown as a sub-item | UI | P1 |
+| ORG-SETNAV-014 | Staff with settings.subscription sees only Subscription sub-item | Staff with only `settings.subscription: true` | 1. Login as staff 2. Open Settings group | Only "Subscription" is shown as a sub-item | UI | P1 |
+| ORG-SETNAV-015 | Staff with settings.users sees only Users sub-item | Staff with only `settings.users: true` | 1. Login as staff 2. Open Settings group | Only "Users" is shown as a sub-item | UI | P1 |
+| ORG-SETNAV-016 | Staff with multiple settings permissions sees corresponding sub-items | Staff with `settings.orgInfo: true` and `settings.users: true` | 1. Login as staff 2. Open Settings group | Organization Info and Users sub-items visible; Subscription not visible | UI | P2 |
+| ORG-SETNAV-017 | RTL layout — Settings sub-items indented from right | Arabic/RTL locale active | 1. Switch to Arabic locale 2. Expand Settings group | Sub-items are indented from the right side (right-to-left padding) | UI | P3 |
+
+---
+
+### Organization Info Page
+
+| TC ID | Test Case Name | Preconditions | Steps | Expected Result | Type | Priority |
+|-------|---------------|---------------|-------|-----------------|------|----------|
+| ORG-ORGINFO-001 | Admin can navigate to org info page | Admin authenticated | 1. Navigate to `/{orgSlug}/settings/organization` | Page renders without redirect | Functional | P1 |
+| ORG-ORGINFO-002 | Org info page displays org name | Admin authenticated, org name is "Acme Corp" | 1. Navigate to `/{orgSlug}/settings/organization` | Page shows "Acme Corp" as the organization name | Functional | P1 |
+| ORG-ORGINFO-003 | Org info page displays contact email | Admin authenticated, contact email set | 1. Navigate to org info page | Contact email field shows the org's contact email | Functional | P1 |
+| ORG-ORGINFO-004 | Org info page displays description | Admin authenticated, description is set | 1. Navigate to org info page | Description field shows the org's description | Functional | P2 |
+| ORG-ORGINFO-005 | Org info page shows "—" for unset optional fields | Admin authenticated, description and category are empty | 1. Navigate to org info page | Description and category rows show the "not set" placeholder | UI | P2 |
+| ORG-ORGINFO-006 | Org info page displays account manager | Admin authenticated, org has a creator (super_admin) | 1. Navigate to org info page | Account Manager row shows the super_admin's name and email | Functional | P2 |
+| ORG-ORGINFO-007 | Org info page shows "—" when no account manager assigned | Admin authenticated, org has no `createdBy` field | 1. Navigate to org info page | Account Manager row shows the "not set" placeholder | Edge Case | P2 |
+| ORG-ORGINFO-008 | Loading skeleton shown while fetching org info | Admin navigates to org info page on slow connection | 1. Navigate to `/{orgSlug}/settings/organization` | Loading skeleton renders before data arrives | UI | P3 |
+| ORG-ORGINFO-009 | Staff without settings.orgInfo is redirected | Staff with `settings.orgInfo: false` | 1. Navigate to `/{orgSlug}/settings/organization` | Redirected to `/{orgSlug}/dashboard` | Security | P1 |
+| ORG-ORGINFO-010 | Staff with settings.orgInfo can access org info page | Staff with `settings.orgInfo: true` | 1. Navigate to `/{orgSlug}/settings/organization` | Page renders and shows org information | Functional | P1 |
+| ORG-ORGINFO-011 | GET /api/organizations/self returns 200 for admin | Admin authenticated | 1. GET `/api/organizations/self` | Returns 200 with `{id, name, subdomain, contactEmail, description, category, accountManager}` | Functional | P1 |
+| ORG-ORGINFO-012 | GET /api/organizations/self returns 401 for unauthenticated | No session cookie | 1. GET `/api/organizations/self` | Returns 401 Unauthorized | Security | P1 |
+| ORG-ORGINFO-013 | GET /api/organizations/self returns 403 for staff without settings.orgInfo | Staff with `settings.orgInfo: false` | 1. GET `/api/organizations/self` | Returns 403 Forbidden | Security | P1 |
+| ORG-ORGINFO-014 | GET /api/organizations/self returns 200 for staff with settings.orgInfo | Staff with `settings.orgInfo: true` | 1. GET `/api/organizations/self` | Returns 200 with org info | Functional | P1 |
+| ORG-ORGINFO-015 | GET /api/organizations/self response includes all expected fields | Admin authenticated | 1. GET `/api/organizations/self` | Response body contains `id`, `name`, `subdomain`, `contactEmail`, `description`, `category`, `accountManager` | Functional | P2 |
+| ORG-ORGINFO-016 | GET /api/organizations/self — org with no creator returns null accountManager | Admin authenticated, org has no `createdBy` | 1. GET `/api/organizations/self` | `accountManager` field is `null` in response | Edge Case | P2 |
+| ORG-ORGINFO-017 | GET /api/organizations/self — user with no organizationId returns 403 | Authenticated user without an org | 1. GET `/api/organizations/self` | Returns 403 with "No organization associated with this account" | Edge Case | P2 |
+
+---
+
+### Settings Permissions
+
+| TC ID | Test Case Name | Preconditions | Steps | Expected Result | Type | Priority |
+|-------|---------------|---------------|-------|-----------------|------|----------|
+| ORG-SETPERM-001 | Settings module visible in PermissionsEditor when inviting staff | Admin on invite/edit user modal | 1. Open invite user modal 2. Set role to "staff" 3. Scroll to permissions editor | "Settings" module section is visible in the permissions editor | UI | P1 |
+| ORG-SETPERM-002 | Settings module shows three operations | Admin viewing permissions editor | 1. Open permissions editor for a staff user | Three toggles shown under Settings: Organization Info, Subscription, Users | UI | P1 |
+| ORG-SETPERM-003 | All settings operations default to false for new staff | Admin creates new staff user with default permissions | 1. Invite staff with default (no custom) permissions | Newly created staff has `settings.orgInfo: false`, `settings.subscription: false`, `settings.users: false` | Functional | P1 |
+| ORG-SETPERM-004 | Granting settings.orgInfo is persisted on user record | Admin grants `settings.orgInfo` to staff | 1. Edit staff user permissions 2. Enable "Organization Info" 3. Save | User record in database has `settings.orgInfo: true` | Functional | P1 |
+| ORG-SETPERM-005 | Granting settings.subscription is persisted | Admin grants `settings.subscription` to staff | 1. Edit staff permissions 2. Enable "Subscription" 3. Save | User record has `settings.subscription: true` | Functional | P1 |
+| ORG-SETPERM-006 | Granting settings.users is persisted | Admin grants `settings.users` to staff | 1. Edit staff permissions 2. Enable "Users" 3. Save | User record has `settings.users: true` | Functional | P1 |
+| ORG-SETPERM-007 | Staff granted settings.orgInfo can access org info page | Staff with `settings.orgInfo: true` | 1. Login as staff 2. Navigate to `/{orgSlug}/settings/organization` | Page renders with org information | Functional | P1 |
+| ORG-SETPERM-008 | Staff denied settings.orgInfo cannot access org info page | Staff with `settings.orgInfo: false` | 1. Login as staff 2. Navigate to `/{orgSlug}/settings/organization` | Redirected to `/{orgSlug}/dashboard` | Security | P1 |
+| ORG-SETPERM-009 | Staff granted settings.subscription can access subscription page | Staff with `settings.subscription: true` | 1. Login as staff 2. Navigate to `/{orgSlug}/subscription` | Subscription page renders with data | Functional | P1 |
+| ORG-SETPERM-010 | Staff denied settings.subscription cannot access subscription page | Staff with `settings.subscription: false` | 1. Login as staff 2. Navigate to `/{orgSlug}/subscription` | Redirected to `/{orgSlug}/dashboard` | Security | P1 |
+| ORG-SETPERM-011 | Staff granted settings.users can access users page | Staff with `settings.users: true` | 1. Login as staff 2. Navigate to `/{orgSlug}/users` | Users page renders with user list | Functional | P1 |
+| ORG-SETPERM-012 | Staff denied settings.users cannot access users page | Staff with `settings.users: false` | 1. Login as staff 2. Navigate to `/{orgSlug}/users` | Redirected to `/{orgSlug}/dashboard` | Security | P1 |
+| ORG-SETPERM-013 | GET /api/users returns 200 for staff with settings.users | Staff with `settings.users: true` | 1. GET `/api/users` as staff | Returns 200 with list of org users | Functional | P1 |
+| ORG-SETPERM-014 | GET /api/users returns 403 for staff without settings.users | Staff with `settings.users: false` | 1. GET `/api/users` as staff | Returns 403 Forbidden | Security | P1 |
+| ORG-SETPERM-015 | GET /api/organizations/self returns 200 for staff with settings.orgInfo | Staff with `settings.orgInfo: true` | 1. GET `/api/organizations/self` as staff | Returns 200 with org data | Functional | P1 |
+| ORG-SETPERM-016 | GET /api/organizations/self returns 403 for staff without settings.orgInfo | Staff with `settings.orgInfo: false` | 1. GET `/api/organizations/self` as staff | Returns 403 Forbidden | Security | P1 |
+| ORG-SETPERM-017 | Admin always has full settings access regardless of permissions object | Admin with explicit `settings.orgInfo: false` in permissions doc | 1. Login as admin 2. Navigate to `/{orgSlug}/settings/organization` | Page renders (admin role overrides stored permissions) | Security | P1 |
+| ORG-SETPERM-018 | Sidebar shows correct sub-items after permission change | Admin revokes `settings.orgInfo` from staff | 1. Revoke permission 2. Staff user refreshes page | "Organization Info" sub-item disappears from Settings group in staff's sidebar | Functional | P2 |
+| ORG-SETPERM-019 | Settings group not visible to staff with all settings permissions revoked | Staff had some settings permissions, all revoked | 1. Admin sets all `settings.*` to false 2. Staff refreshes | Settings group disappears entirely from staff's sidebar | Functional | P2 |
+| ORG-SETPERM-020 | Staff with settings.users cannot invite or manage users (view only) | Staff with `settings.users: true`, `settings.users` grants view only | 1. Login as staff 2. Navigate to `/{orgSlug}/users` | Users page renders; actions that require admin (invite, delete) remain unavailable via API (POST/DELETE `/api/users` returns 403) | Security | P2 |
 
 ---
 
@@ -702,14 +799,18 @@ Generated from codebase on 2026-05-02
 | **ORG: Inventory Items** | 26 | 14 | 1 | 6 | 0 | 5 |
 | **ORG: Inventory Transactions** | 11 | 7 | 0 | 2 | 0 | 2 |
 | **ORG: Inventory Audits** | 10 | 8 | 0 | 1 | 0 | 1 |
-| **ORG: Users Management** | 24 | 12 | 0 | 8 | 0 | 4 |
+| **ORG: Users Management** | 26 | 14 | 0 | 8 | 0 | 4 |
 | **ORG: Invites** | 15 | 7 | 1 | 4 | 0 | 3 |
 | **ORG: Reports** | 8 | 4 | 1 | 2 | 0 | 1 |
 | **ORG: Audit Logs** | 8 | 4 | 1 | 3 | 0 | 0 |
 | **ORG: Support Tickets** | 15 | 9 | 2 | 2 | 0 | 2 |
-| **ORG: Subscription** | 7 | 6 | 1 | 0 | 0 | 0 |
+| **ORG: Subscription** | 9 | 7 | 1 | 1 | 0 | 0 |
 | **ORG: Organization Config** | 15 | 11 | 0 | 2 | 0 | 2 |
 | **ORG: Profile** | 3 | 1 | 1 | 1 | 0 | 0 |
+| **ORG: Network Status Indicator** | 11 | 0 | 9 | 0 | 0 | 2 |
+| **ORG: Settings Navigation Group** | 17 | 1 | 14 | 2 | 0 | 0 |
+| **ORG: Organization Info Page** | 17 | 10 | 2 | 3 | 0 | 2 |
+| **ORG: Settings Permissions** | 20 | 12 | 2 | 5 | 0 | 1 |
 | **ORG: Cron Jobs** | 4 | 2 | 0 | 1 | 0 | 1 |
 | **SA: Authentication** | 7 | 4 | 0 | 3 | 0 | 0 |
 | **SA: Dashboard** | 5 | 3 | 1 | 1 | 0 | 0 |
@@ -725,17 +826,19 @@ Generated from codebase on 2026-05-02
 | **SA: Org Configuration** | 4 | 2 | 1 | 1 | 0 | 0 |
 | **SA: Public Endpoints** | 4 | 3 | 0 | 0 | 0 | 1 |
 | **Cross-Platform** | 22 | 6 | 2 | 8 | 6 | 0 |
-| **TOTAL** | **496** | **284** | **33** | **107** | **6** | **51** |
+| **TOTAL** | **561** | **329** | **57** | **113** | **6** | **56** |
 
 > **Breakdown by Priority:**
-> - P1 (Critical — app broken without it): ~218 test cases
-> - P2 (Important — significant impact if broken): ~223 test cases
+> - P1 (Critical — app broken without it): ~253 test cases
+> - P2 (Important — significant impact if broken): ~253 test cases
 > - P3 (Edge case or minor feature): ~55 test cases
 
 > **Breakdown by Platform:**
-> - Organization Platform: ~322 test cases
+> - Organization Platform: ~387 test cases
 > - Superadmin Platform: ~152 test cases
 > - Cross-Platform: ~22 test cases
+
+> **New sections added (2026-05-02):** Network Status Indicator (11), Settings Navigation Group (17), Organization Info Page (17), Settings Permissions (20). Existing sections updated: Users Management (+2), Subscription (+2).
 
 ---
 
@@ -750,3 +853,6 @@ Generated from codebase on 2026-05-02
 | **i18n / Arabic RTL** | Only one UI test case (CROSS-016) covers locale switching. Comprehensive i18n coverage should include every translated string and RTL layout verification for all major pages. |
 | **CSV Import Validation** | Asset CSV import (ORG-ASSET-032) covers malformed CSV but does not cover specific invalid column values, encoding issues, or very large files (stress/performance). |
 | **Rate Limiting** | Only invite acceptance rate limiting is explicitly documented in code. Other endpoints may or may not have rate limits — coverage is limited to what was confirmed in source. |
+| **Network Information API** | The slow-connection detection (ORG-NET-003, ORG-NET-006) relies on the Network Information API (`navigator.connection.effectiveType`), which is not supported in all browsers (notably Safari). Tests for the slow state may only be verifiable in Chromium-based browsers or via manual DevTools throttling. |
+| **Settings Permissions — Session Refresh** | When an admin changes a staff user's settings permissions, the change takes effect on next page load (or auth refresh). Tests ORG-SETPERM-018 and ORG-SETPERM-019 depend on the client re-fetching `/api/auth/me` to pick up permission changes. Explicit test coverage for the session-refresh path is recommended. |
+| **Settings Permissions — Staff invite with settings perms** | ORG-SETPERM-020 notes that `settings.users` only grants GET access to `/api/users`. POST, PUT, and DELETE on `/api/users` remain admin-only regardless of any settings permission. This asymmetry should be verified on each endpoint individually. |

@@ -767,8 +767,8 @@ const ar: Record<keyof typeof en, string> = {
   'requests.reference':        'المرجع',
   'requests.submittedBy':      'مقدم الطلب',
   'requests.description':      'الوصف',
-  'requests.approved':         'تمت الموافقة على الطلب',
-  'requests.rejected':         'تم رفض الطلب',
+  //'requests.approved':         'تمت الموافقة على الطلب',
+  //'requests.rejected':         'تم رفض الطلب',
 
   // ── Support page ──────────────────────────────────────────────────
   'support.title':             'تذاكر الدعم',

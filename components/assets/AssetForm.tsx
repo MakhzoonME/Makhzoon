@@ -82,6 +82,7 @@ export function AssetForm({ asset, onSuccess }: AssetFormProps) {
       toast.success(asset ? 'Asset updated' : 'Asset added successfully');
 
       qc.invalidateQueries({ queryKey: ['assets'] });
+      if (asset?.id) qc.invalidateQueries({ queryKey: ['assets', asset.id] });
 
       if (onSuccess) {
         onSuccess();

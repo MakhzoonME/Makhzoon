@@ -138,6 +138,7 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
       if (!res.ok) throw new Error(data.error ?? 'Import failed');
       setResult(data);
       qc.invalidateQueries({ queryKey: ['assets'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
       if (data.imported > 0) toast.success(`Imported ${data.imported} asset${data.imported === 1 ? '' : 's'}`);
       if (data.failed > 0) toast.error(`${data.failed} row${data.failed === 1 ? '' : 's'} failed`);
     } catch (err) {

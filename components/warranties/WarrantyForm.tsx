@@ -123,6 +123,8 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
       }
       toast.success(warranty ? 'Warranty updated' : 'Warranty added');
       qc.invalidateQueries({ queryKey: ['warranties'] });
+      const assetId = warranty?.assetId ?? defaultAssetId;
+      if (assetId) qc.invalidateQueries({ queryKey: ['assets', assetId] });
       if (onSuccess) {
         onSuccess();
       } else {

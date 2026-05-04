@@ -172,11 +172,11 @@ export default function ProfilePage() {
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Username</label>
-              <Input value={displayIdentity(user?.email)} disabled className="bg-gray-50" />
+              <Input value={displayIdentity(user?.email)} disabled />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Company</label>
-              <Input value={orgData?.name ?? ''} disabled className="bg-gray-50" />
+              <Input value={orgData?.name ?? (orgSlug ?? '')} disabled />
             </div>
           </div>
           <form onSubmit={handleSaveName} className="flex items-end gap-3">

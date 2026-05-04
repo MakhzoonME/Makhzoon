@@ -39,7 +39,7 @@ export default function OrganizationInfoPage() {
               label={t('settings.accountManager')}
               value={
                 org?.accountManager
-                  ? `${org.accountManager.name} (${org.accountManager.email})`
+                  ? `${org.accountManager.name || org.accountManager.email}`
                   : null
               }
             />

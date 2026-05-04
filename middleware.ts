@@ -31,9 +31,9 @@ export async function middleware(req: NextRequest) {
 
   const session = req.cookies.get('session')?.value;
 
-  if (session && pathnameWithoutLocale === '/login') {
-    return NextResponse.redirect(new URL(`/${locale}/superadmin`, req.url));
-  }
+  // Let the login page handle its own redirect — middleware can't decode the
+  // session to determine org slug, so we allow authenticated users to visit /login
+  // and the page itself will redirect them to the correct org path.
 
   const isPublic = PUBLIC_PATHS.has(pathnameWithoutLocale);
   if (isPublic) {

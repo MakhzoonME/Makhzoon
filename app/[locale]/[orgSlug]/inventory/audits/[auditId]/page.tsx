@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useInventoryAudit } from '@/hooks/inventory';
+import { useOrgSlug } from '@/hooks/ui';
 
 import { PageHeader } from '@/components/shared/PageHeader';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
@@ -39,14 +40,14 @@ function ItemRow({ item, auditId, completed }: { item: InventoryAuditItem; audit
 
   return (
     <div className={cn(
-      'flex items-center gap-4 px-5 py-3 border-b border-gray-50 last:border-0',
-      item.status === 'found' && 'bg-emerald-50/40',
-      item.status === 'missing' && 'bg-red-50/40',
+      'flex items-center gap-4 px-5 py-3 border-b border-border last:border-0',
+      item.status === 'found' && 'bg-emerald-500/10',
+      item.status === 'missing' && 'bg-red-500/10',
     )}>
       <div className="flex-shrink-0 w-6">
-        {item.status === 'found' && <CheckCircle2 className="h-4 w-4" strokeWidth={1.75} />}
-        {item.status === 'missing' && <XCircle className="h-4 w-4" strokeWidth={1.75} />}
-        {item.status === 'pending' && <Clock className="h-4 w-4" strokeWidth={1.75} />}
+        {item.status === 'found' && <CheckCircle2 className="h-4 w-4 text-emerald-600" strokeWidth={1.75} />}
+        {item.status === 'missing' && <XCircle className="h-4 w-4 text-red-500" strokeWidth={1.75} />}
+        {item.status === 'pending' && <Clock className="h-4 w-4 text-gray-400" strokeWidth={1.75} />}
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-medium text-sm text-gray-900">{item.assetName}</div>
@@ -85,6 +86,7 @@ function ItemRow({ item, auditId, completed }: { item: InventoryAuditItem; audit
 
 export default function AuditDetailPage() {
   const { auditId } = useParams<{ auditId: string }>();
+  const orgSlug = useOrgSlug();
   const qc = useQueryClient();
   const { data, isLoading } = useInventoryAudit(auditId);
   const [completing, setCompleting] = useState(false);
@@ -131,7 +133,7 @@ export default function AuditDetailPage() {
     <div>
       <PageHeader
         title={audit.title}
-        breadcrumb={[{ label: 'Inventory', href: '/inventory' }, { label: 'Audits', href: '/inventory/audits' }, { label: audit.title, href: `/inventory/audits/${auditId}` }]}
+        breadcrumb={[{ label: 'Inventory', href: `/${orgSlug}/inventory` }, { label: 'Audits', href: `/${orgSlug}/inventory/audits` }, { label: audit.title, href: `/${orgSlug}/inventory/audits/${auditId}` }]}
         actions={!completed && audit.pendingCount === 0 ? (
           <Button size="sm" onClick={handleComplete} disabled={completing}>
             <CheckCheck className="h-4 w-4" strokeWidth={1.75} /><span className="ml-1">{completing ? 'Completing...' : 'Complete Audit'}</span>
@@ -150,7 +152,7 @@ export default function AuditDetailPage() {
           </div>
           <span className="text-sm font-semibold text-gray-700">{pct}% checked</span>
         </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden flex">
+        <div className="h-2 bg-surface-page rounded-full overflow-hidden flex border border-border">
           <div className="h-2 bg-emerald-500 transition-all" style={{ width: `${audit.totalAssets ? (audit.foundCount / audit.totalAssets) * 100 : 0}%` }} />
           <div className="h-2 bg-red-400 transition-all" style={{ width: `${audit.totalAssets ? (audit.missingCount / audit.totalAssets) * 100 : 0}%` }} />
         </div>

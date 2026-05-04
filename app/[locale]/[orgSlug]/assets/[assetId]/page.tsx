@@ -87,7 +87,7 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
   return (
     <div>
       <PageHeader
-        title={`Asset: ${asset.name}`}
+        title={asset.name}
         breadcrumb={[{ label: 'Assets', href: `/${orgSlug}/assets` }, { label: asset.name, href: `/${orgSlug}/assets/${assetId}` }]}
         actions={isAdmin ? (
           <div className="flex gap-2">
@@ -119,6 +119,7 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
                 ['Location', asset.location || '—'],
                 ['Purchase Cost', asset.purchaseCost ? `${asset.purchaseCost} JOD` : '—'],
                 ['Purchase Date', asset.purchaseDate ? formatDate(asset.purchaseDate) : '—'],
+                ...(asset.receiptUrl ? [['Receipt', <a key="r" href={asset.receiptUrl} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline truncate block max-w-[200px]">View Receipt</a>]] : []),
               ].map(([label, value]) => (
                 <div key={String(label)}>
                   <dt className="text-gray-500">{label}</dt>

@@ -81,8 +81,22 @@ export default function LoginPage() {
       if (sessionStorage.getItem('auth.session_expired')) {
         setGlobalError('Your session expired. Please sign in again.');
         sessionStorage.removeItem('auth.session_expired');
+        return;
       }
     } catch { /* sessionStorage unavailable */ }
+    // Auto-redirect already-logged-in users to their org
+    fetch('/api/auth/me').then(async (res) => {
+      if (!res.ok) return;
+      const body = await res.json().catch(() => null);
+      if (!body) return;
+      const { role, orgSlug, features = {}, permissions = null } = body;
+      if (SUPERADMIN_ROLES.has(role)) {
+        router.replace(buildSuperAdminPath(locale, '/dashboard'));
+      } else if (orgSlug) {
+        const firstPath = getFirstAccessiblePath({ locale, role, features, permissions });
+        router.replace(buildOrgPath(locale, orgSlug, firstPath));
+      }
+    }).catch(() => {});
   }, []);
 
 

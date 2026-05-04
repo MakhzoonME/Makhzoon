@@ -85,8 +85,8 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-2">
+    <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
+      <div className="px-5 py-4 border-b border-border flex items-center gap-2">
         <UserCheckSVG />
         <h2 className="text-sm font-semibold text-gray-900">Checkout</h2>
         {active && (
@@ -155,7 +155,7 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
       )}
 
       {history.length > 0 && (
-        <div className="border-t border-gray-100 px-5 py-3">
+        <div className="border-t border-border px-5 py-3">
           <div className="flex items-center gap-1.5 mb-2">
             <HistorySVG />
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Recent history</p>

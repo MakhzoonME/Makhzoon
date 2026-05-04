@@ -54,14 +54,14 @@ export function AssetNotesSection({ assetId }: { assetId: string }) {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-2">
+    <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
+      <div className="px-5 py-4 border-b border-border flex items-center gap-2">
         <MessageSquareSVG />
         <h2 className="text-sm font-semibold text-gray-900">Notes</h2>
         <span className="text-xs text-gray-400 ml-auto">{notes.length} total</span>
       </div>
 
-      <form onSubmit={handleSubmit} className="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+      <form onSubmit={handleSubmit} className="px-5 py-4 border-b border-border bg-surface-page/50">
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}

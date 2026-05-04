@@ -49,27 +49,29 @@ export function RequestInventoryModal({ open, onOpenChange, itemId, itemName }: 
         <DialogHeader>
           <DialogTitle>Request Refill</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 px-6 pt-4 pb-2">
-          <div className="text-sm text-gray-600">
-            Item: <span className="font-medium text-gray-900">{itemName}</span>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4 px-6 pt-2 pb-4">
+            <div className="text-[14px] text-gray-600">
+              Item: <span className="font-medium text-gray-900">{itemName}</span>
+            </div>
+            <div>
+              <label className="block text-[12px] font-medium text-gray-600 mb-1">Description *</label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe why you need a refill..."
+                rows={3}
+                required
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Description *</label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe why you need a refill..."
-              rows={3}
-              required
-            />
-          </div>
-          <DialogFooter>
+          <DialogFooter className="px-6 py-4 border-t border-border">
             <Button type="button" variant="outline" onClick={() => handleClose(false)} disabled={submitting}>
               Cancel
             </Button>
             <Button type="submit" disabled={submitting || !description.trim()}>
               <SendSVG />
-              <span className="ml-1">{submitting ? 'Submitting...' : 'Submit'}</span>
+              <span className="ms-1">{submitting ? 'Submitting...' : 'Submit'}</span>
             </Button>
           </DialogFooter>
         </form>

@@ -38,7 +38,7 @@ const TYPE_BG: Record<MaintenanceType, string> = {
   service: 'bg-primary-50 text-primary-700',
   inspection: 'bg-purple-50 text-purple-700',
   upgrade: 'bg-green-50 text-green-700',
-  other: 'bg-gray-100 text-gray-700',
+  other: 'bg-surface-page text-gray-700',
 };
 
 export function MaintenanceSection({ assetId }: { assetId: string }) {
@@ -93,8 +93,8 @@ export function MaintenanceSection({ assetId }: { assetId: string }) {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-2">
+    <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
+      <div className="px-5 py-4 border-b border-border flex items-center gap-2">
         <WrenchSVG />
         <h2 className="text-sm font-semibold text-gray-900">Maintenance</h2>
         <div className="ml-auto flex items-center gap-3">
@@ -111,7 +111,7 @@ export function MaintenanceSection({ assetId }: { assetId: string }) {
       </div>
 
       {showForm && isAdmin && (
-        <form onSubmit={handleSubmit} className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 space-y-3">
+        <form onSubmit={handleSubmit} className="px-5 py-4 border-b border-border bg-surface-page/50 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-gray-500 mb-1 block">Type</label>

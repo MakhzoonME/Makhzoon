@@ -136,6 +136,8 @@ const NAV_ICONS: Record<string, React.FC> = {
 
 const EASE_OUT   = [0.16, 1, 0.3, 1] as const;
 const EASE_SLIDE = [0.4, 0, 0.2, 1] as const;
+// Icon is 18px. Collapsed sidebar is 68px. Center = (68-18)/2 = 25px padding-left.
+const ICON_INDENT = 'pl-[25px]';
 export const SIDEBAR_WIDTH_EXPANDED  = 240;
 export const SIDEBAR_WIDTH_COLLAPSED = 68;
 
@@ -253,8 +255,8 @@ export function AppSidebar() {
                   onClick={() => toggleGroup(group.href)}
                   aria-label={label}
                   className={cn(
-                    'group w-full relative flex items-center gap-2.5 rounded-lg text-sm transition-colors duration-150',
-                    sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2',
+                    'group w-full relative flex items-center rounded-lg text-[14px] transition-colors duration-150 h-9',
+                    ICON_INDENT,
                     hasActiveChild
                       ? 'text-primary-700 font-semibold bg-primary-50'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
@@ -266,25 +268,23 @@ export function AppSidebar() {
                   )}>
                     <Icon />
                   </span>
-                  <AnimatePresence initial={false}>
-                    {!sidebarCollapsed && (
-                      <motion.span
-                        key="group-label"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1, transition: { duration: 0.14, delay: 0.16, ease: EASE_OUT } }}
-                        exit={{ opacity: 0, transition: { duration: 0.08 } }}
-                        className="relative z-10 flex flex-1 items-center justify-between whitespace-nowrap"
-                      >
-                        {label}
-                        <span className={cn(
-                          'transition-transform duration-200 opacity-60',
-                          isOpen && 'rotate-180',
-                        )}>
-                          <ChevronDownSVG />
-                        </span>
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
+                  <motion.span
+                    animate={{ width: sidebarCollapsed ? 0 : 'auto', opacity: sidebarCollapsed ? 0 : 1 }}
+                    transition={sidebarCollapsed
+                      ? { width: { duration: 0.18, ease: EASE_SLIDE }, opacity: { duration: 0.08 } }
+                      : { width: { duration: 0.22, ease: EASE_SLIDE }, opacity: { duration: 0.14, delay: 0.16 } }
+                    }
+                    className="relative z-10 flex flex-1 items-center justify-between whitespace-nowrap overflow-hidden ms-2.5 pe-3"
+                    style={{ minWidth: 0 }}
+                  >
+                    {label}
+                    <span className={cn(
+                      'transition-transform duration-200 opacity-60 flex-shrink-0',
+                      isOpen && 'rotate-180',
+                    )}>
+                      <ChevronDownSVG />
+                    </span>
+                  </motion.span>
                 </button>
               );
 
@@ -358,8 +358,8 @@ export function AppSidebar() {
                 href={fullHref}
                 aria-label={translatedLabel}
                 className={cn(
-                  'group relative flex items-center gap-2.5 rounded-lg text-sm transition-colors duration-150',
-                  sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2',
+                  'group relative flex items-center rounded-lg text-[14px] transition-colors duration-150 h-9',
+                  ICON_INDENT,
                   active
                     ? 'text-primary-700 font-semibold'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
@@ -385,19 +385,17 @@ export function AppSidebar() {
                 )}>
                   <Icon />
                 </span>
-                <AnimatePresence initial={false}>
-                  {!sidebarCollapsed && (
-                    <motion.span
-                      key="label"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1, transition: { duration: 0.14, delay: 0.16, ease: EASE_OUT } }}
-                      exit={{ opacity: 0, transition: { duration: 0.08 } }}
-                      className="relative z-10 whitespace-nowrap"
-                    >
-                      {translatedLabel}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
+                <motion.span
+                  animate={{ width: sidebarCollapsed ? 0 : 'auto', opacity: sidebarCollapsed ? 0 : 1 }}
+                  transition={sidebarCollapsed
+                    ? { width: { duration: 0.18, ease: EASE_SLIDE }, opacity: { duration: 0.08 } }
+                    : { width: { duration: 0.22, ease: EASE_SLIDE }, opacity: { duration: 0.14, delay: 0.16 } }
+                  }
+                  className="relative z-10 whitespace-nowrap overflow-hidden ms-2.5"
+                  style={{ minWidth: 0 }}
+                >
+                  {translatedLabel}
+                </motion.span>
               </Link>
             );
 

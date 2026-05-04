@@ -64,12 +64,11 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
       <MobileDrawer />
       <BottomNav />
       <main
-        className={`pt-14 ${showBanner ? 'mt-10' : ''} min-h-screen duration-350 ease-out-expo pb-16 md:pb-0 ${
-          isRtl
-            ? '[margin-right:0] md:[margin-right:var(--sidebar-w)] transition-[margin-right]'
-            : '[margin-left:0]  md:[margin-left:var(--sidebar-w)]  transition-[margin-left]'
-        }`}
-        style={{ '--sidebar-w': `${sidebarWidth}px` } as React.CSSProperties}
+        className={`pt-14 ${showBanner ? 'mt-10' : ''} min-h-screen pb-16 md:pb-0`}
+        style={{
+          [isRtl ? 'marginRight' : 'marginLeft']: `${sidebarWidth}px`,
+          transition: 'margin 0.28s cubic-bezier(0.4,0,0.2,1)',
+        }}
       >
         <ExpiryWarningBanner />
         <div className="px-6 py-6 max-w-7xl">

@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Request } from '@/types';
 import { formatDate } from '@/lib/utils/date';
-import { truncate } from '@/lib/utils/format';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useT } from '@/hooks/ui';

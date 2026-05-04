@@ -26,7 +26,7 @@ function getConnection(): NetworkInformation | undefined {
   return nav.connection ?? nav.mozConnection ?? nav.webkitConnection;
 }
 
-function isSlowConnection(): boolean {
+function _isSlowConnection(): boolean {
   const conn = getConnection();
   return !!conn && (conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g');
 }

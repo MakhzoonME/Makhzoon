@@ -405,7 +405,7 @@ export default function BackendLogsPage() {
                     <td className="px-3 py-2 font-mono text-gray-700 max-w-[220px] truncate" title={log.path}>{log.path}</td>
                     <td className={cn('px-3 py-2 font-mono', statusColor(log.statusCode))}>{log.statusCode}</td>
                     <td className="px-3 py-2">
-                      <span className={cn('px-1.5 py-0.5 rounded text-xs font-medium capitalize', LEVEL_STYLES[log.level] ?? 'bg-gray-100 text-gray-600')}>
+                      <span className={cn('px-1.5 py-0.5 rounded text-xs font-medium capitalize', LEVEL_STYLES[log.level] ?? 'bg-surface-page text-gray-600')}>
                         {log.level}
                       </span>
                     </td>

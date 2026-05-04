@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils/cn';
 /* DS spec:
    Trigger: h=36px, rounded-md (8px), border-border, bg-surface-card, focus ring 3px
    Content: rounded-lg (10px), shadow-md, border-border, bg-surface-card, p-1
-   Item:    rounded-md (8px), text-[13.5px], py-2 px-2.5, focus:bg-gray-50 */
+   Item:    rounded-md (8px), text-[13.5px], py-2 px-2.5, focus:bg-surface-page */
 
 const Select = SelectPrimitive.Root;
 const SelectGroup = SelectPrimitive.Group;
@@ -117,7 +117,7 @@ const SelectItem = React.forwardRef<
     ref={ref}
     className={cn(
       'relative flex w-full cursor-default select-none items-center rounded-md py-2 pl-2.5 pr-8 text-[13.5px] text-gray-700 outline-none',
-      'focus:bg-gray-50 focus:text-gray-900',
+      'focus:bg-surface-page focus:text-gray-900',
       'data-[state=checked]:bg-primary-50 data-[state=checked]:text-primary-700 data-[state=checked]:font-semibold',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className

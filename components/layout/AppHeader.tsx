@@ -110,7 +110,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
           type="button"
           onClick={() => setMobileMenuOpen(true)}
           aria-label="Open menu"
-          className="md:hidden p-1.5 -ml-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95 transition-all duration-150"
+          className="md:hidden p-1.5 -ml-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-surface-page active:scale-95 transition-all duration-150"
         >
           <BurgerSVG />
         </button>
@@ -133,7 +133,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
         <div className="flex-1 flex justify-center">
           <button
             onClick={() => setPaletteOpen(true)}
-            className="hidden md:flex items-center gap-2 w-full max-w-md rounded-md border border-border bg-surface-page px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:border-border-strong transition-colors duration-fast"
+            className="hidden md:flex items-center gap-2 w-full max-w-md rounded-md border border-border bg-surface-page px-3 py-1.5 text-sm text-gray-500 hover:bg-surface-page hover:border-border-strong transition-colors duration-fast"
           >
             <SearchSVG />
             <span className="flex-1 text-left">{t('common.search')}</span>
@@ -146,7 +146,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
           {/* Mobile search */}
           <button
             onClick={() => setPaletteOpen(true)}
-            className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-surface-page transition-colors"
             aria-label={t('common.search')}
           >
             <SearchSVG />
@@ -160,7 +160,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
 
           {/* User menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-gray-700 focus:outline-none px-1 py-1 rounded-md hover:bg-gray-50 transition-colors ml-1">
+            <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-gray-700 focus:outline-none px-1 py-1 rounded-md hover:bg-surface-page transition-colors ml-1">
               <span className="hidden sm:block max-w-[140px] truncate">{user?.displayName || user?.email}</span>
               <ChevronDownSVG />
             </DropdownMenuTrigger>

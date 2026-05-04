@@ -64,11 +64,11 @@ export function SuperAdminPermissionsEditor({ value, onChange }: Props) {
         const hasAnyOp = Object.values(modulePerms ?? {}).some(Boolean);
 
         return (
-          <div key={mod.key} className="rounded-lg border border-gray-200 overflow-hidden">
+          <div key={mod.key} className="rounded-lg border border-border overflow-hidden">
             <div
               className={cn(
                 'flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none',
-                hasAnyOp ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'
+                hasAnyOp ? 'bg-surface-card hover:bg-surface-page' : 'bg-surface-page hover:bg-surface-page'
               )}
               onClick={() => toggleModule(mod.key)}
             >
@@ -84,7 +84,7 @@ export function SuperAdminPermissionsEditor({ value, onChange }: Props) {
               >
                 <span
                   className={cn(
-                    'absolute top-0.5 rounded-full bg-white shadow transition-transform duration-200',
+                    'absolute top-0.5 rounded-full bg-surface-card shadow transition-transform duration-200',
                     hasAnyOp ? 'translate-x-[14px]' : 'translate-x-[2px]'
                   )}
                   style={{ width: 14, height: 14 }}
@@ -102,7 +102,7 @@ export function SuperAdminPermissionsEditor({ value, onChange }: Props) {
             </div>
 
             {isExpanded && (
-              <div className="border-t border-gray-100 px-3 py-2 flex flex-col gap-1.5">
+              <div className="border-t border-border px-3 py-2 flex flex-col gap-1.5">
                 {mod.operations.map((op) => {
                   const checked = modulePerms?.[op.key] === true;
                   const disabled = op.requiresView && modulePerms?.view !== true;

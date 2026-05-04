@@ -59,7 +59,7 @@ export function RequestActionPanel({ assetId, warranties }: RequestActionPanelPr
 
   return (
     <>
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="bg-surface-card rounded-lg border border-border p-4">
         <h2 className="text-sm font-semibold text-gray-900 mb-3">REQUEST ACTIONS</h2>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => openModal('REFILL')}>Request Refill</Button>

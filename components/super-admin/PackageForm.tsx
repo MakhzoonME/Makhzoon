@@ -88,7 +88,7 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
         />
       </div>
 
-      <fieldset className="space-y-3 border border-gray-200 rounded-lg p-4">
+      <fieldset className="space-y-3 border border-border rounded-lg p-4">
         <legend className="px-2 text-sm font-medium text-gray-700">Usage Limits</legend>
         {LIMIT_KEYS.map((key) => (
           <div key={key} className="flex items-center gap-3">
@@ -109,11 +109,11 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
         ))}
       </fieldset>
 
-      <fieldset className="space-y-2 border border-gray-200 rounded-lg p-4">
+      <fieldset className="space-y-2 border border-border rounded-lg p-4">
         <legend className="px-2 text-sm font-medium text-gray-700">Features</legend>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {FEATURE_KEYS.map((key) => (
-            <label key={key} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
+            <label key={key} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-page cursor-pointer">
               <input
                 type="checkbox"
                 checked={features[key]}

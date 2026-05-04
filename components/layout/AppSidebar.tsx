@@ -259,7 +259,7 @@ export function AppSidebar() {
                     ICON_INDENT,
                     hasActiveChild
                       ? 'text-primary-700 font-semibold bg-primary-50'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                      : 'text-gray-600 hover:bg-surface-page hover:text-gray-900',
                   )}
                 >
                   <span className={cn(
@@ -311,7 +311,7 @@ export function AppSidebar() {
                             'group relative flex items-center rounded-md text-sm py-1.5 px-2.5 transition-colors duration-150',
                             subActive
                               ? 'text-primary-700 font-semibold'
-                              : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900',
+                              : 'text-gray-500 hover:bg-surface-page hover:text-gray-900',
                           )}
                         >
                           {subActive && (
@@ -362,7 +362,7 @@ export function AppSidebar() {
                   ICON_INDENT,
                   active
                     ? 'text-primary-700 font-semibold'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                    : 'text-gray-600 hover:bg-surface-page hover:text-gray-900',
                 )}
               >
                 {active && (

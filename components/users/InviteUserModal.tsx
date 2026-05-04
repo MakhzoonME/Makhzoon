@@ -192,7 +192,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
 
             {inviteQR && (
               <div className="flex flex-col items-center gap-3 py-2">
-                <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+                <div className="rounded-xl border border-border bg-surface-card p-3 shadow-sm">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={inviteQR} alt="Invitation QR code" width={200} height={200} />
                 </div>
@@ -212,7 +212,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
               <input
                 readOnly
                 value={inviteLink}
-                className="w-full text-xs font-mono bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-700 truncate focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full text-xs font-mono bg-surface-page border border-border rounded px-3 py-2 text-gray-700 truncate focus:outline-none focus:ring-2 focus:ring-primary-500"
                 onClick={(e) => (e.target as HTMLInputElement).select()}
               />
               <p className="text-xs text-gray-400 mt-1.5">
@@ -232,11 +232,11 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-6 pt-4 pb-2">
 
               {/* Invite mode toggle */}
-              <div className="flex rounded-lg border border-gray-200 p-1 gap-1 bg-gray-50">
-                <button type="button" onClick={() => switchMode('email')} className={cn('flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors', inviteMode === 'email' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700 cursor-pointer')}>
+              <div className="flex rounded-lg border border-border p-1 gap-1 bg-surface-page">
+                <button type="button" onClick={() => switchMode('email')} className={cn('flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors', inviteMode === 'email' ? 'bg-surface-card text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700 cursor-pointer')}>
                   Email invite
                 </button>
-                <button type="button" onClick={() => switchMode('username')} className={cn('flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors', inviteMode === 'username' ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700 cursor-pointer')}>
+                <button type="button" onClick={() => switchMode('username')} className={cn('flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors', inviteMode === 'username' ? 'bg-surface-card text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700 cursor-pointer')}>
                   Username invite
                 </button>
               </div>

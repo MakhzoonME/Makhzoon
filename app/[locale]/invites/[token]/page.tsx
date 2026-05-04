@@ -97,7 +97,7 @@ export default function AcceptInvitePage({ params }: { params: { token: string }
       <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--surface-page)' }}>
         <div className="w-full max-w-md animate-pulse space-y-4">
           <div className="h-10 bg-gray-200 rounded-xl" />
-          <div className="h-48 bg-gray-100 rounded-2xl" />
+          <div className="h-48 bg-surface-page rounded-2xl" />
         </div>
       </div>
     );

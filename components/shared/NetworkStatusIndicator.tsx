@@ -203,7 +203,7 @@ export function NetworkStatusIndicator({ variant = 'ghost-light', className }: P
               'relative flex items-center justify-center w-8 h-8 rounded-md transition-colors',
               variant === 'ghost-dark'
                 ? 'hover:bg-blue-900/50'
-                : 'hover:bg-gray-100 dark:hover:bg-gray-700',
+                : 'hover:bg-surface-page dark:hover:bg-gray-700',
               colorClass,
               className,
             )}

@@ -20,7 +20,7 @@ function ChangesTable({ label, value }: { label: string; value: Record<string, u
       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{label}</p>
       <div className="rounded-lg border border-border overflow-hidden">
         {entries.map(([k, v], i) => (
-          <div key={k} className={`flex text-xs ${i % 2 === 0 ? 'bg-gray-50' : 'bg-surface-card'}`}>
+          <div key={k} className={`flex text-xs ${i % 2 === 0 ? 'bg-surface-page' : 'bg-surface-card'}`}>
             <span className="w-40 flex-shrink-0 px-3 py-2 text-gray-500 font-medium border-r border-border">
               {formatKeyLabel(k)}
             </span>
@@ -151,7 +151,7 @@ export default function OrgAuditLogsPage() {
             <div className="space-y-4 text-[14px] px-6 py-4">
               <div className="rounded-lg border border-border overflow-hidden">
                 {detailRows.filter(([, v]) => v).map(([k, v], i) => (
-                  <div key={String(k)} className={`flex text-xs ${i % 2 === 0 ? 'bg-gray-50' : 'bg-surface-card'}`}>
+                  <div key={String(k)} className={`flex text-xs ${i % 2 === 0 ? 'bg-surface-page' : 'bg-surface-card'}`}>
                     <span className="w-28 flex-shrink-0 px-3 py-2 text-gray-500 font-medium border-r border-border">{k}</span>
                     <span className="px-3 py-2 text-gray-800">{String(v)}</span>
                   </div>

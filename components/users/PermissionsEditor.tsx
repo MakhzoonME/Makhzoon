@@ -76,8 +76,8 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
               className={cn(
                 'flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none',
                 isModuleEnabled
-                  ? 'bg-surface-card hover:bg-gray-50'
-                  : 'bg-gray-50 hover:bg-gray-100'
+                  ? 'bg-surface-card hover:bg-surface-page'
+                  : 'bg-surface-page hover:bg-surface-page'
               )}
               onClick={() => toggleModule(mod.key)}
             >
@@ -94,7 +94,7 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
               >
                 <span
                   className={cn(
-                    'absolute top-0.5 rounded-full bg-white shadow transition-transform duration-200',
+                    'absolute top-0.5 rounded-full bg-surface-card shadow transition-transform duration-200',
                     hasAnyOp ? 'translate-x-[14px]' : 'translate-x-[2px]'
                   )}
                   style={{ width: 14, height: 14 }}

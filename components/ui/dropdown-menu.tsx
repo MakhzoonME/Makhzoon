@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils/cn';
 /* DS spec:
    Content: rounded-lg (10px), shadow-md, border-border, bg-surface-card, p-1
    Item:    rounded-md (8px), px-2.5 py-2, text-[13.5px], text-gray-700
-            focus:bg-gray-50 focus:text-gray-900
+            focus:bg-surface-page focus:text-gray-900
    Divider: h-px bg-border, my-1
    Label:   text-[11px] uppercase tracking, text-gray-500 */
 
@@ -24,7 +24,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      'flex cursor-default select-none items-center gap-2 rounded-md px-2.5 py-2 text-[13.5px] text-gray-700 outline-none focus:bg-gray-50 focus:text-gray-900 data-[state=open]:bg-gray-50',
+      'flex cursor-default select-none items-center gap-2 rounded-md px-2.5 py-2 text-[13.5px] text-gray-700 outline-none focus:bg-surface-page focus:text-gray-900 data-[state=open]:bg-surface-page',
       inset && 'pl-8',
       className
     )}
@@ -86,7 +86,7 @@ const DropdownMenuItem = React.forwardRef<
     ref={ref}
     className={cn(
       'relative flex cursor-default select-none items-center gap-2.5 rounded-md px-2.5 py-2 text-[13.5px] text-gray-700 outline-none transition-colors',
-      'focus:bg-gray-50 focus:text-gray-900',
+      'focus:bg-surface-page focus:text-gray-900',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       inset && 'pl-8',
       className
@@ -127,7 +127,7 @@ DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
 const DropdownMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => (
   <span
     className={cn(
-      'ms-auto text-[11px] text-gray-400 font-mono bg-gray-100 px-1.5 py-0.5 rounded tracking-normal',
+      'ms-auto text-[11px] text-gray-400 font-mono bg-surface-page px-1.5 py-0.5 rounded tracking-normal',
       className
     )}
     {...props}

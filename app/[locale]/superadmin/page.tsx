@@ -163,7 +163,7 @@ export default function SuperAdminPage() {
       header: t('orgs.workspaceId'),
       sortable: true,
       render: (r) => (
-        <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">{r.organization.subdomain}</span>
+        <span className="font-mono text-xs bg-surface-page px-2 py-0.5 rounded">{r.organization.subdomain}</span>
       ),
     },
     {

@@ -119,7 +119,7 @@ export function MobileDrawer() {
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-surface-page transition-colors"
                 aria-label="Close menu"
               >
                 <XSvg />
@@ -162,7 +162,7 @@ export function MobileDrawer() {
                           'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] transition-colors duration-150',
                           active
                             ? 'bg-primary-50 text-primary-700 font-semibold'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                            : 'text-gray-600 hover:bg-surface-page hover:text-gray-900',
                         )}
                       >
                         <Icon />
@@ -194,7 +194,7 @@ export function MobileDrawer() {
                                       'flex items-center px-3 py-2 rounded-lg text-[13px] transition-colors duration-150',
                                       subActive
                                         ? 'bg-primary-50 text-primary-700 font-semibold'
-                                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900',
+                                        : 'text-gray-500 hover:bg-surface-page hover:text-gray-900',
                                     )}
                                   >
                                     {sub.label}
@@ -223,7 +223,7 @@ export function MobileDrawer() {
                       'flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] transition-colors duration-150',
                       active
                         ? 'bg-primary-50 text-primary-700 font-semibold'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                        : 'text-gray-600 hover:bg-surface-page hover:text-gray-900',
                     )}
                   >
                     <Icon />

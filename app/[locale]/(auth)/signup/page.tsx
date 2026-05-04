@@ -182,7 +182,7 @@ export default function SignupPage() {
                 </div>
               </motion.div>
 
-              <motion.hr variants={item} className="border-gray-100" />
+              <motion.hr variants={item} className="border-border" />
 
               <motion.div variants={item} className="space-y-1.5">
                 <Label htmlFor="displayName">Your name</Label>

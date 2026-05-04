@@ -111,7 +111,7 @@ export function DataTable<T>({
               data.map((row, i) => (
                 <tr
                   key={keyExtractor ? keyExtractor(row) : i}
-                  className={`border-b border-border hover:bg-gray-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+                  className={`border-b border-border hover:bg-surface-page transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
                   onClick={() => onRowClick?.(row)}
                 >
                   {columns.map((col) => {
@@ -162,14 +162,14 @@ export function DataTable<T>({
           </div>
           <div className="flex items-center gap-1">
             <button
-              className="px-2.5 py-1 text-[12px] border border-border rounded-md hover:bg-gray-50 text-gray-700 disabled:opacity-40 transition-colors"
+              className="px-2.5 py-1 text-[12px] border border-border rounded-md hover:bg-surface-page text-gray-700 disabled:opacity-40 transition-colors"
               disabled={pagination.page <= 1}
               onClick={() => pagination.onPageChange(1)}
             >
               First
             </button>
             <button
-              className="px-2.5 py-1 text-[12px] border border-border rounded-md hover:bg-gray-50 text-gray-700 disabled:opacity-40 transition-colors"
+              className="px-2.5 py-1 text-[12px] border border-border rounded-md hover:bg-surface-page text-gray-700 disabled:opacity-40 transition-colors"
               disabled={pagination.page <= 1}
               onClick={() => pagination.onPageChange(pagination.page - 1)}
             >
@@ -192,7 +192,7 @@ export function DataTable<T>({
                   className={`px-2.5 py-1 text-[12px] border rounded-md transition-colors ${
                     pagination.page === pageNum
                       ? 'bg-primary-600 text-white border-primary-600'
-                      : 'border-border hover:bg-gray-50 text-gray-700'
+                      : 'border-border hover:bg-surface-page text-gray-700'
                   }`}
                   onClick={() => pagination.onPageChange(pageNum)}
                 >
@@ -201,14 +201,14 @@ export function DataTable<T>({
               );
             })}
             <button
-              className="px-2.5 py-1 text-[12px] border border-border rounded-md hover:bg-gray-50 text-gray-700 disabled:opacity-40 transition-colors"
+              className="px-2.5 py-1 text-[12px] border border-border rounded-md hover:bg-surface-page text-gray-700 disabled:opacity-40 transition-colors"
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => pagination.onPageChange(pagination.page + 1)}
             >
               Next
             </button>
             <button
-              className="px-2.5 py-1 text-[12px] border border-border rounded-md hover:bg-gray-50 text-gray-700 disabled:opacity-40 transition-colors"
+              className="px-2.5 py-1 text-[12px] border border-border rounded-md hover:bg-surface-page text-gray-700 disabled:opacity-40 transition-colors"
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => pagination.onPageChange(pagination.totalPages)}
             >

@@ -80,13 +80,13 @@ export function AssetNotesSection({ assetId }: { assetId: string }) {
         {isLoading ? (
           <div className="p-5 space-y-3">
             {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="h-12 rounded-md bg-gray-100 animate-pulse" />
+              <div key={i} className="h-12 rounded-md bg-surface-page animate-pulse" />
             ))}
           </div>
         ) : notes.length === 0 ? (
           <p className="px-5 py-6 text-sm text-gray-400 text-center">No notes yet.</p>
         ) : (
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-border">
             {notes.map((note) => {
               const canDelete = isAdmin || note.createdBy === user?.uid;
               const timeAgo = note.createdAt

@@ -5,7 +5,7 @@ function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>)
   return (
     <div
       className={cn(
-        'rounded-sm overflow-hidden relative bg-gray-100',
+        'rounded-sm overflow-hidden relative bg-surface-page',
         'after:absolute after:inset-0 after:translate-x-[-100%]',
         'after:bg-gradient-to-r after:from-transparent after:via-white/50 after:to-transparent',
         'after:animate-shimmer',

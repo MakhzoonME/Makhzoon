@@ -27,9 +27,19 @@ export function useAuth() {
 
         if (ORG_ROLES.has(role)) {
           try {
-            const res = await fetch('/api/auth/me', {
+            let res = await fetch('/api/auth/me', {
               headers: { 'Cache-Control': 'no-cache' },
             });
+            // Session cookie may have expired — refresh it with a fresh ID token
+            if (res.status === 401) {
+              const freshToken = await firebaseUser.getIdToken(true);
+              await fetch('/api/auth/session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken: freshToken }),
+              });
+              res = await fetch('/api/auth/me', { headers: { 'Cache-Control': 'no-cache' } });
+            }
             if (res.ok) {
               const data = await res.json();
               features = data.features ?? {};

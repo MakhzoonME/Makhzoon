@@ -14,7 +14,7 @@ export interface UserCardData {
 const ROLE_LABELS: Record<string, { label: string; className: string }> = {
   super_admin: { label: 'Super Admin', className: 'bg-purple-100 text-purple-700' },
   admin:       { label: 'Admin',       className: 'bg-primary-100 text-primary-700' },
-  staff:       { label: 'Staff',       className: 'bg-gray-100   text-gray-600'   },
+  staff:       { label: 'Staff',       className: 'bg-surface-page   text-gray-600'   },
 };
 
 function getInitials(name?: string, email?: string): string {
@@ -45,7 +45,7 @@ interface UserHoverCardProps {
 
 export function UserHoverCard({ user, label, className }: UserHoverCardProps) {
   const displayLabel = label ?? user.name ?? user.email ?? user.uid;
-  const roleInfo = user.role ? (ROLE_LABELS[user.role] ?? { label: user.role, className: 'bg-gray-100 text-gray-600' }) : null;
+  const roleInfo = user.role ? (ROLE_LABELS[user.role] ?? { label: user.role, className: 'bg-surface-page text-gray-600' }) : null;
 
   return (
     <TooltipPrimitive.Provider delayDuration={200}>
@@ -93,7 +93,7 @@ export function UserHoverCard({ user, label, className }: UserHoverCardProps) {
             </div>
 
             {/* Divider */}
-            <div className="border-t border-gray-100 my-2" />
+            <div className="border-t border-border my-2" />
 
             {/* Details grid */}
             <dl className="space-y-1.5 text-xs">

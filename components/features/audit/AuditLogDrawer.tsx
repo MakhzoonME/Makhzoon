@@ -70,15 +70,15 @@ export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/30 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
-          className="fixed right-0 top-0 z-50 h-full w-full sm:max-w-md bg-white border-l border-gray-200 shadow-lg flex flex-col data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right duration-200"
+          className="fixed right-0 top-0 z-50 h-full w-full sm:max-w-md bg-surface-card border-l border-border shadow-lg flex flex-col data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right duration-200"
           aria-describedby={undefined}
         >
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <div className="flex items-center gap-2">
               <ActivitySVGIcon />
               <DialogPrimitive.Title className="text-sm font-semibold text-gray-900">Recent activity</DialogPrimitive.Title>
             </div>
-            <DialogPrimitive.Close className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100">
+            <DialogPrimitive.Close className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-surface-page">
               <XSVGIcon />
               <span className="sr-only">Close</span>
             </DialogPrimitive.Close>
@@ -88,13 +88,13 @@ export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
             {isLoading ? (
               <div className="p-6 space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-14 rounded-md bg-gray-100 animate-pulse" />
+                  <div key={i} className="h-14 rounded-md bg-surface-page animate-pulse" />
                 ))}
               </div>
             ) : recent.length === 0 ? (
               <p className="p-6 text-sm text-gray-400 text-center">No activity yet.</p>
             ) : (
-              <ul className="divide-y divide-gray-100">
+              <ul className="divide-y divide-border">
                 {recent.map((log) => {
                   const label = ACTION_LABEL[log.action] ?? log.action;
                   const href = log.recordId ? buildModuleHref(log.module, log.recordId) : '';
@@ -102,7 +102,7 @@ export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
                     ? formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })
                     : '';
                   const inner = (
-                    <div className="px-5 py-3 hover:bg-gray-50 transition-colors">
+                    <div className="px-5 py-3 hover:bg-surface-page transition-colors">
                       <p className="text-sm text-gray-900 font-medium">{label}</p>
                       <p className="text-xs text-gray-500 mt-0.5">
                         <span className="capitalize">{log.module}</span> · {timeAgo}
@@ -125,7 +125,7 @@ export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
             )}
           </div>
 
-          <div className="border-t border-gray-200 px-5 py-3">
+          <div className="border-t border-border px-5 py-3">
             <Link
               href={`/${locale}/superadmin/audit-logs`}
               onClick={() => onOpenChange(false)}

@@ -89,7 +89,7 @@ export default function HomePage() {
               <Link href="/login" className="inline-flex items-center justify-center gap-2 px-6 h-12 rounded-xl font-semibold text-white no-underline transition-opacity duration-150 hover:opacity-90" style={{ background: 'var(--primary-600)', textDecoration: 'none', fontSize: 16 }}>
                 Start free trial
               </Link>
-              <Link href="/contact" className="inline-flex items-center gap-1.5 px-6 h-12 rounded-xl font-semibold no-underline border transition-colors duration-150 hover:bg-gray-50" style={{ color: 'var(--gray-700)', borderColor: 'var(--border-default)', textDecoration: 'none', fontSize: 16, background: '#fff' }}>
+              <Link href="/contact" className="inline-flex items-center gap-1.5 px-6 h-12 rounded-xl font-semibold no-underline border transition-colors duration-150 hover:bg-surface-page" style={{ color: 'var(--gray-700)', borderColor: 'var(--border-default)', textDecoration: 'none', fontSize: 16, background: '#fff' }}>
                 Book a demo <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
               </Link>
             </div>

@@ -155,13 +155,13 @@ export function MaintenanceSection({ assetId }: { assetId: string }) {
         {isLoading ? (
           <div className="p-5 space-y-3">
             {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="h-14 rounded-md bg-gray-100 animate-pulse" />
+              <div key={i} className="h-14 rounded-md bg-surface-page animate-pulse" />
             ))}
           </div>
         ) : records.length === 0 ? (
           <p className="px-5 py-6 text-sm text-gray-400 text-center">No maintenance records.</p>
         ) : (
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-border">
             {records.map((r) => (
               <li key={r.id} className="px-5 py-3 group">
                 <div className="flex items-start justify-between gap-2">

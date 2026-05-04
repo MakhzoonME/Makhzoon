@@ -35,7 +35,7 @@ const ROLE_STYLE: Record<string, string> = {
   admin:       'bg-primary-50 text-primary-700',
   super_admin: 'bg-violet-50 text-violet-700',
   org_owner:   'bg-purple-50 text-purple-700',
-  staff:       'bg-gray-100 text-gray-600',
+  staff:       'bg-surface-page text-gray-600',
 };
 
 const ROLE_LABEL: Record<string, string> = {
@@ -49,13 +49,13 @@ const STATUS_STYLE: Record<string, string> = {
   active:      'bg-emerald-50 text-emerald-700',
   deactivated: 'bg-red-50 text-red-600',
   pending:     'bg-amber-50 text-amber-700',
-  expired:     'bg-gray-100 text-gray-500',
+  expired:     'bg-surface-page text-gray-500',
   revoked:     'bg-red-50 text-red-500',
 };
 
 function RoleBadge({ role }: { role: string }) {
   return (
-    <span className={cn('inline-block px-2 py-0.5 rounded-full text-xs font-semibold', ROLE_STYLE[role] ?? 'bg-gray-100 text-gray-600')}>
+    <span className={cn('inline-block px-2 py-0.5 rounded-full text-xs font-semibold', ROLE_STYLE[role] ?? 'bg-surface-page text-gray-600')}>
       {ROLE_LABEL[role] ?? role.replace('_', ' ')}
     </span>
   );
@@ -63,7 +63,7 @@ function RoleBadge({ role }: { role: string }) {
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={cn('inline-block px-2 py-0.5 rounded-full text-xs font-semibold capitalize', STATUS_STYLE[status] ?? 'bg-gray-100 text-gray-600')}>
+    <span className={cn('inline-block px-2 py-0.5 rounded-full text-xs font-semibold capitalize', STATUS_STYLE[status] ?? 'bg-surface-page text-gray-600')}>
       {status}
     </span>
   );
@@ -206,7 +206,7 @@ export default function UsersPage() {
       <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border bg-gray-50">
+            <tr className="border-b border-border bg-surface-page">
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.name')}</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.emailUsername')}</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.role')}</th>
@@ -221,7 +221,7 @@ export default function UsersPage() {
                 <tr key={i}>
                   {Array.from({ length: 6 }).map((__, j) => (
                     <td key={j} className="px-4 py-3">
-                      <div className="h-4 bg-gray-100 rounded animate-pulse" style={{ width: j === 0 ? '120px' : j === 1 ? '160px' : '80px' }} />
+                      <div className="h-4 bg-surface-page rounded animate-pulse" style={{ width: j === 0 ? '120px' : j === 1 ? '160px' : '80px' }} />
                     </td>
                   ))}
                 </tr>
@@ -236,7 +236,7 @@ export default function UsersPage() {
                   const u = row.data;
                   const editable = canEditUser(u);
                   return (
-                    <tr key={`user-${u.id}`} className="hover:bg-gray-50 transition-colors">
+                    <tr key={`user-${u.id}`} className="hover:bg-surface-page transition-colors">
                       <td className="px-4 py-3 font-medium text-gray-900">{u.displayName || '—'}</td>
                       <td className="px-4 py-3 text-gray-600">{u.email || (u.username ? `@${u.username}` : '—')}</td>
                       <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
@@ -293,7 +293,7 @@ export default function UsersPage() {
 
                 const inv = row.data;
                 return (
-                  <tr key={`invite-${inv.id}`} className="hover:bg-gray-50 transition-colors bg-amber-50/30">
+                  <tr key={`invite-${inv.id}`} className="hover:bg-surface-page transition-colors bg-amber-50/30">
                     <td className="px-4 py-3 font-medium text-gray-700">{inv.displayName || '—'}</td>
                     <td className="px-4 py-3 text-gray-500">{inv.email || (inv.username ? `@${inv.username}` : '—')}</td>
                     <td className="px-4 py-3"><RoleBadge role={inv.role} /></td>

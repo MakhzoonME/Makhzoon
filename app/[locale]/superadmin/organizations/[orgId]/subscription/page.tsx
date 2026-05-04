@@ -323,7 +323,7 @@ export default function OrgSubscriptionPage({ params }: { params: { orgId: strin
                 {FEATURE_KEYS.map((k) => (
                   <label
                     key={k}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-gray-50 cursor-pointer"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer"
                   >
                     <input
                       type="checkbox"

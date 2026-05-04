@@ -39,7 +39,7 @@ export function FormDrawer({ open, onOpenChange, title, description, children, w
               )}
             </div>
             <DialogPrimitive.Close
-              className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-[3px] focus:ring-primary-500/20"
+              className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-surface-page transition-colors focus:outline-none focus:ring-[3px] focus:ring-primary-500/20"
               aria-label="Close"
             >
               <X className="h-4 w-4" strokeWidth={1.75} />

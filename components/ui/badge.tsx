@@ -9,7 +9,7 @@ const badgeVariants = cva(
     variants: {
       variant: {
         /* neutral */
-        default:    'bg-gray-100 text-gray-600',
+        default:    'bg-surface-page text-gray-600',
         /* semantic shorthands */
         green:      'bg-[var(--green-100)] text-[var(--green-700)]',
         yellow:     'bg-[var(--yellow-100)] text-[var(--yellow-700)]',
@@ -18,7 +18,7 @@ const badgeVariants = cva(
         orange:     'bg-orange-100 text-orange-700',
         /* DS semantic tones */
         active:     'bg-[var(--green-100)] text-[var(--green-700)]',
-        retired:    'bg-gray-100 text-gray-600',
+        retired:    'bg-surface-page text-gray-600',
         pending:    'bg-[var(--yellow-100)] text-[var(--yellow-700)]',
         approved:   'bg-[var(--green-100)] text-[var(--green-700)]',
         rejected:   'bg-[var(--red-100)] text-[var(--red-700)]',
@@ -26,7 +26,7 @@ const badgeVariants = cva(
         expiring:   'bg-[var(--yellow-100)] text-[var(--yellow-700)]',
         valid:      'bg-[var(--green-100)] text-[var(--green-700)]',
         admin:      'bg-[var(--primary-100)] text-[var(--primary-700)]',
-        staff:      'bg-gray-100 text-gray-600',
+        staff:      'bg-surface-page text-gray-600',
         superadmin: 'bg-[var(--blue-100)] text-[var(--blue-600)]',
         info:       'bg-[var(--blue-100)] text-[var(--blue-700)]',
       },

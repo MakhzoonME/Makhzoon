@@ -123,7 +123,7 @@ export default function ConfigurationPage() {
               <span className="text-xs text-gray-400">{t('config.none')}</span>
             ) : (
               enabled.slice(0, 3).map((f) => (
-                <span key={f} className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded">
+                <span key={f} className="text-[10px] bg-surface-page px-1.5 py-0.5 rounded">
                   {f}
                 </span>
               ))
@@ -212,7 +212,7 @@ export default function ConfigurationPage() {
       ) : (
         <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-border">
+            <thead className="bg-surface-page border-b border-border">
               <tr>
                 <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
                   {t('config.featureKey')}

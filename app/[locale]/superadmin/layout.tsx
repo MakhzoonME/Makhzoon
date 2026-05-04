@@ -115,10 +115,10 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
           </div>
         </aside>
         <main
-          className="flex-1 min-h-screen bg-gray-50"
+          className="flex-1 min-h-screen bg-surface-page"
           style={isRtl ? { marginRight: '240px' } : { marginLeft: '240px' }}
         >
-          <div className="px-6 py-6 max-w-7xl">
+          <div className="px-6 py-6 w-full">
             {children}
           </div>
         </main>

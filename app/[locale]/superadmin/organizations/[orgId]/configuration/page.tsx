@@ -122,7 +122,7 @@ export default function OrgConfigurationPage({ params }: { params: { orgId: stri
                 onAdd={() => setStatusDialog({ mode: 'create' })}
                 addLabel="Add Status"
               />
-              <ul className="divide-y divide-gray-100 mt-3">
+              <ul className="divide-y divide-border mt-3">
                 {config.assetStatuses.length === 0 && (
                   <li className="py-3 text-sm text-gray-400">No statuses yet.</li>
                 )}
@@ -157,7 +157,7 @@ export default function OrgConfigurationPage({ params }: { params: { orgId: stri
                 onAdd={() => setLocationDialog({ mode: 'create' })}
                 addLabel="Add Location"
               />
-              <ul className="divide-y divide-gray-100 mt-3">
+              <ul className="divide-y divide-border mt-3">
                 {config.locations.length === 0 && (
                   <li className="py-3 text-sm text-gray-400">No locations yet.</li>
                 )}
@@ -185,7 +185,7 @@ export default function OrgConfigurationPage({ params }: { params: { orgId: stri
                 onAdd={() => setCategoryDialog({ mode: 'create' })}
                 addLabel="Add Category"
               />
-              <ul className="divide-y divide-gray-100 mt-3">
+              <ul className="divide-y divide-border mt-3">
                 {config.categories.length === 0 && (
                   <li className="py-3 text-sm text-gray-400">No categories yet.</li>
                 )}

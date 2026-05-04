@@ -79,7 +79,7 @@ export function PaymentLogForm({ onSubmit, onCancel, submitting }: PaymentLogFor
           id="pmt-method"
           value={method}
           onChange={(e) => setMethod(e.target.value as PaymentLogMethod)}
-          className="flex h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+          className="flex h-9 w-full rounded-md border border-gray-300 bg-surface-card px-3 text-sm"
         >
           {METHODS.map((m) => (
             <option key={m} value={m}>

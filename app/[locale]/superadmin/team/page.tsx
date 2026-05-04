@@ -336,7 +336,7 @@ export default function SuperAdminTeamPage() {
       <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border bg-gray-50">
+            <tr className="border-b border-border bg-surface-page">
               {[
                 { key: 'name', label: t('team.fullName'), width: '120px' },
                 { key: 'email', label: t('team.email'), width: '160px' },
@@ -380,7 +380,7 @@ export default function SuperAdminTeamPage() {
                 <tr key={i}>
                   {Array.from({ length: 6 }).map((__, j) => (
                     <td key={j} className="px-4 py-3">
-                      <div className="h-4 bg-gray-100 rounded animate-pulse" style={{ width: j === 0 ? '120px' : j === 1 ? '160px' : '80px' }} />
+                      <div className="h-4 bg-surface-page rounded animate-pulse" style={{ width: j === 0 ? '120px' : j === 1 ? '160px' : '80px' }} />
                     </td>
                   ))}
                 </tr>
@@ -394,14 +394,14 @@ export default function SuperAdminTeamPage() {
                 const isSelf = m.id === currentUser?.uid;
                 const editable = canEdit(m);
                 return (
-                  <tr key={m.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={m.id} className="hover:bg-surface-page transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-900">
                       {m.displayName}
                       {isSelf && <span className="ml-2 text-xs text-gray-400">({t('team.you')})</span>}
                     </td>
                     <td className="px-4 py-3 text-gray-600">{m.email}</td>
                     <td className="px-4 py-3">
-                      <span className={cn('inline-block px-2 py-0.5 rounded-full text-xs font-semibold', ROLE_STYLE[m.role] ?? 'bg-gray-100 text-gray-600')}>
+                      <span className={cn('inline-block px-2 py-0.5 rounded-full text-xs font-semibold', ROLE_STYLE[m.role] ?? 'bg-surface-page text-gray-600')}>
                         {ROLE_LABEL[m.role] ?? m.role}
                       </span>
                     </td>

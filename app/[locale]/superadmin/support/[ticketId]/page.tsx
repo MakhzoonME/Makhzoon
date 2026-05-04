@@ -146,7 +146,7 @@ export default function SuperAdminTicketDetailPage({ params }: { params: { ticke
                 <div
                   key={m.id}
                   className={`p-3 rounded-lg border ${
-                    isAdmin ? 'bg-primary-50 border-primary-100' : 'bg-gray-50 border-border'
+                    isAdmin ? 'bg-primary-50 border-primary-100' : 'bg-surface-page border-border'
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">

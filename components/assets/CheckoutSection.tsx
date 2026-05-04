@@ -97,7 +97,7 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
       </div>
 
       {isLoading ? (
-        <div className="p-5"><div className="h-16 rounded-md bg-gray-100 animate-pulse" /></div>
+        <div className="p-5"><div className="h-16 rounded-md bg-surface-page animate-pulse" /></div>
       ) : active ? (
         <div className="px-5 py-4">
           <p className="text-sm text-gray-900">

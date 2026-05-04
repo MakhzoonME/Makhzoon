@@ -11,7 +11,7 @@ function formatCurrency(n: number): string {
 
 function Stat({ label, value, icon: Icon, tone = 'gray' }: { label: string; value: string | number; icon: React.FC; tone?: 'gray' | 'indigo' | 'green' | 'amber' | 'red' }) {
   const tones: Record<string, string> = {
-    gray: 'bg-gray-50 text-gray-700',
+    gray: 'bg-surface-page text-gray-700',
     indigo: 'bg-primary-50 text-primary-700',
     green: 'bg-green-50 text-green-700',
     amber: 'bg-amber-50 text-amber-700',
@@ -31,7 +31,7 @@ function Stat({ label, value, icon: Icon, tone = 'gray' }: { label: string; valu
 }
 
 function SkeletonCard() {
-  return <div className="bg-surface-card rounded-xl border border-border p-5 h-24 animate-pulse"><div className="h-3 bg-gray-100 rounded w-20 mb-3" /><div className="h-6 bg-gray-100 rounded w-16" /></div>;
+  return <div className="bg-surface-card rounded-xl border border-border p-5 h-24 animate-pulse"><div className="h-3 bg-surface-page rounded w-20 mb-3" /><div className="h-6 bg-surface-page rounded w-16" /></div>;
 }
 
 export default function ReportsPage() {
@@ -102,7 +102,7 @@ export default function ReportsPage() {
                       <span className="font-medium text-gray-700">{c.category}</span>
                       <span className="text-gray-500 tabular-nums">{c.count} · {formatCurrency(c.value)}</span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-surface-page rounded-full overflow-hidden">
                       <div className="h-full bg-primary-500 rounded-full" style={{ width: `${(c.count / maxCatCount) * 100}%` }} />
                     </div>
                   </li>

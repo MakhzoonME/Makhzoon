@@ -32,7 +32,7 @@ function StockStatusBar({ qty, threshold }: { qty: number; threshold: number }) 
   const pct = threshold === 0 ? 100 : Math.min(100, (qty / (threshold * 3)) * 100);
   const color = qty === 0 ? 'bg-red-500' : qty < threshold ? 'bg-amber-400' : 'bg-emerald-500';
   return (
-    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+    <div className="w-full bg-surface-page rounded-full h-2 overflow-hidden">
       <div className={cn('h-2 rounded-full transition-all', color)} style={{ width: `${pct}%` }} />
     </div>
   );

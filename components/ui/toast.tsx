@@ -34,7 +34,7 @@ const TONES = {
   default: {
     border: 'border-border',
     bg: 'bg-surface-card',
-    iconBg: 'bg-gray-100',
+    iconBg: 'bg-surface-page',
     iconColor: 'text-gray-500',
   },
   success: {
@@ -107,7 +107,7 @@ const ToastAction = React.forwardRef<
     ref={ref}
     className={cn(
       'inline-flex h-7 shrink-0 items-center justify-center rounded-md border border-border bg-transparent px-3 text-[12px] font-medium transition-colors',
-      'hover:bg-gray-50 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20',
+      'hover:bg-surface-page focus:outline-none focus:ring-[3px] focus:ring-primary-500/20',
       className
     )}
     {...props}

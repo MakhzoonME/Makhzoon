@@ -13,7 +13,7 @@ import { Plus, Clock, ClipboardList, CheckCircle2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 const STATUS_MAP = {
-  draft: { label: 'Draft', class: 'bg-gray-100 text-gray-600', icon: <Clock className="h-4 w-4" strokeWidth={1.75} /> },
+  draft: { label: 'Draft', class: 'bg-surface-page text-gray-600', icon: <Clock className="h-4 w-4" strokeWidth={1.75} /> },
   in_progress: { label: 'In Progress', class: 'bg-amber-50 text-amber-700 border border-amber-200', icon: <ClipboardList className="h-4 w-4" strokeWidth={1.75} /> },
   completed: { label: 'Completed', class: 'bg-emerald-50 text-emerald-700 border border-emerald-200', icon: <CheckCircle2 className="h-4 w-4" strokeWidth={1.75} /> },
 };

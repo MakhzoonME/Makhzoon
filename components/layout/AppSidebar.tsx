@@ -134,7 +134,8 @@ const NAV_ICONS: Record<string, React.FC> = {
   '/settings':     SettingsSVG,
 };
 
-const EASE_OUT = [0.16, 1, 0.3, 1] as const;
+const EASE_OUT   = [0.16, 1, 0.3, 1] as const;
+const EASE_SLIDE = [0.4, 0, 0.2, 1] as const;
 export const SIDEBAR_WIDTH_EXPANDED  = 240;
 export const SIDEBAR_WIDTH_COLLAPSED = 68;
 
@@ -202,12 +203,12 @@ export function AppSidebar() {
       <motion.aside
         initial={false}
         animate={{ width: sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED }}
-        transition={{ duration: 0.45, ease: [0.65, 0, 0.35, 1] }}
+        transition={{ duration: 0.28, ease: EASE_SLIDE }}
         className={cn(
           'hidden md:flex fixed top-14 bottom-0 bg-surface-sidebar border-border flex-col z-30',
           isRtl ? 'right-0 border-l' : 'left-0 border-r',
         )}
-        style={{ overflow: 'visible', contain: 'layout style' }}
+        style={{ overflow: 'visible', willChange: 'width' }}
       >
         {/* Collapse toggle */}
         <button
@@ -269,10 +270,9 @@ export function AppSidebar() {
                     {!sidebarCollapsed && (
                       <motion.span
                         key="group-label"
-                        initial={{ opacity: 0, x: isRtl ? 5 : -5 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: isRtl ? 5 : -5 }}
-                        transition={{ duration: 0.16, ease: EASE_OUT }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1, transition: { duration: 0.14, delay: 0.16, ease: EASE_OUT } }}
+                        exit={{ opacity: 0, transition: { duration: 0.08 } }}
                         className="relative z-10 flex flex-1 items-center justify-between whitespace-nowrap"
                       >
                         {label}
@@ -288,13 +288,13 @@ export function AppSidebar() {
                 </button>
               );
 
-              const subList = !sidebarCollapsed && isOpen && (
+              const subList = !sidebarCollapsed && isOpen ? (
                 <motion.div
                   key={`${group.href}-items`}
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2, ease: EASE_OUT }}
+                  transition={{ duration: 0.2, ease: EASE_SLIDE }}
                   style={{ overflow: 'hidden' }}
                 >
                   <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pr-6' : 'pl-6')}>
@@ -327,7 +327,7 @@ export function AppSidebar() {
                     })}
                   </div>
                 </motion.div>
-              );
+              ) : null;
 
               if (sidebarCollapsed) {
                 return (
@@ -389,10 +389,9 @@ export function AppSidebar() {
                   {!sidebarCollapsed && (
                     <motion.span
                       key="label"
-                      initial={{ opacity: 0, x: isRtl ? 5 : -5 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: isRtl ? 5 : -5 }}
-                      transition={{ duration: 0.16, ease: EASE_OUT }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1, transition: { duration: 0.14, delay: 0.16, ease: EASE_OUT } }}
+                      exit={{ opacity: 0, transition: { duration: 0.08 } }}
                       className="relative z-10 whitespace-nowrap"
                     >
                       {translatedLabel}
@@ -424,10 +423,9 @@ export function AppSidebar() {
                 {!sidebarCollapsed && (
                   <motion.div
                     key="user-meta"
-                    initial={{ opacity: 0, x: isRtl ? 5 : -5 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: isRtl ? 5 : -5 }}
-                    transition={{ duration: 0.16, ease: EASE_OUT }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1, transition: { duration: 0.14, delay: 0.16, ease: EASE_OUT } }}
+                    exit={{ opacity: 0, transition: { duration: 0.08 } }}
                     className="flex-1 min-w-0"
                   >
                     <p className="text-xs font-medium text-gray-900 truncate">{user.displayName || displayIdentity(user.email)}</p>

@@ -2,13 +2,22 @@
 import { useQuery } from '@tanstack/react-query';
 import { AuditLog } from '@/types';
 
+interface AuditLogsResponse {
+  logs: AuditLog[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 interface AuditLogsParams {
   orgId?: string;
   userId?: string;
   action?: string;
   dateFrom?: string;
   dateTo?: string;
-  cursor?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 export function useAuditLogs(params?: AuditLogsParams) {
@@ -18,9 +27,10 @@ export function useAuditLogs(params?: AuditLogsParams) {
   if (params?.action) query.set('action', params.action);
   if (params?.dateFrom) query.set('dateFrom', params.dateFrom);
   if (params?.dateTo) query.set('dateTo', params.dateTo);
-  if (params?.cursor) query.set('cursor', params.cursor);
+  if (params?.page) query.set('page', String(params.page));
+  if (params?.pageSize) query.set('pageSize', String(params.pageSize));
 
-  return useQuery<{ logs: AuditLog[]; nextCursor: string | null }>({
+  return useQuery<AuditLogsResponse>({
     queryKey: ['audit-logs', params],
     queryFn: async () => {
       const res = await fetch(`/api/audit-logs?${query.toString()}`);

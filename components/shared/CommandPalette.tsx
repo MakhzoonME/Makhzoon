@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Command } from 'cmdk';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAssets } from '@/hooks/assets';
@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useOrgSlug } from '@/hooks/ui';
 import { Asset } from '@/types';
 import { cn } from '@/lib/utils/cn';
+import { withLocale } from '@/lib/nav';
 
 function DashboardSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><rect x="1.5" y="1.5" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="9.5" y="1.5" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="1.5" y="9.5" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="9.5" y="9.5" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" /></svg>; }
 function PackageSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M13 4.5L8 2 3 4.5v7L8 14l5-2.5v-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /><path d="M8 2v12M3 4.5l5 2.5 5-2.5" stroke="currentColor" strokeWidth="1.3" /></svg>; }
@@ -42,9 +43,11 @@ const ACTIONS = [
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? 'en';
   const { user } = useAuthStore();
   const [search, setSearch] = useState('');
-  const { data: assetsData } = useAssets();
+  const { data: assetsData } = useAssets({ pageSize: 1000 });
   const assets = assetsData?.items ?? [];
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
@@ -53,9 +56,9 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     if (!open) setSearch('');
   }, [open]);
 
-  function go(href: string) {
+  function go(path: string) {
     onOpenChange(false);
-    router.push(`/${orgSlug}${href}`);
+    router.push(`/${locale}/${orgSlug}${path}`);
   }
 
   return (
@@ -101,14 +104,14 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
 
               {assets.length > 0 && (
                 <Command.Group heading="Assets" className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:text-gray-400">
-                  {assets.slice(0, 20).map((asset: Asset) => (
+                  {assets.slice(0, 50).map((asset: Asset) => (
                     <Command.Item
                       key={asset.id}
                       value={`${asset.name} ${asset.category} ${asset.serialNumber ?? ''}`}
                       onSelect={() => go(`/assets/${asset.id}`)}
                       className={cn(
                         'flex items-center gap-2 px-3 py-2 mx-2 rounded-md text-sm cursor-pointer',
-                        'data-[selected=true]:bg-indigo-50 data-[selected=true]:text-indigo-700'
+                        'data-[selected=true]:bg-primary-50 data-[selected=true]:text-primary-700'
                       )}
                     >
                       <PackageSVG />
@@ -133,7 +136,7 @@ function PaletteItem({ onSelect, icon: Icon, label }: { onSelect: () => void; ic
       onSelect={onSelect}
       className={cn(
         'flex items-center gap-2 px-3 py-2 mx-2 rounded-md text-sm cursor-pointer',
-        'data-[selected=true]:bg-indigo-50 data-[selected=true]:text-indigo-700'
+        'data-[selected=true]:bg-primary-50 data-[selected=true]:text-primary-700'
       )}
     >
       <Icon />

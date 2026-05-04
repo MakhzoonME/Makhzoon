@@ -154,17 +154,17 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
     <FormDrawer open={open} onOpenChange={handleClose} title="Import Assets from CSV" width="xl">
       <div className="space-y-5">
         {/* Format info */}
-        <div className="flex items-start gap-3 p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
-          <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <div className="flex items-start gap-3 p-4 bg-primary-50 border border-primary-100 rounded-xl">
+          <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0 mt-0.5">
             <FileTextSVG />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-indigo-900 mb-0.5">CSV format</p>
-            <p className="text-xs text-indigo-700 leading-relaxed">
-              Required: <span className="font-mono bg-indigo-100 px-1 rounded">name</span>,{' '}
-              <span className="font-mono bg-indigo-100 px-1 rounded">category</span>. Optional: status, serialNumber, purchaseDate (YYYY-MM-DD), purchaseCost, assignedTo, location, notes.
+            <p className="text-sm font-medium text-primary-900 mb-0.5">CSV format</p>
+            <p className="text-xs text-primary-700 leading-relaxed">
+              Required: <span className="font-mono bg-primary-100 px-1 rounded">name</span>,{' '}
+              <span className="font-mono bg-primary-100 px-1 rounded">category</span>. Optional: status, serialNumber, purchaseDate (YYYY-MM-DD), purchaseCost, assignedTo, location, notes.
             </p>
-            <button onClick={downloadTemplate} className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 mt-2 transition-colors">
+            <button onClick={downloadTemplate} className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-800 mt-2 transition-colors">
               <DownloadSVG /> Download template
             </button>
           </div>
@@ -174,16 +174,16 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
         {!fileName ? (
           <label
             className={`flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-xl p-10 cursor-pointer transition-colors
-              ${dragging ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-gray-50 hover:border-indigo-300 hover:bg-indigo-50/40'}`}
+              ${dragging ? 'border-primary-400 bg-primary-50' : 'border-gray-200 bg-gray-50 hover:border-primary-300 hover:bg-primary-50/40'}`}
             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
             onDrop={onDrop}
           >
-            <div className={`rounded-full p-3 transition-colors ${dragging ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
+            <div className={`rounded-full p-3 transition-colors ${dragging ? 'bg-primary-100 text-primary-600' : 'bg-gray-100 text-gray-500'}`}>
               <UploadCloudSVG />
             </div>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-800">Drop your CSV here, or <span className="text-indigo-600">browse</span></p>
+              <p className="text-sm font-medium text-gray-800">Drop your CSV here, or <span className="text-primary-600">browse</span></p>
               <p className="text-xs text-gray-400 mt-1">Up to 1,000 rows</p>
             </div>
             <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden"

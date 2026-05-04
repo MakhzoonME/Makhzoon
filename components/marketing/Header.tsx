@@ -1,20 +1,22 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useParams } from 'next/navigation';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
-
-const NAV = [
-  { label: 'Product',   href: '/product'   },
-  { label: 'Customers', href: '/customers' },
-  { label: 'Pricing',   href: '/pricing'   },
-  { label: 'Security',  href: '/security'  },
-  { label: 'About',     href: '/about'     },
-];
 
 export function MarketingHeader() {
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? 'en';
+
+  const NAV = [
+    { label: 'Product',   href: `/${locale}/product`   },
+    { label: 'Customers', href: `/${locale}/customers` },
+    { label: 'Pricing',   href: `/${locale}/pricing`   },
+    { label: 'Security',  href: `/${locale}/security`  },
+    { label: 'About',     href: `/${locale}/about`     },
+  ];
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 8);
@@ -36,7 +38,7 @@ export function MarketingHeader() {
       <div className="mx-auto flex items-center gap-2 px-8 h-[68px]" style={{ maxWidth: 1280 }}>
         {/* Brand */}
         <Link
-          href="/home"
+          href={`/${locale}/home`}
           className="inline-flex items-center gap-2.5 mr-8 no-underline group"
           style={{ textDecoration: 'none' }}
         >
@@ -76,14 +78,14 @@ export function MarketingHeader() {
         {/* CTAs */}
         <div className="flex items-center gap-2.5">
           <Link
-            href="/login"
+            href={`/${locale}/login`}
             className="text-sm font-medium no-underline transition-colors duration-150"
             style={{ color: 'var(--gray-700)', textDecoration: 'none' }}
           >
             Sign in
           </Link>
           <Link
-            href="/login"
+            href={`/${locale}/login`}
             className="inline-flex items-center justify-center px-4 h-9 rounded-lg text-sm font-semibold text-white no-underline transition-opacity duration-150 hover:opacity-90"
             style={{ background: 'var(--primary-600)', textDecoration: 'none' }}
           >

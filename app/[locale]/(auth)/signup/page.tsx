@@ -1,0 +1,260 @@
+'use client';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter, useParams } from 'next/navigation';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase/client';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+function Loader2SVG() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden className="animate-spin">
+      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2" />
+      <path d="M8 2a6 6 0 0 1 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+function AlertCircleSVG() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.4" fill="none" />
+      <path d="M8 5v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
+import { buildOrgPath, buildSuperAdminPath } from '@/lib/utils/tenant-url';
+import { useAuthStore } from '@/store/auth.store';
+
+const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+
+const EASE_OUT = [0.16, 1, 0.3, 1] as const;
+const EASE_SPRING = [0.34, 1.56, 0.64, 1] as const;
+
+export default function SignupPage() {
+  const router = useRouter();
+  const params = useParams<{ locale: string }>();
+  const locale = params.locale ?? 'en';
+  const { user, loading: authLoading } = useAuthStore();
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) { router.replace(`/${locale}/login`); return; }
+    if (SUPERADMIN_ROLES.has(user.role)) return; // super_admin family can use this page
+    // Org users should not be here — send them to their portal
+    if (user.orgSlug) {
+      router.replace(buildOrgPath(locale, user.orgSlug, '/dashboard'));
+    } else {
+      router.replace(buildSuperAdminPath(locale, '/dashboard'));
+    }
+  }, [user, authLoading, router, locale]);
+
+  const [orgName, setOrgName] = useState('');
+  const [subdomain, setSubdomain] = useState('');
+  const [subdomainTouched, setSubdomainTouched] = useState(false);
+  const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const shakeControls = useAnimation();
+
+  function deriveSubdomain(value: string): string {
+    return value.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  }
+
+  function handleOrgName(v: string) {
+    setOrgName(v);
+    if (!subdomainTouched) setSubdomain(deriveSubdomain(v));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/organizations/self-serve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgName, subdomain, displayName, email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const msg = typeof data.error === 'string' ? data.error : 'Signup failed';
+        throw new Error(msg);
+      }
+
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const token = await cred.user.getIdToken();
+      const sessionRes = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: token }),
+      });
+      if (!sessionRes.ok) throw new Error('Session creation failed');
+      window.location.href = buildOrgPath(locale, subdomain, '/dashboard');
+    } catch (err) {
+      console.error('[signup] failed:', err);
+      setError(err instanceof Error ? err.message : 'Signup failed');
+      shakeControls.start({
+        x: [0, -6, 6, -4, 4, 0],
+        transition: { duration: 0.4, ease: 'easeInOut' },
+      });
+      setLoading(false);
+    }
+  }
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.05, delayChildren: 0.1 },
+    },
+  };
+  const item = {
+    hidden: { opacity: 0, y: 10 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE_OUT } },
+  };
+
+  return (
+    <div className="relative min-h-screen flex items-center justify-center px-4 py-12 overflow-hidden bg-surface-page">
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 opacity-70"
+        style={{
+          background:
+            'radial-gradient(1200px 600px at 10% -10%, rgba(99,102,241,0.18), transparent 60%), radial-gradient(900px 500px at 110% 10%, rgba(129,140,248,0.22), transparent 55%), radial-gradient(800px 600px at 50% 120%, rgba(79,70,229,0.15), transparent 60%)',
+          backgroundSize: '300% 300%',
+          animation: 'gradient-shift 14s ease infinite',
+        }}
+      />
+
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="relative w-full max-w-md"
+      >
+        <div className="text-center mb-8">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.55, ease: EASE_SPRING }}
+            className="mb-4"
+          >
+            <MakhzoonMark size={48} />
+          </motion.div>
+          <motion.h1 variants={item} className="text-2xl font-bold text-gray-900">
+            Create your workspace
+          </motion.h1>
+          <motion.p variants={item} className="text-sm text-gray-500 mt-1">
+            Start your 14-day free trial.
+          </motion.p>
+        </div>
+
+        <motion.div animate={shakeControls}>
+          <motion.div
+            variants={item}
+            className="bg-surface-card backdrop-blur-sm rounded-2xl shadow-lg shadow-black/10 border border-border p-6"
+          >
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <motion.div variants={item} className="space-y-1.5">
+                <Label htmlFor="orgName">Organization name</Label>
+                <Input id="orgName" value={orgName} onChange={(e) => handleOrgName(e.target.value)} placeholder="Acme Inc." required />
+              </motion.div>
+
+              <motion.div variants={item} className="space-y-1.5">
+                <Label htmlFor="subdomain">Workspace ID</Label>
+                <div className="flex items-center rounded-md border border-gray-300 focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-primary-500 overflow-hidden transition-colors">
+                  <input
+                    id="subdomain"
+                    value={subdomain}
+                    onChange={(e) => { setSubdomainTouched(true); setSubdomain(e.target.value.toLowerCase()); }}
+                    placeholder="acme"
+                    required
+                    pattern="^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
+                    minLength={3}
+                    maxLength={40}
+                    className="flex-1 px-3 py-2 text-sm outline-none bg-surface-card"
+                  />
+                </div>
+              </motion.div>
+
+              <motion.hr variants={item} className="border-gray-100" />
+
+              <motion.div variants={item} className="space-y-1.5">
+                <Label htmlFor="displayName">Your name</Label>
+                <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Jane Doe" required />
+              </motion.div>
+
+              <motion.div variants={item} className="space-y-1.5">
+                <Label htmlFor="email">Work email</Label>
+                <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@acme.com" required />
+              </motion.div>
+
+              <motion.div variants={item} className="space-y-1.5">
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" required minLength={8} />
+              </motion.div>
+
+              <AnimatePresence initial={false}>
+                {error && (
+                  <motion.div
+                    key="error"
+                    initial={{ opacity: 0, height: 0, y: -4 }}
+                    animate={{ opacity: 1, height: 'auto', y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -4 }}
+                    transition={{ duration: 0.22, ease: EASE_OUT }}
+                    className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2"
+                  >
+                    <AlertCircleSVG />
+                    <span>{error}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <motion.div variants={item}>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  <AnimatePresence mode="wait" initial={false}>
+                    {loading ? (
+                      <motion.span
+                        key="loading"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="inline-flex items-center gap-2"
+                      >
+                        <Loader2SVG />
+                        Creating your workspace…
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="idle"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                      >
+                        Create workspace
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Button>
+              </motion.div>
+            </form>
+          </motion.div>
+        </motion.div>
+
+        <motion.p variants={item} className="text-center text-sm text-gray-500 mt-6">
+          Already have an account?{' '}
+          <Link href={`/${locale}/login`} className="font-medium text-primary-600 hover:text-primary-700 transition-colors">
+            Sign in
+          </Link>
+        </motion.p>
+      </motion.div>
+    </div>
+  );
+}

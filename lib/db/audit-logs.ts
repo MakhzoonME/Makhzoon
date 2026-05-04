@@ -24,14 +24,15 @@ export async function getAuditLogs(opts?: {
   action?: string;
   dateFrom?: string;
   dateTo?: string;
-  limit?: number;
-  cursor?: string;
-}): Promise<{ logs: AuditLog[]; nextCursor: string | null }> {
-  const pageSize = opts?.limit ?? 50;
+  page?: number;
+  pageSize?: number;
+}): Promise<{ logs: AuditLog[]; total: number; page: number; pageSize: number; totalPages: number }> {
+  const page = opts?.page ?? 1;
+  const pageSize = opts?.pageSize ?? 20;
+
   let q = adminDb
     .collection('auditLogs')
-    .orderBy('timestamp', 'desc')
-    .limit(pageSize + 1) as FirebaseFirestore.Query;
+    .orderBy('timestamp', 'desc') as FirebaseFirestore.Query;
 
   if (opts?.orgId) q = q.where('organizationId', '==', opts.orgId);
   if (opts?.userId) q = q.where('userId', '==', opts.userId);
@@ -39,18 +40,14 @@ export async function getAuditLogs(opts?: {
   if (opts?.dateFrom) q = q.where('timestamp', '>=', new Date(opts.dateFrom));
   if (opts?.dateTo) q = q.where('timestamp', '<=', new Date(opts.dateTo));
 
-  if (opts?.cursor) {
-    const cursorDoc = await adminDb.collection('auditLogs').doc(opts.cursor).get();
-    if (cursorDoc.exists) q = q.startAfter(cursorDoc);
-  }
-
   const snap = await q.get();
-  const docs = snap.docs;
-  const hasMore = docs.length > pageSize;
-  const page = hasMore ? docs.slice(0, pageSize) : docs;
+  let logs = snap.docs.map((d) => toLog(d.id, d.data()));
 
-  return {
-    logs: page.map((d) => toLog(d.id, d.data())),
-    nextCursor: hasMore ? page[page.length - 1].id : null,
-  };
+  const total = logs.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * pageSize;
+  const paged = logs.slice(start, start + pageSize);
+
+  return { logs: paged, total, page: safePage, pageSize, totalPages };
 }

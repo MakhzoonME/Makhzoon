@@ -3,6 +3,8 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAuditLogs } from '@/hooks/org';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { withLocale } from '@/lib/nav';
 
 function XSVGIcon() {
   return (
@@ -45,16 +47,23 @@ const ACTION_LABEL: Record<string, string> = {
   INVITE_ACCEPTED: 'Accepted invite',
 };
 
-const MODULE_HREF: Record<string, (id: string) => string> = {
-  assets: (id) => `/assets/${id}`,
-  warranties: () => `/warranties`,
-  requests: () => `/requests`,
-  users: () => `/users`,
-};
-
 export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { data, isLoading } = useAuditLogs();
+  const params = useParams<{ locale: string; orgSlug: string }>();
+  const locale = params?.locale ?? 'en';
+  const orgSlug = params?.orgSlug ?? '';
   const recent = (data?.logs ?? []).slice(0, 30);
+
+  function buildModuleHref(module: string, recordId: string): string {
+    const base = orgSlug ? `/${locale}/${orgSlug}` : `/${locale}`;
+    switch (module) {
+      case 'assets': return `${base}/assets/${recordId}`;
+      case 'warranties': return `${base}/warranties`;
+      case 'requests': return `${base}/requests`;
+      case 'users': return `${base}/users`;
+      default: return '';
+    }
+  }
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -88,7 +97,7 @@ export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
               <ul className="divide-y divide-gray-100">
                 {recent.map((log) => {
                   const label = ACTION_LABEL[log.action] ?? log.action;
-                  const href = MODULE_HREF[log.module]?.(log.recordId);
+                  const href = log.recordId ? buildModuleHref(log.module, log.recordId) : '';
                   const timeAgo = log.timestamp
                     ? formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })
                     : '';
@@ -118,9 +127,9 @@ export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
 
           <div className="border-t border-gray-200 px-5 py-3">
             <Link
-              href="/superadmin/audit-logs"
+              href={`/${locale}/superadmin/audit-logs`}
               onClick={() => onOpenChange(false)}
-              className="text-xs text-indigo-600 hover:underline font-medium"
+              className="text-xs text-primary-600 hover:underline font-medium"
             >
               View all logs →
             </Link>

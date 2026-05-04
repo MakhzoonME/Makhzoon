@@ -35,7 +35,7 @@ import { MAINTENANCE_TYPES, MaintenanceType } from '@/types';
 
 const TYPE_BG: Record<MaintenanceType, string> = {
   repair: 'bg-orange-50 text-orange-700',
-  service: 'bg-indigo-50 text-indigo-700',
+  service: 'bg-primary-50 text-primary-700',
   inspection: 'bg-purple-50 text-purple-700',
   upgrade: 'bg-green-50 text-green-700',
   other: 'bg-gray-100 text-gray-700',

@@ -3,7 +3,7 @@ import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { getUserById, updateUser } from '@/lib/db/users';
 import { queueAuditLog } from '@/lib/audit/logger';
-import { invalidateCachedPermissions } from '@/lib/firebase/session-cache';
+import { invalidateCachedPermissions, invalidateCachedSessionsForUser } from '@/lib/firebase/session-cache';
 import { FieldValue } from 'firebase-admin/firestore';
 import { requireActiveSubscription } from '@/lib/services/base.service';
 
@@ -44,6 +44,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { userId: st
   // Bust server-side caches so the change takes effect on the user's next request
   await adminAuth.revokeRefreshTokens(userId);
   invalidateCachedPermissions(userId);
+  invalidateCachedSessionsForUser(userId);
 
   queueAuditLog({
     organizationId: caller.organizationId!,

@@ -71,7 +71,7 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-5 px-6 pt-4 pb-2">
       <div className="space-y-1.5">
         <Label htmlFor="pkg-name">Name</Label>
         <Input id="pkg-name" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={100} />

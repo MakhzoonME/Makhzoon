@@ -33,10 +33,12 @@ function isSlowConnection(): boolean {
 
 async function pingServer(): Promise<boolean> {
   try {
+    const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const timeoutMs = isDev ? 15_000 : 3_000;
     const res = await fetch(`/api/ping?_=${Date.now()}`, {
       method: 'GET',
       cache: 'no-store',
-      signal: AbortSignal.timeout(3000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     return res.ok;
   } catch {
@@ -106,6 +108,7 @@ const STATUS_KEY: Record<NetworkStatus, MessageKey> = {
 };
 
 const POLL_INTERVAL_MS = 15_000;
+const CONSECUTIVE_FAILURES_THRESHOLD = 3;
 
 /* ── Component ─────────────────────────────────────────────────────── */
 
@@ -118,6 +121,7 @@ interface Props {
 export function NetworkStatusIndicator({ variant = 'ghost-light', className }: Props) {
   const [status, setStatus] = useState<NetworkStatus>('online');
   const prevStatusRef = useRef<NetworkStatus | null>(null);
+  const failCountRef = useRef(0);
   const { t } = useT();
   const tRef = useRef(t);
   useEffect(() => { tRef.current = t; }, [t]);
@@ -146,19 +150,27 @@ export function NetworkStatusIndicator({ variant = 'ghost-light', className }: P
 
       const reachable = await pingServer();
 
-      if (!reachable) {
-        setStatus('offline');
-      } else if (isSlowConnection()) {
-        setStatus('slow');
-      } else {
+      if (reachable) {
+        failCountRef.current = 0;
         setStatus('online');
+      } else {
+        failCountRef.current += 1;
+        if (failCountRef.current >= CONSECUTIVE_FAILURES_THRESHOLD) {
+          setStatus('offline');
+        }
       }
     }
 
     checkConnectivity();
 
-    const handleOffline = () => setStatus('offline');
-    const handleOnline  = () => checkConnectivity();
+    const handleOffline = () => {
+      failCountRef.current = CONSECUTIVE_FAILURES_THRESHOLD;
+      setStatus('offline');
+    };
+    const handleOnline  = () => {
+      failCountRef.current = 0;
+      checkConnectivity();
+    };
     const handleChange  = () => checkConnectivity();
 
     window.addEventListener('online',  handleOnline);

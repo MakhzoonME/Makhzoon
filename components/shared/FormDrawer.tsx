@@ -1,14 +1,7 @@
 'use client';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
-
-function XSvg() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 interface FormDrawerProps {
   open: boolean;
@@ -25,10 +18,10 @@ export function FormDrawer({ open, onOpenChange, title, description, children, w
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/30 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
           className={cn(
-            'fixed right-0 top-0 bottom-0 z-50 bg-white dark:bg-surface-card shadow-xl flex flex-col w-full',
+            'fixed end-0 top-0 bottom-0 z-50 bg-surface-card border-s border-border shadow-xl flex flex-col w-full',
             widthClass,
             'data-[state=open]:animate-in data-[state=closed]:animate-out',
             'data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right',
@@ -36,25 +29,23 @@ export function FormDrawer({ open, onOpenChange, title, description, children, w
           )}
           aria-describedby={description ? 'form-drawer-desc' : undefined}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <div className="flex items-center justify-between px-6 py-[18px] border-b border-border flex-shrink-0">
             <div>
-              <DialogPrimitive.Title className="text-base font-semibold text-gray-900 dark:text-gray-100">
+              <DialogPrimitive.Title className="text-[18px] font-semibold leading-[1.4] text-gray-900">
                 {title}
               </DialogPrimitive.Title>
               {description && (
-                <p id="form-drawer-desc" className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{description}</p>
+                <p id="form-drawer-desc" className="text-[14px] leading-[1.6] text-gray-500 mt-1">{description}</p>
               )}
             </div>
             <DialogPrimitive.Close
-              className="p-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-[3px] focus:ring-primary-500/20"
               aria-label="Close"
             >
-              <XSvg />
+              <X className="h-4 w-4" strokeWidth={1.75} />
             </DialogPrimitive.Close>
           </div>
 
-          {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto px-6 py-6">
             {children}
           </div>

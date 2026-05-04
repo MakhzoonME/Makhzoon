@@ -2,16 +2,32 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SupportTicket, TicketMessage, TicketStatus, TicketPriority } from '@/types';
 
+interface TicketsResponse {
+  items: SupportTicket[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 export function useSupportTickets(filters?: {
   status?: TicketStatus;
   priority?: TicketPriority;
   orgId?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
 }) {
   const params = new URLSearchParams();
   if (filters?.status) params.set('status', filters.status);
   if (filters?.priority) params.set('priority', filters.priority);
   if (filters?.orgId) params.set('orgId', filters.orgId);
-  return useQuery<SupportTicket[]>({
+  if (filters?.page) params.set('page', String(filters.page));
+  if (filters?.pageSize) params.set('pageSize', String(filters.pageSize));
+  if (filters?.sortBy) params.set('sortBy', filters.sortBy);
+  if (filters?.sortDir) params.set('sortDir', filters.sortDir);
+  return useQuery<TicketsResponse>({
     queryKey: ['support-tickets', filters],
     queryFn: async () => {
       const res = await fetch(`/api/support?${params.toString()}`);

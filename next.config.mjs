@@ -12,6 +12,9 @@ const nextConfig = {
     ];
   },
   async headers() {
+    const isDev = process.env.NODE_ENV !== 'production';
+    const evalSrc = isDev ? " 'unsafe-eval'" : '';
+    const upgradeInsecure = isDev ? '' : ' upgrade-insecure-requests;';
     return [
       {
         source: '/api/(.*)',
@@ -35,7 +38,7 @@ const nextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' https://*.firebaseapp.com https://www.gstatic.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.sentry.io https://challenges.cloudflare.com; frame-src 'self' https://challenges.cloudflare.com https://*.firebaseapp.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;",
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline'${evalSrc} https://*.firebaseapp.com https://www.gstatic.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.sentry.io https://challenges.cloudflare.com; frame-src 'self' https://challenges.cloudflare.com https://*.firebaseapp.com; object-src 'none'; base-uri 'self'; form-action 'self';${upgradeInsecure}`,
           },
         ],
       },

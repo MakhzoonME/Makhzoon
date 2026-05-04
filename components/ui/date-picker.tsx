@@ -3,31 +3,8 @@ import { useState } from 'react';
 import { DayPicker } from 'react-day-picker';
 import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { format, parse, isValid, startOfDay } from 'date-fns';
+import { Calendar, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
-
-function CalendarSVG() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <rect x="1.5" y="2.5" width="13" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none" />
-      <path d="M1.5 6.5h13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <path d="M5 1v3M11 1v3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  );
-}
-function ChevronLeftSVG() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-      <path d="M9 3L5 7l4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function ChevronRightSVG() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-      <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 interface DatePickerProps {
   value?: string;        // expects "yyyy-MM-dd" or empty string
@@ -35,9 +12,10 @@ interface DatePickerProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  error?: boolean;
 }
 
-export function DatePicker({ value, onChange, placeholder = 'Pick a date', className, disabled }: DatePickerProps) {
+export function DatePicker({ value, onChange, placeholder = 'Pick a date', className, disabled, error }: DatePickerProps) {
   const [open, setOpen] = useState(false);
 
   const parsed = value ? parse(value, 'yyyy-MM-dd', new Date()) : undefined;
@@ -70,14 +48,15 @@ export function DatePicker({ value, onChange, placeholder = 'Pick a date', class
           type="button"
           disabled={disabled}
           className={cn(
-            'flex h-9 w-full items-center justify-between gap-2 rounded-md border border-gray-200 bg-white px-3 py-1 text-sm shadow-xs transition-colors',
-            'hover:border-gray-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400',
+            'flex h-9 w-full items-center justify-between gap-2 rounded-md border border-border bg-surface-card px-3 text-[14px] transition-colors',
+            'hover:border-gray-300 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-500/20 focus-visible:border-primary-600',
             !selected && 'text-gray-400',
+            error && 'border-red-500 bg-red-50 focus-visible:ring-red-500/20',
             disabled && 'cursor-not-allowed opacity-50',
             className,
           )}
         >
-          <span>{selected ? format(selected, 'dd MMM yyyy') : placeholder}</span>
+          <span className="text-gray-700">{selected ? format(selected, 'dd MMM yyyy') : <span className="text-gray-400">{placeholder}</span>}</span>
           <span className="flex items-center gap-1 flex-shrink-0 text-gray-400">
             {selected && !disabled && (
               <span
@@ -88,12 +67,10 @@ export function DatePicker({ value, onChange, placeholder = 'Pick a date', class
                 className="hover:text-gray-700 transition-colors"
                 aria-label="Clear date"
               >
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
-                  <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                </svg>
+                <X className="h-3 w-3" strokeWidth={1.75} />
               </span>
             )}
-            <CalendarSVG />
+            <Calendar className="h-3.5 w-3.5" strokeWidth={1.75} />
           </span>
         </button>
       </PopoverPrimitive.Trigger>
@@ -102,7 +79,7 @@ export function DatePicker({ value, onChange, placeholder = 'Pick a date', class
         <PopoverPrimitive.Content
           align="start"
           sideOffset={6}
-          className="z-[60] bg-white rounded-xl border border-gray-200 shadow-lg p-0 w-[280px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+          className="z-[60] bg-surface-card rounded-xl border border-border shadow-lg p-0 w-[280px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
         >
           <DayPicker
             mode="single"
@@ -121,49 +98,46 @@ export function DatePicker({ value, onChange, placeholder = 'Pick a date', class
               caption_label: 'hidden',
               dropdowns: 'flex items-center gap-1.5',
               dropdown: cn(
-                'appearance-none bg-white border border-gray-200 rounded-md px-2 py-1 text-sm font-medium text-gray-700',
-                'focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer',
+                'appearance-none bg-surface-card border border-border rounded-md px-2 py-1 text-[13px] font-medium text-gray-700',
+                'focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 cursor-pointer',
               ),
               dropdown_root: 'relative',
               nav: 'flex items-center gap-1',
-              button_previous: cn(
-                'flex items-center justify-center h-7 w-7 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors',
-              ),
-              button_next: cn(
-                'flex items-center justify-center h-7 w-7 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors',
-              ),
+              button_previous: 'flex items-center justify-center h-7 w-7 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors',
+              button_next: 'flex items-center justify-center h-7 w-7 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors',
               month_grid: 'w-full border-collapse',
               weekdays: '',
               weekday: 'w-9 h-8 text-[11px] font-medium text-gray-400 text-center',
               week: '',
               day: 'p-0',
               day_button: cn(
-                'w-9 h-9 text-sm rounded-lg flex items-center justify-center mx-auto transition-colors',
-                'hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-1 focus:ring-indigo-400',
+                'w-9 h-9 text-[13.5px] rounded-lg flex items-center justify-center mx-auto transition-colors',
+                'hover:bg-primary-50 hover:text-primary-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20',
               ),
-              selected: '[&>button]:bg-indigo-600 [&>button]:text-white [&>button]:hover:bg-indigo-700',
-              today: '[&>button]:font-semibold [&>button]:text-indigo-600 [&:not(.rdp-selected)>button]:bg-indigo-50',
+              selected: '[&>button]:bg-primary-600 [&>button]:text-white [&>button]:hover:bg-primary-700',
+              today: '[&>button]:font-semibold [&>button]:text-primary-600 [&:not(.rdp-selected)>button]:bg-primary-50',
               outside: '[&>button]:text-gray-300 [&>button]:hover:bg-gray-50',
               disabled: '[&>button]:text-gray-200 [&>button]:pointer-events-none',
               hidden: 'invisible',
             }}
             components={{
               Chevron: ({ orientation }) =>
-                orientation === 'left' ? <ChevronLeftSVG /> : <ChevronRightSVG />,
+                orientation === 'left'
+                  ? <ChevronLeft className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  : <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.75} />,
             }}
           />
 
-          {/* Footer */}
-          <div className="border-t border-gray-100 px-3 py-2.5 flex items-center justify-between">
+          <div className="border-t border-border px-3 py-2.5 flex items-center justify-between">
             <button
               type="button"
               onClick={handleToday}
-              className="text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors px-2 py-1 rounded-md hover:bg-indigo-50"
+              className="text-[12px] font-medium text-primary-600 hover:text-primary-800 transition-colors px-2 py-1 rounded-md hover:bg-primary-50"
             >
               Today
             </button>
             {selected && (
-              <span className="text-xs text-gray-400">{format(selected, 'EEEE, dd MMM yyyy')}</span>
+              <span className="text-[12px] text-gray-400">{format(selected, 'EEEE, dd MMM yyyy')}</span>
             )}
           </div>
         </PopoverPrimitive.Content>

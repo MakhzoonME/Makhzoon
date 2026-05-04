@@ -49,7 +49,7 @@ export function RequestInventoryModal({ open, onOpenChange, itemId, itemName }: 
         <DialogHeader>
           <DialogTitle>Request Refill</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 px-6 pt-4 pb-2">
           <div className="text-sm text-gray-600">
             Item: <span className="font-medium text-gray-900">{itemName}</span>
           </div>

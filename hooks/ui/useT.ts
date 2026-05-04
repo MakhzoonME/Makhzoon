@@ -1,10 +1,9 @@
 'use client';
-import { useLocaleStore } from '@/store/locale.store';
+import { useLocaleContext } from '@/components/shared/LocaleContext';
 import { messages, MessageKey } from '@/locales/messages';
 
 export function useT() {
-  const { locale } = useLocaleStore();
-  const dir = locale === 'ar' ? 'rtl' : 'ltr';
+  const { locale, dir } = useLocaleContext();
 
   function t(key: MessageKey, fallback?: string): string {
     return messages[locale][key] ?? fallback ?? key;

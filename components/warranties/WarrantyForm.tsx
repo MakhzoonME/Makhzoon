@@ -46,7 +46,7 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
 
   // Fetch all active assets + all org warranties to compute availability
   const { data: assetsData, isLoading: assetsLoading } = useAssets({ status: 'Active' });
-  const { data: allWarranties = [], isLoading: warrantiesLoading } = useWarranties();
+  const { data: allWarrantiesData, isLoading: warrantiesLoading } = useWarranties({ pageSize: 1000 });
 
   // Assets eligible for a NEW warranty = active assets with no non-expired warranty
   const availableAssets = useMemo(() => {
@@ -54,14 +54,15 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
     if (warranty) return allAssets; // editing — show all (asset field is disabled anyway)
 
     const now = new Date();
+    const allWarranties = allWarrantiesData?.items ?? [];
     const assetIdsWithActiveWarranty = new Set(
-      (allWarranties as Warranty[])
+      allWarranties
         .filter((w) => new Date(w.endDate) >= now)
         .map((w) => w.assetId)
     );
 
     return allAssets.filter((a) => !assetIdsWithActiveWarranty.has(a.id));
-  }, [assetsData, allWarranties, warranty]);
+  }, [assetsData, allWarrantiesData, warranty]);
 
   // When editing, ensure the current asset is in the options list even if not yet loaded
   const assetOptions = useMemo(() => {

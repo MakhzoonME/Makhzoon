@@ -106,9 +106,10 @@ export async function GET(req: NextRequest) {
     const action = searchParams.get('action') ?? undefined;
     const dateFrom = searchParams.get('dateFrom') ?? undefined;
     const dateTo = searchParams.get('dateTo') ?? undefined;
-    const cursor = searchParams.get('cursor') ?? undefined;
+    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined;
+    const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined;
 
-    const result = await getAuditLogs({ orgId, userId, action, dateFrom, dateTo, cursor });
+    const result = await getAuditLogs({ orgId, userId, action, dateFrom, dateTo, page, pageSize });
     const enriched = await enrichLogs(result.logs);
     return NextResponse.json({ ...result, logs: enriched });
   } catch (err) {

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const SKIP_PREFIXES = ['/api/', '/invites/', '/_next/'];
+const LOCALES = ['en', 'ar'] as const;
+const DEFAULT_LOCALE = 'en';
 
-// Marketing pages and auth pages are public — no session required
+const SKIP_PREFIXES = ['/api/', '/_next/'];
+
 const PUBLIC_PATHS = new Set([
-  '/', '/home', '/product', '/pricing', '/customers', '/security', '/about', '/contact', '/login',
+  '/', '/home', '/product', '/pricing', '/customers', '/security', '/about', '/contact', '/login', '/signup',
 ]);
 
 export async function middleware(req: NextRequest) {
@@ -14,23 +16,32 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const session = req.cookies.get('session')?.value;
+  const hasLocale = LOCALES.some((l) => pathname.startsWith(`/${l}/`) || pathname === `/${l}`);
 
-  // Logged-in users hitting /login → superadmin dashboard
-  if (session && pathname === '/login') {
-    return NextResponse.redirect(new URL('/superadmin', req.url));
+  if (!hasLocale) {
+    const detectedLocale = DEFAULT_LOCALE;
+    if (pathname === '/') {
+      return NextResponse.redirect(new URL(`/${detectedLocale}`, req.url));
+    }
+    return NextResponse.redirect(new URL(`/${detectedLocale}${pathname}`, req.url));
   }
 
-  // Marketing and auth pages are always accessible without a session
-  if (PUBLIC_PATHS.has(pathname)) {
+  const locale = LOCALES.find((l) => pathname.startsWith(`/${l}/`) || pathname === `/${l}`) || DEFAULT_LOCALE;
+  const pathnameWithoutLocale = pathname.replace(new RegExp(`^/${locale}`), '') || '/';
+
+  const session = req.cookies.get('session')?.value;
+
+  if (session && pathnameWithoutLocale === '/login') {
+    return NextResponse.redirect(new URL(`/${locale}/superadmin`, req.url));
+  }
+
+  const isPublic = PUBLIC_PATHS.has(pathnameWithoutLocale);
+  if (isPublic) {
     return NextResponse.next();
   }
 
-  // Everything else (/superadmin/*, /[orgSlug]/*, /signup) requires a session
-  // Note: Actual JWT verification happens in route handlers via verifySessionCookie()
-  // Middleware is just a gate-check at Edge Runtime (can't run Firebase Admin SDK here)
   if (!session) {
-    return NextResponse.redirect(new URL('/login', req.url));
+    return NextResponse.redirect(new URL(`/${locale}/login`, req.url));
   }
 
   return NextResponse.next();

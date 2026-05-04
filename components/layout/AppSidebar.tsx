@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig } from '@/lib/nav';
+import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, withLocale } from '@/lib/nav';
 import { hasModuleAccess, hasPermByKey } from '@/lib/permissions';
 import { UserPermissions } from '@/types';
 import { useT } from '@/hooks/ui';
@@ -136,11 +136,12 @@ const NAV_ICONS: Record<string, React.FC> = {
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 export const SIDEBAR_WIDTH_EXPANDED  = 240;
-export const SIDEBAR_WIDTH_COLLAPSED = 64;
+export const SIDEBAR_WIDTH_COLLAPSED = 68;
 
 export function AppSidebar() {
   const pathname  = usePathname();
-  const params    = useParams();
+  const params    = useParams<{ locale: string; orgSlug: string }>();
+  const locale    = params?.locale ?? 'en';
   const orgSlug   = (params?.orgSlug as string) ?? '';
   const { user }  = useAuthStore();
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
@@ -176,7 +177,7 @@ export function AppSidebar() {
     for (const entry of visibleEntries) {
       if (!('type' in entry) || entry.type !== 'group') continue;
       const hasActive = entry.items.some((sub) => {
-        const full = orgSlug ? `/${orgSlug}${sub.href}` : sub.href;
+        const full = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
         return pathname === full || pathname.startsWith(full + '/');
       });
       if (hasActive) updates[entry.href] = true;
@@ -201,9 +202,9 @@ export function AppSidebar() {
       <motion.aside
         initial={false}
         animate={{ width: sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED }}
-        transition={{ duration: 0.3, ease: EASE_OUT }}
+        transition={{ duration: 0.45, ease: [0.65, 0, 0.35, 1] }}
         className={cn(
-          'hidden md:flex fixed top-14 bottom-0 bg-surface-sidebar border-gray-200 dark:border-gray-800 flex-col z-30',
+          'hidden md:flex fixed top-14 bottom-0 bg-surface-sidebar border-border flex-col z-30',
           isRtl ? 'right-0 border-l' : 'left-0 border-r',
         )}
         style={{ overflow: 'visible', contain: 'layout style' }}
@@ -214,9 +215,9 @@ export function AppSidebar() {
           aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className={cn(
             'absolute top-1/2 -translate-y-1/2 z-20',
-            'h-6 w-6 rounded-full bg-surface-sidebar border border-gray-200 dark:border-gray-700 shadow-sm',
-            'flex items-center justify-center text-gray-400 dark:text-gray-500',
-            'hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 hover:shadow-md',
+            'h-6 w-6 rounded-full bg-surface-sidebar border border-border shadow-sm',
+            'flex items-center justify-center text-gray-400',
+            'hover:text-gray-700 hover:border-border-strong hover:shadow-md',
             'transition-all duration-200',
             isRtl ? '-left-3' : '-right-3',
           )}
@@ -241,7 +242,7 @@ export function AppSidebar() {
                 return !!user && hasPermByKey(user, sub.permissionKey);
               });
               const hasActiveChild = visibleSubItems.some((sub) => {
-                const full = orgSlug ? `/${orgSlug}${sub.href}` : sub.href;
+                const full = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
                 return pathname === full || pathname.startsWith(full + '/');
               });
 
@@ -254,13 +255,13 @@ export function AppSidebar() {
                     'group w-full relative flex items-center gap-2.5 rounded-lg text-sm transition-colors duration-150',
                     sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2',
                     hasActiveChild
-                      ? 'text-indigo-700 dark:text-indigo-400 font-semibold bg-indigo-50 dark:bg-indigo-950/50'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100',
+                      ? 'text-primary-700 font-semibold bg-primary-50'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
                   )}
                 >
                   <span className={cn(
                     'relative z-10 flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110',
-                    hasActiveChild ? 'text-indigo-700 dark:text-indigo-400' : '',
+                    hasActiveChild ? 'text-primary-700' : '',
                   )}>
                     <Icon />
                   </span>
@@ -298,7 +299,7 @@ export function AppSidebar() {
                 >
                   <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pr-6' : 'pl-6')}>
                     {visibleSubItems.map((sub) => {
-                      const fullHref  = orgSlug ? `/${orgSlug}${sub.href}` : sub.href;
+                      const fullHref  = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
                       const subActive = pathname === fullHref || pathname.startsWith(fullHref + '/');
                       const subLabel  = t(sub.labelKey as MessageKey, sub.label);
                       return (
@@ -309,14 +310,14 @@ export function AppSidebar() {
                           className={cn(
                             'group relative flex items-center rounded-md text-sm py-1.5 px-2.5 transition-colors duration-150',
                             subActive
-                              ? 'text-indigo-700 dark:text-indigo-400 font-semibold'
-                              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100',
+                              ? 'text-primary-700 font-semibold'
+                              : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900',
                           )}
                         >
                           {subActive && (
                             <motion.span
                               layoutId="sidebar-active-pill"
-                              className="absolute inset-0 rounded-md bg-indigo-50 dark:bg-indigo-950/50"
+                              className="absolute inset-0 rounded-md bg-primary-50"
                               transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                             />
                           )}
@@ -348,7 +349,7 @@ export function AppSidebar() {
             /* ── Regular item ───────────────────────────────────── */
             const { href, label: itemLabel, labelKey } = entry as { href: string; label: string; labelKey: MessageKey };
             const Icon = NAV_ICONS[href] ?? DashboardSVG;
-            const fullHref = orgSlug ? `/${orgSlug}${href}` : href;
+            const fullHref = orgSlug ? withLocale(locale, `/${orgSlug}${href}`) : withLocale(locale, href);
             const active   = pathname === fullHref || pathname.startsWith(fullHref + '/');
             const translatedLabel = t(labelKey as MessageKey, itemLabel);
 
@@ -360,21 +361,27 @@ export function AppSidebar() {
                   'group relative flex items-center gap-2.5 rounded-lg text-sm transition-colors duration-150',
                   sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2',
                   active
-                    ? 'text-indigo-700 dark:text-indigo-400 font-semibold'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100',
+                    ? 'text-primary-700 font-semibold'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
                 )}
               >
                 {active && (
-                  <motion.span
-                    layoutId="sidebar-active-pill"
-                    className="absolute inset-0 rounded-lg bg-indigo-50 dark:bg-indigo-950/50"
-                    transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-                  />
+                  <>
+                    <motion.span
+                      layoutId="sidebar-active-pill"
+                      className="absolute inset-0 rounded-lg bg-primary-50"
+                      transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                    />
+                    <span className={cn(
+                      'absolute top-1.5 bottom-1.5 w-0.5 rounded-r bg-primary-600',
+                      isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0',
+                    )} />
+                  </>
                 )}
                 <span className={cn(
                   'relative z-10 flex-shrink-0 transition-transform duration-200 ease-out',
                   'group-hover:scale-110',
-                  active ? 'text-indigo-700 dark:text-indigo-400' : '',
+                  active ? 'text-primary-700' : '',
                 )}>
                   <Icon />
                 </span>
@@ -408,9 +415,9 @@ export function AppSidebar() {
 
         {/* User info */}
         {user && (
-          <div className="p-3 border-t border-gray-100 dark:border-gray-800">
+          <div className="p-3 border-t border-border">
             <div className={cn('flex items-center gap-2 px-1 py-1', sidebarCollapsed && 'justify-center')}>
-              <div className="h-7 w-7 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-xs font-semibold text-indigo-700 dark:text-indigo-300 flex-shrink-0">
+              <div className="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-semibold text-primary-700 flex-shrink-0">
                 {user.displayName?.[0]?.toUpperCase() ?? displayIdentity(user.email)?.[0]?.toUpperCase()}
               </div>
               <AnimatePresence initial={false}>
@@ -423,8 +430,8 @@ export function AppSidebar() {
                     transition={{ duration: 0.16, ease: EASE_OUT }}
                     className="flex-1 min-w-0"
                   >
-                    <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">{user.displayName || displayIdentity(user.email)}</p>
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400 capitalize">{user.role?.replace('_', ' ')}</p>
+                    <p className="text-xs font-medium text-gray-900 truncate">{user.displayName || displayIdentity(user.email)}</p>
+                    <p className="text-[11px] text-gray-500 capitalize">{user.role?.replace('_', ' ')}</p>
                   </motion.div>
                 )}
               </AnimatePresence>

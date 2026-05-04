@@ -46,7 +46,7 @@ export function PaymentLogForm({ onSubmit, onCancel, submitting }: PaymentLogFor
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 px-6 pt-4 pb-2">
       <div className="grid grid-cols-3 gap-3">
         <div className="col-span-2 space-y-1.5">
           <Label htmlFor="pmt-amount">Amount</Label>

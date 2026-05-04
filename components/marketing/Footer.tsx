@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 
 function ShieldBadge({ label, color }: { label: string; color: string }) {
@@ -13,14 +14,17 @@ function ShieldBadge({ label, color }: { label: string; color: string }) {
   );
 }
 
-const COLS = [
-  { title: 'Product',   links: [['Overview', '/product'], ['Pricing', '/pricing'], ['Security', '/security'], ['Changelog', '#'], ['Roadmap', '#']] },
-  { title: 'Company',   links: [['About', '/about'], ['Customers', '/customers'], ['Careers', '#'], ['Press', '#'], ['Contact', '/contact']] },
-  { title: 'Resources', links: [['Documentation', '#'], ['API reference', '#'], ['Help center', '#'], ['Status', '#'], ['Blog', '#']] },
-  { title: 'Legal',     links: [['Privacy', '#'], ['Terms', '#'], ['DPA', '#'], ['Cookies', '#'], ['Subprocessors', '#']] },
-];
-
 export function MarketingFooter() {
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? 'en';
+
+  const COLS = [
+    { title: 'Product',   links: [['Overview', `/${locale}/product`], ['Pricing', `/${locale}/pricing`], ['Security', `/${locale}/security`], ['Changelog', '#'], ['Roadmap', '#']] },
+    { title: 'Company',   links: [['About', `/${locale}/about`], ['Customers', `/${locale}/customers`], ['Careers', '#'], ['Press', '#'], ['Contact', `/${locale}/contact`]] },
+    { title: 'Resources', links: [['Documentation', '#'], ['API reference', '#'], ['Help center', '#'], ['Status', '#'], ['Blog', '#']] },
+    { title: 'Legal',     links: [['Privacy', '#'], ['Terms', '#'], ['DPA', '#'], ['Cookies', '#'], ['Subprocessors', '#']] },
+  ];
+
   return (
     <footer
       style={{
@@ -75,7 +79,7 @@ export function MarketingFooter() {
           <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.45)' }}>
             © 2026 Makhzoon, Inc. · مخزون · &ldquo;stored&rdquo;
           </div>
-          <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-geist-mono, monospace)' }}>
+          <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.45)', fontFamily: 'system-ui, monospace' }}>
             Built in Amman · Trusted globally
           </div>
         </div>

@@ -23,19 +23,23 @@ export async function GET(req: NextRequest) {
     const status = (searchParams.get('status') ?? undefined) as TicketStatus | undefined;
     const priority = (searchParams.get('priority') ?? undefined) as TicketPriority | undefined;
     const orgIdFilter = searchParams.get('orgId') ?? undefined;
+    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined;
+    const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined;
+    const sortBy = searchParams.get('sortBy') ?? undefined;
+    const sortDir = searchParams.get('sortDir') === 'asc' ? 'asc' as const : 'desc' as const;
 
     if (user.role === 'super_admin') {
       if (orgIdFilter) {
-        const tickets = await getSupportTickets(orgIdFilter, status ? { status } : undefined);
-        return NextResponse.json(tickets);
+        const result = await getSupportTickets(orgIdFilter, { status, page, pageSize, sortBy, sortDir });
+        return NextResponse.json(result);
       }
-      const tickets = await getAllSupportTickets({ status, priority });
-      return NextResponse.json(tickets);
+      const result = await getAllSupportTickets({ status, priority, page, pageSize, sortBy, sortDir });
+      return NextResponse.json(result);
     }
 
     if (!user.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    const tickets = await getSupportTickets(user.organizationId, status ? { status } : undefined);
-    return NextResponse.json(tickets);
+    const result = await getSupportTickets(user.organizationId, { status, page, pageSize, sortBy, sortDir });
+    return NextResponse.json(result);
   } catch (err) {
     console.error('[GET /api/support]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

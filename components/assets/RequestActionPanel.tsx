@@ -76,7 +76,7 @@ export function RequestActionPanel({ assetId, warranties }: RequestActionPanelPr
           <DialogHeader>
             <DialogTitle>{openType ? typeLabel[openType] : ''}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 px-6 pt-4 pb-2">
             {openType === 'EXTEND_WARRANTY' && warranties.length > 0 && (
               <div className="space-y-1.5">
                 <Label>Warranty</Label>

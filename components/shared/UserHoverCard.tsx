@@ -13,7 +13,7 @@ export interface UserCardData {
 
 const ROLE_LABELS: Record<string, { label: string; className: string }> = {
   super_admin: { label: 'Super Admin', className: 'bg-purple-100 text-purple-700' },
-  admin:       { label: 'Admin',       className: 'bg-indigo-100 text-indigo-700' },
+  admin:       { label: 'Admin',       className: 'bg-primary-100 text-primary-700' },
   staff:       { label: 'Staff',       className: 'bg-gray-100   text-gray-600'   },
 };
 
@@ -30,8 +30,8 @@ function getInitials(name?: string, email?: string): string {
 function AvatarPlaceholder({ name, email }: { name?: string; email?: string }) {
   const initials = getInitials(name, email);
   return (
-    <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-      <span className="text-sm font-semibold text-indigo-700 select-none">{initials}</span>
+    <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+      <span className="text-[13px] font-semibold text-primary-700 select-none">{initials}</span>
     </div>
   );
 }
@@ -66,7 +66,7 @@ export function UserHoverCard({ user, label, className }: UserHoverCardProps) {
           <TooltipPrimitive.Content
             sideOffset={8}
             className={cn(
-              'z-50 w-64 rounded-xl border border-gray-200 bg-white p-4 shadow-lg',
+              'z-50 w-64 rounded-xl border border-border bg-surface-card p-4 shadow-lg',
               'animate-in fade-in-0 zoom-in-95',
               'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
               'data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2',

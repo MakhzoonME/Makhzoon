@@ -2,19 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Design tokens — single source of truth ───────────────────────── */
 :root {
-  --radius: 0.625rem;
-
   /* Primary (indigo) */
   --primary-700: #4338CA;
   --primary-600: #4F46E5;
   --primary-500: #6366F1;
   --primary-400: #818CF8;
   --primary-100: #E0E7FF;
-  --primary-50: #EEF2FF;
+  --primary-50:  #EEF2FF;
 
-  /* Neutral */
-  --gray-950: #030712;
+  /* Neutrals */
+  --gray-950: #0A0A0F;
   --gray-900: #111827;
   --gray-800: #1F2937;
   --gray-700: #374151;
@@ -24,122 +23,167 @@
   --gray-300: #D1D5DB;
   --gray-200: #E5E7EB;
   --gray-100: #F3F4F6;
-  --gray-50: #F9FAFB;
-  --white: #FFFFFF;
+  --gray-50:  #F9FAFB;
+  --white:    #FFFFFF;
 
   /* Semantic */
   --green-700: #15803D;
   --green-600: #16A34A;
   --green-100: #DCFCE7;
-  --green-50: #F0FDF4;
-
+  --green-50:  #F0FDF4;
   --yellow-700: #A16207;
   --yellow-600: #CA8A04;
   --yellow-100: #FEF9C3;
-  --yellow-50: #FEFCE8;
-
-  --red-700: #B91C1C;
-  --red-600: #DC2626;
-  --red-100: #FEE2E2;
-  --red-50: #FEF2F2;
-
-  --blue-700: #1D4ED8;
-  --blue-600: #2563EB;
-  --blue-100: #DBEAFE;
-  --blue-50: #EFF6FF;
-
-  /* Aspirational accents */
+  --yellow-50:  #FEFCE8;
+  --red-700:   #B91C1C;
+  --red-600:   #DC2626;
+  --red-100:   #FEE2E2;
+  --red-50:    #FEF2F2;
+  --blue-700:  #1D4ED8;
+  --blue-600:  #2563EB;
+  --blue-100:  #DBEAFE;
+  --blue-50:   #EFF6FF;
   --amber-500: #F59E0B;
   --violet-600: #7C3AED;
 
   /* Super Admin */
-  --super-admin-bg: #1E3A5F;
-  --super-admin-text: #BFDBFE;
-  --sa-bg: #1E3A5F;
+  --sa-bg:   #1E3A5F;
   --sa-text: #BFDBFE;
+  /* legacy aliases */
+  --super-admin-bg:   #1E3A5F;
+  --super-admin-text: #BFDBFE;
+
+  /* Surfaces — Light mode */
+  --surface-page:    #F8FAFC;
+  --surface-card:    #FFFFFF;
+  --surface-sidebar: #FFFFFF;
+  --border-default:  #E5E7EB;
+  --border-strong:   #D1D5DB;
+  --text-primary:    #111827;
+  --text-secondary:  #6B7280;
+  --text-tertiary:   #9CA3AF;
+
+  /* Legacy Shadcn aliases */
+  --background: #F8FAFC;
+  --foreground: #111827;
+  --radius: 0.625rem;
 
   /* Radii */
   --r-sm: 6px;
   --r-md: 8px;
   --r-lg: 10px;
+  --r-xl: 14px;
 
-  /* Shadows */
+  /* Shadows — Light */
   --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.06);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.10), 0 4px 6px -4px rgb(0 0 0 / 0.08);
 
-  /* Surface */
-  --surface-page: #F8FAFC;
-  --surface-card: #FFFFFF;
-  --surface-sidebar: #FFFFFF;
-  --border-default: #E5E7EB;
-  --border-strong: #D1D5DB;
-
-  --background: #F8FAFC;
-  --foreground: #111827;
-
   /* Motion — easing curves */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-in: cubic-bezier(0.7, 0, 1, 0.6);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-in:     cubic-bezier(0.7, 0, 1, 0.6);
   --ease-smooth: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
   /* Motion — durations */
   --dur-micro: 120ms;
-  --dur-fast: 200ms;
-  --dur-base: 300ms;
-  --dur-slow: 450ms;
+  --dur-fast:  200ms;
+  --dur-base:  300ms;
+  --dur-slow:  450ms;
+
+  --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
-/* ── Dark mode overrides ──────────────────────────────────────────── */
+/* ── Dark mode token overrides ──────────────────────────────────────── */
+/* Supports both [data-theme="dark"] (design system) and .dark (Tailwind class) */
+[data-theme="dark"],
 .dark {
-  --surface-page:    #0F172A;
-  --surface-card:    #1E293B;
-  --surface-sidebar: #1E293B;
-  --border-default:  #334155;
-  --border-strong:   #475569;
-  --background:      #0F172A;
-  --foreground:      #E2E8F0;
+  --surface-page:    #0F1117;
+  --surface-card:    #1A1D27;
+  --surface-sidebar: #13151E;
+  --border-default:  #252836;
+  --border-strong:   #333647;
+  --text-primary:    #F1F2F6;
+  --text-secondary:  #8B91A8;
+  --text-tertiary:   #5C6275;
 
-  /* Superadmin sidebar gets slightly darker in dark mode */
-  --sa-sidebar-bg: #07111F;
-  --sa-sidebar-border: rgba(59, 130, 246, 0.15);
+  /* Gray scale — remapped for dark mode (light on dark) */
+  --gray-900: #F1F2F6;
+  --gray-800: #D8DCE8;
+  --gray-700: #B8BECD;
+  --gray-600: #8B91A8;
+  --gray-500: #6B7280;
+  --gray-400: #4A5166;
+  --gray-300: #333647;
+  --gray-200: #252836;
+  --gray-100: #1E2130;
+  --gray-50:  #191C28;
+
+  /* Legacy Shadcn aliases */
+  --background: #0F1117;
+  --foreground: #F1F2F6;
+
+  /* Shadows — Dark (stronger) */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.30);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.35), 0 1px 2px -1px rgb(0 0 0 / 0.30);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.40), 0 2px 4px -2px rgb(0 0 0 / 0.30);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.50), 0 4px 6px -4px rgb(0 0 0 / 0.40);
+
+  /* Primary stays brand indigo */
+  --primary-100: rgba(99, 102, 241, 0.15);
+  --primary-50:  rgba(99, 102, 241, 0.08);
+
+  /* Semantic tints — dark-safe rgba overlays */
+  --green-100:  rgba(22, 163, 74, 0.15);
+  --green-50:   rgba(22, 163, 74, 0.08);
+  --yellow-100: rgba(202, 138, 4, 0.15);
+  --yellow-50:  rgba(202, 138, 4, 0.08);
+  --red-100:    rgba(220, 38, 38, 0.15);
+  --red-50:     rgba(220, 38, 38, 0.08);
+  --blue-100:   rgba(37, 99, 235, 0.15);
+  --blue-50:    rgba(37, 99, 235, 0.08);
 }
 
-/* ── Dark mode surface cascade ────────────────────────────────────── */
-/* Covers all components and pages that use standard Tailwind gray classes.
-   Badge and other colored-bg components have explicit dark: variants instead. */
-.dark .bg-white    { background-color: var(--surface-card); }
-.dark .bg-gray-50  { background-color: #1a2744; }
-.dark .bg-gray-100 { background-color: #1e2e48; }
-
-.dark .border-gray-200 { border-color: var(--border-default); }
-.dark .border-gray-100 { border-color: #263248; }
-.dark .border-gray-300 { border-color: #3d4f66; }
-
-.dark .text-gray-900 { color: #f1f5f9; }
-.dark .text-gray-800 { color: #e2e8f0; }
-.dark .text-gray-700 { color: #cbd5e1; }
-.dark .text-gray-600 { color: #94a3b8; }
-.dark .text-gray-500 { color: #64748b; }
-
-.dark .hover\:bg-gray-50:hover  { background-color: #243044; }
-.dark .hover\:bg-gray-100:hover { background-color: #2d3d52; }
-.dark .hover\:bg-gray-200:hover { background-color: #374357; }
+/* ── Base styles ────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  /* Default English — Capriola. --font-capriola is set by Next.js font class on body. */
+  font-family: var(--font-capriola), "Geist", system-ui, sans-serif;
+  --font-display: var(--font-capriola), "Geist", system-ui, sans-serif;
+  color: var(--text-primary);
+  background: var(--surface-page);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background var(--dur-base) var(--ease-smooth),
+              color var(--dur-base) var(--ease-smooth);
 }
 
-/* ── Arabic / RTL font stack ─────────────────────────────────────── */
-html[lang="ar"] body {
-  font-family: 'Tahoma', 'Arial', system-ui, sans-serif;
+/* ── Language-based font switching ─────────────────────────────────── */
+/* When Arabic: switch body + display to Thmanyah Sans */
+html[lang="ar"] body,
+[dir="rtl"] body {
+  font-family: var(--font-thmanyah), "Noto Sans Arabic", system-ui, sans-serif;
+  --font-display: var(--font-thmanyah), "Noto Sans Arabic", system-ui, sans-serif;
 }
 
-/* ── RTL layout helpers ──────────────────────────────────────────── */
+/* ── Type scale classes ─────────────────────────────────────────────── */
+.t-display { font-family: var(--font-display); font-size: 2.25rem;  font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; }
+.t-h1      { font-family: var(--font-display); font-size: 1.875rem; font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; }
+.t-h2      { font-family: var(--font-display); font-size: 1.5rem;   font-weight: 600; line-height: 1.3; letter-spacing: -0.005em; }
+.t-h3      { font-family: var(--font-display); font-size: 1.25rem;  font-weight: 600; line-height: 1.4; }
+.t-h4      {                                   font-size: 1.125rem; font-weight: 600; line-height: 1.4; }
+.t-body-lg {                                   font-size: 1rem;     font-weight: 400; line-height: 1.6; }
+.t-body    {                                   font-size: 0.875rem; font-weight: 400; line-height: 1.6; }
+.t-body-sm {                                   font-size: 0.8125rem;font-weight: 400; line-height: 1.5; }
+.t-caption {                                   font-size: 0.75rem;  font-weight: 500; line-height: 1.4; letter-spacing: 0.01em; }
+.t-mono    { font-family: var(--font-mono);    font-size: 0.8125rem;font-weight: 400; line-height: 1.5; color: var(--text-secondary); }
+.t-arabic  { font-family: var(--font-arabic); direction: rtl; }
+.muted     { color: var(--text-secondary); }
+
+/* ── RTL layout helpers ─────────────────────────────────────────────── */
 [dir="rtl"] .sidebar-left {
   left:  auto;
   right: 0;
@@ -161,6 +205,18 @@ html[lang="ar"] body {
   }
   .press-scale:active {
     transform: scale(0.97);
+  }
+
+  /* kbd element */
+  .kbd {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 2px 6px;
+    border: 1px solid var(--border-default);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    background: var(--surface-page);
+    color: var(--text-secondary);
   }
 
   /* Skeleton shimmer — sweeps a gradient across a muted surface */
@@ -187,31 +243,40 @@ html[lang="ar"] body {
 @layer components {
   /* Input shake for validation errors */
   .animate-input-error {
-    animation: input-shake 400ms var(--ease-in-out);
+    animation: input-shake 400ms var(--ease-smooth);
+  }
+
+  /* Override browser autofill dark background */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px var(--surface-card) inset !important;
+    -webkit-text-fill-color: var(--gray-900) !important;
+    caret-color: var(--gray-900);
+    transition: background-color 9999s ease-in-out 0s;
   }
 }
 
 @keyframes skeleton-shimmer {
-  100% {
-    transform: translateX(100%);
-  }
+  100% { transform: translateX(100%); }
 }
 
 @keyframes input-shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  50% { transform: translateX(4px); }
-  75% { transform: translateX(-4px); }
+  25%       { transform: translateX(-4px); }
+  50%       { transform: translateX(4px); }
+  75%       { transform: translateX(-4px); }
 }
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  50%       { transform: translateY(-10px); }
 }
 
 @keyframes gradient-shift {
   0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  50%       { background-position: 100% 50%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

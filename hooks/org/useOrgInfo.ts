@@ -19,6 +19,7 @@ export function useOrgInfo() {
       if (!res.ok) throw new Error('Failed to fetch organization info');
       return res.json();
     },
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 }

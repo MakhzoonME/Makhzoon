@@ -30,27 +30,80 @@ function toMessage(id: string, ticketId: string, data: FirebaseFirestore.Documen
 
 export async function getSupportTickets(
   orgId: string,
-  filters?: { status?: TicketStatus },
-): Promise<SupportTicket[]> {
-  // Requires composite index: organizationId ASC + createdAt DESC
+  opts?: { status?: TicketStatus; page?: number; pageSize?: number; sortBy?: string; sortDir?: 'asc' | 'desc' },
+): Promise<{ items: SupportTicket[]; total: number; page: number; pageSize: number; totalPages: number }> {
+  const page = opts?.page ?? 1;
+  const pageSize = opts?.pageSize ?? 10;
+  const sortBy = opts?.sortBy ?? 'createdAt';
+  const sortDir = opts?.sortDir ?? 'desc';
+
   let q = adminDb
     .collection('supportTickets')
     .where('organizationId', '==', orgId)
     .orderBy('createdAt', 'desc') as FirebaseFirestore.Query;
-  if (filters?.status) q = q.where('status', '==', filters.status);
+  if (opts?.status) q = q.where('status', '==', opts.status);
   const snap = await q.get();
-  return snap.docs.map((d) => toTicket(d.id, d.data()));
+  let items = snap.docs.map((d) => toTicket(d.id, d.data()));
+
+  const sortFns: Record<string, (a: SupportTicket, b: SupportTicket) => number> = {
+    subject: (a, b) => (a.subject ?? '').localeCompare(b.subject ?? ''),
+    status: (a, b) => (a.status ?? '').localeCompare(b.status ?? ''),
+    priority: (a, b) => (a.priority ?? '').localeCompare(b.priority ?? ''),
+    createdAt: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  };
+
+  const sortFn = sortFns[sortBy];
+  if (sortFn) {
+    items.sort((a, b) => sortDir === 'asc' ? sortFn(a, b) : sortFn(b, a));
+  }
+
+  const total = items.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * pageSize;
+  const paged = items.slice(start, start + pageSize);
+
+  return { items: paged, total, page: safePage, pageSize, totalPages };
 }
 
-export async function getAllSupportTickets(filters?: {
+export async function getAllSupportTickets(opts?: {
   status?: TicketStatus;
   priority?: TicketPriority;
-}): Promise<SupportTicket[]> {
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+}): Promise<{ items: SupportTicket[]; total: number; page: number; pageSize: number; totalPages: number }> {
+  const page = opts?.page ?? 1;
+  const pageSize = opts?.pageSize ?? 10;
+  const sortBy = opts?.sortBy ?? 'createdAt';
+  const sortDir = opts?.sortDir ?? 'desc';
+
   let q = adminDb.collection('supportTickets').orderBy('createdAt', 'desc') as FirebaseFirestore.Query;
-  if (filters?.status) q = q.where('status', '==', filters.status);
-  if (filters?.priority) q = q.where('priority', '==', filters.priority);
+  if (opts?.status) q = q.where('status', '==', opts.status);
+  if (opts?.priority) q = q.where('priority', '==', opts.priority);
   const snap = await q.get();
-  return snap.docs.map((d) => toTicket(d.id, d.data()));
+  let items = snap.docs.map((d) => toTicket(d.id, d.data()));
+
+  const sortFns: Record<string, (a: SupportTicket, b: SupportTicket) => number> = {
+    subject: (a, b) => (a.subject ?? '').localeCompare(b.subject ?? ''),
+    status: (a, b) => (a.status ?? '').localeCompare(b.status ?? ''),
+    priority: (a, b) => (a.priority ?? '').localeCompare(b.priority ?? ''),
+    createdAt: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  };
+
+  const sortFn = sortFns[sortBy];
+  if (sortFn) {
+    items.sort((a, b) => sortDir === 'asc' ? sortFn(a, b) : sortFn(b, a));
+  }
+
+  const total = items.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * pageSize;
+  const paged = items.slice(start, start + pageSize);
+
+  return { items: paged, total, page: safePage, pageSize, totalPages };
 }
 
 export async function getSupportTicketByIdAny(ticketId: string): Promise<SupportTicket | null> {

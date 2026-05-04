@@ -1,6 +1,7 @@
 'use client';
 import { useLocaleStore } from '@/store/locale.store';
 import { useT } from '@/hooks/ui';
+import { useRouter, usePathname } from 'next/navigation';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils/cn';
 import type { Locale } from '@/locales/messages';
@@ -23,6 +24,14 @@ interface Props {
 export function LanguageToggle({ variant = 'ghost-light', className }: Props) {
   const { locale, setLocale } = useLocaleStore();
   const { t } = useT();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  function switchLocale(newLocale: Locale) {
+    setLocale(newLocale);
+    const newPath = pathname.replace(/^\/(en|ar)/, `/${newLocale}`);
+    router.push(newPath);
+  }
 
   const btnClass = cn(
     'flex items-center gap-1.5 h-8 px-2 rounded-md text-xs font-medium transition-colors',
@@ -44,7 +53,7 @@ export function LanguageToggle({ variant = 'ghost-light', className }: Props) {
         {(['en', 'ar'] as Locale[]).map((loc) => (
           <DropdownMenuItem
             key={loc}
-            onClick={() => setLocale(loc)}
+            onClick={() => switchLocale(loc)}
             className={cn(
               'gap-2 cursor-pointer dark:text-gray-200 dark:focus:bg-gray-700',
               locale === loc && 'font-semibold',

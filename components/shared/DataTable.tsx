@@ -2,6 +2,7 @@
 import React from 'react';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { EmptyState } from './EmptyState';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 export interface ColumnDef<T> {
   key: string;
@@ -18,9 +19,9 @@ interface PaginationConfig {
   totalPages: number;
   onPageChange: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
-  onSortChange?: (sortBy: string, sortDir: 'asc' | 'desc') => void;
+  onSortChange?: (sortBy: string, sortDir: 'asc' | 'desc' | 'none') => void;
   currentSortBy?: string;
-  currentSortDir?: 'asc' | 'desc';
+  currentSortDir?: 'asc' | 'desc' | 'none';
 }
 
 interface DataTableProps<T> {
@@ -46,24 +47,21 @@ export function DataTable<T>({
 
   function handleSort(col: ColumnDef<T>) {
     if (!col.sortable || !pagination?.onSortChange) return;
-
     const isCurrentSort = pagination.currentSortBy === col.key;
-    const nextDir = isCurrentSort && pagination.currentSortDir === 'asc' ? 'desc' : 'asc';
-
     if (!isCurrentSort) {
       pagination.onSortChange(col.key, 'asc');
+    } else if (pagination.currentSortDir === 'asc') {
+      pagination.onSortChange(col.key, 'desc');
     } else {
-      pagination.onSortChange(col.key, nextDir);
+      pagination.onSortChange(col.key, 'none');
     }
   }
 
   function SortIcon({ col }: { col: ColumnDef<T> }) {
     if (!col.sortable) return null;
-
     const isCurrentSort = pagination?.currentSortBy === col.key;
     const dir = pagination?.currentSortDir;
-
-    if (!isCurrentSort) {
+    if (!isCurrentSort || dir === 'none') {
       return (
         <svg className="w-3 h-3 text-gray-300" viewBox="0 0 12 12" fill="none">
           <path d="M6 2L9 5H3L6 2Z" fill="currentColor" />
@@ -71,13 +69,12 @@ export function DataTable<T>({
         </svg>
       );
     }
-
     return dir === 'asc' ? (
-      <svg className="w-3 h-3 text-indigo-600" viewBox="0 0 12 12" fill="none">
+      <svg className="w-3 h-3 text-primary-600" viewBox="0 0 12 12" fill="none">
         <path d="M6 2L9 5H3L6 2Z" fill="currentColor" />
       </svg>
     ) : (
-      <svg className="w-3 h-3 text-indigo-600" viewBox="0 0 12 12" fill="none">
+      <svg className="w-3 h-3 text-primary-600" viewBox="0 0 12 12" fill="none">
         <path d="M6 10L3 7H9L6 10Z" fill="currentColor" />
       </svg>
     );
@@ -88,11 +85,11 @@ export function DataTable<T>({
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700">
+            <tr className="border-b border-border">
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 ${col.className ?? ''} ${col.sortable ? 'cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200' : ''}`}
+                  className={`px-4 py-3 text-start text-[11px] font-semibold uppercase tracking-[0.06em] text-gray-500 ${col.className ?? ''} ${col.sortable ? 'cursor-pointer select-none hover:text-gray-700' : ''}`}
                   onClick={() => handleSort(col)}
                 >
                   <span className="inline-flex items-center gap-1">
@@ -114,14 +111,27 @@ export function DataTable<T>({
               data.map((row, i) => (
                 <tr
                   key={keyExtractor ? keyExtractor(row) : i}
-                  className={`border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+                  className={`border-b border-border hover:bg-gray-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
                   onClick={() => onRowClick?.(row)}
                 >
-                  {columns.map((col) => (
-                    <td key={col.key} className={`px-4 py-3 text-sm text-gray-700 dark:text-gray-300 ${col.className ?? ''}`}>
-                      {col.render(row)}
+                  {columns.map((col) => {
+                    const content = col.render(row);
+                    const isPlainText = typeof content === 'string' || typeof content === 'number';
+                    return (
+                    <td key={col.key} className={`px-4 py-3 text-[13.5px] text-gray-700 max-w-[260px] ${col.className ?? ''}`}>
+                      {isPlainText ? (
+                        <TooltipProvider delayDuration={300}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="block truncate">{content}</span>
+                            </TooltipTrigger>
+                            <TooltipContent>{String(content)}</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : content}
                     </td>
-                  ))}
+                    );
+                  })}
                 </tr>
               ))
             )}
@@ -130,18 +140,18 @@ export function DataTable<T>({
       </div>
 
       {pagination && pagination.total > 0 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700 mt-2">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border mt-2">
           <div className="flex items-center gap-4">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-[12px] text-gray-500">
               Showing {(pagination.page - 1) * pagination.pageSize + 1}–{Math.min(pagination.page * pagination.pageSize, pagination.total)} of {pagination.total}
             </p>
             {pagination.onPageSizeChange && (
               <div className="flex items-center gap-1">
-                <span className="text-xs text-gray-500 dark:text-gray-400">Per page:</span>
+                <span className="text-[12px] text-gray-500">Per page:</span>
                 <select
                   value={pagination.pageSize}
                   onChange={(e) => pagination.onPageSizeChange?.(parseInt(e.target.value, 10))}
-                  className="text-xs border border-gray-200 dark:border-gray-600 rounded px-1 py-0.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                  className="text-[12px] border border-border rounded-md px-1.5 py-0.5 bg-surface-card text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20"
                 >
                   {[10, 20, 50, 100].map((size) => (
                     <option key={size} value={size}>{size}</option>
@@ -152,14 +162,14 @@ export function DataTable<T>({
           </div>
           <div className="flex items-center gap-1">
             <button
-              className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 disabled:opacity-40"
+              className="px-2.5 py-1 text-[12px] border border-border rounded-md hover:bg-gray-50 text-gray-700 disabled:opacity-40 transition-colors"
               disabled={pagination.page <= 1}
               onClick={() => pagination.onPageChange(1)}
             >
               First
             </button>
             <button
-              className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 disabled:opacity-40"
+              className="px-2.5 py-1 text-[12px] border border-border rounded-md hover:bg-gray-50 text-gray-700 disabled:opacity-40 transition-colors"
               disabled={pagination.page <= 1}
               onClick={() => pagination.onPageChange(pagination.page - 1)}
             >
@@ -176,14 +186,13 @@ export function DataTable<T>({
               } else {
                 pageNum = pagination.page - 2 + i;
               }
-
               return (
                 <button
                   key={pageNum}
-                  className={`px-2 py-1 text-xs border rounded transition-colors ${
+                  className={`px-2.5 py-1 text-[12px] border rounded-md transition-colors ${
                     pagination.page === pageNum
-                      ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300'
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'border-border hover:bg-gray-50 text-gray-700'
                   }`}
                   onClick={() => pagination.onPageChange(pageNum)}
                 >
@@ -192,14 +201,14 @@ export function DataTable<T>({
               );
             })}
             <button
-              className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 disabled:opacity-40"
+              className="px-2.5 py-1 text-[12px] border border-border rounded-md hover:bg-gray-50 text-gray-700 disabled:opacity-40 transition-colors"
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => pagination.onPageChange(pagination.page + 1)}
             >
               Next
             </button>
             <button
-              className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 disabled:opacity-40"
+              className="px-2.5 py-1 text-[12px] border border-border rounded-md hover:bg-gray-50 text-gray-700 disabled:opacity-40 transition-colors"
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => pagination.onPageChange(pagination.totalPages)}
             >

@@ -13,7 +13,7 @@ export function UsageBar({ label, current, max }: UsageBarProps) {
           <span className="text-gray-500">{current} / Unlimited</span>
         </div>
         <div className="h-2 w-full rounded-full bg-gray-100">
-          <div className="h-full w-0 rounded-full bg-indigo-500" />
+          <div className="h-full w-0 rounded-full bg-primary-500" />
         </div>
       </div>
     );

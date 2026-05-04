@@ -3,23 +3,30 @@ import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils/cn';
 
+/* DS spec:
+   sm  → h=28px  px=10px  gap=6px   icon=14px  text-[13px]
+   md  → h=36px  px=14px  gap=8px   icon=16px  text-[14px]
+   lg  → h=44px  px=18px  gap=10px  icon=18px  text-[15px]
+*/
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-[background-color,color,border-color,box-shadow,transform] duration-150 ease-out-expo active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100',
+  'inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium transition-[background-color,color,border-color,box-shadow,transform] duration-[120ms] ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-500/20 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100',
   {
     variants: {
       variant: {
-        default: 'bg-indigo-600 text-white hover:bg-indigo-700',
-        destructive: 'bg-red-600 text-white hover:bg-red-700',
-        outline: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50',
-        secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200',
-        ghost: 'text-gray-700 hover:bg-gray-100',
-        link: 'text-indigo-600 underline-offset-4 hover:underline',
+        default:     'bg-primary-600 text-white hover:bg-primary-700 shadow-xs',
+        destructive: 'bg-red-600 text-white hover:bg-red-700 shadow-xs',
+        outline:     'border border-border bg-surface-card text-gray-700 hover:bg-gray-50 hover:border-border-strong shadow-xs',
+        secondary:   'bg-gray-100 text-gray-900 hover:bg-gray-200',
+        ghost:       'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+        link:        'text-primary-600 underline-offset-4 hover:underline',
       },
       size: {
-        default: 'h-9 px-4 py-2',
-        sm: 'h-8 rounded-lg px-3 text-xs',
-        lg: 'h-10 rounded-lg px-8',
-        icon: 'h-9 w-9',
+        sm:       'h-7 gap-1.5 px-2.5 text-[13px]',   /* 28px */
+        default:  'h-9 gap-2 px-3.5 text-[14px]',      /* 36px */
+        lg:       'h-11 gap-2.5 px-[18px] text-[15px]',/* 44px */
+        icon:     'h-9 w-9 gap-0',
+        'icon-sm':'h-7 w-7 gap-0',
+        'icon-lg':'h-11 w-11 gap-0',
       },
     },
     defaultVariants: {

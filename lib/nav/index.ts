@@ -55,7 +55,14 @@ const ORG_NAV_FLAT: NavItemConfig[] = ORG_NAV_ENTRIES.flatMap((entry) => {
   return [entry as NavItemConfig];
 });
 
+/** Prepend locale to a path like `/dashboard` → `/en/dashboard` */
+export function withLocale(locale: string, path: string): string {
+  if (path.startsWith('http') || path.startsWith('#')) return path;
+  return `/${locale}${path}`;
+}
+
 export function getFirstAccessiblePath(opts: {
+  locale: string;
   role: string;
   features: Record<string, boolean>;
   permissions?: Record<string, Record<string, boolean>> | null;
@@ -68,7 +75,7 @@ export function getFirstAccessiblePath(opts: {
       const mod = opts.permissions[item.featureKey];
       if (mod && mod['view'] === false) continue;
     }
-    return item.href;
+    return withLocale(opts.locale, item.href);
   }
-  return '/dashboard';
+  return withLocale(opts.locale, '/dashboard');
 }

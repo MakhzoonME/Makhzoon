@@ -65,24 +65,24 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
-          className="fixed left-1/2 top-[20%] z-50 w-full max-w-xl -translate-x-1/2 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+          className="fixed left-1/2 top-[20%] z-50 w-full max-w-xl -translate-x-1/2 rounded-xl border border-border bg-surface-card shadow-lg overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
           aria-describedby={undefined}
         >
           <DialogPrimitive.Title className="sr-only">Command palette</DialogPrimitive.Title>
           <Command shouldFilter className="flex flex-col">
-            <div className="flex items-center gap-2 border-b border-gray-200 px-4">
+            <div className="flex items-center gap-2 border-b border-border px-4">
               <SearchSVG />
               <Command.Input
                 value={search}
                 onValueChange={setSearch}
                 placeholder="Search pages, assets, actions…"
-                className="flex-1 h-12 bg-transparent text-sm outline-none placeholder:text-gray-400"
+                className="flex-1 h-12 bg-transparent text-[14px] text-gray-900 outline-none placeholder:text-gray-400"
               />
-              <kbd className="hidden sm:inline-flex h-5 items-center rounded border border-gray-200 bg-gray-50 px-1.5 text-[10px] font-mono text-gray-400">ESC</kbd>
+              <kbd className="hidden sm:inline-flex h-5 items-center rounded border border-border bg-surface-page px-1.5 text-[10px] font-mono text-gray-500">ESC</kbd>
             </div>
 
             <Command.List className="max-h-80 overflow-y-auto py-2">
-              <Command.Empty className="px-4 py-6 text-sm text-gray-400 text-center">No results.</Command.Empty>
+              <Command.Empty className="px-4 py-6 text-[14px] text-gray-500 text-center">No results.</Command.Empty>
 
               <Command.Group heading="Navigation" className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:text-gray-400">
                 {NAV_GROUPS.map((item) => (
@@ -134,8 +134,8 @@ function PaletteItem({ onSelect, icon: Icon, label }: { onSelect: () => void; ic
       value={label}
       onSelect={onSelect}
       className={cn(
-        'flex items-center gap-2 px-3 py-2 mx-2 rounded-md text-sm cursor-pointer',
-        'data-[selected=true]:bg-primary-50 data-[selected=true]:text-primary-700'
+        'flex items-center gap-2 px-3 py-2 mx-2 rounded-md text-[14px] text-gray-700 cursor-pointer',
+        'data-[selected=true]:bg-primary-100/60 data-[selected=true]:text-primary-700'
       )}
     >
       <Icon />

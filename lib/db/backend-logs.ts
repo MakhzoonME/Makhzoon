@@ -54,7 +54,7 @@ export async function getBackendLogs(opts: GetBackendLogsOptions = {}): Promise<
   }
 
   const snap = await query.get();
-  let logs = snap.docs.map((d) => toLog(d.id, d.data()));
+  const logs = snap.docs.map((d) => toLog(d.id, d.data()));
 
   const total = logs.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));

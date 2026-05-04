@@ -43,7 +43,7 @@ export async function getSupportTickets(
     .orderBy('createdAt', 'desc') as FirebaseFirestore.Query;
   if (opts?.status) q = q.where('status', '==', opts.status);
   const snap = await q.get();
-  let items = snap.docs.map((d) => toTicket(d.id, d.data()));
+  const items = snap.docs.map((d) => toTicket(d.id, d.data()));
 
   const sortFns: Record<string, (a: SupportTicket, b: SupportTicket) => number> = {
     subject: (a, b) => (a.subject ?? '').localeCompare(b.subject ?? ''),
@@ -83,7 +83,7 @@ export async function getAllSupportTickets(opts?: {
   if (opts?.status) q = q.where('status', '==', opts.status);
   if (opts?.priority) q = q.where('priority', '==', opts.priority);
   const snap = await q.get();
-  let items = snap.docs.map((d) => toTicket(d.id, d.data()));
+  const items = snap.docs.map((d) => toTicket(d.id, d.data()));
 
   const sortFns: Record<string, (a: SupportTicket, b: SupportTicket) => number> = {
     subject: (a, b) => (a.subject ?? '').localeCompare(b.subject ?? ''),

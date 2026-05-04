@@ -12,7 +12,7 @@ import { storage } from '@/lib/firebase/client';
 import { auth } from '@/lib/firebase/client';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { Camera, Save, KeyRound, Plus } from 'lucide-react';
+import { Camera, Save, KeyRound } from 'lucide-react';
 
 /** Display email/username without the synthetic @makhzoon.local suffix */
 function displayIdentity(email?: string | null): string {

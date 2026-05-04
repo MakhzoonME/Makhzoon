@@ -4,7 +4,7 @@ import { useAuditLogs } from '@/hooks/org';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { withLocale } from '@/lib/nav';
+
 
 function XSVGIcon() {
   return (

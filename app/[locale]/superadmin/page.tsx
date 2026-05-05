@@ -70,7 +70,7 @@ function sortOrgs(rows: OrgWithUsage[], sortBy: string, sortDir: 'asc' | 'desc')
 }
 
 export default function SuperAdminPage() {
-  const { t } = useT();
+  const { t, locale } = useT();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -231,7 +231,7 @@ export default function SuperAdminPage() {
             variant="ghost"
             onClick={(e) => {
               e.stopPropagation();
-              router.push(`/superadmin/organizations/${r.organization.id}/subscription`);
+              router.push(`/${locale}/superadmin/organizations/${r.organization.id}/subscription`);
             }}
             title={t('nav.subscription')}
           >
@@ -242,7 +242,7 @@ export default function SuperAdminPage() {
             variant="ghost"
             onClick={(e) => {
               e.stopPropagation();
-              router.push(`/superadmin/organizations/${r.organization.id}/configuration`);
+              router.push(`/${locale}/superadmin/organizations/${r.organization.id}/configuration`);
             }}
             title={t('nav.configuration')}
           >
@@ -253,7 +253,7 @@ export default function SuperAdminPage() {
             variant="ghost"
             onClick={(e) => {
               e.stopPropagation();
-              router.push(`/superadmin/organizations/${r.organization.id}/edit`);
+              router.push(`/${locale}/superadmin/organizations/${r.organization.id}/edit`);
             }}
             title={t('common.edit')}
           >
@@ -269,7 +269,7 @@ export default function SuperAdminPage() {
       <PageHeader
         title={t('nav.organizations')}
         actions={
-          <Button size="sm" onClick={() => router.push('/superadmin/organizations/new')}>
+          <Button size="sm" onClick={() => router.push(`/${locale}/superadmin/organizations/new`)}>
             <Plus className="h-4 w-4 mr-1" />
             {t('orgs.createOrg')}
           </Button>

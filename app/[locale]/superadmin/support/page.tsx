@@ -21,7 +21,7 @@ function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
 }
 
 export default function SupportPage() {
-  const { t } = useT();
+  const { t, locale } = useT();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -119,7 +119,7 @@ export default function SupportPage() {
       key: 'actions',
       header: '',
       render: (ticket) => (
-        <Button size="sm" variant="ghost" onClick={() => router.push(`/superadmin/support/${ticket.id}`)}>
+        <Button size="sm" variant="ghost" onClick={() => router.push(`/${locale}/superadmin/support/${ticket.id}`)}>
           {t('support.view')}
         </Button>
       ),

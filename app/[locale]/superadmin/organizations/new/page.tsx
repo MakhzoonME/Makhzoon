@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ORG_CATEGORIES } from '@/types';
@@ -17,6 +17,7 @@ import { ORG_CATEGORIES } from '@/types';
 export default function NewOrganizationPage() {
   const router = useRouter();
   const qc = useQueryClient();
+  const { locale } = useT();
   const [loading, setLoading] = useState(false);
 
   const form = useForm<OrganizationFormData>({
@@ -45,7 +46,7 @@ export default function NewOrganizationPage() {
       await res.json();
       toast.success('Organization created');
       qc.invalidateQueries({ queryKey: ['organizations'] });
-      router.push('/superadmin');
+      router.push(`/${locale}/superadmin`);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong');
     } finally { setLoading(false); }

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
 import { ORG_CATEGORIES, type Organization, type OrgCategory } from '@/types';
 
 interface TeamMember {
@@ -27,6 +27,7 @@ export default function EditOrganizationPage({ params }: { params: { orgId: stri
   const { orgId } = params;
   const router = useRouter();
   const qc = useQueryClient();
+  const { locale } = useT();
 
   const { data: org, isLoading } = useQuery<OrgWithSub>({
     queryKey: ['org', orgId],
@@ -108,7 +109,7 @@ export default function EditOrganizationPage({ params }: { params: { orgId: stri
           <Button
             size="sm"
             variant="outline"
-            onClick={() => router.push(`/superadmin/organizations/${orgId}/configuration`)}
+            onClick={() => router.push(`/${locale}/superadmin/organizations/${orgId}/configuration`)}
           >
             Configuration
           </Button>

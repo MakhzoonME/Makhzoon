@@ -13,9 +13,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { userId: st
   if (caller.role !== 'admin' && caller.role !== 'super_admin' && caller.role !== 'org_owner')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+  const isSuperAdmin = caller.role === 'super_admin';
   const orgId = caller.organizationId;
-  if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
-  await requireActiveSubscription(orgId, caller);
+  // Super admins can modify org users without being part of the org
+  if (!orgId && !isSuperAdmin) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+  if (orgId) await requireActiveSubscription(orgId, caller);
 
   const { userId } = params;
   if (userId === caller.uid) return NextResponse.json({ error: 'You cannot change your own role' }, { status: 400 });
@@ -23,6 +25,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { userId: st
   // Fetch target user to enforce role hierarchy
   const targetUser = await getUserById(userId);
   if (!targetUser) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+  // Super admins can modify any org's users; regular callers must be in the same org
+  if (!isSuperAdmin && orgId && targetUser.organizationId !== orgId) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   // Admin cannot modify owners — only org_owner or super_admin can
   if (targetUser.role === 'org_owner' && caller.role === 'admin') {
@@ -47,7 +53,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { userId: st
   invalidateCachedSessionsForUser(userId);
 
   queueAuditLog({
-    organizationId: caller.organizationId!,
+    organizationId: (caller.organizationId ?? targetUser.organizationId)!,
     userId: caller.uid,
     role: caller.role,
     action: 'USER_UPDATED',
@@ -65,9 +71,10 @@ export async function DELETE(req: NextRequest, { params }: { params: { userId: s
   if (caller.role !== 'admin' && caller.role !== 'super_admin' && caller.role !== 'org_owner')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+  const isSuperAdminDel = caller.role === 'super_admin';
   const orgId = caller.organizationId;
-  if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
-  await requireActiveSubscription(orgId, caller);
+  if (!orgId && !isSuperAdminDel) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+  if (orgId) await requireActiveSubscription(orgId, caller);
 
   const { userId } = params;
   if (userId === caller.uid) return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });
@@ -75,6 +82,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { userId: s
   // Fetch target user to enforce role hierarchy
   const targetUser = await getUserById(userId);
   if (!targetUser) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+  if (!isSuperAdminDel && orgId && targetUser.organizationId !== orgId) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   // Admin cannot delete owners
   if (targetUser.role === 'org_owner' && caller.role === 'admin') {
@@ -97,7 +107,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { userId: s
     await adminDb.collection('users').doc(userId).delete();
 
     queueAuditLog({
-      organizationId: caller.organizationId!,
+      organizationId: (caller.organizationId ?? targetUser.organizationId)!,
       userId: caller.uid,
       role: caller.role,
       action: 'USER_DELETED',
@@ -115,7 +125,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { userId: s
     });
 
     queueAuditLog({
-      organizationId: caller.organizationId!,
+      organizationId: (caller.organizationId ?? targetUser.organizationId)!,
       userId: caller.uid,
       role: caller.role,
       action: 'USER_DEACTIVATED',

@@ -134,7 +134,7 @@ export function MobileDrawer() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-[13px] font-medium text-gray-900 truncate">{user.displayName || displayIdentity(user.email)}</p>
-                    <p className="text-[11px] text-gray-500 capitalize">{user.role?.replace('_', ' ')}</p>
+                    <p className="text-[11px] text-gray-500 capitalize">{user.role === 'org_owner' ? 'Owner' : user.role?.replace('_', ' ')}</p>
                   </div>
                 </div>
               </div>

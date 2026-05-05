@@ -12,7 +12,7 @@ import {
   useUpdateTicket,
   useAddTicketMessage,
 } from '@/hooks/support';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
 import { formatDate } from '@/lib/utils/date';
 import type { TicketStatus, TicketPriority } from '@/types';
 
@@ -22,8 +22,9 @@ const PRIORITIES: TicketPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 export default function SuperAdminTicketDetailPage({ params }: { params: { ticketId: string } }) {
   const { ticketId } = params;
   const router = useRouter();
+  const { locale } = useT();
   const { data: ticket, isLoading } = useSupportTicket(ticketId);
-  const { data: messages = [] } = useTicketMessages(ticketId);
+  const { data: messages = [], isLoading: messagesLoading } = useTicketMessages(ticketId);
   const updateMut = useUpdateTicket(ticketId);
   const replyMut = useAddTicketMessage(ticketId);
   const [reply, setReply] = useState('');
@@ -70,7 +71,7 @@ export default function SuperAdminTicketDetailPage({ params }: { params: { ticke
         title={ticket.subject}
         description={`Ticket #${ticket.id.slice(0, 8)}`}
         breadcrumb={[
-          { label: 'Support', href: '/superadmin/support' },
+          { label: 'Support', href: `/${locale}/superadmin/support` },
           { label: 'Detail', href: '' },
         ]}
         actions={
@@ -137,7 +138,10 @@ export default function SuperAdminTicketDetailPage({ params }: { params: { ticke
         <CardContent className="p-5 space-y-4">
           <h3 className="text-sm font-semibold text-gray-900">Conversation</h3>
           <div className="space-y-3">
-            {messages.length === 0 && (
+            {messagesLoading && (
+              <p className="text-sm text-gray-500 italic">Loading…</p>
+            )}
+            {!messagesLoading && messages.length === 0 && (
               <p className="text-sm text-gray-500 italic">No replies yet.</p>
             )}
             {messages.map((m) => {
@@ -146,14 +150,14 @@ export default function SuperAdminTicketDetailPage({ params }: { params: { ticke
                 <div
                   key={m.id}
                   className={`p-3 rounded-lg border ${
-                    isAdmin ? 'bg-primary-50 border-primary-100' : 'bg-surface-page border-border'
+                    isAdmin ? 'bg-primary-100/30 border-primary-200/50' : 'bg-surface-page border-border'
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-sm font-medium text-gray-900">{m.authorName}</span>
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wide ${
-                        isAdmin ? 'bg-primary-100 text-primary-700' : 'bg-gray-200 text-gray-700'
+                        isAdmin ? 'bg-primary-100/60 text-primary-700' : 'bg-surface-page text-gray-600'
                       }`}
                     >
                       {isAdmin ? 'Super Admin' : 'Org User'}

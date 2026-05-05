@@ -427,7 +427,7 @@ export function AppSidebar() {
                     className="flex-1 min-w-0"
                   >
                     <p className="text-xs font-medium text-gray-900 truncate">{user.displayName || displayIdentity(user.email)}</p>
-                    <p className="text-[11px] text-gray-500 capitalize">{user.role?.replace('_', ' ')}</p>
+                    <p className="text-[11px] text-gray-500 capitalize">{user.role === 'org_owner' ? 'Owner' : user.role?.replace('_', ' ')}</p>
                   </motion.div>
                 )}
               </AnimatePresence>

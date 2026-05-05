@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/ui';
 import { SuperAdminBanner } from '@/components/layout/SuperAdminBanner';
-import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity } from 'lucide-react';
+import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity, UserCircle } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
@@ -100,10 +100,16 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
             })}
           </nav>
           <div className="p-3 border-t border-blue-900">
-            <div className="px-3 py-1.5 mb-1">
-              <TooltipProvider delayDuration={300}><Tooltip><TooltipTrigger asChild><p className="text-xs text-blue-500 truncate">{user.email}</p></TooltipTrigger><TooltipContent>{user.email}</TooltipContent></Tooltip></TooltipProvider>
-              <p className="text-xs text-blue-400 capitalize">{user.role.replace(/_/g, ' ')}</p>
-            </div>
+            <Link
+              href={`/${locale}/superadmin/profile`}
+              className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-900 transition-colors mb-1 group"
+            >
+              <UserCircle className="h-[18px] w-[18px] flex-shrink-0 text-blue-400 group-hover:text-blue-100" />
+              <div className="min-w-0">
+                <TooltipProvider delayDuration={300}><Tooltip><TooltipTrigger asChild><p className="text-xs text-blue-300 truncate group-hover:text-blue-100">{user.email}</p></TooltipTrigger><TooltipContent>{user.email}</TooltipContent></Tooltip></TooltipProvider>
+                <p className="text-[10px] text-blue-500 capitalize">{user.role.replace(/_/g, ' ')}</p>
+              </div>
+            </Link>
             <div className="flex items-center gap-1 px-1 mb-1">
               <ThemeToggle variant="ghost-dark" />
               <LanguageToggle variant="ghost-dark" />

@@ -1,6 +1,7 @@
 'use client';
 import { useMemo } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { Building2, BadgeCheck, AlertTriangle, MessageSquare, ArrowRight } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
@@ -52,6 +53,8 @@ function StatCard({ label, value, icon: Icon, tone = 'indigo' }: StatCardProps) 
 
 export default function SuperAdminDashboardPage() {
   const { t } = useT();
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? 'en';
   const { data: rows = [], isLoading } = useAllOrgsUsage();
   const { data: openTickets } = useSupportTickets({ status: 'OPEN' });
   const { enterTransferMode } = useTransferMode();
@@ -135,7 +138,7 @@ export default function SuperAdminDashboardPage() {
           >
             <ArrowRight className="h-3.5 w-3.5 mr-1" /> {t('superDash.enter')}
           </Button>
-          <Link href={`/superadmin/organizations/${r.organization.id}/edit`}>
+          <Link href={`/${locale}/superadmin/organizations/${r.organization.id}/edit`}>
             <Button size="sm" variant="ghost">{t('superDash.edit')}</Button>
           </Link>
         </div>

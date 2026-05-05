@@ -1,6 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { useAuditLogs } from '@/hooks/org';
+import { useTransferMode } from '@/hooks/ui';
+import { useAuth } from '@/hooks/ui';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { AuditLog } from '@/types';
@@ -36,11 +38,14 @@ function ChangesTable({ label, value }: { label: string; value: Record<string, u
 
 export default function OrgAuditLogsPage() {
   const { t } = useT();
+  const { user } = useAuth();
+  const { orgId: transferOrgId } = useTransferMode();
+  const orgId = user?.role === 'super_admin' ? (transferOrgId ?? undefined) : undefined;
   const [filters, setFilters] = useState({ userId: '', action: '', dateFrom: '', dateTo: '' });
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const { data, isLoading } = useAuditLogs({ ...filters, page, pageSize });
+  const { data, isLoading } = useAuditLogs({ ...filters, orgId, page, pageSize });
   const logs = data?.logs ?? [];
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 1;

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getOrganizationById } from '@/lib/db/organizations';
 import { getSuperAdminUserById } from '@/lib/db/superadmin-users';
+import { adminAuth } from '@/lib/firebase/admin';
 
 export async function GET() {
   try {
@@ -25,7 +26,17 @@ export async function GET() {
     if (org.assignedMemberId) {
       const member = await getSuperAdminUserById(org.assignedMemberId);
       if (member) {
-        accountManager = { id: member.id, name: member.displayName, email: member.email };
+        accountManager = { id: member.id, name: member.displayName ?? '', email: member.email };
+      } else {
+        // Fallback: member may exist only in Firebase Auth (synthetic member)
+        const authUser = await adminAuth.getUser(org.assignedMemberId).catch(() => null);
+        if (authUser) {
+          accountManager = {
+            id: authUser.uid,
+            name: authUser.displayName ?? '',
+            email: authUser.email ?? '',
+          };
+        }
       }
     }
 

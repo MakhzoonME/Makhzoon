@@ -102,7 +102,7 @@ export default function EditOrganizationPage({ params }: { params: { orgId: stri
         title="Edit Organization"
         description={`ID: ${org?.subdomain ?? '—'}`}
         breadcrumb={[
-          { label: 'Organizations', href: '/superadmin' },
+          { label: 'Organizations', href: `/${locale}/superadmin` },
           { label: 'Edit', href: '' },
         ]}
         actions={

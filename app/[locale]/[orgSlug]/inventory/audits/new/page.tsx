@@ -44,7 +44,7 @@ export default function NewAuditPage() {
     <div>
       <PageHeader
         title="Start Physical Audit"
-        breadcrumb={[{ label: 'Inventory', href: '/inventory' }, { label: 'Audits', href: '/inventory/audits' }, { label: 'New', href: '/inventory/audits/new' }]}
+        breadcrumb={[{ label: 'Inventory', href: `/${orgSlug}/inventory` }, { label: 'Audits', href: `/${orgSlug}/inventory/audits` }, { label: 'New', href: `/${orgSlug}/inventory/audits/new` }]}
       />
       <div className="max-w-lg">
         <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6 flex items-start gap-3">

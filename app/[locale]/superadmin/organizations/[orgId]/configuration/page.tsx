@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useT } from '@/hooks/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
@@ -42,6 +43,7 @@ type SimpleDialogState<T> =
 
 export default function OrgConfigurationPage({ params }: { params: { orgId: string } }) {
   const { orgId } = params;
+  const { locale } = useT();
   const qc = useQueryClient();
 
   const { data: org } = useQuery<Organization>({
@@ -103,7 +105,7 @@ export default function OrgConfigurationPage({ params }: { params: { orgId: stri
         title="Organization Configuration"
         description={org ? `Manage dropdown options for ${org.name}` : '—'}
         breadcrumb={[
-          { label: 'Organizations', href: '/superadmin' },
+          { label: 'Organizations', href: `/${locale}/superadmin` },
           { label: org?.name ?? 'Organization', href: `/superadmin/organizations/${orgId}/edit` },
           { label: 'Configuration', href: '' },
         ]}

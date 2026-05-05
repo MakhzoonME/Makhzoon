@@ -2,7 +2,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/ui';
+import { useOrgSlug, useT } from '@/hooks/ui';
 import { inventoryItemSchema, InventoryItemFormData, INVENTORY_UNITS } from '@/lib/validations/inventory.schema';
 import { InventoryItem } from '@/types';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -20,6 +20,7 @@ interface Props { item?: InventoryItem; onSuccess?: () => void; }
 export function InventoryItemForm({ item, onSuccess }: Props) {
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const { locale } = useT();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
   const { data: categories = [] } = useInventoryCategories();
@@ -63,7 +64,7 @@ export function InventoryItemForm({ item, onSuccess }: Props) {
       if (onSuccess) {
         onSuccess();
       } else {
-        router.push(`/${orgSlug}/inventory/${item?.id ?? result.id}`);
+        router.push(`/${locale}/${orgSlug}/inventory/${item?.id ?? result.id}`);
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong');

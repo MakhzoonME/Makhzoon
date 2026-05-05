@@ -56,7 +56,7 @@ export default function NewOrganizationPage() {
     <div>
       <PageHeader
         title="Create Organization"
-        breadcrumb={[{ label: 'Organizations', href: '/superadmin' }, { label: 'New', href: '' }]}
+        breadcrumb={[{ label: 'Organizations', href: `/${locale}/superadmin` }, { label: 'New', href: '' }]}
       />
       <div className="bg-surface-card rounded-lg border border-border p-6 max-w-lg">
         <Form {...form}>

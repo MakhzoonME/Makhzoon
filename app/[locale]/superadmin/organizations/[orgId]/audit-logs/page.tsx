@@ -1,4 +1,5 @@
 'use client';
+import { useT } from '@/hooks/ui';
 import { useState } from 'react';
 import { useAuditLogs } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -35,6 +36,7 @@ function ChangesTable({ label, value }: { label: string; value: Record<string, u
 
 export default function OrgAuditLogsPage({ params }: { params: { orgId: string } }) {
   const { orgId } = params;
+  const { locale } = useT();
   const [filters, setFilters] = useState({ userId: '', action: '', dateFrom: '', dateTo: '' });
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const { data, isLoading } = useAuditLogs({ ...filters, orgId });
@@ -88,7 +90,7 @@ export default function OrgAuditLogsPage({ params }: { params: { orgId: string }
       <PageHeader
         title="Organization Audit Logs"
         breadcrumb={[
-          { label: 'Organizations', href: '/superadmin' },
+          { label: 'Organizations', href: `/${locale}/superadmin` },
           { label: 'Audit Logs', href: '' },
         ]}
         actions={

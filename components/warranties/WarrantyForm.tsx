@@ -2,7 +2,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/ui';
+import { useOrgSlug, useT } from '@/hooks/ui';
 import { warrantySchema, WarrantyFormData } from '@/lib/validations/warranty.schema';
 import { Warranty } from '@/types';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -40,6 +40,7 @@ interface WarrantyFormProps { warranty?: Warranty; onSuccess?: () => void; defau
 export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFormProps) {
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const { locale } = useT();
   const searchParams = useSearchParams();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
@@ -149,7 +150,7 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
           All active assets already have a valid warranty. You can add a new warranty to an asset
           once its existing warranty expires or is deleted.
         </p>
-        <Button variant="outline" onClick={() => router.push(`/${orgSlug}/warranties`)}>
+        <Button variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/warranties`)}>
           Back to Warranties
         </Button>
       </div>

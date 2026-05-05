@@ -111,7 +111,7 @@ export default function InventoryItemDetailPage() {
     <div>
       <PageHeader
         title={item.name}
-        breadcrumb={[{ label: 'Inventory', href: '/inventory' }, { label: item.name, href: `/inventory/${itemId}` }]}
+        breadcrumb={[{ label: 'Inventory', href: `/${orgSlug}/inventory` }, { label: item.name, href: `/${orgSlug}/inventory/${itemId}` }]}
         actions={(
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={() => setReqOpen(true)}>

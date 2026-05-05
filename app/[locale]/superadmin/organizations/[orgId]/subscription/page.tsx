@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { useT } from '@/hooks/ui';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Trash2, Plus } from 'lucide-react';
@@ -45,6 +46,7 @@ function daysUntil(d: Date | string): number {
 export default function OrgSubscriptionPage({ params }: { params: { orgId: string } }) {
   const { orgId } = params;
   const router = useRouter();
+  const { locale } = useT();
   const qc = useQueryClient();
 
   const { data: sub, isLoading: subLoading } = useQuery<Subscription>({
@@ -212,7 +214,7 @@ export default function OrgSubscriptionPage({ params }: { params: { orgId: strin
       <PageHeader
         title="Subscription Management"
         breadcrumb={[
-          { label: 'Organizations', href: '/superadmin' },
+          { label: 'Organizations', href: `/${locale}/superadmin` },
           { label: 'Subscription', href: '' },
         ]}
         actions={<Button variant="outline" size="sm" onClick={() => router.back()}>Back</Button>}

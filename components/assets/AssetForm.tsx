@@ -2,7 +2,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/ui';
+import { useOrgSlug, useT } from '@/hooks/ui';
 import { assetSchema, AssetFormData } from '@/lib/validations/asset.schema';
 import { Asset } from '@/types';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -26,6 +26,7 @@ interface AssetFormProps {
 export function AssetForm({ asset, onSuccess }: AssetFormProps) {
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const { locale } = useT();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
   const { user } = useAuthStore();
@@ -87,7 +88,7 @@ export function AssetForm({ asset, onSuccess }: AssetFormProps) {
       if (onSuccess) {
         onSuccess();
       } else {
-        router.push(`/${orgSlug}/assets/${asset?.id ?? result.id}`);
+        router.push(`/${locale}/${orgSlug}/assets/${asset?.id ?? result.id}`);
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong');

@@ -8,6 +8,7 @@ export interface Warranty {
   endDate: Date;
   reminder: boolean;
   notes?: string;
+  receiptUrl?: string;
   createdAt: Date;
   createdBy: string;
   updatedAt: Date;

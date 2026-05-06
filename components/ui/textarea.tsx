@@ -1,20 +1,32 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils/cn';
 
-export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
+/* DS spec: rounded-md (8px), border-border, bg-surface-card, min-h 64px
+   focus: border-primary-600, ring 3px */
 
-const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, ...props }, ref) => {
-  return (
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  error?: boolean;
+}
+
+const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className, error, ...props }, ref) => (
     <textarea
       className={cn(
-        'flex min-h-[80px] w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-xs placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-transparent disabled:cursor-not-allowed disabled:opacity-50',
+        'flex min-h-[64px] w-full rounded-md border bg-surface-card px-3 py-2 text-[14px] text-gray-900 shadow-xs',
+        'transition-colors placeholder:text-gray-400 leading-[1.6]',
+        'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-500/20 focus-visible:border-primary-600',
+        'hover:border-border-strong',
+        'disabled:cursor-not-allowed disabled:opacity-50',
+        error
+          ? 'border-red-500 bg-red-50 focus-visible:ring-red-500/20 focus-visible:border-red-500'
+          : 'border-border',
         className
       )}
       ref={ref}
       {...props}
     />
-  );
-});
+  )
+);
 Textarea.displayName = 'Textarea';
 
 export { Textarea };

@@ -8,7 +8,8 @@ async function handleUnauthorized() {
   try { sessionStorage.setItem('auth.session_expired', '1'); } catch { /* ignore */ }
   try { await signOut(auth); } catch { /* ignore */ }
   await fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
-  window.location.href = '/login';
+  const locale = typeof localStorage !== 'undefined' ? (() => { try { const l = JSON.parse(localStorage.getItem('makhzoon-locale') || ''); return l?.state?.locale; } catch { return null; } })() : null;
+  window.location.href = `/${locale ?? 'en'}/login`;
 }
 
 function isUnauthorizedError(error: unknown): boolean {

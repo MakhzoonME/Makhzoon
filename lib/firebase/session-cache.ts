@@ -61,3 +61,16 @@ export function setCachedPermissions(uid: string, permissions: UserPermissions |
 export function invalidateCachedPermissions(uid: string): void {
   permissionsCache.delete(uid);
 }
+
+/**
+ * Invalidate ALL cached sessions for a specific user.
+ * Used when a user's role or permissions change so the
+ * next request re-verifies the ID token and fetches fresh data.
+ */
+export function invalidateCachedSessionsForUser(uid: string): void {
+  for (const [token, entry] of cache.entries()) {
+    if (entry.decoded.uid === uid) {
+      cache.delete(token);
+    }
+  }
+}

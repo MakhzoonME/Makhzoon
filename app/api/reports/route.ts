@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getReportsForOrg } from '@/lib/firestore/reports';
+import { getReportsForOrg } from '@/lib/db/reports';
 
 export async function GET() {
   try {

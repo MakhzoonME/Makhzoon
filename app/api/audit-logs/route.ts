@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getAuditLogs } from '@/lib/firestore/audit-logs';
+import { getAuditLogs } from '@/lib/db/audit-logs';
 import { adminDb } from '@/lib/firebase/admin';
 import { AuditLog } from '@/types';
 
@@ -106,9 +106,10 @@ export async function GET(req: NextRequest) {
     const action = searchParams.get('action') ?? undefined;
     const dateFrom = searchParams.get('dateFrom') ?? undefined;
     const dateTo = searchParams.get('dateTo') ?? undefined;
-    const cursor = searchParams.get('cursor') ?? undefined;
+    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined;
+    const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined;
 
-    const result = await getAuditLogs({ orgId, userId, action, dateFrom, dateTo, cursor });
+    const result = await getAuditLogs({ orgId, userId, action, dateFrom, dateTo, page, pageSize });
     const enriched = await enrichLogs(result.logs);
     return NextResponse.json({ ...result, logs: enriched });
   } catch (err) {

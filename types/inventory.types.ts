@@ -17,6 +17,10 @@ export interface InventoryItem {
   unitCost?: number;
   notes?: string;
   stockStatus: StockStatus;
+  posEnabled?: boolean;
+  barcode?: string | null;
+  taxRateId?: string | null;
+  posPrice?: number | null;
   createdAt: Date;
   createdBy: string;
   createdByEmail?: string;

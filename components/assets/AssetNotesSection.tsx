@@ -1,11 +1,11 @@
 'use client';
 import { useState } from 'react';
-import { useAssetNotes, useCreateAssetNote, useDeleteAssetNote } from '@/hooks/useAssetNotes';
+import { useAssetNotes, useCreateAssetNote, useDeleteAssetNote } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDistanceToNow } from 'date-fns';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 
 function Trash2SVG() {
   return (
@@ -54,14 +54,14 @@ export function AssetNotesSection({ assetId }: { assetId: string }) {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-2">
+    <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
+      <div className="px-5 py-4 border-b border-border flex items-center gap-2">
         <MessageSquareSVG />
         <h2 className="text-sm font-semibold text-gray-900">Notes</h2>
         <span className="text-xs text-gray-400 ml-auto">{notes.length} total</span>
       </div>
 
-      <form onSubmit={handleSubmit} className="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+      <form onSubmit={handleSubmit} className="px-5 py-4 border-b border-border bg-surface-page/50">
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -80,13 +80,13 @@ export function AssetNotesSection({ assetId }: { assetId: string }) {
         {isLoading ? (
           <div className="p-5 space-y-3">
             {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="h-12 rounded-md bg-gray-100 animate-pulse" />
+              <div key={i} className="h-12 rounded-md bg-surface-page animate-pulse" />
             ))}
           </div>
         ) : notes.length === 0 ? (
           <p className="px-5 py-6 text-sm text-gray-400 text-center">No notes yet.</p>
         ) : (
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-border">
             {notes.map((note) => {
               const canDelete = isAdmin || note.createdBy === user?.uid;
               const timeAgo = note.createdAt

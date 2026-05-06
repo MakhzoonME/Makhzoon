@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getSubscriptionByOrg } from '@/lib/firestore/subscriptions';
+import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
 import { adminDb } from '@/lib/firebase/admin';
 
 export async function GET() {

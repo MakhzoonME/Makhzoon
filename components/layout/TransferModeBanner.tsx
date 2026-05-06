@@ -1,6 +1,6 @@
 'use client';
 import { useTransferStore } from '@/store/transfer.store';
-import { useTransferMode } from '@/hooks/useTransferMode';
+import { useTransferMode } from '@/hooks/ui';
 import { useUiStore } from '@/store/ui.store';
 import { SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from '@/components/layout/AppSidebar';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,7 @@ export function TransferModeBanner() {
     >
       <AlertTriangleSVG />
       <p className="text-sm text-amber-800 flex-1">
-        You are acting as Admin of: <span className="font-semibold">{orgName}</span>
+        You are acting as owner of: <span className="font-semibold">{orgName}</span>
       </p>
       <Button size="sm" variant="outline" className="border-amber-300 text-amber-800 hover:bg-amber-100" onClick={exitTransferMode}>
         Exit Transfer Mode

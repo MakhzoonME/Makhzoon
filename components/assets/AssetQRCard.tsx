@@ -83,17 +83,17 @@ export function AssetQRCard({ assetId, assetName }: { assetId: string; assetName
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-2">
+    <div className="bg-surface-card rounded-xl border border-border overflow-hidden">
+      <div className="px-5 py-4 border-b border-border flex items-center gap-2">
         <QrCodeSVG />
         <h2 className="text-sm font-semibold text-gray-900">QR label</h2>
       </div>
       <div className="px-5 py-4 flex flex-col items-center">
         {isLoading || !data ? (
-          <div className="h-40 w-40 bg-gray-100 rounded-lg animate-pulse" />
+          <div className="h-40 w-40 bg-surface-page rounded-lg animate-pulse" />
         ) : (
           <>
-            <div className="p-3 bg-white border border-gray-200 rounded-xl">
+            <div className="p-3 bg-surface-card border border-border rounded-xl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={data.dataUrl} alt={`QR code for ${assetName}`} className="h-36 w-36" />
             </div>

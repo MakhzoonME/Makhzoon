@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 import { Warranty } from '@/types';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -59,7 +59,7 @@ export function RequestActionPanel({ assetId, warranties }: RequestActionPanelPr
 
   return (
     <>
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="bg-surface-card rounded-lg border border-border p-4">
         <h2 className="text-sm font-semibold text-gray-900 mb-3">REQUEST ACTIONS</h2>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => openModal('REFILL')}>Request Refill</Button>
@@ -76,7 +76,7 @@ export function RequestActionPanel({ assetId, warranties }: RequestActionPanelPr
           <DialogHeader>
             <DialogTitle>{openType ? typeLabel[openType] : ''}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 px-6 pt-4 pb-2">
             {openType === 'EXTEND_WARRANTY' && warranties.length > 0 && (
               <div className="space-y-1.5">
                 <Label>Warranty</Label>

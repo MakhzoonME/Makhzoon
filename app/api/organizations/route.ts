@@ -4,13 +4,14 @@ import {
   getOrganizationsWithSearch,
   createOrganization,
   subdomainExists,
-} from '@/lib/firestore/organizations';
-import { createSubscription } from '@/lib/firestore/subscriptions';
-import { createInvite, generateInviteToken } from '@/lib/firestore/invites';
-import { writeAuditLog } from '@/lib/audit/logger';
+} from '@/lib/db/organizations';
+import { createSubscription } from '@/lib/db/subscriptions';
+import { createInvite, generateInviteToken } from '@/lib/db/invites';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { organizationSchema } from '@/lib/validations/organization.schema';
 import { sendEmail } from '@/lib/email/resend';
 import { inviteEmail } from '@/lib/email/templates';
+import { logError } from '@/lib/logging/safe-error';
 
 
 export async function GET(req: NextRequest) {
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
     const orgs = await getOrganizationsWithSearch({ search, category });
     return NextResponse.json(orgs);
   } catch (err) {
-    console.error('[GET /api/organizations]', err);
+    logError('[GET /api/organizations]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     const data = parsed.data;
     const exists = await subdomainExists(data.subdomain);
-    if (exists) return NextResponse.json({ error: 'Subdomain already taken' }, { status: 409 });
+    if (exists) return NextResponse.json({ error: 'Workspace ID already taken' }, { status: 409 });
 
     const orgId = await createOrganization({
       name: data.name,
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
       description: data.description ?? null,
       category: data.category ?? null,
       packageDetails: data.packageDetails,
+      assignedMemberId: null,
       createdBy: user.uid,
       updatedBy: user.uid,
     });
@@ -59,7 +61,7 @@ export async function POST(req: NextRequest) {
     await createSubscription({
       organizationId: orgId,
       packageId: null,
-      features: {},
+      features: { pos: false },
       notes: data.packageDetails ?? null,
       packageDetails: { notes: data.packageDetails ?? '' },
       startDate: new Date(data.subscriptionStartDate),
@@ -69,7 +71,7 @@ export async function POST(req: NextRequest) {
       updatedBy: user.uid,
     });
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: orgId,
       userId: user.uid,
       role: user.role,
@@ -116,7 +118,7 @@ export async function POST(req: NextRequest) {
           if (process.env.NODE_ENV !== 'production') console.warn('[org-create] Owner invite email failed:', err);
         });
 
-        await writeAuditLog({
+        queueAuditLog({
           organizationId: orgId,
           userId: user.uid,
           role: user.role,
@@ -132,7 +134,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ id: orgId }, { status: 201 });
   } catch (err) {
-    console.error('[POST /api/organizations]', err);
+    logError('[POST /api/organizations]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -4,10 +4,15 @@ import {
   getSupportTickets,
   getAllSupportTickets,
   createSupportTicket,
-} from '@/lib/firestore/support-tickets';
-import { writeAuditLog } from '@/lib/audit/logger';
+} from '@/lib/db/support-tickets';
+import { getOrganizationById } from '@/lib/db/organizations';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { supportTicketCreateSchema } from '@/lib/validations/support-ticket.schema';
 import { TicketStatus, TicketPriority } from '@/types';
+import { sendEmail } from '@/lib/email/resend';
+import { supportTicketNotificationEmail } from '@/lib/email/templates';
+
+const SUPPORT_EMAILS = ['info@makhzoon.me', 'support@makhzoon.me'];
 
 export async function GET(req: NextRequest) {
   try {
@@ -18,19 +23,23 @@ export async function GET(req: NextRequest) {
     const status = (searchParams.get('status') ?? undefined) as TicketStatus | undefined;
     const priority = (searchParams.get('priority') ?? undefined) as TicketPriority | undefined;
     const orgIdFilter = searchParams.get('orgId') ?? undefined;
+    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined;
+    const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined;
+    const sortBy = searchParams.get('sortBy') ?? undefined;
+    const sortDir = searchParams.get('sortDir') === 'asc' ? 'asc' as const : 'desc' as const;
 
     if (user.role === 'super_admin') {
       if (orgIdFilter) {
-        const tickets = await getSupportTickets(orgIdFilter, status ? { status } : undefined);
-        return NextResponse.json(tickets);
+        const result = await getSupportTickets(orgIdFilter, { status, page, pageSize, sortBy, sortDir });
+        return NextResponse.json(result);
       }
-      const tickets = await getAllSupportTickets({ status, priority });
-      return NextResponse.json(tickets);
+      const result = await getAllSupportTickets({ status, priority, page, pageSize, sortBy, sortDir });
+      return NextResponse.json(result);
     }
 
     if (!user.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    const tickets = await getSupportTickets(user.organizationId, status ? { status } : undefined);
-    return NextResponse.json(tickets);
+    const result = await getSupportTickets(user.organizationId, { status, page, pageSize, sortBy, sortDir });
+    return NextResponse.json(result);
   } catch (err) {
     console.error('[GET /api/support]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -49,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     const ticket = await createSupportTicket(user.organizationId, user.uid, parsed.data);
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: user.organizationId,
       userId: user.uid,
       role: user.role,
@@ -58,6 +67,29 @@ export async function POST(req: NextRequest) {
       recordId: ticket.id,
       newValue: { subject: parsed.data.subject },
     });
+
+    // Send notification email asynchronously — don't block the response
+    (async () => {
+      try {
+        const org = await getOrganizationById(user.organizationId!);
+        const { html, text } = supportTicketNotificationEmail({
+          orgName: org?.name ?? user.organizationId!,
+          subject: parsed.data.subject,
+          description: parsed.data.description,
+          priority: parsed.data.priority ?? 'MEDIUM',
+          createdBy: user.email ?? user.uid,
+          ticketId: ticket.id,
+        });
+        await sendEmail({
+          to: SUPPORT_EMAILS,
+          subject: `[Support] ${parsed.data.subject} — ${org?.name ?? user.organizationId}`,
+          html,
+          text,
+        });
+      } catch (emailErr) {
+        console.error('[POST /api/support] email notification failed:', emailErr);
+      }
+    })();
 
     return NextResponse.json(ticket, { status: 201 });
   } catch (err) {

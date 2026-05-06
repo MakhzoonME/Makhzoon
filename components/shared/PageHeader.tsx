@@ -40,8 +40,8 @@ export function PageHeader({ title, description, actions, breadcrumb }: PageHead
             ))}
           </nav>
         )}
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{title}</h1>
-        {description && <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>}
+        <h1 className="t-h1 text-gray-900">{title}</h1>
+        {description && <p className="t-body muted">{description}</p>}
       </div>
       {actions && (
         <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>

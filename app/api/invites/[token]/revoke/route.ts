@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getInviteByToken, revokeInvite } from '@/lib/firestore/invites';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { getInviteByToken, revokeInvite } from '@/lib/db/invites';
+import { queueAuditLog } from '@/lib/audit/logger';
 
 export async function POST(_req: NextRequest, { params }: { params: { token: string } }) {
   try {
@@ -20,7 +20,7 @@ export async function POST(_req: NextRequest, { params }: { params: { token: str
 
     await revokeInvite(invite.id, user.uid);
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: user.organizationId,
       userId: user.uid,
       role: user.role,

@@ -44,6 +44,23 @@ export interface AuditLogsPermissions {
   view: boolean;
 }
 
+export interface PosPermissions {
+  open_session: boolean;
+  close_session: boolean;
+  process_sale: boolean;
+  apply_discount: boolean;
+  issue_refund: boolean;
+  void_transaction: boolean;
+  view_reports: boolean;
+}
+
+export interface SettingsPermissions {
+  view: boolean;
+  orgInfo: boolean;
+  subscription: boolean;
+  users: boolean;
+}
+
 export interface UserPermissions {
   assets: AssetPermissions;
   inventory: InventoryPermissions;
@@ -52,6 +69,8 @@ export interface UserPermissions {
   reports: ReportsPermissions;
   support: SupportPermissions;
   auditLogs: AuditLogsPermissions;
+  pos?: PosPermissions;
+  settings: SettingsPermissions;
 }
 
 export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
@@ -62,6 +81,7 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   reports:   { view: true  },
   support:   { view: true,  create: true  },
   auditLogs: { view: true  },
+  settings:  { view: true,  orgInfo: true,  subscription: true,  users: true  },
 };
 
 export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
@@ -72,6 +92,7 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   reports:   { view: false },
   support:   { view: true,  create: true },
   auditLogs: { view: false },
+  settings:  { view: false, orgInfo: false, subscription: false, users: false },
 };
 
 export interface ModuleOperationConfig {
@@ -160,6 +181,29 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     featureKey: 'auditLogs',
     operations: [
       { key: 'view', label: 'View Audit Logs' },
+    ],
+  },
+  {
+    key: 'pos',
+    label: 'Point of Sale',
+    featureKey: 'pos',
+    operations: [
+      { key: 'open_session',      label: 'Open Session' },
+      { key: 'close_session',     label: 'Close Session' },
+      { key: 'process_sale',      label: 'Process Sales' },
+      { key: 'apply_discount',    label: 'Apply Discounts', requiresView: true },
+      { key: 'issue_refund',      label: 'Issue Refunds', requiresView: true },
+      { key: 'void_transaction',  label: 'Void Transactions', requiresView: true },
+      { key: 'view_reports',      label: 'View Reports' },
+    ],
+  },
+  {
+    key: 'settings',
+    label: 'Settings',
+    operations: [
+      { key: 'orgInfo',      label: 'Organization Info', requiresView: true },
+      { key: 'subscription', label: 'Subscription',      requiresView: true },
+      { key: 'users',        label: 'Users',             requiresView: true },
     ],
   },
 ];

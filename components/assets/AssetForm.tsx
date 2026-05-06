@@ -2,7 +2,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/useOrgSlug';
+import { useOrgSlug, useT } from '@/hooks/ui';
 import { assetSchema, AssetFormData } from '@/lib/validations/asset.schema';
 import { Asset } from '@/types';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -11,11 +11,11 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useAssetCategories } from '@/hooks/useAssets';
-import { useOrgConfig } from '@/hooks/useOrgConfig';
+import { useAssetCategories } from '@/hooks/assets';
+import { useOrgConfig } from '@/hooks/org';
 import { useAuthStore } from '@/store/auth.store';
 
 interface AssetFormProps {
@@ -26,6 +26,7 @@ interface AssetFormProps {
 export function AssetForm({ asset, onSuccess }: AssetFormProps) {
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const { locale } = useT();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
   const { user } = useAuthStore();
@@ -53,6 +54,7 @@ export function AssetForm({ asset, onSuccess }: AssetFormProps) {
       assignedTo: asset?.assignedTo ?? '',
       location: asset?.location ?? '',
       notes: asset?.notes ?? '',
+      receiptUrl: asset?.receiptUrl ?? '',
     },
   });
 
@@ -81,11 +83,12 @@ export function AssetForm({ asset, onSuccess }: AssetFormProps) {
       toast.success(asset ? 'Asset updated' : 'Asset added successfully');
 
       qc.invalidateQueries({ queryKey: ['assets'] });
+      if (asset?.id) qc.invalidateQueries({ queryKey: ['assets', asset.id] });
 
       if (onSuccess) {
         onSuccess();
       } else {
-        router.push(`/${orgSlug}/assets/${asset?.id ?? result.id}`);
+        router.push(`/${locale}/${orgSlug}/assets/${asset?.id ?? result.id}`);
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong');
@@ -185,6 +188,14 @@ export function AssetForm({ asset, onSuccess }: AssetFormProps) {
           <FormItem>
             <FormLabel>Notes</FormLabel>
             <FormControl><Textarea {...field} rows={4} placeholder="Additional notes..." /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={form.control} name="receiptUrl" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Receipt URL</FormLabel>
+            <FormControl><Input {...field} placeholder="https://example.com/receipt.pdf" /></FormControl>
             <FormMessage />
           </FormItem>
         )} />

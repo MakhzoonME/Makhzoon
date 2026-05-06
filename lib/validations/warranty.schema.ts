@@ -7,6 +7,7 @@ export const warrantySchema = z.object({
   endDate: z.string().min(1, 'End date is required'),
   reminder: z.boolean().default(true),
   notes: z.string().optional(),
+  receiptUrl: z.string().optional(),
 }).refine((data) => {
   if (data.startDate && data.endDate) {
     return new Date(data.endDate) >= new Date(data.startDate);

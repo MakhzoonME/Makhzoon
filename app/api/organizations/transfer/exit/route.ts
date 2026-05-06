@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 
 export async function POST() {
   try {
@@ -9,12 +9,13 @@ export async function POST() {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (user.role !== 'super_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const exitingOrgId = cookieStore.get('transferOrgId')?.value ?? null;
-    cookieStore.set('transferOrgId', '', { maxAge: 0, path: '/' });
+    const isSecure = process.env.NODE_ENV !== 'development';
+    cookieStore.set('transferOrgId', '', { maxAge: 0, path: '/', httpOnly: true, secure: isSecure, sameSite: 'strict' });
 
     if (exitingOrgId) {
-      await writeAuditLog({
+      queueAuditLog({
         organizationId: exitingOrgId,
         userId: user.uid,
         role: user.role,

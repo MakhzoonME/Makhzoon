@@ -1,14 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase/admin';
-import { createOrganization, subdomainExists } from '@/lib/firestore/organizations';
-import { createSubscription } from '@/lib/firestore/subscriptions';
-import { createUser } from '@/lib/firestore/users';
+import { createOrganization, subdomainExists } from '@/lib/db/organizations';
+import { createSubscription } from '@/lib/db/subscriptions';
+import { createUser } from '@/lib/db/users';
 import { selfServeSignupSchema } from '@/lib/validations/signup.schema';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 const TRIAL_DAYS = 14;
 
 export async function POST(req: NextRequest) {
+  // SECURITY: Rate limit signup (3 orgs per IP per 24 hours)
+  const clientIp = getClientIp(req);
+  const rateLimitResult = checkRateLimit(
+    `signup:${clientIp}`,
+    3,
+    24 * 60 * 60 * 1000,
+    { action: 'create new organizations' }
+  );
+  if (rateLimitResult) return rateLimitResult;
+
   const body = await req.json().catch(() => null);
   const parsed = selfServeSignupSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
@@ -20,7 +31,7 @@ export async function POST(req: NextRequest) {
   if (existingAuth) return NextResponse.json({ error: 'An account already exists for this email' }, { status: 409 });
 
   if (await subdomainExists(normalizedSub)) {
-    return NextResponse.json({ error: 'That subdomain is already taken' }, { status: 409 });
+    return NextResponse.json({ error: 'That workspace ID is already taken' }, { status: 409 });
   }
 
   const newUser = await adminAuth.createUser({
@@ -39,6 +50,7 @@ export async function POST(req: NextRequest) {
       description: null,
       category: null,
       packageDetails: 'trial',
+      assignedMemberId: null,
       createdBy: newUser.uid,
       updatedBy: newUser.uid,
     });
@@ -67,7 +79,7 @@ export async function POST(req: NextRequest) {
   await createSubscription({
     organizationId,
     packageId: null,
-    features: {},
+    features: { pos: false },
     notes: null,
     packageDetails: { tier: 'trial', trialDays: TRIAL_DAYS },
     startDate: now,
@@ -77,7 +89,7 @@ export async function POST(req: NextRequest) {
     updatedBy: newUser.uid,
   });
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId,
     userId: newUser.uid,
     role: 'admin',

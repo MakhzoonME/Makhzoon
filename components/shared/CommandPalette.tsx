@@ -1,10 +1,11 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Command } from 'cmdk';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { useAssets } from '@/hooks/useAssets';
+import { useAssets } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
+import { useOrgSlug } from '@/hooks/ui';
 import { Asset } from '@/types';
 import { cn } from '@/lib/utils/cn';
 
@@ -40,9 +41,12 @@ const ACTIONS = [
 
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const router = useRouter();
+  const orgSlug = useOrgSlug();
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? 'en';
   const { user } = useAuthStore();
   const [search, setSearch] = useState('');
-  const { data: assetsData } = useAssets();
+  const { data: assetsData } = useAssets({ pageSize: 1000 });
   const assets = assetsData?.items ?? [];
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
@@ -51,9 +55,9 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     if (!open) setSearch('');
   }, [open]);
 
-  function go(href: string) {
+  function go(path: string) {
     onOpenChange(false);
-    router.push(href);
+    router.push(`/${locale}/${orgSlug}${path}`);
   }
 
   return (
@@ -61,24 +65,24 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
-          className="fixed left-1/2 top-[20%] z-50 w-full max-w-xl -translate-x-1/2 rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+          className="fixed left-1/2 top-[20%] z-50 w-full max-w-xl -translate-x-1/2 rounded-xl border border-border bg-surface-card shadow-lg overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
           aria-describedby={undefined}
         >
           <DialogPrimitive.Title className="sr-only">Command palette</DialogPrimitive.Title>
           <Command shouldFilter className="flex flex-col">
-            <div className="flex items-center gap-2 border-b border-gray-200 px-4">
+            <div className="flex items-center gap-2 border-b border-border px-4">
               <SearchSVG />
               <Command.Input
                 value={search}
                 onValueChange={setSearch}
                 placeholder="Search pages, assets, actions…"
-                className="flex-1 h-12 bg-transparent text-sm outline-none placeholder:text-gray-400"
+                className="flex-1 h-12 bg-transparent text-[14px] text-gray-900 outline-none placeholder:text-gray-400"
               />
-              <kbd className="hidden sm:inline-flex h-5 items-center rounded border border-gray-200 bg-gray-50 px-1.5 text-[10px] font-mono text-gray-400">ESC</kbd>
+              <kbd className="hidden sm:inline-flex h-5 items-center rounded border border-border bg-surface-page px-1.5 text-[10px] font-mono text-gray-500">ESC</kbd>
             </div>
 
             <Command.List className="max-h-80 overflow-y-auto py-2">
-              <Command.Empty className="px-4 py-6 text-sm text-gray-400 text-center">No results.</Command.Empty>
+              <Command.Empty className="px-4 py-6 text-[14px] text-gray-500 text-center">No results.</Command.Empty>
 
               <Command.Group heading="Navigation" className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:text-gray-400">
                 {NAV_GROUPS.map((item) => (
@@ -99,14 +103,14 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
 
               {assets.length > 0 && (
                 <Command.Group heading="Assets" className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:text-gray-400">
-                  {assets.slice(0, 20).map((asset: Asset) => (
+                  {assets.slice(0, 50).map((asset: Asset) => (
                     <Command.Item
                       key={asset.id}
                       value={`${asset.name} ${asset.category} ${asset.serialNumber ?? ''}`}
                       onSelect={() => go(`/assets/${asset.id}`)}
                       className={cn(
                         'flex items-center gap-2 px-3 py-2 mx-2 rounded-md text-sm cursor-pointer',
-                        'data-[selected=true]:bg-indigo-50 data-[selected=true]:text-indigo-700'
+                        'data-[selected=true]:bg-primary-50 data-[selected=true]:text-primary-700'
                       )}
                     >
                       <PackageSVG />
@@ -130,8 +134,8 @@ function PaletteItem({ onSelect, icon: Icon, label }: { onSelect: () => void; ic
       value={label}
       onSelect={onSelect}
       className={cn(
-        'flex items-center gap-2 px-3 py-2 mx-2 rounded-md text-sm cursor-pointer',
-        'data-[selected=true]:bg-indigo-50 data-[selected=true]:text-indigo-700'
+        'flex items-center gap-2 px-3 py-2 mx-2 rounded-md text-[14px] text-gray-700 cursor-pointer',
+        'data-[selected=true]:bg-primary-100/60 data-[selected=true]:text-primary-700'
       )}
     >
       <Icon />

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/email/resend';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { checkOrigin } from '@/lib/csrf';
 
 const notifyHtml = (email: string) => `
 <!DOCTYPE html>
@@ -51,12 +53,35 @@ const confirmHtml = (email: string) => `
 </html>`;
 
 export async function POST(req: NextRequest) {
+  // SECURITY: Rate limit early access (5 per IP per day, 1 per email per week)
+  const clientIp = getClientIp(req);
+  const rateLimitIp = checkRateLimit(
+    `early-access:ip:${clientIp}`,
+    5,
+    24 * 60 * 60 * 1000,
+    { action: 'request early access' }
+  );
+  if (rateLimitIp) return rateLimitIp;
+
+  // SECURITY: Validate origin to prevent CSRF
+  const originCheck = checkOrigin(req);
+  if (originCheck) return originCheck;
+
   const body = await req.json().catch(() => null);
   const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ error: 'Invalid email' }, { status: 422 });
   }
+
+  // Rate limit by email as well
+  const rateLimitEmail = checkRateLimit(
+    `early-access:email:${email}`,
+    1,
+    7 * 24 * 60 * 60 * 1000,
+    { errorMessage: 'You have already requested early access from this email. Please check your inbox for updates.' }
+  );
+  if (rateLimitEmail) return rateLimitEmail;
 
   await Promise.all([
     sendEmail({

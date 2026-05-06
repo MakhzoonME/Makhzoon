@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getInventoryAuditById, getAuditItems, completeAudit } from '@/lib/firestore/inventory-audits';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { getInventoryAuditById, getAuditItems, completeAudit } from '@/lib/db/inventory-audits';
+import { queueAuditLog } from '@/lib/audit/logger';
 
 interface Params { params: { auditId: string } }
 
@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const body = await req.json();
     if (body.action === 'complete') {
       await completeAudit(params.auditId);
-      await writeAuditLog({
+      queueAuditLog({
         organizationId: user.organizationId!,
         userId: user.uid,
         role: user.role,

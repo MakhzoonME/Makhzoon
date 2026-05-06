@@ -2,14 +2,22 @@
 import { useEffect } from 'react';
 import { useLocaleStore } from '@/store/locale.store';
 
-export function LocaleProvider({ children }: { children: React.ReactNode }) {
-  const { locale } = useLocaleStore();
+export function LocaleProvider({
+  children,
+  locale,
+  dir,
+}: {
+  children: React.ReactNode;
+  locale: string;
+  dir: 'rtl' | 'ltr';
+}) {
+  const { setLocale } = useLocaleStore();
 
   useEffect(() => {
-    const dir = locale === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = locale;
-    document.documentElement.dir  = dir;
-  }, [locale]);
+    document.documentElement.dir = dir;
+    setLocale(locale as 'en' | 'ar');
+  }, [locale, dir, setLocale]);
 
   return <>{children}</>;
 }

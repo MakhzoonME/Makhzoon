@@ -1,12 +1,12 @@
 'use client';
 import { useState } from 'react';
-import { useCheckouts, useCheckoutAsset, useReturnAsset } from '@/hooks/useCheckouts';
+import { useCheckouts, useCheckoutAsset, useReturnAsset } from '@/hooks/assets';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { DatePicker } from '@/components/ui/date-picker';
 import { formatDate } from '@/lib/utils/date';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 
 function ArrowUpRightSVG() {
   return (
@@ -85,8 +85,8 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-2">
+    <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
+      <div className="px-5 py-4 border-b border-border flex items-center gap-2">
         <UserCheckSVG />
         <h2 className="text-sm font-semibold text-gray-900">Checkout</h2>
         {active && (
@@ -97,7 +97,7 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
       </div>
 
       {isLoading ? (
-        <div className="p-5"><div className="h-16 rounded-md bg-gray-100 animate-pulse" /></div>
+        <div className="p-5"><div className="h-16 rounded-md bg-surface-page animate-pulse" /></div>
       ) : active ? (
         <div className="px-5 py-4">
           <p className="text-sm text-gray-900">
@@ -155,7 +155,7 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
       )}
 
       {history.length > 0 && (
-        <div className="border-t border-gray-100 px-5 py-3">
+        <div className="border-t border-border px-5 py-3">
           <div className="flex items-center gap-1.5 mb-2">
             <HistorySVG />
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Recent history</p>

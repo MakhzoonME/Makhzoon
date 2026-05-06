@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getAuditLogs } from '@/lib/firestore/audit-logs';
+import { getAuditLogs } from '@/lib/db/audit-logs';
 
 function csvEscape(v: unknown): string {
   if (v === null || v === undefined) return '';
@@ -22,18 +22,17 @@ export async function GET(req: NextRequest) {
     const dateFrom = searchParams.get('dateFrom') ?? undefined;
     const dateTo = searchParams.get('dateTo') ?? undefined;
 
-    // Page through to collect all matching rows. Cap to avoid runaway exports.
     const HARD_CAP = 5000;
-    const PAGE = 500;
+    const PAGE_SIZE = 500;
     const rows: string[] = [];
-    rows.push(['timestamp', 'organizationId', 'userId', 'role', 'action', 'module', 'recordId', 'oldValue', 'newValue']
-      .join(','));
+    rows.push(['timestamp', 'organizationId', 'userId', 'role', 'action', 'module', 'recordId', 'oldValue', 'newValue'].join(','));
 
-    let cursor: string | undefined;
-    let total = 0;
-    while (total < HARD_CAP) {
-      const { logs, nextCursor } = await getAuditLogs({
-        orgId, userId, action, dateFrom, dateTo, limit: PAGE, cursor,
+    let page = 1;
+    let fetched = 0;
+
+    while (fetched < HARD_CAP) {
+      const { logs, totalPages } = await getAuditLogs({
+        orgId, userId, action, dateFrom, dateTo, page, pageSize: PAGE_SIZE,
       });
       for (const l of logs) {
         rows.push([
@@ -47,11 +46,11 @@ export async function GET(req: NextRequest) {
           l.oldValue,
           l.newValue,
         ].map(csvEscape).join(','));
-        total += 1;
-        if (total >= HARD_CAP) break;
+        fetched += 1;
+        if (fetched >= HARD_CAP) break;
       }
-      if (!nextCursor) break;
-      cursor = nextCursor;
+      if (page >= totalPages || logs.length === 0) break;
+      page += 1;
     }
 
     return new NextResponse(rows.join('\n'), {

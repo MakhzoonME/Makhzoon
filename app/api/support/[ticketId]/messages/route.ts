@@ -6,9 +6,14 @@ import {
   addTicketMessage,
   addTicketMessageAny,
   getSupportTicketByIdAny,
-} from '@/lib/firestore/support-tickets';
-import { writeAuditLog } from '@/lib/audit/logger';
+} from '@/lib/db/support-tickets';
+import { getOrganizationById } from '@/lib/db/organizations';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { ticketMessageSchema } from '@/lib/validations/support-ticket.schema';
+import { sendEmail } from '@/lib/email/resend';
+import { supportTicketReplyEmail } from '@/lib/email/templates';
+
+const SUPPORT_EMAILS = ['info@makhzoon.me', 'support@makhzoon.me'];
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ ticketId: string }> }) {
   try {
@@ -55,7 +60,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tic
         parsed.data.body,
       );
 
-      await writeAuditLog({
+      queueAuditLog({
         organizationId: ticket.organizationId,
         userId: user.uid,
         role: user.role,
@@ -63,6 +68,29 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tic
         module: 'support',
         recordId: ticketId,
       });
+
+      (async () => {
+        try {
+          const org = await getOrganizationById(ticket.organizationId);
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? '';
+          const { html, text } = supportTicketReplyEmail({
+            orgName: org?.name ?? ticket.organizationId,
+            subject: ticket.subject,
+            ticketId,
+            authorName: user.displayName || user.email || 'Makhzoon Team',
+            message: parsed.data.body,
+            ticketUrl: `${baseUrl}/superadmin/support/${ticketId}`,
+          });
+          await sendEmail({
+            to: SUPPORT_EMAILS,
+            subject: `[Support Reply] ${ticket.subject} — ${org?.name ?? ticket.organizationId}`,
+            html,
+            text,
+          });
+        } catch (emailErr) {
+          console.error('[POST /api/support/[ticketId]/messages] email notification failed:', emailErr);
+        }
+      })();
 
       return NextResponse.json(message, { status: 201 });
     }
@@ -78,7 +106,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tic
       parsed.data.body,
     );
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: user.organizationId,
       userId: user.uid,
       role: user.role,
@@ -86,6 +114,30 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tic
       module: 'support',
       recordId: ticketId,
     });
+
+    (async () => {
+      try {
+        const org = await getOrganizationById(user.organizationId!);
+        const ticket = await getSupportTicketByIdAny(ticketId);
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? '';
+        const { html, text } = supportTicketReplyEmail({
+          orgName: org?.name ?? user.organizationId!,
+          subject: ticket?.subject ?? ticketId,
+          ticketId,
+          authorName: user.displayName || user.email || 'Unknown',
+          message: parsed.data.body,
+          ticketUrl: `${baseUrl}/superadmin/support/${ticketId}`,
+        });
+        await sendEmail({
+          to: SUPPORT_EMAILS,
+          subject: `[Support Reply] ${ticket?.subject ?? ticketId} — ${org?.name ?? user.organizationId}`,
+          html,
+          text,
+        });
+      } catch (emailErr) {
+        console.error('[POST /api/support/[ticketId]/messages] email notification failed:', emailErr);
+      }
+    })();
 
     return NextResponse.json(message, { status: 201 });
   } catch (err) {

@@ -23,6 +23,8 @@ const en = {
   'nav.configuration': 'Configuration',
   'nav.team':          'Team',
   'nav.backendLogs':   'Backend Logs',
+  'nav.settings':      'Settings',
+  'nav.orgInfo':       'Organization Info',
 
   // ── Common actions ───────────────────────────────────────────────
   'common.save':         'Save',
@@ -53,6 +55,12 @@ const en = {
   'lang.label':    'Language',
   'lang.en':       'English',
   'lang.ar':       'العربية',
+
+  // ── Network status ───────────────────────────────────────────────
+  'network.online':      'Connected',
+  'network.offline':     'No internet connection',
+  'network.slow':        'Slow connection',
+  'network.backOnline':  'Connection restored',
 
   // ── Auth ─────────────────────────────────────────────────────────
   'auth.signIn':        'Sign in',
@@ -181,6 +189,7 @@ const en = {
   'assets.exportCsv':  'Export CSV',
   'assets.searchPlaceholder': 'Search by name…',
   'assets.allStatuses':       'All Statuses',
+  'assets.allCategories':     'All Categories',
   'assets.noAssets':          'No assets found.',
   'assets.retire':            'Retire asset',
   'assets.retireConfirmTitle':'Retire Asset',
@@ -206,12 +215,19 @@ const en = {
   'warranties.addWarranty':  'Add Warranty',
   'warranties.searchPlaceholder': 'Search by asset or vendor…',
   'warranties.allStatuses':  'All Statuses',
+  'warranties.active':       'Active',
+  'warranties.expired':      'Expired',
   'warranties.noWarranties': 'No warranties found.',
 
   // ── Requests page ─────────────────────────────────────────────────
   'requests.addRequest':   'New Request',
   'requests.noRequests':   'No requests found.',
   'requests.searchPlaceholder': 'Search requests…',
+  'requests.allStatuses':  'All Statuses',
+  'requests.allTypes':     'All Types',
+  'requests.pending':      'Pending',
+  'requests.approved':     'Approved',
+  'requests.rejected':     'Rejected',
 
   // ── Users page ── (supplement existing keys) ─────────────────────
   'users.searchPlaceholder': 'Search users…',
@@ -267,8 +283,6 @@ const en = {
   'requests.reference':        'Reference',
   'requests.submittedBy':      'Submitted By',
   'requests.description':      'Description',
-  'requests.approved':         'Request approved successfully',
-  'requests.rejected':         'Request rejected',
 
   // ── Support page ──────────────────────────────────────────────────
   'support.title':             'Support Tickets',
@@ -351,15 +365,20 @@ const en = {
   'subscription.users':        'Users',
   'subscription.warranties':   'Warranties',
   'subscription.requests':     'Requests',
+  'subscription.feature.reports': 'Reports',
+  'subscription.feature.maintenance': 'Maintenance Records',
+  'subscription.feature.checkouts': 'Asset Checkouts',
+  'subscription.feature.notes': 'Asset Notes',
+  'subscription.feature.support': 'Support Tickets',
 
   // ── Superadmin organizations ──────────────────────────────────────
   'orgs.createOrg':            'Create Organization',
-  'orgs.searchPlaceholder':    'Search name, subdomain, email…',
+  'orgs.searchPlaceholder':    'Search name, workspace ID, email…',
   'orgs.allCategories':        'All categories',
   'orgs.clear':                'Clear',
   'orgs.noMatch':              'No organizations match the filters.',
   'orgs.name':                 'Name',
-  'orgs.subdomain':            'Subdomain',
+  'orgs.workspaceId':          'Workspace ID',
   'orgs.category':             'Category',
   'orgs.subscription':         'Subscription',
   'orgs.created':              'Created',
@@ -452,6 +471,15 @@ const en = {
   'config.active':             'Active',
   'config.inactive':           'Inactive',
 
+  // ── Settings page ────────────────────────────────────────────────
+  'settings.orgName':          'Organization Name',
+  'settings.workspaceId':      'Workspace ID',
+  'settings.contactEmail':     'Contact Email',
+  'settings.description':      'Description',
+  'settings.category':         'Category',
+  'settings.accountManager':   'Account Manager',
+  'settings.notSet':           '—',
+
   // ── Users page (extra) ────────────────────────────────────────────
   'users.expires':             'Expires',
   'users.editing':             'Editing',
@@ -479,6 +507,8 @@ const ar: Record<keyof typeof en, string> = {
   'nav.configuration': 'الإعدادات',
   'nav.team':          'الفريق',
   'nav.backendLogs':   'سجلات النظام',
+  'nav.settings':      'الإعدادات',
+  'nav.orgInfo':       'معلومات المنظمة',
 
   // ── Common actions ───────────────────────────────────────────────
   'common.save':         'حفظ',
@@ -509,6 +539,12 @@ const ar: Record<keyof typeof en, string> = {
   'lang.label':    'اللغة',
   'lang.en':       'English',
   'lang.ar':       'العربية',
+
+  // ── Network status ───────────────────────────────────────────────
+  'network.online':      'متصل',
+  'network.offline':     'لا يوجد اتصال',
+  'network.slow':        'اتصال بطيء',
+  'network.backOnline':  'تم استعادة الاتصال',
 
   // ── Auth ─────────────────────────────────────────────────────────
   'auth.signIn':         'تسجيل الدخول',
@@ -637,6 +673,7 @@ const ar: Record<keyof typeof en, string> = {
   'assets.exportCsv':  'تصدير CSV',
   'assets.searchPlaceholder': 'بحث بالاسم...',
   'assets.allStatuses':       'جميع الحالات',
+  'assets.allCategories':     'جميع الفئات',
   'assets.noAssets':          'لا توجد أصول.',
   'assets.retire':            'إيقاف الأصل',
   'assets.retireConfirmTitle':'إيقاف الأصل',
@@ -662,12 +699,19 @@ const ar: Record<keyof typeof en, string> = {
   'warranties.addWarranty':  'إضافة ضمان',
   'warranties.searchPlaceholder': 'بحث بالأصل أو المورد...',
   'warranties.allStatuses':  'جميع الحالات',
+  'warranties.active':       'نشط',
+  'warranties.expired':      'منتهي',
   'warranties.noWarranties': 'لا توجد ضمانات.',
 
   // ── Requests page ─────────────────────────────────────────────────
   'requests.addRequest':   'طلب جديد',
   'requests.noRequests':   'لا توجد طلبات.',
   'requests.searchPlaceholder': 'بحث في الطلبات...',
+  'requests.allStatuses':  'جميع الحالات',
+  'requests.allTypes':     'جميع الأنواع',
+  'requests.pending':      'قيد الانتظار',
+  'requests.approved':     'موافق',
+  'requests.rejected':     'مرفوض',
 
   // ── Users page ── (supplement existing keys) ─────────────────────
   'users.searchPlaceholder': 'بحث المستخدمين...',
@@ -723,8 +767,8 @@ const ar: Record<keyof typeof en, string> = {
   'requests.reference':        'المرجع',
   'requests.submittedBy':      'مقدم الطلب',
   'requests.description':      'الوصف',
-  'requests.approved':         'تمت الموافقة على الطلب',
-  'requests.rejected':         'تم رفض الطلب',
+  //'requests.approved':         'تمت الموافقة على الطلب',
+  //'requests.rejected':         'تم رفض الطلب',
 
   // ── Support page ──────────────────────────────────────────────────
   'support.title':             'تذاكر الدعم',
@@ -807,15 +851,20 @@ const ar: Record<keyof typeof en, string> = {
   'subscription.users':        'المستخدمون',
   'subscription.warranties':   'الضمانات',
   'subscription.requests':     'الطلبات',
+  'subscription.feature.reports': 'التقارير',
+  'subscription.feature.maintenance': 'سجلات الصيانة',
+  'subscription.feature.checkouts': 'الأصول المستأجرة',
+  'subscription.feature.notes': 'ملاحظات الأصول',
+  'subscription.feature.support': 'تذاكر الدعم',
 
   // ── Superadmin organizations ──────────────────────────────────────
   'orgs.createOrg':            'إنشاء منظمة',
-  'orgs.searchPlaceholder':    'بحث بالاسم أو النطاق أو البريد...',
+  'orgs.searchPlaceholder':    'بحث بالاسم أو معرف مساحة العمل أو البريد...',
   'orgs.allCategories':        'جميع الفئات',
   'orgs.clear':                'مسح',
   'orgs.noMatch':              'لا توجد منظمات تطابق الفلاتر.',
   'orgs.name':                 'الاسم',
-  'orgs.subdomain':            'النطاق الفرعي',
+  'orgs.workspaceId':          'معرف مساحة العمل',
   'orgs.category':             'الفئة',
   'orgs.subscription':         'الاشتراك',
   'orgs.created':              'تاريخ الإنشاء',
@@ -907,6 +956,15 @@ const ar: Record<keyof typeof en, string> = {
   'config.none':               'لا شيء',
   'config.active':             'نشطة',
   'config.inactive':           'غير نشطة',
+
+  // ── Settings page ────────────────────────────────────────────────
+  'settings.orgName':        'اسم المنظمة',
+  'settings.workspaceId':    'معرف مساحة العمل',
+  'settings.contactEmail':   'البريد الإلكتروني للتواصل',
+  'settings.description':    'الوصف',
+  'settings.category':       'الفئة',
+  'settings.accountManager':   'مدير الحساب',
+  'settings.notSet':           '—',
 
   // ── Users page (extra) ────────────────────────────────────────────
   'users.expires':             'تنتهي',

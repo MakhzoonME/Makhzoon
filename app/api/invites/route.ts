@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { withLogging } from '@/lib/logging/with-logging';
 import {
   getInvites,
@@ -7,14 +8,15 @@ import {
   getPendingInviteForUsername,
   createInvite,
   generateInviteToken,
-} from '@/lib/firestore/invites';
-import { getOrganizationById } from '@/lib/firestore/organizations';
+} from '@/lib/db/invites';
+import { getOrganizationById } from '@/lib/db/organizations';
 import { createInviteSchema } from '@/lib/validations/invite.schema';
 import { adminAuth } from '@/lib/firebase/admin';
 import { sendEmail } from '@/lib/email/resend';
 import { inviteEmail } from '@/lib/email/templates';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { generateInviteQRDataUrl } from '@/lib/qr';
+import { requireActiveSubscription } from '@/lib/services/base.service';
 
 async function _GET(_req: NextRequest) {
   const user = await verifySessionCookie();
@@ -28,11 +30,23 @@ async function _GET(_req: NextRequest) {
 }
 
 async function _POST(req: NextRequest) {
+  // SECURITY: Rate limit invite sending (10 per IP per hour)
+  const clientIp = getClientIp(req);
+  const rateLimitResult = checkRateLimit(
+    `invite:${clientIp}`,
+    10,
+    60 * 60 * 1000,
+    { action: 'send invites' }
+  );
+  if (rateLimitResult) return rateLimitResult;
+
   const user = await verifySessionCookie();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+
+  await requireActiveSubscription(user.organizationId, user);
 
   const body = await req.json();
   const parsed = createInviteSchema.safeParse(body);
@@ -44,16 +58,27 @@ async function _POST(req: NextRequest) {
 
   if (normalizedEmail) {
     const existing = await adminAuth.getUserByEmail(normalizedEmail).catch(() => null);
-    if (existing) return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
+    if (existing) {
+      // SECURITY: Don't reveal if user exists (prevents user enumeration)
+      // Return same generic error regardless
+      return NextResponse.json({ error: 'This email cannot be invited' }, { status: 409 });
+    }
     const pending = await getPendingInviteForEmail(user.organizationId, normalizedEmail);
-    if (pending) return NextResponse.json({ error: 'An invite is already pending for this email' }, { status: 409 });
+    if (pending) {
+      return NextResponse.json({ error: 'This email cannot be invited' }, { status: 409 });
+    }
   }
   if (normalizedUsername) {
     const syntheticEmail = `${normalizedUsername}@makhzoon.local`;
     const existing = await adminAuth.getUserByEmail(syntheticEmail).catch(() => null);
-    if (existing) return NextResponse.json({ error: 'This username is already taken' }, { status: 409 });
+    if (existing) {
+      // SECURITY: Don't reveal if username exists
+      return NextResponse.json({ error: 'This username cannot be invited' }, { status: 409 });
+    }
     const pending = await getPendingInviteForUsername(user.organizationId, normalizedUsername);
-    if (pending) return NextResponse.json({ error: 'An invite is already pending for this username' }, { status: 409 });
+    if (pending) {
+      return NextResponse.json({ error: 'This username cannot be invited' }, { status: 409 });
+    }
   }
 
   const token = generateInviteToken();
@@ -98,7 +123,7 @@ async function _POST(req: NextRequest) {
     }
   }
 
-  await writeAuditLog({
+  queueAuditLog({
     organizationId: user.organizationId,
     userId: user.uid,
     role: user.role,

@@ -1,12 +1,13 @@
 import { z } from 'zod';
 
+export const supportTicketStatusEnum = z.enum(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']);
+export const supportTicketPriorityEnum = z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']);
+
 export const supportTicketCreateSchema = z.object({
   subject: z.string().min(5).max(200),
   description: z.string().min(20).max(5000),
+  priority: supportTicketPriorityEnum.optional(),
 });
-
-export const supportTicketStatusEnum = z.enum(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']);
-export const supportTicketPriorityEnum = z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']);
 
 // Org users can only close their own tickets.
 export const supportTicketOrgUpdateSchema = z.object({

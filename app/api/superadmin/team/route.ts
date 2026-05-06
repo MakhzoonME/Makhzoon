@@ -5,7 +5,8 @@ import {
   getSuperAdminUsers,
   createSuperAdminUser,
   MakhzoonRole,
-} from '@/lib/firestore/superadmin-users';
+} from '@/lib/db/superadmin-users';
+import { createPasswordResetToken } from '@/lib/db/password-reset-tokens';
 import { sendEmail } from '@/lib/email/resend';
 import { z } from 'zod';
 
@@ -13,7 +14,6 @@ const createMemberSchema = z.object({
   email: z.string().email('Invalid email address'),
   displayName: z.string().min(2, 'Name must be at least 2 characters').max(100),
   role: z.enum(['super_admin', 'makhzoon_admin', 'makhzoon_support']),
-  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
   permissions: z.record(z.unknown()).optional().nullable(),
 });
 
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   const parsed = createMemberSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
-  const { email, displayName, role, password, permissions } = parsed.data;
+  const { email, displayName, role, permissions } = parsed.data;
 
   // Only super_admin can create super_admin accounts
   if (role === 'super_admin' && caller.role !== 'super_admin') {
@@ -71,10 +71,10 @@ export async function POST(req: NextRequest) {
   const existing = await adminAuth.getUserByEmail(email).catch(() => null);
   if (existing) return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
 
+  // Create user without a password — they'll set it via password reset link
   const newUser = await adminAuth.createUser({
     email,
     displayName,
-    password,
     emailVerified: true,
   });
 
@@ -88,11 +88,15 @@ export async function POST(req: NextRequest) {
     permissions: role === 'makhzoon_support' && permissions ? permissions as never : undefined,
   });
 
+  // Generate password reset token and send email with reset link
+  const resetToken = await createPasswordResetToken(newUser.uid);
+  const resetLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${encodeURIComponent(resetToken)}`;
+
   await sendEmail({
     to: email,
-    subject: 'Your Makhzoon team account',
-    html: `<p>Hi ${displayName},</p><p>Your Makhzoon team account has been created.</p><p><strong>Email:</strong> ${email}<br/><strong>Temporary password:</strong> ${password}</p><p>Please sign in and change your password.</p>`,
-    text: `Hi ${displayName},\n\nYour Makhzoon team account has been created.\n\nEmail: ${email}\nTemporary password: ${password}\n\nPlease sign in and change your password.`,
+    subject: 'Set up your Makhzoon team account',
+    html: `<p>Hi ${displayName},</p><p>Your Makhzoon team account has been created. Click the link below to set your password.</p><p><a href="${resetLink}">Set Password</a></p><p>This link expires in 24 hours.</p>`,
+    text: `Hi ${displayName},\n\nYour Makhzoon team account has been created. Visit the link below to set your password:\n\n${resetLink}\n\nThis link expires in 24 hours.`,
   }).catch((err) => {
     if (process.env.NODE_ENV !== 'production') console.warn('[team] Welcome email failed:', err);
   });

@@ -4,7 +4,7 @@ import Papa from 'papaparse';
 import { useQueryClient } from '@tanstack/react-query';
 import { FormDrawer } from '@/components/shared/FormDrawer';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 
 function UploadCloudSVG() {
   return (
@@ -138,6 +138,7 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
       if (!res.ok) throw new Error(data.error ?? 'Import failed');
       setResult(data);
       qc.invalidateQueries({ queryKey: ['assets'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
       if (data.imported > 0) toast.success(`Imported ${data.imported} asset${data.imported === 1 ? '' : 's'}`);
       if (data.failed > 0) toast.error(`${data.failed} row${data.failed === 1 ? '' : 's'} failed`);
     } catch (err) {
@@ -154,17 +155,17 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
     <FormDrawer open={open} onOpenChange={handleClose} title="Import Assets from CSV" width="xl">
       <div className="space-y-5">
         {/* Format info */}
-        <div className="flex items-start gap-3 p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
-          <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <div className="flex items-start gap-3 p-4 bg-primary-50 border border-primary-100 rounded-xl">
+          <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0 mt-0.5">
             <FileTextSVG />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-indigo-900 mb-0.5">CSV format</p>
-            <p className="text-xs text-indigo-700 leading-relaxed">
-              Required: <span className="font-mono bg-indigo-100 px-1 rounded">name</span>,{' '}
-              <span className="font-mono bg-indigo-100 px-1 rounded">category</span>. Optional: status, serialNumber, purchaseDate (YYYY-MM-DD), purchaseCost, assignedTo, location, notes.
+            <p className="text-sm font-medium text-primary-900 mb-0.5">CSV format</p>
+            <p className="text-xs text-primary-700 leading-relaxed">
+              Required: <span className="font-mono bg-primary-100 px-1 rounded">name</span>,{' '}
+              <span className="font-mono bg-primary-100 px-1 rounded">category</span>. Optional: status, serialNumber, purchaseDate (YYYY-MM-DD), purchaseCost, assignedTo, location, notes.
             </p>
-            <button onClick={downloadTemplate} className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 mt-2 transition-colors">
+            <button onClick={downloadTemplate} className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-800 mt-2 transition-colors">
               <DownloadSVG /> Download template
             </button>
           </div>
@@ -174,24 +175,24 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
         {!fileName ? (
           <label
             className={`flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-xl p-10 cursor-pointer transition-colors
-              ${dragging ? 'border-indigo-400 bg-indigo-50' : 'border-gray-200 bg-gray-50 hover:border-indigo-300 hover:bg-indigo-50/40'}`}
+              ${dragging ? 'border-primary-400 bg-primary-50' : 'border-border bg-surface-page hover:border-primary-300 hover:bg-primary-50/40'}`}
             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
             onDrop={onDrop}
           >
-            <div className={`rounded-full p-3 transition-colors ${dragging ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
+            <div className={`rounded-full p-3 transition-colors ${dragging ? 'bg-primary-100 text-primary-600' : 'bg-surface-page text-gray-500'}`}>
               <UploadCloudSVG />
             </div>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-800">Drop your CSV here, or <span className="text-indigo-600">browse</span></p>
+              <p className="text-sm font-medium text-gray-800">Drop your CSV here, or <span className="text-primary-600">browse</span></p>
               <p className="text-xs text-gray-400 mt-1">Up to 1,000 rows</p>
             </div>
             <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) parseFile(f); }} />
           </label>
         ) : (
-          <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
-            <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center flex-shrink-0">
+          <div className="flex items-center gap-3 bg-surface-page border border-border rounded-xl px-4 py-3">
+            <div className="w-8 h-8 rounded-lg bg-surface-card border border-border flex items-center justify-center flex-shrink-0">
               <FileTextSVG />
             </div>
             <div className="flex-1 min-w-0">
@@ -214,26 +215,26 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
 
         {/* Preview table */}
         {rows.length > 0 && !result && (
-          <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+          <div className="border border-border rounded-xl overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-border flex items-center justify-between bg-surface-page">
               <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Preview</span>
               <span className="text-xs text-gray-400">Showing {preview.length} of {rows.length}</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
-                <thead className="bg-gray-50 border-b border-gray-100">
+                <thead className="bg-surface-page border-b border-border">
                   <tr>{headers.map((h) => <th key={h} className="text-left px-3 py-2 font-medium text-gray-500 whitespace-nowrap">{h}</th>)}</tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {preview.map((r, i) => (
-                    <tr key={i} className="hover:bg-gray-50">
+                    <tr key={i} className="hover:bg-surface-page">
                       {headers.map((h) => <td key={h} className="px-3 py-2 text-gray-700 whitespace-nowrap max-w-[180px] truncate">{r[h] || <span className="text-gray-300">—</span>}</td>)}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+            <div className="px-4 py-3 border-t border-border bg-surface-page flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={reset}>Clear</Button>
               <Button size="sm" onClick={handleImport} disabled={submitting}>
                 {submitting ? 'Importing…' : `Import ${rows.length} asset${rows.length === 1 ? '' : 's'}`}
@@ -244,8 +245,8 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
 
         {/* Result */}
         {result && (
-          <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+          <div className="border border-border rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-border bg-surface-page">
               <span className="text-sm font-semibold text-gray-900">Import complete</span>
             </div>
             <div className="px-4 py-4 space-y-3">
@@ -269,7 +270,7 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
                 </>
               )}
             </div>
-            <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+            <div className="px-4 py-3 border-t border-border bg-surface-page flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={reset}>Import another file</Button>
               <Button size="sm" onClick={() => handleClose(false)}>Done</Button>
             </div>

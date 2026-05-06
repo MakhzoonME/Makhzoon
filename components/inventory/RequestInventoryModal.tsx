@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 
 function SendSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M12.5 1.5L1 5.5l4.5 2 2 4.5 5-10.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /><path d="M5.5 7.5L8.5 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
 
@@ -49,27 +49,29 @@ export function RequestInventoryModal({ open, onOpenChange, itemId, itemName }: 
         <DialogHeader>
           <DialogTitle>Request Refill</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="text-sm text-gray-600">
-            Item: <span className="font-medium text-gray-900">{itemName}</span>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4 px-6 pt-2 pb-4">
+            <div className="text-[14px] text-gray-600">
+              Item: <span className="font-medium text-gray-900">{itemName}</span>
+            </div>
+            <div>
+              <label className="block text-[12px] font-medium text-gray-600 mb-1">Description *</label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe why you need a refill..."
+                rows={3}
+                required
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Description *</label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe why you need a refill..."
-              rows={3}
-              required
-            />
-          </div>
-          <DialogFooter>
+          <DialogFooter className="px-6 py-4 border-t border-border">
             <Button type="button" variant="outline" onClick={() => handleClose(false)} disabled={submitting}>
               Cancel
             </Button>
             <Button type="submit" disabled={submitting || !description.trim()}>
               <SendSVG />
-              <span className="ml-1">{submitting ? 'Submitting...' : 'Submit'}</span>
+              <span className="ms-1">{submitting ? 'Submitting...' : 'Submit'}</span>
             </Button>
           </DialogFooter>
         </form>

@@ -46,7 +46,7 @@ export function PaymentLogForm({ onSubmit, onCancel, submitting }: PaymentLogFor
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 px-6 pt-4 pb-2">
       <div className="grid grid-cols-3 gap-3">
         <div className="col-span-2 space-y-1.5">
           <Label htmlFor="pmt-amount">Amount</Label>
@@ -79,7 +79,7 @@ export function PaymentLogForm({ onSubmit, onCancel, submitting }: PaymentLogFor
           id="pmt-method"
           value={method}
           onChange={(e) => setMethod(e.target.value as PaymentLogMethod)}
-          className="flex h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+          className="flex h-9 w-full rounded-md border border-gray-300 bg-surface-card px-3 text-sm"
         >
           {METHODS.map((m) => (
             <option key={m} value={m}>

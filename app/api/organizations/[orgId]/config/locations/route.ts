@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { addLocation } from '@/lib/firestore/organization-configs';
-import { getOrganizationById } from '@/lib/firestore/organizations';
+import { addLocation } from '@/lib/db/organization-configs';
+import { getOrganizationById } from '@/lib/db/organizations';
 import { locationInputSchema } from '@/lib/validations/organization-config.schema';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 
 export async function POST(req: NextRequest, { params }: { params: { orgId: string } }) {
   try {
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, { params }: { params: { orgId: stri
 
     try {
       const { location, locations } = await addLocation(params.orgId, parsed.data, user.uid);
-      await writeAuditLog({
+      queueAuditLog({
         organizationId: params.orgId,
         userId: user.uid,
         role: user.role,

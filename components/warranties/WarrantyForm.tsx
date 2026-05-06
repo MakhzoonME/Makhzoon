@@ -2,7 +2,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/useOrgSlug';
+import { useOrgSlug, useT } from '@/hooks/ui';
 import { warrantySchema, WarrantyFormData } from '@/lib/validations/warranty.schema';
 import { Warranty } from '@/types';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -11,11 +11,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
-import { useAssets } from '@/hooks/useAssets';
-import { useWarranties } from '@/hooks/useWarranties';
+import { useAssets } from '@/hooks/assets';
+import { useWarranties } from '@/hooks/warranties';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 function AlertTriangleSVG() {
@@ -40,13 +40,14 @@ interface WarrantyFormProps { warranty?: Warranty; onSuccess?: () => void; defau
 export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFormProps) {
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const { locale } = useT();
   const searchParams = useSearchParams();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
 
   // Fetch all active assets + all org warranties to compute availability
   const { data: assetsData, isLoading: assetsLoading } = useAssets({ status: 'Active' });
-  const { data: allWarranties = [], isLoading: warrantiesLoading } = useWarranties();
+  const { data: allWarrantiesData, isLoading: warrantiesLoading } = useWarranties({ pageSize: 1000 });
 
   // Assets eligible for a NEW warranty = active assets with no non-expired warranty
   const availableAssets = useMemo(() => {
@@ -54,17 +55,29 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
     if (warranty) return allAssets; // editing — show all (asset field is disabled anyway)
 
     const now = new Date();
+    const allWarranties = allWarrantiesData?.items ?? [];
     const assetIdsWithActiveWarranty = new Set(
-      (allWarranties as Warranty[])
+      allWarranties
         .filter((w) => new Date(w.endDate) >= now)
         .map((w) => w.assetId)
     );
 
     return allAssets.filter((a) => !assetIdsWithActiveWarranty.has(a.id));
-  }, [assetsData, allWarranties, warranty]);
+  }, [assetsData, allWarrantiesData, warranty]);
+
+  // When editing, ensure the current asset is in the options list even if not yet loaded
+  const assetOptions = useMemo(() => {
+    if (!warranty) return availableAssets;
+    const existing = availableAssets.find((a) => a.id === warranty.assetId);
+    if (existing) return availableAssets;
+    return [
+      { id: warranty.assetId, name: warranty.assetName ?? warranty.assetId },
+      ...availableAssets,
+    ];
+  }, [availableAssets, warranty]);
 
   const isLoadingData = assetsLoading || warrantiesLoading;
-  const noAssetsAvailable = !isLoadingData && availableAssets.length === 0 && !warranty;
+  const noAssetsAvailable = !isLoadingData && assetOptions.length === 0 && !warranty;
 
   const form = useForm<WarrantyFormData>({
     resolver: zodResolver(warrantySchema),
@@ -75,7 +88,19 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
       endDate: warranty?.endDate ? new Date(warranty.endDate).toISOString().slice(0, 10) : '',
       reminder: warranty?.reminder ?? true,
       notes: warranty?.notes ?? '',
+      receiptUrl: warranty?.receiptUrl ?? '',
     },
+    values: warranty
+      ? {
+          assetId: warranty.assetId,
+          vendor: warranty.vendor,
+          startDate: new Date(warranty.startDate).toISOString().slice(0, 10),
+          endDate: new Date(warranty.endDate).toISOString().slice(0, 10),
+          reminder: warranty.reminder ?? true,
+          notes: warranty.notes ?? '',
+          receiptUrl: warranty.receiptUrl ?? '',
+        }
+      : undefined,
   });
 
   async function onSubmit(data: WarrantyFormData) {
@@ -99,6 +124,8 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
       }
       toast.success(warranty ? 'Warranty updated' : 'Warranty added');
       qc.invalidateQueries({ queryKey: ['warranties'] });
+      const assetId = warranty?.assetId ?? defaultAssetId;
+      if (assetId) qc.invalidateQueries({ queryKey: ['assets', assetId] });
       if (onSuccess) {
         onSuccess();
       } else {
@@ -123,7 +150,7 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
           All active assets already have a valid warranty. You can add a new warranty to an asset
           once its existing warranty expires or is deleted.
         </p>
-        <Button variant="outline" onClick={() => router.push(`/${orgSlug}/warranties`)}>
+        <Button variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/warranties`)}>
           Back to Warranties
         </Button>
       </div>
@@ -149,13 +176,13 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {availableAssets.length === 0 ? (
+                {assetOptions.length === 0 ? (
                   <div className="flex items-center gap-2 px-3 py-4 text-sm text-gray-500">
                     <AlertTriangleSVG />
                     No assets available
                   </div>
                 ) : (
-                  availableAssets.map((a) => (
+                  assetOptions.map((a) => (
                     <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                   ))
                 )}
@@ -209,6 +236,14 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
           <FormItem>
             <FormLabel>Notes</FormLabel>
             <FormControl><Textarea {...field} rows={3} /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={form.control} name="receiptUrl" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Receipt URL</FormLabel>
+            <FormControl><Input {...field} placeholder="https://example.com/receipt.pdf" /></FormControl>
             <FormMessage />
           </FormItem>
         )} />

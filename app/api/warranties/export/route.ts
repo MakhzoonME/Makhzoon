@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getWarranties } from '@/lib/firestore/warranties';
+import { getWarranties } from '@/lib/db/warranties';
 import { exportWarrantiesToCSV } from '@/lib/export/csv';
 import { format } from 'date-fns';
 
@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest) {
     const orgId = user.organizationId;
     if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
 
-    const warranties = await getWarranties(orgId);
+    const warranties = (await getWarranties(orgId)).items;
     const csv = exportWarrantiesToCSV(warranties);
     const filename = `warranties-${format(new Date(), 'yyyy-MM-dd')}.csv`;
 

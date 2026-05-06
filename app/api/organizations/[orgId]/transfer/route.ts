@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { cookies } from 'next/headers';
 import { adminDb } from '@/lib/firebase/admin';
 
@@ -17,14 +17,17 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ or
     const subdomain = (orgDoc.data()?.subdomain as string) ?? null;
     const name = (orgDoc.data()?.name as string) ?? null;
 
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
+    const isSecure = process.env.NODE_ENV !== 'development';
     cookieStore.set('transferOrgId', orgId, {
       httpOnly: true,
+      secure: isSecure,
       path: '/',
-      sameSite: 'lax',
+      sameSite: 'strict',
+      maxAge: 3600,
     });
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: orgId,
       userId: user.uid,
       role: user.role,

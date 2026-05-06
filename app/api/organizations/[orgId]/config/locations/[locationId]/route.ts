@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { updateLocation, deleteLocation } from '@/lib/firestore/organization-configs';
-import { getOrganizationById } from '@/lib/firestore/organizations';
+import { updateLocation, deleteLocation } from '@/lib/db/organization-configs';
+import { getOrganizationById } from '@/lib/db/organizations';
 import { locationPatchSchema } from '@/lib/validations/organization-config.schema';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 
 interface Params { params: { orgId: string; locationId: string } }
 
@@ -23,7 +23,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     try {
       const { location, locations } = await updateLocation(params.orgId, params.locationId, parsed.data, user.uid);
       if (!location) return NextResponse.json({ error: 'Location not found' }, { status: 404 });
-      await writeAuditLog({
+      queueAuditLog({
         organizationId: params.orgId,
         userId: user.uid,
         role: user.role,
@@ -55,7 +55,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
     const { removed, locations } = await deleteLocation(params.orgId, params.locationId, user.uid);
     if (!removed) return NextResponse.json({ error: 'Location not found' }, { status: 404 });
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: params.orgId,
       userId: user.uid,
       role: user.role,

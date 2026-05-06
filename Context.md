@@ -606,7 +606,129 @@ organizationConfigs/{orgId}
 
 ---
 
-## 7. Current State
+## 7. Services Layer (T4-3)
+
+### Architecture
+
+The **lib/services/** layer centralizes business logic previously scattered across 67 API route handlers. This three-tier architecture improves maintainability and reduces code duplication:
+
+```
+API Route Handler
+    ↓
+Service Layer (business logic: auth, permissions, subscriptions, audit)
+    ↓
+Database Layer (CRUD operations)
+```
+
+### Base Service Functions (lib/services/base.service.ts)
+
+Common utilities used by all domain services:
+
+- `requireAuth()` — Verify session cookie, return authenticated user or throw 401
+- `requirePermission(user, module, action)` — Check user permission or throw 403
+- `requireActiveSubscription(orgId)` — Verify subscription is ACTIVE or throw 403
+- `requireFeature(orgId, featureKey)` — Verify feature is enabled or throw 403
+- `getUserContext(user)` — Extract user details (uid, email, displayName, role) for audit logs
+- `errorResponse(message, status)` — Standardized error response
+- `successResponse(data, status)` — Standardized success response
+
+### Domain Services
+
+**lib/services/assets.service.ts**
+
+```typescript
+// Exports:
+getOrgAssets(user, filters?)                     // GET /api/assets
+getOrgAsset(user, assetId)                       // GET /api/assets/[id]
+createAssetWithAudit(user, data)                 // POST /api/assets
+updateAssetWithAudit(user, assetId, data)       // PATCH /api/assets/[id]
+deleteAssetWithAudit(user, assetId)              // DELETE /api/assets/[id]
+getOrgAssetCategories(user)                      // GET /api/assets?categoriesOnly=true
+```
+
+Each function handles:
+1. Permission checks
+2. Subscription validation
+3. Organization context verification
+4. Database operation
+5. Automatic audit logging
+
+**lib/services/inventory.service.ts**
+
+Follows same pattern as assets:
+```typescript
+getOrgInventoryItems(user, filters?)
+getOrgInventoryItem(user, itemId)
+createInventoryItemWithAudit(user, data)
+updateInventoryItemWithAudit(user, itemId, data)
+deleteInventoryItemWithAudit(user, itemId)
+getOrgInventoryCategories(user)
+applyInventoryTransactionWithAudit(user, itemId, type, quantity, reason, note?)
+```
+
+### API Route Refactoring Example
+
+**Before** — 98 lines with duplicated patterns:
+```typescript
+async function _POST(req: NextRequest) {
+  try {
+    const user = await verifySessionCookie();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!hasPermission(user, 'assets', 'create')) 
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    
+    const orgId = user.organizationId;
+    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+    
+    const sub = await getSubscriptionByOrg(orgId);
+    if (sub && sub.status !== 'ACTIVE') 
+      return NextResponse.json({ error: 'Subscription expired' }, { status: 403 });
+    
+    // ... validation, db call, audit logging ...
+  } catch (err) { /* error handling */ }
+}
+```
+
+**After** — 20 lines, business logic delegated to service:
+```typescript
+async function _POST(req: NextRequest) {
+  try {
+    const user = await requireAuth();
+    const body = await req.json();
+    const parsed = assetSchema.safeParse(body);
+    if (!parsed.success) 
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
+    
+    const result = await assetsService.createAssetWithAudit(user, parsed.data);
+    return NextResponse.json(result, { status: 201 });
+  } catch (err) {
+    if (err instanceof NextResponse) return err;
+    console.error('[POST /api/assets]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+```
+
+### Scalability Path
+
+To apply this pattern to remaining 65+ API routes:
+
+1. **Create domain service** (e.g., `lib/services/warranties.service.ts`)
+   - Follow assets/inventory pattern
+   - Implement getOrg*, createWithAudit, updateWithAudit, deleteWithAudit
+   - ~100-150 lines per service
+
+2. **Refactor API routes** for that domain
+   - Replace inline logic with service calls
+   - Remove boilerplate auth/permission/audit code
+   - API routes become thin adapters
+
+3. **Domains remaining**:
+   - warranties, requests, support, users, organizations, packages, reports, audit-logs, payment-logs
+
+---
+
+## 8. Current State
 
 ### Implemented Features
 - ✅ Multi-tenant organization management with path-based routing
@@ -639,6 +761,9 @@ organizationConfigs/{orgId}
 - ✅ Button press animations (scale + easing)
 - ✅ Loading skeleton animations (gradient shimmer)
 - ✅ Motion/UX polish with easing tokens and duration utilities
+- ✅ Barrel exports (components/ui, components/shared, hooks) for cleaner import paths
+- ✅ Organized lib/utils with permissions and nav config split into separate modules
+- ✅ Comprehensive .env.example documenting all environment variables
 
 ### Commented Out / Not Production-Ready
 - ⏳ **SSO/OIDC:** Full OIDC/PKCE flow implemented but disabled with TODO comments
@@ -663,19 +788,48 @@ organizationConfigs/{orgId}
 5. **Report Exports:** Report data structure defined but full report computation logic varies
 6. **Frontend Error Boundaries:** Error pages added for `/[orgSlug]/error.tsx` and `/superadmin/error.tsx`, but not all sub-routes have dedicated error.tsx files
 
-### Recent Fixes (Task A, B, C - Auth Fixes & QA Audit)
-- Commented out SSO and Turnstile with TODO comments (Task A)
-- Fixed logout handlers to use hard redirect (`window.location.href`) instead of client-side navigation (Task B)
-- Invalidated server-side session cache on logout (Task B)
-- Fixed wrong redirects for non-superadmin users accessing superadmin routes (Task B)
-- Added loading/disabled states to logout buttons (Task C)
-- Added orgSlug fetching and storage for correct post-login redirects (Task C)
-- Added session-expired notification to login page via sessionStorage flag (Task C)
-- Fixed signup page redirects to org portal instead of public home (Task C)
-- Fixed invite acceptance error handling for missing orgSlug (Task C)
-- Added error boundaries for org and superadmin routes (Task C)
-- Removed query param fallback for cron secret (security fix, Task C)
-- Changed non-superadmin routes to use `router.replace()` to avoid history stack issues (Task C)
+### Recent Fixes (Tracks 1-4 - Comprehensive Audit)
+
+**Track 1 (Functional Audit):**
+- Commented out SSO (disabled /api/auth/sso/* endpoints)
+- Commented out Turnstile bot verification
+- Fixed middleware to check session cookie existence
+- Added CRON_SECRET guard to /api/cron/warranty-alerts
+- Deleted 14 duplicate route folders ("subscription 2", "support 2", etc.)
+- Fixed usage bar max={-1} placeholder
+- Cleaned up signup flow logic
+
+**Track 2 (UI Audit):**
+- Replaced 5 inline SVG functions with lucide-react icons in assets page
+- Fixed i18n interpolation in subscription page (removed duplicate text)
+- Moved FEATURE_LABELS to locales/messages.ts with translations
+- Removed image optimization bypass on profile avatar
+- Added error boundaries: app/error.tsx (root) and app/(marketing)/error.tsx
+
+**Track 3 (Performance):**
+- Fixed N+1 query in inventory.updateInventoryItem using Firestore transaction
+
+**Track 4 (Architecture) — 7/8 items complete:**
+- ✅ T4-8: Created .env.example documenting all 19 environment variables
+- ✅ T4-7: Added barrel exports (components/ui, components/shared, hooks)
+- ✅ T4-6: Split lib/utils → lib/permissions/, lib/nav/ (11 files updated)
+- ✅ T4-5: Moved domain-specific components → components/features/ (4 files)
+- ✅ T4-4: Reorganized hooks by domain (27 hooks into 9 subfolders, 150+ imports updated)
+- ✅ T4-2: Renamed lib/firestore/ → lib/db/ (84 imports updated)
+- ✅ T4-3: Created lib/services/ business logic layer (assets/inventory services + 2 API routes refactored)
+- ✅ T4-1: Already done in earlier audit (deleted 14 duplicate route folders)
+
+**Earlier Fixes (Tasks A, B, C):**
+- Fixed logout handlers to use hard redirect (`window.location.href`)
+- Invalidated server-side session cache on logout
+- Fixed wrong redirects for non-superadmin users
+- Added loading/disabled states to logout buttons
+- Added orgSlug fetching and storage for correct redirects
+- Added session-expired notification to login page
+- Fixed signup page redirects to org portal
+- Fixed invite acceptance error handling
+- Removed query param fallback for cron secret
+- Changed non-superadmin routes to use `router.replace()`
 
 ### API Rate Limiting
 - **Not implemented** on public endpoints:
@@ -714,25 +868,27 @@ organizationConfigs/{orgId}
     /cron                  — Cron job triggers (warranty alerts, etc.)
 
 /components                — Reusable React components
-  /ui                      — Base components (button, input, dialog, etc.)
+  /ui                      — Base components (button, input, dialog, etc.) [barrel export: index.ts]
   /layout                  — App layout (header, sidebar, nav, drawer)
-  /shared                  — Shared components (QueryProvider, etc.)
+  /shared                  — Shared components (QueryProvider, etc.) [barrel export: index.ts]
 
-/hooks                     — Custom React hooks
+/hooks                     — Custom React hooks [barrel export: index.ts]
   useAuth.ts               — Auth state
   useT.ts                  — i18n/localization
-  usePermission.ts         — Permission checking
-  useOrgContext.ts         — Org context
+  useAssets.ts, useInventory.ts, etc. — Data fetching hooks by domain
 
 /lib                       — Utility functions and services
+  /db                      — Database access layer (22 files, one per collection/entity)
+  /services                — Business logic layer (base, assets, inventory services with patterns for other domains)
   /firebase                — Firebase client/admin initialization
-  /firestore               — Database queries (one file per collection/entity)
+  /permissions             — Permission utilities (hasPermission, hasModuleAccess)
+  /nav                     — Navigation config (ORG_NAV_ITEMS, getFirstAccessiblePath)
   /oidc                    — OIDC/PKCE helpers (commented out)
   /email                   — Email templates and sending
   /audit                   — Audit logging
   /middleware              — Auth, role-based middleware
   /validations             — Zod schemas for form/API validation
-  /utils                   — Utilities (formatting, permissions, nav config, etc.)
+  /utils                   — Pure utilities (cn, date, format, tenant-url, api-fetch, etc.)
   /export                  — CSV export
   /logging                 — Backend logging
 
@@ -768,36 +924,44 @@ tsconfig.json              — TypeScript config
 - **app/layout.tsx** — Root layout, QueryProvider, Sentry, theme/locale setup
 - **app/[orgSlug]/layout.tsx** — Org portal layout with sidebar, header, auth check
 - **app/superadmin/layout.tsx** — Superadmin layout with transfer mode banner
+- **app/error.tsx** — Root-level error boundary for uncaught exceptions
+- **app/(marketing)/error.tsx** — Error boundary for marketing/public pages
 - **lib/firebase/auth-helpers.ts** — `verifySessionCookie()` for API routes
 - **lib/audit/logger.ts** — `writeAuditLog()` called by all mutation endpoints
+- **lib/permissions/index.ts** — Permission utilities
+- **lib/nav/index.ts** — Navigation configuration
 - **components/shared/QueryProvider.tsx** — React Query setup, 401 handling
+- **components/ui/index.ts** — Barrel export of all UI components
+- **components/shared/index.ts** — Barrel export of shared components
+- **hooks/index.ts** — Barrel export of all hooks organized by domain
 
 ---
 
 ## 9. Environment Variables
 
+**See `.env.example` for comprehensive documentation of all 19 environment variables with descriptions and sources.**
+
 ### Public Variables (NEXT_PUBLIC_*)
-```
-NEXT_PUBLIC_FIREBASE_API_KEY
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-NEXT_PUBLIC_FIREBASE_PROJECT_ID
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-NEXT_PUBLIC_FIREBASE_APP_ID
-NEXT_PUBLIC_APP_URL                    — Domain for email links, etc.
-```
+- `NEXT_PUBLIC_FIREBASE_API_KEY` — Firebase client API key
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` — Firebase Auth domain
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID` — Firebase project ID
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` — Firebase storage bucket
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` — Firebase messaging ID
+- `NEXT_PUBLIC_FIREBASE_APP_ID` — Firebase app ID
+- `NEXT_PUBLIC_APP_URL` — Domain for email links, redirects, etc.
+- `NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY` — Bot protection (disabled)
+- `NEXT_PUBLIC_SENTRY_DSN` — Error tracking endpoint
 
 ### Server-Only Variables
-```
-FIREBASE_PROJECT_ID
-FIREBASE_CLIENT_EMAIL
-FIREBASE_PRIVATE_KEY                   — Private key for Firebase Admin SDK
-CRON_SECRET                            — Secret for cron job triggers
-RESEND_API_KEY                         — Email service API key
-SENTRY_ORG, SENTRY_PROJECT             — Error tracking
-NODE_ENV                               — development, staging, production
-CLOUDFLARE_TURNSTILE_SECRET_KEY        — Disabled, commented out
-```
+- `FIREBASE_PROJECT_ID` — Firebase project ID (server)
+- `FIREBASE_CLIENT_EMAIL` — Firebase Admin SDK service account email
+- `FIREBASE_PRIVATE_KEY` — Private key for Firebase Admin SDK (must be kept secret)
+- `CRON_SECRET` — Secret for cron job triggers (`/api/cron/*` endpoints)
+- `RESEND_API_KEY` — Email service API key (Resend)
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_SMS_FROM`, `TWILIO_WHATSAPP_FROM` — SMS service (not yet integrated)
+- `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` — Error tracking credentials
+- `CLOUDFLARE_TURNSTILE_SECRET_KEY` — Bot protection secret (disabled)
+- `NODE_ENV` — Deployment environment (development, staging, production)
 
 ---
 

@@ -1,4 +1,5 @@
 'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,11 +7,17 @@ import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ORG_NAV_ITEMS } from '@/lib/utils/nav-config';
-import { hasModuleAccess } from '@/lib/utils/permissions';
+import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, withLocale } from '@/lib/nav';
+import { hasModuleAccess, hasPermByKey } from '@/lib/permissions';
 import { UserPermissions } from '@/types';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 import type { MessageKey } from '@/locales/messages';
+
+/** Display email/username without the synthetic @makhzoon.local suffix */
+function displayIdentity(email?: string | null): string {
+  if (!email) return '';
+  return email.replace(/@makhzoon\.local$/i, '');
+}
 
 /* ── Inline SVG nav icons ─────────────────────────────────────── */
 function DashboardSVG() {
@@ -66,25 +73,6 @@ function ReportsSVG() {
     </svg>
   );
 }
-function UsersSVG() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-      <circle cx="7" cy="6.5" r="2.5" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M2 15c0-2.761 2.239-4.5 5-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <circle cx="13" cy="7" r="2" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M16 15c0-2.209-1.343-3.5-3-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  );
-}
-function SubscriptionSVG() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-      <rect x="2" y="4.5" width="14" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none" />
-      <path d="M2 8h14" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M5.5 11.5h2M10 11.5h2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  );
-}
 function SupportSVG() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -102,6 +90,16 @@ function AuditSVG() {
     </svg>
   );
 }
+function SettingsSVG() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+      <path d="M3 5h12M3 9h12M3 13h12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="6" cy="5" r="1.5" fill="currentColor" />
+      <circle cx="12" cy="9" r="1.5" fill="currentColor" />
+      <circle cx="6" cy="13" r="1.5" fill="currentColor" />
+    </svg>
+  );
+}
 function ChevronLeftSVG() {
   return (
     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
@@ -116,6 +114,13 @@ function ChevronRightSVG() {
     </svg>
   );
 }
+function ChevronDownSVG() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
+      <path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 const NAV_ICONS: Record<string, React.FC> = {
   '/dashboard':    DashboardSVG,
@@ -124,29 +129,42 @@ const NAV_ICONS: Record<string, React.FC> = {
   '/warranties':   WarrantySVG,
   '/requests':     RequestsSVG,
   '/reports':      ReportsSVG,
-  '/users':        UsersSVG,
-  '/subscription': SubscriptionSVG,
   '/support':      SupportSVG,
   '/audit-logs':   AuditSVG,
+  '/settings':     SettingsSVG,
 };
 
-const EASE_OUT = [0.16, 1, 0.3, 1] as const;
+const EASE_OUT   = [0.16, 1, 0.3, 1] as const;
+const EASE_SLIDE = [0.4, 0, 0.2, 1] as const;
+// Icon is 18px. Collapsed sidebar is 68px. Center = (68-18)/2 = 25px padding-left.
+const ICON_INDENT = 'pl-[25px]';
 export const SIDEBAR_WIDTH_EXPANDED  = 240;
-export const SIDEBAR_WIDTH_COLLAPSED = 64;
+export const SIDEBAR_WIDTH_COLLAPSED = 68;
 
 export function AppSidebar() {
   const pathname  = usePathname();
-  const params    = useParams();
+  const params    = useParams<{ locale: string; orgSlug: string }>();
+  const locale    = params?.locale ?? 'en';
   const orgSlug   = (params?.orgSlug as string) ?? '';
   const { user }  = useAuthStore();
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
   const { t, dir } = useT();
   const isRtl = dir === 'rtl';
 
-  const features  = user?.features ?? {};
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+
+  const features    = user?.features ?? {};
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
-  const visibleItems = ORG_NAV_ITEMS.filter((item) => {
+  const visibleEntries = ORG_NAV_ENTRIES.filter((entry): entry is NavEntry => {
+    if ('type' in entry && entry.type === 'group') {
+      if (!entry.adminOnly || canSeeAdmin) return true;
+      // Staff: show group if any sub-item permission is granted
+      return user?.role === 'staff' && !!user && entry.items.some(
+        (sub) => sub.permissionKey && hasPermByKey(user, sub.permissionKey)
+      );
+    }
+    const item = entry as { adminOnly?: boolean; featureKey?: string };
     if (item.adminOnly && !canSeeAdmin) return false;
     if (item.featureKey && features[item.featureKey] === false) return false;
     if (user?.role === 'staff' && item.featureKey) {
@@ -156,27 +174,53 @@ export function AppSidebar() {
     return true;
   });
 
+  // Auto-open groups that contain the active route
+  useEffect(() => {
+    const updates: Record<string, boolean> = {};
+    for (const entry of visibleEntries) {
+      if (!('type' in entry) || entry.type !== 'group') continue;
+      const hasActive = entry.items.some((sub) => {
+        const full = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
+        return pathname === full || pathname.startsWith(full + '/');
+      });
+      if (hasActive) updates[entry.href] = true;
+    }
+    if (Object.keys(updates).length > 0) {
+      setOpenGroups((prev) => ({ ...prev, ...updates }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, orgSlug]);
+
+  function toggleGroup(href: string) {
+    if (sidebarCollapsed) {
+      toggleSidebar();
+      setOpenGroups((prev) => ({ ...prev, [href]: true }));
+    } else {
+      setOpenGroups((prev) => ({ ...prev, [href]: !prev[href] }));
+    }
+  }
+
   return (
     <TooltipProvider delayDuration={120} skipDelayDuration={200}>
       <motion.aside
         initial={false}
         animate={{ width: sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED }}
-        transition={{ duration: 0.3, ease: EASE_OUT }}
+        transition={{ duration: 0.28, ease: EASE_SLIDE }}
         className={cn(
-          'hidden md:flex fixed top-14 bottom-0 bg-surface-sidebar border-gray-200 dark:border-gray-800 flex-col z-30',
+          'hidden md:flex fixed top-14 bottom-0 bg-surface-sidebar border-border flex-col z-30',
           isRtl ? 'right-0 border-l' : 'left-0 border-r',
         )}
-        style={{ overflow: 'visible', contain: 'layout style' }}
+        style={{ overflow: 'visible', willChange: 'width' }}
       >
-        {/* Collapse toggle — outer edge, vertically centered */}
+        {/* Collapse toggle */}
         <button
           onClick={toggleSidebar}
           aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className={cn(
             'absolute top-1/2 -translate-y-1/2 z-20',
-            'h-6 w-6 rounded-full bg-surface-sidebar border border-gray-200 dark:border-gray-700 shadow-sm',
-            'flex items-center justify-center text-gray-400 dark:text-gray-500',
-            'hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 hover:shadow-md',
+            'h-6 w-6 rounded-full bg-surface-sidebar border border-border shadow-sm',
+            'flex items-center justify-center text-gray-400',
+            'hover:text-gray-700 hover:border-border-strong hover:shadow-md',
             'transition-all duration-200',
             isRtl ? '-left-3' : '-right-3',
           )}
@@ -188,54 +232,170 @@ export function AppSidebar() {
         </button>
 
         <nav className="flex-1 p-2.5 space-y-0.5 overflow-y-auto overflow-x-hidden">
-          {visibleItems.map(({ href, label, labelKey }) => {
+          {visibleEntries.map((entry) => {
+            /* ── Group ──────────────────────────────────────────── */
+            if ('type' in entry && entry.type === 'group') {
+              const group = entry as NavGroupConfig;
+              const Icon = NAV_ICONS[group.href] ?? SettingsSVG;
+              const isOpen = openGroups[group.href] ?? false;
+              const label  = t(group.labelKey as MessageKey, group.label);
+              const visibleSubItems = group.items.filter((sub) => {
+                if (canSeeAdmin) return true;
+                if (!sub.permissionKey) return true;
+                return !!user && hasPermByKey(user, sub.permissionKey);
+              });
+              const hasActiveChild = visibleSubItems.some((sub) => {
+                const full = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
+                return pathname === full || pathname.startsWith(full + '/');
+              });
+
+              const groupBtn = (
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.href)}
+                  aria-label={label}
+                  className={cn(
+                    'group w-full relative flex items-center rounded-lg text-[14px] transition-colors duration-150 h-9',
+                    ICON_INDENT,
+                    hasActiveChild
+                      ? 'text-primary-700 font-semibold bg-primary-50'
+                      : 'text-gray-600 hover:bg-surface-page hover:text-gray-900',
+                  )}
+                >
+                  <span className={cn(
+                    'relative z-10 flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110',
+                    hasActiveChild ? 'text-primary-700' : '',
+                  )}>
+                    <Icon />
+                  </span>
+                  <motion.span
+                    animate={{ width: sidebarCollapsed ? 0 : 'auto', opacity: sidebarCollapsed ? 0 : 1 }}
+                    transition={sidebarCollapsed
+                      ? { width: { duration: 0.18, ease: EASE_SLIDE }, opacity: { duration: 0.08 } }
+                      : { width: { duration: 0.22, ease: EASE_SLIDE }, opacity: { duration: 0.14, delay: 0.16 } }
+                    }
+                    className="relative z-10 flex flex-1 items-center justify-between whitespace-nowrap overflow-hidden ms-2.5 pe-3"
+                    style={{ minWidth: 0 }}
+                  >
+                    {label}
+                    <span className={cn(
+                      'transition-transform duration-200 opacity-60 flex-shrink-0',
+                      isOpen && 'rotate-180',
+                    )}>
+                      <ChevronDownSVG />
+                    </span>
+                  </motion.span>
+                </button>
+              );
+
+              const subList = !sidebarCollapsed && isOpen ? (
+                <motion.div
+                  key={`${group.href}-items`}
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: EASE_SLIDE }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pr-6' : 'pl-6')}>
+                    {visibleSubItems.map((sub) => {
+                      const fullHref  = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
+                      const subActive = pathname === fullHref || pathname.startsWith(fullHref + '/');
+                      const subLabel  = t(sub.labelKey as MessageKey, sub.label);
+                      return (
+                        <Link
+                          key={sub.href}
+                          href={fullHref}
+                          aria-label={subLabel}
+                          className={cn(
+                            'group relative flex items-center rounded-md text-sm py-1.5 px-2.5 transition-colors duration-150',
+                            subActive
+                              ? 'text-primary-700 font-semibold'
+                              : 'text-gray-500 hover:bg-surface-page hover:text-gray-900',
+                          )}
+                        >
+                          {subActive && (
+                            <motion.span
+                              layoutId="sidebar-active-pill"
+                              className="absolute inset-0 rounded-md bg-primary-50"
+                              transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                            />
+                          )}
+                          <span className="relative z-10 whitespace-nowrap">{subLabel}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              ) : null;
+
+              if (sidebarCollapsed) {
+                return (
+                  <Tooltip key={group.href}>
+                    <TooltipTrigger asChild>{groupBtn}</TooltipTrigger>
+                    <TooltipContent side={isRtl ? 'left' : 'right'}>{label}</TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              return (
+                <div key={group.href}>
+                  {groupBtn}
+                  <AnimatePresence initial={false}>{subList}</AnimatePresence>
+                </div>
+              );
+            }
+
+            /* ── Regular item ───────────────────────────────────── */
+            const { href, label: itemLabel, labelKey } = entry as { href: string; label: string; labelKey: MessageKey };
             const Icon = NAV_ICONS[href] ?? DashboardSVG;
-            const fullHref = orgSlug ? `/${orgSlug}${href}` : href;
+            const fullHref = orgSlug ? withLocale(locale, `/${orgSlug}${href}`) : withLocale(locale, href);
             const active   = pathname === fullHref || pathname.startsWith(fullHref + '/');
-            const translatedLabel = t(labelKey as MessageKey, label);
+            const translatedLabel = t(labelKey as MessageKey, itemLabel);
 
             const link = (
               <Link
                 href={fullHref}
                 aria-label={translatedLabel}
                 className={cn(
-                  'group relative flex items-center gap-2.5 rounded-lg text-sm transition-colors duration-150',
-                  sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2',
+                  'group relative flex items-center rounded-lg text-[14px] transition-colors duration-150 h-9',
+                  ICON_INDENT,
                   active
-                    ? 'text-indigo-700 dark:text-indigo-400 font-semibold'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100',
+                    ? 'text-primary-700 font-semibold'
+                    : 'text-gray-600 hover:bg-surface-page hover:text-gray-900',
                 )}
               >
                 {active && (
-                  <motion.span
-                    layoutId="sidebar-active-pill"
-                    className="absolute inset-0 rounded-lg bg-indigo-50 dark:bg-indigo-950/50"
-                    transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-                  />
+                  <>
+                    <motion.span
+                      layoutId="sidebar-active-pill"
+                      className="absolute inset-0 rounded-lg bg-primary-50"
+                      transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                    />
+                    <span className={cn(
+                      'absolute top-1.5 bottom-1.5 w-0.5 rounded-r bg-primary-600',
+                      isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0',
+                    )} />
+                  </>
                 )}
-                <span
-                  className={cn(
-                    'relative z-10 flex-shrink-0 transition-transform duration-200 ease-out',
-                    'group-hover:scale-110',
-                    active ? 'text-indigo-700 dark:text-indigo-400' : '',
-                  )}
-                >
+                <span className={cn(
+                  'relative z-10 flex-shrink-0 transition-transform duration-200 ease-out',
+                  'group-hover:scale-110',
+                  active ? 'text-primary-700' : '',
+                )}>
                   <Icon />
                 </span>
-                <AnimatePresence initial={false}>
-                  {!sidebarCollapsed && (
-                    <motion.span
-                      key="label"
-                      initial={{ opacity: 0, x: isRtl ? 5 : -5 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: isRtl ? 5 : -5 }}
-                      transition={{ duration: 0.16, ease: EASE_OUT }}
-                      className="relative z-10 whitespace-nowrap"
-                    >
-                      {translatedLabel}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
+                <motion.span
+                  animate={{ width: sidebarCollapsed ? 0 : 'auto', opacity: sidebarCollapsed ? 0 : 1 }}
+                  transition={sidebarCollapsed
+                    ? { width: { duration: 0.18, ease: EASE_SLIDE }, opacity: { duration: 0.08 } }
+                    : { width: { duration: 0.22, ease: EASE_SLIDE }, opacity: { duration: 0.14, delay: 0.16 } }
+                  }
+                  className="relative z-10 whitespace-nowrap overflow-hidden ms-2.5"
+                  style={{ minWidth: 0 }}
+                >
+                  {translatedLabel}
+                </motion.span>
               </Link>
             );
 
@@ -252,23 +412,22 @@ export function AppSidebar() {
 
         {/* User info */}
         {user && (
-          <div className="p-3 border-t border-gray-100 dark:border-gray-800">
+          <div className="p-3 border-t border-border">
             <div className={cn('flex items-center gap-2 px-1 py-1', sidebarCollapsed && 'justify-center')}>
-              <div className="h-7 w-7 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-xs font-semibold text-indigo-700 dark:text-indigo-300 flex-shrink-0">
-                {user.displayName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase()}
+              <div className="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-semibold text-primary-700 flex-shrink-0">
+                {user.displayName?.[0]?.toUpperCase() ?? displayIdentity(user.email)?.[0]?.toUpperCase()}
               </div>
               <AnimatePresence initial={false}>
                 {!sidebarCollapsed && (
                   <motion.div
                     key="user-meta"
-                    initial={{ opacity: 0, x: isRtl ? 5 : -5 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: isRtl ? 5 : -5 }}
-                    transition={{ duration: 0.16, ease: EASE_OUT }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1, transition: { duration: 0.14, delay: 0.16, ease: EASE_OUT } }}
+                    exit={{ opacity: 0, transition: { duration: 0.08 } }}
                     className="flex-1 min-w-0"
                   >
-                    <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">{user.displayName || user.email}</p>
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400 capitalize">{user.role?.replace('_', ' ')}</p>
+                    <p className="text-xs font-medium text-gray-900 truncate">{user.displayName || displayIdentity(user.email)}</p>
+                    <p className="text-[11px] text-gray-500 capitalize">{user.role === 'org_owner' ? 'Owner' : user.role?.replace('_', ' ')}</p>
                   </motion.div>
                 )}
               </AnimatePresence>

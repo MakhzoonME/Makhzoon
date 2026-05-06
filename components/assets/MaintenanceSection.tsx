@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { useMaintenance, useCreateMaintenance, useDeleteMaintenance } from '@/hooks/useMaintenance';
+import { useMaintenance, useCreateMaintenance, useDeleteMaintenance } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { formatDate } from '@/lib/utils/date';
-import { toast } from '@/hooks/useToast';
+import { toast } from '@/hooks/ui';
 function Trash2SVG() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
@@ -35,10 +35,10 @@ import { MAINTENANCE_TYPES, MaintenanceType } from '@/types';
 
 const TYPE_BG: Record<MaintenanceType, string> = {
   repair: 'bg-orange-50 text-orange-700',
-  service: 'bg-indigo-50 text-indigo-700',
+  service: 'bg-primary-50 text-primary-700',
   inspection: 'bg-purple-50 text-purple-700',
   upgrade: 'bg-green-50 text-green-700',
-  other: 'bg-gray-100 text-gray-700',
+  other: 'bg-surface-page text-gray-700',
 };
 
 export function MaintenanceSection({ assetId }: { assetId: string }) {
@@ -93,8 +93,8 @@ export function MaintenanceSection({ assetId }: { assetId: string }) {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-200 flex items-center gap-2">
+    <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
+      <div className="px-5 py-4 border-b border-border flex items-center gap-2">
         <WrenchSVG />
         <h2 className="text-sm font-semibold text-gray-900">Maintenance</h2>
         <div className="ml-auto flex items-center gap-3">
@@ -111,7 +111,7 @@ export function MaintenanceSection({ assetId }: { assetId: string }) {
       </div>
 
       {showForm && isAdmin && (
-        <form onSubmit={handleSubmit} className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 space-y-3">
+        <form onSubmit={handleSubmit} className="px-5 py-4 border-b border-border bg-surface-page/50 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-gray-500 mb-1 block">Type</label>
@@ -155,13 +155,13 @@ export function MaintenanceSection({ assetId }: { assetId: string }) {
         {isLoading ? (
           <div className="p-5 space-y-3">
             {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="h-14 rounded-md bg-gray-100 animate-pulse" />
+              <div key={i} className="h-14 rounded-md bg-surface-page animate-pulse" />
             ))}
           </div>
         ) : records.length === 0 ? (
           <p className="px-5 py-6 text-sm text-gray-400 text-center">No maintenance records.</p>
         ) : (
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-border">
             {records.map((r) => (
               <li key={r.id} className="px-5 py-3 group">
                 <div className="flex items-start justify-between gap-2">

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { updateStatus, deleteStatus } from '@/lib/firestore/organization-configs';
-import { getOrganizationById } from '@/lib/firestore/organizations';
+import { updateStatus, deleteStatus } from '@/lib/db/organization-configs';
+import { getOrganizationById } from '@/lib/db/organizations';
 import { statusPatchSchema } from '@/lib/validations/organization-config.schema';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { queueAuditLog } from '@/lib/audit/logger';
 
 interface Params { params: { orgId: string; statusId: string } }
 
@@ -23,7 +23,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     try {
       const { status, statuses } = await updateStatus(params.orgId, params.statusId, parsed.data, user.uid);
       if (!status) return NextResponse.json({ error: 'Status not found' }, { status: 404 });
-      await writeAuditLog({
+      queueAuditLog({
         organizationId: params.orgId,
         userId: user.uid,
         role: user.role,
@@ -56,7 +56,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     try {
       const { removed, statuses } = await deleteStatus(params.orgId, params.statusId, user.uid);
       if (!removed) return NextResponse.json({ error: 'Status not found' }, { status: 404 });
-      await writeAuditLog({
+      queueAuditLog({
         organizationId: params.orgId,
         userId: user.uid,
         role: user.role,

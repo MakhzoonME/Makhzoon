@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getRequests, createRequest } from '@/lib/firestore/requests';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { getRequests, createRequest } from '@/lib/db/requests';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { requestSchema } from '@/lib/validations/request.schema';
+import { requireActiveSubscription } from '@/lib/services/base.service';
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,9 +15,16 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status') ?? undefined;
+    const type = searchParams.get('type') ?? undefined;
     const userId = user.role === 'staff' ? user.uid : undefined;
+    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined;
+    const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined;
+    const sortBy = searchParams.get('sortBy') ?? undefined;
+    const sortDir = searchParams.get('sortDir') === 'asc' ? 'asc' as const : 'desc' as const;
 
-    const requests = await getRequests(orgId, { status, userId });
+    const requests = await getRequests(orgId, {
+      status, type, userId, page, pageSize, sortBy: sortBy as never, sortDir,
+    });
     return NextResponse.json(requests);
   } catch (err) {
     console.error('[GET /api/requests]', err);
@@ -31,6 +39,8 @@ export async function POST(req: NextRequest) {
 
     const orgId = user.organizationId;
     if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+
+    await requireActiveSubscription(orgId, user);
 
     const body = await req.json();
     const parsed = requestSchema.safeParse(body);
@@ -51,7 +61,7 @@ export async function POST(req: NextRequest) {
       updatedBy: user.uid,
     });
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: orgId,
       userId: user.uid,
       role: user.role,

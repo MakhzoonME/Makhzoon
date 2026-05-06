@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getInventoryAudits, createInventoryAudit } from '@/lib/firestore/inventory-audits';
-import { getAssets } from '@/lib/firestore/assets';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { getInventoryAudits, createInventoryAudit } from '@/lib/db/inventory-audits';
+import { getAssets } from '@/lib/db/assets';
+import { queueAuditLog } from '@/lib/audit/logger';
 import { inventoryAuditSchema } from '@/lib/validations/inventory.schema';
 
 export async function GET() {
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
     // Load all active assets to seed the audit
-    const { items: assets } = await getAssets(orgId, { status: 'Active', limit: 1000 });
+    const { items: assets } = await getAssets(orgId, { status: 'Active', pageSize: 1000 });
 
     const id = await createInventoryAudit({
       organizationId: orgId,
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       })),
     });
 
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: orgId,
       userId: user.uid,
       role: user.role,

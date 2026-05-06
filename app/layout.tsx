@@ -4,17 +4,21 @@ import './globals.css';
 import { QueryProvider } from '@/components/shared/QueryProvider';
 import { AppToastProvider } from '@/components/shared/ToastProvider';
 import { ThemeProvider } from '@/components/shared/ThemeProvider';
-import { LocaleProvider } from '@/components/shared/LocaleProvider';
 
-const geistSans = localFont({
-  src: './fonts/GeistVF.woff',
-  variable: '--font-geist-sans',
-  weight: '100 900',
+const capriola = localFont({
+  src: '../fonts/Capriola/Capriola-Regular.ttf',
+  variable: '--font-capriola',
+  weight: '400',
 });
-const geistMono = localFont({
-  src: './fonts/GeistMonoVF.woff',
-  variable: '--font-geist-mono',
-  weight: '100 900',
+const thmanyah = localFont({
+  src: [
+    { path: '../fonts/Thmanyah-Font-Family/thmanyah typeface/thmanyahsans/woff2/thmanyahsans-Light.woff2', weight: '300' },
+    { path: '../fonts/Thmanyah-Font-Family/thmanyah typeface/thmanyahsans/woff2/thmanyahsans-Regular.woff2', weight: '400' },
+    { path: '../fonts/Thmanyah-Font-Family/thmanyah typeface/thmanyahsans/woff2/thmanyahsans-Medium.woff2', weight: '500' },
+    { path: '../fonts/Thmanyah-Font-Family/thmanyah typeface/thmanyahsans/woff2/thmanyahsans-Bold.woff2', weight: '700' },
+    { path: '../fonts/Thmanyah-Font-Family/thmanyah typeface/thmanyahsans/woff2/thmanyahsans-Black.woff2', weight: '900' },
+  ],
+  variable: '--font-thmanyah',
 });
 
 export const metadata: Metadata = {
@@ -27,7 +31,7 @@ export const metadata: Metadata = {
   },
 };
 
-/** Inline script runs before React hydration to prevent theme flash (FOUC). */
+/** Inline script: sets theme + lang/dir before hydration to prevent flash. */
 const themeScript = `
 (function(){
   try {
@@ -38,30 +42,26 @@ const themeScript = `
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   } catch(e) {}
   try {
-    var l = localStorage.getItem('makhzoon-locale');
-    var loc = l ? JSON.parse(l).state?.locale : 'en';
-    if (loc) {
-      document.documentElement.lang = loc;
-      document.documentElement.dir  = loc === 'ar' ? 'rtl' : 'ltr';
-    }
+    var p = window.location.pathname.split('/');
+    var locale = (p[1] === 'ar') ? 'ar' : 'en';
+    document.documentElement.lang = locale;
+    document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
   } catch(e) {}
 })();
 `;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html suppressHydrationWarning>
       {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-surface-page`}>
+      <body className={`${capriola.variable} ${thmanyah.variable} antialiased bg-surface-page`}>
         <QueryProvider>
           <AppToastProvider>
             <ThemeProvider>
-              <LocaleProvider>
-                {children}
-              </LocaleProvider>
+              {children}
             </ThemeProvider>
           </AppToastProvider>
         </QueryProvider>

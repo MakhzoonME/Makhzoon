@@ -14,7 +14,7 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
 import { Asset, Warranty } from '@/types';
 import { RequestActionPanel } from '@/components/assets/RequestActionPanel';
-import { Pencil, Plus } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { AssetNotesSection } from '@/components/assets/AssetNotesSection';
 import { MaintenanceSection } from '@/components/assets/MaintenanceSection';
 import { CheckoutSection } from '@/components/assets/CheckoutSection';
@@ -40,9 +40,6 @@ function QrSVG() {
 }
 function ArrowUpRightSVG() {
   return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M3.5 10.5L10.5 3.5M4.5 3.5h6v6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-}
-function RefreshSVG() {
-  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M2 8A6 6 0 0 1 11.2 3.8L13 5.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><path d="M13 2v3.5h-3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /><path d="M14 8a6 6 0 0 1-9.2 4.2L3 10.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /><path d="M3 14v-3.5h3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 function UploadSVG() {
   return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 10V3M5 6l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M2 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>;
@@ -221,8 +218,9 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
                   </KVRow>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </dl>
+          </CardContent>
+        </Card>
 
           {/* Warranties card */}
           <Card>
@@ -267,25 +265,8 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
                   <span className="text-gray-700 dark:text-gray-300 tabular-nums">{formatDate(asset.updatedAt)}</span>
                 </KVRow>
               </div>
-            </dl>
           </CardContent>
         </Card>
-      </div>
-
-      <div className="bg-surface-card rounded-lg border border-border mb-6">
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">WARRANTIES</h2>
-          {isAdmin && (() => {
-            const now = new Date();
-            const hasActiveWarranty = warranties.some((w) => new Date(w.endDate) >= now);
-            return !hasActiveWarranty && (
-              <Button size="sm" onClick={() => setAddWarrantyOpen(true)}>
-                <Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ml-1">Add Warranty</span>
-              </Button>
-            );
-          })()}
-        </div>
-        <DataTable data={warranties} columns={wColumns} isLoading={wLoading} emptyMessage="No warranties attached." keyExtractor={(w) => w.id} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -293,82 +274,80 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
         <AssetQRCard assetId={assetId} assetName={asset.name} />
       </div>
 
-          {/* Notes + Maintenance */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <AssetNotesSection assetId={assetId} />
-            <MaintenanceSection assetId={assetId} />
-          </div>
-        </div>
-
-        {/* Right column: quick actions */}
-        <div className="space-y-4">
-          {/* Quick actions (staff) */}
-          {isStaff && (
-            <RequestActionPanel assetId={assetId} warranties={warranties} />
-          )}
-
-          {/* Admin quick actions */}
-          {isAdmin && (
-            <Card>
-              <CardContent className="p-5">
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Actions</h2>
-                <div className="space-y-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={() => setAddWarrantyOpen(true)}
-                  >
-                    <PlusSVG /><span className="ml-2">Add warranty</span>
-                  </Button>
-                  {asset.status !== 'Retired' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => setEditAssetOpen(true)}
-                    >
-                      <EditSVG /><span className="ml-2">Edit asset</span>
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start"
-                  >
-                    <UploadSVG /><span className="ml-2">Transfer asset</span>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Linked records */}
-          {(asset as any).poNumber || (asset as any).invoiceRef || (asset as any).insurance ? (
-            <Card>
-              <CardContent className="p-5">
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Linked</h2>
-                <div className="space-y-3">
-                  {(asset as any).poNumber && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 dark:text-gray-400">PO number</span>
-                      <span className="font-mono text-xs text-gray-900 dark:text-gray-100">{(asset as any).poNumber}</span>
-                    </div>
-                  )}
-                  {(asset as any).invoiceRef && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 dark:text-gray-400">Invoice</span>
-                      <button className="font-mono text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 flex items-center gap-1 transition-colors">
-                        {(asset as any).invoiceRef} <ArrowUpRightSVG />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ) : null}
-        </div>
+      {/* Notes + Maintenance */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+        <AssetNotesSection assetId={assetId} />
+        <MaintenanceSection assetId={assetId} />
       </div>
+
+      {/* Quick actions (staff) */}
+      {isStaff && (
+        <RequestActionPanel assetId={assetId} warranties={warranties} />
+      )}
+
+      {/* Admin quick actions */}
+      {isAdmin && (
+        <Card>
+          <CardContent className="p-5">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Actions</h2>
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => setAddWarrantyOpen(true)}
+              >
+                <PlusSVG /><span className="ml-2">Add warranty</span>
+              </Button>
+              {asset.status !== 'Retired' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => setEditAssetOpen(true)}
+                >
+                  <EditSVG /><span className="ml-2">Edit asset</span>
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start"
+              >
+                <UploadSVG /><span className="ml-2">Transfer asset</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Linked records */}
+      {(() => {
+        const extended = asset as Asset & { poNumber?: string; invoiceRef?: string; insurance?: string };
+        return extended.poNumber || extended.invoiceRef || extended.insurance ? (
+          <Card>
+            <CardContent className="p-5">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Linked</h2>
+              <div className="space-y-3">
+                {extended.poNumber && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">PO number</span>
+                    <span className="font-mono text-xs text-gray-900 dark:text-gray-100">{extended.poNumber}</span>
+                  </div>
+                )}
+                {extended.invoiceRef && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">Invoice</span>
+                    <button className="font-mono text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 flex items-center gap-1 transition-colors">
+                      {extended.invoiceRef} <ArrowUpRightSVG />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : null;
+      })()}
 
       {/* ── Dialogs ───────────────────────────────────────────────── */}
       <ConfirmDialog

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import type { Asset } from '@/types/asset.types'
-import type { CreateAssetInput, UpdateAssetInput } from '@/lib/services/assets.service'
+import type { CreateAssetInput } from '@/lib/services/assets.service'
 import { AssetsRepository } from '@/lib/modules/assets/repositories/assets.repository'
 import { hasPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'

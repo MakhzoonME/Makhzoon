@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
     const tenant = await resolveTenant()
     const parsed = createAssetSchema.safeParse(await req.json())
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return NextResponse.json(await service.create(tenant, parsed.data as any), { status: 201 })
   } catch (err) {
     return err instanceof NextResponse ? err : NextResponse.json({ error: 'Internal error' }, { status: 500 })

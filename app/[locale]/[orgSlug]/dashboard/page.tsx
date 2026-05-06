@@ -1,13 +1,11 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/useOrgSlug';
+import { useOrgSlug } from '@/hooks/ui';
 import { useAuthStore } from '@/store/auth.store';
-import { useT } from '@/hooks/useT';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { useT } from '@/hooks/ui';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
-import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { formatDate, daysUntil } from '@/lib/utils/date';
 import { Asset, Warranty, Request } from '@/types';
@@ -21,7 +19,7 @@ function ActiveIcon() {
     </svg>
   );
 }
-function RetiredIcon() {
+function _RetiredIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
       <path d="M3 7h12M5 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
@@ -415,7 +413,7 @@ export default function DashboardPage() {
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const activeAssets       = data?.assets.filter((a) => a.status === 'Active')  ?? [];
-  const retiredAssets      = data?.assets.filter((a) => a.status === 'Retired') ?? [];
+  const _retiredAssets      = data?.assets.filter((a) => a.status === 'Retired') ?? [];
   const totalAssets        = data?.assets ?? [];
   const expiringWarranties = data?.warranties ?? [];
   const pendingRequests    = data?.requests ?? [];

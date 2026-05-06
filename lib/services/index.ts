@@ -1,12 +1,6 @@
 export * from './base.service';
 export * as assetsService from './assets.service';
 export * as inventoryService from './inventory.service';
-export * as warrantiesService from './warranties.service';
-export * as requestsService from './requests.service';
-export * as supportService from './support.service';
-export * as usersService from './users.service';
 export * as organizationsService from './organizations.service';
 export * as packagesService from './packages.service';
-export * as reportsService from './reports.service';
-export * as auditLogsService from './audit-logs.service';
 export * as paymentLogsService from './payment-logs.service';

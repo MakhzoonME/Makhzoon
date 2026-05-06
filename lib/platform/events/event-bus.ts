@@ -1,4 +1,4 @@
-type EventHandler<T = any> = (payload: T) => void | Promise<void>
+type EventHandler<T = unknown> = (payload: T) => void | Promise<void>
 
 class EventBus {
   private listeners = new Map<string, EventHandler[]>()

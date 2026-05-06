@@ -19,13 +19,13 @@ export interface UpdateUserInput {
 }
 
 export async function getAll(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'users', 'view'))
+  if (!hasPermission(tenant, 'settings', 'users'))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   return getUsers(tenant.organizationId);
 }
 
 export async function getById(tenant: TenantContext, userId: string) {
-  if (!hasPermission(tenant, 'users', 'view'))
+  if (!hasPermission(tenant, 'settings', 'users'))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const target = await getUserById(userId);
   if (!target || target.organizationId !== tenant.organizationId)
@@ -34,7 +34,7 @@ export async function getById(tenant: TenantContext, userId: string) {
 }
 
 export async function update(tenant: TenantContext, userId: string, data: UpdateUserInput) {
-  if (!hasPermission(tenant, 'users', 'update'))
+  if (!hasPermission(tenant, 'settings', 'users'))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const target = await getUserById(userId);
@@ -54,7 +54,7 @@ export async function update(tenant: TenantContext, userId: string, data: Update
 }
 
 export async function deactivate(tenant: TenantContext, userId: string) {
-  if (!hasPermission(tenant, 'users', 'delete'))
+  if (!hasPermission(tenant, 'settings', 'users'))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const target = await getUserById(userId);
@@ -74,7 +74,7 @@ export async function deactivate(tenant: TenantContext, userId: string) {
 }
 
 export async function revokeInvite(tenant: TenantContext, token: string) {
-  if (!hasPermission(tenant, 'users', 'delete'))
+  if (!hasPermission(tenant, 'settings', 'users'))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const invite = await getInviteByToken(token);

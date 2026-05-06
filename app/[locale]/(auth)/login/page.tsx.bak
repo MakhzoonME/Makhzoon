@@ -70,7 +70,7 @@ function CheckSVG() {
 }
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
-const _EASE_SPRING = [0.34, 1.56, 0.64, 1] as const;
+const EASE_SPRING = [0.34, 1.56, 0.64, 1] as const;
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
 const FEATURE_LIST = [
@@ -283,185 +283,107 @@ export default function LoginPage() {
             )}
           </AnimatePresence>
 
-          <motion.div animate={shakeControls}>
-            <motion.div
-              variants={item}
-              className="bg-surface-card backdrop-blur-sm rounded-2xl shadow-lg shadow-black/10 border border-border p-8"
-            >
-              {/* Tab toggle */}
-              <div className="flex rounded-lg border border-border p-1 gap-1 bg-surface-page mb-6">
-                <button
-                  type="button"
-                  onClick={() => { setTab('email'); setEmailError(''); setUsernameError(''); }}
-                  className={cn(
-                    'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-sm font-medium transition-colors',
-                    tab === 'email' ? 'bg-surface-card text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                  )}
-                >
-                  <MailSVG /> Email
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setTab('username'); setEmailError(''); setUsernameError(''); }}
-                  className={cn(
-                    'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-sm font-medium transition-colors',
-                    tab === 'username' ? 'bg-surface-card text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                  )}
-                >
-                  <UserSVG /> Username
-                </button>
-              </div>
-  
-                <AnimatePresence mode="wait" initial={false}>
-                  {/* ── Email tab ─────────────────────────────────── */}
-                  {tab === 'email' && (
-                    <motion.form
-                      key="email"
-                      onSubmit={handleEmailSubmit}
-                      className="space-y-4"
-                      initial={{ opacity: 0, x: -12 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 12 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <div className="space-y-1.5">
-                        <Label htmlFor="email">Email address</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          autoComplete="email"
-                          placeholder="you@company.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="email-password">Password</Label>
-                          <button
-                            type="button"
-                            className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors font-medium"
-                          >
-                            Forgot password?
-                          </button>
-                        </div>
-                        <div className="relative">
-                          <Input
-                            id="email-password"
-                            type={showEmailPassword ? 'text' : 'password'}
-                            autoComplete="current-password"
-                            placeholder="••••••••"
-                            value={emailPassword}
-                            onChange={(e) => setEmailPassword(e.target.value)}
-                            required
-                            className="pr-10"
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                            onClick={() => setShowEmailPassword(!showEmailPassword)}
-                            aria-label={showEmailPassword ? 'Hide password' : 'Show password'}
-                          >
-                            {showEmailPassword ? <EyeOffSVG /> : <EyeSVG />}
-                          </button>
-                        </div>
-                      </div>
-                      <AnimatePresence initial={false}>
-                        {emailError && (
-                          <motion.div
-                            key="email-err"
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="flex items-start gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/40 rounded-xl px-3 py-2.5"
-                          >
-                            <AlertCircleSVG /><span>{emailError}</span>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                      <Button type="submit" className="w-full" disabled={emailLoading}>
-                        <AnimatePresence mode="wait" initial={false}>
-                          {emailLoading ? (
-                            <motion.span key="l" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="inline-flex items-center gap-2">
-                              <Loader2SVG />Signing in…
-                            </motion.span>
-                          ) : (
-                            <motion.span key="i" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                              Sign In
-                            </motion.span>
-                          )}
-                        </AnimatePresence>
-                      </Button>
-                    </motion.form>
-                  )}
-  
-                {/* ── Username tab ──────────────────────────────── */}
-                {tab === 'username' && (
+        <motion.div animate={shakeControls}>
+          <motion.div
+            variants={item}
+            className="bg-surface-card backdrop-blur-sm rounded-2xl shadow-lg shadow-black/10 border border-border p-8"
+          >
+            {/* Tab toggle */}
+            <div className="flex rounded-lg border border-border p-1 gap-1 bg-surface-page mb-6">
+              <button
+                type="button"
+                onClick={() => { setTab('email'); setEmailError(''); setUsernameError(''); }}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-sm font-medium transition-colors',
+                  tab === 'email' ? 'bg-surface-card text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                )}
+              >
+                <MailSVG /> Email
+              </button>
+              <button
+                type="button"
+                onClick={() => { setTab('username'); setEmailError(''); setUsernameError(''); }}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-sm font-medium transition-colors',
+                  tab === 'username' ? 'bg-surface-card text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                )}
+              >
+                <UserSVG /> Username
+              </button>
+            </div>
+
+              <AnimatePresence mode="wait" initial={false}>
+                {/* ── Email tab ─────────────────────────────────── */}
+                {tab === 'email' && (
                   <motion.form
-                    key="username"
-                    onSubmit={handleUsernameSubmit}
+                    key="email"
+                    onSubmit={handleEmailSubmit}
                     className="space-y-4"
-                    initial={{ opacity: 0, x: 12 }}
+                    initial={{ opacity: 0, x: -12 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -12 }}
+                    exit={{ opacity: 0, x: 12 }}
                     transition={{ duration: 0.2 }}
                   >
                     <div className="space-y-1.5">
-                      <Label htmlFor="username">Username</Label>
+                      <Label htmlFor="email">Email address</Label>
                       <Input
-                        id="username"
-                        type="text"
-                        autoComplete="username"
-                        autoCapitalize="none"
-                        autoCorrect="off"
-                        placeholder="your_username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
+                        id="email"
+                        type="email"
+                        autoComplete="email"
+                        placeholder="you@company.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         required
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="username-password">Password</Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="email-password">Password</Label>
+                        <button
+                          type="button"
+                          className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors font-medium"
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
                       <div className="relative">
                         <Input
-                          id="username-password"
-                          type={showUsernamePassword ? 'text' : 'password'}
+                          id="email-password"
+                          type={showEmailPassword ? 'text' : 'password'}
                           autoComplete="current-password"
                           placeholder="••••••••"
-                          value={usernamePassword}
-                          onChange={(e) => setUsernamePassword(e.target.value)}
+                          value={emailPassword}
+                          onChange={(e) => setEmailPassword(e.target.value)}
                           required
                           className="pr-10"
                         />
                         <button
                           type="button"
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                          onClick={() => setShowUsernamePassword(!showUsernamePassword)}
-                          aria-label={showUsernamePassword ? 'Hide password' : 'Show password'}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                          onClick={() => setShowEmailPassword(!showEmailPassword)}
+                          aria-label={showEmailPassword ? 'Hide password' : 'Show password'}
                         >
-                          {showUsernamePassword ? <EyeOffSVG /> : <EyeSVG />}
+                          {showEmailPassword ? <EyeOffSVG /> : <EyeSVG />}
                         </button>
                       </div>
                     </div>
                     <AnimatePresence initial={false}>
-                      {usernameError && (
+                      {emailError && (
                         <motion.div
-                          key="username-err"
+                          key="email-err"
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
                           transition={{ duration: 0.2 }}
-                          className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2"
+                          className="flex items-start gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/40 rounded-xl px-3 py-2.5"
                         >
-                          <AlertCircleSVG /><span>{usernameError}</span>
+                          <AlertCircleSVG /><span>{emailError}</span>
                         </motion.div>
                       )}
                     </AnimatePresence>
-                    <Button type="submit" className="w-full" disabled={usernameLoading}>
+                    <Button type="submit" className="w-full" disabled={emailLoading}>
                       <AnimatePresence mode="wait" initial={false}>
-                        {usernameLoading ? (
+                        {emailLoading ? (
                           <motion.span key="l" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="inline-flex items-center gap-2">
                             <Loader2SVG />Signing in…
                           </motion.span>
@@ -474,8 +396,85 @@ export default function LoginPage() {
                     </Button>
                   </motion.form>
                 )}
-              </AnimatePresence>
-            </motion.div>
+
+              {/* ── Username tab ──────────────────────────────── */}
+              {tab === 'username' && (
+                <motion.form
+                  key="username"
+                  onSubmit={handleUsernameSubmit}
+                  className="space-y-4"
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -12 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="space-y-1.5">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      type="text"
+                      autoComplete="username"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      placeholder="your_username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="username-password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="username-password"
+                        type={showUsernamePassword ? 'text' : 'password'}
+                        autoComplete="current-password"
+                        placeholder="••••••••"
+                        value={usernamePassword}
+                        onChange={(e) => setUsernamePassword(e.target.value)}
+                        required
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                        onClick={() => setShowUsernamePassword(!showUsernamePassword)}
+                        aria-label={showUsernamePassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showUsernamePassword ? <EyeOffSVG /> : <EyeSVG />}
+                      </button>
+                    </div>
+                  </div>
+                  <AnimatePresence initial={false}>
+                    {usernameError && (
+                      <motion.div
+                        key="username-err"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2"
+                      >
+                        <AlertCircleSVG /><span>{usernameError}</span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <Button type="submit" className="w-full" disabled={usernameLoading}>
+                    <AnimatePresence mode="wait" initial={false}>
+                      {usernameLoading ? (
+                        <motion.span key="l" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="inline-flex items-center gap-2">
+                          <Loader2SVG />Signing in…
+                        </motion.span>
+                      ) : (
+                        <motion.span key="i" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                          Sign In
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </Button>
+                </motion.form>
+              )}
+            </AnimatePresence>
           </motion.div>
 
           <motion.p variants={item} className="text-xs text-gray-400 dark:text-gray-500 mt-8 text-center">

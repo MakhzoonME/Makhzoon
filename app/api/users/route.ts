@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest) {
     const tenant = await resolveTenant();
     const user = tenant.user;
     const isAdmin = user.role === 'admin' || user.role === 'super_admin' || user.role === 'org_owner';
-    const canViewUsers = isAdmin || hasPermission(tenant, 'users', 'view');
+    const canViewUsers = isAdmin || hasPermission(tenant, 'settings', 'users');
     if (!canViewUsers) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const users = await getUsers(tenant.organizationId);

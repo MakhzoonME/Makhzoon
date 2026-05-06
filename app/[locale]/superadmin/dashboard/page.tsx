@@ -1,7 +1,6 @@
 'use client';
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { Building2, BadgeCheck, AlertTriangle, MessageSquare, ArrowRight } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';

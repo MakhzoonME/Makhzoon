@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/ui';
 import { SuperAdminBanner } from '@/components/layout/SuperAdminBanner';
 import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity } from 'lucide-react';
 import Link from 'next/link';
@@ -13,7 +13,7 @@ import { useTransferStore } from '@/store/transfer.store';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
-import { useT } from '@/hooks/useT';
+import { useT } from '@/hooks/ui';
 import type { MessageKey } from '@/locales/messages';
 
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);

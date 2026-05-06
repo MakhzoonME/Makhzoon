@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getInventoryAuditById, updateAuditItem } from '@/lib/db/inventory-audits';
 
 interface Params { params: { auditId: string } }
 
 export async function POST(req: NextRequest, { params }: Params) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
 
     const audit = await getInventoryAuditById(params.auditId);
-    if (!audit || audit.organizationId !== user.organizationId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (!audit || audit.organizationId !== tenant.organizationId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     if (audit.status === 'completed') return NextResponse.json({ error: 'Audit already completed' }, { status: 409 });
 
     const body = await req.json();
@@ -24,12 +23,13 @@ export async function POST(req: NextRequest, { params }: Params) {
       auditItemId,
       params.auditId,
       status,
-      { uid: user.uid, displayName: user.displayName || undefined },
+      { uid: tenant.userId, displayName: tenant.user.displayName || undefined },
       note
     );
 
     return NextResponse.json({ ok: true });
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error('[POST /api/inventory/audits/[auditId]/items]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

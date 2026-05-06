@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { checkoutSchema } from '@/lib/validations/asset-checkout.schema';
 import * as assetsService from '@/lib/services/assets.service';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   try {
     const { assetId } = await params;
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
 
     const checkouts = await assetsService.getAssetCheckouts(user, assetId);
     return NextResponse.json(checkouts);
@@ -22,8 +22,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ass
 export async function POST(req: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   try {
     const { assetId } = await params;
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
 
     const body = await req.json();
     const parsed = checkoutSchema.safeParse(body);

@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getAssetNoteById, deleteAssetNote } from '@/lib/db/asset-notes';
-import { queueAuditLog } from '@/lib/audit/logger';
+import { auditLog } from '@/lib/platform/audit';
 
 export async function DELETE(_req: NextRequest, { params }: { params: { assetId: string; noteId: string } }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
 
     const note = await getAssetNoteById(params.noteId);
     if (!note || note.organizationId !== user.organizationId || note.assetId !== params.assetId) {
@@ -21,10 +20,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: { assetId:
 
     await deleteAssetNote(params.noteId);
 
-    queueAuditLog({
-      organizationId: user.organizationId,
-      userId: user.uid,
-      role: user.role,
+    auditLog.queue({
+      tenant,
       action: 'ASSET_NOTE_DELETED',
       module: 'assets',
       recordId: params.assetId,

@@ -1,44 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getUsers, createUser } from '@/lib/db/users';
 import { adminAuth } from '@/lib/firebase/admin';
-import { queueAuditLog } from '@/lib/audit/logger';
+import { auditLog } from '@/lib/platform/audit';
 import { inviteUserSchema } from '@/lib/validations/user.schema';
-import { withLogging } from '@/lib/logging/with-logging';
-import { requireActiveSubscription } from '@/lib/services/base.service';
+import { hasPermission } from '@/lib/platform/permissions';
 
-async function _GET(_req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
     const isAdmin = user.role === 'admin' || user.role === 'super_admin' || user.role === 'org_owner';
-    const canViewUsers = isAdmin || (user.role === 'staff' && user.permissions?.settings?.users === true);
+    const canViewUsers = isAdmin || hasPermission(tenant, 'users', 'view');
     if (!canViewUsers) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const orgId = user.organizationId;
-    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
-
-    const users = await getUsers(orgId);
+    const users = await getUsers(tenant.organizationId);
     return NextResponse.json(users, {
       headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
     });
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error('[GET /api/users]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-async function _POST(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
     if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const orgId = user.organizationId;
-    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
-
-    await requireActiveSubscription(orgId, user);
+    if (tenant.subscription?.status && tenant.subscription.status !== 'ACTIVE')
+      return NextResponse.json({ error: 'Subscription expired' }, { status: 403 });
 
     const body = await req.json();
     const parsed = inviteUserSchema.safeParse(body);
@@ -46,24 +41,22 @@ async function _POST(req: NextRequest) {
 
     const data = parsed.data;
 
-    // Generate a temporary password (used only internally for creation, not returned to API)
-    // User will receive password reset email instead
     const tempPassword = randomBytes(16).toString('base64');
 
     const newUser = await adminAuth.createUser({
       email: data.email,
       displayName: data.displayName,
       password: tempPassword,
-      emailVerified: false, // User must verify email before full access
+      emailVerified: false,
     });
 
     await adminAuth.setCustomUserClaims(newUser.uid, {
       role: data.role,
-      organizationId: orgId,
+      organizationId: tenant.organizationId,
     });
 
     await createUser(newUser.uid, {
-      organizationId: orgId,
+      organizationId: tenant.organizationId,
       email: data.email,
       displayName: data.displayName,
       role: data.role,
@@ -72,19 +65,14 @@ async function _POST(req: NextRequest) {
       updatedBy: user.uid,
     });
 
-    queueAuditLog({
-      organizationId: orgId,
-      userId: user.uid,
-      role: user.role,
+    auditLog.queue({
+      tenant,
       action: 'USER_INVITED',
       module: 'users',
       recordId: newUser.uid,
       newValue: { email: data.email, role: data.role },
     });
 
-    // SECURITY: Do NOT return tempPassword in response
-    // Client should send password reset email instead via separate endpoint
-    // This prevents credentials from being exposed in logs/CDN/proxies
     return NextResponse.json({
       id: newUser.uid,
       email: data.email,
@@ -93,10 +81,8 @@ async function _POST(req: NextRequest) {
       message: 'User created. They will receive an email to set their password.'
     }, { status: 201 });
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error('[POST /api/users]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-
-export const GET  = withLogging(_GET);
-export const POST = withLogging(_POST);

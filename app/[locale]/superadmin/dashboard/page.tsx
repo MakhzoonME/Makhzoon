@@ -52,9 +52,7 @@ function StatCard({ label, value, icon: Icon, tone = 'indigo' }: StatCardProps) 
 }
 
 export default function SuperAdminDashboardPage() {
-  const { t } = useT();
-  const params = useParams<{ locale: string }>();
-  const locale = params?.locale ?? 'en';
+  const { t, locale } = useT();
   const { data: rows = [], isLoading } = useAllOrgsUsage();
   const { data: openTickets } = useSupportTickets({ status: 'OPEN' });
   const { enterTransferMode } = useTransferMode();

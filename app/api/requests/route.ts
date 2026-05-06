@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getRequests, createRequest } from '@/lib/db/requests';
-import { queueAuditLog } from '@/lib/audit/logger';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { requestSchema } from '@/lib/validations/request.schema';
-import { requireActiveSubscription } from '@/lib/services/base.service';
+import * as requestsService from '@/lib/modules/requests/services/requests.service';
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const orgId = user.organizationId;
-    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status') ?? undefined;
@@ -22,11 +17,12 @@ export async function GET(req: NextRequest) {
     const sortBy = searchParams.get('sortBy') ?? undefined;
     const sortDir = searchParams.get('sortDir') === 'asc' ? 'asc' as const : 'desc' as const;
 
-    const requests = await getRequests(orgId, {
+    const requests = await requestsService.getAll(tenant, {
       status, type, userId, page, pageSize, sortBy: sortBy as never, sortDir,
     });
     return NextResponse.json(requests);
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error('[GET /api/requests]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -34,45 +30,24 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const orgId = user.organizationId;
-    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
-
-    await requireActiveSubscription(orgId, user);
+    const tenant = await resolveTenant();
 
     const body = await req.json();
     const parsed = requestSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
     const data = parsed.data;
-    const id = await createRequest({
-      organizationId: orgId,
+    const result = await requestsService.create(tenant, {
       type: data.type,
       assetId: data.assetId || undefined,
       warrantyId: data.warrantyId || undefined,
       inventoryItemId: data.inventoryItemId || undefined,
       description: data.description,
-      status: 'PENDING',
-      createdBy: user.uid,
-      createdByName: user.displayName || undefined,
-      createdByEmail: user.email || undefined,
-      updatedBy: user.uid,
     });
 
-    queueAuditLog({
-      organizationId: orgId,
-      userId: user.uid,
-      role: user.role,
-      action: 'REQUEST_SUBMITTED',
-      module: 'requests',
-      recordId: id,
-      newValue: { type: data.type, description: data.description },
-    });
-
-    return NextResponse.json({ id }, { status: 201 });
+    return NextResponse.json(result, { status: 201 });
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error('[POST /api/requests]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

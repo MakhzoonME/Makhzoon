@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getAssetById } from '@/lib/db/assets';
 import { generateAssetQRDataUrl, assetUrl } from '@/lib/qr';
 
 export async function GET(req: NextRequest, { params }: { params: { assetId: string } }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
 
     const asset = await getAssetById(params.assetId);
     if (!asset || asset.organizationId !== user.organizationId) {

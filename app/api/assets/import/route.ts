@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { createAsset } from '@/lib/db/assets';
-import { queueAuditLog } from '@/lib/audit/logger';
+import { auditLog } from '@/lib/platform/audit';
 import { assetSchema } from '@/lib/validations/asset.schema';
-import { requireActiveSubscription } from '@/lib/services/base.service';
 import { z } from 'zod';
 
 const importBodySchema = z.object({
@@ -24,14 +23,14 @@ export async function POST(req: NextRequest) {
   );
   if (rateLimitResult) return rateLimitResult;
 
-  const user = await verifySessionCookie();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const tenant = await resolveTenant();
+  const user = tenant.user;
   if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
-  if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
 
-  await requireActiveSubscription(user.organizationId, user);
+  if (tenant.subscription?.status && tenant.subscription.status !== 'ACTIVE')
+    return NextResponse.json({ error: 'Subscription expired' }, { status: 403 });
 
   const body = await req.json().catch(() => null);
   const parsed = importBodySchema.safeParse(body);
@@ -65,7 +64,7 @@ export async function POST(req: NextRequest) {
     const d = rowParsed.data;
     try {
       await createAsset({
-        organizationId: user.organizationId,
+        organizationId: tenant.organizationId,
         name: d.name,
         category: d.category,
         status: d.status,
@@ -84,10 +83,8 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  queueAuditLog({
-    organizationId: user.organizationId,
-    userId: user.uid,
-    role: user.role,
+  auditLog.queue({
+    tenant,
     action: 'ASSETS_IMPORTED',
     module: 'assets',
     newValue: { imported, failed: errors.length, total: parsed.data.rows.length },

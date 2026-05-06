@@ -1,70 +1,60 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { inventoryItemSchema } from '@/lib/validations/inventory.schema';
-import { withLogging } from '@/lib/logging/with-logging';
-import * as inventoryService from '@/lib/services/inventory.service';
+import { NextRequest, NextResponse } from 'next/server'
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { InventoryService } from '@/lib/modules/inventory/services/inventory.service'
+import { createInventoryItemSchema } from '@/lib/modules/inventory/validators/schemas'
 
 interface Params { params: { itemId: string } }
 
-async function _GET(_req: NextRequest, { params }: Params) {
+const service = new InventoryService()
+
+export async function GET(_req: NextRequest, { params }: Params) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const item = await inventoryService.getOrgInventoryItem(user, params.itemId);
-    return NextResponse.json(item);
+    const tenant = await resolveTenant()
+    const item = await service.getById(tenant, params.itemId)
+    return NextResponse.json(item)
   } catch (err) {
-    const message = err instanceof Error ? err.message : '';
-    if (message === 'Inventory item not found') return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    console.error('[GET /api/inventory/[itemId]]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    if (err instanceof NextResponse) return err
+    console.error('[GET /api/inventory/[itemId]]', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-async function _PATCH(req: NextRequest, { params }: Params) {
+export async function PATCH(req: NextRequest, { params }: Params) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant()
+    const body = await req.json()
+    const parsed = createInventoryItemSchema.safeParse(body)
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
 
-    const body = await req.json();
-    const parsed = inventoryItemSchema.safeParse(body);
-    if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
-
-    const data = parsed.data;
-    const transformedData = {
-      ...data,
+    const data = parsed.data
+    await service.update(tenant, params.itemId, {
+      name: data.name,
+      category: data.category,
+      sku: data.sku || undefined,
+      unit: data.unit,
+      minimumThreshold: data.minimumThreshold,
       reorderQuantity: data.reorderQuantity ? Number(data.reorderQuantity) : undefined,
+      location: data.location || undefined,
+      supplier: data.supplier || undefined,
       unitCost: data.unitCost ? Number(data.unitCost) : undefined,
-    };
-    await inventoryService.updateInventoryItemWithAudit(user, params.itemId, transformedData);
-    return NextResponse.json({ ok: true });
+      notes: data.notes || undefined,
+    })
+    return NextResponse.json({ ok: true })
   } catch (err) {
-    const message = err instanceof Error ? err.message : '';
-    if (message === 'Forbidden') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (message === 'Inventory item not found') return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    console.error('[PATCH /api/inventory/[itemId]]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    if (err instanceof NextResponse) return err
+    console.error('[PATCH /api/inventory/[itemId]]', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-async function _DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    await inventoryService.deleteInventoryItemWithAudit(user, params.itemId);
-    return NextResponse.json({ ok: true });
+    const tenant = await resolveTenant()
+    await service.delete(tenant, params.itemId)
+    return NextResponse.json({ ok: true })
   } catch (err) {
-    const message = err instanceof Error ? err.message : '';
-    if (message === 'Forbidden') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (message === 'Inventory item not found') return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    console.error('[DELETE /api/inventory/[itemId]]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    if (err instanceof NextResponse) return err
+    console.error('[DELETE /api/inventory/[itemId]]', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const GET    = withLogging(_GET as any);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const PATCH  = withLogging(_PATCH as any);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const DELETE = withLogging(_DELETE as any);

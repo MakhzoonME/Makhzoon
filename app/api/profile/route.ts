@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
@@ -15,23 +15,29 @@ export async function PATCH(req: NextRequest) {
   );
   if (rateLimitResult) return rateLimitResult;
 
-  const user = await verifySessionCookie();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const tenant = await resolveTenant();
+    const user = tenant.user;
 
-  const { displayName, photoURL } = await req.json();
+    const { displayName, photoURL } = await req.json();
 
-  const updates: Record<string, string> = {};
-  if (displayName) updates.displayName = displayName;
-  if (photoURL) updates.photoURL = photoURL;
+    const updates: Record<string, string> = {};
+    if (displayName) updates.displayName = displayName;
+    if (photoURL) updates.photoURL = photoURL;
 
-  if (Object.keys(updates).length === 0) return NextResponse.json({ ok: true });
+    if (Object.keys(updates).length === 0) return NextResponse.json({ ok: true });
 
-  await adminAuth.updateUser(user.uid, updates);
+    await adminAuth.updateUser(user.uid, updates);
 
-  const firestoreUpdates: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp(), updatedBy: user.uid };
-  if (displayName) firestoreUpdates.displayName = displayName;
-  if (photoURL) firestoreUpdates.photoURL = photoURL;
-  await adminDb.collection('users').doc(user.uid).update(firestoreUpdates);
+    const firestoreUpdates: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp(), updatedBy: user.uid };
+    if (displayName) firestoreUpdates.displayName = displayName;
+    if (photoURL) firestoreUpdates.photoURL = photoURL;
+    await adminDb.collection('users').doc(user.uid).update(firestoreUpdates);
 
-  return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    if (err instanceof NextResponse) return err;
+    console.error('[PATCH /api/profile]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

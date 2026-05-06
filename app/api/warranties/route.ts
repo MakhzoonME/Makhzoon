@@ -1,25 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getWarranties, createWarranty, getExpiringWarranties } from '@/lib/db/warranties';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getAssetById } from '@/lib/db/assets';
-import { queueAuditLog } from '@/lib/audit/logger';
 import { warrantySchema } from '@/lib/validations/warranty.schema';
-import { hasPermission } from '@/lib/permissions';
-import { requireActiveSubscription } from '@/lib/services/base.service';
+import * as warrantiesService from '@/lib/modules/warranties/services/warranties.service';
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const orgId = user.organizationId;
-    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+    const tenant = await resolveTenant();
 
     const { searchParams } = new URL(req.url);
     const expiringSoon = searchParams.get('expiringSoon') === 'true';
 
     if (expiringSoon) {
-      const warranties = await getExpiringWarranties(orgId, 30);
+      const warranties = await warrantiesService.getExpiring(tenant, 30);
       return NextResponse.json(warranties);
     }
 
@@ -30,11 +23,12 @@ export async function GET(req: NextRequest) {
     const sortBy = searchParams.get('sortBy') ?? undefined;
     const sortDir = searchParams.get('sortDir') === 'asc' ? 'asc' as const : 'desc' as const;
 
-    const warranties = await getWarranties(orgId, {
+    const warranties = await warrantiesService.getAll(tenant, {
       assetId, status, page, pageSize, sortBy: sortBy as never, sortDir,
     });
     return NextResponse.json(warranties);
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error('[GET /api/warranties]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -42,14 +36,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!hasPermission(user, 'warranties', 'create')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-
-    const orgId = user.organizationId;
-    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
-
-    await requireActiveSubscription(orgId, user);
+    const tenant = await resolveTenant();
+    const orgId = tenant.organizationId;
 
     const body = await req.json();
     const parsed = warrantySchema.safeParse(body);
@@ -60,8 +48,7 @@ export async function POST(req: NextRequest) {
     if (!asset || asset.organizationId !== orgId) return NextResponse.json({ error: 'Asset not found' }, { status: 404 });
     if (asset.status === 'Retired') return NextResponse.json({ error: 'Cannot attach warranty to a retired asset' }, { status: 422 });
 
-    const id = await createWarranty({
-      organizationId: orgId,
+    const result = await warrantiesService.create(tenant, {
       assetId: data.assetId,
       vendor: data.vendor,
       startDate: new Date(data.startDate),
@@ -69,22 +56,11 @@ export async function POST(req: NextRequest) {
       reminder: data.reminder,
       notes: data.notes || undefined,
       receiptUrl: data.receiptUrl || undefined,
-      createdBy: user.uid,
-      updatedBy: user.uid,
     });
 
-    queueAuditLog({
-      organizationId: orgId,
-      userId: user.uid,
-      role: user.role,
-      action: 'WARRANTY_CREATED',
-      module: 'warranties',
-      recordId: id,
-      newValue: { ...data },
-    });
-
-    return NextResponse.json({ id }, { status: 201 });
+    return NextResponse.json(result, { status: 201 });
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error('[POST /api/warranties]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

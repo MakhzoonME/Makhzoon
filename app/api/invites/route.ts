@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
-import { withLogging } from '@/lib/logging/with-logging';
 import {
   getInvites,
   getPendingInviteForEmail,
@@ -14,22 +13,20 @@ import { createInviteSchema } from '@/lib/validations/invite.schema';
 import { adminAuth } from '@/lib/firebase/admin';
 import { sendEmail } from '@/lib/email/resend';
 import { inviteEmail } from '@/lib/email/templates';
-import { queueAuditLog } from '@/lib/audit/logger';
+import { auditLog } from '@/lib/platform/audit';
 import { generateInviteQRDataUrl } from '@/lib/qr';
-import { requireActiveSubscription } from '@/lib/services/base.service';
 
-async function _GET(_req: NextRequest) {
-  const user = await verifySessionCookie();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export async function GET(_req: NextRequest) {
+  const tenant = await resolveTenant();
+  const user = tenant.user;
   if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
 
-  const invites = await getInvites(user.organizationId);
+  const invites = await getInvites(tenant.organizationId);
   return NextResponse.json(invites);
 }
 
-async function _POST(req: NextRequest) {
+export async function POST(req: NextRequest) {
   // SECURITY: Rate limit invite sending (10 per IP per hour)
   const clientIp = getClientIp(req);
   const rateLimitResult = checkRateLimit(
@@ -40,13 +37,13 @@ async function _POST(req: NextRequest) {
   );
   if (rateLimitResult) return rateLimitResult;
 
-  const user = await verifySessionCookie();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const tenant = await resolveTenant();
+  const user = tenant.user;
   if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
 
-  await requireActiveSubscription(user.organizationId, user);
+  if (tenant.subscription?.status && tenant.subscription.status !== 'ACTIVE')
+    return NextResponse.json({ error: 'Subscription expired' }, { status: 403 });
 
   const body = await req.json();
   const parsed = createInviteSchema.safeParse(body);
@@ -60,10 +57,9 @@ async function _POST(req: NextRequest) {
     const existing = await adminAuth.getUserByEmail(normalizedEmail).catch(() => null);
     if (existing) {
       // SECURITY: Don't reveal if user exists (prevents user enumeration)
-      // Return same generic error regardless
       return NextResponse.json({ error: 'This email cannot be invited' }, { status: 409 });
     }
-    const pending = await getPendingInviteForEmail(user.organizationId, normalizedEmail);
+    const pending = await getPendingInviteForEmail(tenant.organizationId, normalizedEmail);
     if (pending) {
       return NextResponse.json({ error: 'This email cannot be invited' }, { status: 409 });
     }
@@ -75,7 +71,7 @@ async function _POST(req: NextRequest) {
       // SECURITY: Don't reveal if username exists
       return NextResponse.json({ error: 'This username cannot be invited' }, { status: 409 });
     }
-    const pending = await getPendingInviteForUsername(user.organizationId, normalizedUsername);
+    const pending = await getPendingInviteForUsername(tenant.organizationId, normalizedUsername);
     if (pending) {
       return NextResponse.json({ error: 'This username cannot be invited' }, { status: 409 });
     }
@@ -85,7 +81,7 @@ async function _POST(req: NextRequest) {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   const id = await createInvite({
-    organizationId: user.organizationId,
+    organizationId: tenant.organizationId,
     email: normalizedEmail,
     username: normalizedUsername,
     displayName,
@@ -98,7 +94,7 @@ async function _POST(req: NextRequest) {
     permissions: (permissions ?? null) as import('@/types').UserPermissions | null,
   });
 
-  const org = await getOrganizationById(user.organizationId);
+  const org = await getOrganizationById(tenant.organizationId);
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? req.nextUrl.origin;
   const acceptUrl = `${baseUrl}/invites/${token}`;
   let messageSent = false;
@@ -123,10 +119,8 @@ async function _POST(req: NextRequest) {
     }
   }
 
-  queueAuditLog({
-    organizationId: user.organizationId,
-    userId: user.uid,
-    role: user.role,
+  auditLog.queue({
+    tenant,
     action: 'INVITE_SENT',
     module: 'users',
     recordId: id,
@@ -140,6 +134,3 @@ async function _POST(req: NextRequest) {
     { status: 201 },
   );
 }
-
-export const GET  = withLogging(_GET);
-export const POST = withLogging(_POST);

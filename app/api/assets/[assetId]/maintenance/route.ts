@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getAssetById } from '@/lib/db/assets';
 import { getMaintenanceRecords, createMaintenanceRecord } from '@/lib/db/maintenance-records';
-import { queueAuditLog } from '@/lib/audit/logger';
+import { auditLog } from '@/lib/platform/audit';
 import { maintenanceRecordSchema } from '@/lib/validations/maintenance-record.schema';
 
 export async function GET(_req: NextRequest, { params }: { params: { assetId: string } }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
 
     const asset = await getAssetById(params.assetId);
     if (!asset || asset.organizationId !== user.organizationId) {
@@ -26,12 +25,11 @@ export async function GET(_req: NextRequest, { params }: { params: { assetId: st
 
 export async function POST(req: NextRequest, { params }: { params: { assetId: string } }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
     if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
 
     const asset = await getAssetById(params.assetId);
     if (!asset || asset.organizationId !== user.organizationId) {
@@ -55,10 +53,8 @@ export async function POST(req: NextRequest, { params }: { params: { assetId: st
       createdByEmail: user.email,
     });
 
-    queueAuditLog({
-      organizationId: user.organizationId,
-      userId: user.uid,
-      role: user.role,
+    auditLog.queue({
+      tenant,
       action: 'MAINTENANCE_ADDED',
       module: 'assets',
       recordId: params.assetId,

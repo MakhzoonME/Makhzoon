@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getAssets } from '@/lib/db/assets';
 import { exportAssetsToCSV } from '@/lib/export/csv';
 import { format } from 'date-fns';
 
 export async function GET(_req: NextRequest) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
     if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const orgId = user.organizationId;
-    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+    const orgId = tenant.organizationId;
 
     const { items: assets } = await getAssets(orgId, { pageSize: 1000 });
     const csv = exportAssetsToCSV(assets);

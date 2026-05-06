@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { assetSchema } from '@/lib/validations/asset.schema';
 import * as assetsService from '@/lib/services/assets.service';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
 
     const { assetId } = await params;
     const asset = await assetsService.getOrgAsset(user, assetId);
@@ -15,6 +15,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ass
       headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
     });
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     const message = err instanceof Error ? err.message : '';
     if (message === 'Asset not found') return NextResponse.json({ error: 'Not found' }, { status: 404 });
     console.error('[GET /api/assets/[assetId]]', err);
@@ -24,8 +25,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ass
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
 
     const { assetId } = await params;
     const body = await req.json();
@@ -41,6 +42,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ asse
     await assetsService.updateAssetWithAudit(user, assetId, transformedData);
     return NextResponse.json({ success: true });
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     const message = err instanceof Error ? err.message : '';
     if (message === 'Forbidden') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (message === 'Asset not found') return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -51,13 +53,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ asse
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
 
     const { assetId } = await params;
     await assetsService.deleteAssetWithAudit(user, assetId);
     return NextResponse.json({ success: true });
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     const message = err instanceof Error ? err.message : '';
     if (message === 'Forbidden') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (message === 'Asset not found') return NextResponse.json({ error: 'Not found' }, { status: 404 });

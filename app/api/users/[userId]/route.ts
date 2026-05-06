@@ -1,36 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { getUserById, updateUser } from '@/lib/db/users';
-import { queueAuditLog } from '@/lib/audit/logger';
+import { auditLog } from '@/lib/platform/audit';
 import { invalidateCachedPermissions, invalidateCachedSessionsForUser } from '@/lib/firebase/session-cache';
 import { FieldValue } from 'firebase-admin/firestore';
-import { requireActiveSubscription } from '@/lib/services/base.service';
 
 export async function PATCH(req: NextRequest, { params }: { params: { userId: string } }) {
-  const caller = await verifySessionCookie();
+  const tenant = await resolveTenant().catch(() => null);
+  const caller = tenant?.user;
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (caller.role !== 'admin' && caller.role !== 'super_admin' && caller.role !== 'org_owner')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+  if (tenant?.subscription?.status && tenant.subscription.status !== 'ACTIVE')
+    return NextResponse.json({ error: 'Subscription expired' }, { status: 403 });
+
   const isSuperAdmin = caller.role === 'super_admin';
-  const orgId = caller.organizationId;
-  // Super admins can modify org users without being part of the org
-  if (!orgId && !isSuperAdmin) return NextResponse.json({ error: 'No organization' }, { status: 400 });
-  if (orgId) await requireActiveSubscription(orgId, caller);
+  const orgId = tenant?.organizationId ?? caller.organizationId;
 
   const { userId } = params;
   if (userId === caller.uid) return NextResponse.json({ error: 'You cannot change your own role' }, { status: 400 });
 
-  // Fetch target user to enforce role hierarchy
   const targetUser = await getUserById(userId);
   if (!targetUser) return NextResponse.json({ error: 'User not found' }, { status: 404 });
-  // Super admins can modify any org's users; regular callers must be in the same org
   if (!isSuperAdmin && orgId && targetUser.organizationId !== orgId) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // Admin cannot modify owners — only org_owner or super_admin can
   if (targetUser.role === 'org_owner' && caller.role === 'admin') {
     return NextResponse.json({ error: 'Admins cannot modify Owner accounts' }, { status: 403 });
   }
@@ -39,7 +36,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { userId: st
   const { role, permissions } = body;
   if (!['org_owner', 'admin', 'staff'].includes(role)) return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
 
-  // Only org_owner or super_admin may grant the org_owner role
   if (role === 'org_owner' && caller.role !== 'super_admin' && caller.role !== 'org_owner') {
     return NextResponse.json({ error: 'Only an Owner or Super Admin can grant the Owner role' }, { status: 403 });
   }
@@ -47,46 +43,45 @@ export async function PATCH(req: NextRequest, { params }: { params: { userId: st
   await updateUser(userId, { role, permissions: permissions ?? undefined, updatedBy: caller.uid });
   const existingClaims = (await adminAuth.getUser(userId)).customClaims ?? {};
   await adminAuth.setCustomUserClaims(userId, { ...existingClaims, role });
-  // Bust server-side caches so the change takes effect on the user's next request
   await adminAuth.revokeRefreshTokens(userId);
   invalidateCachedPermissions(userId);
   invalidateCachedSessionsForUser(userId);
 
-  queueAuditLog({
-    organizationId: (caller.organizationId ?? targetUser.organizationId)!,
-    userId: caller.uid,
-    role: caller.role,
-    action: 'USER_UPDATED',
-    module: 'users',
-    recordId: userId,
-    newValue: { role },
-  });
+  if (tenant) {
+    auditLog.queue({
+      tenant,
+      action: 'USER_UPDATED',
+      module: 'users',
+      recordId: userId,
+      newValue: { role },
+    });
+  }
 
   return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { userId: string } }) {
-  const caller = await verifySessionCookie();
+  const tenant = await resolveTenant().catch(() => null);
+  const caller = tenant?.user;
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (caller.role !== 'admin' && caller.role !== 'super_admin' && caller.role !== 'org_owner')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+  if (tenant?.subscription?.status && tenant.subscription.status !== 'ACTIVE')
+    return NextResponse.json({ error: 'Subscription expired' }, { status: 403 });
+
   const isSuperAdminDel = caller.role === 'super_admin';
-  const orgId = caller.organizationId;
-  if (!orgId && !isSuperAdminDel) return NextResponse.json({ error: 'No organization' }, { status: 400 });
-  if (orgId) await requireActiveSubscription(orgId, caller);
+  const orgId = tenant?.organizationId ?? caller.organizationId;
 
   const { userId } = params;
   if (userId === caller.uid) return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });
 
-  // Fetch target user to enforce role hierarchy
   const targetUser = await getUserById(userId);
   if (!targetUser) return NextResponse.json({ error: 'User not found' }, { status: 404 });
   if (!isSuperAdminDel && orgId && targetUser.organizationId !== orgId) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // Admin cannot delete owners
   if (targetUser.role === 'org_owner' && caller.role === 'admin') {
     return NextResponse.json({ error: 'Admins cannot remove Owner accounts' }, { status: 403 });
   }
@@ -106,15 +101,15 @@ export async function DELETE(req: NextRequest, { params }: { params: { userId: s
     }
     await adminDb.collection('users').doc(userId).delete();
 
-    queueAuditLog({
-      organizationId: (caller.organizationId ?? targetUser.organizationId)!,
-      userId: caller.uid,
-      role: caller.role,
-      action: 'USER_DELETED',
-      module: 'users',
-      recordId: userId,
-      newValue: { deleted: true },
-    });
+    if (tenant) {
+      auditLog.queue({
+        tenant,
+        action: 'USER_DELETED',
+        module: 'users',
+        recordId: userId,
+        newValue: { deleted: true },
+      });
+    }
   } else {
     await adminAuth.updateUser(userId, { disabled: true });
     await adminAuth.revokeRefreshTokens(userId);
@@ -124,15 +119,15 @@ export async function DELETE(req: NextRequest, { params }: { params: { userId: s
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    queueAuditLog({
-      organizationId: (caller.organizationId ?? targetUser.organizationId)!,
-      userId: caller.uid,
-      role: caller.role,
-      action: 'USER_DEACTIVATED',
-      module: 'users',
-      recordId: userId,
-      newValue: { status: 'deactivated' },
-    });
+    if (tenant) {
+      auditLog.queue({
+        tenant,
+        action: 'USER_DEACTIVATED',
+        module: 'users',
+        recordId: userId,
+        newValue: { status: 'deactivated' },
+      });
+    }
   }
 
   return NextResponse.json({ ok: true });

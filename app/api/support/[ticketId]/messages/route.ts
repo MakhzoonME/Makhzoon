@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import {
   getTicketMessages,
   getTicketMessagesAny,
@@ -8,7 +8,7 @@ import {
   getSupportTicketByIdAny,
 } from '@/lib/db/support-tickets';
 import { getOrganizationById } from '@/lib/db/organizations';
-import { queueAuditLog } from '@/lib/audit/logger';
+import { auditLog } from '@/lib/platform/audit';
 import { ticketMessageSchema } from '@/lib/validations/support-ticket.schema';
 import { sendEmail } from '@/lib/email/resend';
 import { supportTicketReplyEmail } from '@/lib/email/templates';
@@ -17,8 +17,8 @@ const SUPPORT_EMAILS = ['info@makhzoon.me', 'support@makhzoon.me'];
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ ticketId: string }> }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
 
     const { ticketId } = await params;
 
@@ -27,10 +27,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tic
       return NextResponse.json(messages);
     }
 
-    if (!user.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    const messages = await getTicketMessages(ticketId, user.organizationId);
+    if (!tenant.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const messages = await getTicketMessages(ticketId, tenant.organizationId);
     return NextResponse.json(messages);
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error('[GET /api/support/[ticketId]/messages]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -38,8 +39,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tic
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ ticketId: string }> }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
 
     const { ticketId } = await params;
     const body = await req.json();
@@ -60,10 +61,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tic
         parsed.data.body,
       );
 
-      queueAuditLog({
-        organizationId: ticket.organizationId,
-        userId: user.uid,
-        role: user.role,
+      auditLog.queue({
+        tenant,
         action: 'TICKET_REPLIED',
         module: 'support',
         recordId: ticketId,
@@ -95,21 +94,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tic
       return NextResponse.json(message, { status: 201 });
     }
 
-    if (!user.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!tenant.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const message = await addTicketMessage(
       ticketId,
-      user.organizationId,
+      tenant.organizationId,
       user.uid,
       user.displayName || user.email,
       authorRole,
       parsed.data.body,
     );
 
-    queueAuditLog({
-      organizationId: user.organizationId,
-      userId: user.uid,
-      role: user.role,
+    auditLog.queue({
+      tenant,
       action: 'TICKET_REPLIED',
       module: 'support',
       recordId: ticketId,
@@ -117,11 +114,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tic
 
     (async () => {
       try {
-        const org = await getOrganizationById(user.organizationId!);
+        const org = await getOrganizationById(tenant.organizationId!);
         const ticket = await getSupportTicketByIdAny(ticketId);
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? '';
         const { html, text } = supportTicketReplyEmail({
-          orgName: org?.name ?? user.organizationId!,
+          orgName: org?.name ?? tenant.organizationId!,
           subject: ticket?.subject ?? ticketId,
           ticketId,
           authorName: user.displayName || user.email || 'Unknown',
@@ -130,7 +127,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tic
         });
         await sendEmail({
           to: SUPPORT_EMAILS,
-          subject: `[Support Reply] ${ticket?.subject ?? ticketId} — ${org?.name ?? user.organizationId}`,
+          subject: `[Support Reply] ${ticket?.subject ?? ticketId} — ${org?.name ?? tenant.organizationId}`,
           html,
           text,
         });
@@ -141,6 +138,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tic
 
     return NextResponse.json(message, { status: 201 });
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error('[POST /api/support/[ticketId]/messages]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

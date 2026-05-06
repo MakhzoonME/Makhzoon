@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getAuditLogs } from '@/lib/db/audit-logs';
 import { adminDb } from '@/lib/firebase/admin';
 import { AuditLog } from '@/types';
@@ -91,8 +91,8 @@ async function enrichLogs(logs: AuditLog[]): Promise<AuditLog[]> {
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
     if (user.role !== 'super_admin' && user.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const orgId =
       user.role === 'admin'
-        ? (user.organizationId ?? undefined)
+        ? tenant.organizationId
         : (searchParams.get('orgId') ?? undefined);
     const userId = searchParams.get('userId') ?? undefined;
     const action = searchParams.get('action') ?? undefined;

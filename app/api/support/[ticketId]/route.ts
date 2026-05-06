@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import {
   getSupportTicketById,
   getSupportTicketByIdAny,
   updateSupportTicket,
   updateSupportTicketAdmin,
 } from '@/lib/db/support-tickets';
-import { queueAuditLog } from '@/lib/audit/logger';
+import { auditLog } from '@/lib/platform/audit';
 import {
   supportTicketAdminUpdateSchema,
   supportTicketOrgUpdateSchema,
@@ -14,8 +14,8 @@ import {
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ ticketId: string }> }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
 
     const { ticketId } = await params;
 
@@ -25,11 +25,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tic
       return NextResponse.json(ticket);
     }
 
-    if (!user.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    const ticket = await getSupportTicketById(ticketId, user.organizationId);
+    if (!tenant.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const ticket = await getSupportTicketById(ticketId, tenant.organizationId);
     if (!ticket) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(ticket);
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error('[GET /api/support/[ticketId]]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -37,8 +38,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tic
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ticketId: string }> }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
 
     const { ticketId } = await params;
     const body = await req.json();
@@ -59,10 +60,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
           ? 'TICKET_CLOSED'
           : 'TICKET_UPDATED';
 
-      queueAuditLog({
-        organizationId: ticket.organizationId,
-        userId: user.uid,
-        role: user.role,
+      auditLog.queue({
+        tenant,
         action,
         module: 'support',
         recordId: ticketId,
@@ -72,17 +71,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
       return NextResponse.json({ success: true });
     }
 
-    if (!user.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!tenant.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const parsed = supportTicketOrgUpdateSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
-    await updateSupportTicket(ticketId, user.organizationId, parsed.data);
+    await updateSupportTicket(ticketId, tenant.organizationId, parsed.data);
 
-    queueAuditLog({
-      organizationId: user.organizationId,
-      userId: user.uid,
-      role: user.role,
+    auditLog.queue({
+      tenant,
       action: parsed.data.status === 'CLOSED' ? 'TICKET_CLOSED' : 'TICKET_UPDATED',
       module: 'support',
       recordId: ticketId,
@@ -91,6 +88,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
 
     return NextResponse.json({ success: true });
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error('[PATCH /api/support/[ticketId]]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

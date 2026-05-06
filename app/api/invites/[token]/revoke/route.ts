@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getInviteByToken, revokeInvite } from '@/lib/db/invites';
-import { queueAuditLog } from '@/lib/audit/logger';
+import { auditLog } from '@/lib/platform/audit';
 
 export async function POST(_req: NextRequest, { params }: { params: { token: string } }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
     if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
 
     const invite = await getInviteByToken(params.token);
-    if (!invite || invite.organizationId !== user.organizationId) {
+    if (!invite || invite.organizationId !== tenant.organizationId) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
     if (invite.status !== 'pending') {
@@ -20,10 +19,8 @@ export async function POST(_req: NextRequest, { params }: { params: { token: str
 
     await revokeInvite(invite.id, user.uid);
 
-    queueAuditLog({
-      organizationId: user.organizationId,
-      userId: user.uid,
-      role: user.role,
+    auditLog.queue({
+      tenant,
       action: 'INVITE_REVOKED',
       module: 'users',
       recordId: invite.id,
@@ -32,6 +29,7 @@ export async function POST(_req: NextRequest, { params }: { params: { token: str
 
     return NextResponse.json({ success: true });
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error('[POST /api/invites/[token]/revoke]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

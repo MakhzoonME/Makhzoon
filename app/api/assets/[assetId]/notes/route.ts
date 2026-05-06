@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getAssetById } from '@/lib/db/assets';
 import { getAssetNotes, createAssetNote } from '@/lib/db/asset-notes';
-import { queueAuditLog } from '@/lib/audit/logger';
+import { auditLog } from '@/lib/platform/audit';
 import { assetNoteSchema } from '@/lib/validations/asset-note.schema';
 
 export async function GET(_req: NextRequest, { params }: { params: { assetId: string } }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
 
     const asset = await getAssetById(params.assetId);
     if (!asset || asset.organizationId !== user.organizationId) {
@@ -26,9 +25,8 @@ export async function GET(_req: NextRequest, { params }: { params: { assetId: st
 
 export async function POST(req: NextRequest, { params }: { params: { assetId: string } }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
+    const tenant = await resolveTenant();
+    const user = tenant.user;
 
     const asset = await getAssetById(params.assetId);
     if (!asset || asset.organizationId !== user.organizationId) {
@@ -47,10 +45,8 @@ export async function POST(req: NextRequest, { params }: { params: { assetId: st
       createdByEmail: user.email,
     });
 
-    queueAuditLog({
-      organizationId: user.organizationId,
-      userId: user.uid,
-      role: user.role,
+    auditLog.queue({
+      tenant,
       action: 'ASSET_NOTE_ADDED',
       module: 'assets',
       recordId: params.assetId,

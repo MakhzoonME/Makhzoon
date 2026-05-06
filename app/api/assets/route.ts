@@ -1,72 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { assetSchema } from '@/lib/validations/asset.schema';
-import { withLogging } from '@/lib/logging/with-logging';
-import { requireAuth } from '@/lib/services/base.service';
-import * as assetsService from '@/lib/services/assets.service';
-import { logError } from '@/lib/logging/safe-error';
+import { NextRequest, NextResponse } from 'next/server'
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { AssetsService } from '@/lib/modules/assets/services/assets.service'
+import { createAssetSchema } from '@/lib/modules/assets/validators/schemas'
 
-async function _GET(req: NextRequest) {
+const service = new AssetsService()
+
+export async function GET(_req: NextRequest) {
   try {
-    const user = await requireAuth();
-    const { searchParams } = new URL(req.url);
-
-    if (searchParams.get('categoriesOnly') === 'true') {
-      const categories = await assetsService.getOrgAssetCategories(user);
-      return NextResponse.json({ categories }, {
-        headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
-      });
-    }
-
-    const status = searchParams.get('status') ?? undefined;
-    const category = searchParams.get('category') ?? undefined;
-    const search = searchParams.get('search') ?? undefined;
-    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined;
-    const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined;
-    const sortBy = searchParams.get('sortBy') ?? undefined;
-    const sortDir = searchParams.get('sortDir') === 'asc' ? 'asc' as const : 'desc' as const;
-
-    const result = await assetsService.getOrgAssets(user, {
-      status, category, search, page, pageSize, sortBy: sortBy as never, sortDir,
-    });
-    return NextResponse.json(result, {
-      headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
-    });
+    const tenant = await resolveTenant()
+    return NextResponse.json(await service.getAll(tenant))
   } catch (err) {
-    if (err instanceof NextResponse) return err;
-    logError('[GET /api/assets]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return err instanceof NextResponse ? err : NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }
 
-async function _POST(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const user = await requireAuth();
-
-    const body = await req.json();
-    const parsed = assetSchema.safeParse(body);
-    if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
-
-    const data = parsed.data;
-    const result = await assetsService.createAssetWithAudit(user, {
-      name: data.name,
-      category: data.category,
-      status: data.status,
-      serialNumber: data.serialNumber || undefined,
-      purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : undefined,
-      purchaseCost: data.purchaseCost ? Number(data.purchaseCost) : undefined,
-      assignedTo: data.assignedTo || undefined,
-      location: data.location || undefined,
-      notes: data.notes || undefined,
-      receiptUrl: data.receiptUrl || undefined,
-    });
-
-    return NextResponse.json(result, { status: 201 });
+    const tenant = await resolveTenant()
+    const parsed = createAssetSchema.safeParse(await req.json())
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
+    return NextResponse.json(await service.create(tenant, parsed.data as any), { status: 201 })
   } catch (err) {
-    if (err instanceof NextResponse) return err;
-    logError('[POST /api/assets]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return err instanceof NextResponse ? err : NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }
-
-export const GET  = withLogging(_GET);
-export const POST = withLogging(_POST);

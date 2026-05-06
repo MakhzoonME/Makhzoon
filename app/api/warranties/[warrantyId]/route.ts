@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { getWarrantyById, updateWarranty, deleteWarranty } from '@/lib/db/warranties';
-import { queueAuditLog } from '@/lib/audit/logger';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { warrantySchema } from '@/lib/validations/warranty.schema';
-import { hasPermission } from '@/lib/permissions';
-import { requireActiveSubscription } from '@/lib/services/base.service';
+import * as warrantiesService from '@/lib/modules/warranties/services/warranties.service';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ warrantyId: string }> }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const tenant = await resolveTenant();
     const { warrantyId } = await params;
-    const warranty = await getWarrantyById(warrantyId);
-    if (!warranty) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const warranty = await warrantiesService.getById(tenant, warrantyId);
     return NextResponse.json(warranty);
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error('[GET /api/warranties/[warrantyId]]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -22,45 +18,25 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ war
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ warrantyId: string }> }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!hasPermission(user, 'warranties', 'update')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-
-    const orgId = user.organizationId;
-    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
-    await requireActiveSubscription(orgId, user);
-
+    const tenant = await resolveTenant();
     const { warrantyId } = await params;
-    const existing = await getWarrantyById(warrantyId);
-    if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const body = await req.json();
     const parsed = warrantySchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
     const data = parsed.data;
-    await updateWarranty(warrantyId, {
+    await warrantiesService.update(tenant, warrantyId, {
       vendor: data.vendor,
       startDate: new Date(data.startDate),
       endDate: new Date(data.endDate),
       reminder: data.reminder,
       notes: data.notes || undefined,
-      updatedBy: user.uid,
-    });
-
-    queueAuditLog({
-      organizationId: existing.organizationId,
-      userId: user.uid,
-      role: user.role,
-      action: 'WARRANTY_UPDATED',
-      module: 'warranties',
-      recordId: warrantyId,
-      oldValue: { vendor: existing.vendor, endDate: existing.endDate },
-      newValue: { vendor: data.vendor, endDate: data.endDate },
     });
 
     return NextResponse.json({ success: true });
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error('[PUT /api/warranties/[warrantyId]]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -68,31 +44,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ warr
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ warrantyId: string }> }) {
   try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!hasPermission(user, 'warranties', 'delete')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-
-    const orgId = user.organizationId;
-    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
-    await requireActiveSubscription(orgId, user);
-
+    const tenant = await resolveTenant();
     const { warrantyId } = await params;
-    const existing = await getWarrantyById(warrantyId);
-    if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-
-    await deleteWarranty(warrantyId);
-    queueAuditLog({
-      organizationId: existing.organizationId,
-      userId: user.uid,
-      role: user.role,
-      action: 'WARRANTY_DELETED',
-      module: 'warranties',
-      recordId: warrantyId,
-      oldValue: { vendor: existing.vendor },
-    });
-
+    await warrantiesService.del(tenant, warrantyId);
     return NextResponse.json({ success: true });
   } catch (err) {
+    if (err instanceof NextResponse) return err;
     console.error('[DELETE /api/warranties/[warrantyId]]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

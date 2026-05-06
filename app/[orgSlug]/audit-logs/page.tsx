@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatActionLabel, formatKeyLabel } from '@/lib/utils/audit-labels';
+import { useT } from '@/hooks/useT';
 
 function ChangesTable({ label, value }: { label: string; value: Record<string, unknown> }) {
   const entries = Object.entries(value).filter(([, v]) => v !== undefined && v !== null && v !== '');
@@ -34,37 +35,45 @@ function ChangesTable({ label, value }: { label: string; value: Record<string, u
 }
 
 export default function OrgAuditLogsPage() {
+  const { t } = useT();
   const [filters, setFilters] = useState({ userId: '', action: '', dateFrom: '', dateTo: '' });
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const { data, isLoading } = useAuditLogs(filters);
   const logs = data?.logs ?? [];
 
+  const filterFields = [
+    { key: 'userId', label: t('auditLogs.userId') },
+    { key: 'action', label: t('auditLogs.action') },
+    { key: 'dateFrom', label: t('auditLogs.dateFrom'), type: 'date' },
+    { key: 'dateTo', label: t('auditLogs.dateTo'), type: 'date' },
+  ];
+
   const columns: ColumnDef<AuditLog>[] = [
     {
       key: 'timestamp',
-      header: 'Timestamp',
+      header: t('auditLogs.timestamp'),
       render: (l) => <span className="font-mono text-xs">{formatDateTime(l.timestamp)}</span>,
     },
     {
       key: 'userId',
-      header: 'User',
+      header: t('auditLogs.user'),
       render: (l) => (
         <span className="text-xs">{l.userDisplayName ?? l.userId}</span>
       ),
     },
     {
       key: 'action',
-      header: 'Action',
+      header: t('auditLogs.action'),
       render: (l) => (
         <span className="text-xs font-medium">{formatActionLabel(l.action)}</span>
       ),
     },
-    { key: 'module', header: 'Module', render: (l) => <span className="text-xs capitalize">{l.module}</span> },
+    { key: 'module', header: t('auditLogs.module'), render: (l) => <span className="text-xs capitalize">{l.module}</span> },
     {
       key: 'recordId',
-      header: 'Record',
+      header: t('auditLogs.record'),
       render: (l) => (
-        <span className="text-xs text-gray-700">{l.recordName ?? l.recordId}</span>
+        <span className="text-xs text-gray-700 dark:text-gray-300">{l.recordName ?? l.recordId}</span>
       ),
     },
     {
@@ -72,24 +81,27 @@ export default function OrgAuditLogsPage() {
       header: '',
       render: (l) => (
         <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setSelectedLog(l); }}>
-          Details
+          {t('auditLogs.details')}
         </Button>
       ),
     },
   ];
 
+  const detailRows = selectedLog ? [
+    [t('auditLogs.action'), formatActionLabel(selectedLog.action)],
+    [t('auditLogs.module'), selectedLog.module],
+    [t('auditLogs.record'), selectedLog.recordName ?? selectedLog.recordId],
+    [t('auditLogs.user'), selectedLog.userDisplayName ?? selectedLog.userId],
+    [t('auditLogs.timestamp'), formatDateTime(selectedLog.timestamp)],
+  ] : [];
+
   return (
     <div>
-      <PageHeader title="Audit Logs" />
+      <PageHeader title={t('nav.auditLogs')} />
 
       <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { key: 'userId', label: 'User ID' },
-            { key: 'action', label: 'Action' },
-            { key: 'dateFrom', label: 'Date From', type: 'date' },
-            { key: 'dateTo', label: 'Date To', type: 'date' },
-          ].map(({ key, label, type }) => (
+          {filterFields.map(({ key, label, type }) => (
             <div key={key} className="space-y-1">
               <Label className="text-xs">{label}</Label>
               <Input
@@ -108,7 +120,7 @@ export default function OrgAuditLogsPage() {
           data={logs}
           columns={columns}
           isLoading={isLoading}
-          emptyMessage="No audit logs found."
+          emptyMessage={t('auditLogs.noLogs')}
           keyExtractor={(l) => l.id}
         />
       </div>
@@ -116,18 +128,12 @@ export default function OrgAuditLogsPage() {
       <Dialog open={!!selectedLog} onOpenChange={(o) => !o && setSelectedLog(null)}>
         <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Audit Log Detail</DialogTitle>
+            <DialogTitle>{t('auditLogs.detail')}</DialogTitle>
           </DialogHeader>
           {selectedLog && (
             <div className="space-y-4 text-sm">
               <div className="rounded-lg border border-gray-200 overflow-hidden">
-                {[
-                  ['Action', formatActionLabel(selectedLog.action)],
-                  ['Module', selectedLog.module],
-                  ['Record', selectedLog.recordName ?? selectedLog.recordId],
-                  ['User', selectedLog.userDisplayName ?? selectedLog.userId],
-                  ['Timestamp', formatDateTime(selectedLog.timestamp)],
-                ].filter(([, v]) => v).map(([k, v], i) => (
+                {detailRows.filter(([, v]) => v).map(([k, v], i) => (
                   <div key={String(k)} className={`flex text-xs ${i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
                     <span className="w-28 flex-shrink-0 px-3 py-2 text-gray-500 font-medium border-r border-gray-200">{k}</span>
                     <span className="px-3 py-2 text-gray-800">{String(v)}</span>
@@ -135,10 +141,10 @@ export default function OrgAuditLogsPage() {
                 ))}
               </div>
               {selectedLog.oldValue && (
-                <ChangesTable label="Previous Values" value={selectedLog.oldValue} />
+                <ChangesTable label={t('auditLogs.previousValues')} value={selectedLog.oldValue} />
               )}
               {selectedLog.newValue && (
-                <ChangesTable label="New Values" value={selectedLog.newValue} />
+                <ChangesTable label={t('auditLogs.newValues')} value={selectedLog.newValue} />
               )}
             </div>
           )}

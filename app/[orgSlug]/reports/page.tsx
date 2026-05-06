@@ -1,6 +1,7 @@
 'use client';
 import { useReports } from '@/hooks/useReports';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { useT } from '@/hooks/useT';
 
 function PackageSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M13 4.5L8 2 3 4.5v7L8 14l5-2.5v-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /><path d="M8 2v12M3 4.5l5 2.5 5-2.5" stroke="currentColor" strokeWidth="1.3" /></svg>; }
 function PackageCheckSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M10 4.5L8 2 3 4.5v7L8 14l5-2.5V8" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /><path d="M8 2v8M3 4.5l5 2.5" stroke="currentColor" strokeWidth="1.3" /><path d="M10 8l2 2 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
@@ -32,7 +33,7 @@ function Stat({ label, value, icon: Icon, tone = 'gray' }: { label: string; valu
           <Icon />
         </div>
       </div>
-      <p className="text-2xl font-bold text-gray-900 tabular-nums">{value}</p>
+      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{value}</p>
     </div>
   );
 }
@@ -42,12 +43,13 @@ function SkeletonCard() {
 }
 
 export default function ReportsPage() {
+  const { t } = useT();
   const { data, isLoading } = useReports();
 
   if (isLoading) {
     return (
       <div>
-        <PageHeader title="Reports" description="Overview of your asset inventory and activity." />
+        <PageHeader title={t('nav.reports')} description={t('reports.description')} />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
@@ -62,50 +64,50 @@ export default function ReportsPage() {
 
   return (
     <div>
-      <PageHeader title="Reports" description="Overview of your asset inventory and activity." />
+      <PageHeader title={t('nav.reports')} description={t('reports.description')} />
 
       <section className="mb-6">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Inventory</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('reports.inventory')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label="Total assets" value={summary.totalAssets} icon={PackageSVG} tone="indigo" />
-          <Stat label="Active" value={summary.activeAssets} icon={PackageCheckSVG} tone="green" />
-          <Stat label="Retired" value={summary.retiredAssets} icon={PackageXSVG} />
-          <Stat label="Total value" value={formatCurrency(summary.totalValue)} icon={WalletSVG} tone="indigo" />
+          <Stat label={t('reports.totalAssets')} value={summary.totalAssets} icon={PackageSVG} tone="indigo" />
+          <Stat label={t('reports.active')} value={summary.activeAssets} icon={PackageCheckSVG} tone="green" />
+          <Stat label={t('reports.retired')} value={summary.retiredAssets} icon={PackageXSVG} />
+          <Stat label={t('reports.totalValue')} value={formatCurrency(summary.totalValue)} icon={WalletSVG} tone="indigo" />
         </div>
       </section>
 
       <section className="mb-6">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Activity</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('reports.activity')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label="Checked out" value={summary.activeCheckouts} icon={UserCheckSVG} tone="amber" />
-          <Stat label="Overdue" value={summary.overdueCheckouts} icon={AlertTriangleSVG} tone="red" />
-          <Stat label="Expiring warranties" value={summary.warrantiesExpiringSoon} icon={ShieldCheckSVG} tone="amber" />
-          <Stat label="Open requests" value={summary.openRequests} icon={ClipboardListSVG} />
+          <Stat label={t('reports.checkedOut')} value={summary.activeCheckouts} icon={UserCheckSVG} tone="amber" />
+          <Stat label={t('reports.overdue')} value={summary.overdueCheckouts} icon={AlertTriangleSVG} tone="red" />
+          <Stat label={t('reports.expiringWarranties')} value={summary.warrantiesExpiringSoon} icon={ShieldCheckSVG} tone="amber" />
+          <Stat label={t('reports.openRequests')} value={summary.openRequests} icon={ClipboardListSVG} />
         </div>
       </section>
 
       <section className="mb-6">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Maintenance</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('reports.maintenance')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label="Total cost" value={formatCurrency(summary.maintenanceCost)} icon={WrenchSVG} tone="indigo" />
-          <Stat label="Records" value={summary.maintenanceCount} icon={WrenchSVG} />
+          <Stat label={t('reports.totalCost')} value={formatCurrency(summary.maintenanceCost)} icon={WrenchSVG} tone="indigo" />
+          <Stat label={t('reports.records')} value={summary.maintenanceCount} icon={WrenchSVG} />
         </div>
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-900">By category</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('reports.byCategory')}</h2>
           </div>
           <div className="p-5">
             {categories.length === 0 ? (
-              <p className="text-sm text-gray-500">No assets yet.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-300">{t('reports.noAssets')}</p>
             ) : (
               <ul className="space-y-2.5">
                 {categories.slice(0, 8).map((c) => (
                   <li key={c.category}>
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-medium text-gray-700">{c.category}</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-300">{c.category}</span>
                       <span className="text-gray-500 tabular-nums">{c.count} · {formatCurrency(c.value)}</span>
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -120,16 +122,16 @@ export default function ReportsPage() {
 
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-900">By location</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('reports.byLocation')}</h2>
           </div>
           <div className="p-5">
             {locations.length === 0 ? (
-              <p className="text-sm text-gray-500">No assets yet.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-300">{t('reports.noAssets')}</p>
             ) : (
               <ul className="space-y-1.5">
                 {locations.slice(0, 8).map((l) => (
                   <li key={l.location} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-700">{l.location}</span>
+                    <span className="text-gray-700 dark:text-gray-300">{l.location}</span>
                     <span className="text-gray-500 tabular-nums text-xs">{l.count}</span>
                   </li>
                 ))}
@@ -141,11 +143,11 @@ export default function ReportsPage() {
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-200">
-          <h2 className="text-sm font-semibold text-gray-900">Maintenance cost by month</h2>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('reports.maintenanceCost')}</h2>
         </div>
         <div className="p-5">
           {maintenanceByMonth.length === 0 ? (
-            <p className="text-sm text-gray-500">No maintenance records yet.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300">{t('reports.noMaintenance')}</p>
           ) : (
             <div className="flex items-end gap-3 h-40">
               {maintenanceByMonth.map((m) => (

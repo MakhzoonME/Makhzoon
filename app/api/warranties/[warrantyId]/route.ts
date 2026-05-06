@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getWarrantyById, updateWarranty, deleteWarranty } from '@/lib/firestore/warranties';
-import { writeAuditLog } from '@/lib/audit/logger';
+import { writeAuditLog, queueAuditLog } from '@/lib/audit/logger';
 import { warrantySchema } from '@/lib/validations/warranty.schema';
 import { hasPermission } from '@/lib/utils/permissions';
 
@@ -72,7 +72,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     await deleteWarranty(warrantyId);
-    await writeAuditLog({
+    queueAuditLog({
       organizationId: existing.organizationId,
       userId: user.uid,
       role: user.role,

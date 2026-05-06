@@ -12,7 +12,12 @@ import { ExportButton } from '@/components/shared/ExportButton';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Warranty } from '@/types';
-import { formatDate, isExpired, getWarrantyStatus, daysUntil } from '@/lib/utils/date';
+import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
+import { useT } from '@/hooks/useT';
+function PlusSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>; }
+function EditSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /></svg>; }
+function Trash2SVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M2 3.5h10M5.5 3.5V2.5h3v1M4 3.5l.75 8h4.5L10 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
+function CheckSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M3 8l4 4 6-7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
 import { FormDrawer } from '@/components/shared/FormDrawer';
 import { WarrantyForm } from '@/components/warranties/WarrantyForm';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
@@ -68,6 +73,7 @@ function ExpiryBanner({ warranties }: { warranties: Warranty[] }) {
 
 /* ── Page ────────────────────────────────────────────────────────── */
 export default function WarrantiesPage() {
+  const { t } = useT();
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const { user } = useAuthStore();
@@ -103,100 +109,26 @@ export default function WarrantiesPage() {
   });
 
   const columns: ColumnDef<Warranty>[] = [
+    { key: 'assetId', header: t('col.asset'), render: (w) => <button className="text-indigo-600 hover:underline" onClick={() => router.push(`/${orgSlug}/assets/${w.assetId}`)}>{w.assetName ?? w.assetId}</button> },
+    { key: 'vendor', header: t('col.vendor'), render: (w) => w.vendor },
+    { key: 'startDate', header: t('warranties.startDate'), render: (w) => formatDate(w.startDate) },
+    { key: 'endDate', header: t('warranties.endDate'), render: (w) => <span className={isExpired(w.endDate) ? 'text-red-600' : ''}>{formatDate(w.endDate)}</span> },
+    { key: 'reminder', header: t('warranties.reminder'), render: (w) => w.reminder ? <span className="text-green-600"><CheckSVG /></span> : <span className="text-gray-400">—</span> },
+    { key: 'status', header: t('col.status'), render: (w) => <StatusBadge status={getWarrantyStatus(w.endDate)} /> },
     {
-      key: 'assetId',
-      header: 'Asset',
+      key: 'actions', header: t('col.actions'),
       render: (w) => (
-        <button
-          className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:underline text-left text-sm"
-          onClick={(e) => { e.stopPropagation(); router.push(`/${orgSlug}/assets/${w.assetId}`); }}
-        >
-          {w.assetName ?? w.assetId}
-        </button>
-      ),
-    },
-    {
-      key: 'vendor',
-      header: 'Vendor',
-      render: (w) => <span className="text-sm text-gray-700 dark:text-gray-300">{w.vendor}</span>,
-    },
-    {
-      key: 'startDate',
-      header: 'Start',
-      render: (w) => <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums">{formatDate(w.startDate)}</span>,
-    },
-    {
-      key: 'endDate',
-      header: 'End',
-      render: (w) => (
-        <span className={`text-sm tabular-nums font-medium ${isExpired(w.endDate) ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}`}>
-          {formatDate(w.endDate)}
-        </span>
-      ),
-    },
-    {
-      key: 'daysLeft',
-      header: 'Days left',
-      render: (w) => {
-        const d = daysUntil(w.endDate);
-        const color =
-          d < 0   ? 'text-red-600 dark:text-red-400' :
-          d <= 30 ? 'text-red-500 dark:text-red-400' :
-          d <= 90 ? 'text-amber-600 dark:text-amber-400' :
-                   'text-gray-700 dark:text-gray-300';
-        return (
-          <span className={`text-sm font-semibold tabular-nums ${color}`}>
-            {d < 0 ? `Expired ${Math.abs(d)}d ago` : `${d}d`}
-          </span>
-        );
-      },
-    },
-    {
-      key: 'reminder',
-      header: 'Reminder',
-      render: (w) =>
-        w.reminder ? (
-          <span className="text-emerald-600 dark:text-emerald-400"><CheckSVG /></span>
-        ) : (
-          <span className="text-gray-300 dark:text-gray-600">—</span>
-        ),
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      render: (w) => <StatusBadge status={getWarrantyStatus(w.endDate)} />,
-    },
-    {
-      key: 'actions',
-      header: '',
-      render: (w) =>
-        isAdmin ? (
-          <div className="flex items-center gap-1 justify-end">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={(e) => { e.stopPropagation(); setEditTarget(w); setDrawerOpen(true); }}
-            >
-              <EditSVG />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"
-              onClick={(e) => { e.stopPropagation(); setDeleteTarget(w); }}
-            >
-              <Trash2SVG />
-            </Button>
-          </div>
-        ) : (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={(e) => { e.stopPropagation(); router.push(`/${orgSlug}/assets/${w.assetId}`); }}
-          >
-            View asset
-          </Button>
-        ),
+        <div className="flex gap-1">
+          {isAdmin ? (
+            <>
+              <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditTarget(w); setDrawerOpen(true); }}><EditSVG /></Button>
+              <Button size="sm" variant="ghost" className="text-red-500 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setDeleteTarget(w); }}><Trash2SVG /></Button>
+            </>
+          ) : (
+            <Button size="sm" variant="ghost" onClick={() => router.push(`/${orgSlug}/assets/${w.assetId}`)}>{t('warranties.viewAsset')}</Button>
+          )}
+        </div>
+      )
     },
   ];
 
@@ -205,14 +137,11 @@ export default function WarrantiesPage() {
     setDeleting(true);
     try {
       await fetch(`/api/warranties/${deleteTarget.id}`, { method: 'DELETE' });
-      toast.success('Warranty deleted');
+      toast.success(t('warranties.warrantyDeleted'));
       qc.invalidateQueries({ queryKey: ['warranties'] });
       setDeleteTarget(null);
-    } catch {
-      toast.error('Failed to delete warranty');
-    } finally {
-      setDeleting(false);
-    }
+    } catch { toast.error(t('warranties.warrantyDeleteFailed')); }
+    finally { setDeleting(false); }
   }
 
   const subtitle = [
@@ -224,25 +153,8 @@ export default function WarrantiesPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Warranties"
-        description={subtitle || undefined}
-        actions={
-          isAdmin ? (
-            <div className="flex items-center gap-2">
-              <ExportButton
-                exportUrl="/api/warranties/export"
-                filename={`warranties-${format(new Date(), 'yyyy-MM-dd')}.csv`}
-              />
-              <Button
-                size="sm"
-                onClick={() => { setEditTarget(null); setDrawerOpen(true); }}
-              >
-                <PlusSVG />
-                <span className="ml-1">Add Warranty</span>
-              </Button>
-            </div>
-          ) : undefined
-        }
+        title={t('nav.warranties')}
+        actions={isAdmin ? <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}><PlusSVG /><span className="ml-1">{t('warranties.addWarranty')}</span></Button> : undefined}
       />
 
       {/* ── Expiry warning banner ──────────────────────────────────── */}
@@ -267,24 +179,16 @@ export default function WarrantiesPage() {
           </Select>
         }
       />
-
-      {/* ── Table ──────────────────────────────────────────────────── */}
-      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
-        <DataTable
-          data={filtered}
-          columns={columns}
-          isLoading={isLoading}
-          emptyMessage="No warranties found."
-          keyExtractor={(w) => w.id}
-        />
+      <div className="bg-white rounded-lg border border-gray-200">
+        <DataTable data={warranties} columns={columns} isLoading={isLoading} emptyMessage={t('warranties.noWarranties')} keyExtractor={(w) => w.id} />
       </div>
 
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
-        title="Delete Warranty"
-        description={`Delete warranty from "${deleteTarget?.vendor}"? This cannot be undone.`}
-        confirmLabel="Delete"
+        title={t('warranties.deleteWarranty')}
+        description={t('warranties.deleteWarrantyDesc').replace('{vendor}', deleteTarget?.vendor ?? '')}
+        confirmLabel={t('common.delete')}
         onConfirm={handleDelete}
         loading={deleting}
       />
@@ -292,7 +196,7 @@ export default function WarrantiesPage() {
       <FormDrawer
         open={drawerOpen}
         onOpenChange={(o) => { setDrawerOpen(o); if (!o) setEditTarget(null); }}
-        title={editTarget ? 'Edit Warranty' : 'Add Warranty'}
+        title={editTarget ? t('warranties.editWarranty') : t('warranties.addWarranty')}
       >
         <WarrantyForm
           warranty={editTarget ?? undefined}

@@ -108,6 +108,27 @@
   --sa-sidebar-border: rgba(59, 130, 246, 0.15);
 }
 
+/* ── Dark mode surface cascade ────────────────────────────────────── */
+/* Covers all components and pages that use standard Tailwind gray classes.
+   Badge and other colored-bg components have explicit dark: variants instead. */
+.dark .bg-white    { background-color: var(--surface-card); }
+.dark .bg-gray-50  { background-color: #1a2744; }
+.dark .bg-gray-100 { background-color: #1e2e48; }
+
+.dark .border-gray-200 { border-color: var(--border-default); }
+.dark .border-gray-100 { border-color: #263248; }
+.dark .border-gray-300 { border-color: #3d4f66; }
+
+.dark .text-gray-900 { color: #f1f5f9; }
+.dark .text-gray-800 { color: #e2e8f0; }
+.dark .text-gray-700 { color: #cbd5e1; }
+.dark .text-gray-600 { color: #94a3b8; }
+.dark .text-gray-500 { color: #64748b; }
+
+.dark .hover\:bg-gray-50:hover  { background-color: #243044; }
+.dark .hover\:bg-gray-100:hover { background-color: #2d3d52; }
+.dark .hover\:bg-gray-200:hover { background-color: #374357; }
+
 body {
   color: var(--foreground);
   background: var(--background);

@@ -35,11 +35,11 @@ export function DataTable<T>({ data, columns, isLoading, emptyMessage = 'No data
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="border-b border-gray-200">
+            <tr className="border-b border-gray-200 dark:border-gray-700">
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 ${col.className ?? ''}`}
+                  className={`px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 ${col.className ?? ''}`}
                 >
                   {col.header}
                 </th>
@@ -57,11 +57,11 @@ export function DataTable<T>({ data, columns, isLoading, emptyMessage = 'No data
               data.map((row, i) => (
                 <tr
                   key={keyExtractor ? keyExtractor(row) : i}
-                  className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+                  className={`border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
                   onClick={() => onRowClick?.(row)}
                 >
                   {columns.map((col) => (
-                    <td key={col.key} className={`px-4 py-3 text-sm text-gray-700 ${col.className ?? ''}`}>
+                    <td key={col.key} className={`px-4 py-3 text-sm text-gray-700 dark:text-gray-300 ${col.className ?? ''}`}>
                       {col.render(row)}
                     </td>
                   ))}
@@ -73,20 +73,20 @@ export function DataTable<T>({ data, columns, isLoading, emptyMessage = 'No data
       </div>
 
       {pagination && pagination.total > pagination.pageSize && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 mt-2">
-          <p className="text-xs text-gray-500">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700 mt-2">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             Showing {(pagination.page - 1) * pagination.pageSize + 1}–{Math.min(pagination.page * pagination.pageSize, pagination.total)} of {pagination.total}
           </p>
           <div className="flex gap-1">
             <button
-              className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40"
+              className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 disabled:opacity-40"
               disabled={pagination.page <= 1}
               onClick={() => pagination.onPageChange(pagination.page - 1)}
             >
               Previous
             </button>
             <button
-              className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-40"
+              className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 disabled:opacity-40"
               disabled={pagination.page * pagination.pageSize >= pagination.total}
               onClick={() => pagination.onPageChange(pagination.page + 1)}
             >

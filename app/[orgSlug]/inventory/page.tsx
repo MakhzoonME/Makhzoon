@@ -17,6 +17,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/useDebounce';
 import { InventoryItem } from '@/types';
 import { RequestInventoryModal } from '@/components/inventory/RequestInventoryModal';
+import { useT } from '@/hooks/useT';
 function PlusSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>; }
 function EditSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /></svg>; }
 function Trash2SVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M2 3.5h10M5.5 3.5V2.5h3v1M4 3.5l.75 8h4.5L10 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
@@ -25,13 +26,13 @@ function ClipboardCheckSVG() { return <svg width="16" height="16" viewBox="0 0 1
 function RequestSVG() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><rect x="2" y="2" width="10" height="10" rx="1" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M4 5h6M4 7.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
 import { cn } from '@/lib/utils/cn';
 
-function StockBadge({ status, qty, unit }: { status: InventoryItem['stockStatus']; qty: number; unit: string }) {
+function StockBadge({ status, qty, unit, labels }: { status: InventoryItem['stockStatus']; qty: number; unit: string; labels: { inStock: string; lowStock: string; outOfStock: string } }) {
   const map = {
     ok: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     low: 'bg-amber-50 text-amber-700 border-amber-200',
     out: 'bg-red-50 text-red-700 border-red-200',
   };
-  const label = { ok: 'In Stock', low: 'Low Stock', out: 'Out of Stock' };
+  const label = { ok: labels.inStock, low: labels.lowStock, out: labels.outOfStock };
   return (
     <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs font-medium', map[status])}>
       {status === 'low' && <AlertTriangleSVG size={12} />}
@@ -41,6 +42,7 @@ function StockBadge({ status, qty, unit }: { status: InventoryItem['stockStatus'
 }
 
 export default function InventoryPage() {
+  const { t } = useT();
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const { user } = useAuthStore();
@@ -62,9 +64,11 @@ export default function InventoryPage() {
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
+  const stockLabels = { inStock: t('inventory.inStock'), lowStock: t('inventory.lowStock'), outOfStock: t('inventory.outOfStock') };
+
   const columns: ColumnDef<InventoryItem>[] = [
     {
-      key: 'name', header: 'Item',
+      key: 'name', header: t('inventory.item'),
       render: (i) => (
         <div>
           <button className="font-medium text-indigo-600 hover:underline text-left" onClick={() => router.push(`/${orgSlug}/inventory/${i.id}`)}>
@@ -74,14 +78,14 @@ export default function InventoryPage() {
         </div>
       ),
     },
-    { key: 'category', header: 'Category', render: (i) => i.category },
+    { key: 'category', header: t('col.category'), render: (i) => i.category },
     {
-      key: 'stock', header: 'Stock',
-      render: (i) => <StockBadge status={i.stockStatus} qty={i.quantityOnHand} unit={i.unit} />,
+      key: 'stock', header: t('inventory.stock'),
+      render: (i) => <StockBadge status={i.stockStatus} qty={i.quantityOnHand} unit={i.unit} labels={stockLabels} />,
     },
-    { key: 'threshold', header: 'Min. Threshold', render: (i) => <span className="text-sm text-gray-600">{i.minimumThreshold} {i.unit}</span> },
-    { key: 'location', header: 'Location', render: (i) => i.location || <span className="text-gray-400">—</span> },
-    { key: 'supplier', header: 'Supplier', render: (i) => i.supplier || <span className="text-gray-400">—</span> },
+    { key: 'threshold', header: t('inventory.minThreshold'), render: (i) => <span className="text-sm text-gray-600">{i.minimumThreshold} {i.unit}</span> },
+    { key: 'location', header: t('col.location'), render: (i) => i.location || <span className="text-gray-400">—</span> },
+    { key: 'supplier', header: t('inventory.supplier'), render: (i) => i.supplier || <span className="text-gray-400">—</span> },
     {
       key: 'actions', header: '',
       render: (i) => (
@@ -110,11 +114,11 @@ export default function InventoryPage() {
     try {
       const res = await fetch(`/api/inventory/${deleteTarget.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error();
-      toast.success('Item deleted');
+      toast.success(t('inventory.itemDeleted'));
       qc.invalidateQueries({ queryKey: ['inventory'] });
       setDeleteTarget(null);
     } catch {
-      toast.error('Failed to delete item');
+      toast.error(t('inventory.itemDeleteFailed'));
     } finally {
       setDeleting(false);
     }
@@ -126,19 +130,19 @@ export default function InventoryPage() {
   return (
     <div>
       <PageHeader
-        title="Inventory"
+        title={t('nav.inventory')}
         actions={isAdmin ? (
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={() => router.push(`/${orgSlug}/inventory/audits`)}>
-              <ClipboardCheckSVG /> Audits
+              <ClipboardCheckSVG /> {t('inventory.audits')}
             </Button>
             <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
-              <PlusSVG /><span className="ml-1">Add Item</span>
+              <PlusSVG /><span className="ml-1">{t('inventory.addItem')}</span>
             </Button>
           </div>
         ) : (
           <Button size="sm" variant="outline" onClick={() => router.push(`/${orgSlug}/inventory/audits`)}>
-            <ClipboardCheckSVG /> Audits
+            <ClipboardCheckSVG /> {t('inventory.audits')}
           </Button>
         )}
       />
@@ -146,40 +150,40 @@ export default function InventoryPage() {
       {(lowCount > 0 || outCount > 0) && (
         <div className="mb-4 flex gap-3 flex-wrap">
           {outCount > 0 && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 dark:text-red-700">
               <AlertTriangleSVG />
-              <span><strong>{outCount}</strong> item{outCount > 1 ? 's' : ''} out of stock</span>
+              <span><strong>{outCount}</strong> {outCount > 1 ? t('inventory.itemsOutOfStockPlural').replace('{count}', String(outCount)) : t('inventory.itemsOutOfStock').replace('{count}', String(outCount))}</span>
             </div>
           )}
           {lowCount > 0 && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+            <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 dark:text-amber-700">
               <AlertTriangleSVG />
-              <span><strong>{lowCount}</strong> item{lowCount > 1 ? 's' : ''} running low</span>
+              <span><strong>{lowCount}</strong> {lowCount > 1 ? t('inventory.itemsRunningLowPlural').replace('{count}', String(lowCount)) : t('inventory.itemsRunningLow').replace('{count}', String(lowCount))}</span>
             </div>
           )}
         </div>
       )}
 
       <FilterBar
-        searchPlaceholder="Search items..."
+        searchPlaceholder={t('inventory.searchPlaceholder')}
         searchValue={search}
         onSearchChange={setSearch}
         filters={
           <div className="flex items-center gap-2">
             <Select value={category || 'all'} onValueChange={(v) => setCategory(v === 'all' ? '' : v)}>
-              <SelectTrigger className="w-40"><SelectValue placeholder="Category" /></SelectTrigger>
+              <SelectTrigger className="w-40"><SelectValue placeholder={t('inventory.allCategories')} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="all">{t('inventory.allCategories')}</SelectItem>
                 {(categories ?? []).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={stockFilter || 'all'} onValueChange={(v) => setStockFilter(v === 'all' ? '' : v)}>
-              <SelectTrigger className="w-36"><SelectValue placeholder="Stock" /></SelectTrigger>
+              <SelectTrigger className="w-36"><SelectValue placeholder={t('inventory.allStock')} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Stock</SelectItem>
-                <SelectItem value="ok">In Stock</SelectItem>
-                <SelectItem value="low">Low Stock</SelectItem>
-                <SelectItem value="out">Out of Stock</SelectItem>
+                <SelectItem value="all">{t('inventory.allStock')}</SelectItem>
+                <SelectItem value="ok">{t('inventory.inStock')}</SelectItem>
+                <SelectItem value="low">{t('inventory.lowStock')}</SelectItem>
+                <SelectItem value="out">{t('inventory.outOfStock')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -191,7 +195,7 @@ export default function InventoryPage() {
           data={items}
           columns={columns}
           isLoading={isLoading}
-          emptyMessage="No inventory items found."
+          emptyMessage={t('inventory.noItems')}
           onRowClick={(i) => router.push(`/${orgSlug}/inventory/${i.id}`)}
           keyExtractor={(i) => i.id}
         />
@@ -200,9 +204,9 @@ export default function InventoryPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
-        title="Delete Item"
-        description={`Delete "${deleteTarget?.name}"? This cannot be undone.`}
-        confirmLabel="Delete"
+        title={t('inventory.deleteItem')}
+        description={t('inventory.deleteItemDesc').replace('{name}', deleteTarget?.name ?? '')}
+        confirmLabel={t('common.delete')}
         onConfirm={handleDelete}
         loading={deleting}
       />
@@ -210,7 +214,7 @@ export default function InventoryPage() {
       <FormDrawer
         open={drawerOpen}
         onOpenChange={(o) => { setDrawerOpen(o); if (!o) setEditTarget(null); }}
-        title={editTarget ? 'Edit Item' : 'Add Inventory Item'}
+        title={editTarget ? t('inventory.editItem') : t('inventory.addInventoryItem')}
         width="xl"
       >
         <InventoryItemForm

@@ -13,6 +13,7 @@ import { Plus, ArrowRight, Search, Edit2, CreditCard, Settings } from 'lucide-re
 import { useTransferMode } from '@/hooks/useTransferMode';
 import { useDebounce } from '@/hooks/useDebounce';
 import { ORG_CATEGORIES, type OrgWithUsage } from '@/types';
+import { useT } from '@/hooks/useT';
 
 /* ── SVG icons ───────────────────────────────────────────────────── */
 function BuildingSVG() {
@@ -89,6 +90,7 @@ function StatCard({
 }
 
 export default function SuperAdminPage() {
+  const { t } = useT();
   const router = useRouter();
   const { enterTransferMode } = useTransferMode();
 
@@ -109,7 +111,7 @@ export default function SuperAdminPage() {
   const columns: ColumnDef<OrgWithUsage>[] = [
     {
       key: 'name',
-      header: 'Organization',
+      header: t('orgs.name'),
       render: (r) => (
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-xs font-semibold text-indigo-700 dark:text-indigo-300 flex-shrink-0">
@@ -123,13 +125,13 @@ export default function SuperAdminPage() {
       ),
     },
     {
-      key: 'subdomain',
-      header: 'Category',
+      key: 'category',
+      header: t('orgs.category'),
       render: (r) => r.organization.category ?? <span className="text-gray-400 dark:text-gray-500">—</span>,
     },
     {
       key: 'subscription',
-      header: 'Subscription',
+      header: t('orgs.subscription'),
       render: (r) => {
         if (!r.subscription) return <span className="text-gray-400 dark:text-gray-500 text-sm">—</span>;
         const d = daysUntil(r.subscription.endDate);
@@ -138,7 +140,9 @@ export default function SuperAdminPage() {
           <div className="space-y-1">
             <StatusBadge status={r.subscription.status} />
             <p className={`text-[11px] ${tone}`}>
-              {d < 0 ? `Expired ${Math.abs(d)}d ago` : `${d}d remaining`}
+              {d < 0
+                ? t('orgs.expiredAgo').replace('{days}', String(Math.abs(d)))
+                : t('orgs.daysRemaining').replace('{days}', String(d))}
             </p>
           </div>
         );
@@ -146,12 +150,12 @@ export default function SuperAdminPage() {
     },
     {
       key: 'created',
-      header: 'Since',
+      header: t('orgs.created'),
       render: (r) => <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums">{formatDate(r.organization.createdAt)}</span>,
     },
     {
       key: 'actions',
-      header: '',
+      header: t('orgs.actions'),
       render: (r) => (
         <div className="flex gap-1 justify-end">
           <Button
@@ -163,7 +167,7 @@ export default function SuperAdminPage() {
               enterTransferMode(r.organization.id, r.organization.name);
             }}
           >
-            <ArrowRight className="h-3.5 w-3.5 mr-1" /> Enter
+            <ArrowRight className="h-3.5 w-3.5 mr-1" /> {t('orgs.enter')}
           </Button>
           <Button
             size="sm"
@@ -172,7 +176,7 @@ export default function SuperAdminPage() {
               e.stopPropagation();
               router.push(`/superadmin/organizations/${r.organization.id}/subscription`);
             }}
-            title="Subscription"
+            title={t('nav.subscription')}
           >
             <CreditCard className="h-3.5 w-3.5" />
           </Button>
@@ -183,7 +187,7 @@ export default function SuperAdminPage() {
               e.stopPropagation();
               router.push(`/superadmin/organizations/${r.organization.id}/configuration`);
             }}
-            title="Configuration"
+            title={t('nav.configuration')}
           >
             <Settings className="h-3.5 w-3.5" />
           </Button>
@@ -194,7 +198,7 @@ export default function SuperAdminPage() {
               e.stopPropagation();
               router.push(`/superadmin/organizations/${r.organization.id}/edit`);
             }}
-            title="Edit"
+            title={t('common.edit')}
           >
             <Edit2 className="h-3.5 w-3.5" />
           </Button>
@@ -206,12 +210,12 @@ export default function SuperAdminPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Organizations"
+        title={t('nav.organizations')}
         description={`${rows.length} workspaces on the platform`}
         actions={
           <Button size="sm" onClick={() => router.push('/superadmin/organizations/new')}>
             <Plus className="h-4 w-4 mr-1" />
-            Create Organization
+            {t('orgs.createOrg')}
           </Button>
         }
       />
@@ -273,7 +277,7 @@ export default function SuperAdminPage() {
           <Input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search name, subdomain, email…"
+            placeholder={t('orgs.searchPlaceholder')}
             className="pl-8"
           />
         </div>
@@ -282,7 +286,7 @@ export default function SuperAdminPage() {
           onChange={(e) => setCategory(e.target.value)}
           className="h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 text-sm outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors"
         >
-          <option value="">All categories</option>
+          <option value="">{t('orgs.allCategories')}</option>
           {ORG_CATEGORIES.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
@@ -296,7 +300,7 @@ export default function SuperAdminPage() {
               setCategory('');
             }}
           >
-            Clear
+            {t('orgs.clear')}
           </Button>
         )}
       </div>
@@ -307,7 +311,7 @@ export default function SuperAdminPage() {
           data={rows}
           columns={columns}
           isLoading={isLoading}
-          emptyMessage="No organizations match the filters."
+          emptyMessage={t('orgs.noMatch')}
           keyExtractor={(r) => r.organization.id}
         />
       </div>

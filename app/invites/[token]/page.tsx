@@ -113,7 +113,8 @@ export default function AcceptInvitePage({ params }: { params: { token: string }
     });
     if (!sessionRes.ok) throw new Error('Session creation failed');
     const { orgSlug } = await sessionRes.json();
-    router.push(orgSlug ? `/${orgSlug}/dashboard` : '/login');
+    if (!orgSlug) throw new Error('Your workspace could not be found. Please contact support.');
+    router.push(`/${orgSlug}/dashboard`);
   }
 
   async function handleAccept(e: React.FormEvent) {

@@ -28,7 +28,7 @@ export function FormDrawer({ open, onOpenChange, title, description, children, w
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/30 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
           className={cn(
-            'fixed right-0 top-0 bottom-0 z-50 bg-white shadow-xl flex flex-col w-full',
+            'fixed right-0 top-0 bottom-0 z-50 bg-white dark:bg-surface-card shadow-xl flex flex-col w-full',
             widthClass,
             'data-[state=open]:animate-in data-[state=closed]:animate-out',
             'data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right',
@@ -37,17 +37,17 @@ export function FormDrawer({ open, onOpenChange, title, description, children, w
           aria-describedby={description ? 'form-drawer-desc' : undefined}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
             <div>
-              <DialogPrimitive.Title className="text-base font-semibold text-gray-900">
+              <DialogPrimitive.Title className="text-base font-semibold text-gray-900 dark:text-gray-100">
                 {title}
               </DialogPrimitive.Title>
               {description && (
-                <p id="form-drawer-desc" className="text-sm text-gray-500 mt-0.5">{description}</p>
+                <p id="form-drawer-desc" className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{description}</p>
               )}
             </div>
             <DialogPrimitive.Close
-              className="p-1.5 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              className="p-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               aria-label="Close"
             >
               <XSvg />

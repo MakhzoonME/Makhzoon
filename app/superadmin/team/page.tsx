@@ -21,6 +21,7 @@ import {
   DEFAULT_MAKHZOON_ADMIN_PERMISSIONS,
   DEFAULT_SUPPORT_PERMISSIONS,
 } from '@/types';
+import { useT } from '@/hooks/useT';
 
 function defaultPermsForRole(role: MakhzoonRole): SuperAdminPermissions {
   if (role === 'super_admin') return DEFAULT_SUPER_ADMIN_PERMISSIONS;
@@ -74,6 +75,7 @@ function generatePassword(): string {
 }
 
 export default function SuperAdminTeamPage() {
+  const { t } = useT();
   const { user: currentUser } = useAuthStore();
   const qc = useQueryClient();
   const isSuperAdmin = currentUser?.role === 'super_admin';
@@ -212,10 +214,10 @@ export default function SuperAdminTeamPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Makhzoon Team</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Internal team members with superadmin access.</p>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('team.title')}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-300 mt-0.5">{t('team.subtitle')}</p>
         </div>
-        <Button size="sm" onClick={openAdd}><PlusSVG /><span className="ml-1">Add Member</span></Button>
+        <Button size="sm" onClick={openAdd}><PlusSVG /><span className="ml-1">{t('team.addMember')}</span></Button>
       </div>
 
       {/* Role hierarchy info */}
@@ -223,7 +225,7 @@ export default function SuperAdminTeamPage() {
         {(['super_admin', 'makhzoon_admin', 'makhzoon_support'] as MakhzoonRole[]).map((role) => (
           <div key={role} className={cn('rounded-lg border px-4 py-3', ROLE_STYLE[role].replace('text-', 'border-').replace('bg-', 'bg-'))}>
             <p className={cn('text-xs font-semibold', ROLE_STYLE[role].split(' ')[1])}>{ROLE_LABEL[role]}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{ROLE_DESCRIPTION[role]}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">{ROLE_DESCRIPTION[role]}</p>
           </div>
         ))}
       </div>
@@ -232,11 +234,11 @@ export default function SuperAdminTeamPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Role</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Added</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('team.fullName')}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('team.email')}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('team.role')}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('team.status')}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('team.added')}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -253,7 +255,7 @@ export default function SuperAdminTeamPage() {
               ))
             ) : members.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-gray-400">No team members found.</td>
+                <td colSpan={6} className="px-4 py-12 text-center text-sm text-gray-400">{t('team.noResults')}</td>
               </tr>
             ) : (
               members.map((m) => {
@@ -261,11 +263,11 @@ export default function SuperAdminTeamPage() {
                 const editable = canEdit(m);
                 return (
                   <tr key={m.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900">
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
                       {m.displayName}
-                      {isSelf && <span className="ml-2 text-xs text-gray-400">(you)</span>}
+                      {isSelf && <span className="ml-2 text-xs text-gray-400">({t('team.you')})</span>}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{m.email}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{m.email}</td>
                     <td className="px-4 py-3">
                       <span className={cn('inline-block px-2 py-0.5 rounded-full text-xs font-semibold', ROLE_STYLE[m.role] ?? 'bg-gray-100 text-gray-600')}>
                         {ROLE_LABEL[m.role] ?? m.role}
@@ -275,7 +277,7 @@ export default function SuperAdminTeamPage() {
                       <span className={cn('inline-block px-2 py-0.5 rounded-full text-xs font-semibold capitalize',
                         m.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
                       )}>
-                        {m.status}
+                        {m.status === 'active' ? t('status.active') : t('status.deactivated')}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(new Date(m.createdAt))}</td>
@@ -288,7 +290,7 @@ export default function SuperAdminTeamPage() {
                             className="text-gray-500 hover:text-indigo-600 text-xs"
                             onClick={() => openEdit(m)}
                           >
-                            Edit
+                            {t('common.edit')}
                           </Button>
                           <Button
                             size="sm"
@@ -296,7 +298,7 @@ export default function SuperAdminTeamPage() {
                             className={cn('text-xs', m.status === 'active' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50')}
                             onClick={() => handleDeactivate(m)}
                           >
-                            {m.status === 'active' ? 'Deactivate' : 'Reactivate'}
+                            {m.status === 'active' ? t('team.deactivate') : t('team.reactivate')}
                           </Button>
                           {isSuperAdmin && (
                             <Button
@@ -305,7 +307,7 @@ export default function SuperAdminTeamPage() {
                               className="text-red-500 hover:text-red-600 hover:bg-red-50 text-xs"
                               onClick={() => handleDelete(m)}
                             >
-                              Delete
+                              {t('team.delete')}
                             </Button>
                           )}
                         </div>
@@ -323,11 +325,11 @@ export default function SuperAdminTeamPage() {
       <Dialog open={showAdd} onOpenChange={(o) => !o && setShowAdd(false)}>
         <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Team Member</DialogTitle>
+            <DialogTitle>{t('team.addMember')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAdd} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="tm-name">Full Name *</Label>
+              <Label htmlFor="tm-name">{t('team.fullName')} *</Label>
               <Input
                 id="tm-name"
                 value={addForm.displayName}
@@ -337,7 +339,7 @@ export default function SuperAdminTeamPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="tm-email">Email *</Label>
+              <Label htmlFor="tm-email">{t('team.email')} *</Label>
               <Input
                 id="tm-email"
                 type="email"
@@ -348,7 +350,7 @@ export default function SuperAdminTeamPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Role *</Label>
+              <Label>{t('team.role')} *</Label>
               <Select
                 value={addForm.role}
                 onValueChange={(v) => {
@@ -362,9 +364,9 @@ export default function SuperAdminTeamPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {isSuperAdmin && <SelectItem value="super_admin">Super Admin</SelectItem>}
-                  {isSuperAdmin && <SelectItem value="makhzoon_admin">Makhzoon Admin</SelectItem>}
-                  <SelectItem value="makhzoon_support">Makhzoon Support</SelectItem>
+                  {isSuperAdmin && <SelectItem value="super_admin">{t('role.superAdmin')}</SelectItem>}
+                  {isSuperAdmin && <SelectItem value="makhzoon_admin">{t('role.makhzoonAdmin')}</SelectItem>}
+                  <SelectItem value="makhzoon_support">{t('role.makhzoonSupport')}</SelectItem>
                 </SelectContent>
               </Select>
               {addForm.role && (
@@ -383,21 +385,21 @@ export default function SuperAdminTeamPage() {
                   <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none" />
                   <path d="M4 7h6M7 4v6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
                 </svg>
-                {showAddPerms ? 'Hide Access Permissions' : 'Set Access Permissions'}
+                {showAddPerms ? t('invite.hidePermissions') : t('invite.setPermissions')}
               </button>
               {showAddPerms ? (
                 <SuperAdminPermissionsEditor value={addPermissions} onChange={setAddPermissions} />
               ) : (
                 <p className="text-xs text-gray-400">
                   {addForm.role === 'makhzoon_support'
-                    ? 'Default: limited view-only access. Click above to customise.'
-                    : 'Default: broad access enabled. Click above to customise.'}
+                    ? t('permissions.default')
+                    : t('permissions.defaultAdmin')}
                 </p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="tm-password">Temporary Password *</Label>
+              <Label htmlFor="tm-password">{t('team.tempPassword')} *</Label>
               <div className="relative">
                 <Input
                   id="tm-password"
@@ -413,14 +415,14 @@ export default function SuperAdminTeamPage() {
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-indigo-600 hover:text-indigo-800"
                   onClick={() => setShowPassword((v) => !v)}
                 >
-                  {showPassword ? 'Hide' : 'Show'}
+                  {showPassword ? t('team.hide') : t('team.show')}
                 </button>
               </div>
-              <p className="text-xs text-gray-400">Sent to the member by email. They should change it after first login.</p>
+              <p className="text-xs text-gray-400">{t('team.passwordHint')}</p>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowAdd(false)} disabled={adding}>Cancel</Button>
-              <Button type="submit" disabled={adding}>{adding ? 'Adding…' : 'Add Member'}</Button>
+              <Button type="button" variant="outline" onClick={() => setShowAdd(false)} disabled={adding}>{t('common.cancel')}</Button>
+              <Button type="submit" disabled={adding}>{adding ? t('team.adding') : t('team.addMember')}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -430,15 +432,15 @@ export default function SuperAdminTeamPage() {
       <Dialog open={!!editTarget} onOpenChange={(o) => !o && setEditTarget(null)}>
         <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Member</DialogTitle>
+            <DialogTitle>{t('team.editMember')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-1">
-            <p className="text-xs text-gray-500">
-              Editing <span className="font-medium text-gray-900">{editTarget?.email}</span>
+            <p className="text-xs text-gray-500 dark:text-gray-300">
+              {t('users.editing')} <span className="font-medium text-gray-900 dark:text-gray-100">{editTarget?.email}</span>
             </p>
 
             <div className="space-y-1.5">
-              <Label htmlFor="edit-name">Full Name</Label>
+              <Label htmlFor="edit-name">{t('team.fullName')}</Label>
               <Input
                 id="edit-name"
                 value={editForm.displayName}
@@ -448,7 +450,7 @@ export default function SuperAdminTeamPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Role</Label>
+              <Label>{t('team.role')}</Label>
               <Select
                 value={editForm.role}
                 onValueChange={(v) => {
@@ -460,9 +462,9 @@ export default function SuperAdminTeamPage() {
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {isSuperAdmin && <SelectItem value="super_admin">Super Admin</SelectItem>}
-                  {isSuperAdmin && <SelectItem value="makhzoon_admin">Makhzoon Admin</SelectItem>}
-                  <SelectItem value="makhzoon_support">Makhzoon Support</SelectItem>
+                  {isSuperAdmin && <SelectItem value="super_admin">{t('role.superAdmin')}</SelectItem>}
+                  {isSuperAdmin && <SelectItem value="makhzoon_admin">{t('role.makhzoonAdmin')}</SelectItem>}
+                  <SelectItem value="makhzoon_support">{t('role.makhzoonSupport')}</SelectItem>
                 </SelectContent>
               </Select>
               {editForm.role && (
@@ -481,7 +483,7 @@ export default function SuperAdminTeamPage() {
                   <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none" />
                   <path d="M4 7h6M7 4v6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
                 </svg>
-                {showEditPerms ? 'Hide Access Permissions' : 'Edit Access Permissions'}
+                {showEditPerms ? t('permissions.hideAccess') : t('permissions.editAccess')}
               </button>
               {showEditPerms && (
                 <SuperAdminPermissionsEditor value={editPermissions} onChange={setEditPermissions} />
@@ -489,9 +491,9 @@ export default function SuperAdminTeamPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditTarget(null)} disabled={saving}>Cancel</Button>
+            <Button variant="outline" onClick={() => setEditTarget(null)} disabled={saving}>{t('common.cancel')}</Button>
             <Button onClick={handleSaveEdit} disabled={saving}>
-              {saving ? 'Saving…' : 'Save Changes'}
+              {saving ? t('common.saving') : t('common.saveChanges')}
             </Button>
           </DialogFooter>
         </DialogContent>

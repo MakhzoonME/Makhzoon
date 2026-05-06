@@ -17,9 +17,7 @@ import { formatDate } from '@/lib/utils/date';
 import { truncate } from '@/lib/utils/format';
 import { toast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
-import { useDebounce } from '@/hooks/useDebounce';
-
-/* ── SVG icons ───────────────────────────────────────────────────── */
+import { useT } from '@/hooks/useT';
 function CheckSVG() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -236,6 +234,7 @@ function RejectModal({
 
 /* ── Page ────────────────────────────────────────────────────────── */
 export default function RequestsPage() {
+  const { t } = useT();
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const { user } = useAuthStore();
@@ -278,7 +277,7 @@ export default function RequestsPage() {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error ?? 'Failed to approve request');
       }
-      toast.success('Request approved');
+      toast.success(action === 'approve' ? 'Request approved successfully' : 'Request rejected');
       qc.invalidateQueries({ queryKey: ['requests'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     } catch (err) {
@@ -313,18 +312,9 @@ export default function RequestsPage() {
   }
 
   const columns: ColumnDef<Request>[] = [
+    { key: 'type', header: 'Type', render: (r) => <span className="font-medium text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">{typeLabels[r.type] ?? r.type}</span> },
     {
-      key: 'type',
-      header: 'Type',
-      render: (r) => (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${typeTones[r.type] ?? 'bg-gray-100 text-gray-700'}`}>
-          {typeLabels[r.type] ?? r.type}
-        </span>
-      ),
-    },
-    {
-      key: 'assetId',
-      header: 'Reference',
+      key: 'assetId', header: 'Reference',
       render: (r) => {
         if (r.assetId)
           return (
@@ -347,165 +337,30 @@ export default function RequestsPage() {
         return <span className="text-gray-400">—</span>;
       },
     },
-    {
-      key: 'createdBy',
-      header: 'Submitted by',
-      render: (r) => (
-        <span className="text-sm text-gray-700 dark:text-gray-300">
-          {r.createdByName ?? r.createdByEmail ?? r.createdBy}
-        </span>
-      ),
-    },
-    {
-      key: 'createdAt',
-      header: 'Date',
-      render: (r) => <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums">{formatDate(r.createdAt)}</span>,
-    },
-    {
-      key: 'description',
-      header: 'Note',
-      render: (r) => (
-        <span className="text-sm text-gray-500 dark:text-gray-400">{truncate(r.description, 55)}</span>
-      ),
-    },
+    { key: 'createdBy', header: 'Submitted By', render: (r) => r.createdByName ?? r.createdByEmail ?? r.createdBy },
+    { key: 'createdAt', header: 'Date', render: (r) => formatDate(r.createdAt) },
+    { key: 'description', header: 'Description', render: (r) => <span className="text-gray-600">{truncate(r.description, 60)}</span> },
     { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
     {
-      key: 'actions',
-      header: '',
-      render: (r) =>
-        isAdmin && r.status === 'PENDING' ? (
-          <div className="flex items-center gap-1 justify-end">
-            <button
-              aria-label="Approve"
-              disabled={processing === r.id}
-              onClick={(e) => { e.stopPropagation(); handleApprove(r.id); }}
-              className="h-7 w-7 rounded-md flex items-center justify-center text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 disabled:opacity-40 transition-colors duration-150"
-            >
-              <CheckSVG />
-            </button>
-            <button
-              aria-label="Reject"
-              disabled={processing === r.id}
-              onClick={(e) => { e.stopPropagation(); setRejectTarget(r); }}
-              className="h-7 w-7 rounded-md flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-40 transition-colors duration-150"
-            >
-              <XSVG />
-            </button>
-          </div>
-        ) : null,
+      key: 'actions', header: 'Actions',
+      render: (r) => isAdmin && r.status === 'PENDING' ? (
+        <div className="flex gap-1">
+          <Button size="sm" variant="ghost" className="text-green-600 hover:bg-green-50" disabled={processing === r.id} onClick={(e) => { e.stopPropagation(); handleDecision(r.id, 'approve'); }}>
+            <CheckSVG />
+          </Button>
+          <Button size="sm" variant="ghost" className="text-red-500 hover:bg-red-50" disabled={processing === r.id} onClick={(e) => { e.stopPropagation(); handleDecision(r.id, 'reject'); }}>
+            <XSVG />
+          </Button>
+        </div>
+      ) : null
     },
   ];
 
   return (
-    <>
-      <div className="space-y-5">
-        <PageHeader
-          title={isStaff ? 'My Requests' : 'Requests'}
-          description={
-            isStaff
-              ? 'Track the status of requests you have submitted.'
-              : 'Approve, reject, and review every request in your workspace.'
-          }
-          actions={
-            <Button size="sm" onClick={() => router.push(`/${orgSlug}/requests/new`)}>
-              <PlusSVG />
-              <span className="ml-1">New request</span>
-            </Button>
-          }
-        />
-
-        {/* ── Stat cards ─────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <StatCard
-            icon={<ClockSVG />}
-            iconBg="var(--yellow-50)"
-            iconColor="var(--yellow-600)"
-            label="Pending"
-            value={
-              isLoading
-                ? <div className="h-7 w-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                : <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{pending}</p>
-            }
-          />
-          <StatCard
-            icon={<CheckCircleSVG />}
-            iconBg="var(--green-50)"
-            iconColor="var(--green-600)"
-            label="Approved"
-            value={
-              isLoading
-                ? <div className="h-7 w-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                : <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{approvedMonth}</p>
-            }
-          />
-          <StatCard
-            icon={<XCircleSVG />}
-            iconBg="var(--red-50)"
-            iconColor="var(--red-600)"
-            label="Rejected"
-            value={
-              isLoading
-                ? <div className="h-7 w-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                : <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{rejected}</p>
-            }
-          />
-          <StatCard
-            icon={<AvgSVG />}
-            iconBg="var(--primary-50)"
-            iconColor="var(--primary-600)"
-            label="Total"
-            value={
-              isLoading
-                ? <div className="h-7 w-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                : <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{requests.length}</p>
-            }
-          />
-        </div>
-
-        {/* ── Filter bar ─────────────────────────────────────────────── */}
-        <FilterBar
-          searchPlaceholder="Search by asset, requester…"
-          searchValue={search}
-          onSearchChange={setSearch}
-          filters={
-            <>
-              <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : v)}>
-                <SelectTrigger className="w-36">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Any status</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="APPROVED">Approved</SelectItem>
-                  <SelectItem value="REJECTED">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={type || 'all'} onValueChange={(v) => setType(v === 'all' ? '' : v)}>
-                <SelectTrigger className="w-36">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Any type</SelectItem>
-                  <SelectItem value="REFILL">Refill</SelectItem>
-                  <SelectItem value="RETIRE">Retire</SelectItem>
-                  <SelectItem value="BUY_NEW">Buy New</SelectItem>
-                  <SelectItem value="EXTEND_WARRANTY">Extend Warranty</SelectItem>
-                </SelectContent>
-              </Select>
-            </>
-          }
-        />
-
-        {/* ── Table ──────────────────────────────────────────────────── */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
-          <DataTable
-            data={filtered}
-            columns={columns}
-            isLoading={isLoading}
-            emptyMessage="No requests found."
-            keyExtractor={(r) => r.id}
-          />
-        </div>
+    <div>
+      <PageHeader title="Requests" />
+      <div className="bg-white rounded-lg border border-gray-200">
+        <DataTable data={requests} columns={columns} isLoading={isLoading} emptyMessage="No requests found." keyExtractor={(r) => r.id} />
       </div>
 
       {/* Reject modal */}

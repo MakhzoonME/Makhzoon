@@ -25,8 +25,10 @@ function AlertCircleSVG() {
   );
 }
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
-import { buildOrgPath } from '@/lib/utils/tenant-url';
+import { buildOrgPath, buildSuperAdminPath } from '@/lib/utils/tenant-url';
 import { useAuthStore } from '@/store/auth.store';
+
+const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 const EASE_SPRING = [0.34, 1.56, 0.64, 1] as const;
@@ -36,8 +38,14 @@ export default function SignupPage() {
   const { user, loading: authLoading } = useAuthStore();
 
   useEffect(() => {
-    if (!authLoading && user?.role !== 'super_admin') {
-      router.replace(user ? '/' : '/login');
+    if (authLoading) return;
+    if (!user) { router.replace('/login'); return; }
+    if (SUPERADMIN_ROLES.has(user.role)) return; // super_admin family can use this page
+    // Org users should not be here — send them to their portal
+    if (user.orgSlug) {
+      router.replace(buildOrgPath(user.orgSlug, '/dashboard'));
+    } else {
+      router.replace(buildSuperAdminPath('/dashboard'));
     }
   }, [user, authLoading, router]);
 

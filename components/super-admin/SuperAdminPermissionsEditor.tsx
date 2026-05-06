@@ -76,7 +76,7 @@ export function SuperAdminPermissionsEditor({ value, onChange }: Props) {
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setModuleEnabled(mod.key, !hasAnyOp); }}
                 className={cn(
-                  'relative flex-shrink-0 rounded-full transition-colors duration-200',
+                  'relative flex-shrink-0 p-0 overflow-hidden rounded-full transition-colors duration-200',
                   hasAnyOp ? 'bg-violet-600' : 'bg-gray-300'
                 )}
                 style={{ width: 32, height: 18 }}
@@ -84,8 +84,8 @@ export function SuperAdminPermissionsEditor({ value, onChange }: Props) {
               >
                 <span
                   className={cn(
-                    'absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow transition-transform duration-200',
-                    hasAnyOp ? 'translate-x-[14px]' : 'translate-x-0.5'
+                    'absolute top-0.5 rounded-full bg-white shadow transition-transform duration-200',
+                    hasAnyOp ? 'translate-x-[14px]' : 'translate-x-[2px]'
                   )}
                   style={{ width: 14, height: 14 }}
                 />

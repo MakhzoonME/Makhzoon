@@ -44,3 +44,10 @@ export async function writeAuditLog(params: LogParams): Promise<void> {
     timestamp: FieldValue.serverTimestamp(),
   });
 }
+
+export function queueAuditLog(params: LogParams): void {
+  adminDb.collection('auditLogs').add({
+    ...params,
+    timestamp: FieldValue.serverTimestamp(),
+  }).catch((err) => console.error('[auditLog] failed to write:', err));
+}

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { SuperAdminBanner } from '@/components/layout/SuperAdminBanner';
@@ -35,17 +35,26 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   const { t, dir } = useT();
   const isRtl = dir === 'rtl';
 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   useEffect(() => {
     if (!loading && !user) router.push('/login');
-    if (!loading && user && !SUPERADMIN_ROLES.has(user.role)) router.push('/');
+    // Org users who somehow land on /superadmin: send to their portal or public home
+    if (!loading && user && !SUPERADMIN_ROLES.has(user.role)) {
+      router.push(user.orgSlug ? `/${user.orgSlug}/dashboard` : '/');
+    }
   }, [user, loading, router]);
 
   async function handleLogout() {
-    await fetch('/api/auth/session', { method: 'DELETE' });
-    await signOut(auth);
+    setIsLoggingOut(true);
+    try {
+      await fetch('/api/auth/session', { method: 'DELETE' });
+      await signOut(auth);
+    } catch {
+      // ignore — always redirect regardless of errors
+    }
     useTransferStore.getState().clearTransfer();
-    router.push('/login');
-    router.refresh();
+    window.location.href = '/login';
   }
 
   if (loading || !user) return (
@@ -97,9 +106,9 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
               <ThemeToggle variant="ghost-dark" />
               <LanguageToggle variant="ghost-dark" />
             </div>
-            <button onClick={handleLogout} className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-blue-300 hover:bg-blue-900 hover:text-blue-100 w-full transition-colors">
+            <button onClick={handleLogout} disabled={isLoggingOut} className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-blue-300 hover:bg-blue-900 hover:text-blue-100 w-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               <LogOut className="h-[18px] w-[18px]" />
-              {t('common.signOut')}
+              {isLoggingOut ? '…' : t('common.signOut')}
             </button>
           </div>
         </aside>

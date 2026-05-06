@@ -29,10 +29,12 @@ import {
   type FeatureKey,
 } from '@/types';
 import type { PackageFormData } from '@/lib/validations/package.schema';
+import { useT } from '@/hooks/useT';
 
 type Tab = 'packages' | 'features';
 
 export default function ConfigurationPage() {
+  const { t } = useT();
   const [tab, setTab] = useState<Tab>('packages');
   const [showInactive, setShowInactive] = useState(false);
   const { data: packages = [], isLoading } = usePackages({ includeInactive: showInactive });
@@ -48,10 +50,10 @@ export default function ConfigurationPage() {
   async function handleCreate(data: PackageFormData) {
     try {
       await createMut.mutateAsync(data);
-      toast.success('Package created');
+      toast.success(t('config.packageCreated'));
       setCreateOpen(false);
     } catch {
-      toast.error('Failed to create package');
+      toast.error(t('config.packageCreateFailed'));
     }
   }
 
@@ -59,10 +61,10 @@ export default function ConfigurationPage() {
     if (!editing) return;
     try {
       await updateMut.mutateAsync(data);
-      toast.success('Package updated');
+      toast.success(t('config.packageUpdated'));
       setEditing(null);
     } catch {
-      toast.error('Failed to update package');
+      toast.error(t('config.packageUpdateFailed'));
     }
   }
 
@@ -70,47 +72,47 @@ export default function ConfigurationPage() {
     if (!deleteTarget) return;
     try {
       await deleteMut.mutateAsync(deleteTarget.id);
-      toast.success('Package deactivated');
+      toast.success(t('config.packageDeactivated'));
       setDeleteTarget(null);
     } catch {
-      toast.error('Failed to deactivate package');
+      toast.error(t('config.packageDeactivateFailed'));
     }
   }
 
   const packageColumns: ColumnDef<Package>[] = [
     {
       key: 'name',
-      header: 'Name',
+      header: t('config.name'),
       render: (p) => (
         <div>
-          <p className="font-medium text-gray-900">{p.name}</p>
-          <p className="text-xs text-gray-500 line-clamp-1">{p.description}</p>
+          <p className="font-medium text-gray-900 dark:text-gray-100">{p.name}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-300 line-clamp-1">{p.description}</p>
         </div>
       ),
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('config.status'),
       render: (p) =>
         p.isActive ? (
-          <Badge variant="green">Active</Badge>
+          <Badge variant="green">{t('config.active')}</Badge>
         ) : (
-          <Badge variant="default">Inactive</Badge>
+          <Badge variant="default">{t('config.inactive')}</Badge>
         ),
     },
     {
       key: 'maxAssets',
-      header: 'Max Assets',
-      render: (p) => (p.limits.maxAssets === -1 ? 'Unlimited' : p.limits.maxAssets),
+      header: t('config.maxAssets'),
+      render: (p) => (p.limits.maxAssets === -1 ? t('config.unlimited') : p.limits.maxAssets),
     },
     {
       key: 'maxUsers',
-      header: 'Max Users',
-      render: (p) => (p.limits.maxUsers === -1 ? 'Unlimited' : p.limits.maxUsers),
+      header: t('config.maxUsers'),
+      render: (p) => (p.limits.maxUsers === -1 ? t('config.unlimited') : p.limits.maxUsers),
     },
     {
       key: 'features',
-      header: 'Features',
+      header: t('config.features'),
       render: (p) => {
         const enabled = (Object.entries(p.features) as [FeatureKey, boolean][])
           .filter(([, v]) => v)
@@ -118,7 +120,7 @@ export default function ConfigurationPage() {
         return (
           <div className="flex flex-wrap gap-1">
             {enabled.length === 0 ? (
-              <span className="text-xs text-gray-400">none</span>
+              <span className="text-xs text-gray-400">{t('config.none')}</span>
             ) : (
               enabled.slice(0, 3).map((f) => (
                 <span key={f} className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded">
@@ -133,7 +135,7 @@ export default function ConfigurationPage() {
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('config.actions'),
       render: (p) => (
         <div className="flex gap-1">
           <Button size="sm" variant="ghost" onClick={() => setEditing(p)}>
@@ -151,7 +153,7 @@ export default function ConfigurationPage() {
 
   return (
     <div>
-      <PageHeader title="Configuration" description="Manage subscription tiers and feature catalog." />
+      <PageHeader title={t('nav.configuration')} description={t('config.description')} />
 
       <div className="border-b border-gray-200 mb-6">
         <nav className="flex gap-6" aria-label="Tabs">
@@ -164,7 +166,7 @@ export default function ConfigurationPage() {
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            Packages
+            {t('config.packages')}
           </button>
           <button
             type="button"
@@ -175,7 +177,7 @@ export default function ConfigurationPage() {
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            Features Reference
+            {t('config.featuresRef')}
           </button>
         </nav>
       </div>
@@ -183,17 +185,17 @@ export default function ConfigurationPage() {
       {tab === 'packages' ? (
         <>
           <div className="flex justify-between items-center mb-4">
-            <label className="inline-flex items-center gap-2 text-sm text-gray-600">
+            <label className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
               <input
                 type="checkbox"
                 checked={showInactive}
                 onChange={(e) => setShowInactive(e.target.checked)}
               />
-              Show inactive
+              {t('config.showInactive')}
             </label>
             <Button size="sm" onClick={() => setCreateOpen(true)}>
               <Plus className="h-4 w-4 mr-1" />
-              New Package
+              {t('config.newPackage')}
             </Button>
           </div>
 
@@ -202,7 +204,7 @@ export default function ConfigurationPage() {
               data={packages}
               columns={packageColumns}
               isLoading={isLoading}
-              emptyMessage="No packages yet."
+              emptyMessage={t('config.noPackages')}
               keyExtractor={(p) => p.id}
             />
           </div>
@@ -213,13 +215,13 @@ export default function ConfigurationPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                  Feature Key
+                  {t('config.featureKey')}
                 </th>
                 <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                  Label
+                  {t('config.featureLabel')}
                 </th>
                 <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                  Description
+                  {t('config.featureDesc')}
                 </th>
               </tr>
             </thead>
@@ -227,8 +229,8 @@ export default function ConfigurationPage() {
               {FEATURE_KEYS.map((k) => (
                 <tr key={k} className="border-b border-gray-100">
                   <td className="px-4 py-3 font-mono text-xs text-indigo-700">{k}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{FEATURE_LABELS[k]}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{FEATURE_DESCRIPTIONS[k]}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{FEATURE_LABELS[k]}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{FEATURE_DESCRIPTIONS[k]}</td>
                 </tr>
               ))}
             </tbody>
@@ -239,8 +241,8 @@ export default function ConfigurationPage() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>New Package</DialogTitle>
-            <DialogDescription>Define limits, features, and activation state.</DialogDescription>
+            <DialogTitle>{t('config.newPackageTitle')}</DialogTitle>
+            <DialogDescription>{t('config.newPackageDesc')}</DialogDescription>
           </DialogHeader>
           <PackageForm
             onCancel={() => setCreateOpen(false)}
@@ -253,7 +255,7 @@ export default function ConfigurationPage() {
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Package</DialogTitle>
+            <DialogTitle>{t('config.editPackage')}</DialogTitle>
             <DialogDescription>{editing?.name}</DialogDescription>
           </DialogHeader>
           {editing && (
@@ -271,9 +273,9 @@ export default function ConfigurationPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
-        title="Deactivate package?"
-        description={`"${deleteTarget?.name}" will no longer be assignable to new subscriptions. Existing subscriptions are unaffected.`}
-        confirmLabel="Deactivate"
+        title={t('config.deactivatePackage')}
+        description={t('config.deactivateDesc').replace('{name}', deleteTarget?.name ?? '')}
+        confirmLabel={t('config.deactivate')}
         onConfirm={handleDelete}
         loading={deleteMut.isPending}
       />

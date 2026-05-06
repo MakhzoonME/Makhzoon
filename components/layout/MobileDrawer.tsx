@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,7 +10,6 @@ import { useTransferStore } from '@/store/transfer.store';
 import { useSubscriptionFeatures } from '@/hooks/useSubscriptionFeatures';
 import { auth } from '@/lib/firebase/client';
 import { signOut } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 
 function DashboardSVG() { return <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden><rect x="2" y="2" width="6" height="7" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="10" y="2" width="6" height="4" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="10" y="8" width="6" height="8" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="2" y="11" width="6" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /></svg>; }
@@ -45,12 +45,12 @@ const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 export function MobileDrawer() {
   const pathname = usePathname();
   const params = useParams();
-  const router = useRouter();
   const orgSlug = (params?.orgSlug as string) ?? '';
   const { user } = useAuthStore();
   const { mobileMenuOpen, setMobileMenuOpen } = useUiStore();
   const features = useSubscriptionFeatures();
 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const visibleItems = navItems.filter((item) => {
@@ -60,12 +60,16 @@ export function MobileDrawer() {
   });
 
   async function handleLogout() {
+    setIsLoggingOut(true);
     setMobileMenuOpen(false);
-    await fetch('/api/auth/session', { method: 'DELETE' });
-    await signOut(auth);
+    try {
+      await fetch('/api/auth/session', { method: 'DELETE' });
+      await signOut(auth);
+    } catch {
+      // ignore — always redirect regardless of errors
+    }
     useTransferStore.getState().clearTransfer();
-    router.push('/login');
-    router.refresh();
+    window.location.href = '/login';
   }
 
   return (
@@ -149,10 +153,11 @@ export function MobileDrawer() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
+                disabled={isLoggingOut}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <LogOutSVG />
-                <span>Sign out</span>
+                <span>{isLoggingOut ? '…' : 'Sign out'}</span>
               </button>
             </div>
           </motion.aside>

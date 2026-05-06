@@ -9,11 +9,13 @@ import { useSupportTickets } from '@/hooks/useSupportTickets';
 import { useAllOrgsUsage } from '@/hooks/useAllOrgsUsage';
 import { formatDate } from '@/lib/utils/date';
 import type { SupportTicket, TicketStatus, TicketPriority } from '@/types';
+import { useT } from '@/hooks/useT';
 
 const STATUSES: TicketStatus[] = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 const PRIORITIES: TicketPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 
 export default function SupportPage() {
+  const { t } = useT();
   const router = useRouter();
   const [orgId, setOrgId] = useState<string>('');
   const [status, setStatus] = useState<TicketStatus | ''>('');
@@ -34,28 +36,28 @@ export default function SupportPage() {
   const columns: ColumnDef<SupportTicket>[] = [
     {
       key: 'subject',
-      header: 'Subject',
-      render: (t) => (
+      header: t('support.subject'),
+      render: (ticket) => (
         <div>
-          <p className="font-medium text-gray-900 line-clamp-1">{t.subject}</p>
-          <p className="text-xs text-gray-500 line-clamp-1">{t.description}</p>
+          <p className="font-medium text-gray-900 dark:text-gray-100 line-clamp-1">{ticket.subject}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-300 line-clamp-1">{ticket.description}</p>
         </div>
       ),
     },
     {
       key: 'org',
-      header: 'Organization',
-      render: (t) => orgNameById.get(t.organizationId) ?? <span className="font-mono text-xs text-gray-500">{t.organizationId.slice(0, 8)}…</span>,
+      header: t('auditLogs.organization'),
+      render: (ticket) => orgNameById.get(ticket.organizationId) ?? <span className="font-mono text-xs text-gray-500">{ticket.organizationId.slice(0, 8)}…</span>,
     },
-    { key: 'priority', header: 'Priority', render: (t) => <StatusBadge status={t.priority} /> },
-    { key: 'status', header: 'Status', render: (t) => <StatusBadge status={t.status} /> },
-    { key: 'created', header: 'Created', render: (t) => formatDate(new Date(t.createdAt)) },
+    { key: 'priority', header: t('support.priority'), render: (ticket) => <StatusBadge status={ticket.priority} /> },
+    { key: 'status', header: t('support.status'), render: (ticket) => <StatusBadge status={ticket.status} /> },
+    { key: 'created', header: t('support.created'), render: (ticket) => formatDate(new Date(ticket.createdAt)) },
     {
       key: 'actions',
       header: '',
-      render: (t) => (
-        <Button size="sm" variant="ghost" onClick={() => router.push(`/superadmin/support/${t.id}`)}>
-          View
+      render: (ticket) => (
+        <Button size="sm" variant="ghost" onClick={() => router.push(`/superadmin/support/${ticket.id}`)}>
+          {t('support.view')}
         </Button>
       ),
     },
@@ -69,7 +71,7 @@ export default function SupportPage() {
 
   return (
     <div>
-      <PageHeader title="Support Tickets" description="Review and respond to tickets across all organizations." />
+      <PageHeader title={t('nav.support')} description={t('support.description2')} />
 
       <div className="bg-white border border-gray-200 rounded-lg p-3 flex flex-wrap gap-2 mb-4">
         <select
@@ -77,7 +79,7 @@ export default function SupportPage() {
           onChange={(e) => setOrgId(e.target.value)}
           className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm"
         >
-          <option value="">All organizations</option>
+          <option value="">{t('support.allOrgs')}</option>
           {orgs.map((r) => (
             <option key={r.organization.id} value={r.organization.id}>
               {r.organization.name}
@@ -89,7 +91,7 @@ export default function SupportPage() {
           onChange={(e) => setStatus(e.target.value as TicketStatus | '')}
           className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm"
         >
-          <option value="">Any status</option>
+          <option value="">{t('support.anyStatus')}</option>
           {STATUSES.map((s) => (
             <option key={s} value={s}>
               {s.replace('_', ' ')}
@@ -101,7 +103,7 @@ export default function SupportPage() {
           onChange={(e) => setPriority(e.target.value as TicketPriority | '')}
           className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm"
         >
-          <option value="">Any priority</option>
+          <option value="">{t('support.anyPriority')}</option>
           {PRIORITIES.map((p) => (
             <option key={p} value={p}>
               {p}
@@ -110,7 +112,7 @@ export default function SupportPage() {
         </select>
         {(orgId || status || priority) && (
           <Button size="sm" variant="ghost" onClick={clearFilters}>
-            Clear
+            {t('orgs.clear')}
           </Button>
         )}
       </div>
@@ -120,8 +122,8 @@ export default function SupportPage() {
           data={tickets}
           columns={columns}
           isLoading={isLoading}
-          emptyMessage="No tickets match the current filters."
-          keyExtractor={(t) => t.id}
+          emptyMessage={t('support.noMatch')}
+          keyExtractor={(ticket) => ticket.id}
         />
       </div>
     </div>

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useOrgSlug } from '@/hooks/useOrgSlug';
 import { useAuthStore } from '@/store/auth.store';
+import { useT } from '@/hooks/useT';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
@@ -408,6 +409,7 @@ export default function DashboardPage() {
   const orgSlug = useOrgSlug();
   const { user } = useAuthStore();
   const { data, isLoading } = useDashboard();
+  const { t } = useT();
 
   const firstName = (user?.displayName ?? user?.email ?? 'there').split(/[\s@]/)[0];
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
@@ -428,12 +430,12 @@ export default function DashboardPage() {
   }
 
   const warrantyColumns: ColumnDef<Warranty>[] = [
-    { key: 'assetId', header: 'Asset',  render: (w) => <span className="font-medium text-sm">{w.assetName ?? w.assetId}</span> },
-    { key: 'vendor',  header: 'Vendor', render: (w) => <span className="text-sm text-gray-600 dark:text-gray-400">{w.vendor}</span> },
-    { key: 'endDate', header: 'Expiry', render: (w) => <span className="text-red-600 dark:text-red-400 font-medium text-sm tabular-nums">{formatDate(w.endDate)}</span> },
+    { key: 'assetId', header: t('col.asset'),     render: (w) => <span className="font-medium text-sm">{w.assetName ?? w.assetId}</span> },
+    { key: 'vendor',  header: t('col.vendor'),    render: (w) => <span className="text-sm text-gray-600 dark:text-gray-400">{w.vendor}</span> },
+    { key: 'endDate', header: t('col.expiry'),    render: (w) => <span className="text-red-600 dark:text-red-400 font-medium text-sm tabular-nums">{formatDate(w.endDate)}</span> },
     {
       key: 'days',
-      header: 'Left',
+      header: t('col.remaining'),
       render: (w) => {
         const d = daysUntil(w.endDate);
         return (
@@ -475,7 +477,7 @@ export default function DashboardPage() {
           icon={<TotalIcon />}
           iconBg="var(--primary-50)"
           iconColor="var(--primary-600)"
-          label="Total Assets"
+          label={t('dashboard.totalAssets')}
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{totalAssets.length}</p>}
           onClick={() => router.push(`/${orgSlug}/assets`)}
         />
@@ -483,9 +485,9 @@ export default function DashboardPage() {
           icon={<ActiveIcon />}
           iconBg="var(--green-50)"
           iconColor="var(--green-600)"
-          label="Active"
+          label={t('dashboard.active')}
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{activeAssets.length}</p>}
-          sub={!isLoading && totalAssets.length > 0 ? `${Math.round((activeAssets.length / totalAssets.length) * 100)}% of total` : undefined}
+          sub={!isLoading && totalAssets.length > 0 ? `${Math.round((activeAssets.length / totalAssets.length) * 100)}${t('dashboard.percentOfTotal')}` : undefined}
           onClick={() => router.push(`/${orgSlug}/assets?status=Active`)}
         />
         <StatCard
@@ -501,7 +503,7 @@ export default function DashboardPage() {
           icon={<WarningIcon />}
           iconBg="var(--yellow-50)"
           iconColor="var(--yellow-600)"
-          label="Warranties Expiring"
+          label={t('dashboard.warrantiesExpiring')}
           value={
             isLoading ? <SkeletonValue /> : (
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">
@@ -525,7 +527,7 @@ export default function DashboardPage() {
                 onClick={() => router.push(`/${orgSlug}/assets`)}
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
               >
-                View all <ArrowRightIcon />
+                {t('dashboard.viewAll')} <ArrowRightIcon />
               </button>
             </div>
             <AssetBreakdownBar assets={totalAssets} isLoading={isLoading} />
@@ -555,19 +557,19 @@ export default function DashboardPage() {
         <Card className="lg:col-span-2">
           <CardContent className="p-0">
             <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Expiring warranties</h2>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('dashboard.expiringWarranties')}</h2>
               <button
                 onClick={() => router.push(`/${orgSlug}/warranties`)}
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
               >
-                View all <ArrowRightIcon />
+                {t('dashboard.viewAll')} <ArrowRightIcon />
               </button>
             </div>
             <DataTable
               data={expiringWarranties.slice(0, 5)}
               columns={warrantyColumns}
               isLoading={isLoading}
-              emptyMessage="No warranties expiring soon."
+              emptyMessage={t('dashboard.noWarranties')}
               keyExtractor={(w) => w.id}
             />
           </CardContent>

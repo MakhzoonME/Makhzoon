@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const SUPPORTED_LOCALES = ['en', 'ar'];
+const DEFAULT_LOCALE = 'en';
 const SKIP_PREFIXES = ['/api/', '/invites/', '/_next/'];
 
-// Marketing pages and auth pages are public — no session required
+// Paths that don't require a session (without locale prefix)
 const PUBLIC_PATHS = new Set([
-  '/', '/home', '/product', '/pricing', '/customers', '/security', '/about', '/contact', '/login',
+  '/', '/home', '/product', '/pricing', '/customers', '/security', '/about', '/contact', '/login', '/signup',
 ]);
+
+function stripLocale(pathname: string): { locale: string | null; rest: string } {
+  const parts = pathname.split('/');
+  if (parts.length > 1 && SUPPORTED_LOCALES.includes(parts[1])) {
+    return { locale: parts[1], rest: '/' + parts.slice(2).join('/') || '/' };
+  }
+  return { locale: null, rest: pathname };
+}
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -14,17 +24,27 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  const { locale, rest } = stripLocale(pathname);
+
+  // If no locale prefix, redirect to add the default locale
+  if (!locale) {
+    const url = req.nextUrl.clone();
+    url.pathname = `/${DEFAULT_LOCALE}${pathname === '/' ? '' : pathname}`;
+    return NextResponse.redirect(url);
+  }
+
   const session = req.cookies.get('session')?.value;
 
-  // Marketing and auth pages are always accessible — let the login page
-  // itself route already-signed-in users based on their role.
-  if (PUBLIC_PATHS.has(pathname)) {
+  // Marketing and auth pages are always accessible
+  if (PUBLIC_PATHS.has(rest) || rest === '/') {
     return NextResponse.next();
   }
 
-  // Everything else (/superadmin/*, /[orgSlug]/*, /signup) requires a session
+  // Everything else requires a session
   if (!session) {
-    return NextResponse.redirect(new URL('/login', req.url));
+    const url = req.nextUrl.clone();
+    url.pathname = `/${locale}/login`;
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();

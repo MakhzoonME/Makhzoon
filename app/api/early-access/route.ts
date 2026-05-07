@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/email/resend';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { checkOrigin } from '@/lib/csrf';
+import { createEarlyAccessEntry } from '@/lib/db/early-access';
 
 const notifyHtml = (email: string) => `
 <!DOCTYPE html>
@@ -96,6 +97,7 @@ export async function POST(req: NextRequest) {
       html: confirmHtml(email),
       text: `Hi,\n\nThanks for your interest in Makhzoon. We'll reach out to ${email} as soon as we're ready to onboard you.\n\nMakhzoon · makhzoon.me`,
     }),
+    createEarlyAccessEntry(email, clientIp),
   ]);
 
   return NextResponse.json({ ok: true });

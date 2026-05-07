@@ -11,11 +11,18 @@ function getAdminApp(): App {
     if (getApps().length > 0) {
       _app = getApps()[0];
     } else {
+      const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+      console.log('[firebase-admin] init', {
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+        privateKeyLength: privateKey?.length,
+        privateKeyValid: privateKey?.includes('BEGIN PRIVATE KEY'),
+      });
       _app = initializeApp({
         credential: cert({
           projectId: process.env.FIREBASE_PROJECT_ID,
           clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+          privateKey,
         }),
       });
     }

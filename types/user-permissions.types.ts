@@ -61,6 +61,10 @@ export interface SettingsPermissions {
   users: boolean;
 }
 
+export interface LeadsPermissions {
+  view: boolean;
+}
+
 export interface UserPermissions {
   assets: AssetPermissions;
   inventory: InventoryPermissions;
@@ -69,6 +73,7 @@ export interface UserPermissions {
   reports: ReportsPermissions;
   support: SupportPermissions;
   auditLogs: AuditLogsPermissions;
+  leads: LeadsPermissions;
   pos?: PosPermissions;
   settings: SettingsPermissions;
 }
@@ -81,6 +86,7 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   reports:   { view: true  },
   support:   { view: true,  create: true  },
   auditLogs: { view: true  },
+  leads:     { view: true  },
   settings:  { view: true,  orgInfo: true,  subscription: true,  users: true  },
 };
 
@@ -92,6 +98,7 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   reports:   { view: false },
   support:   { view: true,  create: true },
   auditLogs: { view: false },
+  leads:     { view: true  },
   settings:  { view: false, orgInfo: false, subscription: false, users: false },
 };
 
@@ -181,6 +188,13 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     featureKey: 'auditLogs',
     operations: [
       { key: 'view', label: 'View Audit Logs' },
+    ],
+  },
+  {
+    key: 'leads',
+    label: 'Leads',
+    operations: [
+      { key: 'view', label: 'View Leads' },
     ],
   },
   {

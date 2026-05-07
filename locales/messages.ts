@@ -23,6 +23,7 @@ const en = {
   'nav.configuration': 'Configuration',
   'nav.team':          'Team',
   'nav.backendLogs':   'Backend Logs',
+  'nav.leads':         'Leads',
   'nav.settings':      'Settings',
   'nav.orgInfo':       'Organization Info',
 
@@ -524,6 +525,20 @@ const en = {
   'users.deactivateDesc':      'Deactivate "{name}"? They will lose access immediately.',
   'users.deleteDesc':          'Permanently delete "{name}"? This cannot be undone.',
   'users.deletePermanently':   'Delete Permanently',
+
+  // ── Leads ─────────────────────────────────────────────────────────
+  'leads.description':         'Manage early-access signups and contact sales inquiries.',
+  'leads.earlyAccessTab':      'Early Access',
+  'leads.contactSalesTab':     'Contact Sales',
+  'leads.noEarlyAccess':       'No early access signups yet.',
+  'leads.noContactSales':      'No contact sales inquiries yet.',
+  'leads.email':               'Email',
+  'leads.ipAddress':           'IP Address',
+  'leads.submitted':           'Submitted',
+  'leads.name':                'Name',
+  'leads.organization':        'Organization',
+  'leads.phone':               'Phone',
+  'leads.notes':               'Notes',
 } as const;
 
 const ar: Record<keyof typeof en, string> = {
@@ -542,6 +557,7 @@ const ar: Record<keyof typeof en, string> = {
   'nav.configuration': 'الإعدادات',
   'nav.team':          'الفريق',
   'nav.backendLogs':   'سجلات النظام',
+  'nav.leads':         'العملاء المحتملين',
   'nav.settings':      'الإعدادات',
   'nav.orgInfo':       'معلومات المنظمة',
 
@@ -1045,6 +1061,20 @@ const ar: Record<keyof typeof en, string> = {
   'users.deactivateDesc':      'تعطيل "{name}"؟ سيفقدون الوصول فوراً.',
   'users.deleteDesc':          'حذف "{name}" نهائياً؟ لا يمكن التراجع.',
   'users.deletePermanently':   'حذف نهائياً',
+
+  // ── Leads ─────────────────────────────────────────────────────────
+  'leads.description':         'إدارة التسجيلات المبكرة واستفسارات التواصل مع المبيعات.',
+  'leads.earlyAccessTab':      'الوصول المبكر',
+  'leads.contactSalesTab':     'التواصل مع المبيعات',
+  'leads.noEarlyAccess':       'لا توجد تسجيلات وصول مبكر بعد.',
+  'leads.noContactSales':      'لا توجد استفسارات تواصل مع المبيعات بعد.',
+  'leads.email':               'البريد الإلكتروني',
+  'leads.ipAddress':           'عنوان IP',
+  'leads.submitted':           'تم الإرسال',
+  'leads.name':                'الاسم',
+  'leads.organization':        'المنظمة',
+  'leads.phone':               'الهاتف',
+  'leads.notes':               'ملاحظات',
 };
 
 export const messages: Record<Locale, Record<keyof typeof en, string>> = { en, ar };

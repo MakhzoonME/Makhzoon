@@ -6,17 +6,35 @@ let _app: App | null = null;
 let _db: Firestore | null = null;
 let _auth: Auth | null = null;
 
+function parsePrivateKey(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  // Strip surrounding quotes that some env var systems add
+  let key = raw.replace(/^["']|["']$/g, '');
+  // Normalize escaped newlines (handles \n and \\n variants)
+  key = key.replace(/\\n/g, '\n');
+  // If still no real newlines, the key is likely one long line — reconstruct it
+  if (!key.includes('\n')) {
+    const match = key.match(/-----BEGIN PRIVATE KEY-----(.*?)-----END PRIVATE KEY-----/s);
+    if (match) {
+      const body = match[1].trim().replace(/\s+/g, '\n');
+      key = `-----BEGIN PRIVATE KEY-----\n${body}\n-----END PRIVATE KEY-----\n`;
+    }
+  }
+  return key;
+}
+
 function getAdminApp(): App {
   if (!_app) {
     if (getApps().length > 0) {
       _app = getApps()[0];
     } else {
-      const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+      const privateKey = parsePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
       console.log('[firebase-admin] init', {
         projectId: process.env.FIREBASE_PROJECT_ID,
         hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
         privateKeyLength: privateKey?.length,
         privateKeyValid: privateKey?.includes('BEGIN PRIVATE KEY'),
+        privateKeyHasNewlines: privateKey?.includes('\n'),
       });
       _app = initializeApp({
         credential: cert({

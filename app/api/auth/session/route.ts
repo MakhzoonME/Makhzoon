@@ -52,7 +52,15 @@ export async function POST(req: NextRequest) {
     //   }
     // }
 
-    const decoded = await verifyWithRetry(idToken);
+    let decoded;
+    try {
+      decoded = await verifyWithRetry(idToken);
+    } catch (verifyErr) {
+      const msg = verifyErr instanceof Error ? verifyErr.message : String(verifyErr);
+      const code = (verifyErr as Record<string, unknown>)?.code;
+      console.error('Session: verifyIdToken failed', { code, msg });
+      return NextResponse.json({ error: 'Unauthorized', detail: `verifyIdToken: ${code ?? msg}` }, { status: 401 });
+    }
 
     if (!decoded.role) {
       return NextResponse.json({ error: 'No account found' }, { status: 403 });
@@ -60,7 +68,15 @@ export async function POST(req: NextRequest) {
 
     // 24-hour session (reduced from 5 days for better security)
     const expiresIn = 60 * 60 * 24 * 1 * 1000; // 1 day
-    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+    let sessionCookie;
+    try {
+      sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+    } catch (cookieErr) {
+      const msg = cookieErr instanceof Error ? cookieErr.message : String(cookieErr);
+      const code = (cookieErr as Record<string, unknown>)?.code;
+      console.error('Session: createSessionCookie failed', { code, msg });
+      return NextResponse.json({ error: 'Unauthorized', detail: `createSessionCookie: ${code ?? msg}` }, { status: 401 });
+    }
 
     const cookieStore = await cookies();
     // Set secure flag in all non-development environments
@@ -107,8 +123,10 @@ export async function POST(req: NextRequest) {
       { headers: { 'Cache-Control': 'no-store' } }
     );
   } catch (err) {
-    console.error('Session creation error:', err);
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const errMsg = err instanceof Error ? err.message : String(err);
+    const errCode = (err as Record<string, unknown>)?.code;
+    console.error('Session creation error:', { message: errMsg, code: errCode, stack: err instanceof Error ? err.stack : undefined });
+    return NextResponse.json({ error: 'Unauthorized', detail: errMsg }, { status: 401 });
   }
 }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { checkOrigin } from '@/lib/csrf';
+import { createContactSalesEntry } from '@/lib/db/contact-sales';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
@@ -66,13 +67,11 @@ export async function POST(req: NextRequest) {
 
     if (!RESEND_API_KEY) {
       console.warn('RESEND_API_KEY not configured. Storing message for manual review.');
-      return NextResponse.json({ success: true });
-    }
+    } else {
 
     const { Resend } = await import('resend');
     const resend = new Resend(RESEND_API_KEY);
 
-    // SECURITY: Sanitize all user inputs for HTML display
     const sanitizedName = sanitizeText(name);
     const sanitizedOrg = sanitizeText(organizationName);
     const sanitizedPhone = sanitizeText(phone);
@@ -100,6 +99,16 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+    }
+
+    await createContactSalesEntry({
+      name,
+      organizationName,
+      phone,
+      email,
+      notes: notes || undefined,
+      ip: clientIp,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

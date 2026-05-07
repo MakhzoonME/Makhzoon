@@ -89,12 +89,6 @@ function CheckCircleSVG() {
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
-const FEATURE_LIST_KEYS = [
-  'Assets, inventory & warranties in one place',
-  'POS-ready for retail stores and offices',
-  'Granular role-based access control',
-] as const;
-
 /* ── Contact Sales Modal ─────────────────────────────────────── */
 function ContactSalesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useT();
@@ -112,10 +106,7 @@ function ContactSalesModal({ open, onClose }: { open: boolean; onClose: () => vo
     setLoading(false); setSubmitted(false); setError('');
   }
 
-  function handleClose() {
-    onClose();
-    setTimeout(reset, 300);
-  }
+  function handleClose() { onClose(); setTimeout(reset, 300); }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -144,13 +135,10 @@ function ContactSalesModal({ open, onClose }: { open: boolean; onClose: () => vo
       {open && (
         <motion.div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
           <motion.div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
-
           <motion.div
             className="relative bg-surface-card border border-border rounded-2xl shadow-2xl w-full max-w-md p-6 z-10"
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -158,35 +146,22 @@ function ContactSalesModal({ open, onClose }: { open: boolean; onClose: () => vo
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.2, ease: EASE_OUT }}
           >
-            <button
-              type="button"
-              onClick={handleClose}
-              className="absolute top-4 end-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              aria-label="Close"
-            >
+            <button type="button" onClick={handleClose} className="absolute top-4 end-4 text-gray-500 hover:text-gray-800 transition-colors" aria-label="Close">
               <XSVGIcon />
             </button>
-
             <AnimatePresence mode="wait" initial={false}>
               {submitted ? (
-                <motion.div
-                  key="success"
-                  className="flex flex-col items-center text-center py-6 gap-4"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  <span className="text-primary-600 dark:text-primary-400"><CheckCircleSVG /></span>
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('auth.requestSent')}</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">{t('auth.requestSentBody')}</p>
+                <motion.div key="success" className="flex flex-col items-center text-center py-6 gap-4"
+                  initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+                  <span className="text-primary-600"><CheckCircleSVG /></span>
+                  <h2 className="text-lg font-semibold text-gray-900">{t('auth.requestSent')}</h2>
+                  <p className="text-sm text-gray-500 max-w-xs">{t('auth.requestSentBody')}</p>
                   <Button className="mt-2" onClick={handleClose}>{t('common.cancel')}</Button>
                 </motion.div>
               ) : (
                 <motion.div key="form" initial={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">{t('auth.contactSalesTitle')}</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{t('auth.contactSalesSubtitle')}</p>
-
+                  <h2 className="text-lg font-semibold text-gray-900 mb-1">{t('auth.contactSalesTitle')}</h2>
+                  <p className="text-sm text-gray-500 mb-6">{t('auth.contactSalesSubtitle')}</p>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1.5">
                       <Label htmlFor="cs-name">{t('auth.fullName')}</Label>
@@ -209,30 +184,24 @@ function ContactSalesModal({ open, onClose }: { open: boolean; onClose: () => vo
                     <div className="space-y-1.5">
                       <Label htmlFor="cs-notes">
                         {t('auth.notes')}{' '}
-                        <span className="text-gray-400 dark:text-gray-500 font-normal">{t('auth.notesOptional')}</span>
+                        <span className="text-gray-400 font-normal">{t('auth.notesOptional')}</span>
                       </Label>
                       <textarea
-                        id="cs-notes"
-                        rows={3}
+                        id="cs-notes" rows={3}
                         placeholder={t('auth.notesPlaceholder')}
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        className="w-full rounded-lg border border-border bg-surface-page px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 resize-none transition-colors"
+                        value={notes} onChange={(e) => setNotes(e.target.value)}
+                        className="w-full rounded-lg border border-border bg-surface-page px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 resize-none transition-colors"
                       />
                     </div>
-
                     {error && (
-                      <div className="flex items-start gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/40 rounded-xl px-3 py-2.5">
+                      <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
                         <AlertCircleSVG /><span>{error}</span>
                       </div>
                     )}
-
                     <div className="flex gap-3 pt-1">
                       <Button type="button" variant="outline" className="flex-1" onClick={handleClose}>{t('common.cancel')}</Button>
                       <Button type="submit" className="flex-1" disabled={loading}>
-                        {loading
-                          ? <span className="inline-flex items-center gap-2"><Loader2SVG />{t('auth.sending')}</span>
-                          : t('auth.sendRequest')}
+                        {loading ? <span className="inline-flex items-center gap-2"><Loader2SVG />{t('auth.sending')}</span> : t('auth.sendRequest')}
                       </Button>
                     </div>
                   </form>
@@ -303,12 +272,9 @@ export default function LoginPage() {
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
-      if (body.orgSuspended) {
-        toast.error('This workspace is suspended. Please contact support to restore access.');
-      }
+      if (body.orgSuspended) toast.error('This workspace is suspended. Please contact support to restore access.');
       throw new Error(body.error || 'Session creation failed');
     }
-
     const { role, orgSlug, features = {}, permissions = null } = body;
     if (SUPERADMIN_ROLES.has(role)) {
       router.push(buildSuperAdminPath(locale, '/dashboard'));
@@ -339,11 +305,7 @@ export default function LoginPage() {
   async function handleUsernameSubmit(e: React.FormEvent) {
     e.preventDefault();
     setUsernameError('');
-    if (!username.trim()) {
-      setUsernameError('Username is required');
-      shake();
-      return;
-    }
+    if (!username.trim()) { setUsernameError('Username is required'); shake(); return; }
     setUsernameLoading(true);
     try {
       const syntheticEmail = `${username.trim().toLowerCase()}@makhzoon.local`;
@@ -378,30 +340,33 @@ export default function LoginPage() {
     show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE_OUT } },
   };
 
+  const featureKeys = ['auth.feature1', 'auth.feature2', 'auth.feature3'] as const;
+
   return (
     <div className="relative min-h-screen flex overflow-hidden bg-surface-page">
-      {/* Top-right toggles */}
-      <div className="absolute top-4 end-4 z-20 flex items-center gap-1">
-        <LanguageToggle variant="ghost-light" />
-        <ThemeToggle variant="ghost-light" />
-      </div>
 
       {/* ── Left: Login form ──────────────────────────────────── */}
-      <div className="flex flex-1 items-center justify-center px-4 py-16">
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-16 relative">
+        {/* Toggles — pinned inside the form column, not over the purple panel */}
+        <div className="absolute top-4 end-4 flex items-center gap-1">
+          <LanguageToggle variant="ghost-light" />
+          <ThemeToggle variant="ghost-light" />
+        </div>
+
         <motion.div variants={container} initial="hidden" animate="show" className="w-full max-w-sm">
           {/* Logo */}
           <motion.div variants={item} className="flex items-center gap-2.5 mb-8">
             <MakhzoonMark size={32} />
-            <span className="text-base font-semibold text-gray-900 dark:text-gray-100">
-              Makhzoon<span className="text-gray-400 dark:text-gray-500 font-normal">·ME</span>
+            <span className="text-base font-semibold text-gray-900">
+              {t('auth.brandName')}<span className="text-gray-500 font-normal">·ME</span>
             </span>
           </motion.div>
 
           <motion.div variants={item} className="mb-7">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
               {t('auth.welcomeBack')}
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-sm text-gray-600 mt-1">
               {t('auth.welcomeSubtitle')}
             </p>
           </motion.div>
@@ -410,11 +375,9 @@ export default function LoginPage() {
             {globalError && (
               <motion.div
                 key="global-err"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
+                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2 }}
-                className="flex items-start gap-2 text-sm text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-xl px-3 py-2.5 mb-4"
+                className="flex items-start gap-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 mb-4"
               >
                 <AlertCircleSVG /><span>{globalError}</span>
               </motion.div>
@@ -422,10 +385,7 @@ export default function LoginPage() {
           </AnimatePresence>
 
           <motion.div animate={shakeControls}>
-            <motion.div
-              variants={item}
-              className="bg-surface-card backdrop-blur-sm rounded-2xl shadow-lg shadow-black/10 border border-border p-8"
-            >
+            <motion.div variants={item} className="bg-surface-card rounded-2xl shadow-lg shadow-black/10 border border-border p-8">
               {/* Tab toggle */}
               <div className="flex rounded-lg border border-border p-1 gap-1 bg-surface-page mb-6">
                 <button
@@ -434,8 +394,8 @@ export default function LoginPage() {
                   className={cn(
                     'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-sm font-medium transition-colors',
                     tab === 'email'
-                      ? 'bg-surface-card text-primary-600 dark:text-primary-400 shadow-sm'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                      ? 'bg-surface-card text-primary-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-800'
                   )}
                 >
                   <MailSVG /> {t('auth.tabEmail')}
@@ -446,8 +406,8 @@ export default function LoginPage() {
                   className={cn(
                     'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-sm font-medium transition-colors',
                     tab === 'username'
-                      ? 'bg-surface-card text-primary-600 dark:text-primary-400 shadow-sm'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                      ? 'bg-surface-card text-primary-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-800'
                   )}
                 >
                   <UserSVG /> {t('auth.tabUsername')}
@@ -457,83 +417,41 @@ export default function LoginPage() {
               <AnimatePresence mode="wait" initial={false}>
                 {/* ── Email tab ─────────────────────────────────── */}
                 {tab === 'email' && (
-                  <motion.form
-                    key="email"
-                    onSubmit={handleEmailSubmit}
-                    className="space-y-4"
-                    initial={{ opacity: 0, x: -12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 12 }}
-                    transition={{ duration: 0.2 }}
-                  >
+                  <motion.form key="email" onSubmit={handleEmailSubmit} className="space-y-4"
+                    initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }} transition={{ duration: 0.2 }}>
                     <div className="space-y-1.5">
                       <Label htmlFor="email">{t('auth.email')}</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        autoComplete="email"
-                        placeholder={t('auth.emailPlaceholder')}
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                      />
+                      <Input id="email" type="email" autoComplete="email" placeholder={t('auth.emailPlaceholder')} value={email} onChange={(e) => setEmail(e.target.value)} required />
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="email-password">{t('auth.password')}</Label>
-                        <button
-                          type="button"
-                          className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors font-medium"
-                        >
+                        <button type="button" className="text-xs text-primary-600 hover:text-primary-700 transition-colors font-medium">
                           {t('auth.forgotPassword')}
                         </button>
                       </div>
                       <div className="relative">
-                        <Input
-                          id="email-password"
-                          type={showEmailPassword ? 'text' : 'password'}
-                          autoComplete="current-password"
-                          placeholder={t('auth.passwordPlaceholder')}
-                          value={emailPassword}
-                          onChange={(e) => setEmailPassword(e.target.value)}
-                          required
-                          className="pr-10"
-                        />
-                        <button
-                          type="button"
-                          className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                          onClick={() => setShowEmailPassword(!showEmailPassword)}
-                          aria-label={showEmailPassword ? 'Hide password' : 'Show password'}
-                        >
+                        <Input id="email-password" type={showEmailPassword ? 'text' : 'password'} autoComplete="current-password"
+                          placeholder={t('auth.passwordPlaceholder')} value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} required className="pr-10" />
+                        <button type="button" className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                          onClick={() => setShowEmailPassword(!showEmailPassword)} aria-label={showEmailPassword ? 'Hide password' : 'Show password'}>
                           {showEmailPassword ? <EyeOffSVG /> : <EyeSVG />}
                         </button>
                       </div>
                     </div>
                     <AnimatePresence initial={false}>
                       {emailError && (
-                        <motion.div
-                          key="email-err"
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="flex items-start gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/40 rounded-xl px-3 py-2.5"
-                        >
+                        <motion.div key="email-err" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }}
+                          className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
                           <AlertCircleSVG /><span>{emailError}</span>
                         </motion.div>
                       )}
                     </AnimatePresence>
                     <Button type="submit" className="w-full" disabled={emailLoading}>
                       <AnimatePresence mode="wait" initial={false}>
-                        {emailLoading ? (
-                          <motion.span key="l" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="inline-flex items-center gap-2">
-                            <Loader2SVG />{t('auth.signingIn')}
-                          </motion.span>
-                        ) : (
-                          <motion.span key="i" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                            {t('auth.signIn')}
-                          </motion.span>
-                        )}
+                        {emailLoading
+                          ? <motion.span key="l" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="inline-flex items-center gap-2"><Loader2SVG />{t('auth.signingIn')}</motion.span>
+                          : <motion.span key="i" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{t('auth.signIn')}</motion.span>}
                       </AnimatePresence>
                     </Button>
                   </motion.form>
@@ -541,77 +459,37 @@ export default function LoginPage() {
 
                 {/* ── Username tab ──────────────────────────────── */}
                 {tab === 'username' && (
-                  <motion.form
-                    key="username"
-                    onSubmit={handleUsernameSubmit}
-                    className="space-y-4"
-                    initial={{ opacity: 0, x: 12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -12 }}
-                    transition={{ duration: 0.2 }}
-                  >
+                  <motion.form key="username" onSubmit={handleUsernameSubmit} className="space-y-4"
+                    initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.2 }}>
                     <div className="space-y-1.5">
                       <Label htmlFor="username">{t('auth.usernameLabel')}</Label>
-                      <Input
-                        id="username"
-                        type="text"
-                        autoComplete="username"
-                        autoCapitalize="none"
-                        autoCorrect="off"
-                        placeholder={t('auth.usernamePlaceholder')}
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        required
-                      />
+                      <Input id="username" type="text" autoComplete="username" autoCapitalize="none" autoCorrect="off"
+                        placeholder={t('auth.usernamePlaceholder')} value={username} onChange={(e) => setUsername(e.target.value)} required />
                     </div>
                     <div className="space-y-1.5">
                       <Label htmlFor="username-password">{t('auth.password')}</Label>
                       <div className="relative">
-                        <Input
-                          id="username-password"
-                          type={showUsernamePassword ? 'text' : 'password'}
-                          autoComplete="current-password"
-                          placeholder={t('auth.passwordPlaceholder')}
-                          value={usernamePassword}
-                          onChange={(e) => setUsernamePassword(e.target.value)}
-                          required
-                          className="pr-10"
-                        />
-                        <button
-                          type="button"
-                          className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                          onClick={() => setShowUsernamePassword(!showUsernamePassword)}
-                          aria-label={showUsernamePassword ? 'Hide password' : 'Show password'}
-                        >
+                        <Input id="username-password" type={showUsernamePassword ? 'text' : 'password'} autoComplete="current-password"
+                          placeholder={t('auth.passwordPlaceholder')} value={usernamePassword} onChange={(e) => setUsernamePassword(e.target.value)} required className="pr-10" />
+                        <button type="button" className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                          onClick={() => setShowUsernamePassword(!showUsernamePassword)} aria-label={showUsernamePassword ? 'Hide password' : 'Show password'}>
                           {showUsernamePassword ? <EyeOffSVG /> : <EyeSVG />}
                         </button>
                       </div>
                     </div>
                     <AnimatePresence initial={false}>
                       {usernameError && (
-                        <motion.div
-                          key="username-err"
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="flex items-start gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/40 rounded-xl px-3 py-2.5"
-                        >
+                        <motion.div key="username-err" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }}
+                          className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
                           <AlertCircleSVG /><span>{usernameError}</span>
                         </motion.div>
                       )}
                     </AnimatePresence>
                     <Button type="submit" className="w-full" disabled={usernameLoading}>
                       <AnimatePresence mode="wait" initial={false}>
-                        {usernameLoading ? (
-                          <motion.span key="l" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="inline-flex items-center gap-2">
-                            <Loader2SVG />{t('auth.signingIn')}
-                          </motion.span>
-                        ) : (
-                          <motion.span key="i" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                            {t('auth.signIn')}
-                          </motion.span>
-                        )}
+                        {usernameLoading
+                          ? <motion.span key="l" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="inline-flex items-center gap-2"><Loader2SVG />{t('auth.signingIn')}</motion.span>
+                          : <motion.span key="i" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{t('auth.signIn')}</motion.span>}
                       </AnimatePresence>
                     </Button>
                   </motion.form>
@@ -620,13 +498,10 @@ export default function LoginPage() {
             </motion.div>
           </motion.div>
 
-          <motion.p variants={item} className="text-xs text-gray-400 dark:text-gray-500 mt-8 text-center">
+          <motion.p variants={item} className="text-xs text-gray-500 mt-8 text-center">
             {t('auth.needWorkspace')}{' '}
-            <button
-              type="button"
-              onClick={() => setContactOpen(true)}
-              className="text-primary-600 dark:text-primary-400 font-medium cursor-pointer hover:text-primary-700 dark:hover:text-primary-300 transition-colors underline-offset-2 hover:underline"
-            >
+            <button type="button" onClick={() => setContactOpen(true)}
+              className="text-primary-600 font-medium hover:text-primary-700 transition-colors underline-offset-2 hover:underline">
               {t('auth.contactSales')}
             </button>
           </motion.p>
@@ -638,38 +513,41 @@ export default function LoginPage() {
         className="hidden lg:flex w-[480px] xl:w-[560px] flex-shrink-0 flex-col justify-between p-12 relative overflow-hidden"
         style={{ background: 'var(--primary-600)' }}
       >
+        {/* Decorative rings */}
         <div aria-hidden className="absolute end-0 bottom-0 translate-x-1/3 translate-y-1/3 w-[480px] h-[480px] rounded-full border border-white/10 pointer-events-none" />
         <div aria-hidden className="absolute end-0 bottom-0 translate-x-1/4 translate-y-1/4 w-[320px] h-[320px] rounded-full border border-white/8 pointer-events-none" />
 
+        {/* Logo — use actual MakhzoonMark with white tint */}
         <div className="flex items-center gap-2.5 relative z-10">
-          <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.18)' }}>
-            <div className="h-3.5 w-3.5 rounded-sm border-[1.5px] border-white" />
+          <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.18)' }}>
+            <MakhzoonMark size={20} className="brightness-0 invert" />
           </div>
-          <span className="text-sm font-semibold text-white/90">Makhzoon·ME</span>
+          <span className="text-sm font-semibold text-white/90">{t('auth.brandName')}·ME</span>
         </div>
 
+        {/* Hero copy */}
         <div className="relative z-10 space-y-6">
           <h2 className="text-[2rem] font-bold text-white leading-tight tracking-tight max-w-sm" style={{ letterSpacing: '-0.5px' }}>
-            Track assets, run inventory, and manage warranties — all in one place.
+            {t('auth.marketingHeadline')}
           </h2>
           <p className="text-sm text-white/80 leading-relaxed max-w-xs">
-            From retail store shelves to office laptops, Makhzoon gives your team a single system for assets, inventory, warranties, and point-of-sale — built for growing operations.
+            {t('auth.marketingBody')}
           </p>
-
           <ul className="space-y-3">
-            {FEATURE_LIST_KEYS.map((feat) => (
-              <li key={feat} className="flex items-center gap-3 text-sm text-white/90">
+            {featureKeys.map((key) => (
+              <li key={key} className="flex items-center gap-3 text-sm text-white/90">
                 <span className="h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.2)' }}>
                   <CheckSVG />
                 </span>
-                {feat}
+                {t(key)}
               </li>
             ))}
           </ul>
         </div>
 
+        {/* Footer */}
         <p className="text-xs text-white/50 relative z-10 mt-8">
-          © {new Date().getFullYear()} Makhzoon · Trusted by growing office teams
+          © {new Date().getFullYear()} {t('auth.brandName')} · {t('auth.marketingFooter')}
         </p>
       </div>
 

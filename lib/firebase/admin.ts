@@ -31,6 +31,26 @@ function getCredential(): ServiceAccount {
     }
   }
 
+  const rawLen = raw.length;
+  const keyLen = key.length;
+  const hasBegin = key.includes('-----BEGIN PRIVATE KEY-----');
+  const hasEnd = key.includes('-----END PRIVATE KEY-----');
+  const newlineCount = (key.match(/\n/g) || []).length;
+  const firstChars = raw.slice(0, 30).replace(/\n/g, '\\n');
+  const lastChars = raw.slice(-30).replace(/\n/g, '\\n');
+
+  console.log('[firebase-admin] private key diagnostics', {
+    rawLen,
+    keyLen,
+    hasBegin,
+    hasEnd,
+    newlineCount,
+    firstChars,
+    lastChars,
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  });
+
   return {
     projectId: process.env.FIREBASE_PROJECT_ID,
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,

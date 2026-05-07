@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, signOut } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { getAnalytics, Analytics, isSupported } from 'firebase/analytics';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -10,6 +11,7 @@ const firebaseConfig = {
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
 // initializeApp itself is safe; getAuth/getFirestore may throw during build-time
@@ -20,9 +22,15 @@ const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseCon
 let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
+let analytics: Analytics | null = null;
 try { auth = getAuth(app); } catch { auth = null as unknown as Auth; }
 try { db = getFirestore(app); } catch { db = null as unknown as Firestore; }
 try { storage = getStorage(app); } catch { storage = null as unknown as FirebaseStorage; }
 
-export { auth, db, storage, signOut };
+// Analytics is browser-only — initialise lazily after checking support
+if (typeof window !== 'undefined') {
+  isSupported().then((yes) => { if (yes) analytics = getAnalytics(app); });
+}
+
+export { auth, db, storage, analytics, signOut };
 export default app;

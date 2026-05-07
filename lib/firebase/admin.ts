@@ -14,10 +14,13 @@ function parsePrivateKey(raw: string | undefined): string | undefined {
   key = key.replace(/\\n/g, '\n');
   // If still no real newlines, the key is likely one long line — reconstruct it
   if (!key.includes('\n')) {
-    const match = key.match(/-----BEGIN PRIVATE KEY-----(.*?)-----END PRIVATE KEY-----/s);
-    if (match) {
-      const body = match[1].trim().replace(/\s+/g, '\n');
-      key = `-----BEGIN PRIVATE KEY-----\n${body}\n-----END PRIVATE KEY-----\n`;
+    const start = '-----BEGIN PRIVATE KEY-----';
+    const end = '-----END PRIVATE KEY-----';
+    const startIdx = key.indexOf(start);
+    const endIdx = key.indexOf(end);
+    if (startIdx !== -1 && endIdx !== -1) {
+      const body = key.slice(startIdx + start.length, endIdx).trim().replace(/\s+/g, '\n');
+      key = `${start}\n${body}\n${end}\n`;
     }
   }
   return key;

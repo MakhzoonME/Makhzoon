@@ -56,6 +56,7 @@
   /* Surfaces — Light mode */
   --surface-page:    #F8FAFC;
   --surface-card:    #FFFFFF;
+  --surface-input:   #FFFFFF;
   --surface-sidebar: #FFFFFF;
   --border-default:  #E5E7EB;
   --border-strong:   #D1D5DB;
@@ -102,9 +103,10 @@
 .dark {
   --surface-page:    #0F1117;
   --surface-card:    #1A1D27;
+  --surface-input:   #0F1117;
   --surface-sidebar: #13151E;
-  --border-default:  #252836;
-  --border-strong:   #333647;
+  --border-default:  #2E3147;
+  --border-strong:   #3D4160;
   --text-primary:    #F1F2F6;
   --text-secondary:  #8B91A8;
   --text-tertiary:   #5C6275;
@@ -251,7 +253,7 @@ html[lang="ar"] body,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus,
   input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px var(--surface-card) inset !important;
+    -webkit-box-shadow: 0 0 0 1000px var(--surface-input) inset !important;
     -webkit-text-fill-color: var(--gray-900) !important;
     caret-color: var(--gray-900);
     transition: background-color 9999s ease-in-out 0s;

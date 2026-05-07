@@ -39,6 +39,7 @@ const config: Config = {
         surface: {
           page:    'var(--surface-page)',
           card:    'var(--surface-card)',
+          input:   'var(--surface-input)',
           sidebar: 'var(--surface-sidebar)',
         },
         border: {

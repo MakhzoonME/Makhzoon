@@ -1,4 +1,4 @@
-import { App, getApps, initializeApp, cert } from 'firebase-admin/app';
+import { App, getApps, initializeApp, cert, ServiceAccount } from 'firebase-admin/app';
 import { Firestore, getFirestore } from 'firebase-admin/firestore';
 import { Auth, getAuth } from 'firebase-admin/auth';
 
@@ -6,13 +6,20 @@ let _app: App | null = null;
 let _db: Firestore | null = null;
 let _auth: Auth | null = null;
 
-function parsePrivateKey(raw: string | undefined): string | undefined {
-  if (!raw) return undefined;
-  // Strip surrounding quotes that some env var systems add
+function getCredential(): ServiceAccount {
+  // Preferred: single base64-encoded JSON env var — avoids all newline escaping issues
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
+    const json = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf8');
+    return JSON.parse(json) as ServiceAccount;
+  }
+
+  // Fallback: individual env vars
+  const raw = process.env.FIREBASE_PRIVATE_KEY ?? '';
+  // Strip surrounding quotes some env systems add
   let key = raw.replace(/^["']|["']$/g, '');
-  // Normalize escaped newlines (handles \n and \\n variants)
+  // Normalize escaped newlines
   key = key.replace(/\\n/g, '\n');
-  // If still no real newlines, the key is likely one long line — reconstruct it
+  // If still no real newlines, reconstruct from single-line base64 body
   if (!key.includes('\n')) {
     const start = '-----BEGIN PRIVATE KEY-----';
     const end = '-----END PRIVATE KEY-----';
@@ -23,7 +30,12 @@ function parsePrivateKey(raw: string | undefined): string | undefined {
       key = `${start}\n${body}\n${end}\n`;
     }
   }
-  return key;
+
+  return {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: key,
+  };
 }
 
 function getAdminApp(): App {
@@ -31,21 +43,14 @@ function getAdminApp(): App {
     if (getApps().length > 0) {
       _app = getApps()[0];
     } else {
-      const privateKey = parsePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
+      const credential = getCredential();
       console.log('[firebase-admin] init', {
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
-        privateKeyLength: privateKey?.length,
-        privateKeyValid: privateKey?.includes('BEGIN PRIVATE KEY'),
-        privateKeyHasNewlines: privateKey?.includes('\n'),
+        source: process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 ? 'base64-json' : 'individual-vars',
+        projectId: credential.projectId,
+        hasClientEmail: !!credential.clientEmail,
+        hasPrivateKey: !!credential.privateKey,
       });
-      _app = initializeApp({
-        credential: cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey,
-        }),
-      });
+      _app = initializeApp({ credential: cert(credential) });
     }
   }
   return _app;
@@ -54,10 +59,6 @@ function getAdminApp(): App {
 export function getAdminDb(): Firestore {
   if (!_db) {
     _db = getFirestore(getAdminApp());
-    // settings() can only be called once per Firestore instance. Under Next.js HMR the
-    // module-scope `_db` cache resets, but the underlying instance from firebase-admin
-    // is cached at the App level, so a re-init throws. Swallowing is safe — settings
-    // were already applied on first init.
     try {
       _db.settings({ ignoreUndefinedProperties: true });
     } catch (err) {

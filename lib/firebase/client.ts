@@ -29,7 +29,11 @@ try { storage = getStorage(app); } catch { storage = null as unknown as Firebase
 
 // Analytics is browser-only — initialise lazily after checking support
 if (typeof window !== 'undefined') {
-  isSupported().then((yes) => { if (yes) analytics = getAnalytics(app); });
+  isSupported().then((yes) => {
+    if (yes) {
+      try { analytics = getAnalytics(app); } catch { /* analytics unavailable */ }
+    }
+  }).catch(() => {});
 }
 
 export { auth, db, storage, analytics, signOut };

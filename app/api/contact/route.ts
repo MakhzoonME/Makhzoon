@@ -7,12 +7,11 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 // Validate contact form input
 const contactSchema = z.object({
-  firstName: z.string().min(1).max(100),
-  lastName: z.string().min(1).max(100),
+  name: z.string().min(1).max(200),
+  organizationName: z.string().min(1).max(255),
+  phone: z.string().min(1).max(30),
   email: z.string().email(),
-  organization: z.string().max(255).optional(),
-  assetCount: z.string().max(50).optional(),
-  message: z.string().min(10).max(2000),
+  notes: z.string().max(2000).optional(),
 });
 
 /**
@@ -54,7 +53,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { firstName, lastName, email, organization, assetCount, message } = parsed.data;
+    const { name, organizationName, phone, email, notes } = parsed.data;
 
     // Rate limit by email as well
     const rateLimitEmail = checkRateLimit(
@@ -72,27 +71,26 @@ export async function POST(req: NextRequest) {
 
     const { Resend } = await import('resend');
     const resend = new Resend(RESEND_API_KEY);
-    const fullName = `${firstName} ${lastName}`;
 
     // SECURITY: Sanitize all user inputs for HTML display
-    const sanitizedName = sanitizeText(fullName);
+    const sanitizedName = sanitizeText(name);
+    const sanitizedOrg = sanitizeText(organizationName);
+    const sanitizedPhone = sanitizeText(phone);
     const sanitizedEmail = sanitizeText(email);
-    const sanitizedOrg = sanitizeText(organization || 'Not provided');
-    const sanitizedCount = sanitizeText(assetCount || 'Not provided');
-    const sanitizedMessage = sanitizeText(message).replace(/\n/g, '<br>');
+    const sanitizedNotes = notes ? sanitizeText(notes).replace(/\n/g, '<br>') : 'None';
 
     const emailRes = await resend.emails.send({
       from: 'noreply@makhzoon.com',
       to: 'sales@makhzoon.com',
-      subject: `New contact form submission from ${sanitizedName}`,
+      subject: `New sales inquiry from ${sanitizedName} — ${sanitizedOrg}`,
       html: `
-        <h2>New Contact Form Submission</h2>
+        <h2>New Sales Inquiry</h2>
         <p><strong>Name:</strong> ${sanitizedName}</p>
-        <p><strong>Email:</strong> ${sanitizedEmail}</p>
         <p><strong>Organization:</strong> ${sanitizedOrg}</p>
-        <p><strong>Asset Count:</strong> ${sanitizedCount}</p>
-        <p><strong>Message:</strong></p>
-        <p>${sanitizedMessage}</p>
+        <p><strong>Phone:</strong> ${sanitizedPhone}</p>
+        <p><strong>Email:</strong> ${sanitizedEmail}</p>
+        <p><strong>Additional Notes:</strong></p>
+        <p>${sanitizedNotes}</p>
       `,
     });
 

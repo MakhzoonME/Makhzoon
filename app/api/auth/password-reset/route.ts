@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase/admin';
 import { verifyPasswordResetToken } from '@/lib/db/password-reset-tokens';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { z } from 'zod';
 
 const resetSchema = z.object({
@@ -10,6 +11,18 @@ const resetSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // SECURITY: Rate limit password reset attempts to prevent brute-force token
+    // guessing and replay of leaked tokens. 5 attempts per IP per 15 minutes
+    // (matches the login endpoint's posture for credential-handling actions).
+    const clientIp = getClientIp(req);
+    const rateLimitIp = checkRateLimit(
+      `password-reset:ip:${clientIp}`,
+      5,
+      15 * 60 * 1000,
+      { action: 'reset password' }
+    );
+    if (rateLimitIp) return rateLimitIp;
+
     const body = await req.json();
     const parsed = resetSchema.safeParse(body);
     if (!parsed.success) {
@@ -17,6 +30,16 @@ export async function POST(req: NextRequest) {
     }
 
     const { token, password } = parsed.data;
+
+    // SECURITY: Per-token rate limit — even with a valid leaked token, an
+    // attacker can only attempt a small number of resets before being blocked.
+    const rateLimitToken = checkRateLimit(
+      `password-reset:token:${token}`,
+      3,
+      60 * 60 * 1000,
+      { action: 'reset password with this token' }
+    );
+    if (rateLimitToken) return rateLimitToken;
 
     // Verify token and get UID
     const uid = await verifyPasswordResetToken(token);

@@ -22,9 +22,14 @@ export async function sendEmail(params: SendEmailParams): Promise<{ id: string |
   const from = process.env.RESEND_FROM_EMAIL;
 
   if (!client || !from) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn('[email] Skipping send — RESEND_API_KEY or RESEND_FROM_EMAIL not configured');
-    }
+    // Log in production too so the deployment misconfiguration is visible in
+    // CloudWatch instead of failing silently. Don't include the key value.
+    console.warn(
+      '[email] Skipping send — missing config:',
+      !client ? 'RESEND_API_KEY' : '',
+      !from ? 'RESEND_FROM_EMAIL' : '',
+      `(to=${Array.isArray(params.to) ? params.to.join(',') : params.to})`,
+    );
     return { id: null, skipped: true };
   }
 

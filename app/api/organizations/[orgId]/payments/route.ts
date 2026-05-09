@@ -5,11 +5,14 @@ import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
 import { queueAuditLog } from '@/lib/audit/logger';
 import { paymentLogSchema } from '@/lib/validations/payment-log.schema';
 
+// Payment records are financial data — restricted to super_admin and makhzoon_admin.
+const PAYMENT_ROLES = new Set(['super_admin', 'makhzoon_admin']);
+
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'super_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!PAYMENT_ROLES.has(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { orgId } = await params;
     const logs = await getPaymentLogs(orgId);

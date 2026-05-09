@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getAuditLogs } from '@/lib/db/audit-logs';
 
 function csvEscape(v: unknown): string {
@@ -9,11 +9,13 @@ function csvEscape(v: unknown): string {
   return s;
 }
 
+const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+
 export async function GET(req: NextRequest) {
   try {
-    const tenant = await resolveTenant();
-    const user = tenant.user;
-    if (user.role !== 'super_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const user = await verifySessionCookie();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!SUPERADMIN_ROLES.has(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { searchParams } = new URL(req.url);
     const orgId = searchParams.get('orgId') ?? undefined;

@@ -10,8 +10,10 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ orgId: s
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { orgId } = params;
-    // Super admins can read any org; org members can read their own.
-    if (user.role !== 'super_admin' && user.organizationId !== orgId) {
+    // makhzoon_admin and super_admin can read any org config; makhzoon_support cannot (configuration page is restricted).
+    // Org members can read their own org config.
+    const CONFIG_ROLES = new Set(['super_admin', 'makhzoon_admin']);
+    if (!CONFIG_ROLES.has(user.role) && user.organizationId !== orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

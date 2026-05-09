@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getInviteByToken } from '@/lib/db/invites';
 import { getOrganizationById } from '@/lib/db/organizations';
 
-export async function GET(_req: NextRequest, { params }: { params: { token: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const invite = await getInviteByToken(params.token);
     if (!invite) return NextResponse.json({ error: 'Invite not found' }, { status: 404 });

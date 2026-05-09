@@ -24,11 +24,11 @@
     "clone:dev": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=dev",
     "clone:prod": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=prod --no-scrub",
 
-    "clone:auth:legacy-to-prod": "bash scripts/clone-auth.sh legacy prod",
-    "clone:auth:prod-to-staging": "bash scripts/clone-auth.sh prod staging",
-    "clone:auth:prod-to-dev": "bash scripts/clone-auth.sh prod dev",
-    "clone:auth:legacy-to-staging": "bash scripts/clone-auth.sh legacy staging",
-    "clone:auth:legacy-to-dev": "bash scripts/clone-auth.sh legacy dev",
+    "clone:auth:legacy-to-prod": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-auth.ts legacy prod",
+    "clone:auth:prod-to-staging": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-auth.ts prod staging",
+    "clone:auth:prod-to-dev": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-auth.ts prod dev",
+    "clone:auth:legacy-to-staging": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-auth.ts legacy staging",
+    "clone:auth:legacy-to-dev": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-auth.ts legacy dev",
 
     "fs:export:prod": "bash scripts/export-prod.sh",
     "fs:import:staging": "bash scripts/import-to-env.sh staging",

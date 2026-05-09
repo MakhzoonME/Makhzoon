@@ -224,25 +224,39 @@ After step 1c the export JSON is on disk with password hashes. Delete it:
 Remove-Item auth-export-legacy-*.json
 ```
 
-### Step 2 — Seed staging from prod (PII-scrubbed)
+### Step 2 — Seed staging (Firestore from prod, auth from legacy)
 
 ```powershell
-$env:PROD_SERVICE_ACCOUNT_PATH   = "$HOME\.firebase-keys\makhzoon-prod.json"
-$env:TARGET_SERVICE_ACCOUNT_PATH = "$HOME\.firebase-keys\makhzoon-staging.json"
+$env:PROD_SERVICE_ACCOUNT_PATH   = "$HOME\.firebase-keys\makhzoonme-prod.json"
+$env:TARGET_SERVICE_ACCOUNT_PATH = "$HOME\.firebase-keys\makhzoonme-stg.json"
 
+# Firestore data — from new prod, with PII scrubbing
 npm run clone:dry:staging
 npm run clone:staging
-npm run clone:auth:prod-to-staging
+
+# Auth users — IMPORTANT: import from LEGACY, not from prod.
+# When users are re-exported from makhzoonme-prod, Firebase re-encodes the
+# password hashes with prod's own signer key. Importing those re-encoded
+# hashes into staging using the original office-asset-system signer key
+# fails verification ("Invalid credentials" on every login). Importing
+# directly from legacy keeps the hash bytes paired with the matching
+# signer key end-to-end.
+npm run clone:auth:legacy-to-staging
+Remove-Item auth-export-legacy-*.json
 ```
 
-### Step 3 — Seed dev from prod (PII-scrubbed)
+### Step 3 — Seed dev (same pattern as Step 2)
 
 ```powershell
-$env:TARGET_SERVICE_ACCOUNT_PATH = "$HOME\.firebase-keys\makhzoon-dev.json"
+$env:TARGET_SERVICE_ACCOUNT_PATH = "$HOME\.firebase-keys\makhzoonme-dev.json"
 
+# Firestore from prod
 npm run clone:dry:dev
 npm run clone:dev
-npm run clone:auth:prod-to-dev
+
+# Auth: legacy → dev (NOT prod → dev — see Step 2 explanation)
+npm run clone:auth:legacy-to-dev
+Remove-Item auth-export-legacy-*.json
 ```
 
 ### Step 4 — Verify

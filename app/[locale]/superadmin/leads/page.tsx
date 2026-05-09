@@ -11,10 +11,12 @@ type Tab = 'early-access' | 'contact-sales';
 export default function LeadsPage() {
   const { t } = useT();
   const [tab, setTab] = useState<Tab>('early-access');
-  const { data, isLoading } = useLeads(tab);
+  // Fetch both lists together — the API returns { earlyAccess, contactSales }
+  // when called without a `type` param. Tab counts need both arrays anyway.
+  const { data, isLoading } = useLeads();
 
-  const earlyAccess = (data as { earlyAccess: EarlyAccessLead[] } | undefined)?.earlyAccess ?? [];
-  const contactSales = (data as { contactSales: ContactSalesLead[] } | undefined)?.contactSales ?? [];
+  const earlyAccess = (data as { earlyAccess?: EarlyAccessLead[] } | undefined)?.earlyAccess ?? [];
+  const contactSales = (data as { contactSales?: ContactSalesLead[] } | undefined)?.contactSales ?? [];
 
   const eaColumns: ColumnDef<EarlyAccessLead>[] = [
     {

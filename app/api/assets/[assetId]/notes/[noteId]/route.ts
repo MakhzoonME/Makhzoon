@@ -3,7 +3,11 @@ import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getAssetNoteById, deleteAssetNote } from '@/lib/db/asset-notes';
 import { auditLog } from '@/lib/platform/audit';
 
-export async function DELETE(_req: NextRequest, { params }: { params: { assetId: string; noteId: string } }) {
+export async function DELETE(
+  _req: NextRequest,
+  props: { params: Promise<{ assetId: string; noteId: string }> }
+) {
+  const params = await props.params;
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;

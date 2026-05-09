@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
@@ -25,7 +25,8 @@ const ROLE_LABEL: Record<string, string> = {
   staff: 'Staff',
 };
 
-export default function AcceptInvitePage({ params }: { params: { token: string } }) {
+export default function AcceptInvitePage(props: { params: Promise<{ token: string }> }) {
+  const params = use(props.params);
   const router = useRouter();
   const localeParams = useParams<{ locale: string }>();
   const locale = localeParams?.locale ?? 'en';

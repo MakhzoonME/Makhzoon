@@ -84,7 +84,7 @@ export async function createInventoryItemWithAudit(
   await requireActiveSubscription(user.organizationId!, user);
 
   const userContext = getUserContext(user);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const id = await dbCreateInventoryItem(
     {
       organizationId: user.organizationId!,

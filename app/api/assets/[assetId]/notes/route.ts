@@ -5,7 +5,8 @@ import { getAssetNotes, createAssetNote } from '@/lib/db/asset-notes';
 import { auditLog } from '@/lib/platform/audit';
 import { assetNoteSchema } from '@/lib/validations/asset-note.schema';
 
-export async function GET(_req: NextRequest, { params }: { params: { assetId: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ assetId: string }> }) {
+  const params = await props.params;
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;
@@ -23,7 +24,8 @@ export async function GET(_req: NextRequest, { params }: { params: { assetId: st
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { assetId: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ assetId: string }> }) {
+  const params = await props.params;
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;

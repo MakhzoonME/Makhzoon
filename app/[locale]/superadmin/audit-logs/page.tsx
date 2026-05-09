@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAuditLogs } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -47,13 +47,13 @@ export default function AuditLogsPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [orgId, setOrgId] = useState(searchParams.get('orgId') ?? '');
-  const [userId, setUserId] = useState(searchParams.get('userId') ?? '');
-  const [action, setAction] = useState(searchParams.get('action') ?? '');
-  const [dateFrom, setDateFrom] = useState(searchParams.get('dateFrom') ?? '');
-  const [dateTo, setDateTo] = useState(searchParams.get('dateTo') ?? '');
-  const [page, setPage] = useState(searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1);
-  const [pageSize, setPageSize] = useState(searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20);
+  const orgId = searchParams.get('orgId') ?? '';
+  const userId = searchParams.get('userId') ?? '';
+  const action = searchParams.get('action') ?? '';
+  const dateFrom = searchParams.get('dateFrom') ?? '';
+  const dateTo = searchParams.get('dateTo') ?? '';
+  const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
+  const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
 
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
 
@@ -77,24 +77,6 @@ export default function AuditLogsPage() {
     router.replace(url, { scroll: false });
   }, [pathname, router]);
 
-  useEffect(() => {
-    const urlOrgId = searchParams.get('orgId') ?? '';
-    const urlUserId = searchParams.get('userId') ?? '';
-    const urlAction = searchParams.get('action') ?? '';
-    const urlDateFrom = searchParams.get('dateFrom') ?? '';
-    const urlDateTo = searchParams.get('dateTo') ?? '';
-    const urlPage = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
-    const urlPageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
-
-    if (urlOrgId !== orgId) setOrgId(urlOrgId);
-    if (urlUserId !== userId) setUserId(urlUserId);
-    if (urlAction !== action) setAction(urlAction);
-    if (urlDateFrom !== dateFrom) setDateFrom(urlDateFrom);
-    if (urlDateTo !== dateTo) setDateTo(urlDateTo);
-    if (urlPage !== page) setPage(urlPage);
-    if (urlPageSize !== pageSize) setPageSize(urlPageSize);
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
-
   function syncAllToUrl(next: Partial<Record<'orgId' | 'userId' | 'action' | 'dateFrom' | 'dateTo' | 'page' | 'pageSize', string>>) {
     updateUrl({
       orgId: next.orgId ?? orgId,
@@ -108,17 +90,10 @@ export default function AuditLogsPage() {
   }
 
   function handleFilterChange(key: string, value: string) {
-    setPage(1);
     syncAllToUrl({ [key]: value, page: '1' });
   }
 
   function clearFilters() {
-    setOrgId('');
-    setUserId('');
-    setAction('');
-    setDateFrom('');
-    setDateTo('');
-    setPage(1);
     syncAllToUrl({ orgId: '', userId: '', action: '', dateFrom: '', dateTo: '', page: '1' });
   }
 
@@ -241,8 +216,8 @@ export default function AuditLogsPage() {
             pageSize,
             total,
             totalPages,
-            onPageChange: (p) => { setPage(p); syncAllToUrl({ page: String(p) }); },
-            onPageSizeChange: (s) => { setPageSize(s); setPage(1); syncAllToUrl({ pageSize: String(s), page: '1' }); },
+            onPageChange: (p) => syncAllToUrl({ page: String(p) }),
+            onPageSizeChange: (s) => syncAllToUrl({ pageSize: String(s), page: '1' }),
           }}
         />
       </div>

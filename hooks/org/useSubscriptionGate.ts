@@ -2,7 +2,7 @@
 import { useAuthStore } from '@/store/auth.store';
 import { useTransferStore } from '@/store/transfer.store';
 import { useSubscription } from './useSubscription';
-import { daysUntil, formatDate } from '@/lib/utils/date';
+import { formatDate } from '@/lib/utils/date';
 
 const DAYS_UNTIL_SUSPENSION = 30;
 const SUPER_ADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);

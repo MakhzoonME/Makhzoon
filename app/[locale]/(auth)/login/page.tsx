@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -223,17 +223,25 @@ export default function LoginPage() {
   const shakeControls = useAnimation();
 
   const [tab, setTab] = useState<'email' | 'username'>('email');
-  const [globalError, setGlobalError] = useState('');
   const [contactOpen, setContactOpen] = useState(false);
 
+  const sessionExpiredMessage = useSyncExternalStore(
+    () => () => {},
+    () => {
+      try {
+        if (sessionStorage.getItem('auth.session_expired')) {
+          sessionStorage.removeItem('auth.session_expired');
+          return t('auth.sessionExpired');
+        }
+      } catch { /* sessionStorage unavailable */ }
+      return '';
+    },
+    () => '',
+  );
+  const globalError = sessionExpiredMessage;
+
   useEffect(() => {
-    try {
-      if (sessionStorage.getItem('auth.session_expired')) {
-        setGlobalError(t('auth.sessionExpired'));
-        sessionStorage.removeItem('auth.session_expired');
-        return;
-      }
-    } catch { /* sessionStorage unavailable */ }
+    if (sessionExpiredMessage) return; // skip auto-redirect when prompting re-auth
     fetch('/api/auth/me').then(async (res) => {
       if (!res.ok) return;
       const body = await res.json().catch(() => null);
@@ -246,7 +254,7 @@ export default function LoginPage() {
         router.replace(buildOrgPath(locale, orgSlug, firstPath));
       }
     }).catch(() => {});
-  }, [locale, router]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [locale, router, sessionExpiredMessage]);
 
   const [email, setEmail] = useState('');
   const [emailPassword, setEmailPassword] = useState('');

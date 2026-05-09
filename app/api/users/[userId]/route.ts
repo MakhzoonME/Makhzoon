@@ -6,7 +6,8 @@ import { auditLog } from '@/lib/platform/audit';
 import { invalidateCachedPermissions, invalidateCachedSessionsForUser } from '@/lib/firebase/session-cache';
 import { FieldValue } from 'firebase-admin/firestore';
 
-export async function PATCH(req: NextRequest, { params }: { params: { userId: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ userId: string }> }) {
+  const params = await props.params;
   const tenant = await resolveTenant().catch(() => null);
   const caller = tenant?.user;
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -60,7 +61,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { userId: st
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { userId: string } }) {
+export async function DELETE(req: NextRequest, props: { params: Promise<{ userId: string }> }) {
+  const params = await props.params;
   const tenant = await resolveTenant().catch(() => null);
   const caller = tenant?.user;
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

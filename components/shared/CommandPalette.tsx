@@ -51,17 +51,18 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
-  useEffect(() => {
-    if (!open) setSearch('');
-  }, [open]);
+  function handleOpenChange(next: boolean) {
+    if (!next) setSearch('');
+    onOpenChange(next);
+  }
 
   function go(path: string) {
-    onOpenChange(false);
+    handleOpenChange(false);
     router.push(`/${locale}/${orgSlug}${path}`);
   }
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+    <DialogPrimitive.Root open={open} onOpenChange={handleOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content

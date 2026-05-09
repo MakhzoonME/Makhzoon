@@ -5,7 +5,8 @@ import { getOrganizationById } from '@/lib/db/organizations';
 import { categoryInputSchema } from '@/lib/validations/organization-config.schema';
 import { queueAuditLog } from '@/lib/audit/logger';
 
-export async function POST(req: NextRequest, { params }: { params: { orgId: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ orgId: string }> }) {
+  const params = await props.params;
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -4,6 +4,7 @@ import './globals.css';
 import { QueryProvider } from '@/components/shared/QueryProvider';
 import { AppToastProvider } from '@/components/shared/ToastProvider';
 import { ThemeProvider } from '@/components/shared/ThemeProvider';
+import { EnvBadge } from '@/components/shared/EnvBadge';
 
 const capriola = localFont({
   src: '../fonts/Capriola/Capriola-Regular.ttf',
@@ -62,6 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AppToastProvider>
             <ThemeProvider>
               {children}
+              <EnvBadge />
             </ThemeProvider>
           </AppToastProvider>
         </QueryProvider>

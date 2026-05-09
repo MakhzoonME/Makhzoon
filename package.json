@@ -6,7 +6,25 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+
+    "fb:use:prod": "firebase use prod",
+    "fb:use:staging": "firebase use staging",
+    "fb:use:dev": "firebase use dev",
+    "fb:use:legacy": "firebase use legacy",
+
+    "fb:deploy:rules:dev": "firebase use dev && firebase deploy --only firestore:rules,firestore:indexes",
+    "fb:deploy:rules:staging": "firebase use staging && firebase deploy --only firestore:rules,firestore:indexes",
+    "fb:deploy:rules:prod": "firebase use prod && firebase deploy --only firestore:rules,firestore:indexes",
+
+    "clone:dry:staging": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=staging --dry-run",
+    "clone:dry:dev": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=dev --dry-run",
+    "clone:staging": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=staging",
+    "clone:dev": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=dev",
+
+    "fs:export:prod": "bash scripts/export-prod.sh",
+    "fs:import:staging": "bash scripts/import-to-env.sh staging",
+    "fs:import:dev": "bash scripts/import-to-env.sh dev"
   },
   "dependencies": {
     "@firebase/firestore": "^4.7.3",
@@ -63,6 +81,7 @@
     "postcss": "^8",
     "prettier": "^3.8.3",
     "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.2",
     "typescript": "5.9.3",
     "vitest": "^1.6.1"
   }

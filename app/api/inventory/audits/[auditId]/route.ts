@@ -3,9 +3,10 @@ import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getInventoryAuditById, getAuditItems, completeAudit } from '@/lib/db/inventory-audits';
 import { auditLog } from '@/lib/platform/audit';
 
-interface Params { params: { auditId: string } }
+interface Params { params: Promise<{ auditId: string }> }
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export async function GET(_req: NextRequest, props: Params) {
+  const params = await props.params;
   try {
     const tenant = await resolveTenant();
 
@@ -21,7 +22,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: Params) {
+export async function PATCH(req: NextRequest, props: Params) {
+  const params = await props.params;
   try {
     const tenant = await resolveTenant();
     if (tenant.role !== 'admin' && tenant.role !== 'super_admin' && tenant.role !== 'org_owner') {

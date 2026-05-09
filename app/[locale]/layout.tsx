@@ -8,13 +8,18 @@ function isValidLocale(locale: string): locale is (typeof LOCALES)[number] {
   return LOCALES.includes(locale as (typeof LOCALES)[number]);
 }
 
-export default function LocaleLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode;
-  params: { locale: string };
-}) {
+export default async function LocaleLayout(
+  props: {
+    children: React.ReactNode;
+    params: Promise<{ locale: string }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   if (!isValidLocale(params.locale)) {
     notFound();
   }

@@ -76,14 +76,15 @@ export default function SuperAdminPage() {
   const searchParams = useSearchParams();
   const { enterTransferMode } = useTransferMode();
 
-  const [searchInput, setSearchInput] = useState(searchParams.get('search') ?? '');
-  const [category, setCategory] = useState(searchParams.get('category') ?? '');
-  const [page, setPage] = useState(searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1);
-  const [pageSize, setPageSize] = useState(searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10);
-  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') ?? 'created');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc' | 'none'>(searchParams.get('sortDir') === 'asc' ? 'asc' : searchParams.get('sortDir') === 'none' ? 'none' : 'desc');
+  const search = searchParams.get('search') ?? '';
+  const category = searchParams.get('category') ?? '';
+  const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
+  const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10;
+  const sortBy = searchParams.get('sortBy') ?? 'created';
+  const sortDir = (searchParams.get('sortDir') === 'asc' ? 'asc' : searchParams.get('sortDir') === 'none' ? 'none' : 'desc') as 'asc' | 'desc' | 'none';
 
-  const search = useDebounce(searchInput, 250);
+  const [searchInput, setSearchInput] = useState(search);
+  const debouncedSearchInput = useDebounce(searchInput, 250);
 
   const { data: allRows = [], isLoading } = useAllOrgsUsage({
     search: search || undefined,
@@ -114,24 +115,21 @@ export default function SuperAdminPage() {
   }, [pathname, router]);
 
   useEffect(() => {
-    const urlSearch = searchParams.get('search') ?? '';
-    const urlCategory = searchParams.get('category') ?? '';
-    const urlPage = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
-    const urlPageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10;
-    const urlSortBy = searchParams.get('sortBy') ?? 'created';
-    const urlSortDir = (searchParams.get('sortDir') ?? 'desc') as 'asc' | 'desc' | 'none';
-
-    if (urlSearch !== searchInput) setSearchInput(urlSearch);
-    if (urlCategory !== category) setCategory(urlCategory);
-    if (urlPage !== page) setPage(urlPage);
-    if (urlPageSize !== pageSize) setPageSize(urlPageSize);
-    if (urlSortBy !== sortBy) setSortBy(urlSortBy);
-    if (urlSortDir !== sortDir) setSortDir(urlSortDir);
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (debouncedSearchInput !== search) {
+      updateUrl({
+        search: debouncedSearchInput,
+        category,
+        page: '1',
+        pageSize: String(pageSize),
+        sortBy,
+        sortDir,
+      });
+    }
+  }, [debouncedSearchInput]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function syncAllToUrl(next: Partial<Record<'search' | 'category' | 'page' | 'pageSize' | 'sortBy' | 'sortDir', string>>) {
     updateUrl({
-      search: next.search ?? searchInput,
+      search: next.search ?? search,
       category: next.category ?? category,
       page: next.page ?? String(page),
       pageSize: next.pageSize ?? String(pageSize),
@@ -141,8 +139,6 @@ export default function SuperAdminPage() {
   }
 
   function handleSortChange(nextSortBy: string, nextSortDir: 'asc' | 'desc' | 'none') {
-    setSortBy(nextSortBy);
-    setSortDir(nextSortDir);
     syncAllToUrl({ sortBy: nextSortBy, sortDir: nextSortDir === 'none' ? '' : nextSortDir });
   }
 
@@ -281,14 +277,14 @@ export default function SuperAdminPage() {
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             value={searchInput}
-            onChange={(e) => { setSearchInput(e.target.value); setPage(1); syncAllToUrl({ search: e.target.value, page: '1' }); }}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t('orgs.searchPlaceholder')}
             className="pl-8"
           />
         </div>
         <select
           value={category}
-          onChange={(e) => { setCategory(e.target.value); setPage(1); syncAllToUrl({ category: e.target.value, page: '1' }); }}
+          onChange={(e) => syncAllToUrl({ category: e.target.value, page: '1' })}
           className="h-9 rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
         >
           <option value="">{t('orgs.allCategories')}</option>
@@ -302,8 +298,6 @@ export default function SuperAdminPage() {
             variant="ghost"
             onClick={() => {
               setSearchInput('');
-              setCategory('');
-              setPage(1);
               syncAllToUrl({ search: '', category: '', page: '1' });
             }}
           >
@@ -324,8 +318,8 @@ export default function SuperAdminPage() {
             pageSize,
             total,
             totalPages,
-            onPageChange: (p) => { setPage(p); syncAllToUrl({ page: String(p) }); },
-            onPageSizeChange: (s) => { setPageSize(s); setPage(1); syncAllToUrl({ pageSize: String(s), page: '1' }); },
+            onPageChange: (p) => syncAllToUrl({ page: String(p) }),
+            onPageSizeChange: (s) => syncAllToUrl({ pageSize: String(s), page: '1' }),
             onSortChange: handleSortChange,
             currentSortBy: sortBy,
             currentSortDir: sortDir,

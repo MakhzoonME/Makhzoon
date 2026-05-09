@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getInventoryAuditById, updateAuditItem } from '@/lib/db/inventory-audits';
 
-interface Params { params: { auditId: string } }
+interface Params { params: Promise<{ auditId: string }> }
 
-export async function POST(req: NextRequest, { params }: Params) {
+export async function POST(req: NextRequest, props: Params) {
+  const params = await props.params;
   try {
     const tenant = await resolveTenant();
 

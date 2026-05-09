@@ -5,9 +5,10 @@ import { getOrganizationById } from '@/lib/db/organizations';
 import { statusPatchSchema } from '@/lib/validations/organization-config.schema';
 import { queueAuditLog } from '@/lib/audit/logger';
 
-interface Params { params: { orgId: string; statusId: string } }
+interface Params { params: Promise<{ orgId: string; statusId: string }> }
 
-export async function PUT(req: NextRequest, { params }: Params) {
+export async function PUT(req: NextRequest, props: Params) {
+  const params = await props.params;
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -44,7 +45,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(_req: NextRequest, props: Params) {
+  const params = await props.params;
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -151,7 +151,7 @@ export function AppSidebar() {
   const { t, dir } = useT();
   const isRtl = dir === 'rtl';
 
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const [userToggles, setUserToggles] = useState<Record<string, boolean>>({});
 
   const features    = user?.features ?? {};
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
@@ -174,29 +174,24 @@ export function AppSidebar() {
     return true;
   });
 
-  // Auto-open groups that contain the active route
-  useEffect(() => {
-    const updates: Record<string, boolean> = {};
-    for (const entry of visibleEntries) {
-      if (!('type' in entry) || entry.type !== 'group') continue;
-      const hasActive = entry.items.some((sub) => {
-        const full = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
-        return pathname === full || pathname.startsWith(full + '/');
-      });
-      if (hasActive) updates[entry.href] = true;
-    }
-    if (Object.keys(updates).length > 0) {
-      setOpenGroups((prev) => ({ ...prev, ...updates }));
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, orgSlug]);
+  // Auto-open groups containing the active route, merged with user toggles
+  const autoOpenGroups: Record<string, boolean> = {};
+  for (const entry of visibleEntries) {
+    if (!('type' in entry) || entry.type !== 'group') continue;
+    const hasActive = entry.items.some((sub) => {
+      const full = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
+      return pathname === full || pathname.startsWith(full + '/');
+    });
+    if (hasActive) autoOpenGroups[entry.href] = true;
+  }
+  const openGroups: Record<string, boolean> = { ...autoOpenGroups, ...userToggles };
 
   function toggleGroup(href: string) {
     if (sidebarCollapsed) {
       toggleSidebar();
-      setOpenGroups((prev) => ({ ...prev, [href]: true }));
+      setUserToggles((prev) => ({ ...prev, [href]: true }));
     } else {
-      setOpenGroups((prev) => ({ ...prev, [href]: !prev[href] }));
+      setUserToggles((prev) => ({ ...prev, [href]: !openGroups[href] }));
     }
   }
 

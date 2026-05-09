@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useOrgSlug } from '@/hooks/ui';
@@ -229,6 +230,8 @@ function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: 
 
 /* ── ActivityFeed ────────────────────────────────────────────────── */
 function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: boolean }) {
+  const [now] = useState(() => Date.now());
+
   function getInitials(name?: string, email?: string): string {
     const src = name || email || '?';
     return src.split(/[\s@]/).map((s: string) => s[0]).slice(0, 2).join('').toUpperCase();
@@ -236,7 +239,7 @@ function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: bool
 
   function formatRelative(ts: string | number): string {
     const d = typeof ts === 'string' ? new Date(ts) : new Date(ts);
-    const diffMs = Date.now() - d.getTime();
+    const diffMs = now - d.getTime();
     const diffMin = Math.floor(diffMs / 60_000);
     const diffH   = Math.floor(diffMs / 3_600_000);
     const diffD   = Math.floor(diffMs / 86_400_000);

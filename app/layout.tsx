@@ -53,7 +53,7 @@ const themeScript = `
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html suppressHydrationWarning>
-      {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
+      { }
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

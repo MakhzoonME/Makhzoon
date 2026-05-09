@@ -5,11 +5,13 @@ import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
 import { queueAuditLog } from '@/lib/audit/logger';
 import { organizationUpdateSchema } from '@/lib/validations/organization.schema';
 
+const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'super_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!SUPERADMIN_ROLES.has(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { orgId } = await params;
     const org = await getOrganizationById(orgId);

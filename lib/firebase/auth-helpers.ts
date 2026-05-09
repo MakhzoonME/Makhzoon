@@ -32,16 +32,16 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
       if (transferOrgId) organizationId = transferOrgId;
     }
 
-    // Fetch the authoritative role from Firestore so role changes take effect
-    // immediately without requiring re-authentication. Token custom claims
-    // are only refreshed on sign-in, but the Firestore user document is
-    // updated at the time of the role change.
+    // Fetch the authoritative role and organizationId from Firestore so role
+    // changes and org assignments take effect immediately without requiring
+    // re-authentication. Token custom claims are only refreshed on sign-in.
     const ORG_ROLES = new Set(['org_owner', 'admin', 'staff']);
-    if (ORG_ROLES.has(role) && organizationId) {
+    if (ORG_ROLES.has(role)) {
       const userDoc = await adminDb.collection('users').doc(decoded.uid).get();
       if (userDoc.exists) {
         const docData = userDoc.data();
         role = (docData?.role as UserRole) ?? role;
+        // Always prefer Firestore value; falls back to token claim if not set in Firestore
         organizationId = docData?.organizationId ?? organizationId;
       }
     }

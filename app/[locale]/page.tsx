@@ -3,9 +3,9 @@ import { useState } from 'react';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { ArrowRight, Loader2 } from 'lucide-react';
 
-
-
 export default function ComingSoonPage() {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [state, setState] = useState<'idle' | 'loading' | 'done'>('idle');
 
@@ -17,7 +17,7 @@ export default function ComingSoonPage() {
       await fetch('/api/early-access', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ firstName, lastName, email }),
       });
     } catch {
       // best-effort — still show success
@@ -148,38 +148,70 @@ export default function ComingSoonPage() {
             You&apos;re on the list. We&apos;ll be in touch.
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="w-full flex gap-2" style={{ maxWidth: 460 }}>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@company.com"
-              className="flex-1 min-w-0 px-4 rounded-xl text-sm outline-none"
-              style={{
-                height: 48,
-                background: 'rgba(255,255,255,0.07)',
-                border: '1px solid rgba(255,255,255,0.11)',
-                color: '#fff',
-                fontFamily: 'inherit',
-              }}
-            />
-            <button
-              type="submit"
-              disabled={state === 'loading'}
-              className="inline-flex items-center gap-2 px-5 rounded-xl text-sm font-semibold transition-opacity duration-200"
-              style={{
-                height: 48,
-                background: 'var(--primary-600)',
-                color: '#fff',
-                border: 'none',
-                cursor: 'pointer',
-                flexShrink: 0,
-                opacity: state === 'loading' ? 0.65 : 1,
-              }}
-            >
-              {state === 'loading' ? <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} /> : <><span>Get early access</span><ArrowRight className="h-4 w-4" strokeWidth={1.75} /></>}
-            </button>
+          <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3" style={{ maxWidth: 460 }}>
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="First name"
+                className="flex-1 min-w-0 px-4 rounded-xl text-sm outline-none"
+                style={{
+                  height: 48,
+                  background: 'rgba(255,255,255,0.07)',
+                  border: '1px solid rgba(255,255,255,0.11)',
+                  color: '#fff',
+                  fontFamily: 'inherit',
+                }}
+              />
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Last name"
+                className="flex-1 min-w-0 px-4 rounded-xl text-sm outline-none"
+                style={{
+                  height: 48,
+                  background: 'rgba(255,255,255,0.07)',
+                  border: '1px solid rgba(255,255,255,0.11)',
+                  color: '#fff',
+                  fontFamily: 'inherit',
+                }}
+              />
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@company.com"
+                className="flex-1 min-w-0 px-4 rounded-xl text-sm outline-none"
+                style={{
+                  height: 48,
+                  background: 'rgba(255,255,255,0.07)',
+                  border: '1px solid rgba(255,255,255,0.11)',
+                  color: '#fff',
+                  fontFamily: 'inherit',
+                }}
+              />
+              <button
+                type="submit"
+                disabled={state === 'loading'}
+                className="inline-flex items-center gap-2 px-5 rounded-xl text-sm font-semibold transition-opacity duration-200"
+                style={{
+                  height: 48,
+                  background: 'var(--primary-600)',
+                  color: '#fff',
+                  border: 'none',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  opacity: state === 'loading' ? 0.65 : 1,
+                }}
+              >
+                {state === 'loading' ? <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} /> : <><span>Get early access</span><ArrowRight className="h-4 w-4" strokeWidth={1.75} /></>}
+              </button>
+            </div>
           </form>
         )}
 

@@ -25,6 +25,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       'flex cursor-default select-none items-center gap-2 rounded-md px-2.5 py-2 text-[13.5px] text-gray-700 outline-none focus:bg-surface-page focus:text-gray-900 data-[state=open]:bg-surface-page',
+      'whitespace-nowrap',
       inset && 'pl-8',
       className
     )}
@@ -42,7 +43,7 @@ const DropdownMenuSubContent = React.forwardRef<
   <DropdownMenuPrimitive.SubContent
     ref={ref}
     className={cn(
-      'z-50 min-w-[10rem] overflow-hidden rounded-lg border border-border bg-surface-card p-1 text-gray-900 shadow-md',
+      'z-50 min-w-max overflow-hidden rounded-lg border border-border bg-surface-card p-1 text-gray-900 shadow-md',
       'data-[state=open]:animate-in data-[state=closed]:animate-out',
       'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
       'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
@@ -64,7 +65,7 @@ const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        'z-50 min-w-[10rem] overflow-hidden rounded-lg border border-border bg-surface-card p-1 text-gray-900 shadow-md',
+        'z-50 min-w-max overflow-hidden rounded-lg border border-border bg-surface-card p-1 text-gray-900 shadow-md',
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
         'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
@@ -86,6 +87,7 @@ const DropdownMenuItem = React.forwardRef<
     ref={ref}
     className={cn(
       'relative flex cursor-default select-none items-center gap-2.5 rounded-md px-2.5 py-2 text-[13.5px] text-gray-700 outline-none transition-colors',
+      'whitespace-nowrap',
       'focus:bg-surface-page focus:text-gray-900',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       inset && 'pl-8',

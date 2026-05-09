@@ -19,8 +19,16 @@
 
     "clone:dry:staging": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=staging --dry-run",
     "clone:dry:dev": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=dev --dry-run",
+    "clone:dry:prod": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=prod --no-scrub --dry-run",
     "clone:staging": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=staging",
     "clone:dev": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=dev",
+    "clone:prod": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=prod --no-scrub",
+
+    "clone:auth:legacy-to-prod": "bash scripts/clone-auth.sh legacy prod",
+    "clone:auth:prod-to-staging": "bash scripts/clone-auth.sh prod staging",
+    "clone:auth:prod-to-dev": "bash scripts/clone-auth.sh prod dev",
+    "clone:auth:legacy-to-staging": "bash scripts/clone-auth.sh legacy staging",
+    "clone:auth:legacy-to-dev": "bash scripts/clone-auth.sh legacy dev",
 
     "fs:export:prod": "bash scripts/export-prod.sh",
     "fs:import:staging": "bash scripts/import-to-env.sh staging",

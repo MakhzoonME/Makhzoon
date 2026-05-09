@@ -39,14 +39,26 @@ const args = Object.fromEntries(
     return [k, v ?? 'true'];
   }),
 );
-const TARGET = args.target as 'staging' | 'dev' | undefined;
+const TARGET = args.target as 'staging' | 'dev' | 'prod' | undefined;
 const DRY_RUN = args['dry-run'] === 'true';
+const NO_SCRUB = args['no-scrub'] === 'true';
 const COLLECTION_FILTER = args.collections ? (args.collections as string).split(',') : null;
 const SKIP_CONFIRM = args['yes'] === 'true' || args['y'] === 'true';
 
-if (!TARGET || !['staging', 'dev'].includes(TARGET)) {
-  console.error('❌ --target=staging|dev is required');
+if (!TARGET || !['staging', 'dev', 'prod'].includes(TARGET)) {
+  console.error('❌ --target=staging|dev|prod is required');
   process.exit(1);
+}
+
+// Prod target requires --no-scrub explicitly (PII must survive prod->prod)
+// AND the operator has to opt in to this rare path.
+if (TARGET === 'prod' && !NO_SCRUB) {
+  console.error('❌ --target=prod requires --no-scrub (prod migrations preserve PII).');
+  console.error('   Example: --target=prod --no-scrub');
+  process.exit(1);
+}
+if (TARGET === 'prod') {
+  console.warn('⚠️  Targeting prod — this is a one-time migration, not a routine clone.');
 }
 
 // ---------- PII scrub rules ----------
@@ -113,6 +125,7 @@ const targetDb = targetApp.firestore();
 
 // ---------- Helpers ----------
 function scrubDoc(collection: string, id: string, data: FirebaseFirestore.DocumentData) {
+  if (NO_SCRUB) return data;
   const rules = SCRUB_FIELDS_BY_COLLECTION[collection];
   if (!rules) return data;
   const out = { ...data };

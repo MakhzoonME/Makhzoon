@@ -4,22 +4,29 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 export interface EarlyAccessEntry {
   id: string;
   email: string;
+  firstName: string;
+  lastName: string;
   ip: string | null;
-  createdAt: Date;
+  createdAt: string;
 }
 
 function toEntry(id: string, data: FirebaseFirestore.DocumentData): EarlyAccessEntry {
+  const ts = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt);
   return {
     id,
     email: data.email,
+    firstName: data.firstName ?? '',
+    lastName: data.lastName ?? '',
     ip: data.ip ?? null,
-    createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
+    createdAt: ts.toISOString(),
   };
 }
 
-export async function createEarlyAccessEntry(email: string, ip: string | null): Promise<string> {
+export async function createEarlyAccessEntry(email: string, ip: string | null, firstName?: string, lastName?: string): Promise<string> {
   const ref = await adminDb.collection('earlyAccess').add({
     email: email.toLowerCase(),
+    firstName: firstName ?? '',
+    lastName: lastName ?? '',
     ip,
     createdAt: FieldValue.serverTimestamp(),
   });

@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 export interface EarlyAccessLead {
   id: string;
   email: string;
+  firstName: string;
+  lastName: string;
   ip: string | null;
   createdAt: string;
 }
@@ -10,6 +12,8 @@ export interface EarlyAccessLead {
 export interface ContactSalesLead {
   id: string;
   name: string;
+  firstName: string;
+  lastName: string;
   organizationName: string;
   phone: string;
   email: string;

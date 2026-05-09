@@ -39,6 +39,25 @@
       "updatedAt": "2026-05-09T00:04:46.203Z",
       "pid": 16612,
       "terminationReason": "host process 16612 exited"
+    },
+    "swarm-1778334547545-t7jx04": {
+      "swarmId": "swarm-1778334547545-t7jx04",
+      "topology": "hierarchical",
+      "maxAgents": 8,
+      "status": "running",
+      "agents": [],
+      "tasks": [],
+      "config": {
+        "topology": "hierarchical",
+        "maxAgents": 8,
+        "strategy": "specialized",
+        "communicationProtocol": "message-bus",
+        "autoScaling": true,
+        "consensusMechanism": "majority"
+      },
+      "createdAt": "2026-05-09T13:49:07.545Z",
+      "updatedAt": "2026-05-09T13:49:07.545Z",
+      "pid": 63860
     }
   },
   "version": "3.0.0"

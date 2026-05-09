@@ -33,7 +33,7 @@
  * ============================================================================
  */
 
-import { spawn, spawnSync } from 'child_process';
+import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as readline from 'readline';
 
@@ -67,8 +67,10 @@ function prompt(question: string, opts: { silent?: boolean } = {}): Promise<stri
 
 function runFirebase(args: string[]): Promise<number> {
   return new Promise((resolve, reject) => {
-    const cmd = process.platform === 'win32' ? 'firebase.cmd' : 'firebase';
-    const child = spawn(cmd, args, { stdio: 'inherit', shell: false });
+    // On Windows, Node 18+ refuses to spawn .cmd files without shell:true
+    // (CVE-2024-27980 mitigation). Use shell:true so the shell resolves
+    // `firebase` from PATH on every platform.
+    const child = spawn('firebase', args, { stdio: 'inherit', shell: true });
     child.on('error', reject);
     child.on('exit', (code) => resolve(code ?? 0));
   });

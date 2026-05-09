@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import {
   getSupportTickets,
@@ -13,11 +14,12 @@ import { sendEmail } from '@/lib/email/resend';
 import { supportTicketNotificationEmail } from '@/lib/email/templates';
 
 const SUPPORT_EMAILS = ['info@makhzoon.me', 'support@makhzoon.me'];
+const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
 export async function GET(req: NextRequest) {
   try {
-    const tenant = await resolveTenant();
-    const user = tenant.user;
+    const user = await verifySessionCookie();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
     const status = (searchParams.get('status') ?? undefined) as TicketStatus | undefined;
@@ -28,7 +30,7 @@ export async function GET(req: NextRequest) {
     const sortBy = searchParams.get('sortBy') ?? undefined;
     const sortDir = searchParams.get('sortDir') === 'asc' ? 'asc' as const : 'desc' as const;
 
-    if (user.role === 'super_admin') {
+    if (SUPERADMIN_ROLES.has(user.role)) {
       if (orgIdFilter) {
         const result = await getSupportTickets(orgIdFilter, { status, page, pageSize, sortBy, sortDir });
         return NextResponse.json(result);
@@ -37,8 +39,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(result);
     }
 
-    if (!tenant.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    const result = await getSupportTickets(tenant.organizationId, { status, page, pageSize, sortBy, sortDir });
+    if (!user.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const result = await getSupportTickets(user.organizationId, { status, page, pageSize, sortBy, sortDir });
     return NextResponse.json(result);
   } catch (err) {
     if (err instanceof NextResponse) return err;

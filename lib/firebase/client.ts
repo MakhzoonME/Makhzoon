@@ -36,5 +36,15 @@ if (typeof window !== 'undefined') {
   }).catch(() => {});
 }
 
+// Environment indicator for UI affordances (env badge, etc.). Prefers the
+// explicit NEXT_PUBLIC_APP_ENV; falls back to inferring from the project ID.
+export const APP_ENV: 'production' | 'staging' | 'development' =
+  (process.env.NEXT_PUBLIC_APP_ENV as 'production' | 'staging' | 'development' | undefined) ??
+  (firebaseConfig.projectId?.includes('prod')
+    ? 'production'
+    : firebaseConfig.projectId?.includes('staging') || firebaseConfig.projectId?.includes('stg')
+      ? 'staging'
+      : 'development');
+
 export { auth, db, storage, analytics, signOut };
 export default app;

@@ -16,7 +16,8 @@ const patchSchema = z.object({
   displayName: z.string().min(2).max(100).optional(),
 });
 
-export async function PATCH(req: NextRequest, { params }: { params: { memberId: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ memberId: string }> }) {
+  const params = await props.params;
   const caller = await verifySessionCookie();
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (caller.role !== 'super_admin' && caller.role !== 'makhzoon_admin')
@@ -73,7 +74,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { memberId: 
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { memberId: string } }) {
+export async function DELETE(_req: NextRequest, props: { params: Promise<{ memberId: string }> }) {
+  const params = await props.params;
   const caller = await verifySessionCookie();
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (caller.role !== 'super_admin') return NextResponse.json({ error: 'Only Super Admins can permanently delete team members' }, { status: 403 });

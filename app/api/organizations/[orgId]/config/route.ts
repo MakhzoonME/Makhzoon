@@ -3,7 +3,8 @@ import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getOrCreateOrganizationConfig } from '@/lib/db/organization-configs';
 import { getOrganizationById } from '@/lib/db/organizations';
 
-export async function GET(_req: NextRequest, { params }: { params: { orgId: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ orgId: string }> }) {
+  const params = await props.params;
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

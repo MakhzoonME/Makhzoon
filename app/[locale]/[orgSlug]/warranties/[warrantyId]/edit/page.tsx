@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 
-export default function EditWarrantyPage({ params }: { params: { orgSlug: string; warrantyId: string } }) {
+export default async function EditWarrantyPage(props: { params: Promise<{ orgSlug: string; warrantyId: string }> }) {
+  const params = await props.params;
   redirect(`/${params.orgSlug}/warranties`);
 }

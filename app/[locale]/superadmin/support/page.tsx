@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
@@ -26,13 +26,13 @@ export default function SupportPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [orgId, setOrgId] = useState(searchParams.get('orgId') ?? '');
-  const [status, setStatus] = useState(searchParams.get('status') ?? '');
-  const [priority, setPriority] = useState(searchParams.get('priority') ?? '');
-  const [page, setPage] = useState(searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1);
-  const [pageSize, setPageSize] = useState(searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10);
-  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') ?? 'createdAt');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc' | 'none'>(searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc');
+  const orgId = searchParams.get('orgId') ?? '';
+  const status = searchParams.get('status') ?? '';
+  const priority = searchParams.get('priority') ?? '';
+  const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
+  const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10;
+  const sortBy = searchParams.get('sortBy') ?? 'createdAt';
+  const sortDir = (searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc') as 'asc' | 'desc' | 'none';
 
   const filters = {
     orgId: orgId || undefined,
@@ -58,24 +58,6 @@ export default function SupportPage() {
     router.replace(url, { scroll: false });
   }, [pathname, router]);
 
-  useEffect(() => {
-    const urlOrgId = searchParams.get('orgId') ?? '';
-    const urlStatus = searchParams.get('status') ?? '';
-    const urlPriority = searchParams.get('priority') ?? '';
-    const urlPage = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
-    const urlPageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10;
-    const urlSortBy = searchParams.get('sortBy') ?? 'createdAt';
-    const urlSortDir = (searchParams.get('sortDir') ?? 'desc') as 'asc' | 'desc' | 'none';
-
-    if (urlOrgId !== orgId) setOrgId(urlOrgId);
-    if (urlStatus !== status) setStatus(urlStatus);
-    if (urlPriority !== priority) setPriority(urlPriority);
-    if (urlPage !== page) setPage(urlPage);
-    if (urlPageSize !== pageSize) setPageSize(urlPageSize);
-    if (urlSortBy !== sortBy) setSortBy(urlSortBy);
-    if (urlSortDir !== sortDir) setSortDir(urlSortDir);
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
-
   function syncAllToUrl(next: Partial<Record<'orgId' | 'status' | 'priority' | 'page' | 'pageSize' | 'sortBy' | 'sortDir', string>>) {
     updateUrl({
       orgId: next.orgId ?? orgId,
@@ -89,9 +71,6 @@ export default function SupportPage() {
   }
 
   function handleSortChange(nextSortBy: string, nextSortDir: 'asc' | 'desc' | 'none') {
-    setSortBy(nextSortBy);
-    setSortDir(nextSortDir);
-    setPage(1);
     syncAllToUrl({ sortBy: nextSortBy, sortDir: nextSortDir === 'none' ? '' : nextSortDir, page: '1' });
   }
 
@@ -127,10 +106,6 @@ export default function SupportPage() {
   ];
 
   const clearFilters = () => {
-    setOrgId('');
-    setStatus('');
-    setPriority('');
-    setPage(1);
     syncAllToUrl({ orgId: '', status: '', priority: '', page: '1' });
   };
 
@@ -141,7 +116,7 @@ export default function SupportPage() {
       <div className="bg-surface-card border border-border rounded-lg p-3 flex flex-wrap gap-2 mb-4">
         <select
           value={orgId}
-          onChange={(e) => { setOrgId(e.target.value); setPage(1); syncAllToUrl({ orgId: e.target.value, page: '1' }); }}
+          onChange={(e) => syncAllToUrl({ orgId: e.target.value, page: '1' })}
           className="h-9 rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
         >
           <option value="">{t('support.allOrgs')}</option>
@@ -153,7 +128,7 @@ export default function SupportPage() {
         </select>
         <select
           value={status}
-          onChange={(e) => { setStatus(e.target.value); setPage(1); syncAllToUrl({ status: e.target.value, page: '1' }); }}
+          onChange={(e) => syncAllToUrl({ status: e.target.value, page: '1' })}
           className="h-9 rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
         >
           <option value="">{t('support.anyStatus')}</option>
@@ -165,7 +140,7 @@ export default function SupportPage() {
         </select>
         <select
           value={priority}
-          onChange={(e) => { setPriority(e.target.value); setPage(1); syncAllToUrl({ priority: e.target.value, page: '1' }); }}
+          onChange={(e) => syncAllToUrl({ priority: e.target.value, page: '1' })}
           className="h-9 rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
         >
           <option value="">{t('support.anyPriority')}</option>
@@ -194,8 +169,8 @@ export default function SupportPage() {
             pageSize,
             total,
             totalPages,
-            onPageChange: (p) => { setPage(p); syncAllToUrl({ page: String(p) }); },
-            onPageSizeChange: (s) => { setPageSize(s); setPage(1); syncAllToUrl({ pageSize: String(s), page: '1' }); },
+            onPageChange: (p) => syncAllToUrl({ page: String(p) }),
+            onPageSizeChange: (s) => syncAllToUrl({ pageSize: String(s), page: '1' }),
             onSortChange: handleSortChange,
             currentSortBy: sortBy,
             currentSortDir: sortDir,

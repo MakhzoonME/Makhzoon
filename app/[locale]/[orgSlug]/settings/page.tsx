@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation';
 
 interface Props {
-  params: { locale: string; orgSlug: string };
+  params: Promise<{ locale: string; orgSlug: string }>;
 }
 
-export default function SettingsIndexPage({ params }: Props) {
+export default async function SettingsIndexPage(props: Props) {
+  const params = await props.params;
   redirect(`/${params.locale}/${params.orgSlug}/settings/organization`);
 }

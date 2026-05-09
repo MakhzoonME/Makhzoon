@@ -3,7 +3,8 @@ import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getAssetById } from '@/lib/db/assets';
 import { generateAssetQRDataUrl, assetUrl } from '@/lib/qr';
 
-export async function GET(req: NextRequest, { params }: { params: { assetId: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ assetId: string }> }) {
+  const params = await props.params;
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;

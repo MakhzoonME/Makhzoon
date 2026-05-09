@@ -51,25 +51,25 @@ export default function InventoryPage() {
   const { user } = useAuthStore();
   const qc = useQueryClient();
 
-  const [search, setSearch] = useState(searchParams.get('search') ?? '');
-  const [category, setCategory] = useState(searchParams.get('category') ?? '');
-  const [stockFilter, setStockFilter] = useState(searchParams.get('stockStatus') ?? '');
-  const [page, setPage] = useState(searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1);
-  const [pageSize, setPageSize] = useState(searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10);
-  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') ?? 'createdAt');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc' | 'none'>(searchParams.get('sortDir') === 'asc' ? 'asc' : searchParams.get('sortDir') === 'none' ? 'none' : 'desc');
+  const search = searchParams.get('search') ?? '';
+  const category = searchParams.get('category') ?? '';
+  const stockFilter = searchParams.get('stockStatus') ?? '';
+  const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
+  const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10;
+  const sortBy = searchParams.get('sortBy') ?? 'createdAt';
+  const sortDir = (searchParams.get('sortDir') === 'asc' ? 'asc' : searchParams.get('sortDir') === 'none' ? 'none' : 'desc') as 'asc' | 'desc' | 'none';
 
+  const [searchInput, setSearchInput] = useState(search);
   const [deleteTarget, setDeleteTarget] = useState<InventoryItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<InventoryItem | null>(null);
   const [reqTarget, setReqTarget] = useState<InventoryItem | null>(null);
 
-  const debouncedSearch = useDebounce(search, 400);
   const { data: inventoryData, isLoading } = useInventoryItems({
     category: category || undefined,
     stockStatus: stockFilter || undefined,
-    search: debouncedSearch || undefined,
+    search: search || undefined,
     page,
     pageSize,
     sortBy: sortDir === 'none' ? undefined : sortBy,
@@ -83,23 +83,20 @@ export default function InventoryPage() {
     router.replace(url, { scroll: false });
   }, [pathname, router]);
 
+  const debouncedSearchInput = useDebounce(searchInput, 400);
   useEffect(() => {
-    const urlSearch = searchParams.get('search') ?? '';
-    const urlCategory = searchParams.get('category') ?? '';
-    const urlStock = searchParams.get('stockStatus') ?? '';
-    const urlPage = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
-    const urlPageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10;
-    const urlSortBy = searchParams.get('sortBy') ?? 'createdAt';
-    const urlSortDir = (searchParams.get('sortDir') ?? 'desc') as 'asc' | 'desc' | 'none';
-
-    if (urlSearch !== search) setSearch(urlSearch);
-    if (urlCategory !== category) setCategory(urlCategory);
-    if (urlStock !== stockFilter) setStockFilter(urlStock);
-    if (urlPage !== page) setPage(urlPage);
-    if (urlPageSize !== pageSize) setPageSize(urlPageSize);
-    if (urlSortBy !== sortBy) setSortBy(urlSortBy);
-    if (urlSortDir !== sortDir) setSortDir(urlSortDir);
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (debouncedSearchInput !== search) {
+      updateUrl({
+        search: debouncedSearchInput,
+        category,
+        stockStatus: stockFilter,
+        page: '1',
+        pageSize: String(pageSize),
+        sortBy,
+        sortDir,
+      });
+    }
+  }, [debouncedSearchInput]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
@@ -181,27 +178,19 @@ export default function InventoryPage() {
 
   function handleCategoryChange(v: string) {
     const next = v === 'all' ? '' : v;
-    setCategory(next);
-    setPage(1);
     syncAllToUrl({ category: next, page: '1' });
   }
 
   function handleStockChange(v: string) {
     const next = v === 'all' ? '' : v;
-    setStockFilter(next);
-    setPage(1);
     syncAllToUrl({ stockStatus: next, page: '1' });
   }
 
   function handleSearchChange(v: string) {
-    setSearch(v);
-    setPage(1);
-    syncAllToUrl({ search: v, page: '1' });
+    setSearchInput(v);
   }
 
   function handleSortChange(sortByField: string, dir: 'asc' | 'desc' | 'none') {
-    setSortBy(sortByField);
-    setSortDir(dir);
     syncAllToUrl({ sortBy: sortByField, sortDir: dir === 'none' ? '' : dir });
   }
 
@@ -246,7 +235,7 @@ export default function InventoryPage() {
 
       <FilterBar
         searchPlaceholder={t('inventory.searchPlaceholder')}
-        searchValue={search}
+        searchValue={searchInput}
         onSearchChange={handleSearchChange}
         filters={
           <div className="flex items-center gap-2">
@@ -283,8 +272,8 @@ export default function InventoryPage() {
             pageSize: inventoryData.pageSize,
             total: inventoryData.total,
             totalPages: inventoryData.totalPages,
-            onPageChange: (p) => { setPage(p); syncAllToUrl({ page: String(p) }); },
-            onPageSizeChange: (s) => { setPageSize(s); setPage(1); syncAllToUrl({ pageSize: String(s), page: '1' }); },
+            onPageChange: (p) => syncAllToUrl({ page: String(p) }),
+            onPageSizeChange: (s) => syncAllToUrl({ pageSize: String(s), page: '1' }),
             onSortChange: handleSortChange,
             currentSortBy: sortBy,
             currentSortDir: sortDir,

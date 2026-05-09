@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { useT } from '@/hooks/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -41,7 +41,8 @@ type SimpleDialogState<T> =
   | { mode: 'edit'; item: T }
   | null;
 
-export default function OrgConfigurationPage({ params }: { params: { orgId: string } }) {
+export default function OrgConfigurationPage(props: { params: Promise<{ orgId: string }> }) {
+  const params = use(props.params);
   const { orgId } = params;
   const { locale } = useT();
   const qc = useQueryClient();

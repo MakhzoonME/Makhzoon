@@ -85,6 +85,7 @@ export default function UsersPage() {
   const features = useSubscriptionFeatures();
   const [deleteTarget, setDeleteTarget] = useState<{ user: OrgUser; permanent: boolean } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [now] = useState(() => Date.now());
   const qc = useQueryClient();
 
   if (!isAllowed) return <div className="flex items-center justify-center h-48"><div className="h-7 w-7 rounded-full border-2 border-primary-600 border-t-transparent animate-spin" /></div>;
@@ -96,7 +97,7 @@ export default function UsersPage() {
   const canInvite = isAdmin; // staff cannot invite
 
   const pendingInvites = invites.filter(
-    (i) => i.status === 'pending' && new Date(i.expiresAt).getTime() > Date.now()
+    (i) => i.status === 'pending' && new Date(i.expiresAt).getTime() > now
   );
 
   const rows: Row[] = [

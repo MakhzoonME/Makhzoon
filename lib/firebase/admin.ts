@@ -1,3 +1,4 @@
+import 'server-only';
 import { App, getApps, initializeApp, cert, ServiceAccount } from 'firebase-admin/app';
 import { Firestore, getFirestore } from 'firebase-admin/firestore';
 import { Auth, getAuth } from 'firebase-admin/auth';
@@ -11,16 +12,22 @@ function getCredential(): ServiceAccount {
   // Strip surrounding quotes/whitespace some env systems add and validate before parsing
   // so a malformed value falls through to the individual-vars path instead of crashing
   // module-load (e.g. during Next's "Collecting page data" build phase).
+  // Service account JSON from Google uses snake_case (project_id, client_email,
+  // private_key); ServiceAccount type uses camelCase. firebase-admin's cert() accepts
+  // either, so we normalize to camelCase here for consistent validation.
   const b64Raw = (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 ?? '').trim().replace(/^["']|["']$/g, '');
   if (b64Raw) {
     try {
       const json = Buffer.from(b64Raw, 'base64').toString('utf8');
       if (!json) throw new Error('decoded empty string');
-      const parsed = JSON.parse(json) as ServiceAccount;
-      if (!parsed?.projectId || !parsed?.clientEmail || !parsed?.privateKey) {
-        throw new Error('parsed JSON missing projectId/clientEmail/privateKey');
+      const raw = JSON.parse(json) as Record<string, unknown>;
+      const projectId = (raw.projectId ?? raw.project_id) as string | undefined;
+      const clientEmail = (raw.clientEmail ?? raw.client_email) as string | undefined;
+      const privateKey = (raw.privateKey ?? raw.private_key) as string | undefined;
+      if (!projectId || !clientEmail || !privateKey) {
+        throw new Error('parsed JSON missing project_id/client_email/private_key');
       }
-      return parsed;
+      return { projectId, clientEmail, privateKey };
     } catch (err) {
       console.warn(
         '[firebase-admin] FIREBASE_SERVICE_ACCOUNT_BASE64 set but invalid; falling back to individual vars.',

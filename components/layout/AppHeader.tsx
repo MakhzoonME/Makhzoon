@@ -96,7 +96,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-4 gap-4 z-40">
+      <header className="fixed top-0 left-0 right-0 h-14 bg-surface-card border-b border-border flex items-center px-4 gap-4 z-40">
         {/* Burger menu — mobile only */}
         <button
           type="button"

@@ -3,11 +3,12 @@ import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { InventoryService } from '@/lib/modules/inventory/services/inventory.service'
 import { inventoryTransactionSchema } from '@/lib/modules/inventory/validators/schemas'
 
-interface Params { params: { itemId: string } }
+interface Params { params: Promise<{ itemId: string }> }
 
 const service = new InventoryService()
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export async function GET(_req: NextRequest, props: Params) {
+  const params = await props.params;
   try {
     const tenant = await resolveTenant()
     const transactions = await service.getTransactions(tenant, params.itemId)
@@ -19,7 +20,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
   }
 }
 
-export async function POST(req: NextRequest, { params }: Params) {
+export async function POST(req: NextRequest, props: Params) {
+  const params = await props.params;
   try {
     const tenant = await resolveTenant()
     const body = await req.json()

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
@@ -122,9 +122,11 @@ export default function SuperAdminTeamPage() {
   const qc = useQueryClient();
   const isSuperAdmin = currentUser?.role === 'super_admin';
 
-  const [searchInput, setSearchInput] = useState(searchParams.get('search') ?? '');
-  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') ?? 'created');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc' | 'none'>(searchParams.get('sortDir') === 'asc' ? 'asc' : searchParams.get('sortDir') === 'none' ? 'none' : 'desc');
+  const search = searchParams.get('search') ?? '';
+  const sortBy = searchParams.get('sortBy') ?? 'created';
+  const sortDir = (searchParams.get('sortDir') === 'asc' ? 'asc' : searchParams.get('sortDir') === 'none' ? 'none' : 'desc') as 'asc' | 'desc' | 'none';
+
+  const [searchInput, setSearchInput] = useState(search);
 
   const [showAdd, setShowAdd] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -164,27 +166,15 @@ export default function SuperAdminTeamPage() {
     router.replace(url, { scroll: false });
   }, [pathname, router]);
 
-  useEffect(() => {
-    const urlSearch = searchParams.get('search') ?? '';
-    const urlSortBy = searchParams.get('sortBy') ?? 'created';
-    const urlSortDir = (searchParams.get('sortDir') ?? 'desc') as 'asc' | 'desc' | 'none';
-
-    if (urlSearch !== searchInput) setSearchInput(urlSearch);
-    if (urlSortBy !== sortBy) setSortBy(urlSortBy);
-    if (urlSortDir !== sortDir) setSortDir(urlSortDir);
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
-
   function syncAllToUrl(next: Partial<Record<'search' | 'sortBy' | 'sortDir', string>>) {
     updateUrl({
-      search: next.search ?? searchInput,
+      search: next.search ?? search,
       sortBy: next.sortBy ?? sortBy,
       sortDir: next.sortDir ?? sortDir,
     });
   }
 
   function handleSortChange(nextSortBy: string, nextSortDir: 'asc' | 'desc' | 'none') {
-    setSortBy(nextSortBy);
-    setSortDir(nextSortDir);
     syncAllToUrl({ sortBy: nextSortBy, sortDir: nextSortDir === 'none' ? '' : nextSortDir });
   }
 

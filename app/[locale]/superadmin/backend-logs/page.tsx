@@ -71,21 +71,21 @@ export default function BackendLogsPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const level = searchParams.get('level') ?? 'all';
+  const orgId = searchParams.get('orgId') ?? '';
+  const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 50;
+  const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
+  const autoRefresh = searchParams.get('autoRefresh') === 'true';
+  const userSearch = searchParams.get('userSearch') ?? '';
+  const dateFrom = searchParams.get('dateFrom') ?? '';
+  const dateTo = searchParams.get('dateTo') ?? '';
+
   const [logs, setLogs] = useState<BackendLog[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [level, setLevel] = useState(searchParams.get('level') ?? 'all');
-  const [orgId, setOrgId] = useState(searchParams.get('orgId') ?? '');
-  const [pageSize, setPageSize] = useState(searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 50);
-  const [page, setPage] = useState(searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1);
-  const [autoRefresh, setAutoRefresh] = useState(searchParams.get('autoRefresh') === 'true');
   const [expanded, setExpanded] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const [userSearch, setUserSearch] = useState(searchParams.get('userSearch') ?? '');
-  const [dateFrom, setDateFrom] = useState(searchParams.get('dateFrom') ?? '');
-  const [dateTo, setDateTo] = useState(searchParams.get('dateTo') ?? '');
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
@@ -104,6 +104,10 @@ export default function BackendLogsPage() {
     }
   }, [level, orgId, page, pageSize]);
 
+  // TODO: migrate fetchLogs to useQuery so loading/logs/total/totalPages
+  // become derived rather than kept in local state. Until then this effect
+  // legitimately needs to setState on filter change.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
   useEffect(() => {
@@ -111,26 +115,6 @@ export default function BackendLogsPage() {
     if (autoRefresh) intervalRef.current = setInterval(fetchLogs, 10_000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [autoRefresh, fetchLogs]);
-
-  useEffect(() => {
-    const urlLevel = searchParams.get('level') ?? 'all';
-    const urlOrgId = searchParams.get('orgId') ?? '';
-    const urlPageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 50;
-    const urlPage = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
-    const urlAutoRefresh = searchParams.get('autoRefresh') === 'true';
-    const urlUserSearch = searchParams.get('userSearch') ?? '';
-    const urlDateFrom = searchParams.get('dateFrom') ?? '';
-    const urlDateTo = searchParams.get('dateTo') ?? '';
-
-    if (urlLevel !== level) setLevel(urlLevel);
-    if (urlOrgId !== orgId) setOrgId(urlOrgId);
-    if (urlPageSize !== pageSize) setPageSize(urlPageSize);
-    if (urlPage !== page) setPage(urlPage);
-    if (urlAutoRefresh !== autoRefresh) setAutoRefresh(urlAutoRefresh);
-    if (urlUserSearch !== userSearch) setUserSearch(urlUserSearch);
-    if (urlDateFrom !== dateFrom) setDateFrom(urlDateFrom);
-    if (urlDateTo !== dateTo) setDateTo(urlDateTo);
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateUrl = useCallback((params: Record<string, string>) => {
     const url = syncFiltersToUrl(pathname, params);
@@ -174,12 +158,6 @@ export default function BackendLogsPage() {
   const levels = ['all', 'success', 'warning', 'error', 'info'];
 
   function clearFilters() {
-    setUserSearch('');
-    setDateFrom('');
-    setDateTo('');
-    setOrgId('');
-    setLevel('all');
-    setPage(1);
     syncAllToUrl({ userSearch: '', dateFrom: '', dateTo: '', orgId: '', level: 'all', page: '1' });
   }
 
@@ -197,7 +175,7 @@ export default function BackendLogsPage() {
             <input
               type="checkbox"
               checked={autoRefresh}
-              onChange={(e) => { setAutoRefresh(e.target.checked); syncAllToUrl({ autoRefresh: String(e.target.checked) }); }}
+              onChange={(e) => syncAllToUrl({ autoRefresh: String(e.target.checked) })}
               className="rounded border-border"
             />
             {t('backendLogs.autoRefresh')}
@@ -216,7 +194,7 @@ export default function BackendLogsPage() {
             {levels.map((l) => (
               <button
                 key={l}
-                onClick={() => { setLevel(l); syncAllToUrl({ level: l }); }}
+                onClick={() => syncAllToUrl({ level: l })}
                 className={cn(
                   'px-3 py-1 rounded text-xs font-medium capitalize transition-colors',
                   level === l
@@ -236,12 +214,12 @@ export default function BackendLogsPage() {
             <div className="relative">
               <Input
                 value={userSearch}
-                onChange={(e) => { setUserSearch(e.target.value); syncAllToUrl({ userSearch: e.target.value }); }}
+                onChange={(e) => syncAllToUrl({ userSearch: e.target.value })}
                 placeholder={t('backendLogs.searchUser')}
                 className="h-8 text-xs pr-7"
               />
               {userSearch && (
-                <button onClick={() => { setUserSearch(''); syncAllToUrl({ userSearch: '' }); }} className="absolute right-2 top-1/2 -translate-y-1/2">
+                <button onClick={() => syncAllToUrl({ userSearch: '' })} className="absolute right-2 top-1/2 -translate-y-1/2">
                   <X className="h-3 w-3 text-gray-400" />
                 </button>
               )}
@@ -253,12 +231,12 @@ export default function BackendLogsPage() {
             <div className="relative">
               <Input
                 value={orgId}
-                onChange={(e) => { setOrgId(e.target.value); syncAllToUrl({ orgId: e.target.value }); }}
+                onChange={(e) => syncAllToUrl({ orgId: e.target.value })}
                 placeholder={t('backendLogs.filterOrg')}
                 className="h-8 text-xs pr-7"
               />
               {orgId && (
-                <button onClick={() => { setOrgId(''); syncAllToUrl({ orgId: '' }); }} className="absolute right-2 top-1/2 -translate-y-1/2">
+                <button onClick={() => syncAllToUrl({ orgId: '' })} className="absolute right-2 top-1/2 -translate-y-1/2">
                   <X className="h-3 w-3 text-gray-400" />
                 </button>
               )}
@@ -270,7 +248,7 @@ export default function BackendLogsPage() {
             <Input
               type="datetime-local"
               value={dateFrom}
-              onChange={(e) => { setDateFrom(e.target.value); syncAllToUrl({ dateFrom: e.target.value }); }}
+              onChange={(e) => syncAllToUrl({ dateFrom: e.target.value })}
               className="h-8 text-xs"
             />
           </div>
@@ -280,14 +258,14 @@ export default function BackendLogsPage() {
             <Input
               type="datetime-local"
               value={dateTo}
-              onChange={(e) => { setDateTo(e.target.value); syncAllToUrl({ dateTo: e.target.value }); }}
+              onChange={(e) => syncAllToUrl({ dateTo: e.target.value })}
               className="h-8 text-xs"
             />
           </div>
 
           <div className="space-y-1">
             <Label className="text-xs">{t('backendLogs.limit')}</Label>
-            <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(parseInt(v, 10)); setPage(1); syncAllToUrl({ pageSize: v, page: '1' }); }}>
+            <Select value={String(pageSize)} onValueChange={(v) => syncAllToUrl({ pageSize: v, page: '1' })}>
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -319,14 +297,14 @@ export default function BackendLogsPage() {
             <button
               className="px-2 py-1 text-xs border border-border rounded-md hover:bg-surface-page disabled:opacity-40"
               disabled={page <= 1}
-              onClick={() => { setPage(1); syncAllToUrl({ page: '1' }); }}
+              onClick={() => syncAllToUrl({ page: '1' })}
             >
               First
             </button>
             <button
               className="px-2 py-1 text-xs border border-border rounded-md hover:bg-surface-page disabled:opacity-40"
               disabled={page <= 1}
-              onClick={() => { setPage(page - 1); syncAllToUrl({ page: String(page - 1) }); }}
+              onClick={() => syncAllToUrl({ page: String(page - 1) })}
             >
               Prev
             </button>
@@ -340,7 +318,7 @@ export default function BackendLogsPage() {
                 <button
                   key={pageNum}
                   className={`px-2 py-1 text-xs border rounded transition-colors ${page === pageNum ? 'bg-primary-600 text-white border-primary-600' : 'border-border hover:bg-surface-page'}`}
-                  onClick={() => { setPage(pageNum); syncAllToUrl({ page: String(pageNum) }); }}
+                  onClick={() => syncAllToUrl({ page: String(pageNum) })}
                 >
                   {pageNum}
                 </button>
@@ -349,14 +327,14 @@ export default function BackendLogsPage() {
             <button
               className="px-2 py-1 text-xs border border-border rounded-md hover:bg-surface-page disabled:opacity-40"
               disabled={page >= totalPages}
-              onClick={() => { setPage(page + 1); syncAllToUrl({ page: String(page + 1) }); }}
+              onClick={() => syncAllToUrl({ page: String(page + 1) })}
             >
               Next
             </button>
             <button
               className="px-2 py-1 text-xs border border-border rounded-md hover:bg-surface-page disabled:opacity-40"
               disabled={page >= totalPages}
-              onClick={() => { setPage(totalPages); syncAllToUrl({ page: String(totalPages) }); }}
+              onClick={() => syncAllToUrl({ page: String(totalPages) })}
             >
               Last
             </button>

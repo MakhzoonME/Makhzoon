@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import { toast } from '@/hooks/ui';
 
 export default function ContactPage() {
@@ -105,7 +106,7 @@ export default function ContactPage() {
               {submitting ? 'Sending...' : 'Send message'}
             </button>
             <div style={{ fontSize: 11.5, color: 'var(--gray-500)', textAlign: 'center' }}>
-              By submitting, you agree to our <a href="/privacy" style={{ color: 'var(--primary-600)', textDecoration: 'none' }}>Privacy Policy</a>.
+              By submitting, you agree to our <Link href="/privacy" style={{ color: 'var(--primary-600)', textDecoration: 'none' }}>Privacy Policy</Link>.
             </div>
           </form>
         </div>

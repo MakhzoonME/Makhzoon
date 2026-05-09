@@ -7,7 +7,8 @@ import { createUser } from '@/lib/db/users';
 import { acceptInviteSchema } from '@/lib/validations/invite.schema';
 import { queueAuditLog } from '@/lib/audit/logger';
 
-export async function POST(req: NextRequest, { params }: { params: { token: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     // SECURITY: Rate limit invite acceptance (5 per IP per hour)
     const clientIp = getClientIp(req);

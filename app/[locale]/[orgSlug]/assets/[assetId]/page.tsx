@@ -22,7 +22,7 @@ import { AssetQRCard } from '@/components/assets/AssetQRCard';
 import { FormDrawer } from '@/components/shared/FormDrawer';
 import { AssetForm } from '@/components/assets/AssetForm';
 import { WarrantyForm } from '@/components/warranties/WarrantyForm';
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
@@ -59,7 +59,8 @@ function KVRow({ label, children }: { label: string; children: React.ReactNode }
 }
 
 /* ── Page ────────────────────────────────────────────────────────── */
-export default function AssetDetailPage({ params }: { params: { assetId: string } }) {
+export default function AssetDetailPage(props: { params: Promise<{ assetId: string }> }) {
+  const params = use(props.params);
   const { assetId } = params;
   const router = useRouter();
   const orgSlug = useOrgSlug();

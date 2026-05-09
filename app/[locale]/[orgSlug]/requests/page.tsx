@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useOrgSlug } from '@/hooks/ui';
 import { useRequests } from '@/hooks/requests';
@@ -41,12 +41,12 @@ export default function RequestsPage() {
   const qc = useQueryClient();
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
-  const [status, setStatus] = useState(searchParams.get('status') ?? '');
-  const [type, setType] = useState(searchParams.get('type') ?? '');
-  const [page, setPage] = useState(searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1);
-  const [pageSize, setPageSize] = useState(searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10);
-  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') ?? 'createdAt');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc' | 'none'>(searchParams.get('sortDir') === 'asc' ? 'asc' : searchParams.get('sortDir') === 'none' ? 'none' : 'desc');
+  const status = searchParams.get('status') ?? '';
+  const type = searchParams.get('type') ?? '';
+  const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
+  const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10;
+  const sortBy = searchParams.get('sortBy') ?? 'createdAt';
+  const sortDir = (searchParams.get('sortDir') === 'asc' ? 'asc' : searchParams.get('sortDir') === 'none' ? 'none' : 'desc') as 'asc' | 'desc' | 'none';
 
   const [processing, setProcessing] = useState<string | null>(null);
 
@@ -64,22 +64,6 @@ export default function RequestsPage() {
     const url = syncFiltersToUrl(pathname, params);
     router.replace(url, { scroll: false });
   }, [pathname, router]);
-
-  useEffect(() => {
-    const urlStatus = searchParams.get('status') ?? '';
-    const urlType = searchParams.get('type') ?? '';
-    const urlPage = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
-    const urlPageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10;
-    const urlSortBy = searchParams.get('sortBy') ?? 'createdAt';
-    const urlSortDir = (searchParams.get('sortDir') ?? 'desc') as 'asc' | 'desc' | 'none';
-
-    if (urlStatus !== status) setStatus(urlStatus);
-    if (urlType !== type) setType(urlType);
-    if (urlPage !== page) setPage(urlPage);
-    if (urlPageSize !== pageSize) setPageSize(urlPageSize);
-    if (urlSortBy !== sortBy) setSortBy(urlSortBy);
-    if (urlSortDir !== sortDir) setSortDir(urlSortDir);
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleDecision(requestId: string, action: 'approve' | 'reject') {
     setProcessing(requestId);
@@ -111,21 +95,15 @@ export default function RequestsPage() {
 
   function handleStatusChange(v: string) {
     const next = v === 'all' ? '' : v;
-    setStatus(next);
-    setPage(1);
     syncAllToUrl({ status: next, page: '1' });
   }
 
   function handleTypeChange(v: string) {
     const next = v === 'all' ? '' : v;
-    setType(next);
-    setPage(1);
     syncAllToUrl({ type: next, page: '1' });
   }
 
   function handleSortChange(sortByField: string, dir: 'asc' | 'desc' | 'none') {
-    setSortBy(sortByField);
-    setSortDir(dir);
     syncAllToUrl({ sortBy: sortByField, sortDir: dir === 'none' ? '' : dir });
   }
 
@@ -206,8 +184,8 @@ export default function RequestsPage() {
             pageSize: requestsData.pageSize,
             total: requestsData.total,
             totalPages: requestsData.totalPages,
-            onPageChange: (p) => { setPage(p); syncAllToUrl({ page: String(p) }); },
-            onPageSizeChange: (s) => { setPageSize(s); setPage(1); syncAllToUrl({ pageSize: String(s), page: '1' }); },
+            onPageChange: (p) => syncAllToUrl({ page: String(p) }),
+            onPageSizeChange: (s) => syncAllToUrl({ pageSize: String(s), page: '1' }),
             onSortChange: handleSortChange,
             currentSortBy: sortBy,
             currentSortDir: sortDir,

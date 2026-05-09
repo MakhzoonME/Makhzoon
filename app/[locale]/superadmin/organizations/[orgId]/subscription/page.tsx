@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, use } from 'react';
 import { useT } from '@/hooks/ui';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -43,7 +43,8 @@ function daysUntil(d: Date | string): number {
   return Math.ceil((target.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
 }
 
-export default function OrgSubscriptionPage({ params }: { params: { orgId: string } }) {
+export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: string }> }) {
+  const params = use(props.params);
   const { orgId } = params;
   const router = useRouter();
   const { locale } = useT();
@@ -74,19 +75,26 @@ export default function OrgSubscriptionPage({ params }: { params: { orgId: strin
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState<PaymentLog | null>(null);
 
+  // Hydrate form fields from the fetched subscription. The form has many
+  // intertwined handlers (handleSaveMeta, handlePackageChange,
+  // handleFeatureToggle) that all read/write these state vars, so extracting
+  // a child with key={sub.id} is a substantial restructure. Default missing
+  // FEATURE_KEYS to true so a newly added key doesn't silently disable the
+  // feature for orgs that pre-date the key.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!sub) return;
     setEndDate(sub.endDate ? new Date(sub.endDate).toISOString().slice(0, 10) : '');
     setStatus(sub.status);
     setPackageId(sub.packageId ?? '');
-    // Default missing keys to true so a newly added FEATURE_KEY doesn't
-    // silently disable the feature for orgs that pre-date the key.
-    const merged = FEATURE_KEYS.reduce(
-      (acc, k) => ({ ...acc, [k]: sub.features?.[k] ?? true }),
-      {} as Record<FeatureKey, boolean>,
+    setFeatures(
+      FEATURE_KEYS.reduce(
+        (acc, k) => ({ ...acc, [k]: sub.features?.[k] ?? true }),
+        {} as Record<FeatureKey, boolean>,
+      ),
     );
-    setFeatures(merged);
   }, [sub]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const selectedPackage = useMemo(
     () => packages.find((p) => p.id === packageId) ?? null,

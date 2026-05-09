@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 
-export default function NewInventoryItemPage({ params }: { params: { orgSlug: string } }) {
+export default async function NewInventoryItemPage(props: { params: Promise<{ orgSlug: string }> }) {
+  const params = await props.params;
   redirect(`/${params.orgSlug}/inventory`);
 }

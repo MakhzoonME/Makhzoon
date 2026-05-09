@@ -5,7 +5,8 @@ import { getMaintenanceRecords, createMaintenanceRecord } from '@/lib/db/mainten
 import { auditLog } from '@/lib/platform/audit';
 import { maintenanceRecordSchema } from '@/lib/validations/maintenance-record.schema';
 
-export async function GET(_req: NextRequest, { params }: { params: { assetId: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ assetId: string }> }) {
+  const params = await props.params;
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;
@@ -23,7 +24,8 @@ export async function GET(_req: NextRequest, { params }: { params: { assetId: st
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { assetId: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ assetId: string }> }) {
+  const params = await props.params;
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;

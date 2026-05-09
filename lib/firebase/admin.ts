@@ -7,10 +7,29 @@ let _db: Firestore | null = null;
 let _auth: Auth | null = null;
 
 function getCredential(): ServiceAccount {
-  // Preferred: single base64-encoded JSON env var — avoids all newline escaping issues
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
-    const json = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64').toString('utf8');
-    return JSON.parse(json) as ServiceAccount;
+  // Preferred: single base64-encoded JSON env var — avoids all newline escaping issues.
+  // Strip surrounding quotes/whitespace some env systems add and validate before parsing
+  // so a malformed value falls through to the individual-vars path instead of crashing
+  // module-load (e.g. during Next's "Collecting page data" build phase).
+  const b64Raw = (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 ?? '').trim().replace(/^["']|["']$/g, '');
+  if (b64Raw) {
+    try {
+      const json = Buffer.from(b64Raw, 'base64').toString('utf8');
+      if (!json) throw new Error('decoded empty string');
+      const parsed = JSON.parse(json) as ServiceAccount;
+      if (!parsed?.projectId || !parsed?.clientEmail || !parsed?.privateKey) {
+        throw new Error('parsed JSON missing projectId/clientEmail/privateKey');
+      }
+      return parsed;
+    } catch (err) {
+      console.warn(
+        '[firebase-admin] FIREBASE_SERVICE_ACCOUNT_BASE64 set but invalid; falling back to individual vars.',
+        'reason:',
+        err instanceof Error ? err.message : String(err),
+        'len:', b64Raw.length,
+        'firstChars:', b64Raw.slice(0, 16),
+      );
+    }
   }
 
   // Fallback: individual env vars

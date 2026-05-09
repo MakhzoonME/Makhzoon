@@ -1,6 +1,6 @@
 'use client';
 import { useT } from '@/hooks/ui';
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { useAuditLogs } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
@@ -34,7 +34,8 @@ function ChangesTable({ label, value }: { label: string; value: Record<string, u
   );
 }
 
-export default function OrgAuditLogsPage({ params }: { params: { orgId: string } }) {
+export default function OrgAuditLogsPage(props: { params: Promise<{ orgId: string }> }) {
+  const params = use(props.params);
   const { orgId } = params;
   const { locale } = useT();
   const [filters, setFilters] = useState({ userId: '', action: '', dateFrom: '', dateTo: '' });

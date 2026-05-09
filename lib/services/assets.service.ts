@@ -346,7 +346,7 @@ export async function createAssetMaintenance(
   }
 
   const userContext = getUserContext(user);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const id = await dbCreateMaintenance(
     {
       organizationId: user.organizationId!,
@@ -403,7 +403,7 @@ export async function createAssetNoteWithAudit(
   }
 
   const userContext = getUserContext(user);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const id = await dbCreateAssetNote({
     organizationId: user.organizationId!,
     assetId,

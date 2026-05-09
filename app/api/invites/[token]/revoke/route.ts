@@ -3,7 +3,8 @@ import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getInviteByToken, revokeInvite } from '@/lib/db/invites';
 import { auditLog } from '@/lib/platform/audit';
 
-export async function POST(_req: NextRequest, { params }: { params: { token: string } }) {
+export async function POST(_req: NextRequest, props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;

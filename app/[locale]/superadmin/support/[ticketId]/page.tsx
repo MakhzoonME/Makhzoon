@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,7 +19,8 @@ import type { TicketStatus, TicketPriority } from '@/types';
 const STATUSES: TicketStatus[] = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 const PRIORITIES: TicketPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 
-export default function SuperAdminTicketDetailPage({ params }: { params: { ticketId: string } }) {
+export default function SuperAdminTicketDetailPage(props: { params: Promise<{ ticketId: string }> }) {
+  const params = use(props.params);
   const { ticketId } = params;
   const router = useRouter();
   const { locale } = useT();

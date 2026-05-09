@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { auth } from '@/lib/firebase/client';
 import { signOut } from 'firebase/auth';
@@ -71,15 +71,13 @@ export function AppHeader({ orgName }: { orgName?: string }) {
   const router = useRouter();
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
   const { setMobileMenuOpen } = useUiStore();
-  const [shortcutLabel, setShortcutLabel] = useState('Ctrl+K');
+  const shortcutLabel = useSyncExternalStore(
+    () => () => {},
+    () => (/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl+K'),
+    () => 'Ctrl+K',
+  );
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { t } = useT();
-
-  useEffect(() => {
-    if (typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)) {
-      setShortcutLabel('⌘K');
-    }
-  }, []);
 
   async function handleLogout() {
     setIsLoggingOut(true);

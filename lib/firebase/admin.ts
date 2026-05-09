@@ -1,3 +1,4 @@
+import 'server-only';
 import { App, getApps, initializeApp, cert, ServiceAccount } from 'firebase-admin/app';
 import { Firestore, getFirestore } from 'firebase-admin/firestore';
 import { Auth, getAuth } from 'firebase-admin/auth';

@@ -9,6 +9,21 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
+  // Amplify Hosting (Gen 1) does not forward non-NEXT_PUBLIC_ env vars to the
+  // SSR Lambda runtime, and `.env.production.local` written by preBuild is not
+  // included in the deployed artifact. Inline the values here at build time so
+  // `process.env.X` is available in server bundles. These keys are referenced
+  // exclusively by server-only modules (lib/firebase/admin.ts, scripts in API
+  // routes) so they will not leak into client bundles via tree-shaking.
+  env: {
+    FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+    FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
+    FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY,
+    FIREBASE_SERVICE_ACCOUNT_BASE64: process.env.FIREBASE_SERVICE_ACCOUNT_BASE64,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
+    CRON_SECRET: process.env.CRON_SECRET,
+  },
   async redirects() {
     return [
       {

@@ -11,7 +11,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ org
 
     const { orgId } = await params;
 
-    if (user.role !== 'super_admin' && user.organizationId !== orgId) {
+    const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+    if (!SUPERADMIN_ROLES.has(user.role) && user.organizationId !== orgId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

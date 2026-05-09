@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
 import { getAuditLogs } from '@/lib/db/audit-logs';
 import { adminDb } from '@/lib/firebase/admin';
 import { AuditLog } from '@/types';
@@ -89,18 +89,20 @@ async function enrichLogs(logs: AuditLog[]): Promise<AuditLog[]> {
   }));
 }
 
+const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+
 export async function GET(req: NextRequest) {
   try {
-    const tenant = await resolveTenant();
-    const user = tenant.user;
-    if (user.role !== 'super_admin' && user.role !== 'admin') {
+    const user = await verifySessionCookie();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!SUPERADMIN_ROLES.has(user.role) && user.role !== 'admin' && user.role !== 'org_owner') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
     const orgId =
-      user.role === 'admin'
-        ? tenant.organizationId
+      (user.role === 'admin' || user.role === 'org_owner')
+        ? (user.organizationId ?? undefined)
         : (searchParams.get('orgId') ?? undefined);
     const userId = searchParams.get('userId') ?? undefined;
     const action = searchParams.get('action') ?? undefined;

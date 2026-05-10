@@ -12,12 +12,11 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useInventoryCategories } from '@/hooks/inventory';
+interface Props { item?: InventoryItem; onSuccess?: () => void; onCancel?: () => void; onDirtyChange?: (dirty: boolean) => void; }
 
-interface Props { item?: InventoryItem; onSuccess?: () => void; }
-
-export function InventoryItemForm({ item, onSuccess }: Props) {
+export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: Props) {
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const { locale } = useT();
@@ -41,6 +40,13 @@ export function InventoryItemForm({ item, onSuccess }: Props) {
       notes: item?.notes ?? '',
     },
   });
+
+  const { isDirty } = form.formState;
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+
+  function handleCancel() {
+    onCancel ? onCancel() : router.back();
+  }
 
   async function onSubmit(data: InventoryItemFormData) {
     setLoading(true);
@@ -178,9 +184,10 @@ export function InventoryItemForm({ item, onSuccess }: Props) {
 
         <div className="flex gap-2">
           <Button type="submit" disabled={loading}>{loading ? 'Saving...' : (item ? 'Save Changes' : 'Add Item')}</Button>
-          <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={handleCancel}>Cancel</Button>
         </div>
       </form>
+
     </Form>
   );
 }

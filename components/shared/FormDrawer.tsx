@@ -6,17 +6,26 @@ import { cn } from '@/lib/utils/cn';
 interface FormDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCloseAttempt?: () => void;
   title: string;
   description?: string;
   children: React.ReactNode;
   width?: 'md' | 'lg' | 'xl';
 }
 
-export function FormDrawer({ open, onOpenChange, title, description, children, width = 'lg' }: FormDrawerProps) {
+export function FormDrawer({ open, onOpenChange, onCloseAttempt, title, description, children, width = 'lg' }: FormDrawerProps) {
   const widthClass = { md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl' }[width];
 
+  function handleOpenChange(next: boolean) {
+    if (!next && onCloseAttempt) {
+      onCloseAttempt();
+    } else {
+      onOpenChange(next);
+    }
+  }
+
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+    <DialogPrimitive.Root open={open} onOpenChange={handleOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content

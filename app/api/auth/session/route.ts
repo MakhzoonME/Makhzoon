@@ -31,26 +31,8 @@ export async function POST(req: NextRequest) {
     if (rateLimitResult) return rateLimitResult;
 
     const body = await req.json();
-    const { idToken, turnstileToken: _turnstileToken } = body; // _turnstileToken reserved for Turnstile re-enable
+    const { idToken } = body;
     if (!idToken) return NextResponse.json({ error: 'Missing token' }, { status: 400 });
-
-    // TODO: Cloudflare Turnstile bot protection is not yet enabled.
-    // To enable: set CLOUDFLARE_TURNSTILE_SECRET_KEY env var, uncomment block below, and ensure _turnstileToken is provided from client
-    // const turnstileSecret = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY;
-    // if (turnstileSecret && process.env.NODE_ENV === 'production') {
-    //   if (!_turnstileToken) {
-    //     return NextResponse.json({ error: 'Bot verification failed' }, { status: 400 });
-    //   }
-    //   const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ secret: turnstileSecret, response: _turnstileToken }),
-    //   });
-    //   const verifyData = await verifyRes.json();
-    //   if (!verifyData.success) {
-    //     return NextResponse.json({ error: 'Bot verification failed' }, { status: 400 });
-    //   }
-    // }
 
     let decoded;
     try {

@@ -1,7 +1,6 @@
 'use client';
 import { useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import * as Sentry from '@sentry/nextjs';
 import { auth } from '@/lib/firebase/client';
 import { useAuthStore } from '@/store/auth.store';
 import { AuthUser, UserRole } from '@/types';
@@ -62,10 +61,8 @@ export function useAuth() {
           features,
         };
         setUser(authUser);
-        Sentry.setUser({ id: authUser.uid, email: authUser.email ?? undefined, username: authUser.displayName ?? undefined });
       } else {
         setUser(null);
-        Sentry.setUser(null);
       }
       setLoading(false);
     });

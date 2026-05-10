@@ -7,7 +7,8 @@ export async function POST() {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'super_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+    if (!SUPERADMIN_ROLES.has(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const cookieStore = await cookies();
     const exitingOrgId = cookieStore.get('transferOrgId')?.value ?? null;

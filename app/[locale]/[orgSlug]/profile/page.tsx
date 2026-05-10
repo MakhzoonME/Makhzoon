@@ -8,9 +8,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/ui';
-import { storage } from '@/lib/firebase/client';
 import { auth } from '@/lib/firebase/client';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { Camera, Save, KeyRound } from 'lucide-react';
 
@@ -44,7 +42,6 @@ export default function ProfilePage() {
   const [savingPassword, setSavingPassword] = useState(false);
 
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const initials = (user?.displayName || displayIdentity(user?.email) || '?').slice(0, 2).toUpperCase();
@@ -53,31 +50,29 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     setUploading(true);
-    setUploadProgress(0);
     try {
-      const storageRef = ref(storage, `avatars/${user.uid}`);
-      const task = uploadBytesResumable(storageRef, file);
-      await new Promise<void>((resolve, reject) => {
-        task.on('state_changed',
-          (snap) => setUploadProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
-          reject,
-          resolve,
-        );
+      const tokenRes = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'avatar', contentType: file.type, size: file.size }),
       });
-      const photoURL = await getDownloadURL(storageRef);
+      if (!tokenRes.ok) throw new Error();
+      const { uploadUrl, publicUrl } = await tokenRes.json();
+
+      await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+
       const res = await fetch('/api/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ photoURL }),
+        body: JSON.stringify({ photoURL: publicUrl }),
       });
       if (!res.ok) throw new Error();
-      setUser({ ...user, photoURL } as typeof user & { photoURL: string });
+      setUser({ ...user, photoURL: publicUrl } as typeof user & { photoURL: string });
       toast.success('Avatar updated');
     } catch {
       toast.error('Failed to upload avatar');
     } finally {
       setUploading(false);
-      setUploadProgress(0);
     }
   }
 
@@ -159,7 +154,7 @@ export default function ProfilePage() {
             </div>
             <div>
               <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                {uploading ? `Uploading ${uploadProgress}%` : 'Change Photo'}
+                {uploading ? 'Uploading...' : 'Change Photo'}
               </Button>
               <p className="text-xs text-gray-400 mt-1">JPG, PNG up to 5MB</p>
             </div>

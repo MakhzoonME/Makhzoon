@@ -15,6 +15,11 @@ name: Deploy Mirror Functions
 on:
   workflow_dispatch:
     inputs:
+      blaze_confirmed:
+        description: 'Type BLAZE-CONFIRMED to acknowledge the prod project is on the Blaze plan (otherwise this deploy will fail)'
+        type: string
+        required: true
+        default: ''
       dry_run:
         description: 'Dry run (build only, do not deploy)'
         type: boolean
@@ -31,6 +36,13 @@ jobs:
     env:
       FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
     steps:
+      - name: Refuse if Blaze not confirmed
+        if: ${{ github.event.inputs.blaze_confirmed != 'BLAZE-CONFIRMED' }}
+        run: |
+          echo "::error::Mirror functions require the prod Firebase project to be on the Blaze plan."
+          echo "::error::Re-run with input 'BLAZE-CONFIRMED' once the upgrade is done."
+          exit 1
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4

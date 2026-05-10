@@ -1,12 +1,8 @@
 {
   "mcpServers": {
     "ruflo": {
-      "command": "cmd",
+      "command": "claude-flow",
       "args": [
-        "/c",
-        "npx",
-        "-y",
-        "ruflo@latest",
         "mcp",
         "start"
       ],
@@ -18,7 +14,7 @@
         "CLAUDE_FLOW_MAX_AGENTS": "15",
         "CLAUDE_FLOW_MEMORY_BACKEND": "hybrid"
       },
-      "autoStart": false
+      "autoStart": true
     }
   }
 }

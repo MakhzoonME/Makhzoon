@@ -6,9 +6,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ sub
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    // SECURITY: Only super_admin can lookup orgs by subdomain (prevents enumeration)
-    // Org users can only see their own org via organizationId in their session
-    if (user.role !== 'super_admin') {
+    // SECURITY: Only superadmin roles can lookup orgs by subdomain (prevents enumeration by org users)
+    const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+    if (!SUPERADMIN_ROLES.has(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     const { subdomain } = await params;

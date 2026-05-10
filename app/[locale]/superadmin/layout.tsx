@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/ui';
 import { SuperAdminBanner } from '@/components/layout/SuperAdminBanner';
 import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity, Mail } from 'lucide-react';
@@ -18,33 +18,34 @@ import type { MessageKey } from '@/locales/messages';
 
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
-const ALL_NAV_ITEMS = [
-  { href: '/superadmin/dashboard', labelKey: 'nav.dashboard',    icon: LayoutDashboard, roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
-  { href: '/superadmin',           labelKey: 'nav.organizations', icon: Building2,       roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
-  { href: '/superadmin/support',   labelKey: 'nav.support',       icon: MessageSquare,   roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
-  { href: '/superadmin/leads',     labelKey: 'nav.leads',         icon: Mail,            roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
-  { href: '/superadmin/configuration', labelKey: 'nav.configuration', icon: Settings,    roles: ['super_admin', 'makhzoon_admin'] },
-  { href: '/superadmin/audit-logs',    labelKey: 'nav.auditLogs',     icon: FileText,    roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
-  { href: '/superadmin/team',          labelKey: 'nav.team',          icon: Users,       roles: ['super_admin', 'makhzoon_admin'] },
-  { href: '/superadmin/backend-logs',  labelKey: 'nav.backendLogs',   icon: Activity,    roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+const ALL_NAV_ITEMS = (locale: string) => [
+  { href: `/${locale}/superadmin/dashboard`, labelKey: 'nav.dashboard',    icon: LayoutDashboard, roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+  { href: `/${locale}/superadmin`,           labelKey: 'nav.organizations', icon: Building2,       roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+  { href: `/${locale}/superadmin/support`,   labelKey: 'nav.support',       icon: MessageSquare,   roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+  { href: `/${locale}/superadmin/leads`,     labelKey: 'nav.leads',         icon: Mail,            roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+  { href: `/${locale}/superadmin/configuration`, labelKey: 'nav.configuration', icon: Settings,    roles: ['super_admin', 'makhzoon_admin'] },
+  { href: `/${locale}/superadmin/audit-logs`,    labelKey: 'nav.auditLogs',     icon: FileText,    roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+  { href: `/${locale}/superadmin/team`,          labelKey: 'nav.team',          icon: Users,       roles: ['super_admin', 'makhzoon_admin'] },
+  { href: `/${locale}/superadmin/backend-logs`,  labelKey: 'nav.backendLogs',   icon: Activity,    roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
 ];
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+  const params = useParams<{ locale: string }>();
+  const locale = params.locale ?? 'en';
+  const { t, dir } = useT();
+  const isRtl = dir === 'rtl';
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const { t, dir } = useT();
-  const isRtl = dir === 'rtl';
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) router.push('/login');
-    // Org users who somehow land on /superadmin: send to their portal or public home
+    if (!loading && !user) router.push(`/${locale}/login`);
     if (!loading && user && !SUPERADMIN_ROLES.has(user.role)) {
-      router.push(user.orgSlug ? `/${user.orgSlug}/dashboard` : '/');
+      router.push(user.orgSlug ? `/${locale}/${user.orgSlug}/dashboard` : `/${locale}`);
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, locale]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -55,7 +56,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
       // ignore — always redirect regardless of errors
     }
     useTransferStore.getState().clearTransfer();
-    window.location.href = '/login';
+    window.location.href = `/${locale}/login`;
   }
 
   if (loading || !user) return (
@@ -64,7 +65,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
     </div>
   );
 
-  const navItems = ALL_NAV_ITEMS.filter((item) => item.roles.includes(user.role));
+  const navItems = ALL_NAV_ITEMS(locale).filter((item) => item.roles.includes(user.role));
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--sa-page-bg, #0F2440)' }}>
@@ -86,7 +87,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
           <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
             {navItems.map(({ href, labelKey, icon: Icon }) => {
               const label = t(labelKey as MessageKey);
-              const active = pathname === href || (href !== '/superadmin' && pathname.startsWith(href));
+              const active = pathname === href || (href !== `/${locale}/superadmin` && pathname.startsWith(href));
               return (
                 <Link key={href} href={href} className={cn(
                   'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',

@@ -111,7 +111,8 @@ export async function GET(req: NextRequest) {
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined;
     const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined;
 
-    const result = await getAuditLogs({ orgId, userId, action, dateFrom, dateTo, page, pageSize });
+    const isOrgUser = user.role === 'admin' || user.role === 'org_owner';
+    const result = await getAuditLogs({ orgId, userId, action, dateFrom, dateTo, page, pageSize, excludeSuperadminActions: isOrgUser });
     const enriched = await enrichLogs(result.logs);
     return NextResponse.json({ ...result, logs: enriched });
   } catch (err) {

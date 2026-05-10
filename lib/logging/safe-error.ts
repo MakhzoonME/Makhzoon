@@ -18,8 +18,6 @@ export function logError(context: string, error: unknown): string {
       console.error(`[${context}] Error ${errorId}:`, error);
     }
   } else {
-    // Production: Log only sanitized error ID and basic context
-    // The error will be captured by Sentry separately
     console.error(`[${context}] Error occurred (ID: ${errorId})`);
   }
 

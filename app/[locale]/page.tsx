@@ -1,9 +1,50 @@
 'use client';
 import { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { ArrowRight, Loader2 } from 'lucide-react';
 
+const copy = {
+  en: {
+    eyebrow: 'Something is coming',
+    headline: ['Asset intelligence, ', 'quietly precise.'],
+    subtitle: 'مخزون — Makhzoon',
+    body: "We're building the asset management platform operations teams have always deserved. One place for everything your organization owns — from acquisition to retirement.",
+    firstName: 'First name',
+    lastName: 'Last name',
+    email: 'your@company.com',
+    cta: 'Get early access',
+    noSpam: 'No spam. Notify me when we launch.',
+    success: "You're on the list. We'll be in touch.",
+    loginPrompt: 'Already have access?',
+    loginLink: 'Login',
+    dir: 'ltr' as const,
+  },
+  ar: {
+    eyebrow: 'شيء قادم',
+    headline: ['ذكاء الأصول، ', 'هادئ ودقيق.'],
+    subtitle: 'Makhzoon — مخزون',
+    body: 'نبني منصة إدارة الأصول التي تستحقها فرق العمليات دائماً. مكان واحد لكل ما تمتلكه مؤسستك — من الاقتناء إلى التقاعد.',
+    firstName: 'الاسم الأول',
+    lastName: 'اسم العائلة',
+    email: 'بريدك@شركتك.com',
+    cta: 'احصل على وصول مبكر',
+    noSpam: 'لا بريد عشوائي. سنخبرك عند الإطلاق.',
+    success: 'أنت في القائمة. سنتواصل معك.',
+    loginPrompt: 'لديك وصول بالفعل؟',
+    loginLink: 'تسجيل الدخول',
+    dir: 'rtl' as const,
+  },
+};
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.makhzoon.me';
+
 export default function ComingSoonPage() {
+  const params = useParams();
+  const router = useRouter();
+  const locale = (params?.locale as string) === 'ar' ? 'ar' : 'en';
+  const t = copy[locale];
+
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -25,8 +66,11 @@ export default function ComingSoonPage() {
     setState('done');
   }
 
+  const otherLocale = locale === 'en' ? 'ar' : 'en';
+
   return (
     <div
+      dir={t.dir}
       className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden"
       style={{ background: '#05070F' }}
     >
@@ -57,6 +101,19 @@ export default function ComingSoonPage() {
         style={{ background: 'radial-gradient(ellipse 100% 45% at 50% 0%, transparent 55%, #05070F 100%)' }}
       />
 
+      {/* Language toggle */}
+      <button
+        onClick={() => router.push(`/${otherLocale}`)}
+        className="absolute top-5 end-6 z-20 text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
+        style={{
+          background: 'rgba(255,255,255,0.07)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          color: 'rgba(255,255,255,0.55)',
+        }}
+      >
+        {otherLocale === 'ar' ? 'العربية' : 'English'}
+      </button>
+
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-6" style={{ maxWidth: 680 }}>
 
@@ -72,11 +129,11 @@ export default function ComingSoonPage() {
             background: 'rgba(99,102,241,0.1)',
             border: '1px solid rgba(99,102,241,0.22)',
             color: 'rgba(165,167,252,0.9)',
-            letterSpacing: '0.14em',
+            letterSpacing: locale === 'en' ? '0.14em' : '0.04em',
           }}
         >
           <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#818CF8' }} />
-          Something is coming
+          {t.eyebrow}
         </div>
 
         {/* Headline */}
@@ -85,11 +142,11 @@ export default function ComingSoonPage() {
           style={{
             fontSize: 'clamp(38px, 7vw, 70px)',
             lineHeight: 1.06,
-            letterSpacing: '-0.035em',
+            letterSpacing: locale === 'en' ? '-0.035em' : '-0.01em',
             color: '#fff',
           }}
         >
-          Asset intelligence,{' '}
+          {t.headline[0]}
           <span
             style={{
               background: 'linear-gradient(135deg, #818CF8 0%, #A78BFA 50%, #C4B5FD 100%)',
@@ -98,11 +155,11 @@ export default function ComingSoonPage() {
               color: 'transparent',
             }}
           >
-            quietly precise.
+            {t.headline[1]}
           </span>
         </h1>
 
-        {/* Arabic subtitle */}
+        {/* Subtitle (brand name) */}
         <div
           className="mb-6 font-bold"
           style={{
@@ -110,13 +167,12 @@ export default function ComingSoonPage() {
             color: 'rgba(255,255,255,0.18)',
             letterSpacing: '0.04em',
             fontFamily: 'system-ui',
-            direction: 'rtl',
           }}
         >
-          مخزون — Makhzoon
+          {t.subtitle}
         </div>
 
-        {/* Subtitle */}
+        {/* Body */}
         <p
           className="mb-10"
           style={{
@@ -126,8 +182,7 @@ export default function ComingSoonPage() {
             maxWidth: 500,
           }}
         >
-          We&apos;re building the asset management platform operations teams have always deserved.
-          One place for everything your organization owns — from acquisition to retirement.
+          {t.body}
         </p>
 
         {/* Email form */}
@@ -140,12 +195,11 @@ export default function ComingSoonPage() {
               color: 'rgba(134,239,172,0.9)',
             }}
           >
-            {/* Checkmark */}
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
               <circle cx="7" cy="7" r="7" fill="rgba(22,163,74,0.3)" />
               <path d="M4 7l2 2 4-4" stroke="#4ade80" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            You&apos;re on the list. We&apos;ll be in touch.
+            {t.success}
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3" style={{ maxWidth: 460 }}>
@@ -154,7 +208,7 @@ export default function ComingSoonPage() {
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                placeholder="First name"
+                placeholder={t.firstName}
                 className="flex-1 min-w-0 px-4 rounded-xl text-sm outline-none"
                 style={{
                   height: 48,
@@ -168,7 +222,7 @@ export default function ComingSoonPage() {
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                placeholder="Last name"
+                placeholder={t.lastName}
                 className="flex-1 min-w-0 px-4 rounded-xl text-sm outline-none"
                 style={{
                   height: 48,
@@ -185,7 +239,7 @@ export default function ComingSoonPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@company.com"
+                placeholder={t.email}
                 className="flex-1 min-w-0 px-4 rounded-xl text-sm outline-none"
                 style={{
                   height: 48,
@@ -209,14 +263,29 @@ export default function ComingSoonPage() {
                   opacity: state === 'loading' ? 0.65 : 1,
                 }}
               >
-                {state === 'loading' ? <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} /> : <><span>Get early access</span><ArrowRight className="h-4 w-4" strokeWidth={1.75} /></>}
+                {state === 'loading'
+                  ? <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+                  : <><span>{t.cta}</span><ArrowRight className="h-4 w-4" strokeWidth={1.75} /></>}
               </button>
             </div>
           </form>
         )}
 
         <p className="mt-4 text-xs" style={{ color: 'rgba(255,255,255,0.22)' }}>
-          No spam. Notify me when we launch.
+          {t.noSpam}
+        </p>
+
+        <p className="mt-6 text-sm" style={{ color: 'rgba(255,255,255,0.38)' }}>
+          {t.loginPrompt}{' '}
+          <a
+            href={`${APP_URL}/${locale}/login`}
+            className="font-medium transition-colors"
+            style={{ color: 'rgba(165,167,252,0.85)' }}
+            onMouseEnter={(e) => ((e.target as HTMLAnchorElement).style.color = 'rgba(165,167,252,1)')}
+            onMouseLeave={(e) => ((e.target as HTMLAnchorElement).style.color = 'rgba(165,167,252,0.85)')}
+          >
+            {t.loginLink}
+          </a>
         </p>
       </div>
 

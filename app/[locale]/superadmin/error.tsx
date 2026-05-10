@@ -1,12 +1,6 @@
 'use client';
-import { useEffect } from 'react';
-import * as Sentry from '@sentry/nextjs';
 
 export default function SuperAdminError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => {
-    Sentry.captureException(error);
-  }, [error]);
-
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-4 text-center text-white">
       <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-surface-card/10">

@@ -1,11 +1,28 @@
 import { adminDb } from '@/lib/firebase/admin'
-import { FieldValue } from 'firebase-admin/firestore'
+import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import type { Asset } from '@/types/asset.types'
 import type { CreateAssetInput, UpdateAssetInput } from '@/lib/services/assets.service'
 
+function tsToDate(v: unknown): Date | undefined {
+  if (!v) return undefined
+  if (v instanceof Timestamp) return v.toDate()
+  if (v instanceof Date) return v
+  if (typeof v === 'string') {
+    const d = new Date(v)
+    return isNaN(d.getTime()) ? undefined : d
+  }
+  return undefined
+}
+
 function toAsset(id: string, data: FirebaseFirestore.DocumentData): Asset {
-  return { id, ...data } as Asset
+  return {
+    ...data,
+    id,
+    purchaseDate: tsToDate(data.purchaseDate),
+    createdAt: tsToDate(data.createdAt) ?? new Date(),
+    updatedAt: tsToDate(data.updatedAt) ?? new Date(),
+  } as Asset
 }
 
 type SortField = 'name' | 'category' | 'status' | 'serialNumber' | 'assignedTo' | 'location' | 'purchaseDate' | 'createdAt'

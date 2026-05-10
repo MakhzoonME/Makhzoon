@@ -3,7 +3,7 @@ import { ShieldCheck, User, FileText, Layers, RefreshCw, Activity, Eye, Inbox, C
 
 const PILLARS = [
   { Icon: ShieldCheck, title: 'Encryption everywhere',       desc: 'AES-256 at rest, TLS 1.3 in transit. Per-tenant encryption keys with rotation on demand.' },
-  { Icon: User,   title: 'Least-privilege by default',  desc: 'Role-based access for every action. SCIM provisioning. SAML SSO. Granular custom roles on Enterprise.' },
+  { Icon: User,   title: 'Least-privilege by default',  desc: 'Role-based access for every action. Granular custom roles on Enterprise.' },
   { Icon: FileText,   title: 'Tamper-evident audit log',    desc: 'Every action logged with actor, timestamp, before/after diff. Append-only — exports are signed.' },
   { Icon: Layers, title: 'Multi-tenant isolation',      desc: 'Each tenant runs in a logically isolated schema. No cross-tenant query is possible by construction.' },
   { Icon: RefreshCw, title: 'Backup + DR',                desc: 'Hourly snapshots. Cross-region replication. Tested DR with 4-hour RTO and 15-minute RPO.' },

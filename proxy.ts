@@ -4,10 +4,12 @@ const SUPPORTED_LOCALES = ['en', 'ar'];
 const DEFAULT_LOCALE = 'en';
 const SKIP_PREFIXES = ['/api/', '/invites/', '/_next/'];
 
-// Paths that don't require a session (without locale prefix)
 const PUBLIC_PATHS = new Set([
   '/', '/home', '/product', '/pricing', '/customers', '/security', '/about', '/contact', '/login', '/signup',
 ]);
+
+const MARKETING_HOSTS = new Set(['makhzoon.me', 'www.makhzoon.me']);
+const APP_HOST = 'app.makhzoon.me';
 
 function stripLocale(pathname: string): { locale: string | null; rest: string } {
   const parts = pathname.split('/');
@@ -19,6 +21,7 @@ function stripLocale(pathname: string): { locale: string | null; rest: string } 
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const hostname = req.headers.get('host')?.split(':')[0] ?? '';
 
   if (SKIP_PREFIXES.some((p) => pathname.startsWith(p)) || pathname === '/favicon.ico') {
     return NextResponse.next();
@@ -29,7 +32,23 @@ export async function proxy(req: NextRequest) {
   // If no locale prefix, redirect to add the default locale
   if (!locale) {
     const url = req.nextUrl.clone();
-    url.pathname = `/${DEFAULT_LOCALE}${pathname === '/' ? '' : pathname}`;
+    const destination = hostname === APP_HOST ? `/${DEFAULT_LOCALE}/login` : `/${DEFAULT_LOCALE}`;
+    url.pathname = `${destination}${pathname === '/' ? '' : pathname}`;
+    return NextResponse.redirect(url);
+  }
+
+  // makhzoon.me — only serve the coming soon root; redirect everything else
+  if (MARKETING_HOSTS.has(hostname)) {
+    if (rest === '/') return NextResponse.next();
+    const url = req.nextUrl.clone();
+    url.pathname = `/${locale}`;
+    return NextResponse.redirect(url);
+  }
+
+  // app.makhzoon.me — redirect locale root to login
+  if (hostname === APP_HOST && rest === '/') {
+    const url = req.nextUrl.clone();
+    url.pathname = `/${locale}/login`;
     return NextResponse.redirect(url);
   }
 

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/ui';
+import { useAuth, useAuthStore } from '@/hooks/ui';
 import { AppHeader } from '@/components/layout/AppHeader';
 import {
   AppSidebar,
@@ -25,6 +25,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   const orgSlug = params.orgSlug as string;
   const { active, orgName, setTransfer } = useTransferStore();
   const { sidebarCollapsed } = useUiStore();
+  const refreshFromServer = useAuthStore((s) => s.refreshFromServer);
   const { dir } = useT();
   const isRtl = dir === 'rtl';
 
@@ -34,16 +35,22 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
       router.replace(`/${locale}/login`);
       return;
     }
-    // Super admin visiting an org path without an active transfer → auto-enter transfer mode
-    if (user.role === 'super_admin' && !active) {
+    const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+    if (SUPERADMIN_ROLES.has(user.role) && !active) {
       fetch(`/api/organizations/by-subdomain/${encodeURIComponent(orgSlug)}`)
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
-          if (data?.id && data?.name) setTransfer(data.id, data.name, data.subdomain ?? orgSlug);
+          if (data?.id && data?.name) {
+            setTransfer(data.id, data.name, data.subdomain ?? orgSlug);
+            // Set server-side cookie so API calls resolve to the correct org
+            fetch(`/api/organizations/${data.id}/transfer`, { method: 'POST' })
+              .then(() => refreshFromServer())
+              .catch(() => {});
+          }
         })
         .catch(() => {});
     }
-  }, [user, loading, router, active, orgSlug, setTransfer, locale]);
+  }, [user, loading, router, active, orgSlug, setTransfer, locale, refreshFromServer]);
 
   if (loading || !user) {
     return (
@@ -53,7 +60,8 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const showBanner = user.role === 'super_admin' && active;
+  const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+  const showBanner = SUPERADMIN_ROLES.has(user.role) && active;
   const sidebarWidth = sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
 
   return (

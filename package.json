@@ -7,34 +7,31 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-
     "fb:use:prod": "firebase use prod",
     "fb:use:staging": "firebase use staging",
     "fb:use:dev": "firebase use dev",
     "fb:use:legacy": "firebase use legacy",
-
     "fb:deploy:rules:dev": "firebase use dev && firebase deploy --only firestore:rules,firestore:indexes",
     "fb:deploy:rules:staging": "firebase use staging && firebase deploy --only firestore:rules,firestore:indexes",
     "fb:deploy:rules:prod": "firebase use prod && firebase deploy --only firestore:rules,firestore:indexes",
-
     "clone:dry:staging": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=staging --dry-run",
     "clone:dry:dev": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=dev --dry-run",
     "clone:dry:prod": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=prod --no-scrub --dry-run",
     "clone:staging": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=staging",
     "clone:dev": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=dev",
     "clone:prod": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-firestore.ts --target=prod --no-scrub",
-
-    "clone:auth:legacy-to-prod": "bash scripts/clone-auth.sh legacy prod",
-    "clone:auth:prod-to-staging": "bash scripts/clone-auth.sh prod staging",
-    "clone:auth:prod-to-dev": "bash scripts/clone-auth.sh prod dev",
-    "clone:auth:legacy-to-staging": "bash scripts/clone-auth.sh legacy staging",
-    "clone:auth:legacy-to-dev": "bash scripts/clone-auth.sh legacy dev",
-
+    "clone:auth:legacy-to-prod": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-auth.ts legacy prod",
+    "clone:auth:legacy-to-staging": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-auth.ts legacy staging",
+    "clone:auth:legacy-to-dev": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/clone-auth.ts legacy dev",
+    "restore:claims:staging": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/restore-claims.ts",
+    "restore:claims:dev": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} scripts/restore-claims.ts",
     "fs:export:prod": "bash scripts/export-prod.sh",
     "fs:import:staging": "bash scripts/import-to-env.sh staging",
     "fs:import:dev": "bash scripts/import-to-env.sh dev"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1045.0",
+    "@aws-sdk/s3-request-presigner": "^3.1045.0",
     "@firebase/firestore": "^4.7.3",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-dialog": "^1.1.15",

@@ -9,6 +9,8 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   /** Re-fetches features + permissions from /api/auth/me and merges into current user */
   refreshFeatures: () => Promise<void>;
+  /** Called after transfer mode is activated — re-fetches auth/me so the org context is current */
+  refreshFromServer: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -26,6 +28,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         user: {
           ...current,
+          features: data.features ?? {},
+          permissions: data.permissions ?? current.permissions,
+        },
+      });
+    } catch {
+      // non-critical
+    }
+  },
+  refreshFromServer: async () => {
+    const current = get().user;
+    if (!current) return;
+    try {
+      const res = await fetch('/api/auth/me', { headers: { 'Cache-Control': 'no-cache' } });
+      if (!res.ok) return;
+      const data = await res.json();
+      set({
+        user: {
+          ...current,
+          role: data.role ?? current.role,
+          organizationId: data.organizationId ?? current.organizationId,
+          orgSlug: data.orgSlug ?? current.orgSlug,
           features: data.features ?? {},
           permissions: data.permissions ?? current.permissions,
         },

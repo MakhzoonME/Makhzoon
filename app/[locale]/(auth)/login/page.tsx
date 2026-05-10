@@ -92,17 +92,18 @@ const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_sup
 /* ── Contact Sales Modal ─────────────────────────────────────── */
 function ContactSalesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useT();
-  const [name, setName] = useState('');
-  const [organizationName, setOrganizationName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
 
   function reset() {
-    setName(''); setOrganizationName(''); setPhone(''); setEmail(''); setNotes('');
+    setFirstName(''); setLastName(''); setPhone(''); setEmail(''); setOrganizationName(''); setNotes('');
     setLoading(false); setSubmitted(false); setError('');
   }
 
@@ -116,7 +117,7 @@ function ContactSalesModal({ open, onClose }: { open: boolean; onClose: () => vo
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, organizationName, phone, email, notes }),
+        body: JSON.stringify({ firstName, lastName, name: [firstName, lastName].filter(Boolean).join(' ') || 'Unknown', organizationName, phone, email, notes }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -163,9 +164,15 @@ function ContactSalesModal({ open, onClose }: { open: boolean; onClose: () => vo
                   <h2 className="text-lg font-semibold text-gray-900 mb-1">{t('auth.contactSalesTitle')}</h2>
                   <p className="text-sm text-gray-500 mb-6">{t('auth.contactSalesSubtitle')}</p>
                   <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="cs-name">{t('auth.fullName')}</Label>
-                      <Input id="cs-name" type="text" placeholder={t('auth.fullNamePlaceholder')} value={name} onChange={(e) => setName(e.target.value)} required />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="cs-firstName">{t('auth.firstName')}</Label>
+                        <Input id="cs-firstName" type="text" placeholder={t('auth.firstNamePlaceholder')} value={firstName} onChange={(e) => setFirstName(e.target.value)} autoCapitalize="words" required />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="cs-lastName">{t('auth.lastName')}</Label>
+                        <Input id="cs-lastName" type="text" placeholder={t('auth.lastNamePlaceholder')} value={lastName} onChange={(e) => setLastName(e.target.value)} autoCapitalize="words" required />
+                      </div>
                     </div>
                     <div className="space-y-1.5">
                       <Label htmlFor="cs-org">{t('auth.orgName')}</Label>
@@ -525,11 +532,9 @@ export default function LoginPage() {
         <div aria-hidden className="absolute end-0 bottom-0 translate-x-1/3 translate-y-1/3 w-[480px] h-[480px] rounded-full border border-white/10 pointer-events-none" />
         <div aria-hidden className="absolute end-0 bottom-0 translate-x-1/4 translate-y-1/4 w-[320px] h-[320px] rounded-full border border-white/8 pointer-events-none" />
 
-        {/* Logo — use actual MakhzoonMark with white tint */}
+        {/* Logo — indigo mark on purple background */}
         <div className="flex items-center gap-2.5 relative z-10">
-          <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.18)' }}>
-            <MakhzoonMark size={20} className="brightness-0 invert" />
-          </div>
+          <MakhzoonMark size={32} fill="rgba(255,255,255,0.25)" glyphFill="rgba(255,255,255,0.9)" radius={8} />
           <span className="text-sm font-semibold text-white/90">{t('auth.brandName')}·ME</span>
         </div>
 

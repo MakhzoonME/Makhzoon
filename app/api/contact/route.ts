@@ -8,6 +8,8 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 // Validate contact form input
 const contactSchema = z.object({
+  firstName: z.string().min(1).max(100).optional(),
+  lastName: z.string().min(1).max(100).optional(),
   name: z.string().min(1).max(200),
   organizationName: z.string().min(1).max(255),
   phone: z.string().min(1).max(30),
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, organizationName, phone, email, notes } = parsed.data;
+    const { firstName, lastName, name, organizationName, phone, email, notes } = parsed.data;
 
     // Rate limit by email as well
     const rateLimitEmail = checkRateLimit(
@@ -72,6 +74,8 @@ export async function POST(req: NextRequest) {
     const { Resend } = await import('resend');
     const resend = new Resend(RESEND_API_KEY);
 
+    const sanitizedFirstName = firstName ? sanitizeText(firstName) : '';
+    const sanitizedLastName = lastName ? sanitizeText(lastName) : '';
     const sanitizedName = sanitizeText(name);
     const sanitizedOrg = sanitizeText(organizationName);
     const sanitizedPhone = sanitizeText(phone);
@@ -84,7 +88,7 @@ export async function POST(req: NextRequest) {
       subject: `New sales inquiry from ${sanitizedName} — ${sanitizedOrg}`,
       html: `
         <h2>New Sales Inquiry</h2>
-        <p><strong>Name:</strong> ${sanitizedName}</p>
+        ${sanitizedFirstName || sanitizedLastName ? `<p><strong>Name:</strong> ${sanitizedFirstName} ${sanitizedLastName}</p>` : `<p><strong>Name:</strong> ${sanitizedName}</p>`}
         <p><strong>Organization:</strong> ${sanitizedOrg}</p>
         <p><strong>Phone:</strong> ${sanitizedPhone}</p>
         <p><strong>Email:</strong> ${sanitizedEmail}</p>
@@ -103,6 +107,8 @@ export async function POST(req: NextRequest) {
 
     await createContactSalesEntry({
       name,
+      firstName,
+      lastName,
       organizationName,
       phone,
       email,

@@ -26,8 +26,9 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
     let role = decoded.role as UserRole;
     let organizationId = (decoded.organizationId as string | undefined) ?? null;
 
-    // Super admin may use the transferOrgId cookie to act as a tenant admin
-    if (role === 'super_admin') {
+    // Superadmin roles may use the transferOrgId cookie to act as a tenant admin
+    const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+    if (SUPERADMIN_ROLES.has(role as string)) {
       const transferOrgId = cookieStore.get('transferOrgId')?.value;
       if (transferOrgId) organizationId = transferOrgId;
     }

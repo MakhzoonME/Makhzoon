@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/ui';
 import { SuperAdminBanner } from '@/components/layout/SuperAdminBanner';
-import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity, Mail } from 'lucide-react';
+import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity, Mail, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
@@ -26,6 +26,7 @@ const ALL_NAV_ITEMS = (locale: string) => [
   { href: `/${locale}/superadmin/configuration`, labelKey: 'nav.configuration', icon: Settings,    roles: ['super_admin', 'makhzoon_admin'] },
   { href: `/${locale}/superadmin/audit-logs`,    labelKey: 'nav.auditLogs',     icon: FileText,    roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
   { href: `/${locale}/superadmin/team`,          labelKey: 'nav.team',          icon: Users,       roles: ['super_admin', 'makhzoon_admin'] },
+  { href: `/${locale}/superadmin/sync`,          labelKey: 'nav.sync',          icon: RefreshCw,   roles: ['super_admin', 'makhzoon_admin'] },
   { href: `/${locale}/superadmin/backend-logs`,  labelKey: 'nav.backendLogs',   icon: Activity,    roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
 ];
 

@@ -39,14 +39,14 @@ const args = Object.fromEntries(
     return [k, v ?? 'true'];
   }),
 );
-const TARGET = args.target as 'staging' | 'dev' | 'prod' | undefined;
+const TARGET = args.target as 'staging' | 'dev' | 'prod' | 'legacy' | undefined;
 const DRY_RUN = args['dry-run'] === 'true';
 const NO_SCRUB = args['no-scrub'] === 'true';
 const COLLECTION_FILTER = args.collections ? (args.collections as string).split(',') : null;
 const SKIP_CONFIRM = args['yes'] === 'true' || args['y'] === 'true';
 
-if (!TARGET || !['staging', 'dev', 'prod'].includes(TARGET)) {
-  console.error('❌ --target=staging|dev|prod is required');
+if (!TARGET || !['staging', 'dev', 'prod', 'legacy'].includes(TARGET)) {
+  console.error('❌ --target=staging|dev|prod|legacy is required');
   process.exit(1);
 }
 
@@ -99,28 +99,30 @@ const SCRUB_FIELDS_BY_COLLECTION: Record<string, Record<string, (id: string) => 
 };
 
 // ---------- Init two admin apps ----------
-const prodKeyPath = process.env.PROD_SERVICE_ACCOUNT_PATH;
+// SOURCE_SERVICE_ACCOUNT_PATH is preferred; PROD_SERVICE_ACCOUNT_PATH kept
+// for backward compat with the original prod-only flow.
+const sourceKeyPath = process.env.SOURCE_SERVICE_ACCOUNT_PATH ?? process.env.PROD_SERVICE_ACCOUNT_PATH;
 const targetKeyPath = process.env.TARGET_SERVICE_ACCOUNT_PATH;
-if (!prodKeyPath || !targetKeyPath) {
-  console.error('❌ Set PROD_SERVICE_ACCOUNT_PATH and TARGET_SERVICE_ACCOUNT_PATH');
+if (!sourceKeyPath || !targetKeyPath) {
+  console.error('❌ Set SOURCE_SERVICE_ACCOUNT_PATH (or PROD_SERVICE_ACCOUNT_PATH) and TARGET_SERVICE_ACCOUNT_PATH');
   process.exit(1);
 }
 
-const prodKey = JSON.parse(fs.readFileSync(path.resolve(prodKeyPath), 'utf-8')) as {
+const sourceKey = JSON.parse(fs.readFileSync(path.resolve(sourceKeyPath), 'utf-8')) as {
   project_id: string;
 };
 const targetKey = JSON.parse(fs.readFileSync(path.resolve(targetKeyPath), 'utf-8')) as {
   project_id: string;
 };
 
-if (prodKey.project_id === targetKey.project_id) {
-  console.error('❌ Refusing to run: prod and target service accounts point at the same project.');
+if (sourceKey.project_id === targetKey.project_id) {
+  console.error('❌ Refusing to run: source and target service accounts point at the same project.');
   process.exit(1);
 }
 
-const prodApp = admin.initializeApp({ credential: admin.credential.cert(prodKey as admin.ServiceAccount) }, 'prod');
+const sourceApp = admin.initializeApp({ credential: admin.credential.cert(sourceKey as admin.ServiceAccount) }, 'source');
 const targetApp = admin.initializeApp({ credential: admin.credential.cert(targetKey as admin.ServiceAccount) }, 'target');
-const prodDb = prodApp.firestore();
+const prodDb = sourceApp.firestore();
 const targetDb = targetApp.firestore();
 
 // ---------- Helpers ----------
@@ -192,8 +194,8 @@ function prompt(question: string): Promise<string> {
     collections = topLevel.map((c) => c.id).sort();
   }
 
-  console.log(`🚀 Cloning prod → ${TARGET} ${DRY_RUN ? '(DRY RUN)' : ''}`);
-  console.log(`   Source : ${prodKey.project_id}`);
+  console.log(`🚀 Cloning ${sourceKey.project_id} → ${TARGET} ${DRY_RUN ? '(DRY RUN)' : ''}`);
+  console.log(`   Source : ${sourceKey.project_id}`);
   console.log(`   Target : ${targetKey.project_id}`);
   console.log(`   Collections (${collections.length}): ${collections.join(', ')}`);
   console.log('');

@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAssets } from '@/hooks/assets';
 import { useWarranties } from '@/hooks/warranties';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -35,9 +35,9 @@ function ShieldOffSVG() {
   );
 }
 
-interface WarrantyFormProps { warranty?: Warranty; onSuccess?: () => void; defaultAssetId?: string; }
+interface WarrantyFormProps { warranty?: Warranty; onSuccess?: () => void; defaultAssetId?: string; onCancel?: () => void; onDirtyChange?: (dirty: boolean) => void; }
 
-export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFormProps) {
+export function WarrantyForm({ warranty, onSuccess, defaultAssetId, onCancel, onDirtyChange }: WarrantyFormProps) {
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const { locale } = useT();
@@ -102,6 +102,13 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
         }
       : undefined,
   });
+
+  const { isDirty } = form.formState;
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+
+  function handleCancel() {
+    onCancel ? onCancel() : router.back();
+  }
 
   async function onSubmit(data: WarrantyFormData) {
     setLoading(true);
@@ -252,9 +259,10 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId }: WarrantyFo
           <Button type="submit" disabled={loading}>
             {loading ? 'Saving…' : (warranty ? 'Save Changes' : 'Add Warranty')}
           </Button>
-          <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={handleCancel}>Cancel</Button>
         </div>
       </form>
+
     </Form>
   );
 }

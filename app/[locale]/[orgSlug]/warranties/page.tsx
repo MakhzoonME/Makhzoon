@@ -47,6 +47,13 @@ export default function WarrantiesPage() {
   const [deleting, setDeleting] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Warranty | null>(null);
+  const [formDirty, setFormDirty] = useState(false);
+  const [showDiscardDrawer, setShowDiscardDrawer] = useState(false);
+
+  function closeDrawer() { setDrawerOpen(false); setEditTarget(null); setFormDirty(false); }
+  function handleDrawerCloseRequest() {
+    if (formDirty) { setShowDiscardDrawer(true); } else { closeDrawer(); }
+  }
 
   const { data: warrantiesData, isLoading } = useWarranties({
     status: status || undefined,
@@ -182,14 +189,28 @@ export default function WarrantiesPage() {
 
       <FormDrawer
         open={drawerOpen}
-        onOpenChange={(o) => { setDrawerOpen(o); if (!o) setEditTarget(null); }}
+        onOpenChange={setDrawerOpen}
+        onCloseAttempt={handleDrawerCloseRequest}
         title={editTarget ? t('warranties.editWarranty') : t('warranties.addWarranty')}
       >
         <WarrantyForm
           warranty={editTarget ?? undefined}
-          onSuccess={() => setDrawerOpen(false)}
+          onSuccess={closeDrawer}
+          onCancel={handleDrawerCloseRequest}
+          onDirtyChange={setFormDirty}
         />
       </FormDrawer>
+
+      <ConfirmDialog
+        open={showDiscardDrawer}
+        onOpenChange={setShowDiscardDrawer}
+        title="Discard changes?"
+        description="You have unsaved changes. Are you sure you want to discard them?"
+        confirmLabel="Discard"
+        cancelLabel="Keep editing"
+        onConfirm={() => { setShowDiscardDrawer(false); closeDrawer(); }}
+        variant="destructive"
+      />
     </div>
   );
 }

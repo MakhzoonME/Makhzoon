@@ -279,11 +279,11 @@ export default function LoginPage() {
     shakeControls.start({ x: [0, -6, 6, -4, 4, 0], transition: { duration: 0.4, ease: 'easeInOut' } });
   }
 
-  async function redirectFromSession(idToken: string, token: string | null) {
+  async function redirectFromSession(idToken: string) {
     const res = await fetch('/api/auth/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken, turnstileToken: token ?? '' }),
+      body: JSON.stringify({ idToken }),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -309,7 +309,7 @@ export default function LoginPage() {
     try {
       const cred = await signInWithEmailAndPassword(auth, email, emailPassword);
       const idToken = await cred.user.getIdToken();
-      await redirectFromSession(idToken, null);
+      await redirectFromSession(idToken);
     } catch (err: unknown) {
       setEmailError(getFirebaseAuthErrorMessage(err, 'email'));
       shake();
@@ -326,7 +326,7 @@ export default function LoginPage() {
       const syntheticEmail = `${username.trim().toLowerCase()}@makhzoon.local`;
       const cred = await signInWithEmailAndPassword(auth, syntheticEmail, usernamePassword);
       const idToken = await cred.user.getIdToken();
-      await redirectFromSession(idToken, null);
+      await redirectFromSession(idToken);
     } catch (err: unknown) {
       setUsernameError(getFirebaseAuthErrorMessage(err, 'username'));
       shake();

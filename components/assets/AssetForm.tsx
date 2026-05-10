@@ -13,17 +13,18 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAssetCategories } from '@/hooks/assets';
 import { useOrgConfig } from '@/hooks/org';
 import { useAuthStore } from '@/store/auth.store';
-
 interface AssetFormProps {
   asset?: Asset;
   onSuccess?: () => void;
+  onCancel?: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
-export function AssetForm({ asset, onSuccess }: AssetFormProps) {
+export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFormProps) {
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const { locale } = useT();
@@ -57,6 +58,13 @@ export function AssetForm({ asset, onSuccess }: AssetFormProps) {
       receiptUrl: asset?.receiptUrl ?? '',
     },
   });
+
+  const { isDirty } = form.formState;
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+
+  function handleCancel() {
+    onCancel ? onCancel() : router.back();
+  }
 
   async function onSubmit(data: AssetFormData) {
     setLoading(true);
@@ -202,9 +210,10 @@ export function AssetForm({ asset, onSuccess }: AssetFormProps) {
 
         <div className="flex gap-2">
           <Button type="submit" disabled={loading}>{loading ? 'Saving...' : (asset ? 'Save Changes' : 'Add Asset')}</Button>
-          <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={handleCancel}>Cancel</Button>
         </div>
       </form>
+
     </Form>
   );
 }

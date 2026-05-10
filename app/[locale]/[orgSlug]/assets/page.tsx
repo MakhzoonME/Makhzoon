@@ -55,6 +55,13 @@ export default function AssetsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Asset | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [formDirty, setFormDirty] = useState(false);
+  const [showDiscardDrawer, setShowDiscardDrawer] = useState(false);
+
+  function closeDrawer() { setDrawerOpen(false); setEditTarget(null); setFormDirty(false); }
+  function handleDrawerCloseRequest() {
+    if (formDirty) { setShowDiscardDrawer(true); } else { closeDrawer(); }
+  }
 
   const { data: assetsData, isLoading } = useAssets({
     status: status || undefined,
@@ -269,14 +276,28 @@ export default function AssetsPage() {
 
       <FormDrawer
         open={drawerOpen}
-        onOpenChange={(o) => { setDrawerOpen(o); if (!o) setEditTarget(null); }}
+        onOpenChange={setDrawerOpen}
+        onCloseAttempt={handleDrawerCloseRequest}
         title={editTarget ? t('common.edit') : t('assets.addAsset')}
       >
         <AssetForm
           asset={editTarget ?? undefined}
-          onSuccess={() => setDrawerOpen(false)}
+          onSuccess={closeDrawer}
+          onCancel={handleDrawerCloseRequest}
+          onDirtyChange={setFormDirty}
         />
       </FormDrawer>
+
+      <ConfirmDialog
+        open={showDiscardDrawer}
+        onOpenChange={setShowDiscardDrawer}
+        title="Discard changes?"
+        description="You have unsaved changes. Are you sure you want to discard them?"
+        confirmLabel="Discard"
+        cancelLabel="Keep editing"
+        onConfirm={() => { setShowDiscardDrawer(false); closeDrawer(); }}
+        variant="destructive"
+      />
 
       <ImportAssetsDrawer open={importOpen} onOpenChange={setImportOpen} />
     </div>

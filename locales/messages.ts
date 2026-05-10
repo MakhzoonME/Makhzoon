@@ -86,6 +86,10 @@ const en = {
   'auth.contactSalesSubtitle':'Tell us about your team and we\'ll get you set up.',
   'auth.fullName':            'Full name',
   'auth.fullNamePlaceholder': 'Your name',
+  'auth.firstName':          'First name',
+  'auth.firstNamePlaceholder':'Jane',
+  'auth.lastName':           'Last name',
+  'auth.lastNamePlaceholder': 'Smith',
   'auth.orgName':             'Organization name',
   'auth.orgNamePlaceholder':  'Company or store name',
   'auth.phone':               'Phone number',
@@ -539,6 +543,7 @@ const en = {
   'leads.organization':        'Organization',
   'leads.phone':               'Phone',
   'leads.notes':               'Notes',
+  'leads.inviteToOrg':         'Invite to organization',
 } as const;
 
 const ar: Record<keyof typeof en, string> = {
@@ -620,6 +625,10 @@ const ar: Record<keyof typeof en, string> = {
   'auth.contactSalesSubtitle':'أخبرنا عن فريقك وسنتولى إعداد حسابك.',
   'auth.fullName':            'الاسم الكامل',
   'auth.fullNamePlaceholder': 'اسمك',
+  'auth.firstName':          'الاسم الأول',
+  'auth.firstNamePlaceholder':'أحمد',
+  'auth.lastName':           'اسم العائلة',
+  'auth.lastNamePlaceholder': 'محمد',
   'auth.orgName':             'اسم المؤسسة',
   'auth.orgNamePlaceholder':  'اسم الشركة أو المتجر',
   'auth.phone':               'رقم الهاتف',
@@ -1075,6 +1084,7 @@ const ar: Record<keyof typeof en, string> = {
   'leads.organization':        'المنظمة',
   'leads.phone':               'الهاتف',
   'leads.notes':               'ملاحظات',
+  'leads.inviteToOrg':         'دعوة إلى منظمة',
 };
 
 export const messages: Record<Locale, Record<keyof typeof en, string>> = { en, ar };

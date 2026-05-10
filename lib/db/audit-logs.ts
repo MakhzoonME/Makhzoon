@@ -18,6 +18,8 @@ function toLog(id: string, data: FirebaseFirestore.DocumentData): AuditLog {
   };
 }
 
+const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+
 export async function getAuditLogs(opts?: {
   orgId?: string;
   userId?: string;
@@ -26,6 +28,7 @@ export async function getAuditLogs(opts?: {
   dateTo?: string;
   page?: number;
   pageSize?: number;
+  excludeSuperadminActions?: boolean;
 }): Promise<{ logs: AuditLog[]; total: number; page: number; pageSize: number; totalPages: number }> {
   const page = opts?.page ?? 1;
   const pageSize = opts?.pageSize ?? 20;
@@ -41,7 +44,12 @@ export async function getAuditLogs(opts?: {
   if (opts?.dateTo) q = q.where('timestamp', '<=', new Date(opts.dateTo));
 
   const snap = await q.get();
-  const logs = snap.docs.map((d) => toLog(d.id, d.data()));
+  let logs = snap.docs.map((d) => toLog(d.id, d.data()));
+
+  // Org users must not see actions performed by superadmin roles (including transfer mode actions)
+  if (opts?.excludeSuperadminActions) {
+    logs = logs.filter((l) => !SUPERADMIN_ROLES.has(l.role) && !l.transferMode);
+  }
 
   const total = logs.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));

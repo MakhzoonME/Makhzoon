@@ -2,29 +2,67 @@
 import { useState } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
+import { Button } from '@/components/ui/button';
 import { useLeads, EarlyAccessLead, ContactSalesLead } from '@/hooks/superadmin/useLeads';
+import { InviteLeadModal } from '@/components/super-admin/InviteLeadModal';
 import { formatDate } from '@/lib/utils/date';
 import { useT } from '@/hooks/ui';
 
 type Tab = 'early-access' | 'contact-sales';
 
+function InviteSVG() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export default function LeadsPage() {
   const { t } = useT();
   const [tab, setTab] = useState<Tab>('early-access');
-  // Fetch both lists together — the API returns { earlyAccess, contactSales }
-  // when called without a `type` param. Tab counts need both arrays anyway.
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
+
   const { data, isLoading } = useLeads();
 
   const earlyAccess = (data as { earlyAccess?: EarlyAccessLead[] } | undefined)?.earlyAccess ?? [];
   const contactSales = (data as { contactSales?: ContactSalesLead[] } | undefined)?.contactSales ?? [];
+
+  function openInvite(email: string, name?: string) {
+    setInviteEmail(email);
+    setInviteName(name ?? '');
+    setInviteOpen(true);
+  }
 
   const eaColumns: ColumnDef<EarlyAccessLead>[] = [
     {
       key: 'email',
       header: t('leads.email'),
       render: (entry) => (
-        <span className="font-medium text-sm text-gray-900 dark:text-gray-100">{entry.email}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm text-gray-900 dark:text-gray-100">{entry.email}</span>
+          <button
+            type="button"
+            onClick={() => openInvite(entry.email, [entry.firstName, entry.lastName].filter(Boolean).join(' ') || undefined)}
+            className="ml-auto flex-shrink-0 p-1.5 rounded-md text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors"
+            title={t('leads.inviteToOrg')}
+          >
+            <InviteSVG />
+          </button>
+        </div>
       ),
+    },
+    {
+      key: 'firstName',
+      header: t('leads.name'),
+      render: (entry) => {
+        const fullName = [entry.firstName, entry.lastName].filter(Boolean).join(' ') || '—';
+        return (
+          <span className="text-sm text-gray-700 dark:text-gray-300">{fullName}</span>
+        );
+      },
     },
     {
       key: 'ip',
@@ -47,12 +85,15 @@ export default function LeadsPage() {
     {
       key: 'name',
       header: t('leads.name'),
-      render: (entry) => (
-        <div>
-          <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{entry.name}</p>
-          <p className="text-xs text-gray-500">{entry.email}</p>
-        </div>
-      ),
+      render: (entry) => {
+        const fullName = [entry.firstName, entry.lastName].filter(Boolean).join(' ') || entry.name;
+        return (
+          <div>
+            <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{fullName}</p>
+            <p className="text-xs text-gray-500">{entry.email}</p>
+          </div>
+        );
+      },
     },
     {
       key: 'organizationName',
@@ -76,6 +117,20 @@ export default function LeadsPage() {
       ),
     },
     {
+      key: 'invite',
+      header: '',
+      render: (entry) => (
+        <button
+          type="button"
+          onClick={() => openInvite(entry.email, [entry.firstName, entry.lastName].filter(Boolean).join(' ') || entry.name)}
+          className="ml-auto flex-shrink-0 p-1.5 rounded-md text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors"
+          title={t('leads.inviteToOrg')}
+        >
+          <InviteSVG />
+        </button>
+      ),
+    },
+    {
       key: 'createdAt',
       header: t('leads.submitted'),
       sortable: true,
@@ -87,7 +142,23 @@ export default function LeadsPage() {
 
   return (
     <div>
-      <PageHeader title={t('nav.leads')} description={t('leads.description')} />
+      <PageHeader
+        title={t('nav.leads')}
+        description={t('leads.description')}
+        actions={
+          tab === 'contact-sales' && contactSales.length > 0 ? (
+            <Button size="sm" variant="outline" onClick={() => openInvite(contactSales[0].email, contactSales[0].name)}>
+              <InviteSVG />
+              {t('leads.inviteToOrg')}
+            </Button>
+          ) : tab === 'early-access' && earlyAccess.length > 0 ? (
+            <Button size="sm" variant="outline" onClick={() => openInvite(earlyAccess[0].email)}>
+              <InviteSVG />
+              {t('leads.inviteToOrg')}
+            </Button>
+          ) : undefined
+        }
+      />
 
       <div className="border-b border-border mb-6">
         <nav className="flex gap-6" aria-label="Tabs">
@@ -96,8 +167,8 @@ export default function LeadsPage() {
             onClick={() => setTab('early-access')}
             className={`py-2 text-sm font-medium border-b-2 transition-colors ${
               tab === 'early-access'
-                ? 'border-primary-600 text-primary-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-primary-600 text-primary-700 dark:text-primary-300'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             {t('leads.earlyAccessTab')}
@@ -112,8 +183,8 @@ export default function LeadsPage() {
             onClick={() => setTab('contact-sales')}
             className={`py-2 text-sm font-medium border-b-2 transition-colors ${
               tab === 'contact-sales'
-                ? 'border-primary-600 text-primary-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-primary-600 text-primary-700 dark:text-primary-300'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             {t('leads.contactSalesTab')}
@@ -145,6 +216,13 @@ export default function LeadsPage() {
           />
         )}
       </div>
+
+      <InviteLeadModal
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        leadEmail={inviteEmail}
+        leadName={inviteName}
+      />
     </div>
   );
 }

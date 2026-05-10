@@ -65,6 +65,13 @@ export default function InventoryPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<InventoryItem | null>(null);
   const [reqTarget, setReqTarget] = useState<InventoryItem | null>(null);
+  const [formDirty, setFormDirty] = useState(false);
+  const [showDiscardDrawer, setShowDiscardDrawer] = useState(false);
+
+  function closeDrawer() { setDrawerOpen(false); setEditTarget(null); setFormDirty(false); }
+  function handleDrawerCloseRequest() {
+    if (formDirty) { setShowDiscardDrawer(true); } else { closeDrawer(); }
+  }
 
   const { data: inventoryData, isLoading } = useInventoryItems({
     category: category || undefined,
@@ -293,15 +300,29 @@ export default function InventoryPage() {
 
       <FormDrawer
         open={drawerOpen}
-        onOpenChange={(o) => { setDrawerOpen(o); if (!o) setEditTarget(null); }}
+        onOpenChange={setDrawerOpen}
+        onCloseAttempt={handleDrawerCloseRequest}
         title={editTarget ? t('inventory.editItem') : t('inventory.addInventoryItem')}
         width="xl"
       >
         <InventoryItemForm
           item={editTarget ?? undefined}
-          onSuccess={() => setDrawerOpen(false)}
+          onSuccess={closeDrawer}
+          onCancel={handleDrawerCloseRequest}
+          onDirtyChange={setFormDirty}
         />
       </FormDrawer>
+
+      <ConfirmDialog
+        open={showDiscardDrawer}
+        onOpenChange={setShowDiscardDrawer}
+        title="Discard changes?"
+        description="You have unsaved changes. Are you sure you want to discard them?"
+        confirmLabel="Discard"
+        cancelLabel="Keep editing"
+        onConfirm={() => { setShowDiscardDrawer(false); closeDrawer(); }}
+        variant="destructive"
+      />
 
       <RequestInventoryModal
         open={!!reqTarget}

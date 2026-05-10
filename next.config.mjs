@@ -1,4 +1,3 @@
-import { withSentryConfig } from '@sentry/nextjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -9,12 +8,6 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
-  // Amplify Hosting (Gen 1) does not forward non-NEXT_PUBLIC_ env vars to the
-  // SSR Lambda runtime, and `.env.production.local` written by preBuild is not
-  // included in the deployed artifact. Inline the values here at build time so
-  // `process.env.X` is available in server bundles. These keys are referenced
-  // exclusively by server-only modules (lib/firebase/admin.ts, scripts in API
-  // routes) so they will not leak into client bundles via tree-shaking.
   env: {
     FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
     FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
@@ -60,7 +53,7 @@ const nextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
           {
             key: 'Content-Security-Policy',
-            value: `default-src 'self'; script-src 'self' 'unsafe-inline'${evalSrc} https://*.firebaseapp.com https://www.gstatic.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.sentry.io https://challenges.cloudflare.com; frame-src 'self' https://challenges.cloudflare.com https://*.firebaseapp.com; object-src 'none'; base-uri 'self'; form-action 'self';${upgradeInsecure}`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline'${evalSrc} https://*.firebaseapp.com https://www.gstatic.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com; frame-src 'self' https://*.firebaseapp.com; object-src 'none'; base-uri 'self'; form-action 'self';${upgradeInsecure}`,
           },
         ],
       },
@@ -68,14 +61,4 @@ const nextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  silent: !process.env.CI,
-  widenClientFileUpload: true,
-  hideSourceMaps: true,
-  webpack: {
-    treeshake: { removeDebugLogging: true },
-    automaticVercelMonitors: true,
-  },
-});
+export default nextConfig;

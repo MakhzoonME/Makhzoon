@@ -76,13 +76,6 @@ function ArrowRightIcon() {
     </svg>
   );
 }
-function PlusSVG() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 /* ── Greeting helper ─────────────────────────────────────────────── */
 function greeting(): string {
@@ -460,16 +453,6 @@ export default function DashboardPage() {
             Here&apos;s what&apos;s happening across your workspace today.
           </p>
         </div>
-        {isAdmin && (
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() => router.push(`/${orgSlug}/assets/new`)}
-            >
-              <PlusSVG /><span className="ml-1.5">New asset</span>
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* ── Stat cards ───────────────────────────────────────────────── */}

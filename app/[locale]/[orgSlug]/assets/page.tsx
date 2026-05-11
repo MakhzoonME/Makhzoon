@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 // useEffect retained for debounced-search → URL commit only.
-import { Pencil, ArchiveX, Trash2, Upload } from 'lucide-react';
+import { Plus, Pencil, ArchiveX, Trash2, Upload } from 'lucide-react';
 import { useOrgSlug } from '@/hooks/ui';
 import { useAssets } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
@@ -18,6 +18,7 @@ import { ImportAssetsDrawer } from '@/components/assets/ImportAssetsDrawer';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Asset } from '@/types';
+import { hasPermission } from '@/lib/permissions';
 import { formatDate } from '@/lib/utils/date';
 import { ConfirmDialog, SubscriptionGate } from '@/components/shared';
 import { toast } from '@/hooks/ui';
@@ -96,6 +97,7 @@ export default function AssetsPage() {
   }, [debouncedSearchInput]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
+  const canCreateAsset = !!user && hasPermission(user, 'assets', 'create');
 
   const columns: ColumnDef<Asset>[] = [
     { key: 'name', header: t('col.name'), sortable: true, render: (a) => <button className="font-medium text-primary-600 hover:text-primary-700 hover:underline text-left" onClick={() => router.push(`/${orgSlug}/assets/${a.id}`)}>{a.name}</button> },
@@ -194,13 +196,22 @@ export default function AssetsPage() {
     <div>
       <PageHeader
         title={t('nav.assets')}
-        actions={isAdmin ? (
+        actions={(isAdmin || canCreateAsset) ? (
           <div className="flex items-center gap-2">
-            <SubscriptionGate>
-              <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
-                <Upload className="w-4 h-4" /><span className="ms-1">{t('assets.importCsv')}</span>
-              </Button>
-            </SubscriptionGate>
+            {isAdmin && (
+              <SubscriptionGate>
+                <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+                  <Upload className="w-4 h-4" /><span className="ms-1">{t('assets.importCsv')}</span>
+                </Button>
+              </SubscriptionGate>
+            )}
+            {canCreateAsset && (
+              <SubscriptionGate>
+                <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
+                  <Plus className="w-4 h-4" /><span className="ms-1">{t('assets.addAsset')}</span>
+                </Button>
+              </SubscriptionGate>
+            )}
           </div>
         ) : undefined}
       />

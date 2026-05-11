@@ -188,32 +188,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
           </CardContent>
         </Card>
 
-          {/* Warranties card */}
-          <Card>
-            <CardContent className="p-0">
-              <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Warranties</h2>
-                {isAdmin && (() => {
-                  const now = new Date();
-                  const hasActiveWarranty = (warranties as Warranty[]).some((w) => new Date(w.endDate) >= now);
-                  return !hasActiveWarranty ? (
-                    <Button size="sm" variant="ghost" onClick={() => setAddWarrantyOpen(true)}>
-                      <PlusSVG /><span className="ml-1">Add warranty</span>
-                    </Button>
-                  ) : null;
-                })()}
-              </div>
-              <DataTable
-                data={warranties}
-                columns={wColumns}
-                isLoading={wLoading}
-                emptyMessage="No warranties attached."
-                keyExtractor={(w) => w.id}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Metadata card */}
+          {/* Record history card */}
           <Card>
             <CardContent className="p-6">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Record history</h2>
@@ -231,9 +206,34 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
                   <span className="text-gray-700 dark:text-gray-300 tabular-nums">{formatDate(asset.updatedAt)}</span>
                 </KVRow>
               </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
       </div>
+
+      {/* Warranties — full width */}
+      <Card className="mb-6">
+        <CardContent className="p-0">
+          <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Warranties</h2>
+            {isAdmin && (() => {
+              const now = new Date();
+              const hasActiveWarranty = (warranties as Warranty[]).some((w) => new Date(w.endDate) >= now);
+              return !hasActiveWarranty ? (
+                <Button size="sm" variant="ghost" onClick={() => setAddWarrantyOpen(true)}>
+                  <PlusSVG /><span className="ml-1">Add warranty</span>
+                </Button>
+              ) : null;
+            })()}
+          </div>
+          <DataTable
+            data={warranties}
+            columns={wColumns}
+            isLoading={wLoading}
+            emptyMessage="No warranties attached."
+            keyExtractor={(w) => w.id}
+          />
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <CheckoutSection assetId={assetId} assetName={asset.name} />

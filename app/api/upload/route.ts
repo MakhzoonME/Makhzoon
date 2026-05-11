@@ -6,9 +6,13 @@ import { randomBytes } from 'crypto';
 
 const ALLOWED_TYPES: Record<string, string[]> = {
   avatar: ['image/jpeg', 'image/png', 'image/webp'],
+  receipt: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'image/bmp', 'image/tiff', 'image/avif'],
 };
 
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_SIZES: Record<string, number> = {
+  avatar: 5 * 1024 * 1024,
+  receipt: 3 * 1024 * 1024,
+};
 
 export async function POST(req: NextRequest) {
   const clientIp = getClientIp(req);
@@ -27,7 +31,7 @@ export async function POST(req: NextRequest) {
     if (!ALLOWED_TYPES[type].includes(contentType)) {
       return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
     }
-    if (!size || size > MAX_SIZE) {
+    if (!size || size > MAX_SIZES[type]) {
       return NextResponse.json({ error: 'File too large' }, { status: 400 });
     }
 

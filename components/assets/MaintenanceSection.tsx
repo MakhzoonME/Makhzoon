@@ -152,7 +152,7 @@ export function MaintenanceSection({ assetId }: { assetId: string }) {
       )}
 
       <div>
-        {isLoading ? (
+        {isLoading || createMut.isPending ? (
           <div className="p-5 space-y-3">
             {Array.from({ length: 2 }).map((_, i) => (
               <div key={i} className="h-14 rounded-md bg-surface-page animate-pulse" />

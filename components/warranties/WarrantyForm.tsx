@@ -18,6 +18,7 @@ import { useAssets } from '@/hooks/assets';
 import { useWarranties } from '@/hooks/warranties';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
+import { UploadCloud, X } from 'lucide-react';
 function AlertTriangleSVG() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -44,6 +45,7 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId, onCancel, on
   const searchParams = useSearchParams();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
+  const [receiptUploading, setReceiptUploading] = useState(false);
 
   // Fetch all active assets + all org warranties to compute availability
   const { data: assetsData, isLoading: assetsLoading } = useAssets({ status: 'Active' });
@@ -108,6 +110,32 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId, onCancel, on
 
   function handleCancel() {
     onCancel ? onCancel() : router.back();
+  }
+
+  async function handleReceiptUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
+    if (file.size > 3 * 1024 * 1024) { toast.error('Image must be smaller than 3 MB'); return; }
+    setReceiptUploading(true);
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'receipt', contentType: file.type, size: file.size }),
+      });
+      if (!res.ok) throw new Error('Failed to get upload URL');
+      const { uploadUrl, publicUrl } = await res.json();
+      const put = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+      if (!put.ok) throw new Error('Failed to upload image');
+      form.setValue('receiptUrl', publicUrl, { shouldDirty: true });
+      toast.success('Receipt uploaded');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setReceiptUploading(false);
+      e.target.value = '';
+    }
   }
 
   async function onSubmit(data: WarrantyFormData) {
@@ -175,7 +203,7 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId, onCancel, on
             <Select
               onValueChange={field.onChange}
               defaultValue={field.value}
-              disabled={!!warranty || isLoadingData}
+              disabled={!!warranty || !!defaultAssetId || isLoadingData}
             >
               <FormControl>
                 <SelectTrigger>
@@ -249,8 +277,28 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId, onCancel, on
 
         <FormField control={form.control} name="receiptUrl" render={({ field }) => (
           <FormItem>
-            <FormLabel>Receipt URL</FormLabel>
-            <FormControl><Input {...field} placeholder="https://example.com/receipt.pdf" /></FormControl>
+            <FormLabel>Receipt Image</FormLabel>
+            <FormControl>
+              <div className="space-y-3">
+                {field.value && (
+                  <div className="relative inline-block">
+                    <img src={field.value} alt="Receipt" className="rounded-md border border-gray-200 dark:border-gray-700 max-h-48 object-contain" />
+                    <button
+                      type="button"
+                      onClick={() => form.setValue('receiptUrl', '', { shouldDirty: true })}
+                      className="absolute -top-1.5 -right-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-0.5 shadow-sm hover:bg-gray-50"
+                    >
+                      <X className="h-3 w-3 text-gray-500" />
+                    </button>
+                  </div>
+                )}
+                <label className={`flex items-center gap-2 cursor-pointer text-sm text-gray-600 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-600 rounded-md px-4 py-3 hover:border-gray-400 dark:hover:border-gray-500 transition-colors w-fit ${receiptUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <UploadCloud className="h-4 w-4 shrink-0" />
+                  <span>{receiptUploading ? 'Uploading…' : (field.value ? 'Replace image' : 'Upload receipt image')}</span>
+                  <input type="file" accept="image/*" className="sr-only" onChange={handleReceiptUpload} disabled={receiptUploading} />
+                </label>
+              </div>
+            </FormControl>
             <FormMessage />
           </FormItem>
         )} />

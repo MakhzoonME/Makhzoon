@@ -5,10 +5,26 @@ import { createAssetSchema } from '@/lib/modules/assets/validators/schemas'
 
 const service = new AssetsService()
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    return NextResponse.json(await service.getAll(tenant))
+    const { searchParams } = new URL(req.url)
+
+    if (searchParams.get('categoriesOnly') === 'true') {
+      const categories = await service.getCategories(tenant)
+      return NextResponse.json({ categories })
+    }
+
+    const result = await service.getAll(tenant, {
+      status: searchParams.get('status') ?? undefined,
+      category: searchParams.get('category') ?? undefined,
+      search: searchParams.get('search') ?? undefined,
+      page: searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined,
+      pageSize: searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined,
+      sortBy: searchParams.get('sortBy') as never ?? undefined,
+      sortDir: searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc',
+    })
+    return NextResponse.json(result)
   } catch (err) {
     return err instanceof NextResponse ? err : NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }

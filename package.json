@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
     "fb:use:prod": "firebase use prod",
     "fb:use:staging": "firebase use staging",
     "fb:use:dev": "firebase use dev",
@@ -78,6 +81,7 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@vitejs/plugin-react": "^4.7.0",
+    "@vitest/coverage-v8": "^4.1.5",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.6",
     "firebase-tools": "^15.15.0",
@@ -86,6 +90,6 @@
     "tailwindcss": "^3.4.1",
     "ts-node": "^10.9.2",
     "typescript": "5.9.3",
-    "vitest": "^1.6.1"
+    "vitest": "^4.1.5"
   }
 }

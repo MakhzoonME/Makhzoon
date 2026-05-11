@@ -151,12 +151,16 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
           <FormField control={form.control} name="category" render={({ field }) => (
             <FormItem>
               <FormLabel>Category *</FormLabel>
-              <FormControl>
-                <Input {...field} list="categories" placeholder="e.g. Devices" />
-              </FormControl>
-              <datalist id="categories">
-                {categoryOptions.map((c) => <option key={c} value={c} />)}
-              </datalist>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {categoryOptions.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )} />

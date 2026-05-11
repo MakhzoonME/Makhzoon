@@ -26,6 +26,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { useDebounce } from '@/hooks/ui';
 import { useAssetCategories } from '@/hooks/assets';
+import { useOrgConfig } from '@/hooks/org';
 
 function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
   const qs = new URLSearchParams();
@@ -73,7 +74,14 @@ export default function AssetsPage() {
     sortBy: sortDir === 'none' ? undefined : sortBy,
     sortDir: sortDir === 'none' ? undefined : sortDir,
   });
-  const { data: categories = [] } = useAssetCategories();
+  const { data: usedCategories = [] } = useAssetCategories();
+  const { data: orgConfig } = useOrgConfig(user?.organizationId ?? undefined);
+  const categories = Array.from(
+    new Set([
+      ...(orgConfig?.categories.map((c) => c.name) ?? []),
+      ...usedCategories,
+    ])
+  ).sort((a, b) => a.localeCompare(b));
   const assets = assetsData?.items ?? [];
 
   const updateUrl = useCallback((params: Record<string, string>) => {

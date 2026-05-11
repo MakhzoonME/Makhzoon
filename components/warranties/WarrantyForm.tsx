@@ -124,7 +124,10 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId, onCancel, on
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'receipt', contentType: file.type, size: file.size }),
       });
-      if (!res.ok) throw new Error('Failed to get upload URL');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? 'Failed to get upload URL');
+      }
       const { uploadUrl, publicUrl } = await res.json();
       const put = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
       if (!put.ok) throw new Error('Failed to upload image');

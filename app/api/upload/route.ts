@@ -15,6 +15,11 @@ const MAX_SIZES: Record<string, number> = {
 };
 
 export async function POST(req: NextRequest) {
+  if (!process.env.APP_AWS_REGION || !process.env.APP_AWS_ACCESS_KEY_ID || !process.env.APP_AWS_SECRET_ACCESS_KEY || !process.env.APP_AWS_S3_BUCKET_NAME) {
+    console.error('[POST /api/upload] Missing S3 environment variables: APP_AWS_REGION, APP_AWS_ACCESS_KEY_ID, APP_AWS_SECRET_ACCESS_KEY, APP_AWS_S3_BUCKET_NAME');
+    return NextResponse.json({ error: 'File upload is not configured on this server' }, { status: 503 });
+  }
+
   const clientIp = getClientIp(req);
   const rateLimitResult = checkRateLimit(`upload:${clientIp}`, 20, 60 * 60 * 1000, { action: 'upload' });
   if (rateLimitResult) return rateLimitResult;

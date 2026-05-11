@@ -37,13 +37,16 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
     // changes and org assignments take effect immediately without requiring
     // re-authentication. Token custom claims are only refreshed on sign-in.
     const ORG_ROLES = new Set(['org_owner', 'admin', 'staff']);
+    let firestoreDisplayName: string | undefined;
+    let firestoreEmail: string | undefined;
     if (ORG_ROLES.has(role)) {
       const userDoc = await adminDb.collection('users').doc(decoded.uid).get();
       if (userDoc.exists) {
         const docData = userDoc.data();
         role = (docData?.role as UserRole) ?? role;
-        // Always prefer Firestore value; falls back to token claim if not set in Firestore
         organizationId = docData?.organizationId ?? organizationId;
+        firestoreDisplayName = docData?.displayName as string | undefined;
+        firestoreEmail = docData?.email as string | undefined;
       }
     }
 
@@ -62,8 +65,8 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
 
     return {
       uid: decoded.uid,
-      email: decoded.email ?? '',
-      displayName: decoded.name ?? '',
+      email: firestoreEmail ?? decoded.email ?? '',
+      displayName: firestoreDisplayName ?? decoded.name ?? '',
       role,
       organizationId,
       permissions,

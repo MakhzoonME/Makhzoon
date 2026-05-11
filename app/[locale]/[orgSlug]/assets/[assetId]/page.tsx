@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/ui';
+import { useOrgSlug, useT } from '@/hooks/ui';
 import { useAsset } from '@/hooks/assets';
 import { useWarranties } from '@/hooks/warranties';
 import { useAuthStore } from '@/store/auth.store';
@@ -64,6 +64,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
   const { assetId } = params;
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const { locale } = useT();
   const { user } = useAuthStore();
   const qc = useQueryClient();
   const { data: asset, isLoading, error } = useAsset(assetId);
@@ -131,9 +132,6 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
         breadcrumb={[{ label: 'Assets', href: `/${orgSlug}/assets` }, { label: asset.name, href: `/${orgSlug}/assets/${assetId}` }]}
         actions={isAdmin ? (
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => {}}>
-              <QrSVG /><span className="ml-1.5">QR label</span>
-            </Button>
             {asset.status !== 'Retired' && (
               <Button variant="outline" size="sm" onClick={() => setEditAssetOpen(true)}>
                 <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ml-1">Edit</span>
@@ -166,8 +164,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
                 ['Location', asset.location || '—'],
                 ['Purchase Cost', asset.purchaseCost ? `${asset.purchaseCost} JOD` : '—'],
                 ['Purchase Date', asset.purchaseDate ? formatDate(asset.purchaseDate) : '—'],
-                ...(asset.receiptUrl ? [['Receipt', <a key="r" href={asset.receiptUrl} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline truncate block max-w-[200px]">View Receipt</a>]] : []),
-              ].map(([label, value]) => (
+                ].map(([label, value]) => (
                 <div key={String(label)}>
                   <dt className="text-gray-500">{label}</dt>
                   <dd className="font-medium text-gray-900 mt-0.5">{value}</dd>
@@ -180,46 +177,14 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
                 </div>
               )}
             </dl>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <h2 className="text-sm font-semibold text-gray-900 mb-4">Metadata</h2>
-            <dl className="space-y-3 text-sm">
-              <div>
-                <dt className="text-gray-500 mb-0.5">Created By</dt>
-                <dd><UserHoverCard user={{ uid: asset.createdBy, name: asset.createdByName, email: asset.createdByEmail, role: asset.createdByRole }} /></dd>
+            {asset.receiptUrl && (
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Receipt</p>
+                <a href={asset.receiptUrl} target="_blank" rel="noopener noreferrer">
+                  <img src={asset.receiptUrl} alt="Receipt" className="rounded-md border border-gray-200 dark:border-gray-700 max-h-48 object-contain cursor-zoom-in hover:opacity-90 transition-opacity" />
+                </a>
               </div>
-              <div>
-                <KVRow label="Asset ID">
-                  <span className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-md">{assetId}</span>
-                </KVRow>
-                {asset.serialNumber && (
-                  <KVRow label="Serial number">
-                    <span className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-md">{asset.serialNumber}</span>
-                  </KVRow>
-                )}
-                <KVRow label="Category">{asset.category}</KVRow>
-                {asset.assignedTo && (
-                  <KVRow label="Assigned to">{asset.assignedTo}</KVRow>
-                )}
-                {asset.location && (
-                  <KVRow label="Location">{asset.location}</KVRow>
-                )}
-                {asset.purchaseCost && (
-                  <KVRow label="Purchase cost">{asset.purchaseCost} JOD</KVRow>
-                )}
-                {asset.purchaseDate && (
-                  <KVRow label="Purchase date">{formatDate(asset.purchaseDate)}</KVRow>
-                )}
-                {asset.notes && (
-                  <KVRow label="Notes">
-                    <span className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">{asset.notes}</span>
-                  </KVRow>
-                )}
-              </div>
-            </dl>
+            )}
           </CardContent>
         </Card>
 
@@ -272,7 +237,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <CheckoutSection assetId={assetId} assetName={asset.name} />
-        <AssetQRCard assetId={assetId} assetName={asset.name} />
+        <AssetQRCard assetId={assetId} assetName={asset.name} orgSlug={orgSlug} locale={locale} />
       </div>
 
       {/* Notes + Maintenance */}
@@ -286,41 +251,6 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
         <RequestActionPanel assetId={assetId} warranties={warranties} />
       )}
 
-      {/* Admin quick actions */}
-      {isAdmin && (
-        <Card>
-          <CardContent className="p-5">
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Actions</h2>
-            <div className="space-y-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => setAddWarrantyOpen(true)}
-              >
-                <PlusSVG /><span className="ml-2">Add warranty</span>
-              </Button>
-              {asset.status !== 'Retired' && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => setEditAssetOpen(true)}
-                >
-                  <EditSVG /><span className="ml-2">Edit asset</span>
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-              >
-                <UploadSVG /><span className="ml-2">Transfer asset</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Linked records */}
       {(() => {

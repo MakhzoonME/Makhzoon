@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useAuditLogs } from '@/hooks/org';
+import { useAuditLogs, useAllOrgsUsage } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { AuditLog } from '@/types';
@@ -9,6 +9,8 @@ import { formatDateTime } from '@/lib/utils/date';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatActionLabel, formatKeyLabel } from '@/lib/utils/audit-labels';
 import { useT } from '@/hooks/ui';
@@ -68,6 +70,7 @@ export default function AuditLogsPage() {
   };
 
   const { data, isLoading } = useAuditLogs(params);
+  const { data: orgs = [] } = useAllOrgsUsage();
   const logs = data?.logs ?? [];
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 1;
@@ -199,23 +202,43 @@ export default function AuditLogsPage() {
 
       <div className="bg-surface-card rounded-lg border border-border p-4 mb-4">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {[
-            { key: 'orgId', label: t('auditLogs.orgId'), type: 'text' },
-            { key: 'userId', label: t('auditLogs.user'), type: 'text' },
-            { key: 'action', label: t('auditLogs.action'), type: 'text' },
-            { key: 'dateFrom', label: t('auditLogs.dateFrom'), type: 'date' },
-            { key: 'dateTo', label: t('auditLogs.dateTo'), type: 'date' },
-          ].map(({ key, label, type }) => (
-            <div key={key} className="space-y-1">
-              <Label className="text-xs">{label}</Label>
-              <Input
-                type={type}
-                value={(key === 'orgId' ? orgId : key === 'userId' ? userId : key === 'action' ? action : key === 'dateFrom' ? dateFrom : dateTo) as string}
-                onChange={(e) => handleFilterChange(key, e.target.value)}
-                className="h-8 text-xs"
-              />
-            </div>
-          ))}
+          {/* Organization dropdown */}
+          <div className="space-y-1">
+            <Label className="text-xs">{t('auditLogs.organization')}</Label>
+            <Select value={orgId || '__all__'} onValueChange={(v) => { const val = v === '__all__' ? '' : v; setOrgId(val); handleFilterChange('orgId', val); }}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder={t('auditLogs.allOrgs')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">{t('auditLogs.allOrgs')}</SelectItem>
+                {orgs.map((o) => (
+                  <SelectItem key={o.organization.id} value={o.organization.id}>
+                    {o.organization.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {/* User filter */}
+          <div className="space-y-1">
+            <Label className="text-xs">{t('auditLogs.user')}</Label>
+            <Input value={userId} onChange={(e) => { setUserId(e.target.value); handleFilterChange('userId', e.target.value); }} className="h-8 text-xs" />
+          </div>
+          {/* Action filter */}
+          <div className="space-y-1">
+            <Label className="text-xs">{t('auditLogs.action')}</Label>
+            <Input value={action} onChange={(e) => { setAction(e.target.value); handleFilterChange('action', e.target.value); }} className="h-8 text-xs" />
+          </div>
+          {/* Date from */}
+          <div className="space-y-1">
+            <Label className="text-xs">{t('auditLogs.dateFrom')}</Label>
+            <DatePicker value={dateFrom} onChange={(v) => { setDateFrom(v); handleFilterChange('dateFrom', v); }} className="h-8 text-xs" />
+          </div>
+          {/* Date to */}
+          <div className="space-y-1">
+            <Label className="text-xs">{t('auditLogs.dateTo')}</Label>
+            <DatePicker value={dateTo} onChange={(v) => { setDateTo(v); handleFilterChange('dateTo', v); }} className="h-8 text-xs" />
+          </div>
         </div>
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
           <span className="text-xs text-gray-400">

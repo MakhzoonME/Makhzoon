@@ -322,6 +322,7 @@ const en = {
   'auditLogs.newValues':       'New Values',
   'auditLogs.organization':    'Organization',
   'auditLogs.orgId':           'Organization',
+  'auditLogs.allOrgs':         'All Organizations',
   'auditLogs.exportCsv':       'Export CSV',
   'auditLogs.transferMode':    'Transfer Mode',
 
@@ -405,6 +406,7 @@ const en = {
   'superDash.noOrgs':          'No organizations yet.',
   'superDash.dOverdue':        '{days}d overdue',
   'superDash.dRemaining':      '{days}d remaining',
+  'superDash.newOrg':          'New Organization',
 
   // ── Backend logs ──────────────────────────────────────────────────
   'backendLogs.title':         'Backend Logs',
@@ -808,6 +810,7 @@ const ar: Record<keyof typeof en, string> = {
   'auditLogs.newValues':       'القيم الجديدة',
   'auditLogs.organization':    'المنظمة',
   'auditLogs.orgId':           'المنظمة',
+  'auditLogs.allOrgs':         'جميع المنظمات',
   'auditLogs.exportCsv':       'تصدير CSV',
   'auditLogs.transferMode':    'وضع النقل',
 
@@ -891,6 +894,7 @@ const ar: Record<keyof typeof en, string> = {
   'superDash.noOrgs':          'لا توجد منظمات بعد.',
   'superDash.dOverdue':        'متأخر {days} يوم',
   'superDash.dRemaining':      'متبقي {days} يوم',
+  'superDash.newOrg':          'منظمة جديدة',
 
   // ── Backend logs ──────────────────────────────────────────────────
   'backendLogs.title':         'سجلات النظام',

@@ -10,6 +10,7 @@ import { formatDateTime } from '@/lib/utils/date';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatActionLabel, formatKeyLabel } from '@/lib/utils/audit-labels';
 import { useT } from '@/hooks/ui';
@@ -118,12 +119,19 @@ export default function OrgAuditLogsPage() {
           {filterFields.map(({ key, label, type }) => (
             <div key={key} className="space-y-1">
               <Label className="text-xs">{label}</Label>
-              <Input
-                type={type ?? 'text'}
-                value={filters[key as keyof typeof filters]}
-                onChange={(e) => handleFilterChange(key, e.target.value)}
-                className="h-8 text-xs"
-              />
+              {type === 'date' ? (
+                <DatePicker
+                  value={filters[key as keyof typeof filters]}
+                  onChange={(v) => handleFilterChange(key, v)}
+                  className="h-8 text-xs"
+                />
+              ) : (
+                <Input
+                  value={filters[key as keyof typeof filters]}
+                  onChange={(e) => handleFilterChange(key, e.target.value)}
+                  className="h-8 text-xs"
+                />
+              )}
             </div>
           ))}
         </div>

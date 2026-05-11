@@ -4,6 +4,30 @@ import { withLogging } from '@/lib/logging/with-logging';
 import { requireAuth } from '@/lib/services/base.service';
 import * as assetsService from '@/lib/services/assets.service';
 import { logError } from '@/lib/logging/safe-error';
+import { adminDb } from '@/lib/firebase/admin';
+import { Asset } from '@/types';
+
+async function enrichAssetCreators(items: Asset[]): Promise<Asset[]> {
+  const missingIds = Array.from(new Set(
+    items.filter((a) => a.createdBy && !a.createdByName && !a.createdByEmail).map((a) => a.createdBy!)
+  ));
+  if (!missingIds.length) return items;
+  const docs = await Promise.all(missingIds.map((id) => adminDb.collection('users').doc(id).get()));
+  const labelMap = new Map<string, string>();
+  docs.forEach((doc, i) => {
+    if (doc.exists) {
+      const d = doc.data()!;
+      const label = d.displayName || d.email;
+      if (label) labelMap.set(missingIds[i], String(label));
+    }
+  });
+  return items.map((a) => {
+    if (a.createdBy && !a.createdByName && !a.createdByEmail && labelMap.has(a.createdBy)) {
+      return { ...a, createdByName: labelMap.get(a.createdBy) };
+    }
+    return a;
+  });
+}
 
 async function _GET(req: NextRequest) {
   try {
@@ -28,7 +52,8 @@ async function _GET(req: NextRequest) {
     const result = await assetsService.getOrgAssets(user, {
       status, category, search, page, pageSize, sortBy: sortBy as never, sortDir,
     });
-    return NextResponse.json(result, {
+    const enrichedItems = await enrichAssetCreators(result.items);
+    return NextResponse.json({ ...result, items: enrichedItems }, {
       headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
     });
   } catch (err) {

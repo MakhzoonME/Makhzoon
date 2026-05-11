@@ -22,6 +22,25 @@ async function batchGetNames(
   return map;
 }
 
+/** Returns displayName falling back to email for user records. */
+async function batchGetUserLabels(
+  collection: string,
+  ids: string[]
+): Promise<Map<string, string>> {
+  const unique = Array.from(new Set(ids.filter(Boolean)));
+  if (!unique.length) return new Map();
+  const docs = await Promise.all(unique.map((id) => adminDb.collection(collection).doc(id).get()));
+  const map = new Map<string, string>();
+  docs.forEach((doc, i) => {
+    if (doc.exists) {
+      const d = doc.data()!;
+      const label = d.displayName || d.email || d.name;
+      if (label) map.set(unique[i], String(label));
+    }
+  });
+  return map;
+}
+
 async function enrichLogs(logs: AuditLog[]): Promise<AuditLog[]> {
   if (!logs.length) return logs;
 
@@ -59,8 +78,8 @@ async function enrichLogs(logs: AuditLog[]): Promise<AuditLog[]> {
   };
 
   const [userNamesOrg, userNamesSuperAdmin, orgNames, recordMaps] = await Promise.all([
-    batchGetNames('users', 'displayName', userIds),
-    batchGetNames('superadminUsers', 'displayName', userIds),
+    batchGetUserLabels('users', userIds),
+    batchGetUserLabels('superadminUsers', userIds),
     batchGetNames('organizations', 'name', orgIds),
     Promise.all(
       Object.entries(moduleGroups).map(async ([mod, ids]) => {

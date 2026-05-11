@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Building2, BadgeCheck, AlertTriangle, MessageSquare, ArrowRight } from 'lucide-react';
+import { Building2, BadgeCheck, AlertTriangle, MessageSquare, ArrowRight, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
@@ -148,7 +148,18 @@ export default function SuperAdminDashboardPage() {
 
   return (
     <div>
-      <PageHeader title={t('nav.dashboard')} description={t('superDash.description')} />
+      <PageHeader
+        title={t('nav.dashboard')}
+        description={t('superDash.description')}
+        actions={
+          <Link href={`/${locale}/superadmin/organizations/new`}>
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-1.5" />
+              {t('superDash.newOrg')}
+            </Button>
+          </Link>
+        }
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard label={t('superDash.totalOrgs')} value={stats.totalOrgs} icon={Building2} tone="indigo" />

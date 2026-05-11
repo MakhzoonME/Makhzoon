@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 // useEffect retained for debounced-search → URL commit only.
-import { Plus, Pencil, ArchiveX, Trash2, Upload } from 'lucide-react';
+import { Pencil, ArchiveX, Trash2, Upload } from 'lucide-react';
 import { useOrgSlug } from '@/hooks/ui';
 import { useAssets } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
@@ -199,11 +199,6 @@ export default function AssetsPage() {
             <SubscriptionGate>
               <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
                 <Upload className="w-4 h-4" /><span className="ms-1">{t('assets.importCsv')}</span>
-              </Button>
-            </SubscriptionGate>
-            <SubscriptionGate>
-              <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
-                <Plus className="w-4 h-4" /><span className="ms-1">{t('assets.addAsset')}</span>
               </Button>
             </SubscriptionGate>
           </div>

@@ -55,7 +55,7 @@ export function MobileDrawer() {
 
   const visibleItems = navItems.filter((item) => {
     if (item.adminOnly && !canSeeAdmin) return false;
-    if (item.featureKey && features[item.featureKey] === false) return false;
+    if (item.featureKey && !features[item.featureKey]) return false;
     return true;
   });
 

@@ -38,9 +38,14 @@ import * as fs from 'fs';
 import * as readline from 'readline';
 
 // ---------- CLI args ----------
-const [, , SOURCE, TARGET] = process.argv;
+// Positional: <source-alias> <target-alias>
+// Flags: --yes (skip confirmations; required for CI when target is prod/legacy)
+const positional = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+const flags = new Set(process.argv.slice(2).filter((a) => a.startsWith('--')));
+const [SOURCE, TARGET] = positional;
+const SKIP_CONFIRM = flags.has('--yes') || flags.has('-y');
 if (!SOURCE || !TARGET) {
-  console.error('Usage: clone-auth.ts <source-alias> <target-alias>');
+  console.error('Usage: clone-auth.ts <source-alias> <target-alias> [--yes]');
   process.exit(1);
 }
 if (SOURCE === TARGET) {
@@ -80,11 +85,15 @@ function runFirebase(args: string[]): Promise<number> {
 (async () => {
   // Refuse to overwrite production-class auth without explicit confirmation
   if (TARGET === 'prod' || TARGET === 'legacy') {
-    console.warn(`⚠️  Target is a production alias (${TARGET}).`);
-    const ans = await prompt(`   Type 'yes' to overwrite production-class auth records: `);
-    if (ans.toLowerCase() !== 'yes') {
-      console.log('Aborted.');
-      process.exit(0);
+    if (SKIP_CONFIRM) {
+      console.warn(`⚠️  Target is a production alias (${TARGET}). Proceeding due to --yes.`);
+    } else {
+      console.warn(`⚠️  Target is a production alias (${TARGET}).`);
+      const ans = await prompt(`   Type 'yes' to overwrite production-class auth records: `);
+      if (ans.toLowerCase() !== 'yes') {
+        console.log('Aborted.');
+        process.exit(0);
+      }
     }
   }
 
@@ -105,18 +114,33 @@ function runFirebase(args: string[]): Promise<number> {
   console.log(`   Exported ${userCount} user(s).\n`);
 
   // ---------- Hash parameters ----------
+  // Env vars provide the unattended CI path; falls back to interactive prompts.
+  // Get the values from:
+  //   gcloud auth print-access-token
+  //   GET https://identitytoolkit.googleapis.com/admin/v2/projects/<source-project-id>/config
   console.log(`📥 Importing into [${TARGET}]`);
-  console.log('');
-  console.log("   You need the SOURCE project's hash parameters.");
-  console.log("   Get them via gcloud:");
-  console.log(`     gcloud auth print-access-token`);
-  console.log(`     # Then GET https://identitytoolkit.googleapis.com/admin/v2/projects/<source-project-id>/config`);
-  console.log('');
-  const hashAlgo = await prompt('   hash-algo (e.g. SCRYPT): ');
-  const hashKey = await prompt('   hash-key (signerKey, base64): ');
-  const saltSep = await prompt('   salt-separator (base64): ');
-  const rounds = await prompt('   rounds (e.g. 8): ');
-  const memCost = await prompt('   mem-cost (e.g. 14): ');
+  const envHashAlgo = process.env.AUTH_HASH_ALGO;
+  const envHashKey  = process.env.AUTH_HASH_KEY;
+  const envSaltSep  = process.env.AUTH_SALT_SEPARATOR;
+  const envRounds   = process.env.AUTH_HASH_ROUNDS;
+  const envMemCost  = process.env.AUTH_HASH_MEM_COST;
+  const fromEnv = !!(envHashAlgo && envHashKey && envSaltSep && envRounds && envMemCost);
+  if (!fromEnv) {
+    console.log('');
+    console.log("   You need the SOURCE project's hash parameters.");
+    console.log("   Get them via gcloud:");
+    console.log(`     gcloud auth print-access-token`);
+    console.log(`     # Then GET https://identitytoolkit.googleapis.com/admin/v2/projects/<source-project-id>/config`);
+    console.log("   Or set: AUTH_HASH_ALGO, AUTH_HASH_KEY, AUTH_SALT_SEPARATOR, AUTH_HASH_ROUNDS, AUTH_HASH_MEM_COST.");
+    console.log('');
+  } else {
+    console.log('   (hash parameters supplied via AUTH_HASH_* env vars)');
+  }
+  const hashAlgo = envHashAlgo ?? await prompt('   hash-algo (e.g. SCRYPT): ');
+  const hashKey  = envHashKey  ?? await prompt('   hash-key (signerKey, base64): ');
+  const saltSep  = envSaltSep  ?? await prompt('   salt-separator (base64): ');
+  const rounds   = envRounds   ?? await prompt('   rounds (e.g. 8): ');
+  const memCost  = envMemCost  ?? await prompt('   mem-cost (e.g. 14): ');
   console.log('');
 
   const importCode = await runFirebase([

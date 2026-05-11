@@ -12,9 +12,12 @@ export interface UserCardData {
 }
 
 const ROLE_LABELS: Record<string, { label: string; className: string }> = {
-  super_admin: { label: 'Super Admin', className: 'bg-purple-100 text-purple-700' },
-  admin:       { label: 'Admin',       className: 'bg-primary-100 text-primary-700' },
-  staff:       { label: 'Staff',       className: 'bg-surface-page   text-gray-600'   },
+  org_owner:        { label: 'Owner',       className: 'bg-amber-100 text-amber-700'   },
+  admin:            { label: 'Admin',       className: 'bg-primary-100 text-primary-700' },
+  staff:            { label: 'Staff',       className: 'bg-surface-page text-gray-600'  },
+  super_admin:      { label: 'Super Admin', className: 'bg-purple-100 text-purple-700' },
+  makhzoon_admin:   { label: 'Makhzoon Admin',   className: 'bg-purple-100 text-purple-700' },
+  makhzoon_support: { label: 'Makhzoon Support', className: 'bg-purple-100 text-purple-700' },
 };
 
 function getInitials(name?: string, email?: string): string {

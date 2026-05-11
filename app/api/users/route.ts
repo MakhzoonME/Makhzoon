@@ -22,7 +22,18 @@ export async function GET(_req: NextRequest) {
   } catch (err) {
     if (err instanceof NextResponse) return err;
     console.error('[GET /api/users]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const debug = process.env.NODE_ENV !== 'production' || process.env.DEBUG_API_ERRORS === '1';
+    return NextResponse.json(
+      debug
+        ? {
+            error: 'Internal server error',
+            message: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack?.split('\n').slice(0, 8) : undefined,
+            code: (err as { code?: string | number })?.code,
+          }
+        : { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 

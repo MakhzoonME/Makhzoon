@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+**/node_modules/
 /.pnp
 .pnp.js
 .yarn/install-state.gz
@@ -48,3 +49,16 @@ next-env.d.ts
 *firebase-adminsdk*.json
 serviceAccount*.json
 ruflo/
+
+# local runtime state from RuFlo / agentic-flow / claude-flow MCP
+ruvector.db
+ruvector.db-*
+functions/ruvector.db
+functions/ruvector.db-*
+.swarm/
+agentdb.rvf
+agentdb.rvf.lock
+
+# stray shell brace-expansion / accidental output files
+{,
+x.collectionGroup

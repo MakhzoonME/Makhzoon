@@ -1,13 +1,33 @@
 import { format, formatDistanceToNow, differenceInDays } from 'date-fns';
 
-export function formatDate(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return format(d, 'dd MMM yyyy');
+function toDate(date: unknown): Date | null {
+  if (!date) return null;
+  if (date instanceof Date) return isNaN(date.getTime()) ? null : date;
+  if (typeof date === 'string' || typeof date === 'number') {
+    const d = new Date(date);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  // Firestore Timestamp shapes that survived JSON serialization
+  if (typeof date === 'object') {
+    const o = date as { _seconds?: number; seconds?: number; toDate?: () => Date };
+    if (typeof o.toDate === 'function') {
+      const d = o.toDate();
+      return isNaN(d.getTime()) ? null : d;
+    }
+    const secs = o._seconds ?? o.seconds;
+    if (typeof secs === 'number') return new Date(secs * 1000);
+  }
+  return null;
 }
 
-export function formatDateTime(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return format(d, 'dd MMM yyyy HH:mm');
+export function formatDate(date: Date | string | null | undefined): string {
+  const d = toDate(date);
+  return d ? format(d, 'dd MMM yyyy') : '';
+}
+
+export function formatDateTime(date: Date | string | null | undefined): string {
+  const d = toDate(date);
+  return d ? format(d, 'dd MMM yyyy HH:mm') : '';
 }
 
 export function daysUntil(date: Date | string): number {

@@ -1,0 +1,176 @@
+name: Sync Firestore (and Auth)
+
+# Generalized clone workflow: any source → any target across our Firebase
+# environments. Triggered nightly (prod → dev) and on-demand from the
+# superadmin UI (POST /api/superadmin/sync) or manually from this tab.
+#
+# PII policy: this workflow runs WITHOUT scrubbing. Targets must therefore
+# have the same access controls as their source.
+#
+# Required repo secrets:
+#   PROD_SERVICE_ACCOUNT_JSON      makhzoonme-prod
+#   STAGING_SERVICE_ACCOUNT_JSON   makhzoonme-stg
+#   DEV_SERVICE_ACCOUNT_JSON       makhzoonme-dev
+#   LEGACY_SERVICE_ACCOUNT_JSON    office-asset-system
+#   FIREBASE_TOKEN                 `firebase login:ci` token (Owner on all targets)
+#   AUTH_HASH_ALGO / KEY / SALT_SEPARATOR / ROUNDS / MEM_COST
+#                                   from prod Identity Toolkit (only used when
+#                                   source=prod and the auth job runs)
+#
+# Allowed source→target pairs (enforced both here and in the API route):
+#   prod   → dev | staging | legacy
+#   staging→ dev
+#
+# Anything else exits 1.
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # nightly prod → dev
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Source environment'
+        type: choice
+        options: [prod, staging]
+        default: prod
+      target:
+        description: 'Target environment'
+        type: choice
+        options: [dev, staging, legacy]
+        default: dev
+      dry_run:
+        description: 'Dry run (Firestore only — no writes)'
+        type: boolean
+        default: false
+      skip_auth:
+        description: 'Skip auth clone (Firestore only)'
+        type: boolean
+        default: false
+
+concurrency:
+  # One sync at a time per (source, target) pair.
+  group: sync-firestore-${{ github.event.inputs.source || 'prod' }}-to-${{ github.event.inputs.target || 'dev' }}
+  cancel-in-progress: false
+
+jobs:
+  firestore:
+    name: Sync Firestore ${{ github.event.inputs.source || 'prod' }} → ${{ github.event.inputs.target || 'dev' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SOURCE: ${{ github.event.inputs.source || 'prod' }}
+      TARGET: ${{ github.event.inputs.target || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reject invalid source→target pair
+        run: |
+          ok=0
+          [ "$SOURCE" = "prod" ] && [ "$TARGET" = "dev" ] && ok=1
+          [ "$SOURCE" = "prod" ] && [ "$TARGET" = "staging" ] && ok=1
+          [ "$SOURCE" = "prod" ] && [ "$TARGET" = "legacy" ] && ok=1
+          [ "$SOURCE" = "staging" ] && [ "$TARGET" = "dev" ] && ok=1
+          if [ "$ok" != "1" ]; then
+            echo "::error::Pair $SOURCE → $TARGET is not allowed."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Pick source service account
+        env:
+          PROD_SA: ${{ secrets.PROD_SERVICE_ACCOUNT_JSON }}
+          STAGING_SA: ${{ secrets.STAGING_SERVICE_ACCOUNT_JSON }}
+        run: |
+          mkdir -p .sa
+          case "$SOURCE" in
+            prod) printf '%s' "$PROD_SA" > .sa/source.json ;;
+            staging) printf '%s' "$STAGING_SA" > .sa/source.json ;;
+            *) echo "::error::Unknown source: $SOURCE"; exit 1 ;;
+          esac
+          chmod 600 .sa/source.json
+
+      - name: Pick target service account
+        env:
+          DEV_SA: ${{ secrets.DEV_SERVICE_ACCOUNT_JSON }}
+          STAGING_SA: ${{ secrets.STAGING_SERVICE_ACCOUNT_JSON }}
+          LEGACY_SA: ${{ secrets.LEGACY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          case "$TARGET" in
+            dev) printf '%s' "$DEV_SA" > .sa/target.json ;;
+            staging) printf '%s' "$STAGING_SA" > .sa/target.json ;;
+            legacy) printf '%s' "$LEGACY_SA" > .sa/target.json ;;
+            *) echo "::error::Unknown target: $TARGET"; exit 1 ;;
+          esac
+          chmod 600 .sa/target.json
+          node -e "
+            const s = require('./.sa/source.json');
+            const t = require('./.sa/target.json');
+            if (!s.project_id || !t.project_id) { console.error('missing project_id'); process.exit(1); }
+            if (s.project_id === t.project_id) { console.error('same project_id — refusing'); process.exit(1); }
+            console.log('source:', s.project_id, '→ target:', t.project_id);
+          "
+
+      - name: Run Firestore clone
+        env:
+          SOURCE_SERVICE_ACCOUNT_PATH: .sa/source.json
+          TARGET_SERVICE_ACCOUNT_PATH: .sa/target.json
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            npx ts-node --compiler-options '{"module":"commonjs"}' \
+              scripts/clone-firestore.ts --target=$TARGET --no-scrub --yes --dry-run
+          else
+            npx ts-node --compiler-options '{"module":"commonjs"}' \
+              scripts/clone-firestore.ts --target=$TARGET --no-scrub --yes
+          fi
+
+      - name: Shred service-account keys
+        if: always()
+        run: rm -rf .sa
+
+  auth:
+    name: Sync Auth ${{ github.event.inputs.source || 'prod' }} → ${{ github.event.inputs.target || 'dev' }}
+    runs-on: ubuntu-latest
+    needs: firestore
+    if: ${{ github.event.inputs.skip_auth != 'true' }}
+    timeout-minutes: 20
+    env:
+      SOURCE: ${{ github.event.inputs.source || 'prod' }}
+      TARGET: ${{ github.event.inputs.target || 'dev' }}
+      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+      AUTH_HASH_ALGO: ${{ secrets.AUTH_HASH_ALGO }}
+      AUTH_HASH_KEY: ${{ secrets.AUTH_HASH_KEY }}
+      AUTH_SALT_SEPARATOR: ${{ secrets.AUTH_SALT_SEPARATOR }}
+      AUTH_HASH_ROUNDS: ${{ secrets.AUTH_HASH_ROUNDS }}
+      AUTH_HASH_MEM_COST: ${{ secrets.AUTH_HASH_MEM_COST }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install firebase-tools
+        run: npm i -g firebase-tools
+
+      - name: Run Auth clone
+        # NOTE: AUTH_HASH_* secrets are tied to the source project. If you
+        # ever sync from staging, populate the staging variants and pick
+        # them here. For now the secrets reflect prod.
+        run: |
+          npx ts-node --compiler-options '{"module":"commonjs"}' \
+            scripts/clone-auth.ts $SOURCE $TARGET --yes
+
+      - name: Shred exported auth file
+        if: always()
+        run: find . -maxdepth 1 -name 'auth-export-*.json' -delete || true

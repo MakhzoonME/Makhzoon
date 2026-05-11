@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const SUPPORTED_LOCALES = ['en', 'ar'];
 const DEFAULT_LOCALE = 'en';
-const SKIP_PREFIXES = ['/api/', '/invites/', '/_next/'];
+const SKIP_PREFIXES = ['/api/', '/_next/'];
 
 const PUBLIC_PATHS = new Set([
   '/', '/home', '/product', '/pricing', '/customers', '/security', '/about', '/contact', '/login', '/signup',
@@ -56,6 +56,11 @@ export async function proxy(req: NextRequest) {
 
   // Marketing and auth pages are always accessible
   if (PUBLIC_PATHS.has(rest) || rest === '/') {
+    return NextResponse.next();
+  }
+
+  // Invite acceptance pages are public — invitee has no session yet
+  if (rest.startsWith('/invites/')) {
     return NextResponse.next();
   }
 

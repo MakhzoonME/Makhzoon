@@ -29,6 +29,7 @@ export function LanguageToggle({ variant = 'ghost-light', className }: Props) {
 
   function switchLocale(newLocale: Locale) {
     setLocale(newLocale);
+    document.cookie = `makhzoon-locale=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
     const newPath = pathname.replace(/^\/(en|ar)/, `/${newLocale}`);
     router.push(newPath);
   }

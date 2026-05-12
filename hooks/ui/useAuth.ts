@@ -11,7 +11,35 @@ export function useAuth() {
   const { user, loading, setUser, setLoading } = useAuthStore();
 
   useEffect(() => {
+    // Fallback: if Firebase SDK doesn't fire onAuthStateChanged within 6 seconds
+    // (e.g. IndexedDB deadlock), try /api/auth/me to recover the session.
+    const fallbackTimer = setTimeout(async () => {
+      if (!useAuthStore.getState().loading) return; // already resolved
+      try {
+        const res = await fetch('/api/auth/me', { headers: { 'Cache-Control': 'no-cache' } });
+        if (res.ok) {
+          const data = await res.json();
+          setUser({
+            uid: data.uid ?? '',
+            email: '',
+            displayName: '',
+            role: data.role,
+            organizationId: data.organizationId ?? null,
+            orgSlug: data.orgSlug ?? null,
+            permissions: data.permissions ?? null,
+            features: data.features ?? {},
+          } as AuthUser);
+        } else {
+          setUser(null);
+        }
+      } catch {
+        setUser(null);
+      }
+      setLoading(false);
+    }, 6000);
+
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      clearTimeout(fallbackTimer);
       if (firebaseUser) {
         // Force-refresh the ID token so custom claims (role, orgId) are always current
         await firebaseUser.getIdToken(true);
@@ -66,7 +94,7 @@ export function useAuth() {
       }
       setLoading(false);
     });
-    return () => unsub();
+    return () => { unsub(); clearTimeout(fallbackTimer); };
   }, [setUser, setLoading]);
 
   return { user, loading };

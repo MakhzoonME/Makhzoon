@@ -2,8 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/ui';
-import { SuperAdminBanner } from '@/components/layout/SuperAdminBanner';
 import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity, Mail, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
@@ -88,8 +88,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--sa-page-bg, #0F2440)' }}>
-      <SuperAdminBanner />
-      <div className="flex pt-8">
+      <div className="flex">
         {/* Mobile overlay backdrop */}
         {isMobile && mobileNavOpen && (
           <div
@@ -103,7 +102,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
           animate={{ width: isMobile ? SA_EXPANDED : sidebarW }}
           transition={{ duration: 0.26, ease: EASE_SLIDE }}
           className={cn(
-            'fixed top-8 bottom-0 flex flex-col overflow-visible z-30',
+            'fixed top-0 bottom-0 flex flex-col overflow-visible z-30',
             isRtl ? 'right-0' : 'left-0',
             isMobile && !mobileNavOpen && 'hidden',
           )}
@@ -198,12 +197,12 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
         </motion.aside>
 
         <main
-          className="flex-1 min-h-screen bg-surface-page transition-all duration-[260ms]"
+          className="flex-1 min-h-screen bg-surface-page transition-all duration-[260ms] overflow-x-hidden"
           style={!isMobile ? (isRtl ? { marginRight: sidebarW } : { marginLeft: sidebarW }) : undefined}
         >
           {/* Top nav bar */}
           <div
-            className="sticky top-8 z-20 h-12 flex items-center justify-between px-4 gap-3"
+            className="sticky top-0 z-20 h-12 flex items-center justify-between px-4 gap-3"
             style={{ background: '#0D1F36', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
           >
             {/* Left: mobile hamburger OR desktop title */}
@@ -227,6 +226,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
             {/* Right: controls */}
             <div className="flex items-center gap-1">
+              <NetworkStatusIndicator variant="ghost-dark" />
               <ThemeToggle variant="ghost-dark" />
               <LanguageToggle variant="ghost-dark" />
               <button

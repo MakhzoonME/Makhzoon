@@ -5,12 +5,15 @@ const DEFAULT_LOCALE = 'en';
 const LOCALE_COOKIE = 'makhzoon-locale';
 const SKIP_PREFIXES = ['/api/', '/_next/'];
 
-const PUBLIC_PATHS = new Set([
-  '/', '/home', '/product', '/pricing', '/customers', '/security', '/about', '/contact', '/login', '/signup',
+const MARKETING_HOSTS = new Set(['makhzoon.me', 'www.makhzoon.me']);
+const APP_HOSTS = new Set(['app.makhzoon.me', 'dev.makhzoon.me', 'stg.makhzoon.me']);
+
+// Paths that belong only to the marketing site — block on app hosts
+const MARKETING_ONLY_PATHS = new Set([
+  '/home', '/product', '/pricing', '/customers', '/security', '/about', '/contact',
 ]);
 
-const MARKETING_HOSTS = new Set(['makhzoon.me', 'www.makhzoon.me']);
-const APP_HOST = 'app.makhzoon.me';
+const AUTH_PATHS = new Set(['/login', '/signup']);
 
 function detectLocale(req: NextRequest): string {
   const cookieLocale = req.cookies.get(LOCALE_COOKIE)?.value;
@@ -41,34 +44,40 @@ export async function proxy(req: NextRequest) {
 
   const { locale, rest } = stripLocale(pathname);
 
+  const isAppHost = APP_HOSTS.has(hostname);
+
   // If no locale prefix, redirect with detected locale
   if (!locale) {
     const detected = detectLocale(req);
     const url = req.nextUrl.clone();
-    const destination = hostname === APP_HOST ? `/${detected}/login` : `/${detected}`;
+    const destination = isAppHost ? `/${detected}/login` : `/${detected}`;
     url.pathname = `${destination}${pathname === '/' ? '' : pathname}`;
     return NextResponse.redirect(url);
   }
 
-  // makhzoon.me — only serve the coming soon root; redirect everything else
+  // makhzoon.me / www.makhzoon.me — serve marketing pages only; block everything else
   if (MARKETING_HOSTS.has(hostname)) {
-    if (rest === '/') return NextResponse.next();
+    if (rest === '/' || MARKETING_ONLY_PATHS.has(rest)) {
+      return NextResponse.next();
+    }
     const url = req.nextUrl.clone();
     url.pathname = `/${locale}`;
     return NextResponse.redirect(url);
   }
 
-  // app.makhzoon.me — redirect locale root to login
-  if (hostname === APP_HOST && rest === '/') {
-    const url = req.nextUrl.clone();
-    url.pathname = `/${locale}/login`;
-    return NextResponse.redirect(url);
+  // App hosts — never show marketing pages; root and marketing paths go to login
+  if (isAppHost) {
+    if (rest === '/' || MARKETING_ONLY_PATHS.has(rest)) {
+      const url = req.nextUrl.clone();
+      url.pathname = `/${locale}/login`;
+      return NextResponse.redirect(url);
+    }
   }
 
   const session = req.cookies.get('session')?.value;
 
-  // Marketing and auth pages are always accessible
-  if (PUBLIC_PATHS.has(rest) || rest === '/') {
+  // Auth pages are always accessible
+  if (AUTH_PATHS.has(rest)) {
     return NextResponse.next();
   }
 

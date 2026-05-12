@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { checkResourceLimit } from '@/lib/platform/limits/check-limit';
 import {
   getInvites,
   getPendingInviteForEmail,
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
 
   if (tenant.subscription?.status && tenant.subscription.status !== 'ACTIVE')
     return NextResponse.json({ error: 'Subscription expired' }, { status: 403 });
+  await checkResourceLimit(tenant, 'users');
 
   const body = await req.json();
   const parsed = createInviteSchema.safeParse(body);

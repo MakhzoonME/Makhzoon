@@ -79,9 +79,9 @@ export default function InventoryItemDetailPage() {
   if (isLoading) return <LoadingSkeleton />;
   if (!item) return <div className="text-gray-500 p-6">Item not found.</div>;
 
-  const stockColor = item.stockStatus === 'ok' ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
-    : item.stockStatus === 'low' ? 'text-amber-700 bg-amber-50 border-amber-200'
-    : 'text-red-700 bg-red-50 border-red-200';
+  const stockColor = item.stockStatus === 'ok' ? 'text-[var(--green-700)] bg-[var(--green-100)] border-[var(--green-100)]'
+    : item.stockStatus === 'low' ? 'text-[var(--yellow-700)] bg-[var(--yellow-100)] border-[var(--yellow-100)]'
+    : 'text-[var(--red-700)] bg-[var(--red-100)] border-[var(--red-100)]';
 
   async function handleTransaction(e: React.FormEvent) {
     e.preventDefault();

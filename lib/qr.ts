@@ -1,7 +1,7 @@
 import QRCode from 'qrcode';
 
-export async function generateAssetQRDataUrl(assetId: string, baseUrl: string): Promise<string> {
-  const url = `${baseUrl.replace(/\/$/, '')}/assets/${assetId}`;
+export async function generateAssetQRDataUrl(assetId: string, baseUrl: string, fullUrl?: string): Promise<string> {
+  const url = fullUrl ?? `${baseUrl.replace(/\/$/, '')}/assets/${assetId}`;
   return QRCode.toDataURL(url, {
     width: 512,
     margin: 1,

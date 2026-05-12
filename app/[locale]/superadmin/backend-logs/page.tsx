@@ -30,10 +30,10 @@ interface BackendLog {
 }
 
 const LEVEL_STYLES: Record<string, string> = {
-  success: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-  warning: 'bg-amber-50 text-amber-700 border border-amber-200',
-  error:   'bg-red-50 text-red-700 border border-red-200',
-  info:    'bg-primary-50 text-primary-700 border border-primary-200',
+  success: 'bg-[var(--green-100)] text-[var(--green-700)] border border-[var(--green-100)]',
+  warning: 'bg-[var(--yellow-100)] text-[var(--yellow-700)] border border-[var(--yellow-100)]',
+  error:   'bg-[var(--red-100)] text-[var(--red-700)] border border-[var(--red-100)]',
+  info:    'bg-[var(--primary-100)] text-[var(--primary-700)] border border-[var(--primary-100)]',
 };
 
 const METHOD_STYLES: Record<string, string> = {
@@ -374,8 +374,8 @@ export default function BackendLogsPage() {
                     onClick={() => setExpanded(expanded === log.id ? null : log.id)}
                     className={cn(
                       'cursor-pointer hover:bg-surface-page transition-colors',
-                      log.level === 'error' && 'bg-red-50/60',
-                      expanded === log.id && 'bg-primary-50/60'
+                      log.level === 'error' && 'bg-[var(--red-50)]',
+                      expanded === log.id && 'bg-[var(--primary-50)]'
                     )}
                   >
                     <td className="px-3 py-2 font-mono text-gray-500 whitespace-nowrap">{fmt(log.timestamp)}</td>
@@ -398,7 +398,7 @@ export default function BackendLogsPage() {
                     <td className="px-3 py-2 text-red-600 max-w-[180px] truncate" title={log.errorMessage}>{log.errorMessage ?? ''}</td>
                   </tr>
                   {expanded === log.id && (
-                    <tr key={`${log.id}-detail`} className="bg-primary-50/60">
+                    <tr key={`${log.id}-detail`} className="bg-[var(--primary-50)]">
                       <td colSpan={10} className="px-4 py-3">
                         <div className="grid grid-cols-2 gap-4">
                           <div>

@@ -8,6 +8,7 @@ import {
 import { hasPermission } from '@/lib/platform/permissions';
 import { auditLog } from '@/lib/platform/audit';
 import type { TenantContext } from '@/lib/platform/tenancy/types';
+import { checkResourceLimit } from '@/lib/platform/limits/check-limit';
 
 export interface CreateRequestInput {
   type: 'REFILL' | 'RETIRE' | 'BUY_NEW' | 'EXTEND_WARRANTY';
@@ -37,6 +38,7 @@ export async function create(tenant: TenantContext, data: CreateRequestInput) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   if (tenant.subscription?.status && tenant.subscription.status !== 'ACTIVE')
     throw NextResponse.json({ error: 'Subscription expired' }, { status: 403 });
+  await checkResourceLimit(tenant, 'requests');
 
   const id = await dbCreateRequest({
     organizationId: tenant.organizationId,

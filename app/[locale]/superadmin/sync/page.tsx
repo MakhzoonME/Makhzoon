@@ -38,14 +38,14 @@ const PROJECT_LABEL: Record<Source | Target, string> = {
 
 function statusColor(status: string, conclusion: string | null) {
   if (status === 'completed') {
-    if (conclusion === 'success') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    if (conclusion === 'failure') return 'bg-red-50 text-red-700 border-red-200';
-    return 'bg-gray-50 text-gray-700 border-gray-200';
+    if (conclusion === 'success') return 'bg-[var(--green-100)] text-[var(--green-700)] border-[var(--green-100)]';
+    if (conclusion === 'failure') return 'bg-[var(--red-100)] text-[var(--red-700)] border-[var(--red-100)]';
+    return 'bg-surface-page text-gray-700 border-border';
   }
   if (status === 'in_progress' || status === 'queued' || status === 'waiting') {
-    return 'bg-amber-50 text-amber-700 border-amber-200';
+    return 'bg-[var(--yellow-100)] text-[var(--yellow-700)] border-[var(--yellow-100)]';
   }
-  return 'bg-gray-50 text-gray-700 border-gray-200';
+  return 'bg-surface-page text-gray-700 border-border';
 }
 
 export default function SyncPage() {
@@ -93,14 +93,14 @@ export default function SyncPage() {
       <PageHeader title="Environment Sync" />
 
       {tokenMissing && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
+        <div className="bg-[var(--yellow-100)] border border-[var(--yellow-100)] rounded-lg p-4 text-sm text-[var(--yellow-700)]">
           <strong>Setup required.</strong> Set <code>GITHUB_DISPATCH_TOKEN</code> (fine-grained PAT with{' '}
           <code>actions:write</code> on this repo) and optionally <code>GITHUB_REPO</code> / <code>GITHUB_REF_BRANCH</code>{' '}
           in this environment before the buttons will work.
         </div>
       )}
 
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-800">
+      <div className="bg-[var(--red-100)] border border-[var(--red-100)] rounded-lg p-4 text-sm text-[var(--red-700)]">
         <strong>Heads up:</strong> these actions overwrite the target environment with no scrubbing. Real customer data
         will be visible in the target. Confirm twice before clicking on prod-as-source.
       </div>
@@ -109,11 +109,11 @@ export default function SyncPage() {
         {ALL_PAIRS.map((pair) => (
           <div key={pair.key} className="bg-surface-card border border-border rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 text-primary-700 rounded">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[var(--primary-100)] text-[var(--primary-700)] rounded">
                 {pair.source}
               </span>
               <ArrowRight className="h-4 w-4 text-gray-400" />
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[var(--green-100)] text-[var(--green-700)] rounded">
                 {pair.target}
               </span>
             </div>

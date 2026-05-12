@@ -29,6 +29,7 @@ export function LanguageToggle({ variant = 'ghost-light', className }: Props) {
 
   function switchLocale(newLocale: Locale) {
     setLocale(newLocale);
+    document.cookie = `makhzoon-locale=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
     const newPath = pathname.replace(/^\/(en|ar)/, `/${newLocale}`);
     router.push(newPath);
   }
@@ -37,7 +38,7 @@ export function LanguageToggle({ variant = 'ghost-light', className }: Props) {
     'flex items-center gap-1.5 h-8 px-2 rounded-md text-xs font-medium transition-colors',
     variant === 'ghost-dark'
       ? 'text-blue-300 hover:text-blue-100 hover:bg-blue-900/50'
-      : 'text-gray-500 hover:text-gray-900 hover:bg-surface-page dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700',
+      : 'text-gray-500 hover:text-gray-900 hover:bg-surface-page dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-gray-700/60',
     className,
   );
 
@@ -49,7 +50,7 @@ export function LanguageToggle({ variant = 'ghost-light', className }: Props) {
           <span>{locale === 'en' ? 'EN' : 'ع'}</span>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-40 dark:bg-gray-800 dark:border-gray-700">
+      <DropdownMenuContent align="end" className="w-40">
         {(['en', 'ar'] as Locale[]).map((loc) => (
           <DropdownMenuItem
             key={loc}

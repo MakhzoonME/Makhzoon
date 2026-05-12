@@ -96,7 +96,7 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
         )}
       </div>
 
-      {isLoading ? (
+      {isLoading || checkoutMut.isPending || returnMut.isPending ? (
         <div className="p-5"><div className="h-16 rounded-md bg-surface-page animate-pulse" /></div>
       ) : active ? (
         <div className="px-5 py-4">

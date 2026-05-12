@@ -2,7 +2,7 @@
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -88,6 +88,101 @@ function CheckCircleSVG() {
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+
+/* ── Forgot Password Modal ───────────────────────────────────── */
+function ForgotPasswordModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useT();
+  const [resetEmail, setResetEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+
+  function reset() { setResetEmail(''); setLoading(false); setSubmitted(false); setError(''); }
+  function handleClose() { onClose(); setTimeout(reset, 300); }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, resetEmail.trim());
+      setSubmitted(true);
+    } catch (err: unknown) {
+      const code = (err as { code?: string } | null)?.code ?? '';
+      if (code === 'auth/user-not-found' || code === 'auth/invalid-email') {
+        setSubmitted(true); // don't reveal whether email exists
+      } else if (code === 'auth/too-many-requests') {
+        setError('Too many attempts. Please wait a moment before trying again.');
+      } else {
+        setError('Failed to send reset email. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <motion.div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
+          <motion.div
+            className="relative bg-surface-card border border-border rounded-2xl shadow-2xl w-full max-w-sm p-6 z-10"
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ duration: 0.2, ease: EASE_OUT }}
+          >
+            <button type="button" onClick={handleClose} className="absolute top-4 end-4 text-gray-500 hover:text-gray-800 transition-colors" aria-label="Close">
+              <XSVGIcon />
+            </button>
+            <AnimatePresence mode="wait" initial={false}>
+              {submitted ? (
+                <motion.div key="success" className="flex flex-col items-center text-center py-6 gap-4"
+                  initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+                  <span className="text-primary-600"><CheckCircleSVG /></span>
+                  <h2 className="text-lg font-semibold text-gray-900">{t('auth.resetLinkSent')}</h2>
+                  <p className="text-sm text-gray-500 max-w-xs">{t('auth.resetLinkSentBody').replace('{email}', resetEmail.trim())}</p>
+                  <Button className="mt-2" onClick={handleClose}>{t('auth.backToSignIn')}</Button>
+                </motion.div>
+              ) : (
+                <motion.div key="form" initial={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-1">{t('auth.forgotPasswordTitle')}</h2>
+                  <p className="text-sm text-gray-500 mb-6">{t('auth.forgotPasswordSubtitle')}</p>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="reset-email">{t('auth.emailFieldLabel')}</Label>
+                      <Input
+                        id="reset-email" type="email" autoComplete="email"
+                        placeholder={t('auth.emailPlaceholder')}
+                        value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required
+                      />
+                    </div>
+                    {error && (
+                      <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
+                        <AlertCircleSVG /><span>{error}</span>
+                      </div>
+                    )}
+                    <div className="flex gap-3 pt-1">
+                      <Button type="button" variant="outline" className="flex-1" onClick={handleClose}>{t('auth.backToSignIn')}</Button>
+                      <Button type="submit" className="flex-1" disabled={loading}>
+                        {loading ? <span className="inline-flex items-center gap-2"><Loader2SVG />{t('auth.sending')}</span> : t('auth.sendResetLink')}
+                      </Button>
+                    </div>
+                  </form>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 /* ── Contact Sales Modal ─────────────────────────────────────── */
 function ContactSalesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -231,6 +326,7 @@ export default function LoginPage() {
 
   const [tab, setTab] = useState<'email' | 'username'>('email');
   const [contactOpen, setContactOpen] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   const sessionExpiredMessage = useSyncExternalStore(
     () => () => {},
@@ -249,7 +345,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (sessionExpiredMessage) return; // skip auto-redirect when prompting re-auth
-    fetch('/api/auth/me').then(async (res) => {
+    fetch('/api/auth/me', { cache: 'no-store' }).then(async (res) => {
       if (!res.ok) return;
       const body = await res.json().catch(() => null);
       if (!body) return;
@@ -339,8 +435,10 @@ export default function LoginPage() {
     if (code === 'auth/user-disabled') return 'This account has been deactivated. Please contact support.';
     if (code === 'auth/user-not-found') return mode === 'email' ? 'No account found with this email address.' : 'No account found with this username.';
     if (code === 'auth/wrong-password') return 'Incorrect password. Please try again.';
+    if (code === 'auth/invalid-credential') return mode === 'email' ? 'Incorrect email or password. Please try again.' : 'Incorrect username or password. Please try again.';
     if (code === 'auth/too-many-requests') return 'Too many failed attempts. Please try again later or reset your password.';
     if (code === 'auth/invalid-email') return 'Invalid email address format.';
+    if (code === 'auth/network-request-failed') return 'Network error. Please check your connection and try again.';
     if (/^auth\//.test(code)) return 'Sign in failed. Please check your credentials and try again.';
     if (err instanceof Error) return err.message;
     return 'Sign in failed. Please check your credentials and try again.';
@@ -441,7 +539,7 @@ export default function LoginPage() {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="email-password">{t('auth.password')}</Label>
-                        <button type="button" className="text-xs text-primary-600 hover:text-primary-700 transition-colors font-medium">
+                        <button type="button" onClick={() => setForgotOpen(true)} className="text-xs text-primary-600 hover:text-primary-700 transition-colors font-medium">
                           {t('auth.forgotPassword')}
                         </button>
                       </div>
@@ -564,6 +662,7 @@ export default function LoginPage() {
         </p>
       </div>
 
+      <ForgotPasswordModal open={forgotOpen} onClose={() => setForgotOpen(false)} />
       <ContactSalesModal open={contactOpen} onClose={() => setContactOpen(false)} />
     </div>
   );

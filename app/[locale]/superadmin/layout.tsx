@@ -2,19 +2,25 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/ui';
-import { SuperAdminBanner } from '@/components/layout/SuperAdminBanner';
-import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity, Mail, RefreshCw } from 'lucide-react';
+import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity, Mail, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
 import { useTransferStore } from '@/store/transfer.store';
+import { useUiStore } from '@/store/ui.store';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
 import { useT } from '@/hooks/ui';
+import { motion } from 'framer-motion';
 import type { MessageKey } from '@/locales/messages';
+
+const SA_EXPANDED  = 240;
+const SA_COLLAPSED = 68;
+const EASE_SLIDE = [0.4, 0, 0.2, 1] as const;
 
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
@@ -40,6 +46,16 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   const pathname = usePathname();
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const { superAdminSidebarCollapsed: collapsed, toggleSuperAdminSidebar } = useUiStore();
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) router.push(`/${locale}/login`);
@@ -68,57 +84,162 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
   const navItems = ALL_NAV_ITEMS(locale).filter((item) => item.roles.includes(user.role));
 
+  const sidebarW = collapsed ? SA_COLLAPSED : SA_EXPANDED;
+
   return (
     <div className="min-h-screen" style={{ background: 'var(--sa-page-bg, #0F2440)' }}>
-      <SuperAdminBanner />
-      <div className="flex pt-8">
-        <aside
+      <div className="flex">
+        {/* Mobile overlay backdrop */}
+        {isMobile && mobileNavOpen && (
+          <div
+            className="fixed inset-0 z-20 bg-black/50"
+            onClick={() => setMobileNavOpen(false)}
+          />
+        )}
+
+        <motion.aside
+          initial={false}
+          animate={{ width: isMobile ? SA_EXPANDED : sidebarW }}
+          transition={{ duration: 0.26, ease: EASE_SLIDE }}
           className={cn(
-            'fixed top-8 bottom-0 w-60 flex flex-col',
+            'fixed top-0 bottom-0 flex flex-col overflow-visible z-30',
             isRtl ? 'right-0' : 'left-0',
+            isMobile && !mobileNavOpen && 'hidden',
           )}
-          style={{ background: '#0F2440' }}
+          style={{ background: '#0F2440', willChange: 'width' }}
         >
-          <div className="px-4 py-4 border-b border-blue-900">
-            <div className="flex items-center gap-2">
-              <MakhzoonMark size={28} fill="#FFFFFF" glyphFill="#1E3A5F" />
-              <span className="text-sm font-semibold text-blue-100">Makhzoon</span>
-            </div>
+          {/* Collapse toggle */}
+          <button
+            onClick={toggleSuperAdminSidebar}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className={cn(
+              'absolute top-1/2 -translate-y-1/2 z-20',
+              'h-5 w-5 rounded-full bg-blue-900 border border-blue-700 shadow-sm',
+              'flex items-center justify-center text-blue-300',
+              'hover:text-blue-100 hover:border-blue-500 transition-all duration-200',
+              isRtl ? '-left-2.5' : '-right-2.5',
+            )}
+          >
+            {isRtl
+              ? (collapsed ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)
+              : (collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />)
+            }
+          </button>
+
+          {/* Logo */}
+          <div className="px-4 py-4 border-b border-blue-900 flex items-center gap-2 overflow-hidden">
+            <MakhzoonMark size={28} fill="#FFFFFF" glyphFill="#1E3A5F" className="flex-shrink-0" />
+            <motion.span
+              animate={{ width: collapsed ? 0 : 'auto', opacity: collapsed ? 0 : 1 }}
+              transition={collapsed
+                ? { width: { duration: 0.18, ease: EASE_SLIDE }, opacity: { duration: 0.08 } }
+                : { width: { duration: 0.22, ease: EASE_SLIDE }, opacity: { duration: 0.14, delay: 0.14 } }
+              }
+              className="text-sm font-semibold text-blue-100 whitespace-nowrap overflow-hidden"
+              style={{ minWidth: 0 }}
+            >
+              Makhzoon
+            </motion.span>
           </div>
-          <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+
+          {/* Nav items */}
+          <nav className="flex-1 p-2.5 space-y-0.5 overflow-y-auto overflow-x-hidden">
             {navItems.map(({ href, labelKey, icon: Icon }) => {
               const label = t(labelKey as MessageKey);
               const active = pathname === href || (href !== `/${locale}/superadmin` && pathname.startsWith(href));
               return (
-                <Link key={href} href={href} className={cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
-                  active ? 'bg-blue-800 text-blue-100 font-medium' : 'text-blue-300 hover:bg-blue-900 hover:text-blue-100'
-                )}>
+                <Link
+                  key={href}
+                  href={href}
+                  title={collapsed ? label : undefined}
+                  className={cn(
+                    'group relative flex items-center rounded-lg text-sm transition-colors duration-150 h-9 pl-[25px]',
+                    active ? 'bg-blue-800/80 text-blue-100 font-medium' : 'text-blue-300 hover:bg-blue-900 hover:text-blue-100',
+                  )}
+                >
                   <Icon className="h-[18px] w-[18px] flex-shrink-0" />
-                  {label}
+                  <motion.span
+                    animate={{ width: collapsed ? 0 : 'auto', opacity: collapsed ? 0 : 1 }}
+                    transition={collapsed
+                      ? { width: { duration: 0.18, ease: EASE_SLIDE }, opacity: { duration: 0.08 } }
+                      : { width: { duration: 0.22, ease: EASE_SLIDE }, opacity: { duration: 0.14, delay: 0.14 } }
+                    }
+                    className="whitespace-nowrap overflow-hidden ms-2.5"
+                    style={{ minWidth: 0 }}
+                  >
+                    {label}
+                  </motion.span>
                 </Link>
               );
             })}
           </nav>
-          <div className="p-3 border-t border-blue-900">
-            <div className="px-3 py-1.5 mb-1">
-              <p className="text-xs text-blue-500 truncate">{user.email}</p>
-              <p className="text-xs text-blue-400 capitalize">{user.role.replace(/_/g, ' ')}</p>
+
+          {/* Sidebar footer — logo/identity only */}
+          <div className="p-3 border-t border-blue-900 overflow-hidden">
+            <div className={cn('flex items-center gap-2 px-1', collapsed && 'justify-center')}>
+              <div className="h-7 w-7 rounded-full bg-blue-800 flex items-center justify-center text-xs font-semibold text-blue-200 flex-shrink-0">
+                {user.email?.[0]?.toUpperCase() ?? 'A'}
+              </div>
+              <motion.div
+                animate={{ width: collapsed ? 0 : 'auto', opacity: collapsed ? 0 : 1 }}
+                transition={collapsed
+                  ? { width: { duration: 0.18, ease: EASE_SLIDE }, opacity: { duration: 0.08 } }
+                  : { width: { duration: 0.22, ease: EASE_SLIDE }, opacity: { duration: 0.14, delay: 0.14 } }
+                }
+                className="overflow-hidden"
+                style={{ minWidth: 0 }}
+              >
+                <p className="text-xs text-blue-400 truncate whitespace-nowrap">{user.email}</p>
+                <p className="text-xs text-blue-500 capitalize whitespace-nowrap">{user.role.replace(/_/g, ' ')}</p>
+              </motion.div>
             </div>
-            <div className="flex items-center gap-1 px-1 mb-1">
+          </div>
+        </motion.aside>
+
+        <main
+          className="flex-1 min-h-screen bg-surface-page transition-all duration-[260ms] overflow-x-hidden"
+          style={!isMobile ? (isRtl ? { marginRight: sidebarW } : { marginLeft: sidebarW }) : undefined}
+        >
+          {/* Top nav bar */}
+          <div
+            className="sticky top-0 z-20 h-12 flex items-center justify-between px-4 gap-3"
+            style={{ background: '#0D1F36', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+          >
+            {/* Left: mobile hamburger OR desktop title */}
+            <div className="flex items-center gap-3">
+              {isMobile && (
+                <button
+                  type="button"
+                  onClick={() => setMobileNavOpen(v => !v)}
+                  className="text-blue-300 hover:text-blue-100 p-1.5 rounded-md hover:bg-blue-900/50 transition-colors"
+                  aria-label="Open navigation"
+                >
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+                    <rect x="1" y="3.5" width="16" height="1.5" rx="0.75" fill="currentColor" />
+                    <rect x="1" y="8.25" width="16" height="1.5" rx="0.75" fill="currentColor" />
+                    <rect x="1" y="13" width="16" height="1.5" rx="0.75" fill="currentColor" />
+                  </svg>
+                </button>
+              )}
+              <span className="text-sm font-semibold text-blue-100 hidden sm:block">Super Admin</span>
+            </div>
+
+            {/* Right: controls */}
+            <div className="flex items-center gap-1">
+              <NetworkStatusIndicator variant="ghost-dark" />
               <ThemeToggle variant="ghost-dark" />
               <LanguageToggle variant="ghost-dark" />
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium text-blue-300 hover:text-blue-100 hover:bg-blue-900/50 transition-colors disabled:opacity-50"
+              >
+                <LogOut className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="hidden sm:block">{isLoggingOut ? '…' : t('common.signOut')}</span>
+              </button>
             </div>
-            <button onClick={handleLogout} disabled={isLoggingOut} className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-blue-300 hover:bg-blue-900 hover:text-blue-100 w-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-              <LogOut className="h-[18px] w-[18px]" />
-              {isLoggingOut ? '…' : t('common.signOut')}
-            </button>
           </div>
-        </aside>
-        <main
-          className="flex-1 min-h-screen bg-gray-50 dark:bg-gray-950"
-          style={isRtl ? { marginRight: '240px' } : { marginLeft: '240px' }}
-        >
+
           <div className="px-6 py-6 max-w-7xl">
             {children}
           </div>

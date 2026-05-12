@@ -49,7 +49,7 @@ export function ThemeToggle({ variant = 'ghost-light', className }: Props) {
     'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
     variant === 'ghost-dark'
       ? 'text-blue-300 hover:text-blue-100 hover:bg-blue-900/50'
-      : 'text-gray-500 hover:text-gray-900 hover:bg-surface-page dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700',
+      : 'text-gray-500 hover:text-gray-900 hover:bg-surface-page dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-gray-700/60',
     className,
   );
 
@@ -60,7 +60,7 @@ export function ThemeToggle({ variant = 'ghost-light', className }: Props) {
           <Icon />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-36 dark:bg-gray-800 dark:border-gray-700">
+      <DropdownMenuContent align="end" className="w-36">
         {(['light', 'dark', 'system'] as Theme[]).map((opt) => {
           const OptionIcon = THEME_ICONS[opt];
           const labels: Record<Theme, string> = {

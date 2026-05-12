@@ -29,9 +29,9 @@ function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
 
 function StockBadge({ status, qty, unit, labels }: { status: InventoryItem['stockStatus']; qty: number; unit: string; labels: { inStock: string; lowStock: string; outOfStock: string } }) {
   const map = {
-    ok: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    low: 'bg-amber-50 text-amber-700 border-amber-200',
-    out: 'bg-red-50 text-red-700 border-red-200',
+    ok:  'bg-[var(--green-100)] text-[var(--green-700)] border-[var(--green-100)]',
+    low: 'bg-[var(--yellow-100)] text-[var(--yellow-700)] border-[var(--yellow-100)]',
+    out: 'bg-[var(--red-100)] text-[var(--red-700)] border-[var(--red-100)]',
   };
   const label = { ok: labels.inStock, low: labels.lowStock, out: labels.outOfStock };
   return (

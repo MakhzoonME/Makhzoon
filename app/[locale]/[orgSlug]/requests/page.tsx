@@ -108,7 +108,7 @@ export default function RequestsPage() {
   }
 
   const columns: ColumnDef<Request>[] = [
-    { key: 'type', header: t('requests.type'), sortable: true, render: (r) => <span className="font-medium text-xs bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full">{typeLabels[r.type] ?? r.type}</span> },
+    { key: 'type', header: t('requests.type'), sortable: true, render: (r) => <span className="font-medium text-xs bg-[var(--primary-100)] text-[var(--primary-700)] px-2 py-0.5 rounded-full">{typeLabels[r.type] ?? r.type}</span> },
     {
       key: 'assetId', header: t('requests.reference'),
       render: (r) => {

@@ -47,9 +47,9 @@ export default function NewAuditPage() {
         breadcrumb={[{ label: 'Inventory', href: `/${orgSlug}/inventory` }, { label: 'Audits', href: `/${orgSlug}/inventory/audits` }, { label: 'New', href: `/${orgSlug}/inventory/audits/new` }]}
       />
       <div className="max-w-lg">
-        <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+        <div className="bg-[var(--primary-50)] border border-[var(--primary-100)] rounded-lg p-4 mb-6 flex items-start gap-3">
           <ClipboardCheck className="h-4 w-4" strokeWidth={1.75} />
-          <p className="text-sm text-primary-800">
+          <p className="text-sm text-[var(--primary-700)]">
             Starting an audit will load all active assets. You&apos;ll check each one off as found or mark it missing.
           </p>
         </div>

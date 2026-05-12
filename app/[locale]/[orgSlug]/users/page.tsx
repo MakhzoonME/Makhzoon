@@ -32,9 +32,9 @@ type Row =
   | { _type: 'invite'; data: Invite };
 
 const ROLE_STYLE: Record<string, string> = {
-  admin:       'bg-primary-50 text-primary-700',
-  super_admin: 'bg-violet-50 text-violet-700',
-  org_owner:   'bg-purple-50 text-purple-700',
+  admin:       'bg-[var(--primary-100)] text-[var(--primary-700)]',
+  super_admin: 'bg-[var(--purple-100)] text-[var(--purple-700)]',
+  org_owner:   'bg-[var(--purple-100)] text-[var(--purple-700)]',
   staff:       'bg-surface-page text-gray-600',
 };
 
@@ -46,11 +46,11 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 const STATUS_STYLE: Record<string, string> = {
-  active:      'bg-emerald-50 text-emerald-700',
-  deactivated: 'bg-red-50 text-red-600',
-  pending:     'bg-amber-50 text-amber-700',
+  active:      'bg-[var(--green-100)] text-[var(--green-700)]',
+  deactivated: 'bg-[var(--red-100)] text-[var(--red-700)]',
+  pending:     'bg-[var(--yellow-100)] text-[var(--yellow-700)]',
   expired:     'bg-surface-page text-gray-500',
-  revoked:     'bg-red-50 text-red-500',
+  revoked:     'bg-[var(--red-100)] text-[var(--red-700)]',
 };
 
 function RoleBadge({ role }: { role: string }) {

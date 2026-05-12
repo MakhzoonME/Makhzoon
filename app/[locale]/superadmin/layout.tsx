@@ -115,10 +115,10 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             className={cn(
               'absolute top-1/2 -translate-y-1/2 z-20',
-              'h-6 w-6 rounded-full bg-blue-900 border border-blue-700 shadow-sm',
+              'h-5 w-5 rounded-full bg-blue-900 border border-blue-700 shadow-sm',
               'flex items-center justify-center text-blue-300',
               'hover:text-blue-100 hover:border-blue-500 transition-all duration-200',
-              isRtl ? '-left-3' : '-right-3',
+              isRtl ? '-left-2.5' : '-right-2.5',
             )}
           >
             {isRtl
@@ -175,41 +175,25 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
             })}
           </nav>
 
-          {/* Footer */}
+          {/* Sidebar footer — logo/identity only */}
           <div className="p-3 border-t border-blue-900 overflow-hidden">
-            <motion.div
-              animate={{ opacity: collapsed ? 0 : 1, height: collapsed ? 0 : 'auto' }}
-              transition={{ duration: 0.18 }}
-              className="px-3 py-1.5 mb-1 overflow-hidden"
-            >
-              <p className="text-xs text-blue-500 truncate">{user.email}</p>
-              <p className="text-xs text-blue-400 capitalize">{user.role.replace(/_/g, ' ')}</p>
-            </motion.div>
-            <div className={cn('flex items-center gap-1 px-1 mb-1', collapsed && 'justify-center')}>
-              <ThemeToggle variant="ghost-dark" />
-              {!collapsed && <LanguageToggle variant="ghost-dark" />}
-            </div>
-            <button
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className={cn(
-                'flex items-center rounded-md text-sm text-blue-300 hover:bg-blue-900 hover:text-blue-100 w-full transition-colors disabled:opacity-50 h-9 pl-[25px]',
-                collapsed && 'justify-center pl-0',
-              )}
-            >
-              <LogOut className="h-[18px] w-[18px] flex-shrink-0" />
-              <motion.span
+            <div className={cn('flex items-center gap-2 px-1', collapsed && 'justify-center')}>
+              <div className="h-7 w-7 rounded-full bg-blue-800 flex items-center justify-center text-xs font-semibold text-blue-200 flex-shrink-0">
+                {user.email?.[0]?.toUpperCase() ?? 'A'}
+              </div>
+              <motion.div
                 animate={{ width: collapsed ? 0 : 'auto', opacity: collapsed ? 0 : 1 }}
                 transition={collapsed
-                  ? { width: { duration: 0.18 }, opacity: { duration: 0.08 } }
-                  : { width: { duration: 0.22 }, opacity: { duration: 0.14, delay: 0.14 } }
+                  ? { width: { duration: 0.18, ease: EASE_SLIDE }, opacity: { duration: 0.08 } }
+                  : { width: { duration: 0.22, ease: EASE_SLIDE }, opacity: { duration: 0.14, delay: 0.14 } }
                 }
-                className="whitespace-nowrap overflow-hidden ms-2.5"
+                className="overflow-hidden"
                 style={{ minWidth: 0 }}
               >
-                {isLoggingOut ? '…' : t('common.signOut')}
-              </motion.span>
-            </button>
+                <p className="text-xs text-blue-400 truncate whitespace-nowrap">{user.email}</p>
+                <p className="text-xs text-blue-500 capitalize whitespace-nowrap">{user.role.replace(/_/g, ' ')}</p>
+              </motion.div>
+            </div>
           </div>
         </motion.aside>
 
@@ -217,24 +201,45 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
           className="flex-1 min-h-screen bg-surface-page transition-all duration-[260ms]"
           style={!isMobile ? (isRtl ? { marginRight: sidebarW } : { marginLeft: sidebarW }) : undefined}
         >
-          {/* Mobile header bar */}
-          {isMobile && (
-            <div className="sticky top-0 z-10 h-12 flex items-center px-4 gap-3" style={{ background: '#0F2440', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              <button
-                type="button"
-                onClick={() => setMobileNavOpen(v => !v)}
-                className="text-blue-300 hover:text-blue-100 p-1.5 rounded-md hover:bg-blue-900/50 transition-colors"
-                aria-label="Open navigation"
-              >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-                  <rect x="1" y="3.5" width="16" height="1.5" rx="0.75" fill="currentColor" />
-                  <rect x="1" y="8.25" width="16" height="1.5" rx="0.75" fill="currentColor" />
-                  <rect x="1" y="13" width="16" height="1.5" rx="0.75" fill="currentColor" />
-                </svg>
-              </button>
-              <span className="text-sm font-semibold text-blue-100">Super Admin</span>
+          {/* Top nav bar */}
+          <div
+            className="sticky top-8 z-20 h-12 flex items-center justify-between px-4 gap-3"
+            style={{ background: '#0D1F36', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+          >
+            {/* Left: mobile hamburger OR desktop title */}
+            <div className="flex items-center gap-3">
+              {isMobile && (
+                <button
+                  type="button"
+                  onClick={() => setMobileNavOpen(v => !v)}
+                  className="text-blue-300 hover:text-blue-100 p-1.5 rounded-md hover:bg-blue-900/50 transition-colors"
+                  aria-label="Open navigation"
+                >
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+                    <rect x="1" y="3.5" width="16" height="1.5" rx="0.75" fill="currentColor" />
+                    <rect x="1" y="8.25" width="16" height="1.5" rx="0.75" fill="currentColor" />
+                    <rect x="1" y="13" width="16" height="1.5" rx="0.75" fill="currentColor" />
+                  </svg>
+                </button>
+              )}
+              <span className="text-sm font-semibold text-blue-100 hidden sm:block">Super Admin</span>
             </div>
-          )}
+
+            {/* Right: controls */}
+            <div className="flex items-center gap-1">
+              <ThemeToggle variant="ghost-dark" />
+              <LanguageToggle variant="ghost-dark" />
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium text-blue-300 hover:text-blue-100 hover:bg-blue-900/50 transition-colors disabled:opacity-50"
+              >
+                <LogOut className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="hidden sm:block">{isLoggingOut ? '…' : t('common.signOut')}</span>
+              </button>
+            </div>
+          </div>
+
           <div className="px-6 py-6 max-w-7xl">
             {children}
           </div>

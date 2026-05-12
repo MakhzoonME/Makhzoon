@@ -7,7 +7,7 @@ import { ArrowRight, Loader2 } from 'lucide-react';
 const copy = {
   en: {
     eyebrow: 'Business OS for Arab organizations',
-    headline: ['أدير عملك ', 'في مكان واحد.'],
+    headline: ['Run your business ', 'in one place.'],
     subtitle: 'Makhzoon — مخزون',
     body: "We're building the Business OS for Arab organizations. Assets, inventory, sales, and finance — five modules that work together so your team doesn't have to juggle spreadsheets.",
     firstName: 'First name',

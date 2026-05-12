@@ -294,6 +294,50 @@ html[lang="ar"] body,
   50%       { background-position: 100% 50%; }
 }
 
+@keyframes gradient-breathe {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.07); }
+}
+
+@keyframes grain-shift {
+  0%, 100% { transform: translate(0, 0); }
+  25%       { transform: translate(-2%, -1%); }
+  75%       { transform: translate(2%, 1%); }
+}
+
+@keyframes rotate-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@layer utilities {
+  .animate-breathe   { animation: gradient-breathe 8s ease-in-out infinite; }
+  .animate-grain     { animation: grain-shift 0.9s steps(1) infinite; }
+  .animate-spin-slow { animation: rotate-slow 120s linear infinite; }
+}
+
+@layer components {
+  .cs-eyebrow {
+    position: relative;
+    overflow: hidden;
+  }
+  .cs-eyebrow::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.18) 50%, transparent 100%);
+    transform: translateX(-100%);
+    transition: transform 0.55s ease;
+    pointer-events: none;
+  }
+  .cs-eyebrow:hover::after { transform: translateX(100%); }
+
+  .cs-input:focus {
+    border-color: rgba(99, 102, 241, 0.45) !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

@@ -21,6 +21,8 @@ function CloseSVG() {
   );
 }
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.makhzoon.me';
+
 export function MarketingHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -99,31 +101,31 @@ export function MarketingHeader() {
 
         {/* Desktop CTAs */}
         <div className="hidden md:flex items-center gap-2.5 flex-shrink-0">
-          <Link
-            href={`/${locale}/login`}
+          <a
+            href={`${APP_URL}/${locale}/login`}
             className="text-sm font-medium no-underline transition-colors duration-150"
             style={{ color: 'var(--gray-700)', textDecoration: 'none' }}
           >
             Sign in
-          </Link>
-          <Link
-            href={`/${locale}/login`}
+          </a>
+          <a
+            href={`${APP_URL}/${locale}/login`}
             className="inline-flex items-center justify-center px-4 h-9 rounded-lg text-sm font-semibold text-white no-underline transition-opacity duration-150 hover:opacity-90"
             style={{ background: 'var(--primary-600)', textDecoration: 'none' }}
           >
             Start free trial
-          </Link>
+          </a>
         </div>
 
         {/* Mobile: Sign in + hamburger */}
         <div className="flex md:hidden items-center gap-2 ms-auto">
-          <Link
-            href={`/${locale}/login`}
+          <a
+            href={`${APP_URL}/${locale}/login`}
             className="inline-flex items-center justify-center px-3 h-8 rounded-lg text-xs font-semibold text-white no-underline flex-shrink-0"
             style={{ background: 'var(--primary-600)', textDecoration: 'none' }}
           >
             Sign in
-          </Link>
+          </a>
           <button
             type="button"
             onClick={() => setMobileOpen(v => !v)}

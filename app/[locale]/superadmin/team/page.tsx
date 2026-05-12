@@ -50,9 +50,9 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 const ROLE_STYLE: Record<string, string> = {
-  super_admin: 'bg-violet-50 text-violet-700',
-  makhzoon_admin: 'bg-blue-50 text-blue-700',
-  makhzoon_support: 'bg-cyan-50 text-cyan-700',
+  super_admin:      'bg-[var(--purple-100)] text-[var(--purple-700)]',
+  makhzoon_admin:   'bg-[var(--blue-100)] text-[var(--blue-700)]',
+  makhzoon_support: 'bg-[var(--primary-100)] text-[var(--primary-700)]',
 };
 
 const ROLE_DESCRIPTION: Record<string, string> = {
@@ -397,7 +397,7 @@ export default function SuperAdminTeamPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={cn('inline-block px-2 py-0.5 rounded-full text-xs font-semibold capitalize',
-                        m.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+                        m.status === 'active' ? 'bg-[var(--green-100)] text-[var(--green-700)]' : 'bg-[var(--red-100)] text-[var(--red-700)]'
                       )}>
                         {m.status === 'active' ? t('status.active') : t('status.deactivated')}
                       </span>

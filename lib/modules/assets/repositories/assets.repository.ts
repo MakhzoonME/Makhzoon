@@ -116,9 +116,15 @@ export class AssetsRepository {
       ...input,
       organizationId: tenant.organizationId,
       createdAt: FieldValue.serverTimestamp(),
-      createdBy: tenant.userId,
+      createdBy: tenant.user.uid,
+      createdByEmail: tenant.user.email,
+      createdByName: tenant.user.displayName,
+      createdByRole: tenant.user.role,
       updatedAt: FieldValue.serverTimestamp(),
-      updatedBy: tenant.userId,
+      updatedBy: tenant.user.uid,
+      updatedByEmail: tenant.user.email,
+      updatedByName: tenant.user.displayName,
+      updatedByRole: tenant.user.role,
     }
     const ref = await this.col.add(data)
     const snap = await ref.get()
@@ -129,7 +135,10 @@ export class AssetsRepository {
     const data = {
       ...input,
       updatedAt: FieldValue.serverTimestamp(),
-      updatedBy: tenant.userId,
+      updatedBy: tenant.user.uid,
+      updatedByEmail: tenant.user.email,
+      updatedByName: tenant.user.displayName,
+      updatedByRole: tenant.user.role,
     }
     await this.col.doc(id).update(data)
     return this.getById(tenant, id) as Promise<Asset>

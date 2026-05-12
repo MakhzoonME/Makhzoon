@@ -2,7 +2,9 @@
 
 ## 1. Project Overview
 
-**Makhzoon** is a multi-tenant, SaaS-based asset and inventory management platform designed for organizations to track, manage, and maintain their physical assets, inventory, and warranties across distributed locations.
+**Makhzoon** (مخزون) is a **Business OS for Arab organizations** — a multi-tenant SaaS platform built to replace spreadsheets across five core business domains: assets, inventory, sales/POS, finance, and workspace configuration.
+
+**Vision / Positioning:** "أدير عملك في مكان واحد. بدون جداول بيانات." (Run your business in one place. No spreadsheets.)
 
 **Target Users:**
 - Small to medium-sized organizations across multiple industries (Technology, Healthcare, Finance, Retail, Manufacturing, Education, Government, Non-Profit)
@@ -22,140 +24,166 @@
 
 ---
 
-## 2. Core Features
+## 2. The Five Modules (Module Identity System)
 
-### 2.1 Asset Management
+Makhzoon is organized around five named modules, each with a distinct Arabic name, English brand name, and brand color. These identities are applied consistently across nav, marketing, and UI.
+
+| Module | Arabic | English | Color | Domain |
+|--------|--------|---------|-------|--------|
+| أصول | Usool | Assets | `#00695C` (deep teal) | Asset management |
+| رصيد | Raseed | Inventory | `#E65100` (deep orange) | Inventory management |
+| حركة | Haraka | POS/Sales | `#6A1B9A` (deep purple) | Point of sale |
+| مال | Maal | Finance | `#1B5E20` (deep green) | Finance & reporting |
+| بنّا | Banna | Workspace | `#1565C0` (deep blue) | Workspace builder |
+
+**Brand colors:**
+- Brand Navy: `#0F3F5C`
+- Brand Teal: `#1A7A9A`
+
+**How module identity is applied:**
+- `lib/nav/index.ts` — Each nav item has `moduleColor?: string` and `moduleName?: string`
+- `components/layout/AppSidebar.tsx` — Active nav items use module color for pill background, left border, and icon; Arabic module name shown as subtitle in EN locale
+- `components/layout/BottomNav.tsx` — Module-aware icons on mobile bottom nav
+- `locales/messages.ts` — `nav.assets = 'Usool'` / `nav.inventory = 'Raseed'` (EN); `nav.assets = 'أصول'` / `nav.inventory = 'رصيد'` (AR)
+- Marketing pages — Module cards use module color for border, background tint, and name display
+
+---
+
+## 3. Core Features
+
+### 3.1 Asset Management (أصول / Usool)
 - **Asset Register:** Create, edit, retire, and import assets (CSV)
 - **Asset Fields:** Name, category, status, serial number, purchase date/cost, assigned person, location, notes
 - **Asset Statuses:** Active, Retired (configurable via org config)
-- **Asset Actions:**
-  - QR code generation and download
-  - Checkout/check-in (loan-out and return tracking)
-  - Maintenance records (service, repair, inspection events)
-  - Asset notes (free-form annotations)
+- **Asset Actions:** QR code generation and download, checkout/check-in, maintenance records, asset notes
 - **Asset Import:** Bulk import via CSV file with validation
 - **Asset Export:** Export all assets to CSV with audit metadata
 - **Routes:** `/[orgSlug]/assets/`, `/[orgSlug]/assets/[assetId]/`, `/[orgSlug]/assets/new`, `/[orgSlug]/assets/import`
 
-### 2.2 Inventory Management
+### 3.2 Inventory Management (رصيد / Raseed)
 - **Inventory Items:** Track stocked items with quantity, reorder thresholds, unit cost
 - **Stock Status:** Automatic calculation of stock health (ok, low, out)
 - **Units:** Each, box, pack, pair, roll, liter, kg, meter, sheet, set
 - **Transactions:** Record in/out/adjustment movements with reason and performer tracking
-- **Inventory Audits:**
-  - Physical count audits (draft → in_progress → completed)
-  - Per-item status tracking (pending, found, missing)
-  - Audit history and completion tracking
+- **Inventory Audits:** Physical count audits (draft → in_progress → completed)
 - **Routes:** `/[orgSlug]/inventory/`, `/[orgSlug]/inventory/[itemId]/`, `/[orgSlug]/inventory/audits/`
 
-### 2.3 Warranty Management
+### 3.3 Warranty Management
 - **Warranty Tracking:** Track vendor warranties per asset with start/end dates
-- **Alerts:** Optional reminder flag; cron job alerts admins on warranties expiring within 30 days
-- **Actions:** Create, edit, delete warranties; filter by vendor, asset, or expiry date
+- **Alerts:** Progressive alerts at 30, 14, and 7 days before expiration
 - **Cron Endpoint:** `/api/cron/warranty-alerts` (triggered externally, secured by `CRON_SECRET`)
 - **Routes:** `/[orgSlug]/warranties/`, `/[orgSlug]/warranties/[warrantyId]/edit`
 
-### 2.4 Requests Workflow
+### 3.4 Requests Workflow
 - **Request Types:** REFILL, RETIRE, BUY_NEW, EXTEND_WARRANTY
 - **Status Flow:** PENDING → APPROVED or REJECTED
-- **Workflow:**
-  - Staff submit requests for new assets, retire items, refill inventory, or extend warranties
-  - Admins review and approve/reject with decision tracking
-  - Audit log captures all request activity
 - **Routes:** `/[orgSlug]/requests/`
 
-### 2.5 Reports & Analytics
+### 3.5 Reports & Analytics
 - **Dashboard Metrics:** Quick stats on assets, inventory, warranties, requests
-- **Reports Module:** Utilization, depreciation, and cost analytics (structure defined, full implementation varies by subscription)
+- **Reports Module:** Utilization, depreciation, and cost analytics
 - **Routes:** `/[orgSlug]/dashboard/`, `/[orgSlug]/reports/`
 
-### 2.6 Support Ticketing
+### 3.6 Support Ticketing
 - **In-App Tickets:** Staff create tickets; Makhzoon support team replies
 - **Ticket Lifecycle:** OPEN → IN_PROGRESS → RESOLVED → CLOSED
 - **Priority Levels:** LOW, MEDIUM, HIGH, URGENT
-- **Messages:** Thread-based messages with author tracking (name, role)
 - **Routes:** `/[orgSlug]/support/`, `/superadmin/support/`
 
-### 2.7 Audit Logs
+### 3.7 Audit Logs
 - **Immutable Audit Trail:** Every create/update/delete action is logged
 - **Logged Actions:** ORGANIZATION_CREATED, ASSET_CREATED, WARRANTY_UPDATED, REQUEST_APPROVED, etc.
-- **Audit Fields:** Action, module, timestamp, user, old/new values, record ID
-- **Permissions:** Admins can view and export org logs; superadmin views global audit logs
-- **Export:** CSV export of audit logs with full metadata
+- **Permissions:** Admins view and export org logs; superadmin views global audit logs
 - **Routes:** `/[orgSlug]/audit-logs/`, `/superadmin/audit-logs/`
 
-### 2.8 User Management & Permissions
+### 3.8 User Management & Permissions
 - **Org Roles:** org_owner, admin, staff
-- **Default Permissions:** Admins get full access; staff get view + limited create (can create requests, asset notes, support tickets)
-- **Granular Permissions:** Each user's access can be customized per operation (view, create, update, delete, etc.) across assets, inventory, warranties, requests, reports, support, audit logs
-- **Unified Permission Editor:** Superadmin can edit all org roles' permissions; org admins edit their org's staff permissions
+- **Default Permissions:** Admins get full access; staff get view + limited create
+- **Granular Permissions:** Per-user customization per module operation
 - **Routes:** `/[orgSlug]/users/`, `/superadmin/organizations/[orgId]/configuration`
 
-### 2.9 Organization Configuration
-- **Asset Statuses:** Customizable statuses (default: Active, Inactive)
-- **Locations:** Custom location list for asset assignment
-- **Categories:** Custom categories for assets and inventory items
+### 3.9 Organization Configuration
+- **Customizable:** Asset statuses, locations, categories
 - **Subscription & Packages:** Feature flags per org based on active subscription
 - **Routes:** `/superadmin/organizations/[orgId]/configuration`
 
-### 2.10 Subscriptions & Packages
+### 3.10 Subscriptions & Packages
 - **Packages:** Bundles of features with asset/user/warranty/request limits
-- **Feature System:** Dashboard, assets, inventory, warranties, requests, reports, support, audit logs, maintenance, checkouts, asset notes (11 features)
+- **Feature System:** 11 features (dashboard, assets, inventory, warranties, requests, reports, support, audit logs, maintenance, checkouts, asset notes)
 - **Subscription Status:** ACTIVE, EXPIRED, SUSPENDED
-- **Billing:** Payment logs track method (CARD, BANK_TRANSFER, MANUAL, OTHER), amount, currency, date
 - **Routes:** `/[orgSlug]/subscription/`, `/superadmin/organizations/[orgId]/subscription`
 
-### 2.11 Authentication & Session Management
-- **Auth Methods:**
-  - Email/password (production-ready)
-  - Username/password (for non-email users; alternative identity)
-  - Invite-based user onboarding (accept invite → set password → auto-login)
-  - SSO via OIDC/PKCE (currently disabled/commented out, not production-ready)
-- **Session Management:**
-  - Firebase Auth on client
-  - httpOnly session cookies on server (5-day expiry)
-  - Server-side session cache with 5-10 second TTL for performance
-  - Turnstile bot verification (currently disabled, commented out)
-- **Routes:** `/login`, `/signup`, `/api/auth/session`, `/api/auth/me`, `/invites/[token]`
+### 3.11 Authentication & Session Management
+- **Auth Methods:** Email/password, username/password, invite-based onboarding
+- **Session Management:** Firebase Auth client + httpOnly session cookies (5-day expiry) + server-side cache (5-10s TTL)
+- **SSO:** OIDC/PKCE implemented but disabled (not production-ready)
+- **Routes:** `/login`, `/invites/[token]`, `/api/auth/session`, `/api/auth/me`
 
-### 2.12 Superadmin Portal
+### 3.12 Superadmin Portal
 - **Dashboard:** System overview, organization count, activity
 - **Organization Management:** Create org, edit, view subscription, view audit logs, configuration
 - **Backend Logs:** System-level logs for debugging
-- **Team Management:** Manage Makhzoon platform staff (superadmin, support, admin roles)
-- **Transfer Mode:** Superadmins can "transfer into" an org to troubleshoot as that org
+- **Team Management:** Manage Makhzoon platform staff
+- **Transfer Mode:** Superadmins can "transfer into" an org to troubleshoot
+- **Collapsible Sidebar:** Animated sidebar (240px ↔ 68px) with Framer Motion, persistent via Zustand; RTL-aware toggle
+- **Mobile Support:** Sidebar hidden on mobile; mobile header bar with hamburger opens sidebar as overlay with backdrop
 - **Routes:** `/superadmin/`, `/superadmin/organizations/`, `/superadmin/team/`, `/superadmin/backend-logs/`
 
-### 2.13 Marketing Pages
-- **Public Routes:**
-  - `/home` — Landing page
-  - `/product` — Product overview
-  - `/pricing` — Package and pricing details
-  - `/customers` — Customer testimonials
-  - `/security` — Security and compliance info
-  - `/about` — Company info
-  - `/contact` — Contact form
+### 3.13 Marketing Pages (Public)
+All under `/(marketing)` route group. Fully responsive on all screen sizes.
 
-### 2.14 Localization
-- **Languages:** Arabic and English (RTL for Arabic)
+- `/home` — Landing page (Business OS positioning, 5 module cards, role workflow, stats, testimonials)
+- `/product` — Feature overview (pillar sections alternating text/preview, integrations grid)
+- `/pricing` — Package and pricing details
+- `/customers` — Customer testimonials
+- `/security` — Security and compliance info
+- `/about` — Company info
+- `/contact` — Contact form
+
+**Copy Tone:** Arabic-first, direct, no-nonsense. Headlines in Arabic. Body in English or bilingual. Module names in `Arabic · English` format.
+
+### 3.14 Coming Soon Page
+- **Route:** `/[locale]/` (root path per locale)
+- **Shows:** Business OS pitch, early-access signup form (name + email), login link
+- **Domain routing:** When accessed from `makhzoon.me` or `www.makhzoon.me`, the entire site routes to this page (all other paths redirect to `/[locale]`)
+- **Future:** Will be replaced by full marketing website once `/home` and related pages are deployed to `makhzoon.me`
+
+### 3.15 Localization
+- **Languages:** Arabic (RTL), English (LTR)
 - **Translation Hook:** `useT()` provides `t()`, `lang`, `dir` (rtl/ltr)
-- **Locale Files:** `/locales` directory with translation keys
+- **Locale Files:** `/locales/messages.ts` with EN + AR translation keys
 - **Store:** `locale.store.ts` manages current language/locale
 
-### 2.15 Dark Mode & Theme
+### 3.16 Dark Mode & Theme
 - **Theme Support:** Light and dark modes
-- **Store:** `theme.store.ts` manages theme preference
+- **Store:** `theme.store.ts` manages preference
 - **CSS Variables:** `--primary-*`, `--gray-*`, `--surface-*` etc. applied per theme
+- **Dropdown Menus:** `components/ui/dropdown-menu.tsx` has full dark mode variants (`dark:text-gray-200`, `dark:focus:bg-gray-700/60`, etc.)
+
+### 3.17 Network Status Indicator
+- **Component:** `components/shared/NetworkStatusIndicator.tsx`
+- **States:** `online` (green), `slow` (amber), `offline` (red)
+- **Icons:** Custom SVG wifi icons — full bars (online), lower bars faded (slow), bars with X (offline)
+- **Detection:**
+  - Polls `/api/ping` every 15 seconds
+  - Listens to `window` online/offline events
+  - Listens to Network Information API `change` events
+  - Uses `_isSlowConnection()` (checks `effectiveType === '2g' || 'slow-2g'`) on each successful ping to decide between `online` and `slow`
+  - Requires 3 consecutive ping failures before showing `offline`
+- **Toast notifications:** Shows on state change (error for offline, info for slow, success for back online)
+- **Placement:**
+  - Superadmin: `components/layout/SuperAdminBanner.tsx` (top-right of dark banner, `variant="ghost-dark"`)
+  - Org portal: `components/layout/AppHeader.tsx` (right actions row, `variant="ghost-light"`)
 
 ---
 
-## 3. Business Model
+## 4. Business Model
 
 ### Monetization Strategy
 - **SaaS Subscription Model:** Organizations pay for subscriptions based on features and usage limits
-- **Feature Tiering:** Packages define which features are available (dashboard, assets, inventory, warranties, requests, reports, support, audit logs, maintenance, checkouts, notes)
+- **Feature Tiering:** Packages define which features are available
 - **Usage Limits:** Each package specifies max assets, max users, max warranties, max requests
-- **Payment Methods:** Card, bank transfer, manual, other (tracked in payment logs)
+- **Payment Methods:** Card, bank transfer, manual, other
 - **Subscription Lifecycle:** Start date, end date, status (ACTIVE, EXPIRED, SUSPENDED)
 
 ### User Tiers
@@ -163,894 +191,507 @@
 - **Makhzoon Admin/Support:** View backend logs, manage support tickets, team management
 - **Org Owner:** Full access to org features, manage team, subscription, settings
 - **Org Admin:** Most features except org settings and subscription management
-- **Org Staff:** Limited access: view assets/inventory, create requests/notes/tickets (determined by custom permissions)
+- **Org Staff:** Limited access determined by custom permissions
 
 ### Access Control Model
-- **Organization Isolation:** Strict multi-tenant isolation; users see only their org's data
-- **Role-Based Access Control (RBAC):** Org roles (owner, admin, staff) + Makhzoon platform roles (superadmin, admin, support)
-- **Custom Permissions:** Beyond role defaults, each user's access per module can be customized independently
+- **Organization Isolation:** Strict multi-tenant isolation
+- **RBAC:** Org roles (owner, admin, staff) + Makhzoon platform roles (superadmin, admin, support)
+- **Custom Permissions:** Beyond role defaults, each user's access per module can be customized
 - **Feature Gating:** Feature availability tied to subscription, enforced in UI and API
 
 ---
 
-## 4. Technical Architecture
+## 5. Technical Architecture
 
 ### Stack
 - **Frontend:** Next.js 14 (App Router), React 18, TypeScript
-- **Backend:** Next.js 14 API Routes (server-side)
+- **Backend:** Next.js 14 API Routes
 - **Database:** Firebase Firestore (NoSQL)
 - **Auth:** Firebase Authentication (client) + Firebase Admin SDK (server)
-- **State Management:** Zustand (global state), React Query (client-side data fetching and caching)
-- **Email:** Resend (email service for invites, alerts, notifications)
-- **Error Tracking:** Sentry (error monitoring and logging)
+- **State Management:** Zustand (global state), React Query (client-side data fetching)
+- **Email:** Resend (invites, alerts, notifications)
+- **Error Tracking:** Sentry
 - **Styling:** Tailwind CSS + Radix UI components + Framer Motion (animations)
 - **Validation:** Zod (runtime schema validation)
-- **Cron Jobs:** External trigger via `/api/cron/*` endpoints (secured by `CRON_SECRET`)
-- **QR Codes:** qrcode library for asset QR generation
-- **CSV Export/Import:** papaparse for CSV handling
 - **Localization:** Custom i18n system with `useT()` hook
-- **Theme Management:** Zustand for light/dark mode
-- **Animations:** Framer Motion for component animations, page transitions, sidebar collapse
 
 ### Deployment
 - **Hosting:** Vercel (Next.js optimized platform)
 - **Database:** Firebase (Google Cloud)
-- **Environment Variables:** .env files with NEXT_PUBLIC_* and server-only vars
+- **Domain:** `app.makhzoon.me` — main app; `makhzoon.me` / `www.makhzoon.me` — coming soon / marketing
 
 ### Routing Architecture
 - **Multi-Tenant Path-Based Routing:**
-  - Public: `/`, `/home`, `/product`, `/pricing`, `/customers`, `/security`, `/about`, `/contact`, `/login`
-  - Auth: `/signup`, `/invites/[token]`
-  - Org Portal: `/[orgSlug]/*` — e.g., `/acme-corp/assets`, `/acme-corp/dashboard`
-  - Superadmin: `/superadmin/*` — e.g., `/superadmin/organizations`, `/superadmin/team`
-- **Middleware:** Enforces session existence for protected routes; redirects to /login if missing
-- **API Routes:** `/api/*` — all require per-route session verification via `verifySessionCookie()`
+  - Coming soon / marketing root: `/{locale}` — coming soon page (at `makhzoon.me`)
+  - Public marketing: `/{locale}/home`, `/product`, `/pricing`, `/customers`, `/security`, `/about`, `/contact`
+  - Auth: `/{locale}/login`, `/{locale}/invites/[token]`
+  - Org Portal: `/{locale}/[orgSlug]/*` — e.g., `/en/acme-corp/assets`
+  - Superadmin: `/{locale}/superadmin/*`
+- **Proxy (`proxy.ts`):** All routing logic lives here — imported by Next.js as the middleware entry. Two responsibilities:
+  1. **Domain routing** — When host is `makhzoon.me` or `www.makhzoon.me`, only the root coming soon path is served; all other paths redirect to `/{locale}`. `app.makhzoon.me` redirects locale-root to `/login`.
+  2. **Session enforcement** — Enforces session cookie on protected routes; redirects to `/login` if missing. Public paths (home, product, pricing, etc.) and `/invites/*` are always accessible.
+  3. **Locale detection** — If no locale prefix in path, detects from cookie → Accept-Language → default `en`, then redirects to prefixed URL.
+- **API Routes:** `/api/*` — all require session verification via `verifySessionCookie()`
 
 ### Session & Auth Flow
-1. **Login:** User signs in with email + password or username + password
-2. **ID Token:** Firebase returns an ID token with custom claims (role, organizationId)
-3. **Session Cookie:** Frontend exchanges ID token for httpOnly session cookie via POST `/api/auth/session`
-4. **Caching:** Server caches decoded session for 5-10 seconds for performance
-5. **Logout:** DELETE `/api/auth/session` clears cookie and session cache; client hard-reloads to `/login` with `window.location.href`
-6. **Middleware:** Session cookie checked on protected routes; lack of cookie redirects to /login
+1. User signs in (email/password or username/password)
+2. Firebase returns ID token
+3. Frontend exchanges ID token for httpOnly session cookie via POST `/api/auth/session`
+4. Server caches decoded session for 5-10 seconds
+5. Logout: DELETE `/api/auth/session` + `window.location.href` hard redirect
+6. Login page auto-redirects authenticated users — uses `fetch('/api/auth/me', { cache: 'no-store' })` to bypass browser cache and prevent redirect loops
+
+### Sidebar Architecture
+Both portals use animated collapsible sidebars with Framer Motion:
+
+**Org portal (`components/layout/AppSidebar.tsx`):**
+- Widths: 240px (expanded) / 68px (collapsed)
+- `hidden md:flex` — desktop only; mobile uses `BottomNav`
+- State: `useUiStore().sidebarCollapsed`
+- Module-aware active states (color per module)
+
+**Superadmin portal (`app/[locale]/superadmin/layout.tsx`):**
+- Widths: 240px (expanded) / 68px (collapsed)
+- Desktop: animated `motion.aside` with collapse toggle button
+- Mobile: hidden by default; hamburger in mobile header opens as full-width overlay with backdrop
+- State: `useUiStore().superAdminSidebarCollapsed`; mobile state: local `mobileNavOpen` + `isMobile` (resize listener)
+- `isMobile` check prevents `marginLeft` from being applied to main content on mobile
 
 ### Permission Caching
-- **Session Cache:** Stores decoded session tokens (5-10 second TTL) to avoid redundant Firebase calls
-- **Permission Cache:** Stores user permissions (10 second TTL) keyed by user UID
-- **Invalidation:** Explicit `invalidateCachedSession(token)` call on logout; implicit expiry after TTL
-
-### Data Flow
-1. **Client State:** Zustand (`auth.store`) + React Query (data fetching)
-2. **API Layer:** React hooks (useQuery, useMutation) in components fetch data from `/api/*` endpoints
-3. **Server Handlers:** Each API route verifies session, permission, then queries Firestore
-4. **Database:** Firestore collections indexed by organizationId for multi-tenant isolation
-5. **Audit Logging:** Every write operation triggers `writeAuditLog()` to immutable audit collection
+- **Session Cache:** 5-10 second TTL for decoded Firebase session tokens
+- **Permission Cache:** 10 second TTL keyed by user UID
+- **Invalidation:** `invalidateCachedSession(token)` on logout
 
 ---
 
-## 5. Data Models
+## 6. Data Models
 
 ### Collections & Schemas
 
 #### Organizations
 ```
 organizations/{orgId}
-  - id: string (Firestore doc ID)
-  - name: string
-  - subdomain: string (unique, used for URL routing)
-  - contactEmail: string
-  - description: string | null
-  - category: OrgCategory | null (Technology, Healthcare, Finance, Retail, Manufacturing, Education, Government, Non-Profit, Other)
-  - packageDetails: string | null
-  - createdAt: Date
-  - createdBy: string (user UID)
-  - updatedAt: Date
-  - updatedBy: string
+  - id, name, subdomain (URL slug), contactEmail, description, category
+  - packageDetails, createdAt, createdBy, updatedAt, updatedBy
 ```
 
 #### Users (org-level)
 ```
 users/{userId}
-  - id: string (Firebase UID)
-  - organizationId: string
+  - id (Firebase UID), organizationId
   - email: string | null
-  - username: string | null (alternative to email for login)
-  - displayName: string
-  - role: 'org_owner' | 'admin' | 'staff'
+  - username: string | null (alternative login identity)
+  - displayName, role: 'org_owner' | 'admin' | 'staff'
   - status: 'active' | 'deactivated'
-  - permissions: UserPermissions | null (custom per-user overrides)
-  - createdAt: Date
-  - createdBy: string
-  - updatedAt: Date
-  - updatedBy: string
+  - permissions: UserPermissions | null (custom overrides)
+  - createdAt, createdBy, updatedAt, updatedBy
 ```
 
 #### SuperAdminUsers
 ```
 superadminUsers/{userId}
-  - id: string (Firebase UID)
-  - email: string
-  - displayName: string
+  - id (Firebase UID), email, displayName
   - role: 'super_admin' | 'makhzoon_admin' | 'makhzoon_support'
-  - createdAt: Date
-  - createdBy: string
-  - updatedAt: Date
-  - updatedBy: string
+  - createdAt, createdBy, updatedAt, updatedBy
 ```
 
 #### Assets
 ```
 assets/{assetId}
-  - id: string
-  - organizationId: string
-  - name: string
-  - category: string (custom per org)
-  - status: 'Active' | 'Retired' (from org config)
-  - serialNumber: string | null
-  - purchaseDate: Date | null
-  - purchaseCost: number | null
-  - assignedTo: string | null (user name or ID)
-  - location: string | null (custom location from org config)
-  - notes: string | null
-  - createdAt: Date
-  - createdBy: string
-  - createdByEmail: string | null
-  - createdByName: string | null
-  - createdByRole: string | null
-  - updatedAt: Date
-  - updatedBy: string
-  - updatedByEmail: string | null
-  - updatedByName: string | null
-  - updatedByRole: string | null
+  - id, organizationId, name, category, status
+  - serialNumber, purchaseDate, purchaseCost, assignedTo, location, notes
+  - createdAt/By/Email/Name/Role, updatedAt/By/Email/Name/Role
 ```
 
 #### Warranties
 ```
 warranties/{warrantyId}
-  - id: string
-  - organizationId: string
-  - assetId: string
-  - assetName: string | null
-  - vendor: string
-  - startDate: Date
-  - endDate: Date
-  - reminder: boolean (alert eligibility)
-  - notes: string | null
-  - createdAt: Date
-  - createdBy: string
-  - updatedAt: Date
-  - updatedBy: string
+  - id, organizationId, assetId, assetName
+  - vendor, startDate, endDate, reminder, notes
+  - createdAt, createdBy, updatedAt, updatedBy
 ```
 
 #### InventoryItems
 ```
 inventory/{itemId}
-  - id: string
-  - organizationId: string
-  - name: string
-  - category: string
-  - sku: string | null
-  - unit: InventoryUnit (each, box, pack, pair, roll, liter, kg, meter, sheet, set)
-  - quantityOnHand: number
-  - minimumThreshold: number
-  - reorderQuantity: number | null
-  - location: string | null
-  - supplier: string | null
-  - unitCost: number | null
-  - notes: string | null
+  - id, organizationId, name, category, sku, unit
+  - quantityOnHand, minimumThreshold, reorderQuantity
+  - location, supplier, unitCost, notes
   - stockStatus: 'ok' | 'low' | 'out' (computed)
-  - createdAt: Date
-  - createdBy: string
-  - createdByEmail: string | null
-  - createdByName: string | null
-  - updatedAt: Date
-  - updatedBy: string
-  - updatedByEmail: string | null
-  - updatedByName: string | null
+  - createdAt/By/Email/Name, updatedAt/By/Email/Name
 ```
 
 #### InventoryTransactions
 ```
 inventoryTransactions/{transactionId}
-  - id: string
-  - organizationId: string
-  - itemId: string
-  - itemName: string
+  - id, organizationId, itemId, itemName
   - type: 'in' | 'out' | 'adjustment'
-  - quantity: number
-  - quantityBefore: number
-  - quantityAfter: number
-  - reason: string
-  - note: string | null
-  - performedAt: Date
-  - performedBy: string (user UID)
-  - performedByEmail: string | null
-  - performedByName: string | null
-  - performedByRole: string | null
+  - quantity, quantityBefore, quantityAfter, reason, note
+  - performedAt, performedBy/Email/Name/Role
 ```
 
 #### Requests
 ```
 requests/{requestId}
-  - id: string
-  - organizationId: string
+  - id, organizationId
   - type: 'REFILL' | 'RETIRE' | 'BUY_NEW' | 'EXTEND_WARRANTY'
-  - assetId: string | null
-  - assetName: string | null
-  - warrantyId: string | null
-  - inventoryItemId: string | null
-  - inventoryItemName: string | null
-  - description: string
-  - status: 'PENDING' | 'APPROVED' | 'REJECTED'
-  - decisionBy: string | null (user UID)
-  - decisionAt: Date | null
-  - createdAt: Date
-  - createdBy: string
-  - createdByName: string | null
-  - createdByEmail: string | null
-  - updatedAt: Date
-  - updatedBy: string
+  - assetId, assetName, warrantyId, inventoryItemId, inventoryItemName
+  - description, status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  - decisionBy, decisionAt, createdAt/By/Name/Email, updatedAt/By
 ```
 
 #### SupportTickets
 ```
 supportTickets/{ticketId}
-  - id: string
-  - organizationId: string
-  - subject: string
-  - description: string
+  - id, organizationId, subject, description
   - status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
   - priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
-  - createdBy: string (user UID)
-  - createdAt: Date
-  - updatedAt: Date
+  - createdBy, createdAt, updatedAt
 
 ticketMessages/{messageId}
-  - id: string
-  - ticketId: string
-  - body: string
-  - authorId: string (user UID)
-  - authorName: string
-  - authorRole: string
-  - createdAt: Date
+  - id, ticketId, body, authorId, authorName, authorRole, createdAt
 ```
 
 #### Subscriptions
 ```
 subscriptions/{subscriptionId}
-  - id: string
-  - organizationId: string
-  - packageId: string | null
+  - id, organizationId, packageId
   - features: Record<FeatureKey, boolean>
-  - notes: string | null
-  - packageDetails: Record<string, unknown>
-  - startDate: Date
-  - endDate: Date
-  - status: 'ACTIVE' | 'EXPIRED' | 'SUSPENDED'
-  - createdAt: Date
-  - createdBy: string
-  - updatedAt: Date
-  - updatedBy: string
-```
-
-#### Packages
-```
-packages/{packageId}
-  - id: string
-  - name: string
-  - description: string
-  - isActive: boolean
-  - limits: { maxAssets: number, maxUsers: number, maxWarranties: number, maxRequests: number }
-  - features: Record<FeatureKey, boolean>
-  - createdAt: Date
-  - createdBy: string
-  - updatedAt: Date
-  - updatedBy: string
+  - startDate, endDate, status: 'ACTIVE' | 'EXPIRED' | 'SUSPENDED'
+  - createdAt/By, updatedAt/By
 ```
 
 #### AuditLogs
 ```
 auditLogs/{logId}
-  - id: string
-  - organizationId: string
-  - userId: string (user UID or 'system')
-  - role: UserRole
-  - action: string (ORGANIZATION_CREATED, ASSET_UPDATED, WARRANTY_DELETED, etc.)
-  - module: string (organizations, assets, warranties, requests, etc.)
-  - recordId: string | null
-  - oldValue: Record<string, unknown> | null
-  - newValue: Record<string, unknown> | null
-  - timestamp: Date
-```
-
-#### InventoryAudits
-```
-inventoryAudits/{auditId}
-  - id: string
-  - organizationId: string
-  - title: string
-  - status: 'draft' | 'in_progress' | 'completed'
-  - notes: string | null
-  - totalAssets: number
-  - foundCount: number
-  - missingCount: number
-  - pendingCount: number
-  - startedBy: string (user UID)
-  - startedByName: string | null
-  - completedAt: Date | null
-  - createdAt: Date
-  - updatedAt: Date
-
-inventoryAuditItems/{itemId}
-  - id: string
-  - auditId: string
-  - organizationId: string
-  - assetId: string
-  - assetName: string
-  - assetCategory: string
-  - assetSerial: string | null
-  - assetLocation: string | null
-  - assetAssignedTo: string | null
-  - status: 'pending' | 'found' | 'missing'
-  - note: string | null
-  - checkedAt: Date | null
-  - checkedBy: string | null (user UID)
-  - checkedByName: string | null
+  - id, organizationId, userId, role
+  - action (ORGANIZATION_CREATED, ASSET_UPDATED, etc.)
+  - module, recordId, oldValue, newValue, timestamp
 ```
 
 #### OrganizationConfig
 ```
 organizationConfigs/{orgId}
-  - organizationId: string
-  - assetStatuses: Array<{ id: string, label: string, color: string }>
-  - locations: Array<{ id: string, name: string }>
-  - categories: Array<{ id: string, name: string }>
-  - createdAt: Date
-  - createdBy: string
-  - updatedAt: Date
-  - updatedBy: string
+  - organizationId
+  - assetStatuses: Array<{ id, label, color }>
+  - locations: Array<{ id, name }>
+  - categories: Array<{ id, name }>
+  - createdAt/By, updatedAt/By
 ```
 
 #### Other Collections
-- **assetCheckouts/{checkoutId}** — Loan-out and return records for shared assets
-- **assetNotes/{noteId}** — Free-form notes attached to assets
-- **maintenanceRecords/{recordId}** — Service, repair, inspection events on assets
-- **paymentLogs/{logId}** — Subscription payment tracking (amount, method, date)
-- **invites/{tokenId}** — One-time invitation tokens for user onboarding
-- **backendLogs/{logId}** — System-level logs for superadmin debugging
+- **assetCheckouts** — Loan-out and return records
+- **assetNotes** — Free-form notes on assets
+- **maintenanceRecords** — Service, repair, inspection events
+- **paymentLogs** — Subscription payment tracking
+- **invites** — One-time invitation tokens
+- **backendLogs** — System-level logs for superadmin debugging
+- **inventoryAudits** + **inventoryAuditItems** — Physical count audit records
 
 ---
 
-## 6. User Flows
+## 7. User Flows
 
-### 6.1 Signup Flow (Self-Service)
-1. New user visits `/signup`
-2. Enters email, password, display name, organization name, subdomain
-3. Frontend validates with `signupSchema` (Zod)
-4. Backend (POST `/api/organizations/self-serve`):
-   - Creates organization record
-   - Creates subscription with default features
-   - Creates org_owner user record
-   - Sets Firebase custom claims (role, organizationId)
-   - Sends welcome email
-5. User auto-redirected to `/{subdomain}/dashboard` after account confirmation
+### 7.1 Login Flow
+1. Visit `/login` → select email or username tab
+2. Enter credentials → Firebase `signInWithEmailAndPassword`
+3. Exchange ID token for httpOnly session cookie via POST `/api/auth/session`
+4. Redirect: superadmin roles → `/superadmin/dashboard`; org users → `/{orgSlug}/dashboard`
+5. Login page checks `/api/auth/me` with `{ cache: 'no-store' }` to auto-redirect already-authenticated users without browser cache causing loops
 
-### 6.2 Login Flow
-1. User visits `/login`
-2. Selects auth method: email/password or username/password
-3. Enters credentials
-4. Frontend calls `signInWithEmailAndPassword(auth, ...)`
-5. Firebase returns ID token
-6. Frontend calls POST `/api/auth/session` with ID token
-7. Backend verifies token, checks role/org custom claims, creates httpOnly session cookie
-8. Frontend's `useAuth` hook listens for Firebase auth state change, fetches `/api/auth/me` for features + permissions
-9. User redirected to their portal: `/[orgSlug]/dashboard` (org user) or `/superadmin` (platform role)
+### 7.2 Invite Acceptance Flow
+1. User receives invite email with unique token: `/invites/[token]`
+2. Page fetches invite info, shows inviter name, role, org
+3. User sets password → POST `/api/invites/[token]/accept`
+4. Backend creates account, auto-signs in, redirects to `/{orgSlug}/dashboard`
 
-### 6.3 Invite Acceptance Flow
-1. User receives invite email with unique token link: `/invites/[token]`
-2. User clicks link, lands on invite acceptance page
-3. Page fetches invite details from GET `/api/invites/[token]`
-4. Shows invite info: inviter name, role, org name
-5. User sets password and clicks "Accept invitation"
-6. Frontend calls POST `/api/invites/[token]/accept` with password
-7. Backend creates account (email or username), sets password, accepts the invite
-8. Frontend logs in with email/username + password (auto-completes flow)
-9. User redirected to `/{orgSlug}/dashboard`
+### 7.3 Asset Management CRUD
+1. GET `/api/assets` → list; POST `/api/assets` → create; PATCH `/api/assets/[id]` → update; DELETE → delete
+2. Every mutation logs to `auditLogs` with old/new values
 
-### 6.4 Asset Management Flow (Example CRUD)
-1. **View Assets:** User navigates to `/[orgSlug]/assets` → frontend fetches GET `/api/assets` → lists all assets for org
-2. **Create Asset:** Click "Add asset" → form on `/[orgSlug]/assets/new` → POST `/api/assets` with asset data → redirect to asset detail
-3. **Edit Asset:** Click asset → view `/[orgSlug]/assets/[assetId]` → click "Edit" → `/[orgSlug]/assets/[assetId]/edit` → PATCH `/api/assets/[assetId]` → view updated asset
-4. **Delete Asset:** On asset detail, click "Delete" → DELETE `/api/assets/[assetId]` → redirect to assets list
-5. **QR Code:** GET `/api/assets/[assetId]/qr` returns image URL → user downloads/prints
-6. **Audit:** Every action logged to auditLogs collection with old/new values
+### 7.4 Superadmin Transfer Mode
+1. Superadmin logs in → navigates to org → clicks "Transfer"
+2. POST `/api/organizations/[orgId]/transfer` → sets `transferOrgId` cookie
+3. Superadmin sees org portal with Transfer Mode banner
+4. DELETE to exit → clears cookie → returns to `/superadmin`
 
-### 6.5 Request Workflow
-1. **Staff submits request:** Navigate to `/[orgSlug]/requests` → click "New request" → choose type (BUY_NEW, RETIRE, REFILL, EXTEND_WARRANTY) → enter details → POST `/api/requests` → request created in PENDING state
-2. **Admin reviews:** Admin visits `/[orgSlug]/requests` → sees PENDING requests → clicks request → reads description → approves or rejects
-3. **Approve:** Click "Approve" → POST `/api/requests/[requestId]/approve` → status → APPROVED, decision logged
-4. **Reject:** Click "Reject" → POST `/api/requests/[requestId]/reject` → status → REJECTED, decision logged
-5. **Audit:** Request lifecycle fully audited with timestamps and decision info
-
-### 6.6 Warranty Alert Flow (Cron-Triggered)
-1. **External cron job** calls GET `/api/cron/warranty-alerts` with Authorization header
-2. **Server logic:**
-   - Queries all warranties with endDate between (now - 7 days) and (now + 30 days)
-   - Groups by org
-   - For each org, fetches all admin emails
-   - Fetches asset names from bulk Firestore get
-   - Renders HTML + text email with warranty items sorted by days left
-   - Sends via Resend email service
-   - Logs audit event `WARRANTY_ALERT_SENT` with item count, recipient count, sent count
-3. **Email:** Admins receive email with warranty list, expiry dates, links to assets in dashboard
-
-### 6.7 Superadmin Transfer Mode Flow
-1. **Superadmin** logs in, lands on `/superadmin/dashboard`
-2. **Transfer into org:** Clicks "Transfer mode" or navigates to org detail → clicks "Transfer"
-3. **Backend:** POST `/api/organizations/[orgId]/transfer` → sets `transferOrgId` cookie for this superadmin
-4. **Frontend:** Middleware + layout detects transfer mode, shows "Transfer Mode" banner at top
-5. **Superadmin now sees:**
-   - Org's portal: `/[orgSlug]/dashboard`, `/[orgSlug]/assets`, etc.
-   - Can view/edit org's data as if they are an org admin
-   - Full audit trail and admin capabilities
-6. **Exit transfer:** Click "Exit transfer mode" → DELETE `/api/organizations/[orgId]/transfer` → clears cookie → redirects to `/superadmin`
-
-### 6.8 Permission Customization Flow
-1. **Org admin** navigates to `/[orgSlug]/users`
-2. **Click user** → view user detail
-3. **Click "Customize permissions"** → modal/form showing MODULE_PERMISSIONS_CONFIG
-4. **Toggle operations** per module (view, create, update, delete, etc.)
-5. **Save:** PATCH `/api/users/[userId]` with new permissions object
-6. **Permission cache invalidated** → next API call fetches fresh permissions
-7. **Staff member** sees UI/API-blocked operations per their new custom permissions
+### 7.5 Warranty Alert Cron
+1. External cron calls GET `/api/cron/warranty-alerts` with `Authorization: Bearer {CRON_SECRET}`
+2. Queries warranties expiring within 30 days, groups by org, emails all org admins via Resend
+3. Logs `WARRANTY_ALERT_SENT` audit event
 
 ---
 
-## 7. Services Layer (T4-3)
+## 8. Services Layer
 
-### Architecture
+Architecture: `API Route → Service Layer (auth + permissions + business logic) → Database Layer`
 
-The **lib/services/** layer centralizes business logic previously scattered across 67 API route handlers. This three-tier architecture improves maintainability and reduces code duplication:
+**Base service (`lib/services/base.service.ts`):** `requireAuth()`, `requirePermission()`, `requireActiveSubscription()`, `requireFeature()`, `getUserContext()`, `errorResponse()`, `successResponse()`
 
-```
-API Route Handler
-    ↓
-Service Layer (business logic: auth, permissions, subscriptions, audit)
-    ↓
-Database Layer (CRUD operations)
-```
-
-### Base Service Functions (lib/services/base.service.ts)
-
-Common utilities used by all domain services:
-
-- `requireAuth()` — Verify session cookie, return authenticated user or throw 401
-- `requirePermission(user, module, action)` — Check user permission or throw 403
-- `requireActiveSubscription(orgId)` — Verify subscription is ACTIVE or throw 403
-- `requireFeature(orgId, featureKey)` — Verify feature is enabled or throw 403
-- `getUserContext(user)` — Extract user details (uid, email, displayName, role) for audit logs
-- `errorResponse(message, status)` — Standardized error response
-- `successResponse(data, status)` — Standardized success response
-
-### Domain Services
-
-**lib/services/assets.service.ts**
-
-```typescript
-// Exports:
-getOrgAssets(user, filters?)                     // GET /api/assets
-getOrgAsset(user, assetId)                       // GET /api/assets/[id]
-createAssetWithAudit(user, data)                 // POST /api/assets
-updateAssetWithAudit(user, assetId, data)       // PATCH /api/assets/[id]
-deleteAssetWithAudit(user, assetId)              // DELETE /api/assets/[id]
-getOrgAssetCategories(user)                      // GET /api/assets?categoriesOnly=true
-```
-
-Each function handles:
-1. Permission checks
-2. Subscription validation
-3. Organization context verification
-4. Database operation
-5. Automatic audit logging
-
-**lib/services/inventory.service.ts**
-
-Follows same pattern as assets:
-```typescript
-getOrgInventoryItems(user, filters?)
-getOrgInventoryItem(user, itemId)
-createInventoryItemWithAudit(user, data)
-updateInventoryItemWithAudit(user, itemId, data)
-deleteInventoryItemWithAudit(user, itemId)
-getOrgInventoryCategories(user)
-applyInventoryTransactionWithAudit(user, itemId, type, quantity, reason, note?)
-```
-
-### API Route Refactoring Example
-
-**Before** — 98 lines with duplicated patterns:
-```typescript
-async function _POST(req: NextRequest) {
-  try {
-    const user = await verifySessionCookie();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!hasPermission(user, 'assets', 'create')) 
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    
-    const orgId = user.organizationId;
-    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 400 });
-    
-    const sub = await getSubscriptionByOrg(orgId);
-    if (sub && sub.status !== 'ACTIVE') 
-      return NextResponse.json({ error: 'Subscription expired' }, { status: 403 });
-    
-    // ... validation, db call, audit logging ...
-  } catch (err) { /* error handling */ }
-}
-```
-
-**After** — 20 lines, business logic delegated to service:
-```typescript
-async function _POST(req: NextRequest) {
-  try {
-    const user = await requireAuth();
-    const body = await req.json();
-    const parsed = assetSchema.safeParse(body);
-    if (!parsed.success) 
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
-    
-    const result = await assetsService.createAssetWithAudit(user, parsed.data);
-    return NextResponse.json(result, { status: 201 });
-  } catch (err) {
-    if (err instanceof NextResponse) return err;
-    console.error('[POST /api/assets]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
-```
-
-### Scalability Path
-
-To apply this pattern to remaining 65+ API routes:
-
-1. **Create domain service** (e.g., `lib/services/warranties.service.ts`)
-   - Follow assets/inventory pattern
-   - Implement getOrg*, createWithAudit, updateWithAudit, deleteWithAudit
-   - ~100-150 lines per service
-
-2. **Refactor API routes** for that domain
-   - Replace inline logic with service calls
-   - Remove boilerplate auth/permission/audit code
-   - API routes become thin adapters
-
-3. **Domains remaining**:
-   - warranties, requests, support, users, organizations, packages, reports, audit-logs, payment-logs
+**Domain services:** `lib/services/assets.service.ts`, `lib/services/inventory.service.ts` — handle permission checks, subscription validation, DB ops, and audit logging. Pattern extends to all other domains.
 
 ---
 
-## 8. Current State
+## 9. Current State (as of May 2026)
 
-### Implemented Features
-- ✅ Multi-tenant organization management with path-based routing
-- ✅ User authentication (email/password, username/password, invite-based)
-- ✅ Org-level RBAC (org_owner, admin, staff) + superadmin roles
-- ✅ Custom per-user permissions with granular module controls
-- ✅ Asset register (create, edit, retire, import, QR codes)
-- ✅ Inventory management (items, transactions, stock status)
-- ✅ Inventory audits (physical counts with per-item status)
-- ✅ Warranty tracking and alerts (cron-triggered email alerts)
-- ✅ Request workflow (create, approve/reject, audit)
-- ✅ Asset checkout/check-in tracking
-- ✅ Maintenance records and asset notes
-- ✅ Support ticketing with thread-based messages
-- ✅ Audit logs (immutable, searchable, exportable to CSV)
-- ✅ Reports/Dashboard (metrics, analytics framework)
-- ✅ Organization configuration (custom statuses, locations, categories)
-- ✅ Subscription & package management with feature flags
-- ✅ Payment log tracking (billing history)
-- ✅ Dark mode and light mode support
-- ✅ Arabic and English localization with RTL support
-- ✅ Sentry error tracking and monitoring
-- ✅ Role-based API route protection via `verifySessionCookie()`
-- ✅ Server-side session caching for performance
-- ✅ CSV export for assets, inventory, audit logs, warranties
-- ✅ CSV import for assets and inventory
-- ✅ Email service via Resend (invites, alerts, support notifications)
-- ✅ Sidebar collapse animation with tooltip labels
-- ✅ Page transition animations (fade + translate)
-- ✅ Button press animations (scale + easing)
-- ✅ Loading skeleton animations (gradient shimmer)
-- ✅ Motion/UX polish with easing tokens and duration utilities
-- ✅ Barrel exports (components/ui, components/shared, hooks) for cleaner import paths
-- ✅ Organized lib/utils with permissions and nav config split into separate modules
-- ✅ Comprehensive .env.example documenting all environment variables
+### Implemented & Stable
+- ✅ Multi-tenant organization management (path-based routing)
+- ✅ Email/password + username/password + invite-based auth
+- ✅ Org RBAC + custom per-user permissions
+- ✅ Asset register (create, edit, retire, QR, import/export CSV)
+- ✅ Inventory management (items, transactions, stock status, audits)
+- ✅ Warranty tracking + cron-triggered email alerts (progressive 30/14/7 day)
+- ✅ Request workflow (submit, approve/reject)
+- ✅ Asset checkout/check-in, maintenance records, asset notes
+- ✅ Support ticketing (thread-based)
+- ✅ Immutable audit logs (searchable, CSV export)
+- ✅ Dashboard + reports
+- ✅ Org configuration (statuses, locations, categories)
+- ✅ Subscription + package management + payment logs
+- ✅ Dark mode (full dark variants in all UI components including Radix dropdowns)
+- ✅ Arabic + English with RTL layout support
+- ✅ Sentry error tracking
+- ✅ Server-side session + permission caching
+- ✅ CSV import/export for assets, inventory, audit logs
+- ✅ Sidebar collapse animation (Framer Motion) — both org portal and superadmin
+- ✅ Page transition animations, button press animations, skeleton loading
+- ✅ Module identity system (Usool/Raseed/Haraka/Maal/Banna with colors and Arabic names)
+- ✅ Network status indicator (online/slow/offline) in org portal header and superadmin banner
+- ✅ Full-app responsiveness (all marketing pages, superadmin portal, login, invites, org portal)
+- ✅ Domain routing middleware (`makhzoon.me` → coming soon page)
+- ✅ Marketing website (home, product, pricing, customers, security, about, contact)
+- ✅ Coming soon page with early-access form
+- ✅ Services layer (base + assets + inventory)
+
+### Recent Changes (May 2026 session)
+
+**Module Identity:**
+- `lib/nav/index.ts` — `NavItemConfig` extended with `moduleColor` and `moduleName`
+- `components/layout/AppSidebar.tsx` — Active states use module color for pill/border/icon; Arabic name subtitle shown in EN locale
+- `locales/messages.ts` — nav.assets = 'Usool' / 'أصول', nav.inventory = 'Raseed' / 'رصيد'
+- `components/layout/BottomNav.tsx` — Module-aware labels
+
+**Coming soon page (`app/[locale]/page.tsx`):**
+- Business OS copy in both EN and AR
+- Vertical padding (`py-16`) above logo and below login link
+
+**Marketing website copy + components:**
+- `app/[locale]/(marketing)/home/page.tsx` — MODULES array (5 modules with colors), Business OS headlines, role workflow section, stats, testimonials
+- `app/[locale]/(marketing)/product/page.tsx` — Module kickers with colors, Business OS headline
+- `components/marketing/Footer.tsx` — Business OS tagline and copyright
+- `components/marketing/CTABand.tsx` — Responsive padding + `clamp()` headline + `flex-wrap` CTAs
+
+**Dark mode fix:**
+- `components/ui/dropdown-menu.tsx` — All `DropdownMenuItem`, `DropdownMenuLabel`, `DropdownMenuShortcut`, `DropdownMenuSubTrigger`, `DropdownMenuContent` have full `dark:` variants
+
+**Login redirect loop fix:**
+- `app/[locale]/(auth)/login/page.tsx` — `/api/auth/me` fetch uses `{ cache: 'no-store' }` to bypass browser caching
+
+**Superadmin sidebar collapsible:**
+- `store/ui.store.ts` — Added `superAdminSidebarCollapsed` state and `toggleSuperAdminSidebar`
+- `app/[locale]/superadmin/layout.tsx` — `motion.aside` animates width (240px ↔ 68px), ChevronLeft/Right toggle, animated labels, user info collapses, mobile overlay drawer
+
+**Network status indicator:**
+- `components/shared/NetworkStatusIndicator.tsx` — Fixed: `_isSlowConnection()` now called in `checkConnectivity()` so slow state is actually detected
+- `components/layout/AppHeader.tsx` — `NetworkStatusIndicator` added to org portal header right-actions
+
+**Full-app responsiveness:**
+- `components/marketing/Header.tsx` — Mobile hamburger menu + collapsible nav dropdown (closes on route change)
+- `app/[locale]/(marketing)/home/page.tsx` — All grids responsive: modules (1→2→5 cols), roles/testimonials (1→3 cols), stats (2→4 cols), logo cloud (3→6 cols); section padding responsive
+- `components/marketing/Footer.tsx` — Grid responsive (2→3→5 cols); padding responsive
+- `app/[locale]/(marketing)/product/page.tsx` — Pillars single column on mobile; integrations (2→4 cols); padding responsive
+- `app/[locale]/superadmin/layout.tsx` — isMobile state (resize listener); sidebar hidden on mobile; marginLeft only applied on md+; mobile header bar with hamburger opens sidebar as overlay with backdrop
+
+**Domain routing:**
+- `proxy.ts` (project root) — Already contained `MARKETING_HOSTS` logic. No new file needed; the `makhzoon.me` → coming soon redirect was already implemented here. `middleware.ts` must NOT exist alongside `proxy.ts` — the project uses only `proxy.ts` for all routing.
 
 ### Commented Out / Not Production-Ready
-- ⏳ **SSO/OIDC:** Full OIDC/PKCE flow implemented but disabled with TODO comments
-  - `/app/api/auth/sso/check/route.ts` — returns `ssoEnabled: false`
-  - `/app/api/auth/sso/initiate/route.ts` — returns 503 error
-  - `/app/api/auth/sso/callback/route.ts` — redirects to error
-  - `lib/oidc/discovery.ts`, `lib/oidc/tokens.ts`, `lib/oidc/pkce.ts` — dead code, not called
-  - `lib/firestore/sso-config.ts` — not called
-  - `types/sso.types.ts` — type definitions only
+- ⏳ **SSO/OIDC:** Full flow implemented but disabled (`/api/auth/sso/*` returns disabled errors)
+- ⏳ **Cloudflare Turnstile:** Bot verification implemented but disabled on login page and session endpoint
+- ❌ **SMS Provider:** Stub exists (`lib/sms/provider.ts`) but not integrated
 
-- ⏳ **Cloudflare Turnstile:** Bot verification implemented but disabled
-  - Login page: Turnstile widget import and component render commented out
-  - `/api/auth/session/route.ts` — Turnstile verification block commented out
-
-- ❌ **SMS Provider:** Stub exists (`lib/sms/provider.ts`) but not integrated; used only in types
-
-### Known Issues & TODOs
-1. **SSO Not Production-Ready:** Disabled until full OIDC/PKCE integration and key management are finalized
-2. **Turnstile Bot Verification:** Disabled until bot attack assessment and user experience testing complete
-3. **Email Delivery Monitoring:** Email send failures logged but not tracked separately from successful sends
-4. **Support Ticket Assignment:** Tickets created by org users but routing to Makhzoon support is manual
-5. **Report Exports:** Report data structure defined but full report computation logic varies
-6. **Frontend Error Boundaries:** Error pages added for `/[orgSlug]/error.tsx` and `/superadmin/error.tsx`, but not all sub-routes have dedicated error.tsx files
-
-### Recent Fixes (Tracks 1-4 - Comprehensive Audit)
-
-**Track 1 (Functional Audit):**
-- Commented out SSO (disabled /api/auth/sso/* endpoints)
-- Commented out Turnstile bot verification
-- Fixed middleware to check session cookie existence
-- Added CRON_SECRET guard to /api/cron/warranty-alerts
-- Deleted 14 duplicate route folders ("subscription 2", "support 2", etc.)
-- Fixed usage bar max={-1} placeholder
-- Cleaned up signup flow logic
-
-**Track 2 (UI Audit):**
-- Replaced 5 inline SVG functions with lucide-react icons in assets page
-- Fixed i18n interpolation in subscription page (removed duplicate text)
-- Moved FEATURE_LABELS to locales/messages.ts with translations
-- Removed image optimization bypass on profile avatar
-- Added error boundaries: app/error.tsx (root) and app/(marketing)/error.tsx
-
-**Track 3 (Performance):**
-- Fixed N+1 query in inventory.updateInventoryItem using Firestore transaction
-
-**Track 4 (Architecture) — 7/8 items complete:**
-- ✅ T4-8: Created .env.example documenting all 19 environment variables
-- ✅ T4-7: Added barrel exports (components/ui, components/shared, hooks)
-- ✅ T4-6: Split lib/utils → lib/permissions/, lib/nav/ (11 files updated)
-- ✅ T4-5: Moved domain-specific components → components/features/ (4 files)
-- ✅ T4-4: Reorganized hooks by domain (27 hooks into 9 subfolders, 150+ imports updated)
-- ✅ T4-2: Renamed lib/firestore/ → lib/db/ (84 imports updated)
-- ✅ T4-3: Created lib/services/ business logic layer (assets/inventory services + 2 API routes refactored)
-- ✅ T4-1: Already done in earlier audit (deleted 14 duplicate route folders)
-
-**Earlier Fixes (Tasks A, B, C):**
-- Fixed logout handlers to use hard redirect (`window.location.href`)
-- Invalidated server-side session cache on logout
-- Fixed wrong redirects for non-superadmin users
-- Added loading/disabled states to logout buttons
-- Added orgSlug fetching and storage for correct redirects
-- Added session-expired notification to login page
-- Fixed signup page redirects to org portal
-- Fixed invite acceptance error handling
-- Removed query param fallback for cron secret
-- Changed non-superadmin routes to use `router.replace()`
-
-### API Rate Limiting
-- **Not implemented** on public endpoints:
-  - `/api/early-access` — open to spam
-  - `/api/organizations/self-serve` — open to org enumeration
-  - `/api/invites/[token]` — open to invite token enumeration
-  - `/api/organizations/by-subdomain/[subdomain]` — open to subdomain enumeration
-
-### Deployment & Monitoring
-- **Vercel:** Hosting (auto-deploys from main branch)
-- **Sentry:** Error tracking with org/user context
-- **Firebase:** Database, auth, session management
-- **Email:** Resend service (no rate limiting or bounce handling configured)
+### Known Issues
+1. No rate limiting on public endpoints (`/api/early-access`, `/api/organizations/self-serve`, `/api/invites/*`)
+2. Email delivery failures not tracked separately from successful sends
+3. No pagination on large asset/inventory lists (could implement cursor-based)
+4. Audit logs not indexed by field (every filtered query is a collection scan)
 
 ---
 
-## 8. Code Organization
+## 10. Code Organization
 
 ### Directory Structure
 ```
-/app                       — Next.js App Router routes
-  /(auth)                  — Login, signup (public)
-  /(marketing)             — Public marketing pages
-  /[orgSlug]               — Org portal routes
-  /superadmin              — Superadmin routes
-  /invites                 — Invite acceptance
-  /api                     — API route handlers
-    /auth                  — Auth endpoints
-    /assets                — Asset CRUD
-    /inventory             — Inventory CRUD
-    /warranties            — Warranty CRUD
-    /organizations         — Org management
-    /users                 — User management
-    /requests              — Request workflow
-    /support               — Support ticketing
-    /cron                  — Cron job triggers (warranty alerts, etc.)
+/app                              — Next.js App Router routes
+  /[locale]
+    /(auth)/login                 — Login page (email + username tabs, forgot password modal)
+    /(marketing)                  — Public marketing pages (home, product, pricing, etc.)
+    /[orgSlug]                    — Org portal routes
+    /superadmin                   — Superadmin portal
+    /invites/[token]              — Invite acceptance
+    /page.tsx                     — Coming soon page (root per locale)
+  /api                            — API route handlers
+    /auth                         — session, me, sso (disabled)
+    /assets                       — Asset CRUD
+    /inventory                    — Inventory CRUD
+    /warranties, /requests, /support, /users, /organizations, /packages
+    /cron                         — Cron job triggers
+    /ping                         — Used by NetworkStatusIndicator health check
+    /contact, /early-access       — Public form submissions
 
-/components                — Reusable React components
-  /ui                      — Base components (button, input, dialog, etc.) [barrel export: index.ts]
-  /layout                  — App layout (header, sidebar, nav, drawer)
-  /shared                  — Shared components (QueryProvider, etc.) [barrel export: index.ts]
+/components
+  /layout                         — AppHeader, AppSidebar, BottomNav, SuperAdminBanner, MobileDrawer, TransferModeBanner
+  /marketing                      — MarketingHeader, MarketingFooter, CTABand, DashboardMock, FeaturePreview
+  /shared                         — NetworkStatusIndicator, ThemeToggle, LanguageToggle, CommandPalette, QueryProvider
+  /ui                             — Base UI components (button, input, dialog, dropdown-menu, tooltip, badge, etc.)
 
-/hooks                     — Custom React hooks [barrel export: index.ts]
-  useAuth.ts               — Auth state
-  useT.ts                  — i18n/localization
-  useAssets.ts, useInventory.ts, etc. — Data fetching hooks by domain
+/hooks                            — Custom hooks organized by domain
+/lib
+  /db                             — Firestore access layer (one file per collection)
+  /services                       — Business logic layer (base, assets, inventory)
+  /firebase                       — Client + admin SDK initialization
+  /permissions                    — hasPermission, hasModuleAccess
+  /nav                            — ORG_NAV_ENTRIES, ALL_NAV_ITEMS, NavItemConfig (with moduleColor, moduleName)
+  /email                          — Resend email templates
+  /audit                          — writeAuditLog()
+  /middleware                     — withAuth, withRole helpers
+  /validations                    — Zod schemas
+  /utils                          — cn, date, format, tenant-url, api-fetch
+  /export                         — CSV export
 
-/lib                       — Utility functions and services
-  /db                      — Database access layer (22 files, one per collection/entity)
-  /services                — Business logic layer (base, assets, inventory services with patterns for other domains)
-  /firebase                — Firebase client/admin initialization
-  /permissions             — Permission utilities (hasPermission, hasModuleAccess)
-  /nav                     — Navigation config (ORG_NAV_ITEMS, getFirstAccessiblePath)
-  /oidc                    — OIDC/PKCE helpers (commented out)
-  /email                   — Email templates and sending
-  /audit                   — Audit logging
-  /middleware              — Auth, role-based middleware
-  /validations             — Zod schemas for form/API validation
-  /utils                   — Pure utilities (cn, date, format, tenant-url, api-fetch, etc.)
-  /export                  — CSV export
-  /logging                 — Backend logging
+/store
+  auth.store.ts                   — Auth user + loading state
+  theme.store.ts                  — Dark/light mode
+  locale.store.ts                 — Language/RTL
+  transfer.store.ts               — Superadmin transfer mode
+  ui.store.ts                     — sidebarCollapsed, superAdminSidebarCollapsed, mobileMenuOpen
 
-/store                     — Zustand state stores
-  auth.store.ts            — Auth user + loading
-  theme.store.ts           — Dark/light mode
-  locale.store.ts          — Language/RTL preference
-  transfer.store.ts        — Superadmin transfer mode
-  ui.store.ts              — UI state (sidebar collapse, etc.)
-
-/types                     — TypeScript type definitions
-  index.ts                 — Barrel export
-  [entity].types.ts        — Per-entity types (asset, warranty, user, etc.)
-
-/locales                   — i18n translation files (JSON or similar)
-
-/public                    — Static assets (favicon, images, etc.)
-
-/scripts                   — Build/deploy scripts
-
-.env.local.example         — Example env vars
-.env.development.example   — Development env template
-.env.staging.example       — Staging env template
-.env.production.example    — Production env template
-middleware.ts              — Next.js middleware (session check)
-next.config.mjs            — Next.js config (Sentry, redirects)
-tailwind.config.ts         — Tailwind CSS config
-tsconfig.json              — TypeScript config
+/locales/messages.ts              — EN + AR translation keys (including module names and network status strings)
+/types                            — TypeScript type definitions
+proxy.ts                          — ALL routing logic: domain routing (makhzoon.me → coming soon), session enforcement, locale detection/redirect. NEVER create middleware.ts alongside this file — it causes a build conflict.
+next.config.ts                    — Turbopack, env vars, CORS headers, CSP, redirects
+tailwind.config.ts                — Tailwind CSS config
 ```
 
 ### Key Files
-- **middleware.ts** — Enforces session presence on protected routes
-- **app/layout.tsx** — Root layout, QueryProvider, Sentry, theme/locale setup
-- **app/[orgSlug]/layout.tsx** — Org portal layout with sidebar, header, auth check
-- **app/superadmin/layout.tsx** — Superadmin layout with transfer mode banner
-- **app/error.tsx** — Root-level error boundary for uncaught exceptions
-- **app/(marketing)/error.tsx** — Error boundary for marketing/public pages
-- **lib/firebase/auth-helpers.ts** — `verifySessionCookie()` for API routes
-- **lib/audit/logger.ts** — `writeAuditLog()` called by all mutation endpoints
-- **lib/permissions/index.ts** — Permission utilities
-- **lib/nav/index.ts** — Navigation configuration
-- **components/shared/QueryProvider.tsx** — React Query setup, 401 handling
-- **components/ui/index.ts** — Barrel export of all UI components
-- **components/shared/index.ts** — Barrel export of shared components
-- **hooks/index.ts** — Barrel export of all hooks organized by domain
+- **`proxy.ts`** — ALL routing: domain routing for `makhzoon.me`, session enforcement, locale detection. Do NOT create `middleware.ts` — it conflicts with `proxy.ts` and breaks the build.
+- **`store/ui.store.ts`** — `sidebarCollapsed` + `superAdminSidebarCollapsed` — persistent sidebar states
+- **`components/shared/NetworkStatusIndicator.tsx`** — Three-state wifi icon (online/slow/offline) used in both portals
+- **`components/layout/AppHeader.tsx`** — Org portal header with NetworkStatusIndicator, ThemeToggle, LanguageToggle, user menu
+- **`components/layout/AppSidebar.tsx`** — Org portal sidebar with module-aware active states, collapse animation
+- **`app/[locale]/superadmin/layout.tsx`** — Superadmin layout: collapsible animated sidebar, mobile overlay drawer
+- **`components/marketing/Header.tsx`** — Marketing header with mobile hamburger menu
+- **`lib/nav/index.ts`** — Nav config with `moduleColor` and `moduleName` per entry
+- **`locales/messages.ts`** — All EN + AR translations including module names (Usool/Raseed etc.)
+- **`lib/firebase/auth-helpers.ts`** — `verifySessionCookie()` for API routes
+- **`lib/audit/logger.ts`** — `writeAuditLog()` called by all mutation endpoints
+- **`lib/services/base.service.ts`** — Shared service utilities (requireAuth, requirePermission, etc.)
 
 ---
 
-## 9. Environment Variables
-
-**See `.env.example` for comprehensive documentation of all 19 environment variables with descriptions and sources.**
+## 11. Environment Variables
 
 ### Public Variables (NEXT_PUBLIC_*)
-- `NEXT_PUBLIC_FIREBASE_API_KEY` — Firebase client API key
-- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` — Firebase Auth domain
-- `NEXT_PUBLIC_FIREBASE_PROJECT_ID` — Firebase project ID
-- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` — Firebase storage bucket
-- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` — Firebase messaging ID
-- `NEXT_PUBLIC_FIREBASE_APP_ID` — Firebase app ID
-- `NEXT_PUBLIC_APP_URL` — Domain for email links, redirects, etc.
-- `NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY` — Bot protection (disabled)
-- `NEXT_PUBLIC_SENTRY_DSN` — Error tracking endpoint
+- `NEXT_PUBLIC_FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_STORAGE_BUCKET`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_APP_ID`
+- `NEXT_PUBLIC_APP_URL` — Domain for email links (`https://app.makhzoon.me`)
+- `NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY` — Disabled
+- `NEXT_PUBLIC_SENTRY_DSN`
 
 ### Server-Only Variables
-- `FIREBASE_PROJECT_ID` — Firebase project ID (server)
-- `FIREBASE_CLIENT_EMAIL` — Firebase Admin SDK service account email
-- `FIREBASE_PRIVATE_KEY` — Private key for Firebase Admin SDK (must be kept secret)
-- `CRON_SECRET` — Secret for cron job triggers (`/api/cron/*` endpoints)
-- `RESEND_API_KEY` — Email service API key (Resend)
-- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_SMS_FROM`, `TWILIO_WHATSAPP_FROM` — SMS service (not yet integrated)
-- `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` — Error tracking credentials
-- `CLOUDFLARE_TURNSTILE_SECRET_KEY` — Bot protection secret (disabled)
-- `NODE_ENV` — Deployment environment (development, staging, production)
+- `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (or `FIREBASE_SERVICE_ACCOUNT_BASE64`)
+- `CRON_SECRET` — Authorization for `/api/cron/*`
+- `RESEND_API_KEY`, `RESEND_FROM_EMAIL`
+- `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`
+- `CLOUDFLARE_TURNSTILE_SECRET_KEY` — Disabled
+- `NODE_ENV`
 
 ---
 
-## 10. Not Found in Codebase
-
-- **Database migrations/seeds** — Firebase uses Firestore; no SQL migrations
-- **Test suite** — No Jest/Vitest tests found; only dev dependencies present
-- **GraphQL API** — Uses REST + JSON
-- **CI/CD pipeline config** — Vercel auto-deploys; no explicit GitHub Actions
-- **Kubernetes/Docker** — Vercel handles deployment
-- **Stripe/Payment processing** — Payment logs tracked but actual processor not integrated
-- **Twilio/SMS sending** — Stub exists but not integrated
-- **Redis caching** — In-memory session cache only (Firebase)
-- **Webhook handling** — No incoming webhook handlers (but outgoing emails via Resend)
-- **File upload** — QR generation is server-side; no persistent file storage beyond Firestore
-- **Search/Elasticsearch** — Firestore queries only
-- **Scheduled jobs framework** — Cron jobs via external HTTP triggers, not internal scheduler
-- **API documentation** — No OpenAPI/Swagger; inferred from route handlers
-
----
-
-## 11. Security Considerations
+## 12. Security
 
 ### Implemented
-- ✅ httpOnly session cookies (server-side, not accessible to JS)
-- ✅ CORS / same-site cookie restrictions
-- ✅ Session verification on every API route via `verifySessionCookie()`
+- ✅ httpOnly session cookies
+- ✅ Session verification on every API route
 - ✅ Firebase Admin SDK for trusted server operations
-- ✅ Role and permission checks on mutation endpoints
-- ✅ Audit logging of all data mutations
+- ✅ Role + permission checks on all mutation endpoints
+- ✅ Immutable audit logs
 - ✅ Multi-tenant isolation by organizationId
-- ✅ Immutable audit logs (append-only pattern)
-- ✅ Sentry error tracking with context (no PII in logs)
-- ✅ Cron job secret for scheduled tasks (Authorization header only, not query param)
+- ✅ Sentry error tracking (no PII in logs)
+- ✅ CRON_SECRET via Authorization header only (not query param)
+- ✅ CSP headers configured in next.config.ts
 
-### Gaps / Concerns
-- ⚠️ No rate limiting on public endpoints (early-access, org creation, invite enumeration)
-- ⚠️ Email delivery failures not tracked (sent flag always true even if email failed)
-- ⚠️ SSO disabled but code remains (potential security review needed before enabling)
-- ⚠️ Turnstile disabled but code remains (bot verification gap in prod)
+### Gaps
+- ⚠️ No rate limiting on public endpoints
+- ⚠️ Email delivery failures not tracked
+- ⚠️ SSO code disabled but present (security review needed before enabling)
+- ⚠️ Turnstile disabled (bot verification gap)
 - ⚠️ No password complexity enforcement
-- ⚠️ Session cache has 5-10 second window where stale tokens remain valid (acceptable trade-off)
+- ⚠️ 5-10 second session cache window where stale tokens remain valid (acceptable trade-off)
 
 ---
 
-## 12. Performance Considerations
+## 13. Performance
 
 ### Optimizations
-- ✅ Server-side session caching (5-10 second TTL)
-- ✅ Server-side permission caching (10 second TTL)
-- ✅ React Query with staleTime and cacheTime for client-side data
-- ✅ Firestore indexing by organizationId for fast tenant queries
-- ✅ Bulk Firestore get (getAll) for asset name lookups in warranty alerts
-- ✅ CSV chunking (assets, inventory) for exports without memory bloat
+- ✅ Server-side session + permission caching (5-10 second TTL)
+- ✅ React Query with staleTime + cacheTime
+- ✅ Firestore indexing by organizationId
+- ✅ Bulk Firestore get for asset name lookups in warranty alerts
+- ✅ CSV chunking for exports
 
 ### Bottlenecks
-- ⚠️ Warranty alert cron fetches all asset names sequentially (could batch parallel)
-- ⚠️ No pagination on large asset/inventory lists (could implement cursor-based)
-- ⚠️ Audit logs not indexed (every query is collection scan)
-- ⚠️ Session verification hits Firestore on cache miss (could use Redis in production)
+- ⚠️ No pagination on large lists (cursor-based pagination not implemented)
+- ⚠️ Audit logs not indexed (collection scans on filter queries)
+- ⚠️ Session verification hits Firestore on cache miss
 
 ---
 
-## 13. Internationalization (i18n)
+## 14. Animations & Motion
 
-- **Languages:** Arabic (RTL), English (LTR)
-- **Hook:** `useT()` returns `{ t: (key) => string, lang: 'ar' | 'en', dir: 'rtl' | 'ltr' }`
-- **Store:** `locale.store.ts` manages global language preference
-- **Locales:** `/locales` directory with translation key files
-- **Fallback:** English if locale not found
-
----
-
-## 14. Theming
-
-- **Modes:** Light (default), Dark
-- **Store:** `theme.store.ts` manages preference
-- **CSS Variables:** `--primary-*`, `--gray-*`, `--surface-*`, etc. applied via Tailwind
-- **Persistence:** Theme preference stored in localStorage via Zustand
+- **Library:** Framer Motion
+- **Easing Tokens:** CSS custom properties (ease-out-expo, ease-spring, ease-in-sharp, ease-in-out-smooth)
+- **Duration Tokens:** CSS custom properties (120ms, 180ms, 250ms, 350ms, 450ms)
+- **Page Transitions:** Fade + translate on route changes
+- **Sidebar Animation:** `motion.aside` animates width (240 ↔ 68px) with `EASE_SLIDE = [0.4, 0, 0.2, 1]`; `motion.span` animates label width/opacity; both org and superadmin portals use the same pattern
+- **Button Interactions:** Hover lifts, active scales
+- **Skeleton Loading:** Gradient shimmer
+- **Preference:** `prefers-reduced-motion` reduces all animations to near-zero
 
 ---
 
-## 15. Animations & Motion
+## 15. Responsiveness
 
-- **Library:** Framer Motion for declarative animations
-- **Easing Tokens:** CSS custom properties define standard easing curves (ease-out-expo, ease-spring, ease-in-sharp, ease-in-out-smooth)
-- **Duration Tokens:** CSS custom properties for standard animation durations (120ms, 180ms, 250ms, 350ms, 450ms)
-- **Page Transitions:** Route changes fade and translate with 300ms enter, 180ms exit
-- **Sidebar Animation:** Collapse/expand animates width smoothly with easing; labels fade out
-- **Button Interactions:** Hover lifts, active scales down (97%)
-- **Skeleton Loading:** Gradient shimmer animation for loading states
-- **Preference:** `prefers-reduced-motion` media query reduces all animations to 0.01ms for accessibility
+All pages are fully responsive across mobile, tablet, and desktop.
+
+### Marketing
+- **Header:** Mobile hamburger button; nav collapses to drawer; closes on route change
+- **Home:** All grids fluid — modules (1→2→5 cols), roles/testimonials (1→3 cols), stats (2→4 cols), logos (3→6 cols); section padding uses Tailwind responsive prefixes
+- **Product:** Pillar sections stack vertically on mobile; integrations grid (2→4 cols)
+- **Footer:** 2→3→5 column grid; padding responsive
+- **CTABand:** `clamp()` headline, `flex-wrap` CTAs, responsive padding
+
+### App Portal
+- **Sidebar:** `hidden md:flex` — desktop only. Mobile uses `BottomNav` at the bottom of the screen.
+- **Header:** Burger button on mobile opens `MobileDrawer`; search moves to CommandPalette
+
+### Superadmin Portal
+- **Sidebar:** `hidden md:flex` on desktop; on mobile shows as full-width overlay drawer triggered by hamburger in mobile header bar
+- **Main content:** `marginLeft/Right` only applied when `!isMobile` (checked via resize listener)
+
+### Auth / Invites
+- **Login:** Right marketing panel `hidden lg:flex`; form column fills full width on mobile
+- **Invites:** `max-w-md w-full px-4` — inherently responsive
+
+---
+
+## 16. Not Found in Codebase
+
+- Database migrations/seeds (Firebase/Firestore; no SQL)
+- Test suite (no Jest/Vitest)
+- GraphQL API (REST only)
+- CI/CD config (Vercel auto-deploys)
+- Stripe/payment processing (payment logs tracked but no processor)
+- Redis caching (in-memory session cache only)
+- File upload (no persistent file storage beyond Firestore)
+- Pagination (no cursor-based pagination yet)
+- OpenAPI/Swagger docs

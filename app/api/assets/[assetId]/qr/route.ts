@@ -14,10 +14,12 @@ export async function GET(req: NextRequest, props: { params: Promise<{ assetId: 
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    const origin = req.nextUrl.origin;
+    const clientUrl = req.nextUrl.searchParams.get('url');
+    const origin = clientUrl ? new URL(clientUrl).origin : req.nextUrl.origin;
+    const resolvedUrl = clientUrl ?? assetUrl(params.assetId, origin);
     const [dataUrl, url] = await Promise.all([
-      generateAssetQRDataUrl(params.assetId, origin),
-      Promise.resolve(assetUrl(params.assetId, origin)),
+      generateAssetQRDataUrl(params.assetId, origin, resolvedUrl),
+      Promise.resolve(resolvedUrl),
     ]);
 
     return NextResponse.json({ dataUrl, url });

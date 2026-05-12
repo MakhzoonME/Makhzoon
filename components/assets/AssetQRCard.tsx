@@ -33,11 +33,13 @@ function PrinterSVG() {
 
 type QRResponse = { dataUrl: string; url: string };
 
-export function AssetQRCard({ assetId, assetName }: { assetId: string; assetName: string }) {
+export function AssetQRCard({ assetId, assetName, orgSlug, locale }: { assetId: string; assetName: string; orgSlug: string; locale: string }) {
   const { data, isLoading } = useQuery<QRResponse>({
-    queryKey: ['asset-qr', assetId],
+    queryKey: ['asset-qr', assetId, orgSlug, locale],
     queryFn: async () => {
-      const res = await fetch(`/api/assets/${assetId}/qr`);
+      const origin = window.location.origin;
+      const assetPageUrl = `${origin}/${locale}/${orgSlug}/assets/${assetId}`;
+      const res = await fetch(`/api/assets/${assetId}/qr?url=${encodeURIComponent(assetPageUrl)}`);
       if (!res.ok) throw new Error('Failed to generate QR');
       return res.json();
     },

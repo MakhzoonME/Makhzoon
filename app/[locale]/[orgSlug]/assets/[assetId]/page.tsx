@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/ui';
+import { useOrgSlug, useT } from '@/hooks/ui';
 import { useAsset } from '@/hooks/assets';
 import { useWarranties } from '@/hooks/warranties';
 import { useAuthStore } from '@/store/auth.store';
@@ -51,9 +51,9 @@ function TrashSVG() {
 /* ── KV row ──────────────────────────────────────────────────────── */
 function KVRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[140px_1fr] gap-3 py-2.5 border-b border-gray-100 dark:border-gray-800 last:border-0 items-start">
-      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide pt-0.5">{label}</span>
-      <span className="text-sm text-gray-900 dark:text-gray-100 font-medium">{children}</span>
+    <div className="grid grid-cols-[140px_1fr] gap-3 py-2.5 border-b border-border last:border-0 items-start">
+      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide pt-0.5">{label}</span>
+      <span className="text-sm text-gray-900 font-medium">{children}</span>
     </div>
   );
 }
@@ -64,6 +64,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
   const { assetId } = params;
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const { locale } = useT();
   const { user } = useAuthStore();
   const qc = useQueryClient();
   const { data: asset, isLoading, error } = useAsset(assetId);
@@ -101,11 +102,11 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
 
   const wColumns: ColumnDef<Warranty>[] = [
     { key: 'vendor', header: 'Vendor', render: (w) => <span className="text-sm font-medium">{w.vendor}</span> },
-    { key: 'startDate', header: 'Start', render: (w) => <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums">{formatDate(w.startDate)}</span> },
+    { key: 'startDate', header: 'Start', render: (w) => <span className="text-sm text-gray-500 tabular-nums">{formatDate(w.startDate)}</span> },
     {
       key: 'endDate', header: 'End',
       render: (w) => (
-        <span className={`text-sm tabular-nums font-medium ${isExpired(w.endDate) ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}`}>
+        <span className={`text-sm tabular-nums font-medium ${isExpired(w.endDate) ? 'text-red-600 dark:text-red-400' : 'text-gray-700'}`}>
           {formatDate(w.endDate)}
         </span>
       ),
@@ -131,9 +132,6 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
         breadcrumb={[{ label: 'Assets', href: `/${orgSlug}/assets` }, { label: asset.name, href: `/${orgSlug}/assets/${assetId}` }]}
         actions={isAdmin ? (
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => {}}>
-              <QrSVG /><span className="ml-1.5">QR label</span>
-            </Button>
             {asset.status !== 'Retired' && (
               <Button variant="outline" size="sm" onClick={() => setEditAssetOpen(true)}>
                 <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ml-1">Edit</span>
@@ -166,8 +164,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
                 ['Location', asset.location || '—'],
                 ['Purchase Cost', asset.purchaseCost ? `${asset.purchaseCost} JOD` : '—'],
                 ['Purchase Date', asset.purchaseDate ? formatDate(asset.purchaseDate) : '—'],
-                ...(asset.receiptUrl ? [['Receipt', <a key="r" href={asset.receiptUrl} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline truncate block max-w-[200px]">View Receipt</a>]] : []),
-              ].map(([label, value]) => (
+                ].map(([label, value]) => (
                 <div key={String(label)}>
                   <dt className="text-gray-500">{label}</dt>
                   <dd className="font-medium text-gray-900 mt-0.5">{value}</dd>
@@ -180,99 +177,67 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
                 </div>
               )}
             </dl>
+            {asset.receiptUrl && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Receipt</p>
+                <a href={asset.receiptUrl} target="_blank" rel="noopener noreferrer">
+                  <img src={asset.receiptUrl} alt="Receipt" className="rounded-md border border-border max-h-48 object-contain cursor-zoom-in hover:opacity-90 transition-opacity" />
+                </a>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <h2 className="text-sm font-semibold text-gray-900 mb-4">Metadata</h2>
-            <dl className="space-y-3 text-sm">
-              <div>
-                <dt className="text-gray-500 mb-0.5">Created By</dt>
-                <dd><UserHoverCard user={{ uid: asset.createdBy, name: asset.createdByName, email: asset.createdByEmail, role: asset.createdByRole }} /></dd>
-              </div>
-              <div>
-                <KVRow label="Asset ID">
-                  <span className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-md">{assetId}</span>
-                </KVRow>
-                {asset.serialNumber && (
-                  <KVRow label="Serial number">
-                    <span className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-md">{asset.serialNumber}</span>
-                  </KVRow>
-                )}
-                <KVRow label="Category">{asset.category}</KVRow>
-                {asset.assignedTo && (
-                  <KVRow label="Assigned to">{asset.assignedTo}</KVRow>
-                )}
-                {asset.location && (
-                  <KVRow label="Location">{asset.location}</KVRow>
-                )}
-                {asset.purchaseCost && (
-                  <KVRow label="Purchase cost">{asset.purchaseCost} JOD</KVRow>
-                )}
-                {asset.purchaseDate && (
-                  <KVRow label="Purchase date">{formatDate(asset.purchaseDate)}</KVRow>
-                )}
-                {asset.notes && (
-                  <KVRow label="Notes">
-                    <span className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">{asset.notes}</span>
-                  </KVRow>
-                )}
-              </div>
-            </dl>
-          </CardContent>
-        </Card>
-
-          {/* Warranties card */}
-          <Card>
-            <CardContent className="p-0">
-              <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Warranties</h2>
-                {isAdmin && (() => {
-                  const now = new Date();
-                  const hasActiveWarranty = (warranties as Warranty[]).some((w) => new Date(w.endDate) >= now);
-                  return !hasActiveWarranty ? (
-                    <Button size="sm" variant="ghost" onClick={() => setAddWarrantyOpen(true)}>
-                      <PlusSVG /><span className="ml-1">Add warranty</span>
-                    </Button>
-                  ) : null;
-                })()}
-              </div>
-              <DataTable
-                data={warranties}
-                columns={wColumns}
-                isLoading={wLoading}
-                emptyMessage="No warranties attached."
-                keyExtractor={(w) => w.id}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Metadata card */}
+          {/* Record history card */}
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Record history</h2>
+              <h2 className="text-sm font-semibold text-gray-900 mb-4">Record history</h2>
               <div>
                 <KVRow label="Created by">
                   <UserHoverCard user={{ uid: asset.createdBy, name: asset.createdByName, email: asset.createdByEmail, role: asset.createdByRole }} />
                 </KVRow>
                 <KVRow label="Created at">
-                  <span className="text-gray-700 dark:text-gray-300 tabular-nums">{formatDate(asset.createdAt)}</span>
+                  <span className="text-gray-700 tabular-nums">{formatDate(asset.createdAt)}</span>
                 </KVRow>
                 <KVRow label="Updated by">
                   <UserHoverCard user={{ uid: asset.updatedBy, name: asset.updatedByName, email: asset.updatedByEmail, role: asset.updatedByRole }} />
                 </KVRow>
                 <KVRow label="Updated at">
-                  <span className="text-gray-700 dark:text-gray-300 tabular-nums">{formatDate(asset.updatedAt)}</span>
+                  <span className="text-gray-700 tabular-nums">{formatDate(asset.updatedAt)}</span>
                 </KVRow>
               </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
       </div>
+
+      {/* Warranties — full width */}
+      <Card className="mb-6">
+        <CardContent className="p-0">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-900">Warranties</h2>
+            {isAdmin && (() => {
+              const now = new Date();
+              const hasActiveWarranty = (warranties as Warranty[]).some((w) => new Date(w.endDate) >= now);
+              return !hasActiveWarranty ? (
+                <Button size="sm" variant="ghost" onClick={() => setAddWarrantyOpen(true)}>
+                  <PlusSVG /><span className="ml-1">Add warranty</span>
+                </Button>
+              ) : null;
+            })()}
+          </div>
+          <DataTable
+            data={warranties}
+            columns={wColumns}
+            isLoading={wLoading}
+            emptyMessage="No warranties attached."
+            keyExtractor={(w) => w.id}
+          />
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <CheckoutSection assetId={assetId} assetName={asset.name} />
-        <AssetQRCard assetId={assetId} assetName={asset.name} />
+        <AssetQRCard assetId={assetId} assetName={asset.name} orgSlug={orgSlug} locale={locale} />
       </div>
 
       {/* Notes + Maintenance */}
@@ -286,41 +251,6 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
         <RequestActionPanel assetId={assetId} warranties={warranties} />
       )}
 
-      {/* Admin quick actions */}
-      {isAdmin && (
-        <Card>
-          <CardContent className="p-5">
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Actions</h2>
-            <div className="space-y-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => setAddWarrantyOpen(true)}
-              >
-                <PlusSVG /><span className="ml-2">Add warranty</span>
-              </Button>
-              {asset.status !== 'Retired' && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => setEditAssetOpen(true)}
-                >
-                  <EditSVG /><span className="ml-2">Edit asset</span>
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-              >
-                <UploadSVG /><span className="ml-2">Transfer asset</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Linked records */}
       {(() => {
@@ -328,17 +258,17 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
         return extended.poNumber || extended.invoiceRef || extended.insurance ? (
           <Card>
             <CardContent className="p-5">
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Linked</h2>
+              <h2 className="text-sm font-semibold text-gray-900 mb-4">Linked</h2>
               <div className="space-y-3">
                 {extended.poNumber && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">PO number</span>
-                    <span className="font-mono text-xs text-gray-900 dark:text-gray-100">{extended.poNumber}</span>
+                    <span className="text-gray-500">PO number</span>
+                    <span className="font-mono text-xs text-gray-900">{extended.poNumber}</span>
                   </div>
                 )}
                 {extended.invoiceRef && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Invoice</span>
+                    <span className="text-gray-500">Invoice</span>
                     <button className="font-mono text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 flex items-center gap-1 transition-colors">
                       {extended.invoiceRef} <ArrowUpRightSVG />
                     </button>

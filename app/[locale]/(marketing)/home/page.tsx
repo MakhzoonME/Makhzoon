@@ -2,15 +2,44 @@
 import Link from 'next/link';
 import { CTABand } from '@/components/marketing/CTABand';
 import { DashboardMock } from '@/components/marketing/DashboardMock';
-import { Package, Users, Wrench, FileText, ShieldCheck, BarChart2, CheckCircle2, ChevronRight } from 'lucide-react';
+import { CheckCircle2, ChevronRight } from 'lucide-react';
 
-const FEATURES = [
-  { Icon: Package, title: 'Track', desc: 'Know exactly what you own, where it is, and who has it. QR codes on every asset, scannable from any phone.' },
-  { Icon: Users,  title: 'Manage', desc: 'Assign, retire, and request changes through a structured workflow. Admin approvals built-in — no email threads.' },
-  { Icon: Wrench, title: 'Maintain', desc: 'Log maintenance history and warranty coverage. Get alerted before warranties lapse, not after.' },
-  { Icon: FileText,   title: 'Comply', desc: 'Every action logged. Export audit trails for SOC 2, ISO 27001, or your internal compliance team.' },
-  { Icon: ShieldCheck, title: 'Control', desc: 'Role-based access keeps the right data in the right hands. Multi-tenant by design.' },
-  { Icon: BarChart2, title: 'Report', desc: 'Inventory metrics, maintenance costs, warranty health. Charts that tell you what to do next.' },
+const MODULES = [
+  {
+    name: 'أصول',
+    nameEn: 'Usool',
+    color: '#00695C',
+    title: 'Every asset your organization owns — tracked.',
+    desc: 'Structured records for every item: serial numbers, locations, assignees, warranties, and maintenance history. Scannable QR codes on everything.',
+  },
+  {
+    name: 'رصيد',
+    nameEn: 'Raseed',
+    color: '#E65100',
+    title: 'Your inventory, clear in real time.',
+    desc: 'Know exactly what\'s in stock, where it is, and when to reorder. Reorder alerts, audit trails, and multi-branch sync — no spreadsheets.',
+  },
+  {
+    name: 'حركة',
+    nameEn: 'Haraka',
+    color: '#6A1B9A',
+    title: 'Cloud POS built for growing retail.',
+    desc: 'Sell, sync inventory in real time, and close the day — from any device. No legacy hardware required.',
+  },
+  {
+    name: 'مال',
+    nameEn: 'Maal',
+    color: '#1B5E20',
+    title: 'Financial clarity without the accountant.',
+    desc: 'Track expenses, issue invoices, and see your cash flow — all connected to your inventory and sales.',
+  },
+  {
+    name: 'بنّا',
+    nameEn: 'Banna',
+    color: '#1565C0',
+    title: 'Your workspace, configured for your business.',
+    desc: 'Choose the modules your organization needs. One Space — Usool, Raseed, Haraka, Maal — growing with you.',
+  },
 ];
 
 const ROLES = [
@@ -65,7 +94,7 @@ export default function HomePage() {
             WebkitMaskImage: 'radial-gradient(at 50% 30%, #000 30%, transparent 70%)',
           }}
         />
-        <div className="relative mx-auto px-8" style={{ maxWidth: 1280, paddingTop: 64, paddingBottom: 0 }}>
+        <div className="relative mx-auto px-4 sm:px-8 pt-10 sm:pt-16" style={{ maxWidth: 1280 }}>
           <div className="text-center mx-auto" style={{ maxWidth: 880 }}>
             {/* Pill */}
             <div className="inline-flex items-center gap-2 mb-7 px-3 py-1.5 rounded-full border text-sm" style={{ background: '#fff', borderColor: 'var(--border-default)', color: 'var(--gray-700)', boxShadow: 'var(--shadow-xs)' }}>
@@ -77,13 +106,13 @@ export default function HomePage() {
             </div>
 
             <h1 style={{ fontSize: 'clamp(44px, 5.8vw, 72px)', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.03, margin: '0 0 24px', color: 'var(--gray-900)' }}>
-              Everything your<br />organization owns,<br />
+              أدير عملك<br />في مكان واحد.<br />
               <span style={{ background: 'linear-gradient(135deg, var(--primary-600), var(--violet-600))', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
-                in one place.
+                بدون جداول بيانات.
               </span>
             </h1>
             <p style={{ fontSize: 20, lineHeight: 1.55, color: 'var(--gray-600)', margin: '0 auto 36px', maxWidth: 620 }}>
-              Makhzoon gives operations and IT teams complete visibility over every asset — from acquisition to retirement, with full audit compliance and zero spreadsheets.
+              Makhzoon is the Business OS for Arab organizations. Assets, inventory, sales, and finance — five modules that work together so your team doesn&apos;t have to.
             </p>
             <div className="inline-flex gap-3 mb-3">
               <Link href="/login" className="inline-flex items-center justify-center gap-2 px-6 h-12 rounded-xl font-semibold text-white no-underline transition-opacity duration-150 hover:opacity-90" style={{ background: 'var(--primary-600)', textDecoration: 'none', fontSize: 16 }}>
@@ -97,7 +126,7 @@ export default function HomePage() {
           </div>
 
           {/* Product screenshot */}
-          <div className="relative mt-16">
+          <div className="relative mt-10 md:mt-16">
             <div className="absolute" style={{ inset: '-40px -10% 60%', background: 'radial-gradient(closest-side, rgba(79,70,229,0.16), transparent)', filter: 'blur(40px)' }} />
             <div className="relative overflow-hidden" style={{ borderRadius: 14, boxShadow: '0 32px 80px -20px rgba(15,23,42,0.24), 0 0 0 1px var(--border-default)' }}>
               {/* Browser chrome */}
@@ -107,7 +136,7 @@ export default function HomePage() {
                 <div style={{ width: 11, height: 11, borderRadius: 999, background: '#28C840' }} />
                 <div className="flex-1 text-center" style={{ fontFamily: 'monospace', fontSize: 11.5, color: 'var(--gray-400)' }}>app.makhzoon.me / dashboard</div>
               </div>
-              <div style={{ height: 520 }}>
+              <div className="h-[220px] sm:h-[380px] md:h-[520px]">
                 <DashboardMock />
               </div>
             </div>
@@ -115,43 +144,44 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Features ──────────────────────────────────────────────────── */}
-      <section style={{ background: '#fff', padding: '96px 32px' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-          <div style={{ marginBottom: 56 }}>
-            <div style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--primary-600)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 14 }}>Capabilities</div>
+      {/* ── Modules ───────────────────────────────────────────────────── */}
+      <section className="px-4 sm:px-8 py-16 md:py-24" style={{ background: '#fff' }}>
+        <div className="max-w-[1280px] mx-auto">
+          <div className="mb-10 md:mb-14">
+            <div style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--primary-600)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 14 }}>The Modules</div>
             <h2 style={{ fontSize: 'clamp(28px,3.5vw,40px)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', margin: '0 0 14px', color: 'var(--gray-900)', maxWidth: 640 }}>
-              Five jobs Makhzoon does better than your spreadsheet.
+              Five modules. One Business OS.
             </h2>
-            <p style={{ fontSize: 18, lineHeight: 1.55, color: 'var(--gray-600)', margin: 0 }}>Each one earns its place. None of it is filler.</p>
+            <p style={{ fontSize: 18, lineHeight: 1.55, color: 'var(--gray-600)', margin: 0 }}>Each module does one job brilliantly. Together they replace every spreadsheet in your organization.</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
-            {FEATURES.map(({ Icon, title, desc }) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {MODULES.map(({ name, nameEn, color, title, desc }) => (
               <div
-                key={title}
+                key={nameEn}
                 style={{
-                  padding: 28,
-                  border: '1px solid var(--border-default)',
+                  padding: 24,
+                  border: `1px solid ${color}28`,
                   borderRadius: 12,
-                  background: '#fff',
+                  background: `${color}07`,
                   transition: 'box-shadow 0.18s ease, border-color 0.18s ease, transform 0.18s ease',
                 }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 24px -4px rgba(15,23,42,0.12)';
-                  (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--primary-200)';
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = `0 8px 24px -4px ${color}30`;
+                  (e.currentTarget as HTMLDivElement).style.borderColor = `${color}50`;
                   (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
                 }}
                 onMouseLeave={e => {
                   (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
-                  (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border-default)';
+                  (e.currentTarget as HTMLDivElement).style.borderColor = `${color}28`;
                   (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
                 }}
               >
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--primary-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18, color: 'var(--primary-600)' }}>
-                  <Icon />
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color, fontFamily: 'system-ui', lineHeight: 1 }}>{name}</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color, opacity: 0.65, letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 3 }}>{nameEn}</div>
                 </div>
-                <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--gray-900)', marginBottom: 8 }}>{title}</div>
-                <div style={{ fontSize: 14, lineHeight: 1.65, color: 'var(--gray-600)' }}>{desc}</div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--gray-900)', marginBottom: 8, lineHeight: 1.35 }}>{title}</div>
+                <div style={{ fontSize: 13, lineHeight: 1.65, color: 'var(--gray-500)' }}>{desc}</div>
               </div>
             ))}
           </div>
@@ -159,14 +189,14 @@ export default function HomePage() {
       </section>
 
       {/* ── Roles / Workflow ──────────────────────────────────────────── */}
-      <section style={{ background: 'var(--gray-50)', borderTop: '1px solid var(--border-default)', padding: '96px 32px' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-          <div style={{ marginBottom: 56, maxWidth: 760 }}>
+      <section className="px-4 sm:px-8 py-16 md:py-24" style={{ background: 'var(--gray-50)', borderTop: '1px solid var(--border-default)' }}>
+        <div className="max-w-[1280px] mx-auto">
+          <div className="mb-10 md:mb-14 max-w-[760px]">
             <div style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--primary-600)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 14 }}>Workflow</div>
-            <h2 style={{ fontSize: 'clamp(28px,3.5vw,40px)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', margin: '0 0 14px', color: 'var(--gray-900)' }}>One source of truth, three roles.</h2>
-            <p style={{ fontSize: 18, lineHeight: 1.55, color: 'var(--gray-600)', margin: 0 }}>From the IT manager filing audit reports to the field tech logging a repair — everyone sees what they need, nothing they don&apos;t.</p>
+            <h2 style={{ fontSize: 'clamp(28px,3.5vw,40px)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', margin: '0 0 14px', color: 'var(--gray-900)' }}>كل دور يرى ما يحتاجه — لا أكثر.</h2>
+            <p style={{ fontSize: 18, lineHeight: 1.55, color: 'var(--gray-600)', margin: 0 }}>From the owner reviewing cash flow to the store manager running POS — everyone gets exactly the access they need, nothing they don&apos;t.</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {ROLES.map(({ role, tone, desc, items }) => (
               <div key={role} style={{ background: '#fff', border: '1px solid var(--border-default)', borderRadius: 12, padding: 28, boxShadow: 'var(--shadow-xs)' }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 999, fontSize: 12, fontWeight: 500, ...tone }}>
@@ -188,16 +218,16 @@ export default function HomePage() {
       </section>
 
       {/* ── Stats + Logo cloud ─────────────────────────────────────────── */}
-      <section style={{ background: '#fff', padding: '96px 32px' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+      <section className="px-4 sm:px-8 py-16 md:py-24" style={{ background: '#fff' }}>
+        <div className="max-w-[1280px] mx-auto">
           {/* Logo cloud */}
-          <div style={{ marginBottom: 56, display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 32, alignItems: 'center', opacity: 0.55 }}>
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-6 md:gap-8 items-center mb-10 md:mb-14" style={{ opacity: 0.55 }}>
             {LOGOS.map((name, i) => (
               <div key={name} style={{ fontFamily: i % 2 === 0 ? 'monospace' : 'inherit', fontSize: i === 2 ? 15 : 17, fontWeight: i % 2 === 0 ? 500 : 700, letterSpacing: i % 2 === 0 ? '0.1em' : '-0.02em', color: 'var(--gray-500)', textAlign: 'center' }}>{name}</div>
             ))}
           </div>
           {/* Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32, padding: '40px 0', borderTop: '1px solid var(--border-default)', borderBottom: '1px solid var(--border-default)' }}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-10" style={{ borderTop: '1px solid var(--border-default)', borderBottom: '1px solid var(--border-default)' }}>
             {STATS.map(({ value, label, sub }) => (
               <div key={label}>
                 <div style={{ fontSize: 'clamp(36px, 4vw, 48px)', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--primary-600)', lineHeight: 1, marginBottom: 8 }}>{value}</div>
@@ -210,13 +240,13 @@ export default function HomePage() {
       </section>
 
       {/* ── Testimonials ──────────────────────────────────────────────── */}
-      <section style={{ background: 'var(--gray-50)', borderTop: '1px solid var(--border-default)', padding: '96px 32px' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-          <div style={{ marginBottom: 56, maxWidth: 760 }}>
+      <section className="px-4 sm:px-8 py-16 md:py-24" style={{ background: 'var(--gray-50)', borderTop: '1px solid var(--border-default)' }}>
+        <div className="max-w-[1280px] mx-auto">
+          <div className="mb-10 md:mb-14 max-w-[760px]">
             <div style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--primary-600)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 14 }}>What customers say</div>
             <h2 style={{ fontSize: 'clamp(28px,3.5vw,40px)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', margin: 0, color: 'var(--gray-900)' }}>The receipts.</h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {QUOTES.map(({ name, role, org, quote }) => (
               <div key={name} style={{ background: '#fff', border: '1px solid var(--border-default)', borderRadius: 12, padding: 32, display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-xs)' }}>
                 {/* Quote mark */}

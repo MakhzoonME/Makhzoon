@@ -59,7 +59,7 @@ export function ExpiryWarningBanner() {
 
   if (sub.status === 'SUSPENDED') {
     return (
-      <div className="bg-red-50 border-b border-red-200 px-4 py-2 flex items-center gap-2 text-sm text-red-800">
+      <div className="bg-[var(--red-100)] border-b border-[var(--red-100)] px-4 py-2 flex items-center gap-2 text-sm text-[var(--red-700)]">
         <XCircleSVG />
         Your subscription is suspended. Please contact support.
       </div>
@@ -70,7 +70,7 @@ export function ExpiryWarningBanner() {
     const suspensionDate = new Date(sub.endDate);
     suspensionDate.setDate(suspensionDate.getDate() + DAYS_UNTIL_SUSPENSION);
     return (
-      <div className="bg-red-50 border-b border-red-200 px-4 py-2 flex items-center gap-2 text-sm text-red-800">
+      <div className="bg-[var(--red-100)] border-b border-[var(--red-100)] px-4 py-2 flex items-center gap-2 text-sm text-[var(--red-700)]">
         <XCircleSVG />
         Your subscription has expired. Access will be suspended on{' '}
         <span className="font-semibold mx-1">{formatDate(suspensionDate)}</span>.
@@ -81,7 +81,7 @@ export function ExpiryWarningBanner() {
 
   if (days <= 14) {
     return (
-      <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2 text-sm text-amber-800">
+      <div className="bg-[var(--yellow-100)] border-b border-[var(--yellow-100)] px-4 py-2 flex items-center gap-2 text-sm text-[var(--yellow-700)]">
         <AlertTriangleSVG />
         Your subscription expires in{' '}
         <span className="font-semibold mx-1">{days} day{days !== 1 ? 's' : ''}</span>

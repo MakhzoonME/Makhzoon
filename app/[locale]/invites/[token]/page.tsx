@@ -109,7 +109,7 @@ export default function AcceptInvitePage(props: { params: Promise<{ token: strin
     return (
       <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--surface-page)' }}>
         <div className="w-full max-w-md bg-surface-card rounded-2xl border border-border p-8 text-center shadow-sm">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-red-50 mb-4 text-red-500">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--red-50)] mb-4 text-[var(--red-700)]">
             <AlertCircle className="h-5 w-5" strokeWidth={1.75} />
           </div>
           <h1 className="text-lg font-semibold text-gray-900 mb-1.5">Invite unavailable</h1>
@@ -176,7 +176,7 @@ export default function AcceptInvitePage(props: { params: Promise<{ token: strin
           </div>
 
           {isUsernameInvite && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700">
+            <div className="mb-4 p-3 bg-[var(--blue-50)] border border-[var(--blue-100)] rounded-lg text-xs text-[var(--blue-700)]">
               You&apos;ll sign in with username <strong>{info.username}</strong> and the password you set below.
             </div>
           )}
@@ -207,7 +207,7 @@ export default function AcceptInvitePage(props: { params: Promise<{ token: strin
               />
             </div>
             {formError && (
-              <div className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-red-700 bg-red-50 border border-red-100">
+              <div className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-[var(--red-700)] bg-[var(--red-50)] border border-[var(--red-100)]">
                 <AlertCircle className="h-5 w-5" strokeWidth={1.75} />
                 {formError}
               </div>

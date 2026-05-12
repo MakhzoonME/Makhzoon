@@ -51,9 +51,9 @@ function TrashSVG() {
 /* ── KV row ──────────────────────────────────────────────────────── */
 function KVRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[140px_1fr] gap-3 py-2.5 border-b border-gray-100 dark:border-gray-800 last:border-0 items-start">
-      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide pt-0.5">{label}</span>
-      <span className="text-sm text-gray-900 dark:text-gray-100 font-medium">{children}</span>
+    <div className="grid grid-cols-[140px_1fr] gap-3 py-2.5 border-b border-border last:border-0 items-start">
+      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide pt-0.5">{label}</span>
+      <span className="text-sm text-gray-900 font-medium">{children}</span>
     </div>
   );
 }
@@ -102,11 +102,11 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
 
   const wColumns: ColumnDef<Warranty>[] = [
     { key: 'vendor', header: 'Vendor', render: (w) => <span className="text-sm font-medium">{w.vendor}</span> },
-    { key: 'startDate', header: 'Start', render: (w) => <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums">{formatDate(w.startDate)}</span> },
+    { key: 'startDate', header: 'Start', render: (w) => <span className="text-sm text-gray-500 tabular-nums">{formatDate(w.startDate)}</span> },
     {
       key: 'endDate', header: 'End',
       render: (w) => (
-        <span className={`text-sm tabular-nums font-medium ${isExpired(w.endDate) ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}`}>
+        <span className={`text-sm tabular-nums font-medium ${isExpired(w.endDate) ? 'text-red-600 dark:text-red-400' : 'text-gray-700'}`}>
           {formatDate(w.endDate)}
         </span>
       ),
@@ -178,10 +178,10 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
               )}
             </dl>
             {asset.receiptUrl && (
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Receipt</p>
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Receipt</p>
                 <a href={asset.receiptUrl} target="_blank" rel="noopener noreferrer">
-                  <img src={asset.receiptUrl} alt="Receipt" className="rounded-md border border-gray-200 dark:border-gray-700 max-h-48 object-contain cursor-zoom-in hover:opacity-90 transition-opacity" />
+                  <img src={asset.receiptUrl} alt="Receipt" className="rounded-md border border-border max-h-48 object-contain cursor-zoom-in hover:opacity-90 transition-opacity" />
                 </a>
               </div>
             )}
@@ -191,19 +191,19 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
           {/* Record history card */}
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Record history</h2>
+              <h2 className="text-sm font-semibold text-gray-900 mb-4">Record history</h2>
               <div>
                 <KVRow label="Created by">
                   <UserHoverCard user={{ uid: asset.createdBy, name: asset.createdByName, email: asset.createdByEmail, role: asset.createdByRole }} />
                 </KVRow>
                 <KVRow label="Created at">
-                  <span className="text-gray-700 dark:text-gray-300 tabular-nums">{formatDate(asset.createdAt)}</span>
+                  <span className="text-gray-700 tabular-nums">{formatDate(asset.createdAt)}</span>
                 </KVRow>
                 <KVRow label="Updated by">
                   <UserHoverCard user={{ uid: asset.updatedBy, name: asset.updatedByName, email: asset.updatedByEmail, role: asset.updatedByRole }} />
                 </KVRow>
                 <KVRow label="Updated at">
-                  <span className="text-gray-700 dark:text-gray-300 tabular-nums">{formatDate(asset.updatedAt)}</span>
+                  <span className="text-gray-700 tabular-nums">{formatDate(asset.updatedAt)}</span>
                 </KVRow>
               </div>
             </CardContent>
@@ -213,8 +213,8 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
       {/* Warranties — full width */}
       <Card className="mb-6">
         <CardContent className="p-0">
-          <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Warranties</h2>
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-900">Warranties</h2>
             {isAdmin && (() => {
               const now = new Date();
               const hasActiveWarranty = (warranties as Warranty[]).some((w) => new Date(w.endDate) >= now);
@@ -258,17 +258,17 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
         return extended.poNumber || extended.invoiceRef || extended.insurance ? (
           <Card>
             <CardContent className="p-5">
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Linked</h2>
+              <h2 className="text-sm font-semibold text-gray-900 mb-4">Linked</h2>
               <div className="space-y-3">
                 {extended.poNumber && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">PO number</span>
-                    <span className="font-mono text-xs text-gray-900 dark:text-gray-100">{extended.poNumber}</span>
+                    <span className="text-gray-500">PO number</span>
+                    <span className="font-mono text-xs text-gray-900">{extended.poNumber}</span>
                   </div>
                 )}
                 {extended.invoiceRef && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Invoice</span>
+                    <span className="text-gray-500">Invoice</span>
                     <button className="font-mono text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 flex items-center gap-1 transition-colors">
                       {extended.invoiceRef} <ArrowUpRightSVG />
                     </button>

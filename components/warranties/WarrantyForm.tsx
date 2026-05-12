@@ -285,11 +285,11 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId, onCancel, on
               <div className="space-y-3">
                 {field.value && (
                   <div className="relative inline-block">
-                    <img src={field.value} alt="Receipt" className="rounded-md border border-gray-200 dark:border-gray-700 max-h-48 object-contain" />
+                    <img src={field.value} alt="Receipt" className="rounded-md border border-border max-h-48 object-contain" />
                     <button
                       type="button"
                       onClick={() => form.setValue('receiptUrl', '', { shouldDirty: true })}
-                      className="absolute -top-1.5 -right-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-0.5 shadow-sm hover:bg-gray-50"
+                      className="absolute -top-1.5 -right-1.5 bg-surface-card border border-border rounded-full p-0.5 shadow-sm hover:bg-surface-sidebar"
                     >
                       <X className="h-3 w-3 text-gray-500" />
                     </button>

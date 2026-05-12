@@ -299,9 +299,13 @@ export class InventoryRepository {
     const currentQty = await computeQuantity(itemId, doc.data()!.quantityOnHand ?? 0)
     const minimumThreshold: number = doc.data()!.minimumThreshold ?? 0
 
+    if (type === 'out' && quantity > currentQty) {
+      throw new Error('Insufficient stock')
+    }
+
     let newQty: number
     if (type === 'in') newQty = currentQty + quantity
-    else if (type === 'out') newQty = Math.max(0, currentQty - quantity)
+    else if (type === 'out') newQty = currentQty - quantity
     else newQty = quantity // adjustment
 
     await adminDb.runTransaction(async (t) => {

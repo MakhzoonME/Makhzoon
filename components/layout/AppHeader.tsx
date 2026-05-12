@@ -77,7 +77,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
     () => 'Ctrl+K',
   );
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { t } = useT();
+  const { t, locale } = useT();
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -102,7 +102,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
           type="button"
           onClick={() => setMobileMenuOpen(true)}
           aria-label="Open menu"
-          className="md:hidden p-1.5 -ml-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800 active:scale-95 transition-all duration-150"
+          className="md:hidden p-1.5 -ml-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95 transition-all duration-150"
         >
           <BurgerSVG />
         </button>
@@ -111,12 +111,12 @@ export function AppHeader({ orgName }: { orgName?: string }) {
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex items-center gap-2">
             <MakhzoonMark size={26} />
-            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 hidden sm:block">{t('brand.name')}</span>
+            <span className="text-sm font-semibold text-gray-900 hidden sm:block">{t('brand.name')}</span>
           </div>
           {orgName && (
             <>
-              <span className="text-gray-300 dark:text-gray-600 select-none">/</span>
-              <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[160px]">{orgName}</span>
+              <span className="text-gray-300 select-none">/</span>
+              <span className="text-sm text-gray-600 truncate max-w-[160px]">{orgName}</span>
             </>
           )}
         </div>
@@ -125,11 +125,11 @@ export function AppHeader({ orgName }: { orgName?: string }) {
         <div className="flex-1 flex justify-center">
           <button
             onClick={() => setPaletteOpen(true)}
-            className="hidden md:flex items-center gap-2 w-full max-w-md rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-750 hover:border-gray-300 dark:hover:border-gray-600 transition-colors duration-150"
+            className="hidden md:flex items-center gap-2 w-full max-w-md rounded-lg border border-border bg-surface-input px-3 py-1.5 text-sm text-gray-500 hover:bg-surface-sidebar hover:border-border-strong transition-colors duration-150"
           >
             <SearchSVG />
             <span className="flex-1 text-left">{t('common.search')}</span>
-            <kbd className="inline-flex h-5 items-center rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-1.5 text-[10px] font-mono text-gray-400 dark:text-gray-500">{shortcutLabel}</kbd>
+            <kbd className="inline-flex h-5 items-center rounded border border-border bg-surface-card px-1.5 text-[10px] font-mono text-gray-400">{shortcutLabel}</kbd>
           </button>
         </div>
 
@@ -138,7 +138,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
           {/* Mobile search */}
           <button
             onClick={() => setPaletteOpen(true)}
-            className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
+            className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
             aria-label={t('common.search')}
           >
             <SearchSVG />
@@ -151,21 +151,21 @@ export function AppHeader({ orgName }: { orgName?: string }) {
 
           {/* User menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none px-1 py-1 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ml-1">
+            <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-gray-700 hover:text-gray-900 focus:outline-none px-1 py-1 rounded-md hover:bg-gray-100 transition-colors ml-1">
               <span className="hidden sm:block max-w-[140px] truncate">{user?.displayName || user?.email}</span>
               <ChevronDownSVG />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 dark:bg-gray-800 dark:border-gray-700">
+            <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuLabel className="font-normal">
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator className="dark:bg-gray-700" />
-              <DropdownMenuItem onClick={() => router.push(`/${orgSlug}/profile`)} className="gap-2 dark:text-gray-200 dark:focus:bg-gray-700">
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push(`/${locale}/${orgSlug}/profile`)} className="gap-2">
                 <UserSVG />
                 {t('common.profile')}
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="dark:bg-gray-700" />
-              <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut} className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400 dark:focus:bg-gray-700 gap-2">
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut} className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400 gap-2">
                 <LogOutSVG />
                 {isLoggingOut ? '…' : t('common.signOut')}
               </DropdownMenuItem>

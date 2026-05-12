@@ -34,6 +34,8 @@ export async function POST(req: NextRequest, props: Params) {
     return NextResponse.json({ quantityAfter: result.quantityAfter }, { status: 201 })
   } catch (err) {
     if (err instanceof NextResponse) return err
+    if (err instanceof Error && err.message === 'Insufficient stock')
+      return NextResponse.json({ error: 'Insufficient stock' }, { status: 400 })
     console.error('[POST /api/inventory/[itemId]/transactions]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

@@ -339,8 +339,10 @@ export default function LoginPage() {
     if (code === 'auth/user-disabled') return 'This account has been deactivated. Please contact support.';
     if (code === 'auth/user-not-found') return mode === 'email' ? 'No account found with this email address.' : 'No account found with this username.';
     if (code === 'auth/wrong-password') return 'Incorrect password. Please try again.';
+    if (code === 'auth/invalid-credential') return mode === 'email' ? 'Incorrect email or password. Please try again.' : 'Incorrect username or password. Please try again.';
     if (code === 'auth/too-many-requests') return 'Too many failed attempts. Please try again later or reset your password.';
     if (code === 'auth/invalid-email') return 'Invalid email address format.';
+    if (code === 'auth/network-request-failed') return 'Network error. Please check your connection and try again.';
     if (/^auth\//.test(code)) return 'Sign in failed. Please check your credentials and try again.';
     if (err instanceof Error) return err.message;
     return 'Sign in failed. Please check your credentials and try again.';

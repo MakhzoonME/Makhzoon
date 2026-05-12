@@ -11,11 +11,11 @@ function formatCurrency(n: number): string {
 
 function Stat({ label, value, icon: Icon, tone = 'gray' }: { label: string; value: string | number; icon: React.FC; tone?: 'gray' | 'indigo' | 'green' | 'amber' | 'red' }) {
   const tones: Record<string, string> = {
-    gray: 'bg-surface-page text-gray-700',
-    indigo: 'bg-primary-50 text-primary-700',
-    green: 'bg-green-50 text-green-700',
-    amber: 'bg-amber-50 text-amber-700',
-    red: 'bg-red-50 text-red-700',
+    gray:   'bg-surface-page text-gray-700',
+    indigo: 'bg-[var(--primary-50)] text-[var(--primary-700)]',
+    green:  'bg-[var(--green-50)] text-[var(--green-700)]',
+    amber:  'bg-[var(--yellow-50)] text-[var(--yellow-700)]',
+    red:    'bg-[var(--red-50)] text-[var(--red-700)]',
   };
   return (
     <div className="bg-surface-card rounded-xl border border-border p-5">

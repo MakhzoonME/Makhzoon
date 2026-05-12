@@ -12,7 +12,7 @@ function MenuSVG() { return <svg width="22" height="22" viewBox="0 0 18 18" fill
 
 const PRIMARY_NAV = [
   { href: '/dashboard', label: 'Home',       Icon: DashboardSVG },
-  { href: '/assets',    label: 'Assets',     Icon: AssetsSVG },
+  { href: '/assets',    label: 'Usool',      Icon: AssetsSVG },
   { href: '/requests',  label: 'Requests',   Icon: RequestsSVG },
   { href: '/warranties',label: 'Warranties', Icon: WarrantySVG },
 ];
@@ -25,7 +25,7 @@ export function BottomNav() {
   const { setMobileMenuOpen } = useUiStore();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-surface-card border-t border-border flex md:hidden" style={{ height: 64, paddingBottom: 4 }}>
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-surface-card border-t border-border flex md:hidden" style={{ height: 64, paddingBottom: 'env(safe-area-inset-bottom, 4px)' }}>
       {PRIMARY_NAV.map(({ href, label, Icon }) => {
         const fullHref = `/${locale}/${orgSlug}${href}`;
         const active = pathname === fullHref || pathname.startsWith(fullHref + '/');

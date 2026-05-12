@@ -152,7 +152,7 @@ export function NetworkStatusIndicator({ variant = 'ghost-light', className }: P
 
       if (reachable) {
         failCountRef.current = 0;
-        setStatus('online');
+        setStatus(_isSlowConnection() ? 'slow' : 'online');
       } else {
         failCountRef.current += 1;
         if (failCountRef.current >= CONSECUTIVE_FAILURES_THRESHOLD) {

@@ -6,6 +6,7 @@ import { adminAuth } from '@/lib/firebase/admin';
 import { auditLog } from '@/lib/platform/audit';
 import { inviteUserSchema } from '@/lib/validations/user.schema';
 import { hasPermission } from '@/lib/platform/permissions';
+import { checkResourceLimit } from '@/lib/platform/limits/check-limit';
 
 export async function GET(_req: NextRequest) {
   try {
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
 
     if (tenant.subscription?.status && tenant.subscription.status !== 'ACTIVE')
       return NextResponse.json({ error: 'Subscription expired' }, { status: 403 });
+    await checkResourceLimit(tenant, 'users');
 
     const body = await req.json();
     const parsed = inviteUserSchema.safeParse(body);

@@ -25,11 +25,11 @@ export function TransferModeBanner() {
 
   return (
     <div
-      className="fixed top-14 right-0 z-30 bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2 transition-[left] duration-350 ease-out-expo [left:0] md:[left:var(--banner-left)]"
+      className="fixed top-14 right-0 z-30 bg-[var(--yellow-100)] border-b border-[var(--yellow-100)] px-4 py-2 flex items-center gap-2 transition-[left] duration-350 ease-out-expo [left:0] md:[left:var(--banner-left)]"
       style={{ '--banner-left': `${leftOffset}px` } as React.CSSProperties}
     >
       <AlertTriangleSVG />
-      <p className="text-sm text-amber-800 flex-1">
+      <p className="text-sm text-[var(--yellow-700)] flex-1">
         You are acting as owner of: <span className="font-semibold">{orgName}</span>
       </p>
       <Button size="sm" variant="outline" className="border-amber-300 text-amber-800 hover:bg-amber-100" onClick={exitTransferMode}>

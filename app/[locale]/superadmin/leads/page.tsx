@@ -42,7 +42,7 @@ export default function LeadsPage() {
       header: t('leads.email'),
       render: (entry) => (
         <div className="flex items-center gap-2">
-          <span className="font-medium text-sm text-gray-900 dark:text-gray-100">{entry.email}</span>
+          <span className="font-medium text-sm text-gray-900">{entry.email}</span>
           <button
             type="button"
             onClick={() => openInvite(entry.email, [entry.firstName, entry.lastName].filter(Boolean).join(' ') || undefined)}
@@ -60,7 +60,7 @@ export default function LeadsPage() {
       render: (entry) => {
         const fullName = [entry.firstName, entry.lastName].filter(Boolean).join(' ') || '—';
         return (
-          <span className="text-sm text-gray-700 dark:text-gray-300">{fullName}</span>
+          <span className="text-sm text-gray-700">{fullName}</span>
         );
       },
     },
@@ -68,7 +68,7 @@ export default function LeadsPage() {
       key: 'ip',
       header: t('leads.ipAddress'),
       render: (entry) => (
-        <span className="text-sm text-gray-500 dark:text-gray-400 font-mono text-xs">{entry.ip ?? '—'}</span>
+        <span className="text-sm text-gray-500 font-mono text-xs">{entry.ip ?? '—'}</span>
       ),
     },
     {
@@ -76,7 +76,7 @@ export default function LeadsPage() {
       header: t('leads.submitted'),
       sortable: true,
       render: (entry) => (
-        <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums">{formatDate(new Date(entry.createdAt))}</span>
+        <span className="text-sm text-gray-500 tabular-nums">{formatDate(new Date(entry.createdAt))}</span>
       ),
     },
   ];
@@ -89,7 +89,7 @@ export default function LeadsPage() {
         const fullName = [entry.firstName, entry.lastName].filter(Boolean).join(' ') || entry.name;
         return (
           <div>
-            <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{fullName}</p>
+            <p className="font-medium text-sm text-gray-900">{fullName}</p>
             <p className="text-xs text-gray-500">{entry.email}</p>
           </div>
         );
@@ -99,21 +99,21 @@ export default function LeadsPage() {
       key: 'organizationName',
       header: t('leads.organization'),
       render: (entry) => (
-        <span className="text-sm text-gray-700 dark:text-gray-300">{entry.organizationName}</span>
+        <span className="text-sm text-gray-700">{entry.organizationName}</span>
       ),
     },
     {
       key: 'phone',
       header: t('leads.phone'),
       render: (entry) => (
-        <span className="text-sm text-gray-500 dark:text-gray-400">{entry.phone}</span>
+        <span className="text-sm text-gray-500">{entry.phone}</span>
       ),
     },
     {
       key: 'notes',
       header: t('leads.notes'),
       render: (entry) => (
-        <span className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1 max-w-[200px]">{entry.notes || '—'}</span>
+        <span className="text-sm text-gray-500 line-clamp-1 max-w-[200px]">{entry.notes || '—'}</span>
       ),
     },
     {
@@ -135,7 +135,7 @@ export default function LeadsPage() {
       header: t('leads.submitted'),
       sortable: true,
       render: (entry) => (
-        <span className="text-sm text-gray-500 dark:text-gray-400 tabular-nums">{formatDate(new Date(entry.createdAt))}</span>
+        <span className="text-sm text-gray-500 tabular-nums">{formatDate(new Date(entry.createdAt))}</span>
       ),
     },
   ];

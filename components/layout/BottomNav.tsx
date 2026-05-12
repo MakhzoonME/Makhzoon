@@ -12,7 +12,7 @@ function MenuSVG() { return <svg width="22" height="22" viewBox="0 0 18 18" fill
 
 const PRIMARY_NAV = [
   { href: '/dashboard', label: 'Home',       Icon: DashboardSVG },
-  { href: '/assets',    label: 'Assets',     Icon: AssetsSVG },
+  { href: '/assets',    label: 'Usool',      Icon: AssetsSVG },
   { href: '/requests',  label: 'Requests',   Icon: RequestsSVG },
   { href: '/warranties',label: 'Warranties', Icon: WarrantySVG },
 ];

@@ -9,8 +9,8 @@ export type Locale = 'en' | 'ar';
 const en = {
   // ── Navigation ──────────────────────────────────────────────────
   'nav.dashboard':     'Dashboard',
-  'nav.assets':        'Assets',
-  'nav.inventory':     'Inventory',
+  'nav.assets':        'Usool',
+  'nav.inventory':     'Raseed',
   'nav.warranties':    'Warranties',
   'nav.requests':      'Requests',
   'nav.reports':       'Reports',
@@ -110,12 +110,12 @@ const en = {
   'auth.requestSent':         'Request sent!',
   'auth.requestSentBody':     'Our team will reach out to you shortly to get your workspace set up.',
   'auth.sessionExpired':      'Your session expired. Please sign in again.',
-  'auth.marketingHeadline':   'Track assets, run inventory, and manage warranties — all in one place.',
-  'auth.marketingBody':       'From retail store shelves to office laptops, Makhzoon gives your team a single system for assets, inventory, warranties, and point-of-sale — built for growing operations.',
-  'auth.feature1':            'Assets, inventory & warranties in one place',
-  'auth.feature2':            'POS-ready for retail stores and offices',
-  'auth.feature3':            'Granular role-based access control',
-  'auth.marketingFooter':     'Trusted by growing office teams',
+  'auth.marketingHeadline':   'أدير عملك في مكان واحد.',
+  'auth.marketingBody':       'مخزون — نظام تشغيل الأعمال للمؤسسات العربية. أصول، رصيد، حركة، مال. كل ما تحتاجه في مكان واحد، بدون جداول بيانات.',
+  'auth.feature1':            'أصول · رصيد · حركة · مال — في نظام واحد',
+  'auth.feature2':            'نقطة بيع سحابية للمتاجر والمؤسسات',
+  'auth.feature3':            'صلاحيات دقيقة مبنية على الأدوار',
+  'auth.marketingFooter':     'موثوق به من المؤسسات العربية',
   'auth.brandName':           'Makhzoon',
 
   // ── Status labels ────────────────────────────────────────────────
@@ -556,8 +556,8 @@ const en = {
 const ar: Record<keyof typeof en, string> = {
   // ── Navigation ──────────────────────────────────────────────────
   'nav.dashboard':     'لوحة التحكم',
-  'nav.assets':        'الأصول',
-  'nav.inventory':     'المخزون',
+  'nav.assets':        'أصول',
+  'nav.inventory':     'رصيد',
   'nav.warranties':    'الضمانات',
   'nav.requests':      'الطلبات',
   'nav.reports':       'التقارير',
@@ -656,12 +656,12 @@ const ar: Record<keyof typeof en, string> = {
   'auth.requestSent':         'تم إرسال الطلب!',
   'auth.requestSentBody':     'سيتواصل معك فريقنا قريباً لإعداد مساحة عملك.',
   'auth.sessionExpired':      'انتهت صلاحية جلستك. يرجى تسجيل الدخول مجدداً.',
-  'auth.marketingHeadline':   'تتبّع الأصول، أدر المخزون، وراقب الضمانات — كل ذلك في مكان واحد.',
-  'auth.marketingBody':       'من رفوف المتاجر إلى أجهزة المكتب، يمنح Makhzoon فريقَك نظاماً موحداً للأصول والمخزون والضمانات ونقاط البيع — مصمماً للعمليات المتنامية.',
-  'auth.feature1':            'الأصول والمخزون والضمانات في مكان واحد',
-  'auth.feature2':            'جاهز لنقاط البيع في المتاجر والمكاتب',
+  'auth.marketingHeadline':   'أدير عملك في مكان واحد.',
+  'auth.marketingBody':       'مخزون — نظام تشغيل الأعمال للمؤسسات العربية. أصول، رصيد، حركة، مال. كل ما تحتاجه في مكان واحد، بدون جداول بيانات.',
+  'auth.feature1':            'أصول · رصيد · حركة · مال — في نظام واحد',
+  'auth.feature2':            'نقطة بيع سحابية للمتاجر والمؤسسات',
   'auth.feature3':            'صلاحيات دقيقة مبنية على الأدوار',
-  'auth.marketingFooter':     'موثوق به من الفرق المتنامية',
+  'auth.marketingFooter':     'موثوق به من المؤسسات العربية',
   'auth.brandName':           'مخزون',
 
   // ── Status labels ────────────────────────────────────────────────

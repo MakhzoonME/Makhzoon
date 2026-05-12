@@ -345,7 +345,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (sessionExpiredMessage) return; // skip auto-redirect when prompting re-auth
-    fetch('/api/auth/me').then(async (res) => {
+    fetch('/api/auth/me', { cache: 'no-store' }).then(async (res) => {
       if (!res.ok) return;
       const body = await res.json().catch(() => null);
       if (!body) return;

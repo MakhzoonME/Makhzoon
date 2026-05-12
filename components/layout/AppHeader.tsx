@@ -13,6 +13,7 @@ import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { useOrgSlug, useT } from '@/hooks/ui';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
+import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
 
 /* ── Inline SVG icons ───────────────────────────────────────────── */
 function BurgerSVG() {
@@ -144,6 +145,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
             <SearchSVG />
           </button>
 
+          <NetworkStatusIndicator variant="ghost-light" />
           <ThemeToggle />
           <LanguageToggle />
 

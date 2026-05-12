@@ -6,10 +6,10 @@ import { ArrowRight, Loader2 } from 'lucide-react';
 
 const copy = {
   en: {
-    eyebrow: 'Something is coming',
-    headline: ['Asset intelligence, ', 'quietly precise.'],
-    subtitle: 'مخزون — Makhzoon',
-    body: "We're building the asset management platform operations teams have always deserved. One place for everything your organization owns — from acquisition to retirement.",
+    eyebrow: 'Business OS for Arab organizations',
+    headline: ['أدير عملك ', 'في مكان واحد.'],
+    subtitle: 'Makhzoon — مخزون',
+    body: "We're building the Business OS for Arab organizations. Assets, inventory, sales, and finance — five modules that work together so your team doesn't have to juggle spreadsheets.",
     firstName: 'First name',
     lastName: 'Last name',
     email: 'your@company.com',
@@ -21,10 +21,10 @@ const copy = {
     dir: 'ltr' as const,
   },
   ar: {
-    eyebrow: 'شيء قادم',
-    headline: ['ذكاء الأصول، ', 'هادئ ودقيق.'],
-    subtitle: 'Makhzoon — مخزون',
-    body: 'نبني منصة إدارة الأصول التي تستحقها فرق العمليات دائماً. مكان واحد لكل ما تمتلكه مؤسستك — من الاقتناء إلى التقاعد.',
+    eyebrow: 'نظام تشغيل الأعمال للمؤسسات العربية',
+    headline: ['أدير عملك ', 'في مكان واحد.'],
+    subtitle: 'مخزون — Makhzoon',
+    body: 'نبني نظام تشغيل الأعمال للمؤسسات العربية. أصول، رصيد، حركة، مال — خمسة وحدات تعمل معاً حتى لا يضطر فريقك للعمل بجداول البيانات.',
     firstName: 'الاسم الأول',
     lastName: 'اسم العائلة',
     email: 'بريدك@شركتك.com',
@@ -115,7 +115,7 @@ export default function ComingSoonPage() {
       </button>
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6" style={{ maxWidth: 680 }}>
+      <div className="relative z-10 flex flex-col items-center text-center px-6 py-16" style={{ maxWidth: 680 }}>
 
         {/* Logo */}
         <div className="mb-10" style={{ filter: 'drop-shadow(0 0 36px rgba(99,102,241,0.55))' }}>

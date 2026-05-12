@@ -27,17 +27,17 @@ export function MarketingFooter() {
 
   return (
     <footer
+      className="px-4 sm:px-8 pt-12 sm:pt-16 pb-8 sm:pb-10"
       style={{
         background: 'var(--gray-900)',
         color: 'rgba(255,255,255,0.7)',
-        padding: '64px 32px 36px',
         marginTop: 0,
         borderTop: '1px solid rgba(255,255,255,0.06)',
       }}
     >
-      <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+      <div className="max-w-[1280px] mx-auto">
         {/* Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr 1fr 1fr 1fr', gap: 48, marginBottom: 52 }}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-12 mb-10 md:mb-14">
           {/* Brand col */}
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
@@ -45,7 +45,7 @@ export function MarketingFooter() {
               <span style={{ fontWeight: 600, fontSize: 15.5, color: '#fff' }}>Makhzoon</span>
             </div>
             <p style={{ fontSize: 13.5, lineHeight: 1.65, maxWidth: 300, margin: '0 0 18px', color: 'rgba(255,255,255,0.6)' }}>
-              Asset intelligence for growing organizations. Track, manage, and stay audit-ready — without spreadsheets.
+              نظام تشغيل الأعمال للمؤسسات العربية. أصول، رصيد، حركة، مال — في مكان واحد، بدون جداول بيانات.
             </p>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <ShieldBadge label="SOC 2 Type II" color="#34d399" />
@@ -75,12 +75,12 @@ export function MarketingFooter() {
         </div>
 
         {/* Bottom bar */}
-        <div style={{ paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
           <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.45)' }}>
-            © 2026 Makhzoon, Inc. · مخزون · &ldquo;stored&rdquo;
+            © 2026 مخزون · Makhzoon · نظام تشغيل الأعمال
           </div>
           <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.45)', fontFamily: 'system-ui, monospace' }}>
-            Built in Amman · Trusted globally
+            صُنع في عمّان · للعالم العربي وما بعده
           </div>
         </div>
       </div>

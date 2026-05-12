@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, withLocale } from '@/lib/nav';
+import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, withLocale } from '@/lib/nav';
 import { hasModuleAccess, hasPermByKey } from '@/lib/permissions';
 import { UserPermissions } from '@/types';
 import { useT } from '@/hooks/ui';
@@ -347,7 +347,8 @@ export function AppSidebar() {
             }
 
             /* ── Regular item ───────────────────────────────────── */
-            const { href, label: itemLabel, labelKey } = entry as { href: string; label: string; labelKey: MessageKey };
+            const navEntry = entry as NavItemConfig;
+            const { href, label: itemLabel, labelKey, moduleColor, moduleName } = navEntry;
             const Icon = NAV_ICONS[href] ?? DashboardSVG;
             const fullHref = orgSlug ? withLocale(locale, `/${orgSlug}${href}`) : withLocale(locale, href);
             const active   = pathname === fullHref || pathname.startsWith(fullHref + '/');
@@ -361,28 +362,33 @@ export function AppSidebar() {
                   'group relative flex items-center rounded-lg text-[14px] transition-colors duration-150 h-9',
                   ICON_INDENT,
                   active
-                    ? 'text-primary-700 font-semibold'
+                    ? 'font-semibold'
                     : 'text-gray-600 hover:bg-surface-page hover:text-gray-900',
                 )}
+                style={active && moduleColor ? { color: moduleColor } : undefined}
               >
                 {active && (
                   <>
                     <motion.span
                       layoutId="sidebar-active-pill"
-                      className="absolute inset-0 rounded-lg bg-primary-50"
+                      className="absolute inset-0 rounded-lg"
+                      style={{ background: moduleColor ? `${moduleColor}14` : 'var(--primary-50)' }}
                       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                     />
-                    <span className={cn(
-                      'absolute top-1.5 bottom-1.5 w-0.5 rounded-r bg-primary-600',
-                      isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0',
-                    )} />
+                    <span
+                      className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')}
+                      style={{ background: moduleColor ?? 'var(--primary-600)' }}
+                    />
                   </>
                 )}
-                <span className={cn(
-                  'relative z-10 flex-shrink-0 transition-transform duration-200 ease-out',
-                  'group-hover:scale-110',
-                  active ? 'text-primary-700' : '',
-                )}>
+                <span
+                  className={cn(
+                    'relative z-10 flex-shrink-0 transition-transform duration-200 ease-out',
+                    'group-hover:scale-110',
+                    !active && !moduleColor ? '' : '',
+                  )}
+                  style={active && moduleColor ? { color: moduleColor } : undefined}
+                >
                   <Icon />
                 </span>
                 <motion.span
@@ -391,10 +397,15 @@ export function AppSidebar() {
                     ? { width: { duration: 0.18, ease: EASE_SLIDE }, opacity: { duration: 0.08 } }
                     : { width: { duration: 0.22, ease: EASE_SLIDE }, opacity: { duration: 0.14, delay: 0.16 } }
                   }
-                  className="relative z-10 whitespace-nowrap overflow-hidden ms-2.5"
+                  className="relative z-10 whitespace-nowrap overflow-hidden ms-2.5 flex items-center gap-1.5"
                   style={{ minWidth: 0 }}
                 >
                   {translatedLabel}
+                  {moduleName && locale === 'en' && (
+                    <span className="text-[11px] font-normal opacity-40" style={{ fontFamily: 'system-ui' }}>
+                      {moduleName}
+                    </span>
+                  )}
                 </motion.span>
               </Link>
             );

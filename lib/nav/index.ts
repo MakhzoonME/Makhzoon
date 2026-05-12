@@ -8,6 +8,10 @@ export interface NavItemConfig {
   featureKey?: string;
   /** dot-separated permission key, e.g. 'settings.orgInfo' — grants access to staff with that specific permission */
   permissionKey?: string;
+  /** Module brand color (hex). Present only on named Makhzoon modules (Usool, Raseed, etc.) */
+  moduleColor?: string;
+  /** Module brand name (Arabic). Shown as a subtitle in expanded sidebar. */
+  moduleName?: string;
 }
 
 export interface NavGroupConfig {
@@ -23,8 +27,8 @@ export type NavEntry = NavItemConfig | NavGroupConfig;
 
 export const ORG_NAV_ENTRIES: NavEntry[] = [
   { href: '/dashboard',    label: 'Dashboard',    labelKey: 'nav.dashboard',    featureKey: 'dashboard' },
-  { href: '/assets',       label: 'Assets',       labelKey: 'nav.assets',       featureKey: 'assets' },
-  { href: '/inventory',    label: 'Inventory',    labelKey: 'nav.inventory',    featureKey: 'inventory' },
+  { href: '/assets',       label: 'Usool',        labelKey: 'nav.assets',       featureKey: 'assets',    moduleColor: '#00695C', moduleName: 'أصول' },
+  { href: '/inventory',    label: 'Raseed',       labelKey: 'nav.inventory',    featureKey: 'inventory', moduleColor: '#E65100', moduleName: 'رصيد' },
   { href: '/warranties',   label: 'Warranties',   labelKey: 'nav.warranties',   featureKey: 'warranties' },
   { href: '/requests',     label: 'Requests',     labelKey: 'nav.requests',     featureKey: 'requests' },
   { href: '/reports',      label: 'Reports',      labelKey: 'nav.reports',      adminOnly: true, featureKey: 'reports' },

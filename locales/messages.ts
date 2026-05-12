@@ -110,12 +110,12 @@ const en = {
   'auth.requestSent':         'Request sent!',
   'auth.requestSentBody':     'Our team will reach out to you shortly to get your workspace set up.',
   'auth.sessionExpired':      'Your session expired. Please sign in again.',
-  'auth.marketingHeadline':   'أدير عملك في مكان واحد.',
-  'auth.marketingBody':       'مخزون — نظام تشغيل الأعمال للمؤسسات العربية. أصول، رصيد، حركة، مال. كل ما تحتاجه في مكان واحد، بدون جداول بيانات.',
-  'auth.feature1':            'أصول · رصيد · حركة · مال — في نظام واحد',
-  'auth.feature2':            'نقطة بيع سحابية للمتاجر والمؤسسات',
-  'auth.feature3':            'صلاحيات دقيقة مبنية على الأدوار',
-  'auth.marketingFooter':     'موثوق به من المؤسسات العربية',
+  'auth.marketingHeadline':   'Run your business in one place.',
+  'auth.marketingBody':       'Makhzoon — the Business OS for Arab organizations. Assets, inventory, sales, and finance — all in one place, no spreadsheets.',
+  'auth.feature1':            'Assets · Inventory · Sales · Finance — one platform',
+  'auth.feature2':            'Cloud POS for retail and enterprise',
+  'auth.feature3':            'Granular role-based access control',
+  'auth.marketingFooter':     'Trusted by Arab organizations',
   'auth.brandName':           'Makhzoon',
 
   // ── Status labels ────────────────────────────────────────────────

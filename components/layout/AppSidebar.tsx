@@ -401,11 +401,6 @@ export function AppSidebar() {
                   style={{ minWidth: 0 }}
                 >
                   {translatedLabel}
-                  {moduleName && locale === 'en' && (
-                    <span className="text-[11px] font-normal opacity-40" style={{ fontFamily: 'system-ui' }}>
-                      {moduleName}
-                    </span>
-                  )}
                 </motion.span>
               </Link>
             );

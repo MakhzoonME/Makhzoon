@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   }
 
   await adminAuth.setCustomUserClaims(newUser.uid, {
-    role: 'admin',
+    role: 'org_owner',
     organizationId,
   });
 
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     organizationId,
     email,
     displayName,
-    role: 'admin',
+    role: 'org_owner',
     status: 'active',
     createdBy: newUser.uid,
     updatedBy: newUser.uid,
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
   queueAuditLog({
     organizationId,
     userId: newUser.uid,
-    role: 'admin',
+    role: 'org_owner',
     action: 'ORGANIZATION_SELF_SERVE_CREATED',
     module: 'organizations',
     recordId: organizationId,

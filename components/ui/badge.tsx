@@ -15,7 +15,7 @@ const badgeVariants = cva(
         yellow:     'bg-[var(--yellow-100)] text-[var(--yellow-700)]',
         red:        'bg-[var(--red-100)] text-[var(--red-700)]',
         blue:       'bg-[var(--blue-100)] text-[var(--blue-700)]',
-        orange:     'bg-orange-100 text-orange-700',
+        orange:     'bg-[var(--orange-100)] text-[var(--orange-700)]',
         /* DS semantic tones */
         active:     'bg-[var(--green-100)] text-[var(--green-700)]',
         retired:    'bg-surface-page text-gray-600',

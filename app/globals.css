@@ -146,6 +146,19 @@
   --red-50:     rgba(220, 38, 38, 0.08);
   --blue-100:   rgba(37, 99, 235, 0.15);
   --blue-50:    rgba(37, 99, 235, 0.08);
+  --orange-100: rgba(234, 88, 12, 0.15);
+  --orange-50:  rgba(234, 88, 12, 0.08);
+  --purple-100: rgba(124, 58, 237, 0.15);
+  --purple-50:  rgba(124, 58, 237, 0.08);
+
+  /* Semantic text colors — light tones for dark backgrounds */
+  --green-700:   #4ade80;
+  --yellow-700:  #fbbf24;
+  --red-700:     #f87171;
+  --blue-700:    #60a5fa;
+  --primary-700: #a5b4fc;
+  --orange-700:  #fb923c;
+  --purple-700:  #c084fc;
 }
 
 /* ── Base styles ────────────────────────────────────────────────────── */

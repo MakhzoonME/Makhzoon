@@ -49,7 +49,7 @@ export function LanguageToggle({ variant = 'ghost-light', className }: Props) {
           <span>{locale === 'en' ? 'EN' : 'ع'}</span>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-40 dark:bg-gray-800 dark:border-gray-700">
+      <DropdownMenuContent align="end" className="w-40">
         {(['en', 'ar'] as Locale[]).map((loc) => (
           <DropdownMenuItem
             key={loc}

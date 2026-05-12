@@ -184,7 +184,12 @@ export function AppSidebar() {
     });
     if (hasActive) autoOpenGroups[entry.href] = true;
   }
-  const openGroups: Record<string, boolean> = { ...autoOpenGroups, ...userToggles };
+  // Auto-open always wins over a manual close (user toggled shut) when the current route is inside the group
+  const effectiveToggles = { ...userToggles };
+  for (const href of Object.keys(autoOpenGroups)) {
+    if (autoOpenGroups[href]) effectiveToggles[href] = true;
+  }
+  const openGroups: Record<string, boolean> = { ...autoOpenGroups, ...effectiveToggles };
 
   function toggleGroup(href: string) {
     if (sidebarCollapsed) {

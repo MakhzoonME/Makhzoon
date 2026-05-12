@@ -148,9 +148,9 @@ function StatCard({ icon, iconBg, iconColor, label, value, sub, onClick }: StatC
             {icon}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">{label}</p>
+            <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">{label}</p>
             {value}
-            {sub && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{sub}</p>}
+            {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
           </div>
         </div>
       </CardContent>
@@ -159,7 +159,7 @@ function StatCard({ icon, iconBg, iconColor, label, value, sub, onClick }: StatC
 }
 
 function SkeletonValue() {
-  return <div className="h-7 w-14 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />;
+  return <div className="h-7 w-14 bg-surface-sidebar rounded animate-pulse" />;
 }
 
 /* ── AssetBreakdownBar ───────────────────────────────────────────── */
@@ -176,7 +176,7 @@ function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: 
     0: { bar: 'bg-indigo-500', text: 'text-indigo-700 dark:text-indigo-400' },
     1: { bar: 'bg-emerald-500', text: 'text-emerald-700 dark:text-emerald-400' },
     2: { bar: 'bg-amber-400', text: 'text-amber-700 dark:text-amber-400' },
-    3: { bar: 'bg-gray-400', text: 'text-gray-600 dark:text-gray-400' },
+    3: { bar: 'bg-gray-400', text: 'text-gray-600' },
   };
 
   if (isLoading) {
@@ -184,9 +184,9 @@ function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: 
       <div className="space-y-3">
         {[...Array(4)].map((_, i) => (
           <div key={i} className="grid grid-cols-[130px_1fr_64px] gap-3 items-center">
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
-            <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-4 bg-surface-sidebar rounded animate-pulse" />
+            <div className="h-1.5 bg-surface-sidebar rounded-full animate-pulse" />
+            <div className="h-4 w-12 bg-surface-sidebar rounded animate-pulse" />
           </div>
         ))}
       </div>
@@ -194,7 +194,7 @@ function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: 
   }
 
   if (sorted.length === 0) {
-    return <p className="text-sm text-gray-400 dark:text-gray-500 py-4 text-center">No assets to display.</p>;
+    return <p className="text-sm text-gray-500 py-4 text-center">No assets to display.</p>;
   }
 
   return (
@@ -203,9 +203,9 @@ function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: 
         const pct = Math.round((count / total) * 100);
         const tone = TONES[i] ?? TONES[3];
         return (
-          <div key={cat} className="grid grid-cols-[130px_1fr_64px] gap-3 items-center py-1 border-b border-gray-100 dark:border-gray-800 last:border-0">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{cat}</span>
-            <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+          <div key={cat} className="grid grid-cols-[130px_1fr_64px] gap-3 items-center py-1 border-b border-border last:border-0">
+            <span className="text-sm font-medium text-gray-700 truncate">{cat}</span>
+            <div className="h-1.5 rounded-full bg-surface-sidebar overflow-hidden">
               <div
                 className={`h-full rounded-full ${tone.bar} transition-all duration-500`}
                 style={{ width: `${pct}%` }}
@@ -248,10 +248,10 @@ function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: bool
       <div className="space-y-4">
         {[...Array(4)].map((_, i) => (
           <div key={i} className="flex gap-3 items-start">
-            <div className="h-7 w-7 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse flex-shrink-0" />
+            <div className="h-7 w-7 rounded-full bg-surface-sidebar animate-pulse flex-shrink-0" />
             <div className="flex-1 space-y-1.5">
-              <div className="h-3.5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4" />
-              <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded animate-pulse w-1/3" />
+              <div className="h-3.5 bg-surface-sidebar rounded animate-pulse w-3/4" />
+              <div className="h-3 bg-surface-page rounded animate-pulse w-1/3" />
             </div>
           </div>
         ))}
@@ -260,15 +260,15 @@ function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: bool
   }
 
   if (logs.length === 0) {
-    return <p className="text-sm text-gray-400 dark:text-gray-500 py-4 text-center">No recent activity.</p>;
+    return <p className="text-sm text-gray-500 py-4 text-center">No recent activity.</p>;
   }
 
   const ACTION_COLOR: Record<string, string> = {
-    approved: 'text-emerald-600 dark:text-emerald-400',
-    rejected: 'text-red-500 dark:text-red-400',
-    deleted: 'text-red-500 dark:text-red-400',
-    created: 'text-indigo-600 dark:text-indigo-400',
-    updated: 'text-indigo-600 dark:text-indigo-400',
+    approved: 'text-[var(--green-700)]',
+    rejected: 'text-[var(--red-700)]',
+    deleted:  'text-[var(--red-700)]',
+    created:  'text-primary-600',
+    updated:  'text-primary-600',
   };
 
   return (
@@ -276,25 +276,25 @@ function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: bool
       {logs.map((log) => {
         const actor = log.actorName || log.actorEmail || 'System';
         const initials = getInitials(log.actorName, log.actorEmail);
-        const actionColor = ACTION_COLOR[log.action?.toLowerCase()] ?? 'text-gray-600 dark:text-gray-400';
+        const actionColor = ACTION_COLOR[log.action?.toLowerCase()] ?? 'text-gray-600';
         return (
           <div key={log.id} className="flex gap-3 items-start">
-            <div className="h-7 w-7 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-[10px] font-semibold text-indigo-700 dark:text-indigo-300 flex-shrink-0">
+            <div className="h-7 w-7 rounded-full bg-[var(--primary-100)] flex items-center justify-center text-[10px] font-semibold text-[var(--primary-700)] flex-shrink-0">
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-gray-800 dark:text-gray-200 leading-snug">
+              <p className="text-sm text-gray-800 leading-snug">
                 <span className="font-semibold">{actor}</span>
                 {' '}
                 <span className={actionColor}>{log.action}</span>
                 {log.module && (
-                  <> <span className="text-gray-500 dark:text-gray-400">{log.module}</span></>
+                  <> <span className="text-gray-500">{log.module}</span></>
                 )}
                 {log.targetId && (
-                  <> <span className="font-mono text-xs text-gray-400 dark:text-gray-500">{log.targetId}</span></>
+                  <> <span className="font-mono text-xs text-gray-500">{log.targetId}</span></>
                 )}
               </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatRelative(log.createdAt)}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{formatRelative(log.createdAt)}</p>
             </div>
           </div>
         );
@@ -346,7 +346,7 @@ function PendingRequestsTable({
       key: 'asset',
       header: 'Asset',
       render: (r) => (
-        <span className="font-medium text-gray-900 dark:text-gray-100 text-sm">
+        <span className="font-medium text-gray-900 text-sm">
           {r.assetName ?? r.inventoryItemName ?? '—'}
         </span>
       ),
@@ -355,7 +355,7 @@ function PendingRequestsTable({
       key: 'by',
       header: 'Requested by',
       render: (r) => (
-        <span className="text-sm text-gray-600 dark:text-gray-400">
+        <span className="text-sm text-gray-600">
           {r.createdByName ?? r.createdByEmail ?? r.createdBy}
         </span>
       ),
@@ -425,7 +425,7 @@ export default function DashboardPage() {
 
   const warrantyColumns: ColumnDef<Warranty>[] = [
     { key: 'assetId', header: t('col.asset'),     render: (w) => <span className="font-medium text-sm">{w.assetName ?? w.assetId}</span> },
-    { key: 'vendor',  header: t('col.vendor'),    render: (w) => <span className="text-sm text-gray-600 dark:text-gray-400">{w.vendor}</span> },
+    { key: 'vendor',  header: t('col.vendor'),    render: (w) => <span className="text-sm text-gray-600">{w.vendor}</span> },
     { key: 'endDate', header: t('col.expiry'),    render: (w) => <span className="text-red-600 dark:text-red-400 font-medium text-sm tabular-nums">{formatDate(w.endDate)}</span> },
     {
       key: 'days',
@@ -446,10 +446,10 @@ export default function DashboardPage() {
       {/* ── Page header ──────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
             {greeting()}, {firstName}
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-sm text-gray-500 mt-0.5">
             Here&apos;s what&apos;s happening across your workspace today.
           </p>
         </div>
@@ -462,7 +462,7 @@ export default function DashboardPage() {
           iconBg="var(--primary-50)"
           iconColor="var(--primary-600)"
           label={t('dashboard.totalAssets')}
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{totalAssets.length}</p>}
+          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{totalAssets.length}</p>}
           onClick={() => router.push(`/${orgSlug}/assets`)}
         />
         <StatCard
@@ -470,7 +470,7 @@ export default function DashboardPage() {
           iconBg="var(--green-50)"
           iconColor="var(--green-600)"
           label={t('dashboard.active')}
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{activeAssets.length}</p>}
+          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{activeAssets.length}</p>}
           sub={!isLoading && totalAssets.length > 0 ? `${Math.round((activeAssets.length / totalAssets.length) * 100)}${t('dashboard.percentOfTotal')}` : undefined}
           onClick={() => router.push(`/${orgSlug}/assets?status=Active`)}
         />
@@ -479,7 +479,7 @@ export default function DashboardPage() {
           iconBg="var(--yellow-50)"
           iconColor="var(--yellow-600)"
           label="Pending Requests"
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{pendingRequests.length}</p>}
+          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{pendingRequests.length}</p>}
           sub={!isLoading && pendingRequests.length > 0 ? 'need review' : undefined}
           onClick={() => router.push(`/${orgSlug}/requests`)}
         />
@@ -490,9 +490,9 @@ export default function DashboardPage() {
           label={t('dashboard.warrantiesExpiring')}
           value={
             isLoading ? <SkeletonValue /> : (
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">
+              <p className="text-2xl font-bold text-gray-900 tabular-nums">
                 {expiringWarranties.length}
-                <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-1">soon</span>
+                <span className="text-sm font-normal text-gray-500 ml-1">soon</span>
               </p>
             )
           }
@@ -506,7 +506,7 @@ export default function DashboardPage() {
         <Card className="lg:col-span-3">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Asset breakdown</h2>
+              <h2 className="text-sm font-semibold text-gray-900">Asset breakdown</h2>
               <button
                 onClick={() => router.push(`/${orgSlug}/assets`)}
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
@@ -522,7 +522,7 @@ export default function DashboardPage() {
         <Card className="lg:col-span-2">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recent activity</h2>
+              <h2 className="text-sm font-semibold text-gray-900">Recent activity</h2>
               <button
                 onClick={() => router.push(`/${orgSlug}/audit-logs`)}
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
@@ -540,8 +540,8 @@ export default function DashboardPage() {
         {/* Expiring warranties — takes 2 of 5 columns */}
         <Card className="lg:col-span-2">
           <CardContent className="p-0">
-            <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('dashboard.expiringWarranties')}</h2>
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-900">{t('dashboard.expiringWarranties')}</h2>
               <button
                 onClick={() => router.push(`/${orgSlug}/warranties`)}
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
@@ -563,9 +563,9 @@ export default function DashboardPage() {
         {isAdmin && (
           <Card className="lg:col-span-3">
             <CardContent className="p-0">
-              <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+              <div className="px-5 py-4 border-b border-border flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Pending requests</h2>
+                  <h2 className="text-sm font-semibold text-gray-900">Pending requests</h2>
                   {!isLoading && pendingRequests.length > 0 && (
                     <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[11px] font-semibold tabular-nums">
                       {pendingRequests.length}

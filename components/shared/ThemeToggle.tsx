@@ -60,7 +60,7 @@ export function ThemeToggle({ variant = 'ghost-light', className }: Props) {
           <Icon />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-36 dark:bg-gray-800 dark:border-gray-700">
+      <DropdownMenuContent align="end" className="w-36">
         {(['light', 'dark', 'system'] as Theme[]).map((opt) => {
           const OptionIcon = THEME_ICONS[opt];
           const labels: Record<Theme, string> = {

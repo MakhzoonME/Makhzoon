@@ -28,10 +28,10 @@ interface StatCardProps {
 }
 
 const TONES: Record<NonNullable<StatCardProps['tone']>, string> = {
-  indigo: 'bg-primary-50 text-primary-700',
-  green: 'bg-green-50 text-green-700',
-  amber: 'bg-amber-50 text-amber-700',
-  red: 'bg-red-50 text-red-700',
+  indigo: 'bg-[var(--primary-50)] text-[var(--primary-700)]',
+  green:  'bg-[var(--green-50)] text-[var(--green-700)]',
+  amber:  'bg-[var(--yellow-50)] text-[var(--yellow-700)]',
+  red:    'bg-[var(--red-50)] text-[var(--red-700)]',
 };
 
 function StatCard({ label, value, icon: Icon, tone = 'indigo' }: StatCardProps) {

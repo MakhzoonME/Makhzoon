@@ -6,6 +6,7 @@ import { AssetsRepository, GetAllAssetsOpts } from '@/lib/modules/assets/reposit
 import { hasPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
 import { eventBus } from '@/lib/platform/events/event-bus'
+import { checkResourceLimit } from '@/lib/platform/limits/check-limit'
 
 export class AssetsService {
   private repo = new AssetsRepository()
@@ -27,6 +28,7 @@ export class AssetsService {
       throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     if (tenant.subscription && !tenant.subscription.features['assets'])
       throw NextResponse.json({ error: 'Feature disabled' }, { status: 403 })
+    await checkResourceLimit(tenant, 'assets')
 
     const asset = await this.repo.create(tenant, input)
     await auditLog.create({ tenant, module: 'assets', action: 'ASSET_CREATED', recordId: asset.id, oldValue: null, newValue: asset as unknown as Record<string, unknown> })

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const SUPPORTED_LOCALES = ['en', 'ar'];
 const DEFAULT_LOCALE = 'en';
+const LOCALE_COOKIE = 'makhzoon-locale';
 const SKIP_PREFIXES = ['/api/', '/_next/'];
 
 const PUBLIC_PATHS = new Set([
@@ -10,6 +11,17 @@ const PUBLIC_PATHS = new Set([
 
 const MARKETING_HOSTS = new Set(['makhzoon.me', 'www.makhzoon.me']);
 const APP_HOST = 'app.makhzoon.me';
+
+function detectLocale(req: NextRequest): string {
+  const cookieLocale = req.cookies.get(LOCALE_COOKIE)?.value;
+  if (cookieLocale && SUPPORTED_LOCALES.includes(cookieLocale)) return cookieLocale;
+
+  const acceptLang = req.headers.get('accept-language') ?? '';
+  const primary = acceptLang.split(',')[0]?.split(';')[0]?.trim().toLowerCase() ?? '';
+  if (primary.startsWith('ar')) return 'ar';
+
+  return DEFAULT_LOCALE;
+}
 
 function stripLocale(pathname: string): { locale: string | null; rest: string } {
   const parts = pathname.split('/');
@@ -29,10 +41,11 @@ export async function proxy(req: NextRequest) {
 
   const { locale, rest } = stripLocale(pathname);
 
-  // If no locale prefix, redirect to add the default locale
+  // If no locale prefix, redirect with detected locale
   if (!locale) {
+    const detected = detectLocale(req);
     const url = req.nextUrl.clone();
-    const destination = hostname === APP_HOST ? `/${DEFAULT_LOCALE}/login` : `/${DEFAULT_LOCALE}`;
+    const destination = hostname === APP_HOST ? `/${detected}/login` : `/${detected}`;
     url.pathname = `${destination}${pathname === '/' ? '' : pathname}`;
     return NextResponse.redirect(url);
   }

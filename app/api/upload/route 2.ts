@@ -1,0 +1,46 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { getUploadPresignedUrl, getPublicUrl } from '@/lib/s3';
+import { randomBytes } from 'crypto';
+
+const ALLOWED_TYPES: Record<string, string[]> = {
+  avatar: ['image/jpeg', 'image/png', 'image/webp'],
+};
+
+const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+
+export async function POST(req: NextRequest) {
+  const clientIp = getClientIp(req);
+  const rateLimitResult = checkRateLimit(`upload:${clientIp}`, 20, 60 * 60 * 1000, { action: 'upload' });
+  if (rateLimitResult) return rateLimitResult;
+
+  try {
+    const tenant = await resolveTenant();
+    const user = tenant.user;
+
+    const { type, contentType, size } = await req.json();
+
+    if (!type || !ALLOWED_TYPES[type]) {
+      return NextResponse.json({ error: 'Invalid upload type' }, { status: 400 });
+    }
+    if (!ALLOWED_TYPES[type].includes(contentType)) {
+      return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
+    }
+    if (!size || size > MAX_SIZE) {
+      return NextResponse.json({ error: 'File too large' }, { status: 400 });
+    }
+
+    const ext = contentType.split('/')[1];
+    const key = `${type}s/${user.uid}/${randomBytes(8).toString('hex')}.${ext}`;
+
+    const uploadUrl = await getUploadPresignedUrl(key, contentType);
+    const publicUrl = getPublicUrl(key);
+
+    return NextResponse.json({ uploadUrl, publicUrl });
+  } catch (err) {
+    if (err instanceof NextResponse) return err;
+    console.error('[POST /api/upload]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

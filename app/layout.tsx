@@ -26,9 +26,16 @@ export const metadata: Metadata = {
   title: 'Makhzoon',
   description: 'Multi-tenant asset and warranty management platform',
   icons: {
-    icon: { url: '/icon.svg?v=2', type: 'image/svg+xml' },
+    icon: [{ url: '/icon.svg?v=2', type: 'image/svg+xml', sizes: '64x64' }],
     shortcut: '/icon.svg?v=2',
     apple: '/icon.svg?v=2',
+    other: [
+      {
+        rel: 'icon',
+        type: 'image/svg+xml',
+        url: '/icon.svg?v=2',
+      },
+    ],
   },
 };
 
@@ -57,6 +64,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       { }
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            function fixFavicon() {
+              const link = document.querySelector('link[rel="icon"]');
+              if (link) {
+                link.href = '/icon.svg?v=2';
+              }
+            }
+            fixFavicon();
+            document.addEventListener('DOMContentLoaded', fixFavicon);
+            window.addEventListener('load', fixFavicon);
+            const observer = new MutationObserver(fixFavicon);
+            observer.observe(document.head, { attributes: true, subtree: true });
+          })();
+        ` }} />
       </head>
       <body className={`${capriola.variable} ${thmanyah.variable} antialiased bg-surface-page`}>
         <QueryProvider>

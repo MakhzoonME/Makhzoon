@@ -78,7 +78,7 @@ export default function InventoryItemDetailPage() {
       if (!res.ok) throw new Error();
       toast.success('Item deleted');
       qc.invalidateQueries({ queryKey: ['inventory'] });
-      router.push(`/${orgSlug}/inventory`);
+      router.push(`/${locale}/${orgSlug}/inventory`);
     } catch {
       toast.error('Failed to delete item');
     } finally {
@@ -143,7 +143,7 @@ export default function InventoryItemDetailPage() {
     <div>
       <PageHeader
         title={item.name}
-        breadcrumb={[{ label: 'Inventory', href: `/${orgSlug}/inventory` }, { label: item.name, href: `/${orgSlug}/inventory/${itemId}` }]}
+        breadcrumb={[{ label: 'Inventory', href: `/${locale}/${orgSlug}/inventory` }, { label: item.name, href: `/${locale}/${orgSlug}/inventory/${itemId}` }]}
         actions={(
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={() => setReqOpen(true)}>

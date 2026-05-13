@@ -91,7 +91,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
         (old) => old?.items ? { ...old, items: old.items.filter((a) => a.id !== assetId) } : old,
       );
       qc.removeQueries({ queryKey: ['assets', assetId] });
-      router.push(`/${orgSlug}/assets`);
+      router.push(`/${locale}/${orgSlug}/assets`);
     } catch {
       toast.error(isRetired ? 'Failed to delete asset' : 'Failed to retire asset');
     } finally {
@@ -129,7 +129,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
     <div>
       <PageHeader
         title={asset.name}
-        breadcrumb={[{ label: 'Assets', href: `/${orgSlug}/assets` }, { label: asset.name, href: `/${orgSlug}/assets/${assetId}` }]}
+        breadcrumb={[{ label: 'Assets', href: `/${locale}/${orgSlug}/assets` }, { label: asset.name, href: `/${locale}/${orgSlug}/assets/${assetId}` }]}
         actions={isAdmin ? (
           <div className="flex gap-2">
             {asset.status !== 'Retired' && (

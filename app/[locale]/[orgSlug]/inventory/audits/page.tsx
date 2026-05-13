@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/ui';
+import { useOrgSlug, useT } from '@/hooks/ui';
 import { useInventoryAudits } from '@/hooks/inventory';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -21,6 +21,7 @@ const STATUS_MAP = {
 export default function InventoryAuditsPage() {
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const { locale } = useT();
   const { user } = useAuthStore();
   const { data: auditsData, isLoading } = useInventoryAudits();
   const audits = auditsData?.audits ?? [];
@@ -33,9 +34,9 @@ export default function InventoryAuditsPage() {
       <PageHeader
         title="Inventory Audits"
         description="Periodic counts to reconcile actual stock against system records."
-        breadcrumb={[{ label: 'Inventory', href: `/${orgSlug}/inventory` }, { label: 'Audits', href: `/${orgSlug}/inventory/audits` }]}
+        breadcrumb={[{ label: 'Inventory', href: `/${locale}/${orgSlug}/inventory` }, { label: 'Audits', href: `/${locale}/${orgSlug}/inventory/audits` }]}
         actions={isAdmin ? (
-          <Button size="sm" onClick={() => router.push(`/${orgSlug}/inventory/audits/new`)}>
+          <Button size="sm" onClick={() => router.push(`/${locale}/${orgSlug}/inventory/audits/new`)}>
             <Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ml-1">Start Audit</span>
           </Button>
         ) : undefined}
@@ -54,7 +55,7 @@ export default function InventoryAuditsPage() {
               <div
                 key={audit.id}
                 className="bg-surface-card border border-border rounded-xl p-5 cursor-pointer hover:border-primary-300 transition-colors"
-                onClick={() => router.push(`/${orgSlug}/inventory/audits/${audit.id}`)}
+                onClick={() => router.push(`/${locale}/${orgSlug}/inventory/audits/${audit.id}`)}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">

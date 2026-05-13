@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/ui';
+import { useOrgSlug, useT } from '@/hooks/ui';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { ClipboardCheck } from 'lucide-react';
 export default function NewAuditPage() {
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const { locale } = useT();
   const qc = useQueryClient();
   const [title, setTitle] = useState(`Audit ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`);
   const [notes, setNotes] = useState('');
@@ -32,7 +33,7 @@ export default function NewAuditPage() {
       const { id } = await res.json();
       toast.success('Audit started');
       qc.invalidateQueries({ queryKey: ['inventory-audits'] });
-      router.push(`/${orgSlug}/inventory/audits/${id}`);
+      router.push(`/${locale}/${orgSlug}/inventory/audits/${id}`);
     } catch {
       toast.error('Failed to start audit');
     } finally {
@@ -44,7 +45,7 @@ export default function NewAuditPage() {
     <div>
       <PageHeader
         title="Start Physical Audit"
-        breadcrumb={[{ label: 'Inventory', href: `/${orgSlug}/inventory` }, { label: 'Audits', href: `/${orgSlug}/inventory/audits` }, { label: 'New', href: `/${orgSlug}/inventory/audits/new` }]}
+        breadcrumb={[{ label: 'Inventory', href: `/${locale}/${orgSlug}/inventory` }, { label: 'Audits', href: `/${locale}/${orgSlug}/inventory/audits` }, { label: 'New', href: `/${locale}/${orgSlug}/inventory/audits/new` }]}
       />
       <div className="max-w-lg">
         <div className="bg-[var(--primary-50)] border border-[var(--primary-100)] rounded-lg p-4 mb-6 flex items-start gap-3">

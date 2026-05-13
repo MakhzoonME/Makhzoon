@@ -78,11 +78,11 @@ function ArrowRightIcon() {
 }
 
 /* ── Greeting helper ─────────────────────────────────────────────── */
-function greeting(t: (key: string) => string): string {
+function getGreetingKey(): 'greeting.morning' | 'greeting.afternoon' | 'greeting.evening' {
   const h = new Date().getHours();
-  if (h >= 5 && h < 12) return t('greeting.morning');
-  if (h >= 12 && h < 20) return t('greeting.afternoon');
-  return t('greeting.evening');
+  if (h >= 5 && h < 12) return 'greeting.morning';
+  if (h >= 12 && h < 20) return 'greeting.afternoon';
+  return 'greeting.evening';
 }
 
 /* ── Data fetcher ────────────────────────────────────────────────── */
@@ -322,12 +322,14 @@ function PendingRequestsTable({
   requests,
   isLoading,
   orgSlug,
+  locale,
   onApprove,
   onReject,
 }: {
   requests: Request[];
   isLoading: boolean;
   orgSlug: string;
+  locale: string;
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
 }) {
@@ -391,7 +393,7 @@ function PendingRequestsTable({
       columns={columns}
       isLoading={isLoading}
       emptyMessage="No pending requests."
-      onRowClick={() => router.push(`/${orgSlug}/requests`)}
+      onRowClick={() => router.push(`/${locale}/${orgSlug}/requests`)}
       keyExtractor={(r) => r.id}
     />
   );
@@ -403,7 +405,7 @@ export default function DashboardPage() {
   const orgSlug = useOrgSlug();
   const { user } = useAuthStore();
   const { data, isLoading } = useDashboard();
-  const { t } = useT();
+  const { t, locale } = useT();
 
   const firstName = (user?.displayName ?? user?.email ?? 'there').split(/[\s@]/)[0];
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
@@ -447,7 +449,7 @@ export default function DashboardPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-            {greeting(t)}, {firstName}
+            {t(getGreetingKey())}, {firstName}
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {t('dashboard.subtitle')}
@@ -463,7 +465,7 @@ export default function DashboardPage() {
           iconColor="var(--primary-600)"
           label={t('dashboard.totalAssets')}
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{totalAssets.length}</p>}
-          onClick={() => router.push(`/${orgSlug}/assets`)}
+          onClick={() => router.push(`/${locale}/${orgSlug}/assets`)}
         />
         <StatCard
           icon={<ActiveIcon />}
@@ -472,7 +474,7 @@ export default function DashboardPage() {
           label={t('dashboard.active')}
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{activeAssets.length}</p>}
           sub={!isLoading && totalAssets.length > 0 ? `${Math.round((activeAssets.length / totalAssets.length) * 100)}${t('dashboard.percentOfTotal')}` : undefined}
-          onClick={() => router.push(`/${orgSlug}/assets?status=Active`)}
+          onClick={() => router.push(`/${locale}/${orgSlug}/assets?status=Active`)}
         />
         <StatCard
           icon={<InboxIcon />}
@@ -481,7 +483,7 @@ export default function DashboardPage() {
           label="Pending Requests"
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{pendingRequests.length}</p>}
           sub={!isLoading && pendingRequests.length > 0 ? 'need review' : undefined}
-          onClick={() => router.push(`/${orgSlug}/requests`)}
+          onClick={() => router.push(`/${locale}/${orgSlug}/requests`)}
         />
         <StatCard
           icon={<WarningIcon />}
@@ -496,7 +498,7 @@ export default function DashboardPage() {
               </p>
             )
           }
-          onClick={() => router.push(`/${orgSlug}/warranties?expiring=30`)}
+          onClick={() => router.push(`/${locale}/${orgSlug}/warranties?expiring=30`)}
         />
       </div>
 
@@ -508,7 +510,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-sm font-semibold text-gray-900">Asset breakdown</h2>
               <button
-                onClick={() => router.push(`/${orgSlug}/assets`)}
+                onClick={() => router.push(`/${locale}/${orgSlug}/assets`)}
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
               >
                 {t('dashboard.viewAll')} <ArrowRightIcon />
@@ -524,7 +526,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-sm font-semibold text-gray-900">Recent activity</h2>
               <button
-                onClick={() => router.push(`/${orgSlug}/audit-logs`)}
+                onClick={() => router.push(`/${locale}/${orgSlug}/audit-logs`)}
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
               >
                 View all <ArrowRightIcon />
@@ -543,7 +545,7 @@ export default function DashboardPage() {
             <div className="px-5 py-4 border-b border-border flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-900">{t('dashboard.expiringWarranties')}</h2>
               <button
-                onClick={() => router.push(`/${orgSlug}/warranties`)}
+                onClick={() => router.push(`/${locale}/${orgSlug}/warranties`)}
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
               >
                 {t('dashboard.viewAll')} <ArrowRightIcon />
@@ -573,7 +575,7 @@ export default function DashboardPage() {
                   )}
                 </div>
                 <button
-                  onClick={() => router.push(`/${orgSlug}/requests`)}
+                  onClick={() => router.push(`/${locale}/${orgSlug}/requests`)}
                   className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
                 >
                   Open queue <ArrowRightIcon />
@@ -583,6 +585,7 @@ export default function DashboardPage() {
                 requests={pendingRequests}
                 isLoading={isLoading}
                 orgSlug={orgSlug}
+                locale={locale}
                 onApprove={(id) => handleDecision(id, 'approve')}
                 onReject={(id) => handleDecision(id, 'reject')}
               />

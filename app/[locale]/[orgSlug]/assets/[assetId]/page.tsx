@@ -177,14 +177,6 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
                 </div>
               )}
             </dl>
-            {asset.receiptUrl && (
-              <div className="mt-4 pt-4 border-t border-border">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Receipt</p>
-                <a href={asset.receiptUrl} target="_blank" rel="noopener noreferrer">
-                  <img src={asset.receiptUrl} alt="Receipt" className="rounded-md border border-border max-h-48 object-contain cursor-zoom-in hover:opacity-90 transition-opacity" />
-                </a>
-              </div>
-            )}
           </CardContent>
         </Card>
 

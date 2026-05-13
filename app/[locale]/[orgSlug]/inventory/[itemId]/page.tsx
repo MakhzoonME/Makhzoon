@@ -2,8 +2,9 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useInventoryItem, useInventoryTransactions } from '@/hooks/inventory';
+import { useWarranties } from '@/hooks/warranties';
 import { useAuthStore } from '@/store/auth.store';
-import { useOrgSlug } from '@/hooks/ui';
+import { useOrgSlug, useT } from '@/hooks/ui';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
@@ -11,15 +12,19 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import { InventoryTransaction } from '@/types';
+import { InventoryTransaction, Warranty } from '@/types';
 import { FormDrawer } from '@/components/shared/FormDrawer';
 import { InventoryItemForm } from '@/components/inventory/InventoryItemForm';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { RequestInventoryModal } from '@/components/inventory/RequestInventoryModal';
+import { WarrantyForm } from '@/components/warranties/WarrantyForm';
+import { Card, CardContent } from '@/components/ui/card';
+import { DataTable, ColumnDef } from '@/components/shared/DataTable';
+import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Pencil, ArrowUpCircle, ArrowDownCircle, RefreshCw, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
-import { formatDate } from '@/lib/utils/date';
+import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
 
 const TX_LABELS = { in: 'Stock In', out: 'Stock Out', adjustment: 'Adjustment' };
 const TX_ICONS = {
@@ -42,12 +47,15 @@ export default function InventoryItemDetailPage() {
   const { itemId } = useParams<{ itemId: string }>();
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const { locale } = useT();
   const { user } = useAuthStore();
   const qc = useQueryClient();
 
   const { data: item, isLoading } = useInventoryItem(itemId);
   const { data: txData, isLoading: txLoading } = useInventoryTransactions(itemId);
+  const { data: warrantiesResponse, isLoading: wLoading } = useWarranties({ inventoryItemId: itemId });
   const transactions = txData?.transactions ?? [];
+  const warranties = warrantiesResponse?.items ?? [];
 
   const [txType, setTxType] = useState<'in' | 'out' | 'adjustment'>('in');
   const [txQty, setTxQty] = useState('');
@@ -58,6 +66,8 @@ export default function InventoryItemDetailPage() {
   const [reqOpen, setReqOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editWarrantyTarget, setEditWarrantyTarget] = useState<Warranty | null>(null);
+  const [addWarrantyOpen, setAddWarrantyOpen] = useState(false);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
@@ -82,6 +92,28 @@ export default function InventoryItemDetailPage() {
   const stockColor = item.stockStatus === 'ok' ? 'text-[var(--green-700)] bg-[var(--green-100)] border-[var(--green-100)]'
     : item.stockStatus === 'low' ? 'text-[var(--yellow-700)] bg-[var(--yellow-100)] border-[var(--yellow-100)]'
     : 'text-[var(--red-700)] bg-[var(--red-100)] border-[var(--red-100)]';
+
+  const wColumns: ColumnDef<Warranty>[] = [
+    { key: 'vendor', header: 'Vendor', render: (w) => <span className="text-sm font-medium">{w.vendor}</span> },
+    { key: 'startDate', header: 'Start', render: (w) => <span className="text-sm text-gray-500 tabular-nums">{formatDate(w.startDate)}</span> },
+    {
+      key: 'endDate', header: 'End',
+      render: (w) => (
+        <span className={`text-sm tabular-nums font-medium ${isExpired(w.endDate) ? 'text-red-600 dark:text-red-400' : 'text-gray-700'}`}>
+          {formatDate(w.endDate)}
+        </span>
+      ),
+    },
+    { key: 'status', header: 'Status', render: (w) => <StatusBadge status={getWarrantyStatus(w.endDate)} /> },
+    {
+      key: 'actions', header: '',
+      render: (w) => isAdmin ? (
+        <Button size="sm" variant="ghost" onClick={() => setEditWarrantyTarget(w)}>
+          <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} />
+        </Button>
+      ) : null,
+    },
+  ];
 
   async function handleTransaction(e: React.FormEvent) {
     e.preventDefault();
@@ -212,6 +244,31 @@ export default function InventoryItemDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Warranties */}
+          <Card>
+            <CardContent className="p-0">
+              <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-gray-900">Warranties</h2>
+                {isAdmin && (() => {
+                  const now = new Date();
+                  const hasActiveWarranty = (warranties as Warranty[]).some((w) => new Date(w.endDate) >= now);
+                  return !hasActiveWarranty ? (
+                    <Button size="sm" variant="ghost" onClick={() => setAddWarrantyOpen(true)}>
+                      <span>+ Add warranty</span>
+                    </Button>
+                  ) : null;
+                })()}
+              </div>
+              <DataTable
+                data={warranties}
+                columns={wColumns}
+                isLoading={wLoading}
+                emptyMessage="No warranties attached."
+                keyExtractor={(w) => w.id}
+              />
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right: stock adjustment */}
@@ -291,6 +348,23 @@ export default function InventoryItemDetailPage() {
         itemId={item.id}
         itemName={item.name}
       />
+
+      <FormDrawer
+        open={!!editWarrantyTarget}
+        onOpenChange={(o) => { if (!o) setEditWarrantyTarget(null); }}
+        title="Edit Warranty"
+      >
+        {editWarrantyTarget && (
+          <WarrantyForm warranty={editWarrantyTarget} onSuccess={() => setEditWarrantyTarget(null)} />
+        )}
+      </FormDrawer>
+
+      <FormDrawer open={addWarrantyOpen} onOpenChange={setAddWarrantyOpen} title="Add Warranty">
+        <WarrantyForm
+          defaultInventoryItemId={item.id}
+          onSuccess={() => setAddWarrantyOpen(false)}
+        />
+      </FormDrawer>
     </div>
   );
 }

@@ -25,7 +25,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <span className="text-gray-400 flex-shrink-0 flex items-center">{prefixIcon}</span>
           <input
             type={type}
-            className="flex-1 min-w-0 bg-transparent border-none outline-none text-[14px] text-gray-900 placeholder:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50 h-full"
+            className="flex-1 min-w-0 bg-transparent border-none outline-none text-[14px] text-gray-900 dark:text-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50 h-full"
             ref={ref}
             {...props}
           />
@@ -36,8 +36,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <input
         type={type}
         className={cn(
-          'flex h-9 w-full rounded-md border bg-surface-input px-3 py-1 text-[14px] text-gray-900 shadow-xs',
-          'transition-colors placeholder:text-gray-400',
+          'flex h-9 w-full rounded-md border bg-surface-input px-3 py-1 text-[14px] text-gray-900 dark:text-gray-700 shadow-xs',
+          'transition-colors placeholder:text-gray-400 dark:placeholder:text-gray-600',
           'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-500/20 focus-visible:border-primary-600',
           'hover:border-border-strong',
           'disabled:cursor-not-allowed disabled:opacity-50',

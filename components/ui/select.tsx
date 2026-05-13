@@ -103,7 +103,7 @@ const SelectLabel = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Label
     ref={ref}
-    className={cn('px-2.5 py-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-[0.08em]', className)}
+    className={cn('px-2.5 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-600 uppercase tracking-[0.08em]', className)}
     {...props}
   />
 ));
@@ -116,9 +116,9 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex w-full cursor-default select-none items-center rounded-md py-2 pl-2.5 pr-8 text-[13.5px] text-gray-700 outline-none',
-      'focus:bg-surface-page focus:text-gray-900',
-      'data-[state=checked]:bg-primary-50 data-[state=checked]:text-primary-700 data-[state=checked]:font-semibold',
+      'relative flex w-full cursor-default select-none items-center rounded-md py-2 pl-2.5 pr-8 text-[13.5px] text-gray-700 dark:text-gray-700 outline-none',
+      'focus:bg-surface-page focus:text-gray-900 dark:focus:bg-gray-700/60 dark:focus:text-gray-900',
+      'data-[state=checked]:bg-primary-50 data-[state=checked]:text-primary-700 dark:data-[state=checked]:bg-primary-500/20 dark:data-[state=checked]:text-primary-400 data-[state=checked]:font-semibold',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className
     )}
@@ -126,7 +126,7 @@ const SelectItem = React.forwardRef<
   >
     <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
-        <Check className="h-3.5 w-3.5 text-primary-600" strokeWidth={2} />
+        <Check className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" strokeWidth={2} />
       </SelectPrimitive.ItemIndicator>
     </span>
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>

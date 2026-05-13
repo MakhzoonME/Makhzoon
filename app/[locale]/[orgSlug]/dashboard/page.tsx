@@ -78,11 +78,11 @@ function ArrowRightIcon() {
 }
 
 /* ── Greeting helper ─────────────────────────────────────────────── */
-function greeting(): string {
+function greeting(t: (key: string) => string): string {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (h >= 5 && h < 12) return t('greeting.morning');
+  if (h >= 12 && h < 20) return t('greeting.afternoon');
+  return t('greeting.evening');
 }
 
 /* ── Data fetcher ────────────────────────────────────────────────── */
@@ -447,10 +447,10 @@ export default function DashboardPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-            {greeting()}, {firstName}
+            {greeting(t)}, {firstName}
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Here&apos;s what&apos;s happening across your workspace today.
+            {t('dashboard.subtitle')}
           </p>
         </div>
       </div>

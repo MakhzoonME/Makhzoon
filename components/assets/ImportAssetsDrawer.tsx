@@ -2,9 +2,9 @@
 import { useState, useRef, useCallback } from 'react';
 import Papa from 'papaparse';
 import { useQueryClient } from '@tanstack/react-query';
+import { useT, toast } from '@/hooks/ui';
 import { FormDrawer } from '@/components/shared/FormDrawer';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/ui';
 
 function UploadCloudSVG() {
   return (
@@ -65,6 +65,7 @@ interface Props {
 }
 
 export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
+  const { t } = useT();
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<Row[]>([]);
@@ -97,7 +98,7 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
       transformHeader: (h) => h.trim(),
       complete: (res) => {
         const data = res.data.filter((r) => Object.values(r).some((v) => v && String(v).trim()));
-        if (data.length === 0) { setParseError('CSV contains no data rows.'); setRows([]); return; }
+        if (data.length === 0) { setParseError(t('import.noDataRows')); setRows([]); return; }
         const firstHeaders = Object.keys(data[0]);
         const missing = REQUIRED_COLUMNS.filter((c) => !firstHeaders.includes(c));
         if (missing.length) { setParseError(`Missing required columns: ${missing.join(', ')}`); setRows([]); return; }
@@ -135,14 +136,14 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
         body: JSON.stringify({ rows }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Import failed');
+      if (!res.ok) throw new Error(data.error ?? t('import.importFailed'));
       setResult(data);
       qc.invalidateQueries({ queryKey: ['assets'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
-      if (data.imported > 0) toast.success(`Imported ${data.imported} asset${data.imported === 1 ? '' : 's'}`);
-      if (data.failed > 0) toast.error(`${data.failed} row${data.failed === 1 ? '' : 's'} failed`);
+      if (data.imported > 0) toast.success(`${t('import.importedCount')} ${data.imported} ${data.imported === 1 ? t('import.asset') : t('import.assets')}`);
+      if (data.failed > 0) toast.error(`${data.failed} ${data.failed === 1 ? t('import.rowFailed') : t('import.rowsFailed')}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Import failed');
+      toast.error(err instanceof Error ? err.message : t('import.importFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -152,7 +153,7 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
   const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
 
   return (
-    <FormDrawer open={open} onOpenChange={handleClose} title="Import Assets from CSV" width="xl">
+    <FormDrawer open={open} onOpenChange={handleClose} title={t('import.title')} width="xl">
       <div className="space-y-5">
         {/* Format info */}
         <div className="flex items-start gap-3 p-4 bg-primary-50 border border-primary-100 rounded-xl">
@@ -160,13 +161,13 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
             <FileTextSVG />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-primary-900 mb-0.5">CSV format</p>
+            <p className="text-sm font-medium text-primary-900 mb-0.5">{t('import.csvFormat')}</p>
             <p className="text-xs text-primary-700 leading-relaxed">
-              Required: <span className="font-mono bg-primary-100 px-1 rounded">name</span>,{' '}
-              <span className="font-mono bg-primary-100 px-1 rounded">category</span>. Optional: status, serialNumber, purchaseDate (YYYY-MM-DD), purchaseCost, assignedTo, location, notes.
+              {t('import.required')}: <span className="font-mono bg-primary-100 px-1 rounded">name</span>,{' '}
+              <span className="font-mono bg-primary-100 px-1 rounded">category</span>. {t('import.optional')}: status, serialNumber, purchaseDate (YYYY-MM-DD), purchaseCost, assignedTo, location, notes.
             </p>
             <button onClick={downloadTemplate} className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-800 mt-2 transition-colors">
-              <DownloadSVG /> Download template
+              <DownloadSVG /> {t('import.downloadTemplate')}
             </button>
           </div>
         </div>
@@ -184,8 +185,8 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
               <UploadCloudSVG />
             </div>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-800">Drop your CSV here, or <span className="text-primary-600">browse</span></p>
-              <p className="text-xs text-gray-400 mt-1">Up to 1,000 rows</p>
+              <p className="text-sm font-medium text-gray-800">{t('import.dropHere')} <span className="text-primary-600">{t('import.browse')}</span></p>
+              <p className="text-xs text-gray-400 mt-1">{t('import.maxRows')}</p>
             </div>
             <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) parseFile(f); }} />
@@ -197,7 +198,7 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">{fileName}</p>
-              {rows.length > 0 && <p className="text-xs text-gray-500">{rows.length} row{rows.length !== 1 ? 's' : ''} ready to import</p>}
+              {rows.length > 0 && <p className="text-xs text-gray-500">{rows.length} {rows.length !== 1 ? t('import.rowsReady') : t('import.rowReady')}</p>}
             </div>
             <button onClick={reset} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors flex-shrink-0">
               <XSVG />
@@ -217,8 +218,8 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
         {rows.length > 0 && !result && (
           <div className="border border-border rounded-xl overflow-hidden">
             <div className="px-4 py-2.5 border-b border-border flex items-center justify-between bg-surface-page">
-              <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Preview</span>
-              <span className="text-xs text-gray-400">Showing {preview.length} of {rows.length}</span>
+              <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{t('import.preview')}</span>
+              <span className="text-xs text-gray-400">{t('pagination.showing')} {preview.length} {t('pagination.of')} {rows.length}</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
@@ -235,9 +236,9 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
               </table>
             </div>
             <div className="px-4 py-3 border-t border-border bg-surface-page flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={reset}>Clear</Button>
+              <Button variant="outline" size="sm" onClick={reset}>{t('import.clear')}</Button>
               <Button size="sm" onClick={handleImport} disabled={submitting}>
-                {submitting ? 'Importing…' : `Import ${rows.length} asset${rows.length === 1 ? '' : 's'}`}
+                {submitting ? t('import.importing') : `${t('import.importButton')} ${rows.length} ${rows.length === 1 ? t('import.asset') : t('import.assets')}`}
               </Button>
             </div>
           </div>
@@ -247,18 +248,18 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
         {result && (
           <div className="border border-border rounded-xl overflow-hidden">
             <div className="px-4 py-3 border-b border-border bg-surface-page">
-              <span className="text-sm font-semibold text-gray-900">Import complete</span>
+              <span className="text-sm font-semibold text-gray-900">{t('import.complete')}</span>
             </div>
             <div className="px-4 py-4 space-y-3">
               <div className="flex items-center gap-2 text-sm text-emerald-700">
                 <CheckCircleSVG />
-                <span>{result.imported} asset{result.imported === 1 ? '' : 's'} imported successfully</span>
+                <span>{result.imported} {result.imported === 1 ? t('import.asset') : t('import.assets')} {t('import.importedSuccessfully')}</span>
               </div>
               {result.failed > 0 && (
                 <>
                   <div className="flex items-center gap-2 text-sm text-red-700">
                     <AlertCircleSVG />
-                    <span>{result.failed} row{result.failed === 1 ? '' : 's'} failed</span>
+                    <span>{result.failed} {result.failed === 1 ? t('import.rowFailed') : t('import.rowsFailed')}</span>
                   </div>
                   <div className="bg-red-50 rounded-lg p-3 max-h-48 overflow-y-auto border border-red-100">
                     <ul className="space-y-1 text-xs text-red-700">
@@ -271,8 +272,8 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
               )}
             </div>
             <div className="px-4 py-3 border-t border-border bg-surface-page flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={reset}>Import another file</Button>
-              <Button size="sm" onClick={() => handleClose(false)}>Done</Button>
+              <Button variant="outline" size="sm" onClick={reset}>{t('import.importAnother')}</Button>
+              <Button size="sm" onClick={() => handleClose(false)}>{t('import.done')}</Button>
             </div>
           </div>
         )}

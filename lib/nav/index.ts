@@ -29,7 +29,6 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
   { href: '/dashboard',    label: 'Dashboard',    labelKey: 'nav.dashboard',    featureKey: 'dashboard' },
   { href: '/assets',       label: 'Usool',        labelKey: 'nav.assets',       featureKey: 'assets',    moduleColor: '#00695C', moduleName: 'أصول' },
   { href: '/inventory',    label: 'Raseed',       labelKey: 'nav.inventory',    featureKey: 'inventory', moduleColor: '#E65100', moduleName: 'رصيد' },
-  { href: '/warranties',   label: 'Warranties',   labelKey: 'nav.warranties',   featureKey: 'warranties' },
   { href: '/requests',     label: 'Requests',     labelKey: 'nav.requests',     featureKey: 'requests' },
   { href: '/reports',      label: 'Reports',      labelKey: 'nav.reports',      adminOnly: true, featureKey: 'reports' },
   { href: '/support',      label: 'Support',      labelKey: 'nav.support',      featureKey: 'support' },

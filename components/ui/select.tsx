@@ -20,8 +20,8 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      'flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-border bg-surface-card px-3 py-2 text-[14px] text-gray-900 shadow-xs',
-      'placeholder:text-gray-400',
+      'flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-border bg-surface-card px-3 py-2 text-[14px] text-gray-900 dark:text-gray-100 shadow-xs',
+      'placeholder:text-gray-400 dark:placeholder:text-gray-600',
       'focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600',
       'hover:border-border-strong transition-colors',
       'disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
@@ -31,7 +31,7 @@ const SelectTrigger = React.forwardRef<
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" strokeWidth={1.75} />
+      <ChevronDown className="h-4 w-4 text-gray-400 dark:text-gray-600 flex-shrink-0 ml-2" strokeWidth={1.75} />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
@@ -43,7 +43,7 @@ const SelectScrollUpButton = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.ScrollUpButton
     ref={ref}
-    className={cn('flex cursor-default items-center justify-center py-1 text-gray-400', className)}
+    className={cn('flex cursor-default items-center justify-center py-1 text-gray-400 dark:text-gray-600', className)}
     {...props}
   >
     <ChevronUp className="h-4 w-4" strokeWidth={1.75} />
@@ -57,7 +57,7 @@ const SelectScrollDownButton = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.ScrollDownButton
     ref={ref}
-    className={cn('flex cursor-default items-center justify-center py-1 text-gray-400', className)}
+    className={cn('flex cursor-default items-center justify-center py-1 text-gray-400 dark:text-gray-600', className)}
     {...props}
   >
     <ChevronDown className="h-4 w-4" strokeWidth={1.75} />
@@ -73,7 +73,7 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border border-border bg-surface-card text-gray-900 shadow-md',
+        'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border border-border bg-surface-card text-gray-900 dark:text-gray-100 shadow-md',
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
         'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
@@ -103,7 +103,7 @@ const SelectLabel = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Label
     ref={ref}
-    className={cn('px-2.5 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-600 uppercase tracking-[0.08em]', className)}
+    className={cn('px-2.5 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-[0.08em]', className)}
     {...props}
   />
 ));
@@ -116,8 +116,8 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex w-full cursor-default select-none items-center rounded-md py-2 pl-2.5 pr-8 text-[13.5px] text-gray-700 dark:text-gray-700 outline-none',
-      'focus:bg-surface-page focus:text-gray-900 dark:focus:bg-gray-700/60 dark:focus:text-gray-900',
+      'relative flex w-full cursor-default select-none items-center rounded-md py-2 pl-2.5 pr-8 text-[13.5px] text-gray-700 dark:text-gray-200 outline-none',
+      'focus:bg-surface-page focus:text-gray-900 dark:focus:bg-gray-700/60 dark:focus:text-gray-100',
       'data-[state=checked]:bg-primary-50 data-[state=checked]:text-primary-700 dark:data-[state=checked]:bg-primary-500/20 dark:data-[state=checked]:text-primary-400 data-[state=checked]:font-semibold',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className

@@ -113,12 +113,12 @@ export function AppHeader({ orgName }: { orgName?: string }) {
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex items-center gap-2">
             <MakhzoonMark size={26} />
-            <span className="text-sm font-semibold text-gray-900 hidden sm:block">{t('brand.name')}</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 hidden sm:block">{t('brand.name')}</span>
           </div>
           {orgName && (
             <>
-              <span className="text-gray-300 select-none">/</span>
-              <span className="text-sm text-gray-600 truncate max-w-[160px]">{orgName}</span>
+              <span className="text-gray-300 dark:text-gray-700 select-none">/</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[160px]">{orgName}</span>
             </>
           )}
         </div>
@@ -127,11 +127,11 @@ export function AppHeader({ orgName }: { orgName?: string }) {
         <div className="flex-1 flex justify-center">
           <button
             onClick={() => setPaletteOpen(true)}
-            className="hidden md:flex items-center gap-2 w-full max-w-md rounded-lg border border-border bg-surface-input px-3 py-1.5 text-sm text-gray-500 hover:bg-surface-sidebar hover:border-border-strong transition-colors duration-150"
+            className="hidden md:flex items-center gap-2 w-full max-w-md rounded-lg border border-border bg-surface-input px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:bg-surface-sidebar hover:border-border-strong transition-colors duration-150"
           >
             <SearchSVG />
             <span className="flex-1 text-left">{t('common.search')}</span>
-            <kbd className="inline-flex h-5 items-center rounded border border-border bg-surface-card px-1.5 text-[10px] font-mono text-gray-400">{shortcutLabel}</kbd>
+            <kbd className="inline-flex h-5 items-center rounded border border-border bg-surface-card px-1.5 text-[10px] font-mono text-gray-400 dark:text-gray-500">{shortcutLabel}</kbd>
           </button>
         </div>
 
@@ -169,7 +169,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuLabel className="font-normal">
-                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => router.push(`/${locale}/${orgSlug}/profile`)} className="gap-2">

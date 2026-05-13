@@ -26,7 +26,7 @@ const copy = {
     loginLink: 'Sign in',
     dir: 'ltr' as const,
     cards: [
-      { value: '47,291', label: 'assets tracked' },
+      { value: '791', label: 'assets tracked' },
       { value: '∞', label: 'real-time' },
       { value: '12 teams', label: 'one view' },
     ],
@@ -46,7 +46,7 @@ const copy = {
     loginLink: 'سجّل دخول',
     dir: 'rtl' as const,
     cards: [
-      { value: '٤٧٬٢٩١', label: 'أصل مُتابَع' },
+      { value: '٧٩١', label: 'أصل مُتابَع' },
       { value: '∞', label: 'لحظي' },
       { value: '١٢ فريق', label: 'نظرة واحدة' },
     ],

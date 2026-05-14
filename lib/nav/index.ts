@@ -12,6 +12,11 @@ export interface NavItemConfig {
   moduleColor?: string;
   /** Module brand name (Arabic). Shown as a subtitle in expanded sidebar. */
   moduleName?: string;
+  /**
+   * Optional sub-items rendered beneath this item in the sidebar (Purchases under Raseed, etc.).
+   * The parent link remains independently clickable; children only appear when the sidebar is expanded.
+   */
+  children?: NavItemConfig[];
 }
 
 export interface NavGroupConfig {
@@ -28,7 +33,28 @@ export type NavEntry = NavItemConfig | NavGroupConfig;
 export const ORG_NAV_ENTRIES: NavEntry[] = [
   { href: '/dashboard',    label: 'Dashboard',    labelKey: 'nav.dashboard',    featureKey: 'dashboard' },
   { href: '/usool',        label: 'Usool',        labelKey: 'nav.assets',       featureKey: 'assets',    moduleColor: '#00695C', moduleName: 'أصول' },
-  { href: '/raseed',       label: 'Raseed',       labelKey: 'nav.inventory',    featureKey: 'inventory', moduleColor: '#E65100', moduleName: 'رصيد' },
+  {
+    href: '/raseed', label: 'Raseed', labelKey: 'nav.inventory', featureKey: 'inventory',
+    moduleColor: '#E65100', moduleName: 'رصيد',
+    children: [
+      { href: '/raseed/purchases', label: 'Purchases', labelKey: 'nav.purchases',
+        featureKey: 'inventory', permissionKey: 'purchases.view',
+        moduleColor: '#BF360C', moduleName: 'مشتريات' },
+    ],
+  },
+  {
+    href: '/haraka', label: 'Haraka', labelKey: 'nav.pos', featureKey: 'pos',
+    permissionKey: 'pos.open_session',
+    moduleColor: '#C2185B', moduleName: 'حركة',
+    children: [
+      { href: '/haraka/customers', label: 'Customers', labelKey: 'nav.customers',
+        featureKey: 'pos', permissionKey: 'pos.process_sale',
+        moduleColor: '#AD1457', moduleName: 'عملاء' },
+      { href: '/haraka/reports', label: 'Reports', labelKey: 'nav.harakaReports',
+        featureKey: 'pos', permissionKey: 'pos.view_reports',
+        moduleColor: '#AD1457', moduleName: 'تقارير' },
+    ],
+  },
   { href: '/requests',     label: 'Requests',     labelKey: 'nav.requests',     featureKey: 'requests' },
   { href: '/reports',      label: 'Reports',      labelKey: 'nav.reports',      adminOnly: true, featureKey: 'reports' },
   { href: '/support',      label: 'Support',      labelKey: 'nav.support',      featureKey: 'support' },
@@ -43,6 +69,8 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/settings/organization', label: 'Organization Info', labelKey: 'nav.orgInfo',       permissionKey: 'settings.orgInfo' },
       { href: '/subscription',          label: 'Subscription',      labelKey: 'nav.subscription',  permissionKey: 'settings.subscription' },
       { href: '/users',                 label: 'Users',             labelKey: 'nav.users',         permissionKey: 'settings.users' },
+      { href: '/settings/tax-rates',    label: 'Tax Rates',         labelKey: 'nav.taxRates',      permissionKey: 'settings.taxRates' },
+      { href: '/settings/fawtara',      label: 'Fawtara',           labelKey: 'nav.fawtara',       permissionKey: 'settings.fawtara' },
     ],
   },
 ];

@@ -52,6 +52,15 @@ export interface PosPermissions {
   issue_refund: boolean;
   void_transaction: boolean;
   view_reports: boolean;
+  fawtara_submit: boolean;
+}
+
+export interface PurchasePermissions {
+  view: boolean;
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+  receive: boolean;
 }
 
 export interface SettingsPermissions {
@@ -59,6 +68,8 @@ export interface SettingsPermissions {
   orgInfo: boolean;
   subscription: boolean;
   users: boolean;
+  taxRates: boolean;
+  fawtara: boolean;
 }
 
 export interface LeadsPermissions {
@@ -68,38 +79,43 @@ export interface LeadsPermissions {
 export interface UserPermissions {
   assets: AssetPermissions;
   inventory: InventoryPermissions;
+  purchases: PurchasePermissions;
   warranties: WarrantyPermissions;
   requests: RequestPermissions;
   reports: ReportsPermissions;
   support: SupportPermissions;
   auditLogs: AuditLogsPermissions;
   leads: LeadsPermissions;
-  pos?: PosPermissions;
+  pos: PosPermissions;
   settings: SettingsPermissions;
 }
 
 export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   assets:    { view: true,  create: true,  update: true,  delete: true,  import: true,  checkout: true,  maintenance: true,  notes: true  },
   inventory: { view: true,  create: true,  update: true,  delete: true,  transactions: true,  audits: true  },
+  purchases: { view: true,  create: true,  update: true,  delete: true,  receive: true },
   warranties:{ view: true,  create: true,  update: true,  delete: true  },
   requests:  { view: true,  create: true,  approve: true  },
   reports:   { view: true  },
   support:   { view: true,  create: true  },
   auditLogs: { view: true  },
   leads:     { view: true  },
-  settings:  { view: true,  orgInfo: true,  subscription: true,  users: true  },
+  pos:       { open_session: true, close_session: true, process_sale: true, apply_discount: true, issue_refund: true, void_transaction: true, view_reports: true, fawtara_submit: true },
+  settings:  { view: true,  orgInfo: true,  subscription: true,  users: true,  taxRates: true,  fawtara: true  },
 };
 
 export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   assets:    { view: true,  create: false, update: false, delete: false, import: false, checkout: false, maintenance: false, notes: false },
   inventory: { view: true,  create: false, update: false, delete: false, transactions: false, audits: false },
+  purchases: { view: false, create: false, update: false, delete: false, receive: false },
   warranties:{ view: true,  create: false, update: false, delete: false },
   requests:  { view: true,  create: true,  approve: false },
   reports:   { view: false },
   support:   { view: true,  create: true },
   auditLogs: { view: false },
   leads:     { view: true  },
-  settings:  { view: false, orgInfo: false, subscription: false, users: false },
+  pos:       { open_session: false, close_session: false, process_sale: false, apply_discount: false, issue_refund: false, void_transaction: false, view_reports: false, fawtara_submit: false },
+  settings:  { view: false, orgInfo: false, subscription: false, users: false, taxRates: false, fawtara: false },
 };
 
 export interface ModuleOperationConfig {
@@ -108,18 +124,32 @@ export interface ModuleOperationConfig {
   requiresView?: boolean;
 }
 
+export type ModuleGroup = 'core' | 'commerce' | 'workflow' | 'admin';
+
 export interface ModuleConfig {
   key: keyof UserPermissions;
   label: string;
   featureKey?: string;
+  /** Optional visual grouping in the PermissionsEditor. Defaults to 'core' when omitted. */
+  group?: ModuleGroup;
   operations: ModuleOperationConfig[];
 }
+
+export const MODULE_GROUP_LABELS: Record<ModuleGroup, string> = {
+  core: 'Core',
+  commerce: 'Commerce',
+  workflow: 'Workflow',
+  admin: 'Admin',
+};
+
+export const MODULE_GROUP_ORDER: ModuleGroup[] = ['core', 'commerce', 'workflow', 'admin'];
 
 export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
   {
     key: 'assets',
     label: 'Assets',
     featureKey: 'assets',
+    group: 'core',
     operations: [
       { key: 'view',        label: 'View Assets' },
       { key: 'create',      label: 'Add Assets',         requiresView: true },
@@ -135,6 +165,7 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     key: 'inventory',
     label: 'Inventory',
     featureKey: 'inventory',
+    group: 'core',
     operations: [
       { key: 'view',         label: 'View Inventory' },
       { key: 'create',       label: 'Add Items',                requiresView: true },
@@ -148,6 +179,7 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     key: 'warranties',
     label: 'Warranties',
     featureKey: 'warranties',
+    group: 'core',
     operations: [
       { key: 'view',   label: 'View Warranties' },
       { key: 'create', label: 'Add Warranties',    requiresView: true },
@@ -159,6 +191,7 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     key: 'requests',
     label: 'Requests',
     featureKey: 'requests',
+    group: 'workflow',
     operations: [
       { key: 'view',    label: 'View Requests' },
       { key: 'create',  label: 'Submit Requests', requiresView: true },
@@ -169,6 +202,7 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     key: 'reports',
     label: 'Reports',
     featureKey: 'reports',
+    group: 'workflow',
     operations: [
       { key: 'view', label: 'View Reports' },
     ],
@@ -177,6 +211,7 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     key: 'support',
     label: 'Support',
     featureKey: 'support',
+    group: 'workflow',
     operations: [
       { key: 'view',   label: 'View Tickets' },
       { key: 'create', label: 'Create Tickets', requiresView: true },
@@ -186,6 +221,7 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     key: 'auditLogs',
     label: 'Audit Logs',
     featureKey: 'auditLogs',
+    group: 'admin',
     operations: [
       { key: 'view', label: 'View Audit Logs' },
     ],
@@ -193,31 +229,50 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
   {
     key: 'leads',
     label: 'Leads',
+    group: 'admin',
     operations: [
       { key: 'view', label: 'View Leads' },
     ],
   },
   {
+    key: 'purchases',
+    label: 'Purchases',
+    featureKey: 'inventory',
+    group: 'commerce',
+    operations: [
+      { key: 'view',    label: 'View Purchases' },
+      { key: 'create',  label: 'Create Purchases',  requiresView: true },
+      { key: 'update',  label: 'Edit Purchases',    requiresView: true },
+      { key: 'delete',  label: 'Delete Purchases',  requiresView: true },
+      { key: 'receive', label: 'Receive Purchases (stock-in)', requiresView: true },
+    ],
+  },
+  {
     key: 'pos',
-    label: 'Point of Sale',
+    label: 'Point of Sale (Haraka)',
     featureKey: 'pos',
+    group: 'commerce',
     operations: [
       { key: 'open_session',      label: 'Open Session' },
       { key: 'close_session',     label: 'Close Session' },
       { key: 'process_sale',      label: 'Process Sales' },
-      { key: 'apply_discount',    label: 'Apply Discounts', requiresView: true },
-      { key: 'issue_refund',      label: 'Issue Refunds', requiresView: true },
-      { key: 'void_transaction',  label: 'Void Transactions', requiresView: true },
+      { key: 'apply_discount',    label: 'Apply Discounts' },
+      { key: 'issue_refund',      label: 'Issue Refunds' },
+      { key: 'void_transaction',  label: 'Void Transactions' },
       { key: 'view_reports',      label: 'View Reports' },
+      { key: 'fawtara_submit',    label: 'Resubmit to Fawtara' },
     ],
   },
   {
     key: 'settings',
     label: 'Settings',
+    group: 'admin',
     operations: [
-      { key: 'orgInfo',      label: 'Organization Info', requiresView: true },
-      { key: 'subscription', label: 'Subscription',      requiresView: true },
-      { key: 'users',        label: 'Users',             requiresView: true },
+      { key: 'orgInfo',      label: 'Organization Info' },
+      { key: 'subscription', label: 'Subscription' },
+      { key: 'users',        label: 'Users' },
+      { key: 'taxRates',     label: 'Tax Rates' },
+      { key: 'fawtara',      label: 'Fawtara (Jordan e-invoicing)' },
     ],
   },
 ];

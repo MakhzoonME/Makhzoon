@@ -20,3 +20,5 @@ export * from './inventory-audit.types';
 export * from './organization-config.types';
 export * from './user-permissions.types';
 export * from './superadmin-permissions.types';
+export * from './pos.types';
+export * from './purchase.types';

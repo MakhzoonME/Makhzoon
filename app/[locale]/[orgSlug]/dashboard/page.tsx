@@ -267,8 +267,8 @@ function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: bool
     approved: 'text-[var(--green-700)]',
     rejected: 'text-[var(--red-700)]',
     deleted:  'text-[var(--red-700)]',
-    created:  'text-primary-600',
-    updated:  'text-primary-600',
+    created:  'text-primary-600 dark:text-primary-400',
+    updated:  'text-primary-600 dark:text-primary-400',
   };
 
   return (

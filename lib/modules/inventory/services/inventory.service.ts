@@ -40,6 +40,35 @@ export class InventoryService {
     return item
   }
 
+  /**
+   * Resolve a barcode to an inventory item within the caller's organization.
+   * Returns null on miss so the caller (POS register, purchase line editor)
+   * can offer a "create new item" fallback. Requires only `inventory.view`.
+   */
+  async findByBarcode(tenant: TenantContext, barcode: string) {
+    requirePermission(tenant, 'inventory', 'view')
+    const code = barcode.trim()
+    if (!code) return null
+    return repo.findByBarcode(tenant, code)
+  }
+
+  private async ensureBarcodeUnique(
+    tenant: TenantContext,
+    barcode: string | null | undefined,
+    excludeId?: string,
+  ) {
+    if (!barcode) return
+    const code = barcode.trim()
+    if (!code) return
+    const taken = await repo.barcodeExists(tenant, code, excludeId)
+    if (taken) {
+      throw NextResponse.json(
+        { error: 'Barcode already used by another item in this organization' },
+        { status: 409 },
+      )
+    }
+  }
+
   async create(
     tenant: TenantContext,
     input: {
@@ -54,10 +83,16 @@ export class InventoryService {
       supplier?: string
       unitCost?: number
       notes?: string
+      barcode?: string | null
+      posEnabled?: boolean
+      posPrice?: number | null
+      taxRateId?: string | null
     }
   ) {
     requirePermission(tenant, 'inventory', 'create')
     requireActiveSubscription(tenant)
+
+    await this.ensureBarcodeUnique(tenant, input.barcode)
 
     const id = await repo.create(tenant, input)
 
@@ -88,9 +123,16 @@ export class InventoryService {
       supplier?: string
       unitCost?: number
       notes?: string
+      barcode?: string | null
+      posEnabled?: boolean
+      posPrice?: number | null
+      taxRateId?: string | null
     }
   ) {
     requirePermission(tenant, 'inventory', 'update')
+    if (input.barcode !== undefined) {
+      await this.ensureBarcodeUnique(tenant, input.barcode, id)
+    }
     await repo.update(tenant, id, input)
 
     auditLog.queue({

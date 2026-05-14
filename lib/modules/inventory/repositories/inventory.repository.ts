@@ -79,6 +79,7 @@ export interface GetAllOpts {
   category?: string
   stockStatus?: string
   search?: string
+  posEnabled?: boolean
   page?: number
   pageSize?: number
   sortBy?: SortField
@@ -107,6 +108,9 @@ export class InventoryRepository {
     }
     if (opts?.stockStatus) {
       items = items.filter((i) => i.stockStatus === opts.stockStatus)
+    }
+    if (opts?.posEnabled === true) {
+      items = items.filter((i) => i.posEnabled === true)
     }
     if (opts?.search) {
       const term = opts.search.toLowerCase()
@@ -138,6 +142,43 @@ export class InventoryRepository {
     const pagedItems = items.slice(start, start + pageSize)
 
     return { items: pagedItems, total, page: safePage, pageSize, totalPages }
+  }
+
+  /**
+   * Find an inventory item by its barcode within the tenant's organization.
+   * Returns null when no item matches. Used by the barcode lookup endpoint
+   * for scanner-driven flows (Raseed quick-jump, Purchase line entry, POS register).
+   */
+  async findByBarcode(tenant: TenantContext, barcode: string): Promise<InventoryItem | null> {
+    const snap = await adminDb
+      .collection('inventoryItems')
+      .where('organizationId', '==', tenant.organizationId)
+      .where('barcode', '==', barcode)
+      .limit(1)
+      .get()
+    if (snap.empty) return null
+    const d = snap.docs[0]
+    const qty = await computeQuantity(d.id, d.data().quantityOnHand ?? 0)
+    return toItem(d.id, d.data(), qty)
+  }
+
+  /**
+   * Returns true when another item in this organization already uses `barcode`.
+   * `excludeId` lets the edit-flow skip the current item.
+   */
+  async barcodeExists(
+    tenant: TenantContext,
+    barcode: string,
+    excludeId?: string,
+  ): Promise<boolean> {
+    const snap = await adminDb
+      .collection('inventoryItems')
+      .where('organizationId', '==', tenant.organizationId)
+      .where('barcode', '==', barcode)
+      .limit(2)
+      .get()
+    if (snap.empty) return false
+    return snap.docs.some((d) => d.id !== excludeId)
   }
 
   async getById(tenant: TenantContext, id: string): Promise<InventoryItem | null> {
@@ -173,9 +214,14 @@ export class InventoryRepository {
       supplier?: string
       unitCost?: number
       notes?: string
+      barcode?: string | null
+      posEnabled?: boolean
+      posPrice?: number | null
+      taxRateId?: string | null
     }
   ): Promise<string> {
     const now = new Date()
+    const barcode = input.barcode ? input.barcode.trim() : null
     const ref = await adminDb.collection('inventoryItems').add({
       organizationId: tenant.organizationId,
       name: input.name,
@@ -188,6 +234,10 @@ export class InventoryRepository {
       supplier: input.supplier ?? null,
       unitCost: input.unitCost ?? null,
       notes: input.notes ?? null,
+      barcode: barcode || null,
+      posEnabled: input.posEnabled ?? false,
+      posPrice: input.posPrice ?? null,
+      taxRateId: input.taxRateId ?? null,
       // quantityOnHand intentionally NOT stored — computed from transactions
       createdBy: tenant.userId,
       createdByEmail: tenant.user.email ?? null,
@@ -243,6 +293,10 @@ export class InventoryRepository {
       supplier?: string
       unitCost?: number
       notes?: string
+      barcode?: string | null
+      posEnabled?: boolean
+      posPrice?: number | null
+      taxRateId?: string | null
     }
   ): Promise<void> {
     const doc = await adminDb.collection('inventoryItems').doc(id).get()
@@ -250,8 +304,14 @@ export class InventoryRepository {
       throw new Error('Inventory item not found')
     }
 
+    const patch: Record<string, unknown> = { ...input }
+    if (input.barcode !== undefined) {
+      const trimmed = input.barcode ? input.barcode.trim() : ''
+      patch.barcode = trimmed || null
+    }
+
     await adminDb.collection('inventoryItems').doc(id).update({
-      ...input,
+      ...patch,
       updatedBy: tenant.userId,
       updatedByEmail: tenant.user.email ?? null,
       updatedByName: tenant.user.displayName ?? null,

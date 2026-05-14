@@ -405,7 +405,51 @@ export function AppSidebar() {
               </Link>
             );
 
-            if (!sidebarCollapsed) return <div key={href}>{link}</div>;
+            // Optional sub-items rendered indented beneath the parent (e.g. Purchases under Raseed).
+            // Visible only when the sidebar is expanded; in collapsed mode children are reachable
+            // by clicking the parent and navigating from there.
+            const visibleChildren = (navEntry.children ?? []).filter((sub) => {
+              if (canSeeAdmin) return true;
+              if (sub.featureKey && !features[sub.featureKey]) return false;
+              if (sub.permissionKey && user) return hasPermByKey(user, sub.permissionKey);
+              return true;
+            });
+
+            const childList = !sidebarCollapsed && visibleChildren.length > 0 ? (
+              <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pr-6' : 'pl-6')}>
+                {visibleChildren.map((sub) => {
+                  const subHref  = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
+                  const subActive = pathname === subHref || pathname.startsWith(subHref + '/');
+                  const subLabel = t(sub.labelKey as MessageKey, sub.label);
+                  return (
+                    <Link
+                      key={sub.href}
+                      href={subHref}
+                      aria-label={subLabel}
+                      className={cn(
+                        'group relative flex items-center rounded-md text-sm py-1.5 px-2.5 transition-colors duration-150',
+                        subActive
+                          ? 'text-primary-700 font-semibold'
+                          : 'text-gray-500 hover:bg-surface-page hover:text-gray-900',
+                      )}
+                      style={subActive && sub.moduleColor ? { color: sub.moduleColor } : undefined}
+                    >
+                      {subActive && (
+                        <motion.span
+                          layoutId="sidebar-active-pill-child"
+                          className="absolute inset-0 rounded-md"
+                          style={{ background: sub.moduleColor ? `${sub.moduleColor}14` : 'var(--primary-50)' }}
+                          transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                        />
+                      )}
+                      <span className="relative z-10 whitespace-nowrap">{subLabel}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : null;
+
+            if (!sidebarCollapsed) return <div key={href}>{link}{childList}</div>;
 
             return (
               <Tooltip key={href}>

@@ -106,6 +106,39 @@ export class InventoryService {
 
   async delete(tenant: TenantContext, id: string) {
     requirePermission(tenant, 'inventory', 'delete')
+
+    // Cross-module reference integrity — block deletion while live references exist.
+    const { adminDb } = await import('@/lib/firebase/admin')
+    const now = new Date()
+
+    const [openReqsSnap, activeWarrantiesSnap] = await Promise.all([
+      adminDb.collection('requests')
+        .where('organizationId', '==', tenant.organizationId)
+        .where('inventoryItemId', '==', id)
+        .where('status', '==', 'PENDING')
+        .limit(1)
+        .get(),
+      adminDb.collection('warranties')
+        .where('organizationId', '==', tenant.organizationId)
+        .where('inventoryItemId', '==', id)
+        .where('endDate', '>=', now)
+        .limit(1)
+        .get(),
+    ])
+
+    if (!openReqsSnap.empty) {
+      throw NextResponse.json(
+        { error: 'Cannot delete inventory item with open requests. Resolve or reject them first.' },
+        { status: 409 },
+      )
+    }
+    if (!activeWarrantiesSnap.empty) {
+      throw NextResponse.json(
+        { error: 'Cannot delete inventory item with an active warranty. Delete or let the warranty expire first.' },
+        { status: 409 },
+      )
+    }
+
     await repo.delete(tenant, id)
 
     auditLog.queue({

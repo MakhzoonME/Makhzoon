@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useOrgSlug, useT } from '@/hooks/ui';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
+import { ErrorState } from '@/components/shared/ErrorState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -78,7 +79,7 @@ export default function InventoryItemDetailPage() {
       if (!res.ok) throw new Error();
       toast.success('Item deleted');
       qc.invalidateQueries({ queryKey: ['inventory'] });
-      router.push(`/${locale}/${orgSlug}/inventory`);
+      router.push(`/${locale}/${orgSlug}/raseed`);
     } catch {
       toast.error('Failed to delete item');
     } finally {
@@ -87,7 +88,14 @@ export default function InventoryItemDetailPage() {
   }
 
   if (isLoading) return <LoadingSkeleton />;
-  if (!item) return <div className="text-gray-500 p-6">Item not found.</div>;
+  if (!item) return (
+    <ErrorState
+      title="Item not found"
+      message="This inventory item may have been deleted or you don't have access to it."
+      hint="If you followed a link from another page, that link may be out of date."
+      action={{ label: 'Back to inventory', onClick: () => router.push(`/${locale}/${orgSlug}/raseed`) }}
+    />
+  );
 
   const stockColor = item.stockStatus === 'ok' ? 'text-[var(--green-700)] bg-[var(--green-100)] border-[var(--green-100)]'
     : item.stockStatus === 'low' ? 'text-[var(--yellow-700)] bg-[var(--yellow-100)] border-[var(--yellow-100)]'
@@ -143,7 +151,7 @@ export default function InventoryItemDetailPage() {
     <div>
       <PageHeader
         title={item.name}
-        breadcrumb={[{ label: 'Inventory', href: `/${locale}/${orgSlug}/inventory` }, { label: item.name, href: `/${locale}/${orgSlug}/inventory/${itemId}` }]}
+        breadcrumb={[{ label: 'Inventory', href: `/${locale}/${orgSlug}/raseed` }, { label: item.name, href: `/${locale}/${orgSlug}/raseed/${itemId}` }]}
         actions={(
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={() => setReqOpen(true)}>

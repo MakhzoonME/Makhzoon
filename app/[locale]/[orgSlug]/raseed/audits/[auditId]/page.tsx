@@ -134,7 +134,7 @@ export default function AuditDetailPage() {
     <div>
       <PageHeader
         title={audit.title}
-        breadcrumb={[{ label: 'Inventory', href: `/${locale}/${orgSlug}/inventory` }, { label: 'Audits', href: `/${locale}/${orgSlug}/inventory/audits` }, { label: audit.title, href: `/${locale}/${orgSlug}/inventory/audits/${auditId}` }]}
+        breadcrumb={[{ label: 'Inventory', href: `/${locale}/${orgSlug}/raseed` }, { label: 'Audits', href: `/${locale}/${orgSlug}/raseed/audits` }, { label: audit.title, href: `/${locale}/${orgSlug}/raseed/audits/${auditId}` }]}
         actions={!completed && audit.pendingCount === 0 ? (
           <Button size="sm" onClick={handleComplete} disabled={completing}>
             <CheckCheck className="h-4 w-4" strokeWidth={1.75} /><span className="ml-1">{completing ? 'Completing...' : 'Complete Audit'}</span>

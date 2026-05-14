@@ -239,7 +239,7 @@ export default function UsersPage() {
                   return (
                     <tr key={`user-${u.id}`} className="hover:bg-surface-page transition-colors">
                       <td className="px-4 py-3 font-medium text-gray-900">{u.displayName || '—'}</td>
-                      <td className="px-4 py-3 text-gray-600">{u.email || (u.username ? `@${u.username}` : '—')}</td>
+                      <td className="px-4 py-3 text-gray-600" dir="ltr">{u.email || (u.username ? `@${u.username}` : '—')}</td>
                       <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
                       <td className="px-4 py-3"><StatusBadge status={u.status} /></td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(u.createdAt)}</td>
@@ -296,7 +296,7 @@ export default function UsersPage() {
                 return (
                   <tr key={`invite-${inv.id}`} className="hover:bg-surface-page transition-colors bg-amber-50/30">
                     <td className="px-4 py-3 font-medium text-gray-700">{inv.displayName || '—'}</td>
-                    <td className="px-4 py-3 text-gray-500">{inv.email || (inv.username ? `@${inv.username}` : '—')}</td>
+                    <td className="px-4 py-3 text-gray-500" dir="ltr">{inv.email || (inv.username ? `@${inv.username}` : '—')}</td>
                     <td className="px-4 py-3"><RoleBadge role={inv.role} /></td>
                     <td className="px-4 py-3"><StatusBadge status="pending" /></td>
                     <td className="px-4 py-3 text-gray-400 text-xs">{t('users.expires')} {formatDate(inv.expiresAt)}</td>

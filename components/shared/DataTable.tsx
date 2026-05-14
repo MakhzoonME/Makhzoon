@@ -113,7 +113,7 @@ export function DataTable<T>({
               data.map((row, i) => (
                 <tr
                   key={keyExtractor ? keyExtractor(row) : i}
-                  className={`border-b border-border hover:bg-surface-page transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+                  className={`border-b border-border hover:bg-gray-100 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
                   onClick={() => onRowClick?.(row)}
                 >
                   {columns.map((col) => {
@@ -191,10 +191,12 @@ export function DataTable<T>({
               return (
                 <button
                   key={pageNum}
+                  aria-current={pagination.page === pageNum ? 'page' : undefined}
+                  aria-label={`Page ${pageNum}${pagination.page === pageNum ? ' (current)' : ''}`}
                   className={`px-2.5 py-1 text-[12px] border rounded-md transition-colors ${
                     pagination.page === pageNum
-                      ? 'bg-primary-600 text-white border-primary-600'
-                      : 'border-border hover:bg-surface-page text-gray-700'
+                      ? 'bg-primary-600 text-white border-primary-600 font-semibold shadow-sm'
+                      : 'border-border hover:bg-gray-100 text-gray-700'
                   }`}
                   onClick={() => pagination.onPageChange(pageNum)}
                 >

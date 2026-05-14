@@ -27,6 +27,7 @@ import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { UserHoverCard } from '@/components/shared/UserHoverCard';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 /* ── Icons ───────────────────────────────────────────────────────── */
 function EditSVG() {
@@ -91,7 +92,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
         (old) => old?.items ? { ...old, items: old.items.filter((a) => a.id !== assetId) } : old,
       );
       qc.removeQueries({ queryKey: ['assets', assetId] });
-      router.push(`/${locale}/${orgSlug}/assets`);
+      router.push(`/${locale}/${orgSlug}/usool`);
     } catch {
       toast.error(isRetired ? 'Failed to delete asset' : 'Failed to retire asset');
     } finally {
@@ -129,7 +130,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
     <div>
       <PageHeader
         title={asset.name}
-        breadcrumb={[{ label: 'Assets', href: `/${locale}/${orgSlug}/assets` }, { label: asset.name, href: `/${locale}/${orgSlug}/assets/${assetId}` }]}
+        breadcrumb={[{ label: 'Assets', href: `/${locale}/${orgSlug}/usool` }, { label: asset.name, href: `/${locale}/${orgSlug}/usool/${assetId}` }]}
         actions={isAdmin ? (
           <div className="flex gap-2">
             {asset.status !== 'Retired' && (
@@ -210,11 +211,28 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
             {isAdmin && (() => {
               const now = new Date();
               const hasActiveWarranty = (warranties as Warranty[]).some((w) => new Date(w.endDate) >= now);
-              return !hasActiveWarranty ? (
+              if (hasActiveWarranty) return null;
+              if (isRetired) {
+                return (
+                  <TooltipProvider delayDuration={150}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span tabIndex={0}>
+                          <Button size="sm" variant="ghost" disabled aria-disabled="true" className="pointer-events-none opacity-50">
+                            <PlusSVG /><span className="ml-1">Add warranty</span>
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>Cannot add a warranty to a retired asset.</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                );
+              }
+              return (
                 <Button size="sm" variant="ghost" onClick={() => setAddWarrantyOpen(true)}>
                   <PlusSVG /><span className="ml-1">Add warranty</span>
                 </Button>
-              ) : null;
+              );
             })()}
           </div>
           <DataTable

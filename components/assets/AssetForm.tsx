@@ -95,7 +95,7 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
       if (onSuccess) {
         onSuccess();
       } else {
-        router.push(`/${locale}/${orgSlug}/assets/${asset?.id ?? result.id}`);
+        router.push(`/${locale}/${orgSlug}/usool/${asset?.id ?? result.id}`);
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong');

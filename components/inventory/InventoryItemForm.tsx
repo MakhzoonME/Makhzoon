@@ -70,7 +70,7 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
       if (onSuccess) {
         onSuccess();
       } else {
-        router.push(`/${locale}/${orgSlug}/inventory/${item?.id ?? result.id}`);
+        router.push(`/${locale}/${orgSlug}/raseed/${item?.id ?? result.id}`);
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong');

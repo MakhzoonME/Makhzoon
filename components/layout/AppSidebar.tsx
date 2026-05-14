@@ -124,8 +124,8 @@ function ChevronDownSVG() {
 
 const NAV_ICONS: Record<string, React.FC> = {
   '/dashboard':    DashboardSVG,
-  '/assets':       AssetsSVG,
-  '/inventory':    InventorySVG,
+  '/usool':        AssetsSVG,
+  '/raseed':       InventorySVG,
   '/warranties':   WarrantySVG,
   '/requests':     RequestsSVG,
   '/reports':      ReportsSVG,

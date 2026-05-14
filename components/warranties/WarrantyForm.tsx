@@ -221,68 +221,104 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId, defaultInven
 
         {/* Asset selector — only shows assets without an active warranty */}
         {itemType === 'asset' && (
-          <FormField control={form.control} name="assetId" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Asset *</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-                disabled={!!warranty || !!defaultAssetId || isLoadingData}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={isLoadingData ? 'Loading assets…' : 'Select asset'} />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {assetOptions.length === 0 ? (
-                    <div className="flex items-center gap-2 px-3 py-4 text-sm text-gray-500">
-                      <AlertTriangleSVG />
-                      No assets available
-                    </div>
-                  ) : (
-                    assetOptions.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )} />
+          <FormField control={form.control} name="assetId" render={({ field }) => {
+            const lockedAssetId = warranty?.assetId ?? defaultAssetId;
+            if (lockedAssetId) {
+              const lockedName =
+                warranty?.assetName ??
+                assetOptions.find((a) => a.id === lockedAssetId)?.name ??
+                lockedAssetId;
+              return (
+                <FormItem>
+                  <FormLabel>Asset *</FormLabel>
+                  <div className="flex h-9 w-full items-center rounded-md border border-border bg-surface-page px-3 py-2 text-[14px] text-gray-900">
+                    {lockedName}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              );
+            }
+            return (
+              <FormItem>
+                <FormLabel>Asset *</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  disabled={isLoadingData}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={isLoadingData ? 'Loading assets…' : 'Select asset'} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {assetOptions.length === 0 ? (
+                      <div className="flex items-center gap-2 px-3 py-4 text-sm text-gray-500">
+                        <AlertTriangleSVG />
+                        No assets available
+                      </div>
+                    ) : (
+                      assetOptions.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            );
+          }} />
         )}
 
         {/* Inventory item selector */}
         {itemType === 'inventory' && (
-          <FormField control={form.control} name="inventoryItemId" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Inventory Item *</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-                disabled={!!warranty || !!defaultInventoryItemId || isLoadingData}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={isLoadingData ? 'Loading items…' : 'Select item'} />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {inventoryOptions.length === 0 ? (
-                    <div className="flex items-center gap-2 px-3 py-4 text-sm text-gray-500">
-                      <AlertTriangleSVG />
-                      No items available
-                    </div>
-                  ) : (
-                    inventoryOptions.map((i) => (
-                      <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )} />
+          <FormField control={form.control} name="inventoryItemId" render={({ field }) => {
+            const lockedItemId = warranty?.inventoryItemId ?? defaultInventoryItemId;
+            if (lockedItemId) {
+              const lockedName =
+                warranty?.inventoryItemName ??
+                inventoryOptions.find((i) => i.id === lockedItemId)?.name ??
+                lockedItemId;
+              return (
+                <FormItem>
+                  <FormLabel>Inventory Item *</FormLabel>
+                  <div className="flex h-9 w-full items-center rounded-md border border-border bg-surface-page px-3 py-2 text-[14px] text-gray-900">
+                    {lockedName}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              );
+            }
+            return (
+              <FormItem>
+                <FormLabel>Inventory Item *</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  disabled={isLoadingData}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={isLoadingData ? 'Loading items…' : 'Select item'} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {inventoryOptions.length === 0 ? (
+                      <div className="flex items-center gap-2 px-3 py-4 text-sm text-gray-500">
+                        <AlertTriangleSVG />
+                        No items available
+                      </div>
+                    ) : (
+                      inventoryOptions.map((i) => (
+                        <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            );
+          }} />
         )}
 
         <FormField control={form.control} name="vendor" render={({ field }) => (

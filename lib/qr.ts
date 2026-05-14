@@ -1,7 +1,7 @@
 import QRCode from 'qrcode';
 
 export async function generateAssetQRDataUrl(assetId: string, baseUrl: string, fullUrl?: string): Promise<string> {
-  const url = fullUrl ?? `${baseUrl.replace(/\/$/, '')}/assets/${assetId}`;
+  const url = fullUrl ?? `${baseUrl.replace(/\/$/, '')}/usool/${assetId}`;
   return QRCode.toDataURL(url, {
     width: 512,
     margin: 1,
@@ -11,7 +11,7 @@ export async function generateAssetQRDataUrl(assetId: string, baseUrl: string, f
 }
 
 export function assetUrl(assetId: string, baseUrl: string): string {
-  return `${baseUrl.replace(/\/$/, '')}/assets/${assetId}`;
+  return `${baseUrl.replace(/\/$/, '')}/usool/${assetId}`;
 }
 
 // QR encodes the raw acceptance URL — scanners open it directly in a browser.

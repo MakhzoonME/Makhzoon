@@ -22,7 +22,7 @@ function UploadSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fi
 
 const NAV_GROUPS = [
   { href: '/dashboard', label: 'Dashboard', icon: DashboardSVG },
-  { href: '/assets', label: 'Assets', icon: PackageSVG },
+  { href: '/usool', label: 'Usool', icon: PackageSVG },
   { href: '/warranties', label: 'Warranties', icon: ShieldCheckSVG },
   { href: '/requests', label: 'Requests', icon: ClipboardListSVG },
 ];
@@ -34,8 +34,8 @@ const ADMIN_NAV = [
 ];
 
 const ACTIONS = [
-  { href: '/assets/new', label: 'Create asset', icon: PlusSVG },
-  { href: '/assets/import', label: 'Import assets from CSV', icon: UploadSVG },
+  { href: '/usool/new', label: 'Create asset', icon: PlusSVG },
+  { href: '/usool/import', label: 'Import assets from CSV', icon: UploadSVG },
   { href: '/warranties/new', label: 'Add warranty', icon: PlusSVG },
 ];
 
@@ -108,7 +108,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                     <Command.Item
                       key={asset.id}
                       value={`${asset.name} ${asset.category} ${asset.serialNumber ?? ''}`}
-                      onSelect={() => go(`/assets/${asset.id}`)}
+                      onSelect={() => go(`/usool/${asset.id}`)}
                       className={cn(
                         'flex items-center gap-2 px-3 py-2 mx-2 rounded-md text-sm cursor-pointer',
                         'data-[selected=true]:bg-primary-50 data-[selected=true]:text-primary-700'

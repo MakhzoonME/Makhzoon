@@ -29,8 +29,8 @@ interface NavItem { href: string; label: string; Icon: React.FC; adminOnly?: boo
 
 const navItems: NavItem[] = [
   { href: '/dashboard',    label: 'Dashboard',    Icon: DashboardSVG,                            featureKey: 'dashboard' },
-  { href: '/assets',       label: 'Assets',       Icon: AssetsSVG,                               featureKey: 'assets' },
-  { href: '/inventory',    label: 'Inventory',    Icon: InventorySVG,                            featureKey: 'inventory' },
+  { href: '/usool',        label: 'Usool',        Icon: AssetsSVG,                               featureKey: 'assets' },
+  { href: '/raseed',       label: 'Raseed',       Icon: InventorySVG,                            featureKey: 'inventory' },
   { href: '/warranties',   label: 'Warranties',   Icon: WarrantySVG,    featureKey: 'warranties' },
   { href: '/requests',     label: 'Requests',     Icon: RequestsSVG,    featureKey: 'requests' },
   { href: '/reports',      label: 'Reports',      Icon: ReportsSVG,     adminOnly: true,         featureKey: 'reports' },

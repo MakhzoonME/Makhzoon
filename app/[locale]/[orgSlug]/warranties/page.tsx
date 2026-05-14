@@ -49,7 +49,7 @@ export default function WarrantiesPage() {
   }, [pathname, router]);
 
   const columns: ColumnDef<Warranty>[] = [
-    { key: 'assetId', header: t('col.asset'), sortable: true, render: (w) => <button className="text-primary-600 hover:underline" onClick={() => router.push(`/${locale}/${orgSlug}/assets/${w.assetId}`)}>{w.assetName ?? w.assetId}</button> },
+    { key: 'assetId', header: t('col.asset'), sortable: true, render: (w) => <button className="text-primary-600 hover:underline" onClick={() => router.push(`/${locale}/${orgSlug}/usool/${w.assetId}`)}>{w.assetName ?? w.assetId}</button> },
     { key: 'vendor', header: t('col.vendor'), sortable: true, render: (w) => w.vendor },
     { key: 'startDate', header: t('warranties.startDate'), sortable: true, render: (w) => formatDate(w.startDate) },
     { key: 'endDate', header: t('warranties.endDate'), sortable: true, render: (w) => <span className={isExpired(w.endDate) ? 'text-red-600' : ''}>{formatDate(w.endDate)}</span> },
@@ -58,7 +58,7 @@ export default function WarrantiesPage() {
     {
       key: 'actions', header: t('col.actions'),
       render: (w) => (
-        <Button size="sm" variant="ghost" onClick={() => router.push(`/${locale}/${orgSlug}/assets/${w.assetId}`)}>{t('warranties.viewAsset')}</Button>
+        <Button size="sm" variant="ghost" onClick={() => router.push(`/${locale}/${orgSlug}/usool/${w.assetId}`)}>{t('warranties.viewAsset')}</Button>
       )
     },
   ];

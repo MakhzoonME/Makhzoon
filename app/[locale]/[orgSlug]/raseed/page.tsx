@@ -114,7 +114,7 @@ export default function InventoryPage() {
       key: 'name', header: t('inventory.item'), sortable: true,
       render: (i) => (
         <div>
-          <button className="font-medium text-primary-600 hover:underline text-left" onClick={() => router.push(`/${locale}/${orgSlug}/inventory/${i.id}`)}>
+          <button className="font-medium text-primary-600 hover:underline text-left" onClick={() => router.push(`/${locale}/${orgSlug}/raseed/${i.id}`)}>
             {i.name}
           </button>
           {i.sku && <div className="text-xs text-gray-400 font-mono">{i.sku}</div>}
@@ -207,7 +207,7 @@ export default function InventoryPage() {
         title={t('nav.inventory')}
         actions={isAdmin ? (
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/inventory/audits`)}>
+            <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/raseed/audits`)}>
               <ClipboardCheck className="h-4 w-4" strokeWidth={1.75} /> {t('inventory.audits')}
             </Button>
             <SubscriptionGate>
@@ -217,7 +217,7 @@ export default function InventoryPage() {
             </SubscriptionGate>
           </div>
         ) : (
-          <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/inventory/audits`)}>
+          <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/raseed/audits`)}>
             <ClipboardCheck className="h-4 w-4" strokeWidth={1.75} /> {t('inventory.audits')}
           </Button>
         )}
@@ -272,7 +272,7 @@ export default function InventoryPage() {
           columns={columns}
           isLoading={isLoading}
           emptyMessage={t('inventory.noItems')}
-          onRowClick={(i) => router.push(`/${locale}/${orgSlug}/inventory/${i.id}`)}
+          onRowClick={(i) => router.push(`/${locale}/${orgSlug}/raseed/${i.id}`)}
           keyExtractor={(i) => i.id}
           pagination={inventoryData ? {
             page: inventoryData.page,

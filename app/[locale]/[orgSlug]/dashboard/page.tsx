@@ -462,24 +462,24 @@ export default function DashboardPage() {
         <StatCard
           icon={<TotalIcon />}
           iconBg="var(--primary-50)"
-          iconColor="var(--primary-600)"
+          iconColor="var(--primary-700)"
           label={t('dashboard.totalAssets')}
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{totalAssets.length}</p>}
-          onClick={() => router.push(`/${locale}/${orgSlug}/assets`)}
+          onClick={() => router.push(`/${locale}/${orgSlug}/usool`)}
         />
         <StatCard
           icon={<ActiveIcon />}
           iconBg="var(--green-50)"
-          iconColor="var(--green-600)"
+          iconColor="var(--green-700)"
           label={t('dashboard.active')}
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{activeAssets.length}</p>}
           sub={!isLoading && totalAssets.length > 0 ? `${Math.round((activeAssets.length / totalAssets.length) * 100)}${t('dashboard.percentOfTotal')}` : undefined}
-          onClick={() => router.push(`/${locale}/${orgSlug}/assets?status=Active`)}
+          onClick={() => router.push(`/${locale}/${orgSlug}/usool?status=Active`)}
         />
         <StatCard
           icon={<InboxIcon />}
           iconBg="var(--yellow-50)"
-          iconColor="var(--yellow-600)"
+          iconColor="var(--yellow-700)"
           label="Pending Requests"
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{pendingRequests.length}</p>}
           sub={!isLoading && pendingRequests.length > 0 ? 'need review' : undefined}
@@ -488,7 +488,7 @@ export default function DashboardPage() {
         <StatCard
           icon={<WarningIcon />}
           iconBg="var(--yellow-50)"
-          iconColor="var(--yellow-600)"
+          iconColor="var(--yellow-700)"
           label={t('dashboard.warrantiesExpiring')}
           value={
             isLoading ? <SkeletonValue /> : (
@@ -510,7 +510,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-sm font-semibold text-gray-900">Asset breakdown</h2>
               <button
-                onClick={() => router.push(`/${locale}/${orgSlug}/assets`)}
+                onClick={() => router.push(`/${locale}/${orgSlug}/usool`)}
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
               >
                 {t('dashboard.viewAll')} <ArrowRightIcon />

@@ -1,14 +1,15 @@
 export interface Warranty {
   id: string;
   organizationId: string;
-  assetId: string;
+  assetId?: string;
   assetName?: string;
+  inventoryItemId?: string;
+  inventoryItemName?: string;
   vendor: string;
   startDate: Date;
   endDate: Date;
   reminder: boolean;
   notes?: string;
-  receiptUrl?: string;
   createdAt: Date;
   createdBy: string;
   updatedAt: Date;

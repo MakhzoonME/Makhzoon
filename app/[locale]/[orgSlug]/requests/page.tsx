@@ -32,7 +32,7 @@ const typeLabels: Record<string, string> = {
 };
 
 export default function RequestsPage() {
-  const { t } = useT();
+  const { t, locale } = useT();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -112,8 +112,8 @@ export default function RequestsPage() {
     {
       key: 'assetId', header: t('requests.reference'),
       render: (r) => {
-        if (r.assetId) return <button className="text-primary-600 hover:underline" onClick={() => router.push(`/${orgSlug}/assets/${r.assetId}`)}>{r.assetName ?? r.assetId}</button>;
-        if (r.inventoryItemId) return <button className="text-primary-600 hover:underline" onClick={() => router.push(`/${orgSlug}/inventory/${r.inventoryItemId}`)}>{r.inventoryItemName ?? r.inventoryItemId}</button>;
+        if (r.assetId) return <button className="text-primary-600 hover:underline" onClick={() => router.push(`/${locale}/${orgSlug}/usool/${r.assetId}`)}>{r.assetName ?? r.assetId}</button>;
+        if (r.inventoryItemId) return <button className="text-primary-600 hover:underline" onClick={() => router.push(`/${locale}/${orgSlug}/raseed/${r.inventoryItemId}`)}>{r.inventoryItemName ?? r.inventoryItemId}</button>;
         return <span className="text-gray-400">—</span>;
       }
     },

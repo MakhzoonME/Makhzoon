@@ -21,17 +21,17 @@ const SelectTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       'flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-border bg-surface-card px-3 py-2 text-[14px] text-gray-900 shadow-xs',
-      'placeholder:text-gray-400',
-      'focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600',
+      'placeholder:text-gray-500',
+      'focus:outline-none focus:ring-[3px] focus:ring-primary-500/35 focus:border-primary-600',
       'hover:border-border-strong transition-colors',
-      'disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
+      'disabled:cursor-not-allowed disabled:bg-surface-page disabled:text-gray-700 disabled:border-border [&>span]:line-clamp-1',
       className
     )}
     {...props}
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" strokeWidth={1.75} />
+      <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0 ml-2" strokeWidth={1.75} />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
@@ -43,7 +43,7 @@ const SelectScrollUpButton = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.ScrollUpButton
     ref={ref}
-    className={cn('flex cursor-default items-center justify-center py-1 text-gray-400', className)}
+    className={cn('flex cursor-default items-center justify-center py-1 text-gray-500', className)}
     {...props}
   >
     <ChevronUp className="h-4 w-4" strokeWidth={1.75} />
@@ -57,7 +57,7 @@ const SelectScrollDownButton = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.ScrollDownButton
     ref={ref}
-    className={cn('flex cursor-default items-center justify-center py-1 text-gray-400', className)}
+    className={cn('flex cursor-default items-center justify-center py-1 text-gray-500', className)}
     {...props}
   >
     <ChevronDown className="h-4 w-4" strokeWidth={1.75} />
@@ -117,8 +117,8 @@ const SelectItem = React.forwardRef<
     ref={ref}
     className={cn(
       'relative flex w-full cursor-default select-none items-center rounded-md py-2 pl-2.5 pr-8 text-[13.5px] text-gray-700 outline-none',
-      'focus:bg-surface-page focus:text-gray-900',
-      'data-[state=checked]:bg-primary-50 data-[state=checked]:text-primary-700 data-[state=checked]:font-semibold',
+      'focus:bg-surface-page focus:text-gray-900 dark:focus:bg-gray-700/40',
+      'data-[state=checked]:bg-primary-50 data-[state=checked]:text-primary-700 dark:data-[state=checked]:bg-primary-500/20 dark:data-[state=checked]:text-primary-400 data-[state=checked]:font-semibold',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className
     )}

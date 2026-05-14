@@ -7,6 +7,7 @@ function toWarranty(id: string, data: FirebaseFirestore.DocumentData): Warranty 
     id,
     organizationId: data.organizationId,
     assetId: data.assetId,
+    inventoryItemId: data.inventoryItemId,
     vendor: data.vendor,
     startDate: data.startDate instanceof Timestamp ? data.startDate.toDate() : new Date(data.startDate),
     endDate: data.endDate instanceof Timestamp ? data.endDate.toDate() : new Date(data.endDate),
@@ -19,18 +20,34 @@ function toWarranty(id: string, data: FirebaseFirestore.DocumentData): Warranty 
   };
 }
 
-async function attachAssetNames(warranties: Warranty[]): Promise<Warranty[]> {
-  const uniqueAssetIds = Array.from(new Set(warranties.map((w) => w.assetId)));
-  if (uniqueAssetIds.length === 0) return warranties;
+async function attachAssetAndItemNames(warranties: Warranty[]): Promise<Warranty[]> {
+  const uniqueAssetIds = Array.from(new Set(warranties.map((w) => w.assetId).filter((id): id is string => !!id)));
+  const uniqueItemIds = Array.from(new Set(warranties.map((w) => w.inventoryItemId).filter((id): id is string => !!id)));
 
-  const refs = uniqueAssetIds.map((id) => adminDb.collection('assets').doc(id));
-  const assetDocs = await adminDb.getAll(...refs);
-  const nameMap = new Map<string, string>();
-  assetDocs.forEach((doc) => {
-    if (doc.exists) nameMap.set(doc.id, (doc.data() as { name: string }).name);
-  });
+  const assetNameMap = new Map<string, string>();
+  const itemNameMap = new Map<string, string>();
 
-  return warranties.map((w) => ({ ...w, assetName: nameMap.get(w.assetId) }));
+  if (uniqueAssetIds.length > 0) {
+    const refs = uniqueAssetIds.map((id) => adminDb.collection('assets').doc(id));
+    const assetDocs = await adminDb.getAll(...refs);
+    assetDocs.forEach((doc) => {
+      if (doc.exists) assetNameMap.set(doc.id, (doc.data() as { name: string }).name);
+    });
+  }
+
+  if (uniqueItemIds.length > 0) {
+    const refs = uniqueItemIds.map((id) => adminDb.collection('inventoryItems').doc(id));
+    const itemDocs = await adminDb.getAll(...refs);
+    itemDocs.forEach((doc) => {
+      if (doc.exists) itemNameMap.set(doc.id, (doc.data() as { name: string }).name);
+    });
+  }
+
+  return warranties.map((w) => ({
+    ...w,
+    assetName: w.assetId ? assetNameMap.get(w.assetId) : undefined,
+    inventoryItemName: w.inventoryItemId ? itemNameMap.get(w.inventoryItemId) : undefined,
+  }));
 }
 
 type SortField = 'vendor' | 'startDate' | 'endDate' | 'assetId' | 'createdAt';
@@ -40,6 +57,7 @@ export async function getWarranties(
   opts?: {
     status?: string;
     assetId?: string;
+    inventoryItemId?: string;
     page?: number;
     pageSize?: number;
     sortBy?: SortField;
@@ -55,6 +73,7 @@ export async function getWarranties(
     .where('organizationId', '==', orgId);
 
   if (opts?.assetId) q = q.where('assetId', '==', opts.assetId) as typeof q;
+  if (opts?.inventoryItemId) q = q.where('inventoryItemId', '==', opts.inventoryItemId) as typeof q;
 
   const snap = await q.get();
   let warranties = snap.docs.map((d) => toWarranty(d.id, d.data()));
@@ -68,7 +87,7 @@ export async function getWarranties(
     });
   }
 
-  warranties = await attachAssetNames(warranties);
+  warranties = await attachAssetAndItemNames(warranties);
 
   const total = warranties.length;
 
@@ -134,5 +153,5 @@ export async function getExpiringWarranties(orgId: string, days = 30): Promise<W
     .orderBy('endDate', 'asc')
     .get();
   const warranties = snap.docs.map((d) => toWarranty(d.id, d.data()));
-  return attachAssetNames(warranties);
+  return attachAssetAndItemNames(warranties);
 }

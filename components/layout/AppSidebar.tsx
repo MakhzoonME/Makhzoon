@@ -124,8 +124,8 @@ function ChevronDownSVG() {
 
 const NAV_ICONS: Record<string, React.FC> = {
   '/dashboard':    DashboardSVG,
-  '/assets':       AssetsSVG,
-  '/inventory':    InventorySVG,
+  '/usool':        AssetsSVG,
+  '/raseed':       InventorySVG,
   '/warranties':   WarrantySVG,
   '/requests':     RequestsSVG,
   '/reports':      ReportsSVG,
@@ -376,7 +376,7 @@ export function AppSidebar() {
                       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                     />
                     <span
-                      className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')}
+                      className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r', isRtl ? 'left-0 rounded-r-none rounded-l' : 'left-0')}
                       style={{ background: moduleColor ?? 'var(--primary-600)' }}
                     />
                   </>

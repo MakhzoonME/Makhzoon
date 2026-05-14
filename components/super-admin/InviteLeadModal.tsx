@@ -187,7 +187,7 @@ export function InviteLeadModal({ open, onOpenChange, leadEmail, leadName }: Inv
               <input
                 readOnly
                 value={result.acceptUrl}
-                className="w-full text-xs font-mono bg-surface-page border border-border rounded px-3 py-2 text-gray-700 dark:text-gray-300 truncate focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full text-xs font-mono bg-surface-page border border-border rounded px-3 py-2 text-gray-700 truncate focus:outline-none focus:ring-2 focus:ring-primary-500"
                 onClick={(e) => (e.target as HTMLInputElement).select()}
               />
               <p className="text-xs text-gray-400 mt-1.5">
@@ -205,7 +205,7 @@ export function InviteLeadModal({ open, onOpenChange, leadEmail, leadName }: Inv
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-6 pt-4 pb-2">
               <div className="rounded-lg border border-border bg-surface-page p-3 mb-2">
                 <p className="text-xs text-gray-500 mb-1">Inviting</p>
-                <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{leadEmail}</p>
+                <p className="font-medium text-sm text-gray-900">{leadEmail}</p>
                 {leadName && <p className="text-xs text-gray-400 mt-0.5">{leadName}</p>}
               </div>
 

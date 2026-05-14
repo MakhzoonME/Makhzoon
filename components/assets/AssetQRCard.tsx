@@ -38,7 +38,7 @@ export function AssetQRCard({ assetId, assetName, orgSlug, locale }: { assetId: 
     queryKey: ['asset-qr', assetId, orgSlug, locale],
     queryFn: async () => {
       const origin = window.location.origin;
-      const assetPageUrl = `${origin}/${locale}/${orgSlug}/assets/${assetId}`;
+      const assetPageUrl = `${origin}/${locale}/${orgSlug}/usool/${assetId}`;
       const res = await fetch(`/api/assets/${assetId}/qr?url=${encodeURIComponent(assetPageUrl)}`);
       if (!res.ok) throw new Error('Failed to generate QR');
       return res.json();

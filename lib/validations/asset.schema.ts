@@ -10,7 +10,6 @@ export const assetSchema = z.object({
   assignedTo: z.string().optional(),
   location: z.string().optional(),
   notes: z.string().optional(),
-  receiptUrl: z.string().optional(),
 });
 
 export type AssetFormData = z.infer<typeof assetSchema>;

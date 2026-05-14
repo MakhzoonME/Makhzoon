@@ -1,4 +1,5 @@
 'use client';
+import { useEffect, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
@@ -14,7 +15,12 @@ interface FormDrawerProps {
 }
 
 export function FormDrawer({ open, onOpenChange, onCloseAttempt, title, description, children, width = 'lg' }: FormDrawerProps) {
+  const [isRtl, setIsRtl] = useState(false);
   const widthClass = { md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl' }[width];
+
+  useEffect(() => {
+    setIsRtl(document.documentElement.dir === 'rtl');
+  }, []);
 
   function handleOpenChange(next: boolean) {
     if (!next && onCloseAttempt) {
@@ -33,7 +39,9 @@ export function FormDrawer({ open, onOpenChange, onCloseAttempt, title, descript
             'fixed end-0 top-0 bottom-0 z-50 bg-surface-card border-s border-border shadow-xl flex flex-col w-full',
             widthClass,
             'data-[state=open]:animate-in data-[state=closed]:animate-out',
-            'data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right',
+            isRtl
+              ? 'data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left'
+              : 'data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right',
             'duration-300',
           )}
           aria-describedby={description ? 'form-drawer-desc' : undefined}

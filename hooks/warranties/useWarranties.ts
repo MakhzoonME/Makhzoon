@@ -13,6 +13,7 @@ interface WarrantiesResponse {
 export function useWarranties(params?: {
   status?: string;
   assetId?: string;
+  inventoryItemId?: string;
   page?: number;
   pageSize?: number;
   sortBy?: string;
@@ -21,6 +22,7 @@ export function useWarranties(params?: {
   const query = new URLSearchParams();
   if (params?.status) query.set('status', params.status);
   if (params?.assetId) query.set('assetId', params.assetId);
+  if (params?.inventoryItemId) query.set('inventoryItemId', params.inventoryItemId);
   if (params?.page) query.set('page', String(params.page));
   if (params?.pageSize) query.set('pageSize', String(params.pageSize));
   if (params?.sortBy) query.set('sortBy', params.sortBy);

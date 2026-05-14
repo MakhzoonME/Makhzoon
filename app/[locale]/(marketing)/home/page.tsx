@@ -1,8 +1,11 @@
 'use client';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { CTABand } from '@/components/marketing/CTABand';
 import { DashboardMock } from '@/components/marketing/DashboardMock';
 import { CheckCircle2, ChevronRight } from 'lucide-react';
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.makhzoon.me';
 
 const MODULES = [
   {
@@ -80,6 +83,8 @@ function initials(name: string) {
 }
 
 export default function HomePage() {
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? 'en';
   return (
     <>
       {/* ── Hero ──────────────────────────────────────────────────────── */}
@@ -115,7 +120,7 @@ export default function HomePage() {
               Makhzoon is the Business OS for Arab organizations. Assets, inventory, sales, and finance — five modules that work together so your team doesn&apos;t have to.
             </p>
             <div className="inline-flex gap-3 mb-3">
-              <Link href="/login" className="inline-flex items-center justify-center gap-2 px-6 h-12 rounded-xl font-semibold text-white no-underline transition-opacity duration-150 hover:opacity-90" style={{ background: 'var(--primary-600)', textDecoration: 'none', fontSize: 16 }}>
+              <Link href={`${APP_URL}/${locale}/login`} className="inline-flex items-center justify-center gap-2 px-6 h-12 rounded-xl font-semibold text-white no-underline transition-opacity duration-150 hover:opacity-90" style={{ background: 'var(--primary-600)', textDecoration: 'none', fontSize: 16 }}>
                 Start free trial
               </Link>
               <Link href="/contact" className="inline-flex items-center gap-1.5 px-6 h-12 rounded-xl font-semibold no-underline border transition-colors duration-150 hover:bg-surface-page" style={{ color: 'var(--gray-700)', borderColor: 'var(--border-default)', textDecoration: 'none', fontSize: 16, background: '#fff' }}>

@@ -18,13 +18,7 @@ const nextConfig = {
     CRON_SECRET: process.env.CRON_SECRET,
   },
   async redirects() {
-    return [
-      {
-        source: '/favicon.ico',
-        destination: '/icon.svg?v=2',
-        permanent: false,
-      },
-    ];
+    return [];
   },
   async headers() {
     const isDev = process.env.NODE_ENV !== 'production';

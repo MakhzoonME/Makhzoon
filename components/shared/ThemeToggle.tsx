@@ -49,31 +49,39 @@ export function ThemeToggle({ variant = 'ghost-light', className }: Props) {
     'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
     variant === 'ghost-dark'
       ? 'text-blue-300 hover:text-blue-100 hover:bg-blue-900/50'
-      : 'text-gray-500 hover:text-gray-900 hover:bg-surface-page dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-gray-700/60',
+      : 'text-gray-500 hover:text-gray-900 hover:bg-surface-page dark:hover:bg-gray-700/40',
     className,
   );
+
+  const labels: Record<Theme, string> = {
+    light:  t('theme.light'),
+    dark:   t('theme.dark'),
+    system: t('theme.system'),
+  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button type="button" className={btnClass} aria-label={t('theme.label')}>
+        <button
+          type="button"
+          className={btnClass}
+          aria-label={`${t('theme.label')} — ${labels[theme]}`}
+          aria-haspopup="menu"
+        >
           <Icon />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-36">
+      <DropdownMenuContent align="end" className="w-36" role="menu" aria-label={t('theme.label')}>
         {(['light', 'dark', 'system'] as Theme[]).map((opt) => {
           const OptionIcon = THEME_ICONS[opt];
-          const labels: Record<Theme, string> = {
-            light:  t('theme.light'),
-            dark:   t('theme.dark'),
-            system: t('theme.system'),
-          };
           return (
             <DropdownMenuItem
               key={opt}
               onClick={() => setTheme(opt)}
+              role="menuitemradio"
+              aria-checked={theme === opt}
               className={cn(
-                'gap-2 cursor-pointer dark:text-gray-200 dark:focus:bg-gray-700',
+                'gap-2 cursor-pointer',
                 theme === opt && 'font-semibold',
               )}
             >

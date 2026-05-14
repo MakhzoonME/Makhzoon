@@ -13,13 +13,13 @@ import type { TenantContext } from '@/lib/platform/tenancy/types';
 import { checkResourceLimit } from '@/lib/platform/limits/check-limit';
 
 export interface CreateWarrantyInput {
-  assetId: string;
+  assetId?: string;
+  inventoryItemId?: string;
   vendor: string;
   startDate: Date;
   endDate: Date;
   reminder?: boolean;
   notes?: string;
-  receiptUrl?: string;
 }
 
 export interface UpdateWarrantyInput {
@@ -28,7 +28,6 @@ export interface UpdateWarrantyInput {
   endDate?: Date;
   reminder?: boolean;
   notes?: string;
-  receiptUrl?: string;
   updatedBy?: string;
 }
 

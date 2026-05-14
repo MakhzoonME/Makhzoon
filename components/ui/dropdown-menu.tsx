@@ -24,7 +24,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      'flex cursor-default select-none items-center gap-2 rounded-md px-2.5 py-2 text-[13.5px] text-gray-700 dark:text-gray-200 outline-none focus:bg-surface-page focus:text-gray-900 dark:focus:bg-gray-700/60 dark:focus:text-gray-100 data-[state=open]:bg-surface-page',
+      'flex cursor-default select-none items-center gap-2 rounded-md px-2.5 py-2 text-[13.5px] text-gray-700 outline-none focus:bg-surface-page focus:text-gray-900 dark:focus:bg-gray-700/40 data-[state=open]:bg-surface-page',
       inset && 'pl-8',
       className
     )}
@@ -42,7 +42,7 @@ const DropdownMenuSubContent = React.forwardRef<
   <DropdownMenuPrimitive.SubContent
     ref={ref}
     className={cn(
-      'z-50 min-w-[10rem] overflow-hidden rounded-lg border border-border bg-surface-card p-1 text-gray-900 dark:text-gray-100 shadow-md',
+      'z-50 min-w-[10rem] overflow-hidden rounded-lg border border-border bg-surface-card p-1 text-gray-900 shadow-md',
       'data-[state=open]:animate-in data-[state=closed]:animate-out',
       'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
       'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
@@ -64,7 +64,7 @@ const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        'z-50 min-w-[10rem] overflow-hidden rounded-lg border border-border bg-surface-card p-1 text-gray-900 dark:text-gray-100 shadow-md',
+        'z-50 min-w-[10rem] overflow-hidden rounded-lg border border-border bg-surface-card p-1 text-gray-900 shadow-md',
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
         'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
@@ -85,8 +85,8 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex cursor-default select-none items-center gap-2.5 rounded-md px-2.5 py-2 text-[13.5px] text-gray-700 dark:text-gray-200 outline-none transition-colors',
-      'focus:bg-surface-page focus:text-gray-900 dark:focus:bg-gray-700/60 dark:focus:text-gray-100',
+      'relative flex cursor-default select-none items-center gap-2.5 rounded-md px-2.5 py-2 text-[13.5px] text-gray-700 outline-none transition-colors',
+      'focus:bg-surface-page focus:text-gray-900 dark:focus:bg-gray-700/40',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       inset && 'pl-8',
       className
@@ -103,7 +103,7 @@ const DropdownMenuLabel = React.forwardRef<
   <DropdownMenuPrimitive.Label
     ref={ref}
     className={cn(
-      'px-2.5 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-[0.08em]',
+      'px-2.5 py-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-[0.08em]',
       inset && 'pl-8',
       className
     )}
@@ -127,7 +127,7 @@ DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
 const DropdownMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => (
   <span
     className={cn(
-      'ms-auto text-[11px] text-gray-400 dark:text-gray-500 font-mono bg-surface-page px-1.5 py-0.5 rounded tracking-normal',
+      'ms-auto text-[11px] text-gray-500 font-mono bg-surface-page px-1.5 py-0.5 rounded tracking-normal',
       className
     )}
     {...props}

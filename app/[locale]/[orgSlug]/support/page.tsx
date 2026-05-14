@@ -18,7 +18,7 @@ import { useT } from '@/hooks/ui';
 import { Plus } from 'lucide-react';
 
 export default function SupportPage() {
-  const { t } = useT();
+  const { t, locale } = useT();
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const [showNew, setShowNew] = useState(false);
@@ -57,7 +57,7 @@ export default function SupportPage() {
     {
       key: 'actions', header: '',
       render: (ticket) => (
-        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); router.push(`/${orgSlug}/support/${ticket.id}`); }}>
+        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); router.push(`/${locale}/${orgSlug}/support/${ticket.id}`); }}>
           {t('support.view')}
         </Button>
       ),
@@ -82,7 +82,7 @@ export default function SupportPage() {
           isLoading={isLoading}
           emptyMessage={t('support.noTickets')}
           keyExtractor={(ticket) => ticket.id}
-          onRowClick={(ticket) => router.push(`/${orgSlug}/support/${ticket.id}`)}
+          onRowClick={(ticket) => router.push(`/${locale}/${orgSlug}/support/${ticket.id}`)}
           pagination={{
             page,
             pageSize,

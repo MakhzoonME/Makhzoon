@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import { useT } from '@/hooks/ui';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { EmptyState } from './EmptyState';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
@@ -43,6 +44,7 @@ export function DataTable<T>({
   pagination,
   keyExtractor,
 }: DataTableProps<T>) {
+  const { t } = useT();
   if (isLoading) return <LoadingSkeleton rows={5} columns={columns.length} />;
 
   function handleSort(col: ColumnDef<T>) {
@@ -111,7 +113,7 @@ export function DataTable<T>({
               data.map((row, i) => (
                 <tr
                   key={keyExtractor ? keyExtractor(row) : i}
-                  className={`border-b border-border hover:bg-surface-page transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+                  className={`border-b border-border hover:bg-gray-100 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
                   onClick={() => onRowClick?.(row)}
                 >
                   {columns.map((col) => {
@@ -143,11 +145,11 @@ export function DataTable<T>({
         <div className="flex items-center justify-between px-4 py-3 border-t border-border mt-2">
           <div className="flex items-center gap-4">
             <p className="text-[12px] text-gray-500">
-              Showing {(pagination.page - 1) * pagination.pageSize + 1}–{Math.min(pagination.page * pagination.pageSize, pagination.total)} of {pagination.total}
+              {t('pagination.showing')} {(pagination.page - 1) * pagination.pageSize + 1}–{Math.min(pagination.page * pagination.pageSize, pagination.total)} {t('pagination.of')} {pagination.total}
             </p>
             {pagination.onPageSizeChange && (
               <div className="flex items-center gap-1">
-                <span className="text-[12px] text-gray-500">Per page:</span>
+                <span className="text-[12px] text-gray-500">{t('pagination.perPage')}:</span>
                 <select
                   value={pagination.pageSize}
                   onChange={(e) => pagination.onPageSizeChange?.(parseInt(e.target.value, 10))}
@@ -166,14 +168,14 @@ export function DataTable<T>({
               disabled={pagination.page <= 1}
               onClick={() => pagination.onPageChange(1)}
             >
-              First
+              {t('pagination.first')}
             </button>
             <button
               className="px-2.5 py-1 text-[12px] border border-border rounded-md hover:bg-surface-page text-gray-700 disabled:opacity-40 transition-colors"
               disabled={pagination.page <= 1}
               onClick={() => pagination.onPageChange(pagination.page - 1)}
             >
-              Prev
+              {t('pagination.prev')}
             </button>
             {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
               let pageNum: number;
@@ -189,10 +191,12 @@ export function DataTable<T>({
               return (
                 <button
                   key={pageNum}
+                  aria-current={pagination.page === pageNum ? 'page' : undefined}
+                  aria-label={`Page ${pageNum}${pagination.page === pageNum ? ' (current)' : ''}`}
                   className={`px-2.5 py-1 text-[12px] border rounded-md transition-colors ${
                     pagination.page === pageNum
-                      ? 'bg-primary-600 text-white border-primary-600'
-                      : 'border-border hover:bg-surface-page text-gray-700'
+                      ? 'bg-primary-600 text-white border-primary-600 font-semibold shadow-sm'
+                      : 'border-border hover:bg-gray-100 text-gray-700'
                   }`}
                   onClick={() => pagination.onPageChange(pageNum)}
                 >
@@ -205,14 +209,14 @@ export function DataTable<T>({
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => pagination.onPageChange(pagination.page + 1)}
             >
-              Next
+              {t('pagination.next')}
             </button>
             <button
               className="px-2.5 py-1 text-[12px] border border-border rounded-md hover:bg-surface-page text-gray-700 disabled:opacity-40 transition-colors"
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => pagination.onPageChange(pagination.totalPages)}
             >
-              Last
+              {t('pagination.last')}
             </button>
           </div>
         </div>

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useT } from '@/hooks/ui';
 import { Button } from '@/components/ui/button';
 
 function DownloadSVG() {
@@ -17,8 +18,10 @@ interface ExportButtonProps {
   label?: string;
 }
 
-export function ExportButton({ exportUrl, filename = 'export.csv', label = 'Export CSV' }: ExportButtonProps) {
+export function ExportButton({ exportUrl, filename = 'export.csv', label }: ExportButtonProps) {
   const [loading, setLoading] = useState(false);
+  const { t } = useT();
+  const buttonLabel = label || t('common.exportCsv');
 
   async function handleExport() {
     setLoading(true);
@@ -40,7 +43,7 @@ export function ExportButton({ exportUrl, filename = 'export.csv', label = 'Expo
   return (
     <Button variant="outline" size="sm" onClick={handleExport} disabled={loading}>
       <DownloadSVG />
-      {loading ? 'Preparing...' : label}
+      {loading ? t('common.preparing') : buttonLabel}
     </Button>
   );
 }

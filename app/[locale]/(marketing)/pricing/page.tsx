@@ -1,4 +1,5 @@
 'use client';
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
 import { CTABand } from '@/components/marketing/CTABand';
@@ -98,7 +99,10 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   );
 }
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.makhzoon.me';
 export default function PricingPage() {
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? 'en';
   const [annual, setAnnual] = useState(true);
 
   return (
@@ -178,7 +182,7 @@ export default function PricingPage() {
                   <div style={{ fontSize: 12, color: 'var(--gray-500)', fontFamily: 'monospace', marginBottom: 22, marginTop: price === null ? 8 : 0 }}>{cap}</div>
 
                   <Link
-                    href="/login"
+                    href={`${APP_URL}/${locale}/login`}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: 44,
                       borderRadius: 10, fontWeight: 600, fontSize: 15, textDecoration: 'none', marginBottom: 24,

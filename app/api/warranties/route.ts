@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getAssetById } from '@/lib/db/assets';
+import { getInventoryItemById } from '@/lib/db/inventory';
 import { warrantySchema } from '@/lib/validations/warranty.schema';
 import * as warrantiesService from '@/lib/modules/warranties/services/warranties.service';
 
@@ -17,6 +18,7 @@ export async function GET(req: NextRequest) {
     }
 
     const assetId = searchParams.get('assetId') ?? undefined;
+    const inventoryItemId = searchParams.get('inventoryItemId') ?? undefined;
     const status = searchParams.get('status') ?? undefined;
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined;
     const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined;
@@ -24,7 +26,7 @@ export async function GET(req: NextRequest) {
     const sortDir = searchParams.get('sortDir') === 'asc' ? 'asc' as const : 'desc' as const;
 
     const warranties = await warrantiesService.getAll(tenant, {
-      assetId, status, page, pageSize, sortBy: sortBy as never, sortDir,
+      assetId, inventoryItemId, status, page, pageSize, sortBy: sortBy as never, sortDir,
     });
     return NextResponse.json(warranties);
   } catch (err) {
@@ -44,18 +46,26 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
     const data = parsed.data;
-    const asset = await getAssetById(data.assetId);
-    if (!asset || asset.organizationId !== orgId) return NextResponse.json({ error: 'Asset not found' }, { status: 404 });
-    if (asset.status === 'Retired') return NextResponse.json({ error: 'Cannot attach warranty to a retired asset' }, { status: 422 });
+
+    if (data.assetId) {
+      const asset = await getAssetById(data.assetId);
+      if (!asset || asset.organizationId !== orgId) return NextResponse.json({ error: 'Asset not found' }, { status: 404 });
+      if (asset.status === 'Retired') return NextResponse.json({ error: 'Cannot attach warranty to a retired asset' }, { status: 422 });
+    }
+
+    if (data.inventoryItemId) {
+      const item = await getInventoryItemById(data.inventoryItemId);
+      if (!item || item.organizationId !== orgId) return NextResponse.json({ error: 'Inventory item not found' }, { status: 404 });
+    }
 
     const result = await warrantiesService.create(tenant, {
       assetId: data.assetId,
+      inventoryItemId: data.inventoryItemId,
       vendor: data.vendor,
       startDate: new Date(data.startDate),
       endDate: new Date(data.endDate),
       reminder: data.reminder,
       notes: data.notes || undefined,
-      receiptUrl: data.receiptUrl || undefined,
     });
 
     return NextResponse.json(result, { status: 201 });

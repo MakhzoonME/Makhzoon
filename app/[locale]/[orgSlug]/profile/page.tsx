@@ -1,6 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
-import Image from 'next/image';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
 import { useOrgSlug } from '@/hooks/ui';
@@ -10,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/ui';
 import { auth } from '@/lib/firebase/client';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { Camera, Save, KeyRound } from 'lucide-react';
+import { Save, KeyRound } from 'lucide-react';
 
 /** Display email/username without the synthetic @makhzoon.local suffix */
 function displayIdentity(email?: string | null): string {
@@ -40,41 +39,6 @@ export default function ProfilePage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
-
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const initials = (user?.displayName || displayIdentity(user?.email) || '?').slice(0, 2).toUpperCase();
-
-  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-    setUploading(true);
-    try {
-      const tokenRes = await fetch('/api/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'avatar', contentType: file.type, size: file.size }),
-      });
-      if (!tokenRes.ok) throw new Error();
-      const { uploadUrl, publicUrl } = await tokenRes.json();
-
-      await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
-
-      const res = await fetch('/api/profile', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ photoURL: publicUrl }),
-      });
-      if (!res.ok) throw new Error();
-      setUser({ ...user, photoURL: publicUrl } as typeof user & { photoURL: string });
-      toast.success('Avatar updated');
-    } catch {
-      toast.error('Failed to upload avatar');
-    } finally {
-      setUploading(false);
-    }
-  }
 
   async function handleSaveName(e: React.FormEvent) {
     e.preventDefault();
@@ -129,39 +93,11 @@ export default function ProfilePage() {
     }
   }
 
-  const photoURL = (user as (typeof user & { photoURL?: string }) | null)?.photoURL;
-
   return (
     <div>
       <PageHeader title="Profile" />
 
       <div className="max-w-2xl space-y-6">
-        <div className="bg-surface-card rounded-lg border border-border p-6">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Avatar</h2>
-          <div className="flex items-center gap-4">
-            <div
-              className="relative w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden cursor-pointer group"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {photoURL ? (
-                <Image src={photoURL} alt="Avatar" fill className="object-cover" />
-              ) : (
-                <span className="text-primary-700 font-semibold text-lg">{initials}</span>
-              )}
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Camera className="h-4 w-4" strokeWidth={1.75} />
-              </div>
-            </div>
-            <div>
-              <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                {uploading ? 'Uploading...' : 'Change Photo'}
-              </Button>
-              <p className="text-xs text-gray-400 mt-1">JPG, PNG up to 5MB</p>
-            </div>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-          </div>
-        </div>
-
         <div className="bg-surface-card rounded-lg border border-border p-6">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Account Info</h2>
           <div className="grid grid-cols-2 gap-4 mb-4">

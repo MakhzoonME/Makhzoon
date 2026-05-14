@@ -18,14 +18,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className={cn(
             'flex items-center gap-2 h-9 px-3 rounded-md border bg-surface-input shadow-xs transition-colors',
             error
-              ? 'border-red-600 bg-red-50 focus-within:ring-[3px] focus-within:ring-red-500/20'
-              : 'border-border hover:border-border-strong focus-within:border-primary-600 focus-within:ring-[3px] focus-within:ring-primary-500/20',
+              ? 'border-red-600 bg-red-50 focus-within:ring-[3px] focus-within:ring-red-500/35'
+              : 'border-border hover:border-border-strong focus-within:border-primary-600 focus-within:ring-[3px] focus-within:ring-primary-500/35',
           )}
         >
-          <span className="text-gray-400 flex-shrink-0 flex items-center">{prefixIcon}</span>
+          <span className="text-gray-500 flex-shrink-0 flex items-center">{prefixIcon}</span>
           <input
             type={type}
-            className="flex-1 min-w-0 bg-transparent border-none outline-none text-[14px] text-gray-900 placeholder:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50 h-full"
+            className="flex-1 min-w-0 bg-transparent border-none outline-none text-[14px] text-gray-900 placeholder:text-gray-500 disabled:cursor-not-allowed disabled:text-gray-700 h-full"
             ref={ref}
             {...props}
           />
@@ -37,12 +37,12 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         type={type}
         className={cn(
           'flex h-9 w-full rounded-md border bg-surface-input px-3 py-1 text-[14px] text-gray-900 shadow-xs',
-          'transition-colors placeholder:text-gray-400',
-          'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-500/20 focus-visible:border-primary-600',
+          'transition-colors placeholder:text-gray-500',
+          'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-500/35 focus-visible:border-primary-600',
           'hover:border-border-strong',
-          'disabled:cursor-not-allowed disabled:opacity-50',
+          'disabled:cursor-not-allowed disabled:bg-surface-page disabled:text-gray-700 disabled:border-border',
           error
-            ? 'border-red-500 bg-red-50 focus-visible:ring-red-500/20 focus-visible:border-red-500'
+            ? 'border-red-500 bg-red-50 focus-visible:ring-red-500/35 focus-visible:border-red-500'
             : 'border-border',
           className
         )}

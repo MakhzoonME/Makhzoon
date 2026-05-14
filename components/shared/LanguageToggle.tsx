@@ -38,7 +38,7 @@ export function LanguageToggle({ variant = 'ghost-light', className }: Props) {
     'flex items-center gap-1.5 h-8 px-2 rounded-md text-xs font-medium transition-colors',
     variant === 'ghost-dark'
       ? 'text-blue-300 hover:text-blue-100 hover:bg-blue-900/50'
-      : 'text-gray-500 hover:text-gray-900 hover:bg-surface-page dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-gray-700/60',
+      : 'text-gray-500 hover:text-gray-900 hover:bg-surface-page dark:hover:bg-gray-700/40',
     className,
   );
 
@@ -56,7 +56,7 @@ export function LanguageToggle({ variant = 'ghost-light', className }: Props) {
             key={loc}
             onClick={() => switchLocale(loc)}
             className={cn(
-              'gap-2 cursor-pointer dark:text-gray-200 dark:focus:bg-gray-700',
+              'gap-2 cursor-pointer',
               locale === loc && 'font-semibold',
             )}
           >

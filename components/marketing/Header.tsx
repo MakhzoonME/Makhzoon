@@ -129,7 +129,7 @@ export function MarketingHeader() {
           <button
             type="button"
             onClick={() => setMobileOpen(v => !v)}
-            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors dark:text-gray-300 dark:hover:text-gray-100 dark:hover:bg-gray-700/60"
             aria-label="Toggle menu"
             aria-expanded={mobileOpen}
           >

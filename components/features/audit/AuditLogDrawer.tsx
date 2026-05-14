@@ -57,7 +57,8 @@ export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
   function buildModuleHref(module: string, recordId: string): string {
     const base = orgSlug ? `/${locale}/${orgSlug}` : `/${locale}`;
     switch (module) {
-      case 'assets': return `${base}/assets/${recordId}`;
+      case 'assets': return `${base}/usool/${recordId}`;
+      case 'inventory': return `${base}/raseed/${recordId}`;
       case 'warranties': return `${base}/warranties`;
       case 'requests': return `${base}/requests`;
       case 'users': return `${base}/users`;

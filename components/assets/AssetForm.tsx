@@ -17,7 +17,6 @@ import { useState, useEffect } from 'react';
 import { useAssetCategories } from '@/hooks/assets';
 import { useOrgConfig } from '@/hooks/org';
 import { useAuthStore } from '@/store/auth.store';
-import { UploadCloud, X } from 'lucide-react';
 interface AssetFormProps {
   asset?: Asset;
   onSuccess?: () => void;
@@ -31,7 +30,6 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
   const { locale } = useT();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const [receiptUploading, setReceiptUploading] = useState(false);
   const { user } = useAuthStore();
   const { data: usedCategories = [] } = useAssetCategories();
   const { data: orgConfig } = useOrgConfig(user?.organizationId ?? undefined);
@@ -57,7 +55,6 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
       assignedTo: asset?.assignedTo ?? '',
       location: asset?.location ?? '',
       notes: asset?.notes ?? '',
-      receiptUrl: asset?.receiptUrl ?? '',
     },
   });
 
@@ -66,35 +63,6 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
 
   function handleCancel() {
     onCancel ? onCancel() : router.back();
-  }
-
-  async function handleReceiptUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
-    if (file.size > 3 * 1024 * 1024) { toast.error('Image must be smaller than 3 MB'); return; }
-    setReceiptUploading(true);
-    try {
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'receipt', contentType: file.type, size: file.size }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? 'Failed to get upload URL');
-      }
-      const { uploadUrl, publicUrl } = await res.json();
-      const put = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
-      if (!put.ok) throw new Error('Failed to upload image');
-      form.setValue('receiptUrl', publicUrl, { shouldDirty: true });
-      toast.success('Receipt uploaded');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setReceiptUploading(false);
-      e.target.value = '';
-    }
   }
 
   async function onSubmit(data: AssetFormData) {
@@ -127,7 +95,7 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
       if (onSuccess) {
         onSuccess();
       } else {
-        router.push(`/${locale}/${orgSlug}/assets/${asset?.id ?? result.id}`);
+        router.push(`/${locale}/${orgSlug}/usool/${asset?.id ?? result.id}`);
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong');
@@ -231,34 +199,6 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
           <FormItem>
             <FormLabel>Notes</FormLabel>
             <FormControl><Textarea {...field} rows={4} placeholder="Additional notes..." /></FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-
-        <FormField control={form.control} name="receiptUrl" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Receipt Image</FormLabel>
-            <FormControl>
-              <div className="space-y-3">
-                {field.value && (
-                  <div className="relative inline-block">
-                    <img src={field.value} alt="Receipt" className="rounded-md border border-border max-h-48 object-contain" />
-                    <button
-                      type="button"
-                      onClick={() => form.setValue('receiptUrl', '', { shouldDirty: true })}
-                      className="absolute -top-1.5 -right-1.5 bg-surface-card border border-border rounded-full p-0.5 shadow-sm hover:bg-surface-sidebar"
-                    >
-                      <X className="h-3 w-3 text-gray-500" />
-                    </button>
-                  </div>
-                )}
-                <label className={`flex items-center gap-2 cursor-pointer text-sm text-gray-600 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-600 rounded-md px-4 py-3 hover:border-gray-400 dark:hover:border-gray-500 transition-colors w-fit ${receiptUploading ? 'opacity-50 pointer-events-none' : ''}`}>
-                  <UploadCloud className="h-4 w-4 shrink-0" />
-                  <span>{receiptUploading ? 'Uploading…' : (field.value ? 'Replace image' : 'Upload receipt image')}</span>
-                  <input type="file" accept="image/*" className="sr-only" onChange={handleReceiptUpload} disabled={receiptUploading} />
-                </label>
-              </div>
-            </FormControl>
             <FormMessage />
           </FormItem>
         )} />

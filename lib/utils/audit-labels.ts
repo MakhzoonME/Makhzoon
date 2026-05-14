@@ -1,3 +1,34 @@
+import { formatDateTime } from '@/lib/utils/date';
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+
+/**
+ * Renders an audit log value as a human string. Handles Firestore Timestamps,
+ * Date objects, ISO date strings, primitives, and falls back to JSON.stringify
+ * for plain objects (avoids "[object Object]").
+ */
+export function formatAuditValue(v: unknown): string {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+  if (v instanceof Date) return formatDateTime(v);
+  if (typeof v === 'string') return ISO_DATE_RE.test(v) ? formatDateTime(new Date(v)) : v;
+  if (typeof v === 'number' || typeof v === 'bigint') return String(v);
+  if (typeof v === 'object') {
+    const obj = v as Record<string, unknown>;
+    if (typeof obj._seconds === 'number') {
+      return formatDateTime(new Date(obj._seconds * 1000 + (Number(obj._nanoseconds ?? 0) / 1e6)));
+    }
+    if (typeof obj.seconds === 'number') {
+      return formatDateTime(new Date(obj.seconds * 1000 + (Number(obj.nanoseconds ?? 0) / 1e6)));
+    }
+    if (typeof (obj as { toDate?: () => Date }).toDate === 'function') {
+      try { return formatDateTime((obj as { toDate: () => Date }).toDate()); } catch { /* fall through */ }
+    }
+    try { return JSON.stringify(v); } catch { return '[unserializable]'; }
+  }
+  return String(v);
+}
+
 const ACTION_LABELS: Record<string, string> = {
   ASSET_CREATED: 'Asset Created',
   ASSET_UPDATED: 'Asset Updated',

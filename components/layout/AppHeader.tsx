@@ -6,6 +6,7 @@ import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { CommandPalette, useCommandPalette } from '@/components/shared/CommandPalette';
 import { useUiStore } from '@/store/ui.store';
 import { useTransferStore } from '@/store/transfer.store';
@@ -103,7 +104,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
           type="button"
           onClick={() => setMobileMenuOpen(true)}
           aria-label="Open menu"
-          className="md:hidden p-1.5 -ml-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95 transition-all duration-150"
+          className="md:hidden p-1.5 -ml-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95 transition-all duration-150 dark:hover:bg-gray-700/40"
         >
           <BurgerSVG />
         </button>
@@ -116,7 +117,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
           </div>
           {orgName && (
             <>
-              <span className="text-gray-300 select-none">/</span>
+              <span className="text-gray-400 select-none">/</span>
               <span className="text-sm text-gray-600 truncate max-w-[160px]">{orgName}</span>
             </>
           )}
@@ -130,7 +131,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
           >
             <SearchSVG />
             <span className="flex-1 text-left">{t('common.search')}</span>
-            <kbd className="inline-flex h-5 items-center rounded border border-border bg-surface-card px-1.5 text-[10px] font-mono text-gray-400">{shortcutLabel}</kbd>
+            <kbd className="inline-flex h-5 items-center rounded border border-border bg-surface-card px-1.5 text-[10px] font-mono text-gray-500">{shortcutLabel}</kbd>
           </button>
         </div>
 
@@ -139,7 +140,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
           {/* Mobile search */}
           <button
             onClick={() => setPaletteOpen(true)}
-            className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors dark:hover:bg-gray-700/40"
             aria-label={t('common.search')}
           >
             <SearchSVG />
@@ -153,8 +154,17 @@ export function AppHeader({ orgName }: { orgName?: string }) {
 
           {/* User menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-gray-700 hover:text-gray-900 focus:outline-none px-1 py-1 rounded-md hover:bg-gray-100 transition-colors ml-1">
-              <span className="hidden sm:block max-w-[140px] truncate">{user?.displayName || user?.email}</span>
+            <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-gray-700 hover:text-gray-900 focus:outline-none px-1 py-1 rounded-md hover:bg-gray-100 transition-colors ml-1 dark:hover:bg-gray-700/40">
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="hidden sm:block max-w-[140px] truncate">{user?.displayName || user?.email}</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="font-normal text-xs">
+                    {user?.email}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <ChevronDownSVG />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -167,7 +177,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
                 {t('common.profile')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut} className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400 gap-2">
+              <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut} className="text-red-600 focus:text-red-600 dark:text-red-500 dark:focus:text-red-500 gap-2">
                 <LogOutSVG />
                 {isLoggingOut ? '…' : t('common.signOut')}
               </DropdownMenuItem>

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { formatActionLabel, formatKeyLabel } from '@/lib/utils/audit-labels';
+import { formatActionLabel, formatKeyLabel, formatAuditValue } from '@/lib/utils/audit-labels';
 
 function ChangesTable({ label, value }: { label: string; value: Record<string, unknown> }) {
   const entries = Object.entries(value).filter(([, v]) => v !== undefined && v !== null && v !== '');
@@ -24,9 +24,7 @@ function ChangesTable({ label, value }: { label: string; value: Record<string, u
             <span className="w-40 flex-shrink-0 px-3 py-2 text-gray-500 font-medium border-r border-border">
               {formatKeyLabel(k)}
             </span>
-            <span className="px-3 py-2 text-gray-800 break-all">
-              {typeof v === 'boolean' ? (v ? 'Yes' : 'No') : String(v ?? '')}
-            </span>
+            <span className="px-3 py-2 text-gray-800 break-all">{formatAuditValue(v)}</span>
           </div>
         ))}
       </div>

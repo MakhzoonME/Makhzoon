@@ -9,13 +9,13 @@ import { cn } from '@/lib/utils/cn';
    lg  → h=44px  px=18px  gap=10px  icon=18px  text-[15px]
 */
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium transition-[background-color,color,border-color,box-shadow,transform] duration-[120ms] ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-500/20 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100',
+  'inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium transition-[background-color,color,border-color,box-shadow,transform] duration-[120ms] ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-page disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100',
   {
     variants: {
       variant: {
-        default:     'bg-primary-600 text-white hover:bg-primary-700 shadow-xs',
-        destructive: 'bg-red-600 text-white hover:bg-red-700 shadow-xs',
-        outline:     'border border-border bg-surface-card text-gray-700 hover:bg-surface-page hover:border-border-strong shadow-xs',
+        default:     'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-sm shadow-xs',
+        destructive: 'bg-red-600 text-white hover:bg-red-700 hover:shadow-sm shadow-xs',
+        outline:     'border border-border bg-surface-card text-gray-700 hover:bg-surface-page hover:border-border-strong hover:shadow-sm shadow-xs',
         secondary:   'bg-surface-page text-gray-900 hover:bg-gray-200',
         ghost:       'text-gray-600 hover:bg-surface-page hover:text-gray-900',
         link:        'text-primary-600 underline-offset-4 hover:underline',

@@ -1,13 +1,21 @@
 import { z } from 'zod';
 
 export const warrantySchema = z.object({
-  assetId: z.string().min(1, 'Asset is required'),
+  assetId: z.string().optional(),
+  inventoryItemId: z.string().optional(),
   vendor: z.string().min(1, 'Vendor is required'),
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().min(1, 'End date is required'),
   reminder: z.boolean().default(true),
   notes: z.string().optional(),
-  receiptUrl: z.string().optional(),
+}).refine((data) => {
+  if (!data.assetId && !data.inventoryItemId) {
+    return false;
+  }
+  return true;
+}, {
+  message: 'Either Asset or Inventory Item is required',
+  path: ['assetId'],
 }).refine((data) => {
   if (data.startDate && data.endDate) {
     return new Date(data.endDate) >= new Date(data.startDate);

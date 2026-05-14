@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useOrgSlug } from '@/hooks/ui';
 import { useWarranties } from '@/hooks/warranties';
@@ -8,19 +8,12 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { FilterBar } from '@/components/shared/FilterBar';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { ExportButton } from '@/components/shared/ExportButton';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Warranty } from '@/types';
 import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
 import { useT } from '@/hooks/ui';
-import { FormDrawer } from '@/components/shared/FormDrawer';
-import { WarrantyForm } from '@/components/warranties/WarrantyForm';
-import { ConfirmDialog, SubscriptionGate } from '@/components/shared';
-import { toast } from '@/hooks/ui';
-import { useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { Plus, Pencil, Trash2, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
   const qs = new URLSearchParams();
@@ -29,31 +22,17 @@ function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
 }
 
 export default function WarrantiesPage() {
-  const { t } = useT();
+  const { t, locale } = useT();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const orgSlug = useOrgSlug();
-  const { user } = useAuthStore();
-  const qc = useQueryClient();
 
   const status = searchParams.get('status') ?? '';
   const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
   const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10;
   const sortBy = searchParams.get('sortBy') ?? 'createdAt';
   const sortDir = (searchParams.get('sortDir') === 'asc' ? 'asc' : searchParams.get('sortDir') === 'none' ? 'none' : 'desc') as 'asc' | 'desc' | 'none';
-
-  const [deleteTarget, setDeleteTarget] = useState<Warranty | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<Warranty | null>(null);
-  const [formDirty, setFormDirty] = useState(false);
-  const [showDiscardDrawer, setShowDiscardDrawer] = useState(false);
-
-  function closeDrawer() { setDrawerOpen(false); setEditTarget(null); setFormDirty(false); }
-  function handleDrawerCloseRequest() {
-    if (formDirty) { setShowDiscardDrawer(true); } else { closeDrawer(); }
-  }
 
   const { data: warrantiesData, isLoading } = useWarranties({
     status: status || undefined,
@@ -69,10 +48,8 @@ export default function WarrantiesPage() {
     router.replace(url, { scroll: false });
   }, [pathname, router]);
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
-
   const columns: ColumnDef<Warranty>[] = [
-    { key: 'assetId', header: t('col.asset'), sortable: true, render: (w) => <button className="text-primary-600 hover:underline" onClick={() => router.push(`/${orgSlug}/assets/${w.assetId}`)}>{w.assetName ?? w.assetId}</button> },
+    { key: 'assetId', header: t('col.asset'), sortable: true, render: (w) => <button className="text-primary-600 hover:underline" onClick={() => router.push(`/${locale}/${orgSlug}/usool/${w.assetId}`)}>{w.assetName ?? w.assetId}</button> },
     { key: 'vendor', header: t('col.vendor'), sortable: true, render: (w) => w.vendor },
     { key: 'startDate', header: t('warranties.startDate'), sortable: true, render: (w) => formatDate(w.startDate) },
     { key: 'endDate', header: t('warranties.endDate'), sortable: true, render: (w) => <span className={isExpired(w.endDate) ? 'text-red-600' : ''}>{formatDate(w.endDate)}</span> },
@@ -81,35 +58,10 @@ export default function WarrantiesPage() {
     {
       key: 'actions', header: t('col.actions'),
       render: (w) => (
-        <div className="flex gap-1">
-          {isAdmin ? (
-            <>
-              <SubscriptionGate>
-                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditTarget(w); setDrawerOpen(true); }}><Pencil className="h-3.5 w-3.5" strokeWidth={1.75} /></Button>
-              </SubscriptionGate>
-              <SubscriptionGate>
-                <Button size="sm" variant="ghost" className="text-red-500 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setDeleteTarget(w); }}><Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} /></Button>
-              </SubscriptionGate>
-            </>
-          ) : (
-            <Button size="sm" variant="ghost" onClick={() => router.push(`/${orgSlug}/assets/${w.assetId}`)}>{t('warranties.viewAsset')}</Button>
-          )}
-        </div>
+        <Button size="sm" variant="ghost" onClick={() => router.push(`/${locale}/${orgSlug}/usool/${w.assetId}`)}>{t('warranties.viewAsset')}</Button>
       )
     },
   ];
-
-  async function handleDelete() {
-    if (!deleteTarget) return;
-    setDeleting(true);
-    try {
-      await fetch(`/api/warranties/${deleteTarget.id}`, { method: 'DELETE' });
-      toast.success(t('warranties.warrantyDeleted'));
-      qc.invalidateQueries({ queryKey: ['warranties'] });
-      setDeleteTarget(null);
-    } catch { toast.error(t('warranties.warrantyDeleteFailed')); }
-    finally { setDeleting(false); }
-  }
 
   function syncAllToUrl(next: Partial<Record<'status' | 'page' | 'pageSize' | 'sortBy' | 'sortDir', string>>) {
     updateUrl({
@@ -134,11 +86,6 @@ export default function WarrantiesPage() {
     <div>
       <PageHeader
         title={t('nav.warranties')}
-        actions={isAdmin ? (
-          <SubscriptionGate>
-            <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}><Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ml-1">{t('warranties.addWarranty')}</span></Button>
-          </SubscriptionGate>
-        ) : undefined}
       />
       <FilterBar
         filters={
@@ -151,11 +98,6 @@ export default function WarrantiesPage() {
             </SelectContent>
           </Select>
         }
-        actions={isAdmin ? (
-          <SubscriptionGate>
-            <ExportButton exportUrl="/api/warranties/export" filename={`warranties-${format(new Date(), 'yyyy-MM-dd')}.csv`} />
-          </SubscriptionGate>
-        ) : undefined}
       />
       <div className="bg-surface-card rounded-lg border border-border">
         <DataTable
@@ -177,40 +119,6 @@ export default function WarrantiesPage() {
           } : undefined}
         />
       </div>
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
-        title={t('warranties.deleteWarranty')}
-        description={t('warranties.deleteWarrantyDesc').replace('{vendor}', deleteTarget?.vendor ?? '')}
-        confirmLabel={t('common.delete')}
-        onConfirm={handleDelete}
-        loading={deleting}
-      />
-
-      <FormDrawer
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-        onCloseAttempt={handleDrawerCloseRequest}
-        title={editTarget ? t('warranties.editWarranty') : t('warranties.addWarranty')}
-      >
-        <WarrantyForm
-          warranty={editTarget ?? undefined}
-          onSuccess={closeDrawer}
-          onCancel={handleDrawerCloseRequest}
-          onDirtyChange={setFormDirty}
-        />
-      </FormDrawer>
-
-      <ConfirmDialog
-        open={showDiscardDrawer}
-        onOpenChange={setShowDiscardDrawer}
-        title="Discard changes?"
-        description="You have unsaved changes. Are you sure you want to discard them?"
-        confirmLabel="Discard"
-        cancelLabel="Keep editing"
-        onConfirm={() => { setShowDiscardDrawer(false); closeDrawer(); }}
-        variant="destructive"
-      />
     </div>
   );
 }

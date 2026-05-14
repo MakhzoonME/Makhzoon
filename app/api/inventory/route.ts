@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
       category: searchParams.get('category') ?? undefined,
       stockStatus: searchParams.get('stockStatus') ?? undefined,
       search: searchParams.get('search') ?? undefined,
+      posEnabled: searchParams.get('posEnabled') === 'true' ? true : undefined,
       page: searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined,
       pageSize: searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined,
       sortBy: searchParams.get('sortBy') as never ?? undefined,
@@ -54,6 +55,10 @@ export async function POST(req: NextRequest) {
       supplier: data.supplier || undefined,
       unitCost: data.unitCost ? Number(data.unitCost) : undefined,
       notes: data.notes || undefined,
+      barcode: data.barcode ? data.barcode.trim() : null,
+      posEnabled: data.posEnabled ?? undefined,
+      posPrice: data.posPrice ? Number(data.posPrice) : null,
+      taxRateId: data.taxRateId || null,
     })
 
     return NextResponse.json(result, { status: 201 })

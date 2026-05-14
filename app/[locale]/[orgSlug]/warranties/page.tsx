@@ -52,8 +52,8 @@ export default function WarrantiesPage() {
     { key: 'assetId', header: t('col.asset'), sortable: true, render: (w) => <button className="text-primary-600 hover:underline" onClick={() => router.push(`/${locale}/${orgSlug}/usool/${w.assetId}`)}>{w.assetName ?? w.assetId}</button> },
     { key: 'vendor', header: t('col.vendor'), sortable: true, render: (w) => w.vendor },
     { key: 'startDate', header: t('warranties.startDate'), sortable: true, render: (w) => formatDate(w.startDate) },
-    { key: 'endDate', header: t('warranties.endDate'), sortable: true, render: (w) => <span className={isExpired(w.endDate) ? 'text-red-600' : ''}>{formatDate(w.endDate)}</span> },
-    { key: 'reminder', header: t('warranties.reminder'), render: (w) => w.reminder ? <span className="text-green-600"><Check className="h-4 w-4" strokeWidth={1.75} /></span> : <span className="text-gray-400">—</span> },
+    { key: 'endDate', header: t('warranties.endDate'), sortable: true, render: (w) => <span className={isExpired(w.endDate) ? 'text-red-600 dark:text-red-400' : ''}>{formatDate(w.endDate)}</span> },
+    { key: 'reminder', header: t('warranties.reminder'), render: (w) => w.reminder ? <span className="text-green-600 dark:text-green-400"><Check className="h-4 w-4" strokeWidth={1.75} /></span> : <span className="text-gray-400">—</span> },
     { key: 'status', header: t('col.status'), sortable: true, render: (w) => <StatusBadge status={getWarrantyStatus(w.endDate)} /> },
     {
       key: 'actions', header: t('col.actions'),

@@ -93,5 +93,52 @@ service cloud.firestore {
       allow read, write: if isOrgManager(orgId);
       allow read: if isStaff() && belongsToOrg(orgId);
     }
+
+    // Tax rates — read-only for staff (used by Raseed, Purchases, Haraka).
+    match /taxRates/{taxRateId} {
+      allow read, write: if isSuperAdmin();
+      allow read, write: if isOrgManager(resource.data.organizationId);
+      allow create: if isOrgManager(request.resource.data.organizationId);
+      allow read: if isStaff() && belongsToOrg(resource.data.organizationId);
+    }
+
+    // Purchases — stock-in records under Raseed.
+    match /purchases/{purchaseId} {
+      allow read, write: if isSuperAdmin();
+      allow read, write: if isOrgManager(resource.data.organizationId);
+      allow create: if isOrgManager(request.resource.data.organizationId);
+      allow read: if isStaff() && belongsToOrg(resource.data.organizationId);
+    }
+
+    // POS sessions — cashier opens/closes their own; managers see all in org.
+    match /posSessions/{sessionId} {
+      allow read, write: if isSuperAdmin();
+      allow read, write: if isOrgManager(resource.data.organizationId);
+      allow create: if belongsToOrg(request.resource.data.organizationId);
+      allow read, update: if isStaff() && belongsToOrg(resource.data.organizationId);
+    }
+
+    // POS transactions — append-only by cashier, read by managers + the cashier.
+    match /posTransactions/{txId} {
+      allow read, write: if isSuperAdmin();
+      allow read, write: if isOrgManager(resource.data.organizationId);
+      allow create: if belongsToOrg(request.resource.data.organizationId);
+      allow read: if isStaff() && belongsToOrg(resource.data.organizationId);
+    }
+
+    // POS customers — shared per-org address book.
+    match /posCustomers/{customerId} {
+      allow read, write: if isSuperAdmin();
+      allow read, write: if isOrgManager(resource.data.organizationId);
+      allow create: if belongsToOrg(request.resource.data.organizationId);
+      allow read, update: if isStaff() && belongsToOrg(resource.data.organizationId);
+    }
+
+    // Fawtara counters — per-org sequential invoice numbering. Admin SDK only in v1.
+    match /fawtaraCounters/{orgId} {
+      allow read: if isSuperAdmin();
+      allow read: if isOrgManager(orgId);
+      allow write: if false;
+    }
   }
 }

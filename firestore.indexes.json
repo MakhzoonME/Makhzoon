@@ -32,7 +32,19 @@
     { "collectionGroup": "inventoryItems", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "category", "order": "ASCENDING" }, { "fieldPath": "stockStatus", "order": "ASCENDING" }, { "fieldPath": "name", "order": "ASCENDING" }] },
     { "collectionGroup": "inventoryTransactions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "itemId", "order": "ASCENDING" }, { "fieldPath": "performedAt", "order": "DESCENDING" }] },
     { "collectionGroup": "inventoryAudits", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
-    { "collectionGroup": "inventoryAuditItems", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "auditId", "order": "ASCENDING" }, { "fieldPath": "assetName", "order": "ASCENDING" }] }
+    { "collectionGroup": "inventoryAuditItems", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "auditId", "order": "ASCENDING" }, { "fieldPath": "assetName", "order": "ASCENDING" }] },
+    { "collectionGroup": "inventoryItems", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "barcode", "order": "ASCENDING" }] },
+    { "collectionGroup": "inventoryItems", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "posEnabled", "order": "ASCENDING" }, { "fieldPath": "name", "order": "ASCENDING" }] },
+    { "collectionGroup": "taxRates", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "name", "order": "ASCENDING" }] },
+    { "collectionGroup": "taxRates", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "isDefault", "order": "ASCENDING" }] },
+    { "collectionGroup": "purchases", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "invoiceDate", "order": "DESCENDING" }] },
+    { "collectionGroup": "purchases", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "invoiceDate", "order": "DESCENDING" }] },
+    { "collectionGroup": "posSessions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "openedAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "posSessions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "cashierId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }] },
+    { "collectionGroup": "posTransactions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "posTransactions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "sessionId", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "posTransactions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "posCustomers", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "organizationId", "order": "ASCENDING" }, { "fieldPath": "name", "order": "ASCENDING" }] }
   ],
   "fieldOverrides": []
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
-import { adminDb } from '@/lib/firebase/admin';
+import { getOrganizationById } from '@/lib/db/organizations';
 
 export async function GET() {
   try {
@@ -12,12 +12,12 @@ export async function GET() {
     let orgSlug: string | null = null;
 
     if (user.organizationId) {
-      const [sub, orgDoc] = await Promise.all([
+      const [sub, org] = await Promise.all([
         getSubscriptionByOrg(user.organizationId),
-        adminDb.collection('organizations').doc(user.organizationId).get(),
+        getOrganizationById(user.organizationId),
       ]);
       if (sub?.features) features = sub.features as Record<string, boolean>;
-      if (orgDoc.exists) orgSlug = (orgDoc.data()?.subdomain as string) ?? null;
+      orgSlug = org?.subdomain ?? null;
     }
 
     return NextResponse.json(
@@ -29,7 +29,7 @@ export async function GET() {
         permissions: user.permissions ?? null,
         features,
       },
-      { headers: { 'Cache-Control': 'no-store' } }
+      { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

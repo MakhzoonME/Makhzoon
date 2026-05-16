@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+// NOTE: lib/db/password-reset-tokens is converted in its own Phase 3 slice;
+// signature (verifyPasswordResetToken(token) => uid|null) is preserved so this
+// route needs no further change.
 import { verifyPasswordResetToken } from '@/lib/db/password-reset-tokens';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { z } from 'zod';
@@ -47,8 +50,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid or expired reset token' }, { status: 400 });
     }
 
-    // Update password
-    await adminAuth.updateUser(uid, { password });
+    // Update password (Supabase Auth admin API)
+    const { error: pwErr } = await supabaseAdmin.auth.admin.updateUserById(
+      uid,
+      { password },
+    );
+    if (pwErr) {
+      return NextResponse.json(
+        { error: 'Failed to reset password' },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

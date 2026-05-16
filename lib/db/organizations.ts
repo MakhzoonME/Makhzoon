@@ -1,80 +1,134 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { Organization } from '@/types';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
-function toOrg(id: string, data: FirebaseFirestore.DocumentData): Organization {
+// Phase 3 conversion (canonical pattern): Firestore collection →
+// public.organizations. Public function signatures are preserved exactly so
+// callers (API routes, services) need no changes. Server reads use the
+// service-role client (RLS-bypass) — the direct equivalent of the previous
+// firebase-admin adminDb usage.
+
+type Row = Record<string, unknown>;
+
+function toOrg(r: Row): Organization {
   return {
-    id,
-    name: data.name,
-    subdomain: data.subdomain,
-    contactEmail: data.contactEmail,
-    description: data.description ?? null,
-    category: data.category ?? null,
-    packageDetails: data.packageDetails,
-    assignedMemberId: data.assignedMemberId ?? null,
-    createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
-    createdBy: data.createdBy,
-    updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
-    updatedBy: data.updatedBy,
+    id: r.id as string,
+    name: r.name as string,
+    subdomain: r.subdomain as string,
+    contactEmail: r.contact_email as string,
+    description: (r.description as string) ?? null,
+    category: (r.category as string) ?? null,
+    packageDetails: (r.package_details ?? {}) as Organization['packageDetails'],
+    assignedMemberId: (r.assigned_member_id as string) ?? null,
+    createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
+    createdBy: r.created_by as string,
+    updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
+    updatedBy: r.updated_by as string,
   };
 }
 
 export async function getOrganizations(): Promise<Organization[]> {
-  const snap = await adminDb.collection('organizations').orderBy('createdAt', 'desc').get();
-  return snap.docs.map((d) => toOrg(d.id, d.data()));
+  const { data, error } = await supabaseAdmin
+    .from('organizations')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map(toOrg);
 }
 
-export async function getOrganizationById(id: string): Promise<Organization | null> {
-  const doc = await adminDb.collection('organizations').doc(id).get();
-  if (!doc.exists) return null;
-  return toOrg(doc.id, doc.data()!);
+export async function getOrganizationById(
+  id: string,
+): Promise<Organization | null> {
+  const { data } = await supabaseAdmin
+    .from('organizations')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  return data ? toOrg(data) : null;
 }
 
-export async function createOrganization(data: Omit<Organization, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-  const ref = await adminDb.collection('organizations').add({
-    ...data,
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  });
-  return ref.id;
+export async function createOrganization(
+  data: Omit<Organization, 'id' | 'createdAt' | 'updatedAt'>,
+): Promise<string> {
+  const { data: row, error } = await supabaseAdmin
+    .from('organizations')
+    .insert({
+      name: data.name,
+      subdomain: data.subdomain,
+      contact_email: data.contactEmail,
+      description: data.description ?? null,
+      category: data.category ?? null,
+      package_details: data.packageDetails ?? {},
+      assigned_member_id: data.assignedMemberId ?? null,
+      created_by: data.createdBy,
+      updated_by: data.updatedBy,
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return row.id as string;
 }
 
-export async function updateOrganization(id: string, data: Partial<Organization>): Promise<void> {
-  await adminDb.collection('organizations').doc(id).update({
-    ...data,
-    updatedAt: FieldValue.serverTimestamp(),
-  });
+export async function updateOrganization(
+  id: string,
+  data: Partial<Organization>,
+): Promise<void> {
+  const patch: Row = {};
+  if (data.name !== undefined) patch.name = data.name;
+  if (data.subdomain !== undefined) patch.subdomain = data.subdomain;
+  if (data.contactEmail !== undefined) patch.contact_email = data.contactEmail;
+  if (data.description !== undefined) patch.description = data.description;
+  if (data.category !== undefined) patch.category = data.category;
+  if (data.packageDetails !== undefined)
+    patch.package_details = data.packageDetails;
+  if (data.assignedMemberId !== undefined)
+    patch.assigned_member_id = data.assignedMemberId;
+  if (data.updatedBy !== undefined) patch.updated_by = data.updatedBy;
+  const { error } = await supabaseAdmin
+    .from('organizations')
+    .update(patch)
+    .eq('id', id);
+  if (error) throw error;
 }
 
 export async function subdomainExists(subdomain: string): Promise<boolean> {
-  const snap = await adminDb.collection('organizations').where('subdomain', '==', subdomain).limit(1).get();
-  return !snap.empty;
+  const { data } = await supabaseAdmin
+    .from('organizations')
+    .select('id')
+    .eq('subdomain', subdomain)
+    .limit(1)
+    .maybeSingle();
+  return !!data;
 }
 
-export async function getOrganizationBySubdomain(subdomain: string): Promise<Organization | null> {
-  const snap = await adminDb.collection('organizations').where('subdomain', '==', subdomain).limit(1).get();
-  if (snap.empty) return null;
-  return toOrg(snap.docs[0].id, snap.docs[0].data());
+export async function getOrganizationBySubdomain(
+  subdomain: string,
+): Promise<Organization | null> {
+  const { data } = await supabaseAdmin
+    .from('organizations')
+    .select('*')
+    .eq('subdomain', subdomain)
+    .limit(1)
+    .maybeSingle();
+  return data ? toOrg(data) : null;
 }
 
 export async function getOrganizationsWithSearch(filters?: {
   search?: string;
   category?: string;
 }): Promise<Organization[]> {
-  // Firestore can't do case-insensitive contains-search natively.
-  // Strategy: server-side filter `category` (small set, exact match), then in-memory
-  // substring filter on `search`. Total org count is bounded enough for this to be fine.
-  let q: FirebaseFirestore.Query = adminDb.collection('organizations').orderBy('createdAt', 'desc');
-  if (filters?.category) q = q.where('category', '==', filters.category);
-  const snap = await q.get();
-  let rows = snap.docs.map((d) => toOrg(d.id, d.data()));
-  const term = filters?.search?.trim().toLowerCase();
+  let q = supabaseAdmin
+    .from('organizations')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (filters?.category) q = q.eq('category', filters.category);
+  const term = filters?.search?.trim();
   if (term) {
-    rows = rows.filter((o) =>
-      o.name.toLowerCase().includes(term) ||
-      o.subdomain.toLowerCase().includes(term) ||
-      o.contactEmail.toLowerCase().includes(term),
+    const like = `%${term}%`;
+    q = q.or(
+      `name.ilike.${like},subdomain.ilike.${like},contact_email.ilike.${like}`,
     );
   }
-  return rows;
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []).map(toOrg);
 }

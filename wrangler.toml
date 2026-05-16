@@ -1,0 +1,36 @@
+# Makhzoon — Cloudflare Workers deploy via @opennextjs/cloudflare.
+# Replaces AWS Amplify (amplify.yml removed) and Vercel (vercel.json removed;
+# crons moved to workers/cron). Build/deploy: `npm run cf:deploy`.
+#
+# Branch → environment mapping (Cloudflare has no Pages-style auto preview for
+# Workers; deploy each env explicitly):
+#   DevBranch  → `wrangler deploy --env dev`     (dev.makhzoon.me)
+#   STGBranch  → `wrangler deploy --env staging` (stage.makhzoon.me)
+#   main       → `wrangler deploy --env production` (app.makhzoon.me)
+#
+# Env vars/secrets are NOT stored here. Set per environment in the Cloudflare
+# dashboard (Workers → Settings → Variables) or via `wrangler secret put`:
+#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
+#   SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, RESEND_FROM_EMAIL,
+#   CRON_SECRET, NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_ENV
+
+name = "makhzoon"
+main = ".open-next/worker.js"
+compatibility_date = "2025-05-05"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[observability]
+enabled = true
+
+[env.dev]
+name = "makhzoon-dev"
+
+[env.staging]
+name = "makhzoon-staging"
+
+[env.production]
+name = "makhzoon-prod"

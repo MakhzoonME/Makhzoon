@@ -38,5 +38,109 @@
       "createdAt": "2026-05-15T12:00:00Z",
       "completedAt": null
     }
+    {
+      "id": "MZ-004",
+      "title": "DevOps verification — Supabase migration + Cloudflare Pages setup",
+      "description": "Verify all config files for the Supabase + Cloudflare migration: wrangler.toml, open-next.config.ts, next.config.mjs, proxy.ts, supabase/migrations/, env files, build pipeline, supabase client config. Report what's correct and what needs fixing.",
+      "status": "in-progress",
+      "assignee": "devops",
+      "requestedBy": "user",
+      "files": [
+        "wrangler.toml",
+        "open-next.config.ts",
+        "next.config.mjs",
+        "proxy.ts",
+        "supabase/migrations/0001_init.sql",
+        "supabase/migrations/0002_rls.sql",
+        "supabase/migrations/0003_auth.sql",
+        "supabase/migrations/0004_modules.sql",
+        "supabase/migrations/0005_modules.sql",
+        "supabase/migrations/0006_haraka.sql",
+        "lib/supabase/client.ts",
+        "lib/supabase/server.ts",
+        "lib/supabase/admin.ts",
+        ".env.local",
+        ".env.example",
+        ".env.production.example",
+        ".env.staging.example",
+        ".env.development.example",
+        "package.json"
+      ],
+      "branch": null,
+      "createdAt": "2026-05-16T10:00:00Z",
+      "completedAt": "2026-05-16T10:15:00Z"
+    },
+    {
+      "id": "MZ-005",
+      "title": "QA plan — Supabase migration + Cloudflare Pages setup",
+      "description": "Create comprehensive QA plan covering Supabase migration data integrity, schema validation, query compatibility, auth migration; Cloudflare Pages build pipeline, edge compatibility, env vars, domain/DNS; regression for all 5 modules (Usool, Raseed, Haraka, Maal, Banna); RTL/Arabic + LTR/English localization; performance/security; rollback verification.",
+      "status": "done",
+      "assignee": "qa",
+      "requestedBy": "user",
+      "files": [".opencode/qa-plan-supabase-cloudflare.md"],
+      "branch": null,
+      "createdAt": "2026-05-16T10:15:00Z",
+      "completedAt": null
+    },
+    {
+      "id": "MZ-006",
+      "title": "Fix P1#1 — audit-logs route.ts TS cast (double cast via unknown)",
+      "description": "Fix TypeScript error at app/api/audit-logs/route.ts:21 — row as Record<string, unknown> fails because Papa Parse data can be ParserError. Cast via unknown first.",
+      "status": "done",
+      "assignee": "backend",
+      "requestedBy": "user",
+      "files": ["app/api/audit-logs/route.ts"],
+      "branch": null,
+      "createdAt": "2026-05-16T12:00:00Z",
+      "completedAt": "2026-05-16T12:05:00Z"
+    },
+    {
+      "id": "MZ-007",
+      "title": "Fix P1#2 — proxy.ts session cookie detection for Supabase SSR",
+      "description": "proxy.ts:77 checks for cookie named 'session' but Supabase SSR uses sb-*-auth-token cookies. Fix session detection to use Supabase SSR cookie pattern.",
+      "status": "done",
+      "assignee": "backend",
+      "requestedBy": "user",
+      "files": ["proxy.ts"],
+      "branch": null,
+      "createdAt": "2026-05-16T12:00:00Z",
+      "completedAt": null
+    },
+    {
+      "id": "MZ-008",
+      "title": "Fix P2#3 — Add Supabase env vars to all .env.example files",
+      "description": "NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY are missing from all .env.example files.",
+      "status": "done",
+      "assignee": "devops",
+      "requestedBy": "user",
+      "files": [".env.example", ".env.local.example", ".env.development.example", ".env.staging.example", ".env.production.example"],
+      "branch": null,
+      "createdAt": "2026-05-16T12:00:00Z",
+      "completedAt": "2026-05-16T12:05:00Z"
+    },
+    {
+      "id": "MZ-009",
+      "title": "Fix P2#4 — Update wrangler.toml compatibility_date",
+      "description": "wrangler.toml compatibility_date = '2025-05-05' is outdated. Update to current date '2026-05-01'.",
+      "status": "done",
+      "assignee": "devops",
+      "requestedBy": "user",
+      "files": ["wrangler.toml"],
+      "branch": null,
+      "createdAt": "2026-05-16T12:00:00Z",
+      "completedAt": null
+    },
+    {
+      "id": "MZ-010",
+      "title": "QA execution — verify all MZ-004 fixes",
+      "description": "Run QA plan phases: build verification, lint, test, and verify all P1/P2 fixes compile correctly.",
+      "status": "done",
+      "assignee": "qa",
+      "requestedBy": "user",
+      "files": [".opencode/qa-plan-supabase-cloudflare.md"],
+      "branch": null,
+      "createdAt": "2026-05-16T12:00:00Z",
+      "completedAt": "2026-05-16T12:10:00Z"
+    }
   ]
 }

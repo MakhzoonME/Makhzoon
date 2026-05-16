@@ -16,7 +16,7 @@
 
 name = "makhzoon"
 main = ".open-next/worker.js"
-compatibility_date = "2025-05-05"
+compatibility_date = "2026-05-01"
 compatibility_flags = ["nodejs_compat"]
 
 [assets]

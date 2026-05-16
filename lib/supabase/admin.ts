@@ -1,5 +1,15 @@
 import 'server-only';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import {
+  createClient as createSupabaseClient,
+  type SupabaseClient,
+} from '@supabase/supabase-js';
+
+// No generated DB types available in this environment, so use a permissive
+// schema: this keeps .from(t).insert/update/upsert payloads typed as `any`
+// instead of `never`. Swap for `SupabaseClient<Database>` once
+// `supabase gen types` output is committed.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyClient = SupabaseClient<any, any, any>;
 
 /**
  * Service-role Supabase client. BYPASSES Row Level Security. Server-only.
@@ -10,9 +20,9 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js';
  * The SUPABASE_SERVICE_ROLE_KEY must never be exposed to the browser or put
  * in a NEXT_PUBLIC_* variable.
  */
-let _admin: ReturnType<typeof createSupabaseClient> | null = null;
+let _admin: AnyClient | null = null;
 
-export function getSupabaseAdmin() {
+export function getSupabaseAdmin(): AnyClient {
   if (_admin) return _admin;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -25,12 +35,12 @@ export function getSupabaseAdmin() {
 
   _admin = createSupabaseClient(url, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
-  });
+  }) as AnyClient;
   return _admin;
 }
 
 export const supabaseAdmin = new Proxy(
-  {} as ReturnType<typeof createSupabaseClient>,
+  {} as AnyClient,
   {
     get(_t, prop) {
       return (

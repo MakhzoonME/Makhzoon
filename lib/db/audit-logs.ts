@@ -1,24 +1,25 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { AuditLog } from '@/types';
-import { Timestamp } from 'firebase-admin/firestore';
 
-function toLog(id: string, data: FirebaseFirestore.DocumentData): AuditLog {
+type Row = Record<string, unknown>;
+
+function toLog(r: Row): AuditLog {
   return {
-    id,
-    organizationId: data.organizationId,
-    userId: data.userId,
-    role: data.role,
-    action: data.action,
-    module: data.module,
-    recordId: data.recordId,
-    oldValue: data.oldValue,
-    newValue: data.newValue,
-    timestamp: data.timestamp instanceof Timestamp ? data.timestamp.toDate() : new Date(),
-    transferMode: data.transferMode,
+    id: r.id as string,
+    organizationId: r.organization_id as string,
+    userId: r.user_id as string,
+    role: r.role as AuditLog['role'],
+    action: r.action as string,
+    module: r.module as string,
+    recordId: r.record_id as string,
+    oldValue: r.old_value as AuditLog['oldValue'],
+    newValue: r.new_value as AuditLog['newValue'],
+    timestamp: r.timestamp ? new Date(r.timestamp as string) : new Date(),
+    transferMode: r.transfer_mode as boolean,
   };
 }
 
-const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+const SUPERADMIN_ROLES = ['super_admin', 'makhzoon_admin', 'makhzoon_support'];
 
 export async function getAuditLogs(opts?: {
   orgId?: string;
@@ -33,29 +34,44 @@ export async function getAuditLogs(opts?: {
   const page = opts?.page ?? 1;
   const pageSize = opts?.pageSize ?? 20;
 
-  let q = adminDb
-    .collection('auditLogs')
-    .orderBy('timestamp', 'desc') as FirebaseFirestore.Query;
+  // Shared filter applied to both the count and the page query (a builder
+  // can't be reused once awaited).
+  const build = () => {
+    let x = supabaseAdmin.from('audit_logs').select('*', { count: 'exact' });
+    if (opts?.orgId) x = x.eq('organization_id', opts.orgId);
+    if (opts?.userId) x = x.eq('user_id', opts.userId);
+    if (opts?.action) x = x.eq('action', opts.action);
+    if (opts?.dateFrom)
+      x = x.gte('timestamp', new Date(opts.dateFrom).toISOString());
+    if (opts?.dateTo)
+      x = x.lte('timestamp', new Date(opts.dateTo).toISOString());
+    if (opts?.excludeSuperadminActions) {
+      // Org users must not see superadmin or transfer-mode actions.
+      x = x
+        .not('role', 'in', `(${SUPERADMIN_ROLES.join(',')})`)
+        .or('transfer_mode.is.null,transfer_mode.eq.false');
+    }
+    return x;
+  };
 
-  if (opts?.orgId) q = q.where('organizationId', '==', opts.orgId);
-  if (opts?.userId) q = q.where('userId', '==', opts.userId);
-  if (opts?.action) q = q.where('action', '==', opts.action);
-  if (opts?.dateFrom) q = q.where('timestamp', '>=', new Date(opts.dateFrom));
-  if (opts?.dateTo) q = q.where('timestamp', '<=', new Date(opts.dateTo));
-
-  const snap = await q.get();
-  let logs = snap.docs.map((d) => toLog(d.id, d.data()));
-
-  // Org users must not see actions performed by superadmin roles (including transfer mode actions)
-  if (opts?.excludeSuperadminActions) {
-    logs = logs.filter((l) => !SUPERADMIN_ROLES.has(l.role) && !l.transferMode);
-  }
-
-  const total = logs.length;
+  const { count } = await build()
+    .order('timestamp', { ascending: false })
+    .range(0, 0);
+  const total = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(page, totalPages);
-  const start = (safePage - 1) * pageSize;
-  const paged = logs.slice(start, start + pageSize);
+  const from = (safePage - 1) * pageSize;
 
-  return { logs: paged, total, page: safePage, pageSize, totalPages };
+  const { data, error } = await build()
+    .order('timestamp', { ascending: false })
+    .range(from, from + pageSize - 1);
+  if (error) throw error;
+
+  return {
+    logs: (data ?? []).map(toLog),
+    total,
+    page: safePage,
+    pageSize,
+    totalPages,
+  };
 }

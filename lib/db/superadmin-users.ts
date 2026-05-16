@@ -1,5 +1,4 @@
-import { adminDb } from '@/lib/firebase/admin';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { SuperAdminPermissions } from '@/types';
 
 export type MakhzoonRole = 'super_admin' | 'makhzoon_admin' | 'makhzoon_support';
@@ -16,27 +15,30 @@ export interface SuperAdminUser {
   updatedAt: Date;
 }
 
-function toSuperAdminUser(id: string, data: FirebaseFirestore.DocumentData): SuperAdminUser {
+type Row = Record<string, unknown>;
+
+function toSuperAdminUser(r: Row): SuperAdminUser {
   return {
-    id,
-    email: data.email,
-    displayName: data.displayName,
-    role: data.role,
-    status: data.status ?? 'active',
-    permissions: data.permissions ?? undefined,
-    createdBy: data.createdBy,
-    createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
-    updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
+    id: r.id as string,
+    email: r.email as string,
+    displayName: r.display_name as string,
+    role: r.role as MakhzoonRole,
+    status: (r.status as 'active' | 'deactivated') ?? 'active',
+    permissions: (r.permissions as SuperAdminPermissions) ?? undefined,
+    createdBy: r.created_by as string,
+    createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
+    updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
   };
 }
 
 export async function getSuperAdminUsers(): Promise<SuperAdminUser[]> {
-  const snap = await adminDb
-    .collection('superadminUsers')
-    .orderBy('createdAt', 'desc')
-    .limit(200)
-    .get();
-  return snap.docs.map((d) => toSuperAdminUser(d.id, d.data()));
+  const { data, error } = await supabaseAdmin
+    .from('superadmin_users')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if (error) throw error;
+  return (data ?? []).map(toSuperAdminUser);
 }
 
 export async function createSuperAdminUser(
@@ -47,14 +49,22 @@ export async function createSuperAdminUser(
     role: MakhzoonRole;
     createdBy: string;
     permissions?: SuperAdminPermissions;
-  }
+  },
 ): Promise<void> {
-  await adminDb.collection('superadminUsers').doc(uid).set({
-    ...data,
-    status: 'active',
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  });
+  const { error } = await supabaseAdmin.from('superadmin_users').upsert(
+    {
+      id: uid,
+      email: data.email,
+      display_name: data.displayName,
+      role: data.role,
+      status: 'active',
+      permissions: data.permissions ?? null,
+      created_by: data.createdBy,
+      updated_by: data.createdBy,
+    },
+    { onConflict: 'id' },
+  );
+  if (error) throw error;
 }
 
 export async function updateSuperAdminUser(
@@ -64,25 +74,35 @@ export async function updateSuperAdminUser(
     status?: 'active' | 'deactivated';
     permissions?: SuperAdminPermissions | null;
     updatedBy: string;
-  }
+  },
 ): Promise<void> {
-  const update: Record<string, unknown> = {
-    updatedBy: data.updatedBy,
-    updatedAt: FieldValue.serverTimestamp(),
-  };
-  if (data.role !== undefined) update.role = data.role;
-  if (data.status !== undefined) update.status = data.status;
-  if (data.permissions !== undefined) update.permissions = data.permissions ?? FieldValue.delete();
-
-  await adminDb.collection('superadminUsers').doc(uid).update(update);
+  const patch: Row = { updated_by: data.updatedBy };
+  if (data.role !== undefined) patch.role = data.role;
+  if (data.status !== undefined) patch.status = data.status;
+  // null clears the permissions (Firestore FieldValue.delete() equivalent).
+  if (data.permissions !== undefined) patch.permissions = data.permissions ?? null;
+  const { error } = await supabaseAdmin
+    .from('superadmin_users')
+    .update(patch)
+    .eq('id', uid);
+  if (error) throw error;
 }
 
 export async function deleteSuperAdminUser(uid: string): Promise<void> {
-  await adminDb.collection('superadminUsers').doc(uid).delete();
+  const { error } = await supabaseAdmin
+    .from('superadmin_users')
+    .delete()
+    .eq('id', uid);
+  if (error) throw error;
 }
 
-export async function getSuperAdminUserById(uid: string): Promise<SuperAdminUser | null> {
-  const doc = await adminDb.collection('superadminUsers').doc(uid).get();
-  if (!doc.exists) return null;
-  return toSuperAdminUser(doc.id, doc.data()!);
+export async function getSuperAdminUserById(
+  uid: string,
+): Promise<SuperAdminUser | null> {
+  const { data } = await supabaseAdmin
+    .from('superadmin_users')
+    .select('*')
+    .eq('id', uid)
+    .maybeSingle();
+  return data ? toSuperAdminUser(data) : null;
 }

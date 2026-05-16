@@ -8,8 +8,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { useTransferStore } from '@/store/transfer.store';
 import { useSubscriptionFeatures } from '@/hooks/org';
-import { auth } from '@/lib/firebase/client';
-import { signOut } from 'firebase/auth';
+import { createClient } from '@/lib/supabase/client';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 
 function DashboardSVG() { return <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden><rect x="2" y="2" width="6" height="7" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="10" y="2" width="6" height="4" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="10" y="8" width="6" height="8" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="2" y="11" width="6" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /></svg>; }
@@ -64,7 +63,7 @@ export function MobileDrawer() {
     setMobileMenuOpen(false);
     try {
       await fetch('/api/auth/session', { method: 'DELETE' });
-      await signOut(auth);
+      await createClient().auth.signOut();
     } catch {
       // ignore — always redirect regardless of errors
     }

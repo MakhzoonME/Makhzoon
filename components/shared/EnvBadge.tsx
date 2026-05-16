@@ -1,8 +1,8 @@
 'use client';
-import { APP_ENV } from '@/lib/firebase/client';
+import { APP_ENV } from '@/lib/app-env';
 
 /**
- * Small fixed badge that surfaces the current Firebase environment in
+ * Small fixed badge that surfaces the current deployment environment in
  * non-production builds, so super admins never confuse staging/dev with prod.
  * Renders nothing in production.
  */

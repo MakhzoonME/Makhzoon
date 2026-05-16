@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { writeBackendLog } from './backend-logger';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 
 type RouteContext = { params: Record<string, string> };
 type Handler = (req: NextRequest, ctx?: RouteContext) => Promise<NextResponse | Response>;

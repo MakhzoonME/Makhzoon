@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { getUsers, createUser } from '@/lib/db/users';
-import { adminAuth } from '@/lib/firebase/admin';
+import { createAuthUser } from '@/lib/supabase/auth-admin';
 import { auditLog } from '@/lib/platform/audit';
 import { inviteUserSchema } from '@/lib/validations/user.schema';
 import { hasPermission } from '@/lib/platform/permissions';
@@ -56,14 +56,10 @@ export async function POST(req: NextRequest) {
 
     const tempPassword = randomBytes(16).toString('base64');
 
-    const newUser = await adminAuth.createUser({
+    const newUser = await createAuthUser({
       email: data.email,
       displayName: data.displayName,
       password: tempPassword,
-      emailVerified: false,
-    });
-
-    await adminAuth.setCustomUserClaims(newUser.uid, {
       role: data.role,
       organizationId: tenant.organizationId,
     });

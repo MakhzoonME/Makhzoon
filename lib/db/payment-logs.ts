@@ -1,39 +1,50 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { PaymentLog, PaymentLogMethod } from '@/types';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
-function toPaymentLog(id: string, data: FirebaseFirestore.DocumentData): PaymentLog {
+type Row = Record<string, unknown>;
+
+function toPaymentLog(r: Row): PaymentLog {
   return {
-    id,
-    organizationId: data.organizationId,
-    subscriptionId: data.subscriptionId,
-    amount: data.amount,
-    currency: data.currency,
-    method: data.method as PaymentLogMethod,
-    reference: data.reference ?? null,
-    paidAt: data.paidAt instanceof Timestamp ? data.paidAt.toDate() : new Date(data.paidAt),
-    notes: data.notes ?? null,
-    createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
-    createdBy: data.createdBy ?? '',
-    updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
-    updatedBy: data.updatedBy ?? '',
+    id: r.id as string,
+    organizationId: r.organization_id as string,
+    subscriptionId: r.subscription_id as string,
+    amount: r.amount as number,
+    currency: r.currency as string,
+    method: r.method as PaymentLogMethod,
+    reference: (r.reference as string) ?? null,
+    paidAt: r.paid_at ? new Date(r.paid_at as string) : new Date(),
+    notes: (r.notes as string) ?? null,
+    createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
+    createdBy: (r.created_by as string) ?? '',
+    updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
+    updatedBy: (r.updated_by as string) ?? '',
   };
 }
 
-export async function getPaymentLogs(orgId: string, opts?: { limit?: number }): Promise<PaymentLog[]> {
-  let q: FirebaseFirestore.Query = adminDb
-    .collection('paymentLogs')
-    .where('organizationId', '==', orgId)
-    .orderBy('paidAt', 'desc');
+export async function getPaymentLogs(
+  orgId: string,
+  opts?: { limit?: number },
+): Promise<PaymentLog[]> {
+  let q = supabaseAdmin
+    .from('payment_logs')
+    .select('*')
+    .eq('organization_id', orgId)
+    .order('paid_at', { ascending: false });
   if (opts?.limit) q = q.limit(opts.limit);
-  const snap = await q.get();
-  return snap.docs.map((d) => toPaymentLog(d.id, d.data()));
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []).map(toPaymentLog);
 }
 
-export async function getPaymentLogById(logId: string): Promise<PaymentLog | null> {
-  const doc = await adminDb.collection('paymentLogs').doc(logId).get();
-  if (!doc.exists) return null;
-  return toPaymentLog(doc.id, doc.data()!);
+export async function getPaymentLogById(
+  logId: string,
+): Promise<PaymentLog | null> {
+  const { data } = await supabaseAdmin
+    .from('payment_logs')
+    .select('*')
+    .eq('id', logId)
+    .maybeSingle();
+  return data ? toPaymentLog(data) : null;
 }
 
 export async function createPaymentLog(
@@ -49,25 +60,30 @@ export async function createPaymentLog(
     notes?: string | null;
   },
 ): Promise<PaymentLog> {
-  const ref = adminDb.collection('paymentLogs').doc();
-  await ref.set({
-    organizationId: payload.organizationId,
-    subscriptionId: payload.subscriptionId,
-    amount: payload.amount,
-    currency: payload.currency.toUpperCase(),
-    method: payload.method,
-    reference: payload.reference ?? null,
-    paidAt: payload.paidAt,
-    notes: payload.notes ?? null,
-    createdBy: userId,
-    updatedBy: userId,
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  });
-  const doc = await ref.get();
-  return toPaymentLog(doc.id, doc.data()!);
+  const { data, error } = await supabaseAdmin
+    .from('payment_logs')
+    .insert({
+      organization_id: payload.organizationId,
+      subscription_id: payload.subscriptionId,
+      amount: payload.amount,
+      currency: payload.currency.toUpperCase(),
+      method: payload.method,
+      reference: payload.reference ?? null,
+      paid_at: new Date(payload.paidAt).toISOString(),
+      notes: payload.notes ?? null,
+      created_by: userId,
+      updated_by: userId,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return toPaymentLog(data);
 }
 
 export async function deletePaymentLog(logId: string): Promise<void> {
-  await adminDb.collection('paymentLogs').doc(logId).delete();
+  const { error } = await supabaseAdmin
+    .from('payment_logs')
+    .delete()
+    .eq('id', logId);
+  if (error) throw error;
 }

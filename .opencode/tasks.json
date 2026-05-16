@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "tasks": [
+    {
+      "id": "MZ-001",
+      "title": "Example: Add warranty alert email template",
+      "description": "Create Resend email template for warranty expiry alerts",
+      "status": "done",
+      "assignee": "backend",
+      "requestedBy": "user",
+      "files": ["lib/email/warranty-alert.ts", "locales/messages.ts"],
+      "branch": "feature/warranty-emails",
+      "createdAt": "2026-05-15T10:00:00Z",
+      "completedAt": "2026-05-15T14:00:00Z"
+    },
+    {
+      "id": "MZ-002",
+      "title": "Example: Filter assets by category",
+      "description": "Add category dropdown filter on assets list page",
+      "status": "in-progress",
+      "assignee": "frontend",
+      "requestedBy": "partner",
+      "files": ["app/[locale]/[orgSlug]/assets/page.tsx", "components/assets/AssetFilters.tsx"],
+      "branch": "feature/asset-filters",
+      "createdAt": "2026-05-15T11:00:00Z",
+      "completedAt": null
+    },
+    {
+      "id": "MZ-003",
+      "example": true,
+      "title": "Example: Inventory stock report API",
+      "description": "Build /api/reports/inventory-stock endpoint",
+      "status": "pending",
+      "assignee": "backend",
+      "requestedBy": "user",
+      "files": ["app/api/reports/inventory-stock/route.ts", "lib/services/reports.service.ts"],
+      "branch": null,
+      "createdAt": "2026-05-15T12:00:00Z",
+      "completedAt": null
+    }
+  ]
+}

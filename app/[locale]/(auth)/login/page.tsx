@@ -2,8 +2,7 @@
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '@/lib/firebase/client';
+import { createClient } from '@/lib/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -105,17 +104,24 @@ function ForgotPasswordModal({ open, onClose }: { open: boolean; onClose: () => 
     setError('');
     setLoading(true);
     try {
-      await sendPasswordResetEmail(auth, resetEmail.trim());
-      setSubmitted(true);
-    } catch (err: unknown) {
-      const code = (err as { code?: string } | null)?.code ?? '';
-      if (code === 'auth/user-not-found' || code === 'auth/invalid-email') {
-        setSubmitted(true); // don't reveal whether email exists
-      } else if (code === 'auth/too-many-requests') {
+      const supabase = createClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        resetEmail.trim(),
+        {
+          redirectTo:
+            typeof window !== 'undefined'
+              ? `${window.location.origin}/reset-password`
+              : undefined,
+        },
+      );
+      // Don't reveal whether the email exists; only surface rate limiting.
+      if (error && error.status === 429) {
         setError('Too many attempts. Please wait a moment before trying again.');
       } else {
-        setError('Failed to send reset email. Please try again.');
+        setSubmitted(true);
       }
+    } catch {
+      setError('Failed to send reset email. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -375,11 +381,14 @@ export default function LoginPage() {
     shakeControls.start({ x: [0, -6, 6, -4, 4, 0], transition: { duration: 0.4, ease: 'easeInOut' } });
   }
 
-  async function redirectFromSession(idToken: string) {
+  async function redirectFromSession() {
+    // The Supabase browser client (signInWithPassword) has already set the
+    // auth cookies via @supabase/ssr; this endpoint reads them, enforces the
+    // suspended-org gate, and returns the post-login routing payload.
     const res = await fetch('/api/auth/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken }),
+      body: '{}',
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -403,11 +412,15 @@ export default function LoginPage() {
     setEmailError('');
     setEmailLoading(true);
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, emailPassword);
-      const idToken = await cred.user.getIdToken();
-      await redirectFromSession(idToken);
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password: emailPassword,
+      });
+      if (error) throw error;
+      await redirectFromSession();
     } catch (err: unknown) {
-      setEmailError(getFirebaseAuthErrorMessage(err, 'email'));
+      setEmailError(getAuthErrorMessage(err, 'email'));
       shake();
       setEmailLoading(false);
     }
@@ -419,28 +432,45 @@ export default function LoginPage() {
     if (!username.trim()) { setUsernameError('Username is required'); shake(); return; }
     setUsernameLoading(true);
     try {
+      // Username accounts are backed by a synthetic email (preserved 1:1 from
+      // the Firebase model) so Supabase email/password sign-in works as-is.
       const syntheticEmail = `${username.trim().toLowerCase()}@makhzoon.local`;
-      const cred = await signInWithEmailAndPassword(auth, syntheticEmail, usernamePassword);
-      const idToken = await cred.user.getIdToken();
-      await redirectFromSession(idToken);
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email: syntheticEmail,
+        password: usernamePassword,
+      });
+      if (error) throw error;
+      await redirectFromSession();
     } catch (err: unknown) {
-      setUsernameError(getFirebaseAuthErrorMessage(err, 'username'));
+      setUsernameError(getAuthErrorMessage(err, 'username'));
       shake();
       setUsernameLoading(false);
     }
   }
 
-  function getFirebaseAuthErrorMessage(err: unknown, mode: 'email' | 'username'): string {
-    const code = (err as { code?: string } | null)?.code ?? '';
-    if (code === 'auth/user-disabled') return 'This account has been deactivated. Please contact support.';
-    if (code === 'auth/user-not-found') return mode === 'email' ? 'No account found with this email address.' : 'No account found with this username.';
-    if (code === 'auth/wrong-password') return 'Incorrect password. Please try again.';
-    if (code === 'auth/invalid-credential') return mode === 'email' ? 'Incorrect email or password. Please try again.' : 'Incorrect username or password. Please try again.';
-    if (code === 'auth/too-many-requests') return 'Too many failed attempts. Please try again later or reset your password.';
-    if (code === 'auth/invalid-email') return 'Invalid email address format.';
-    if (code === 'auth/network-request-failed') return 'Network error. Please check your connection and try again.';
-    if (/^auth\//.test(code)) return 'Sign in failed. Please check your credentials and try again.';
-    if (err instanceof Error) return err.message;
+  function getAuthErrorMessage(err: unknown, mode: 'email' | 'username'): string {
+    const e = err as { message?: string; status?: number; code?: string } | null;
+    const status = e?.status;
+    const code = e?.code ?? '';
+    const msg = (e?.message ?? '').toLowerCase();
+    if (status === 429 || code === 'over_request_rate_limit')
+      return 'Too many failed attempts. Please try again later or reset your password.';
+    if (code === 'user_banned' || msg.includes('banned') || msg.includes('disabled'))
+      return 'This account has been deactivated. Please contact support.';
+    if (code === 'email_not_confirmed' || msg.includes('not confirmed'))
+      return 'Please confirm your account before signing in.';
+    if (
+      code === 'invalid_credentials' ||
+      msg.includes('invalid login credentials') ||
+      msg.includes('invalid')
+    )
+      return mode === 'email'
+        ? 'Incorrect email or password. Please try again.'
+        : 'Incorrect username or password. Please try again.';
+    if (msg.includes('network') || msg.includes('fetch'))
+      return 'Network error. Please check your connection and try again.';
+    if (e?.message) return e.message;
     return 'Sign in failed. Please check your credentials and try again.';
   }
 

@@ -1,41 +1,45 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { Asset } from '@/types';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
-function toAsset(id: string, data: FirebaseFirestore.DocumentData): Asset {
+type Row = Record<string, unknown>;
+
+function toAsset(r: Row): Asset {
   return {
-    id,
-    organizationId: data.organizationId,
-    name: data.name,
-    category: data.category,
-    status: data.status,
-    serialNumber: data.serialNumber,
-    purchaseDate: data.purchaseDate instanceof Timestamp ? data.purchaseDate.toDate() : data.purchaseDate,
-    purchaseCost: data.purchaseCost,
-    assignedTo: data.assignedTo,
-    location: data.location,
-    notes: data.notes,
-    createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
-    createdBy: data.createdBy,
-    createdByEmail: data.createdByEmail,
-    createdByName: data.createdByName,
-    createdByRole: data.createdByRole,
-    updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
-    updatedBy: data.updatedBy,
-    updatedByEmail: data.updatedByEmail,
-    updatedByName: data.updatedByName,
-    updatedByRole: data.updatedByRole,
+    id: r.id as string,
+    organizationId: r.organization_id as string,
+    name: r.name as string,
+    category: r.category as string,
+    status: r.status as string,
+    serialNumber: r.serial_number as string,
+    purchaseDate: r.purchase_date ? new Date(r.purchase_date as string) : (r.purchase_date as undefined),
+    purchaseCost: r.purchase_cost as number,
+    assignedTo: r.assigned_to as string,
+    location: r.location as string,
+    notes: r.notes as string,
+    createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
+    createdBy: r.created_by as string,
+    createdByEmail: r.created_by_email as string,
+    createdByName: r.created_by_name as string,
+    createdByRole: r.created_by_role as string,
+    updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
+    updatedBy: r.updated_by as string,
+    updatedByEmail: r.updated_by_email as string,
+    updatedByName: r.updated_by_name as string,
+    updatedByRole: r.updated_by_role as string,
   };
 }
 
-const LIST_SELECT_FIELDS = [
-  'id', 'organizationId', 'name', 'category', 'status', 'serialNumber',
-  'assignedTo', 'location', 'purchaseDate', 'purchaseCost',
-  'createdAt', 'createdBy', 'createdByEmail', 'createdByName', 'createdByRole',
-  'updatedAt', 'updatedBy', 'updatedByEmail', 'updatedByName', 'updatedByRole',
-];
+type SortField =
+  | 'name' | 'category' | 'status' | 'serialNumber' | 'assignedTo'
+  | 'location' | 'purchaseDate' | 'purchaseCost' | 'createdAt' | 'updatedAt';
 
-type SortField = 'name' | 'category' | 'status' | 'serialNumber' | 'assignedTo' | 'location' | 'purchaseDate' | 'purchaseCost' | 'createdAt' | 'updatedAt';
+const SORT_COLUMN: Record<SortField, string> = {
+  name: 'name', category: 'category', status: 'status',
+  serialNumber: 'serial_number', assignedTo: 'assigned_to',
+  location: 'location', purchaseDate: 'purchase_date',
+  purchaseCost: 'purchase_cost', createdAt: 'created_at',
+  updatedAt: 'updated_at',
+};
 
 export async function getAssets(
   orgId: string,
@@ -47,94 +51,137 @@ export async function getAssets(
     pageSize?: number;
     sortBy?: SortField;
     sortDir?: 'asc' | 'desc';
-  }
+  },
 ): Promise<{ items: Asset[]; total: number; page: number; pageSize: number; totalPages: number }> {
   const page = opts?.page ?? 1;
   const pageSize = opts?.pageSize ?? 10;
-  const sortBy = opts?.sortBy ?? 'createdAt';
-  const sortDir = opts?.sortDir ?? 'desc';
+  const sortCol = SORT_COLUMN[opts?.sortBy ?? 'createdAt'];
+  const ascending = (opts?.sortDir ?? 'desc') === 'asc';
 
-  let q = adminDb.collection('assets')
-    .where('organizationId', '==', orgId)
-    .select(...LIST_SELECT_FIELDS);
+  // A query builder can't be reused after awaiting, so run a count query and
+  // a page query independently. Filters use PostgREST `.match` + `.or`.
+  const like = opts?.search ? `%${opts.search}%` : null;
+  const orFilter = like
+    ? `name.ilike.${like},serial_number.ilike.${like},assigned_to.ilike.${like},location.ilike.${like},category.ilike.${like}`
+    : null;
+  const eqMatch: Record<string, string> = { organization_id: orgId };
+  if (opts?.status) eqMatch.status = opts.status;
+  if (opts?.category) eqMatch.category = opts.category;
 
-  if (opts?.status) q = q.where('status', '==', opts.status) as typeof q;
-  if (opts?.category) q = q.where('category', '==', opts.category) as typeof q;
+  let countQ = supabaseAdmin
+    .from('assets')
+    .select('*', { count: 'exact', head: true })
+    .match(eqMatch);
+  if (orFilter) countQ = countQ.or(orFilter);
+  const { count } = await countQ;
 
-  const snap = await q.get();
-  let items = snap.docs.map((d) => toAsset(d.id, d.data()));
-
-  if (opts?.search) {
-    const term = opts.search.toLowerCase();
-    items = items.filter((a) =>
-      (a.name ?? '').toLowerCase().includes(term) ||
-      (a.serialNumber ?? '').toLowerCase().includes(term) ||
-      (a.assignedTo ?? '').toLowerCase().includes(term) ||
-      (a.location ?? '').toLowerCase().includes(term) ||
-      (a.category ?? '').toLowerCase().includes(term)
-    );
-  }
-
-  const total = items.length;
-
-  items.sort((a, b) => {
-    const aVal = a[sortBy];
-    const bVal = b[sortBy];
-    const mult = sortDir === 'asc' ? 1 : -1;
-
-    if (aVal == null && bVal == null) return 0;
-    if (aVal == null) return mult;
-    if (bVal == null) return -mult;
-
-    if (aVal instanceof Date && bVal instanceof Date) {
-      return (aVal.getTime() - bVal.getTime()) * mult;
-    }
-    if (typeof aVal === 'number' && typeof bVal === 'number') {
-      return (aVal - bVal) * mult;
-    }
-    return String(aVal).localeCompare(String(bVal)) * mult;
-  });
-
+  const total = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(page, totalPages);
-  const start = (safePage - 1) * pageSize;
-  const pagedItems = items.slice(start, start + pageSize);
+  const from = (safePage - 1) * pageSize;
 
-  return { items: pagedItems, total, page: safePage, pageSize, totalPages };
+  let pageQ = supabaseAdmin.from('assets').select('*').match(eqMatch);
+  if (orFilter) pageQ = pageQ.or(orFilter);
+  const { data, error } = await pageQ
+    .order(sortCol, { ascending, nullsFirst: false })
+    .range(from, from + pageSize - 1);
+  if (error) throw error;
+
+  return {
+    items: (data ?? []).map(toAsset),
+    total,
+    page: safePage,
+    pageSize,
+    totalPages,
+  };
 }
 
 export async function getAssetById(id: string): Promise<Asset | null> {
-  const doc = await adminDb.collection('assets').doc(id).get();
-  if (!doc.exists) return null;
-  return toAsset(doc.id, doc.data()!);
+  const { data } = await supabaseAdmin
+    .from('assets')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  return data ? toAsset(data) : null;
 }
 
-export async function createAsset(data: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-  const now = new Date();
-  const ref = await adminDb.collection('assets').add({
-    ...data,
-    createdAt: now,
-    updatedAt: now,
-  });
-  return ref.id;
+export async function createAsset(
+  data: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>,
+): Promise<string> {
+  const { data: row, error } = await supabaseAdmin
+    .from('assets')
+    .insert({
+      organization_id: data.organizationId,
+      name: data.name,
+      category: data.category,
+      status: data.status,
+      serial_number: data.serialNumber,
+      purchase_date: data.purchaseDate
+        ? new Date(data.purchaseDate).toISOString()
+        : null,
+      purchase_cost: data.purchaseCost,
+      assigned_to: data.assignedTo,
+      location: data.location,
+      notes: data.notes,
+      created_by: data.createdBy,
+      created_by_email: data.createdByEmail,
+      created_by_name: data.createdByName,
+      created_by_role: data.createdByRole,
+      updated_by: data.updatedBy,
+      updated_by_email: data.updatedByEmail,
+      updated_by_name: data.updatedByName,
+      updated_by_role: data.updatedByRole,
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return row.id as string;
 }
 
-export async function updateAsset(id: string, data: Partial<Asset>): Promise<void> {
-  await adminDb.collection('assets').doc(id).update({
-    ...data,
-    updatedAt: FieldValue.serverTimestamp(),
-  });
+export async function updateAsset(
+  id: string,
+  data: Partial<Asset>,
+): Promise<void> {
+  const patch: Row = {};
+  const map: Record<string, string> = {
+    organizationId: 'organization_id', name: 'name', category: 'category',
+    status: 'status', serialNumber: 'serial_number',
+    purchaseCost: 'purchase_cost', assignedTo: 'assigned_to',
+    location: 'location', notes: 'notes', updatedBy: 'updated_by',
+    updatedByEmail: 'updated_by_email', updatedByName: 'updated_by_name',
+    updatedByRole: 'updated_by_role',
+  };
+  for (const [k, col] of Object.entries(map)) {
+    const v = (data as Record<string, unknown>)[k];
+    if (v !== undefined) patch[col] = v;
+  }
+  if (data.purchaseDate !== undefined) {
+    patch.purchase_date = data.purchaseDate
+      ? new Date(data.purchaseDate).toISOString()
+      : null;
+  }
+  const { error } = await supabaseAdmin
+    .from('assets')
+    .update(patch)
+    .eq('id', id);
+  if (error) throw error;
 }
 
 export async function deleteAsset(id: string): Promise<void> {
-  await adminDb.collection('assets').doc(id).delete();
+  const { error } = await supabaseAdmin.from('assets').delete().eq('id', id);
+  if (error) throw error;
 }
 
 export async function getAssetCategories(orgId: string): Promise<string[]> {
-  const snap = await adminDb.collection('assets')
-    .where('organizationId', '==', orgId)
+  const { data, error } = await supabaseAdmin
+    .from('assets')
     .select('category')
-    .get();
-  const cats = new Set(snap.docs.map((d) => d.data().category as string));
+    .eq('organization_id', orgId);
+  if (error) throw error;
+  const cats = new Set(
+    (data ?? [])
+      .map((d) => (d as Row).category as string)
+      .filter(Boolean),
+  );
   return Array.from(cats).sort();
 }

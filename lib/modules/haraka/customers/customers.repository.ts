@@ -1,30 +1,26 @@
-import { adminDb } from '@/lib/firebase/admin'
-import { FieldValue, Timestamp } from 'firebase-admin/firestore'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import type { PosCustomer } from '@/types'
 
-function tsToDate(v: unknown): Date {
-  return v instanceof Timestamp ? v.toDate() : v instanceof Date ? v : new Date()
-}
+type Row = Record<string, unknown>
 
-function toCustomer(id: string, d: FirebaseFirestore.DocumentData): PosCustomer {
+function toCustomer(r: Row): PosCustomer {
   return {
-    id,
-    organizationId: d.organizationId,
-    name: d.name ?? '',
-    phone: d.phone ?? null,
-    email: d.email ?? null,
-    taxNumber: d.taxNumber ?? null,
-    notes: d.notes ?? null,
-    createdAt: tsToDate(d.createdAt),
-    createdBy: d.createdBy ?? '',
-    updatedAt: tsToDate(d.updatedAt),
-    updatedBy: d.updatedBy ?? '',
+    id: r.id as string,
+    organizationId: r.organization_id as string,
+    name: (r.name as string) ?? '',
+    phone: (r.phone as string) ?? null,
+    email: (r.email as string) ?? null,
+    taxNumber: (r.tax_number as string) ?? null,
+    notes: (r.notes as string) ?? null,
+    createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
+    createdBy: (r.created_by as string) ?? '',
+    updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
+    updatedBy: (r.updated_by as string) ?? '',
   }
 }
 
 export interface CustomerListOpts {
-  /** Free-text match against name/phone/email/taxNumber (case-insensitive). */
   search?: string
   page?: number
   pageSize?: number
@@ -40,20 +36,21 @@ export interface CustomerInput {
 
 export class CustomersRepository {
   async list(tenant: TenantContext, opts?: CustomerListOpts) {
-    const snap = await adminDb
-      .collection('posCustomers')
-      .where('organizationId', '==', tenant.organizationId)
-      .get()
-    let items = snap.docs.map((d) => toCustomer(d.id, d.data()))
+    const { data, error } = await supabaseAdmin
+      .from('pos_customers')
+      .select('*')
+      .eq('organization_id', tenant.organizationId)
+    if (error) throw error
+    let items = (data ?? []).map(toCustomer)
 
     const search = opts?.search?.trim().toLowerCase()
     if (search) {
-      items = items.filter((c) => {
-        const haystack = [c.name, c.phone ?? '', c.email ?? '', c.taxNumber ?? '']
+      items = items.filter((c) =>
+        [c.name, c.phone ?? '', c.email ?? '', c.taxNumber ?? '']
           .join(' ')
           .toLowerCase()
-        return haystack.includes(search)
-      })
+          .includes(search),
+      )
     }
     items.sort((a, b) => a.name.localeCompare(b.name))
 
@@ -72,29 +69,39 @@ export class CustomersRepository {
     }
   }
 
-  async getById(tenant: TenantContext, id: string): Promise<PosCustomer | null> {
-    const doc = await adminDb.collection('posCustomers').doc(id).get()
-    if (!doc.exists) return null
-    const d = doc.data()!
-    if (d.organizationId !== tenant.organizationId) return null
-    return toCustomer(doc.id, d)
+  async getById(
+    tenant: TenantContext,
+    id: string,
+  ): Promise<PosCustomer | null> {
+    const { data } = await supabaseAdmin
+      .from('pos_customers')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+    if (!data || data.organization_id !== tenant.organizationId) return null
+    return toCustomer(data)
   }
 
-  async create(tenant: TenantContext, input: CustomerInput): Promise<string> {
-    const now = new Date()
-    const ref = await adminDb.collection('posCustomers').add({
-      organizationId: tenant.organizationId,
-      name: input.name,
-      phone: input.phone ?? null,
-      email: input.email ?? null,
-      taxNumber: input.taxNumber ?? null,
-      notes: input.notes ?? null,
-      createdBy: tenant.userId,
-      updatedBy: tenant.userId,
-      createdAt: now,
-      updatedAt: now,
-    })
-    return ref.id
+  async create(
+    tenant: TenantContext,
+    input: CustomerInput,
+  ): Promise<string> {
+    const { data, error } = await supabaseAdmin
+      .from('pos_customers')
+      .insert({
+        organization_id: tenant.organizationId,
+        name: input.name,
+        phone: input.phone ?? null,
+        email: input.email ?? null,
+        tax_number: input.taxNumber ?? null,
+        notes: input.notes ?? null,
+        created_by: tenant.userId,
+        updated_by: tenant.userId,
+      })
+      .select('id')
+      .single()
+    if (error) throw error
+    return data.id as string
   }
 
   async update(
@@ -102,25 +109,28 @@ export class CustomersRepository {
     id: string,
     input: Partial<CustomerInput>,
   ): Promise<void> {
-    const doc = await adminDb.collection('posCustomers').doc(id).get()
-    if (!doc.exists || doc.data()!.organizationId !== tenant.organizationId) {
-      throw new Error('Customer not found')
-    }
-    const patch: Record<string, unknown> = {
-      updatedBy: tenant.userId,
-      updatedAt: FieldValue.serverTimestamp(),
-    }
-    for (const key of ['name', 'phone', 'email', 'taxNumber', 'notes'] as const) {
-      if (key in input) patch[key] = input[key] ?? null
-    }
-    await doc.ref.update(patch)
+    const existing = await this.getById(tenant, id)
+    if (!existing) throw new Error('Customer not found')
+    const patch: Row = { updated_by: tenant.userId }
+    if ('name' in input) patch.name = input.name ?? null
+    if ('phone' in input) patch.phone = input.phone ?? null
+    if ('email' in input) patch.email = input.email ?? null
+    if ('taxNumber' in input) patch.tax_number = input.taxNumber ?? null
+    if ('notes' in input) patch.notes = input.notes ?? null
+    const { error } = await supabaseAdmin
+      .from('pos_customers')
+      .update(patch)
+      .eq('id', id)
+    if (error) throw error
   }
 
   async delete(tenant: TenantContext, id: string): Promise<void> {
-    const doc = await adminDb.collection('posCustomers').doc(id).get()
-    if (!doc.exists || doc.data()!.organizationId !== tenant.organizationId) {
-      throw new Error('Customer not found')
-    }
-    await doc.ref.delete()
+    const existing = await this.getById(tenant, id)
+    if (!existing) throw new Error('Customer not found')
+    const { error } = await supabaseAdmin
+      .from('pos_customers')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
   }
 }

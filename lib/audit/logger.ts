@@ -1,6 +1,5 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { UserRole } from '@/types';
-import { FieldValue } from 'firebase-admin/firestore';
 
 export type AuditAction =
   | 'ASSET_CREATED' | 'ASSET_UPDATED' | 'ASSET_RETIRED' | 'ASSET_DELETED' | 'ASSETS_IMPORTED'
@@ -45,16 +44,30 @@ interface LogParams {
   transferMode?: boolean;
 }
 
+function toRow(p: LogParams) {
+  return {
+    organization_id: p.organizationId,
+    user_id: p.userId,
+    role: p.role,
+    action: p.action,
+    module: p.module,
+    record_id: p.recordId ?? null,
+    old_value: p.oldValue ?? null,
+    new_value: p.newValue ?? null,
+    transfer_mode: p.transferMode ?? null,
+  };
+}
+
 export async function writeAuditLog(params: LogParams): Promise<void> {
-  await adminDb.collection('auditLogs').add({
-    ...params,
-    timestamp: FieldValue.serverTimestamp(),
-  });
+  const { error } = await supabaseAdmin.from('audit_logs').insert(toRow(params));
+  if (error) throw error;
 }
 
 export function queueAuditLog(params: LogParams): void {
-  adminDb.collection('auditLogs').add({
-    ...params,
-    timestamp: FieldValue.serverTimestamp(),
-  }).catch((err) => console.error('[auditLog] failed to write:', err));
+  supabaseAdmin
+    .from('audit_logs')
+    .insert(toRow(params))
+    .then(({ error }) => {
+      if (error) console.error('[auditLog] failed to write:', error);
+    });
 }

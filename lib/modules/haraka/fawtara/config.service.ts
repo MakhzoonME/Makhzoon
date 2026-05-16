@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { adminDb } from '@/lib/firebase/admin'
-import { FieldValue } from 'firebase-admin/firestore'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import { hasPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
@@ -25,7 +24,6 @@ export interface FawtaraConfigInput {
   activityNumber?: string | null
   invoiceTypeDefault?: FawtaraInvoiceType
   vatRegistered?: boolean
-  /** Write-only on the UI; setting any of these updates the private secret doc. */
   clientId?: string | null
   clientSecret?: string | null
 }
@@ -33,79 +31,98 @@ export interface FawtaraConfigInput {
 export class FawtaraConfigService {
   async get(tenant: TenantContext): Promise<FawtaraConfig> {
     requireFawtaraSettings(tenant)
-    const doc = await adminDb.collection('organizations').doc(tenant.organizationId).get()
-    if (!doc.exists) throw new Error('Organization not found')
-    const config = (doc.data()?.fawtara as FawtaraConfig | undefined) ?? DEFAULT_FAWTARA_CONFIG
+    const { data: org } = await supabaseAdmin
+      .from('organizations')
+      .select('fawtara')
+      .eq('id', tenant.organizationId)
+      .maybeSingle()
+    if (!org) throw new Error('Organization not found')
+    const config =
+      (org.fawtara as FawtaraConfig | undefined) ?? DEFAULT_FAWTARA_CONFIG
 
-    const privDoc = await adminDb.collection('organizationsPrivate').doc(tenant.organizationId).get()
-    const hasCreds =
-      !!privDoc.exists &&
-      !!privDoc.data()?.fawtara?.clientId &&
-      !!privDoc.data()?.fawtara?.clientSecret
+    const { data: priv } = await supabaseAdmin
+      .from('organizations_private')
+      .select('fawtara')
+      .eq('organization_id', tenant.organizationId)
+      .maybeSingle()
+    const privFawtara = (priv?.fawtara as Record<string, unknown>) ?? {}
+    const hasCreds = !!privFawtara.clientId && !!privFawtara.clientSecret
 
     return { ...config, hasClientCredentials: hasCreds }
   }
 
-  async update(tenant: TenantContext, input: FawtaraConfigInput): Promise<FawtaraConfig> {
+  async update(
+    tenant: TenantContext,
+    input: FawtaraConfigInput,
+  ): Promise<FawtaraConfig> {
     requireFawtaraSettings(tenant)
-    const orgRef = adminDb.collection('organizations').doc(tenant.organizationId)
-    const privRef = adminDb.collection('organizationsPrivate').doc(tenant.organizationId)
-    const orgDoc = await orgRef.get()
-    if (!orgDoc.exists) throw new Error('Organization not found')
+    const { data: org } = await supabaseAdmin
+      .from('organizations')
+      .select('fawtara')
+      .eq('id', tenant.organizationId)
+      .maybeSingle()
+    if (!org) throw new Error('Organization not found')
     const current: FawtaraConfig =
-      (orgDoc.data()?.fawtara as FawtaraConfig | undefined) ?? DEFAULT_FAWTARA_CONFIG
+      (org.fawtara as FawtaraConfig | undefined) ?? DEFAULT_FAWTARA_CONFIG
 
-    // Public part (org doc) — visible to the client.
     const next: FawtaraConfig = {
       enabled: input.enabled ?? current.enabled,
       mode: input.mode ?? current.mode,
       taxpayerNumber: input.taxpayerNumber ?? current.taxpayerNumber,
       activityNumber: input.activityNumber ?? current.activityNumber,
       hasClientCredentials: current.hasClientCredentials,
-      invoiceTypeDefault: input.invoiceTypeDefault ?? current.invoiceTypeDefault,
+      invoiceTypeDefault:
+        input.invoiceTypeDefault ?? current.invoiceTypeDefault,
       vatRegistered: input.vatRegistered ?? current.vatRegistered,
     }
 
-    // Private part (separate doc) — only mutated when credentials change.
-    // New writes are AES-GCM encrypted; existing rows may still be plaintext
-    // and are preserved as-is until next write rotates them through encrypt().
     if (input.clientId !== undefined || input.clientSecret !== undefined) {
-      const privDoc = await privRef.get()
-      const existingPriv = privDoc.exists ? privDoc.data()?.fawtara ?? {} : {}
+      const { data: priv } = await supabaseAdmin
+        .from('organizations_private')
+        .select('fawtara')
+        .eq('organization_id', tenant.organizationId)
+        .maybeSingle()
+      const existingPriv =
+        (priv?.fawtara as Record<string, unknown>) ?? {}
       const nextClientId =
         input.clientId !== undefined
           ? input.clientId
             ? encrypt(input.clientId)
             : null
-          : existingPriv.clientId ?? null
+          : (existingPriv.clientId as string | null) ?? null
       const nextClientSecret =
         input.clientSecret !== undefined
           ? input.clientSecret
             ? encrypt(input.clientSecret)
             : null
-          : existingPriv.clientSecret ?? null
-      await privRef.set(
-        {
-          organizationId: tenant.organizationId,
-          fawtara: {
-            ...existingPriv,
-            clientId: nextClientId,
-            clientSecret: nextClientSecret,
-            // Flag for ops visibility — does NOT change decrypt behavior.
-            cipherVersion: isEncrypted(nextClientSecret ?? '') ? 'v1' : 'plain',
-            updatedAt: FieldValue.serverTimestamp(),
+          : (existingPriv.clientSecret as string | null) ?? null
+      const { error: privErr } = await supabaseAdmin
+        .from('organizations_private')
+        .upsert(
+          {
+            organization_id: tenant.organizationId,
+            fawtara: {
+              ...existingPriv,
+              clientId: nextClientId,
+              clientSecret: nextClientSecret,
+              cipherVersion: isEncrypted(nextClientSecret ?? '')
+                ? 'v1'
+                : 'plain',
+              updatedAt: new Date().toISOString(),
+            },
+            updated_at: new Date().toISOString(),
           },
-        },
-        { merge: true },
-      )
+          { onConflict: 'organization_id' },
+        )
+      if (privErr) throw privErr
       next.hasClientCredentials = !!nextClientId && !!nextClientSecret
     }
 
-    await orgRef.update({
-      fawtara: next,
-      updatedAt: FieldValue.serverTimestamp(),
-      updatedBy: tenant.userId,
-    })
+    const { error: orgErr } = await supabaseAdmin
+      .from('organizations')
+      .update({ fawtara: next, updated_by: tenant.userId })
+      .eq('id', tenant.organizationId)
+    if (orgErr) throw orgErr
 
     auditLog.queue({
       tenant,
@@ -116,7 +133,6 @@ export class FawtaraConfigService {
         enabled: next.enabled,
         mode: next.mode,
         invoiceTypeDefault: next.invoiceTypeDefault,
-        // Never log secrets.
       },
     })
 

@@ -1,57 +1,54 @@
-import { adminDb } from '@/lib/firebase/admin'
-import { FieldValue, Timestamp } from 'firebase-admin/firestore'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import type { TaxRate } from '@/types/pos.types'
 
-function toTaxRate(id: string, d: FirebaseFirestore.DocumentData): TaxRate {
+type Row = Record<string, unknown>
+
+function toTaxRate(r: Row): TaxRate {
   return {
-    id,
-    organizationId: d.organizationId,
-    name: d.name,
-    rate: typeof d.rate === 'number' ? d.rate : 0,
-    isDefault: d.isDefault === true,
-    createdAt: d.createdAt instanceof Timestamp ? d.createdAt.toDate() : new Date(),
-    createdBy: d.createdBy ?? '',
-    updatedAt: d.updatedAt instanceof Timestamp ? d.updatedAt.toDate() : new Date(),
-    updatedBy: d.updatedBy ?? '',
+    id: r.id as string,
+    organizationId: r.organization_id as string,
+    name: r.name as string,
+    rate: typeof r.rate === 'number' ? r.rate : Number(r.rate ?? 0),
+    isDefault: r.is_default === true,
+    createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
+    createdBy: (r.created_by as string) ?? '',
+    updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
+    updatedBy: (r.updated_by as string) ?? '',
   }
 }
 
 export class TaxRatesRepository {
   async getAll(tenant: TenantContext): Promise<TaxRate[]> {
-    const snap = await adminDb
-      .collection('taxRates')
-      .where('organizationId', '==', tenant.organizationId)
-      .get()
-    return snap.docs
-      .map((d) => toTaxRate(d.id, d.data()))
+    const { data, error } = await supabaseAdmin
+      .from('tax_rates')
+      .select('*')
+      .eq('organization_id', tenant.organizationId)
+    if (error) throw error
+    return (data ?? [])
+      .map(toTaxRate)
       .sort((a, b) => a.name.localeCompare(b.name))
   }
 
   async getById(tenant: TenantContext, id: string): Promise<TaxRate | null> {
-    const doc = await adminDb.collection('taxRates').doc(id).get()
-    if (!doc.exists) return null
-    const d = doc.data()!
-    if (d.organizationId !== tenant.organizationId) return null
-    return toTaxRate(doc.id, d)
+    const { data } = await supabaseAdmin
+      .from('tax_rates')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+    if (!data || data.organization_id !== tenant.organizationId) return null
+    return toTaxRate(data)
   }
 
-  /**
-   * Ensure at most one default exists per organization. Called from create/update
-   * when the caller passes isDefault=true; flips every other doc to false in one batch.
-   */
   private async clearOtherDefaults(tenant: TenantContext, excludeId?: string) {
-    const snap = await adminDb
-      .collection('taxRates')
-      .where('organizationId', '==', tenant.organizationId)
-      .where('isDefault', '==', true)
-      .get()
-    if (snap.empty) return
-    const batch = adminDb.batch()
-    snap.docs.forEach((d) => {
-      if (d.id !== excludeId) batch.update(d.ref, { isDefault: false })
-    })
-    await batch.commit()
+    let q = supabaseAdmin
+      .from('tax_rates')
+      .update({ is_default: false })
+      .eq('organization_id', tenant.organizationId)
+      .eq('is_default', true)
+    if (excludeId) q = q.neq('id', excludeId)
+    const { error } = await q
+    if (error) throw error
   }
 
   async create(
@@ -59,18 +56,20 @@ export class TaxRatesRepository {
     input: { name: string; rate: number; isDefault?: boolean },
   ): Promise<string> {
     if (input.isDefault) await this.clearOtherDefaults(tenant)
-    const now = new Date()
-    const ref = await adminDb.collection('taxRates').add({
-      organizationId: tenant.organizationId,
-      name: input.name,
-      rate: input.rate,
-      isDefault: input.isDefault === true,
-      createdBy: tenant.userId,
-      updatedBy: tenant.userId,
-      createdAt: now,
-      updatedAt: now,
-    })
-    return ref.id
+    const { data, error } = await supabaseAdmin
+      .from('tax_rates')
+      .insert({
+        organization_id: tenant.organizationId,
+        name: input.name,
+        rate: input.rate,
+        is_default: input.isDefault === true,
+        created_by: tenant.userId,
+        updated_by: tenant.userId,
+      })
+      .select('id')
+      .single()
+    if (error) throw error
+    return data.id as string
   }
 
   async update(
@@ -78,23 +77,27 @@ export class TaxRatesRepository {
     id: string,
     input: { name?: string; rate?: number; isDefault?: boolean },
   ): Promise<void> {
-    const doc = await adminDb.collection('taxRates').doc(id).get()
-    if (!doc.exists || doc.data()!.organizationId !== tenant.organizationId) {
-      throw new Error('Tax rate not found')
-    }
+    const existing = await this.getById(tenant, id)
+    if (!existing) throw new Error('Tax rate not found')
     if (input.isDefault) await this.clearOtherDefaults(tenant, id)
-    await doc.ref.update({
-      ...input,
-      updatedBy: tenant.userId,
-      updatedAt: FieldValue.serverTimestamp(),
-    })
+    const patch: Row = { updated_by: tenant.userId }
+    if (input.name !== undefined) patch.name = input.name
+    if (input.rate !== undefined) patch.rate = input.rate
+    if (input.isDefault !== undefined) patch.is_default = input.isDefault
+    const { error } = await supabaseAdmin
+      .from('tax_rates')
+      .update(patch)
+      .eq('id', id)
+    if (error) throw error
   }
 
   async delete(tenant: TenantContext, id: string): Promise<void> {
-    const doc = await adminDb.collection('taxRates').doc(id).get()
-    if (!doc.exists || doc.data()!.organizationId !== tenant.organizationId) {
-      throw new Error('Tax rate not found')
-    }
-    await doc.ref.delete()
+    const existing = await this.getById(tenant, id)
+    if (!existing) throw new Error('Tax rate not found')
+    const { error } = await supabaseAdmin
+      .from('tax_rates')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
   }
 }

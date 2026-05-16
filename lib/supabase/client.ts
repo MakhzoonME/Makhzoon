@@ -15,5 +15,7 @@ export function createClient() {
       'Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY',
     );
   }
-  return createBrowserClient(url, anonKey);
+  // Permissive schema (no generated DB types in this env) — see admin.ts.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return createBrowserClient<any, any, any>(url, anonKey);
 }

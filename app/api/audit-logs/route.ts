@@ -18,7 +18,7 @@ async function batchGetNames(
     .in('id', unique);
   if (error) return map;
   for (const row of data ?? []) {
-    const r = row as Record<string, unknown>;
+    const r = row as unknown as Record<string, unknown>;
     const val = r[field];
     if (val) map.set(r.id as string, String(val));
   }

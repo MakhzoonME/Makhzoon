@@ -74,7 +74,9 @@ export async function proxy(req: NextRequest) {
     }
   }
 
-  const session = req.cookies.get('session')?.value;
+  const session = req.cookies.getAll().some(
+    (c) => c.name.startsWith('sb-') && c.name.endsWith('-auth-token') && c.value
+  );
 
   // Auth pages are always accessible
   if (AUTH_PATHS.has(rest)) {

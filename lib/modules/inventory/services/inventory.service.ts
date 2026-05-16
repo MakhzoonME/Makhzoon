@@ -3,6 +3,7 @@ import type { TenantContext } from '@/lib/platform/tenancy/types'
 import { hasPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
 import { eventBus } from '@/lib/platform/events/event-bus'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { InventoryRepository, GetAllOpts } from '../repositories/inventory.repository'
 import type { TransactionType } from '../types'
 
@@ -150,31 +151,32 @@ export class InventoryService {
     requirePermission(tenant, 'inventory', 'delete')
 
     // Cross-module reference integrity — block deletion while live references exist.
-    const { adminDb } = await import('@/lib/firebase/admin')
-    const now = new Date()
+    const now = new Date().toISOString()
 
-    const [openReqsSnap, activeWarrantiesSnap] = await Promise.all([
-      adminDb.collection('requests')
-        .where('organizationId', '==', tenant.organizationId)
-        .where('inventoryItemId', '==', id)
-        .where('status', '==', 'PENDING')
-        .limit(1)
-        .get(),
-      adminDb.collection('warranties')
-        .where('organizationId', '==', tenant.organizationId)
-        .where('inventoryItemId', '==', id)
-        .where('endDate', '>=', now)
-        .limit(1)
-        .get(),
+    const [openReqs, activeWarranties] = await Promise.all([
+      supabaseAdmin
+        .from('requests')
+        .select('id')
+        .eq('organization_id', tenant.organizationId)
+        .eq('inventory_item_id', id)
+        .eq('status', 'PENDING')
+        .limit(1),
+      supabaseAdmin
+        .from('warranties')
+        .select('id')
+        .eq('organization_id', tenant.organizationId)
+        .eq('inventory_item_id', id)
+        .gte('end_date', now)
+        .limit(1),
     ])
 
-    if (!openReqsSnap.empty) {
+    if ((openReqs.data?.length ?? 0) > 0) {
       throw NextResponse.json(
         { error: 'Cannot delete inventory item with open requests. Resolve or reject them first.' },
         { status: 409 },
       )
     }
-    if (!activeWarrantiesSnap.empty) {
+    if ((activeWarranties.data?.length ?? 0) > 0) {
       throw NextResponse.json(
         { error: 'Cannot delete inventory item with an active warranty. Delete or let the warranty expire first.' },
         { status: 409 },

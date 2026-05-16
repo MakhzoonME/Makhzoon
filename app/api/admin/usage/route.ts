@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getAllOrgsWithUsage } from '@/lib/db/usage';
 
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);

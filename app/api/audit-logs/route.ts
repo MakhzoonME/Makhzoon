@@ -1,24 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getAuditLogs } from '@/lib/db/audit-logs';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { AuditLog } from '@/types';
 
 async function batchGetNames(
-  collection: string,
+  table: string,
   field: string,
   ids: string[]
 ): Promise<Map<string, string>> {
   const unique = Array.from(new Set(ids.filter(Boolean)));
   if (!unique.length) return new Map();
-  const docs = await Promise.all(unique.map((id) => adminDb.collection(collection).doc(id).get()));
   const map = new Map<string, string>();
-  docs.forEach((doc, i) => {
-    if (doc.exists) {
-      const val = doc.data()?.[field];
-      if (val) map.set(unique[i], String(val));
-    }
-  });
+  const { data, error } = await supabaseAdmin
+    .from(table)
+    .select(`id, ${field}`)
+    .in('id', unique);
+  if (error) return map;
+  for (const row of data ?? []) {
+    const r = row as Record<string, unknown>;
+    const val = r[field];
+    if (val) map.set(r.id as string, String(val));
+  }
   return map;
 }
 
@@ -36,31 +39,32 @@ async function enrichLogs(logs: AuditLog[]): Promise<AuditLog[]> {
     moduleGroups[mod].push(l.recordId);
   }
 
+  // Postgres tables/columns (snake_case).
   const collectionForModule: Record<string, { col: string; field: string }> = {
     assets: { col: 'assets', field: 'name' },
     asset: { col: 'assets', field: 'name' },
-    users: { col: 'users', field: 'displayName' },
-    user: { col: 'users', field: 'displayName' },
-    invites: { col: 'invites', field: 'displayName' },
-    invite: { col: 'invites', field: 'displayName' },
-    inventory: { col: 'inventoryItems', field: 'name' },
-    'inventory items': { col: 'inventoryItems', field: 'name' },
-    maintenance: { col: 'maintenanceRecords', field: 'title' },
+    users: { col: 'users', field: 'display_name' },
+    user: { col: 'users', field: 'display_name' },
+    invites: { col: 'invites', field: 'display_name' },
+    invite: { col: 'invites', field: 'display_name' },
+    inventory: { col: 'inventory_items', field: 'name' },
+    'inventory items': { col: 'inventory_items', field: 'name' },
+    maintenance: { col: 'maintenance_records', field: 'description' },
     warranties: { col: 'warranties', field: 'vendor' },
     warranty: { col: 'warranties', field: 'vendor' },
-    requests: { col: 'requests', field: 'title' },
-    request: { col: 'requests', field: 'title' },
+    requests: { col: 'requests', field: 'description' },
+    request: { col: 'requests', field: 'description' },
     organizations: { col: 'organizations', field: 'name' },
     organization: { col: 'organizations', field: 'name' },
-    tickets: { col: 'supportTickets', field: 'subject' },
-    ticket: { col: 'supportTickets', field: 'subject' },
+    tickets: { col: 'support_tickets', field: 'subject' },
+    ticket: { col: 'support_tickets', field: 'subject' },
     packages: { col: 'packages', field: 'name' },
     package: { col: 'packages', field: 'name' },
   };
 
   const [userNamesOrg, userNamesSuperAdmin, orgNames, recordMaps] = await Promise.all([
-    batchGetNames('users', 'displayName', userIds),
-    batchGetNames('superadminUsers', 'displayName', userIds),
+    batchGetNames('users', 'display_name', userIds),
+    batchGetNames('superadmin_users', 'display_name', userIds),
     batchGetNames('organizations', 'name', orgIds),
     Promise.all(
       Object.entries(moduleGroups).map(async ([mod, ids]) => {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getOrganizations, getOrganizationById } from '@/lib/db/organizations';
-import { adminAuth } from '@/lib/firebase/admin';
+import { authEmailExists } from '@/lib/supabase/auth-admin';
 import { createInvite, getPendingInviteForEmail } from '@/lib/db/invites';
 import { generateInviteToken } from '@/lib/db/invites';
 import { sendEmail } from '@/lib/email/resend';
@@ -65,8 +65,9 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    const existing = await adminAuth.getUserByEmail(normalizedEmail).catch(() => null);
-    if (existing) return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
+    if (await authEmailExists(normalizedEmail)) {
+      return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
+    }
 
     const pending = await getPendingInviteForEmail(orgId, normalizedEmail);
     if (pending) return NextResponse.json({ error: 'This email already has a pending invite' }, { status: 409 });

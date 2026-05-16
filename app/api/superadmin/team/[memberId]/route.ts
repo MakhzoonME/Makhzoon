@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { adminAuth } from '@/lib/firebase/admin';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
+import {
+  updateAuthUser,
+  setAuthUserActive,
+  revokeAuthUserSessions,
+  deleteAuthUser,
+} from '@/lib/supabase/auth-admin';
 import {
   updateSuperAdminUser,
   deleteSuperAdminUser,
@@ -32,7 +37,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ memberI
   // Resolve target member's current role
   const allMembers = await getSuperAdminUsers();
   const target = allMembers.find((m) => m.id === params.memberId);
-  const targetRole = target?.role ?? (await adminAuth.getUser(params.memberId)).customClaims?.role;
+  const targetRole = target?.role;
 
   // makhzoon_admin cannot touch super_admin members
   if (caller.role === 'makhzoon_admin' && targetRole === 'super_admin') {
@@ -56,19 +61,16 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ memberI
     updatedBy: caller.uid,
   });
 
-  if (parsed.data.displayName) {
-    await adminAuth.updateUser(params.memberId, { displayName: parsed.data.displayName });
-  }
-
-  if (parsed.data.role) {
-    const existingClaims = (await adminAuth.getUser(params.memberId)).customClaims ?? {};
-    await adminAuth.setCustomUserClaims(params.memberId, { ...existingClaims, role: parsed.data.role as MakhzoonRole });
+  if (parsed.data.displayName || parsed.data.role) {
+    await updateAuthUser(params.memberId, {
+      displayName: parsed.data.displayName,
+      role: parsed.data.role as MakhzoonRole | undefined,
+    });
   }
   if (parsed.data.status === 'deactivated') {
-    await adminAuth.updateUser(params.memberId, { disabled: true });
-    await adminAuth.revokeRefreshTokens(params.memberId);
+    await setAuthUserActive(params.memberId, false);
   } else if (parsed.data.status === 'active') {
-    await adminAuth.updateUser(params.memberId, { disabled: false });
+    await setAuthUserActive(params.memberId, true);
   }
 
   return NextResponse.json({ ok: true });
@@ -82,8 +84,8 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ membe
   if (params.memberId === caller.uid)
     return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
 
-  try { await adminAuth.revokeRefreshTokens(params.memberId); } catch { /* ignore */ }
-  try { await adminAuth.deleteUser(params.memberId); } catch { /* ignore */ }
+  await revokeAuthUserSessions(params.memberId);
+  await deleteAuthUser(params.memberId);
   await deleteSuperAdminUser(params.memberId);
 
   return NextResponse.json({ ok: true });

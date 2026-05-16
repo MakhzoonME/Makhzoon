@@ -11,7 +11,7 @@ import {
 } from '@/lib/db/invites';
 import { getOrganizationById } from '@/lib/db/organizations';
 import { createInviteSchema } from '@/lib/validations/invite.schema';
-import { adminAuth } from '@/lib/firebase/admin';
+import { authEmailExists } from '@/lib/supabase/auth-admin';
 import { sendEmail } from '@/lib/email/resend';
 import { inviteEmail } from '@/lib/email/templates';
 import { auditLog } from '@/lib/platform/audit';
@@ -56,8 +56,7 @@ export async function POST(req: NextRequest) {
   const normalizedUsername = username ? username.toLowerCase() : undefined;
 
   if (normalizedEmail) {
-    const existing = await adminAuth.getUserByEmail(normalizedEmail).catch(() => null);
-    if (existing) {
+    if (await authEmailExists(normalizedEmail)) {
       // SECURITY: Don't reveal if user exists (prevents user enumeration)
       return NextResponse.json({ error: 'This email cannot be invited' }, { status: 409 });
     }
@@ -68,8 +67,7 @@ export async function POST(req: NextRequest) {
   }
   if (normalizedUsername) {
     const syntheticEmail = `${normalizedUsername}@makhzoon.local`;
-    const existing = await adminAuth.getUserByEmail(syntheticEmail).catch(() => null);
-    if (existing) {
+    if (await authEmailExists(syntheticEmail)) {
       // SECURITY: Don't reveal if username exists
       return NextResponse.json({ error: 'This username cannot be invited' }, { status: 409 });
     }

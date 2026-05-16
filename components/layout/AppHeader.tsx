@@ -1,8 +1,7 @@
 'use client';
 import { useState, useSyncExternalStore } from 'react';
 import { useAuthStore } from '@/store/auth.store';
-import { auth } from '@/lib/firebase/client';
-import { signOut } from 'firebase/auth';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
@@ -85,7 +84,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
     setIsLoggingOut(true);
     try {
       await fetch('/api/auth/session', { method: 'DELETE' });
-      await signOut(auth);
+      await createClient().auth.signOut();
     } catch {
       // ignore — always redirect regardless of errors
     }

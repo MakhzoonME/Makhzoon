@@ -1,28 +1,22 @@
 import { NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getOrganizationById } from '@/lib/db/organizations';
 import { getSuperAdminUserById } from '@/lib/db/superadmin-users';
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
-/** PII scrub script (scripts/clone-firestore.ts) replaces real contact emails
- *  with this synthetic pattern in non-prod envs. When we detect it, fall back
- *  to the org owner's Firebase Auth email so the page shows the real value. */
+/** Legacy PII-scrub pattern from the Firestore clone scripts. No clone exists
+ *  post-migration so this never matches, but the fallback is kept harmless. */
 const SCRUBBED_ORG_EMAIL = /^org-.+@example\.test$/i;
 
 async function resolveOrgOwnerEmail(orgId: string): Promise<string | null> {
-  const snap = await adminDb.collection('users')
-    .where('organizationId', '==', orgId)
-    .where('role', '==', 'org_owner')
+  const { data } = await supabaseAdmin
+    .from('users')
+    .select('email')
+    .eq('organization_id', orgId)
+    .eq('role', 'org_owner')
     .limit(1)
-    .get();
-  if (snap.empty) return null;
-  const ownerId = snap.docs[0].id;
-  try {
-    const authUser = await adminAuth.getUser(ownerId);
-    return authUser.email ?? null;
-  } catch {
-    return null;
-  }
+    .maybeSingle();
+  return (data?.email as string) ?? null;
 }
 
 export async function GET() {
@@ -54,16 +48,6 @@ export async function GET() {
       const member = await getSuperAdminUserById(org.assignedMemberId);
       if (member) {
         accountManager = { id: member.id, name: member.displayName ?? '', email: member.email };
-      } else {
-        // Fallback: member may exist only in Firebase Auth (synthetic member)
-        const authUser = await adminAuth.getUser(org.assignedMemberId).catch(() => null);
-        if (authUser) {
-          accountManager = {
-            id: authUser.uid,
-            name: authUser.displayName ?? '',
-            email: authUser.email ?? '',
-          };
-        }
       }
     }
 

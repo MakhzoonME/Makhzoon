@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { updateAuthUser } from '@/lib/supabase/auth-admin';
+import { updateUser } from '@/lib/db/users';
 
 export async function PATCH(req: NextRequest) {
   // SECURITY: Rate limit profile updates (20 per IP per hour)
@@ -19,20 +19,13 @@ export async function PATCH(req: NextRequest) {
     const tenant = await resolveTenant();
     const user = tenant.user;
 
-    const { displayName, photoURL } = await req.json();
+    // NOTE: photoURL was stored on the legacy Firestore user doc; there is no
+    // avatar column in public.users, so only displayName is persisted now.
+    const { displayName } = await req.json();
+    if (!displayName) return NextResponse.json({ ok: true });
 
-    const updates: Record<string, string> = {};
-    if (displayName) updates.displayName = displayName;
-    if (photoURL) updates.photoURL = photoURL;
-
-    if (Object.keys(updates).length === 0) return NextResponse.json({ ok: true });
-
-    await adminAuth.updateUser(user.uid, updates);
-
-    const firestoreUpdates: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp(), updatedBy: user.uid };
-    if (displayName) firestoreUpdates.displayName = displayName;
-    if (photoURL) firestoreUpdates.photoURL = photoURL;
-    await adminDb.collection('users').doc(user.uid).update(firestoreUpdates);
+    await updateAuthUser(user.uid, { displayName });
+    await updateUser(user.uid, { displayName, updatedBy: user.uid });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import { updateAuthUser, setAuthUserActive, revokeAuthUserSessions, deleteAuthUser } from '@/lib/supabase/auth-admin';
 import { getUserById, updateUser } from '@/lib/db/users';
 import { auditLog } from '@/lib/platform/audit';
-import { invalidateCachedPermissions, invalidateCachedSessionsForUser } from '@/lib/firebase/session-cache';
-import { FieldValue } from 'firebase-admin/firestore';
+import { invalidateCachedPermissions, invalidateCachedSessionsForUser } from '@/lib/supabase/session-cache';
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ userId: string }> }) {
   const params = await props.params;
@@ -42,9 +42,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ userId:
   }
 
   await updateUser(userId, { role, permissions: permissions ?? undefined, updatedBy: caller.uid });
-  const existingClaims = (await adminAuth.getUser(userId)).customClaims ?? {};
-  await adminAuth.setCustomUserClaims(userId, { ...existingClaims, role });
-  await adminAuth.revokeRefreshTokens(userId);
+  await updateAuthUser(userId, { role });
+  await revokeAuthUserSessions(userId);
   invalidateCachedPermissions(userId);
   invalidateCachedSessionsForUser(userId);
 
@@ -93,15 +92,9 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ userId
   invalidateCachedPermissions(userId);
 
   if (permanent) {
-    try {
-      await adminAuth.revokeRefreshTokens(userId);
-    } catch { /* ignore if already deleted */ }
-    try {
-      await adminAuth.deleteUser(userId);
-    } catch (err: unknown) {
-      if ((err as { code?: string }).code !== 'auth/user-not-found') throw err;
-    }
-    await adminDb.collection('users').doc(userId).delete();
+    await revokeAuthUserSessions(userId);
+    await deleteAuthUser(userId);
+    await supabaseAdmin.from('users').delete().eq('id', userId);
 
     if (tenant) {
       auditLog.queue({
@@ -113,13 +106,8 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ userId
       });
     }
   } else {
-    await adminAuth.updateUser(userId, { disabled: true });
-    await adminAuth.revokeRefreshTokens(userId);
-    await adminDb.collection('users').doc(userId).update({
-      status: 'deactivated',
-      updatedBy: caller.uid,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
+    await setAuthUserActive(userId, false);
+    await updateUser(userId, { status: 'deactivated', updatedBy: caller.uid });
 
     if (tenant) {
       auditLog.queue({

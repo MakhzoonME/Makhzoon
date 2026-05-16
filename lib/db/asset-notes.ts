@@ -1,42 +1,67 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { AssetNote } from '@/types';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
-function toNote(id: string, data: FirebaseFirestore.DocumentData): AssetNote {
+type Row = Record<string, unknown>;
+
+function toNote(r: Row): AssetNote {
   return {
-    id,
-    organizationId: data.organizationId,
-    assetId: data.assetId,
-    text: data.text,
-    createdBy: data.createdBy,
-    createdByEmail: data.createdByEmail,
-    createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+    id: r.id as string,
+    organizationId: r.organization_id as string,
+    assetId: r.asset_id as string,
+    text: r.text as string,
+    createdBy: r.created_by as string,
+    createdByEmail: r.created_by_email as string,
+    createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
   };
 }
 
-export async function getAssetNotes(orgId: string, assetId: string): Promise<AssetNote[]> {
-  const snap = await adminDb.collection('assetNotes')
-    .where('organizationId', '==', orgId)
-    .where('assetId', '==', assetId)
-    .orderBy('createdAt', 'desc')
-    .get();
-  return snap.docs.map((d) => toNote(d.id, d.data()));
+export async function getAssetNotes(
+  orgId: string,
+  assetId: string,
+): Promise<AssetNote[]> {
+  const { data, error } = await supabaseAdmin
+    .from('asset_notes')
+    .select('*')
+    .eq('organization_id', orgId)
+    .eq('asset_id', assetId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map(toNote);
 }
 
-export async function createAssetNote(data: Omit<AssetNote, 'id' | 'createdAt'>): Promise<string> {
-  const ref = await adminDb.collection('assetNotes').add({
-    ...data,
-    createdAt: FieldValue.serverTimestamp(),
-  });
-  return ref.id;
+export async function createAssetNote(
+  data: Omit<AssetNote, 'id' | 'createdAt'>,
+): Promise<string> {
+  const { data: row, error } = await supabaseAdmin
+    .from('asset_notes')
+    .insert({
+      organization_id: data.organizationId,
+      asset_id: data.assetId,
+      text: data.text,
+      created_by: data.createdBy,
+      created_by_email: data.createdByEmail,
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return row.id as string;
 }
 
-export async function getAssetNoteById(id: string): Promise<AssetNote | null> {
-  const doc = await adminDb.collection('assetNotes').doc(id).get();
-  if (!doc.exists) return null;
-  return toNote(doc.id, doc.data()!);
+export async function getAssetNoteById(
+  id: string,
+): Promise<AssetNote | null> {
+  const { data } = await supabaseAdmin
+    .from('asset_notes')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  return data ? toNote(data) : null;
 }
 
 export async function deleteAssetNote(id: string): Promise<void> {
-  await adminDb.collection('assetNotes').doc(id).delete();
+  const { error } = await supabaseAdmin
+    .from('asset_notes')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
 }

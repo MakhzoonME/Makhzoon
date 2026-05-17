@@ -19,13 +19,20 @@ export async function PATCH(req: NextRequest) {
     const tenant = await resolveTenant();
     const user = tenant.user;
 
-    // NOTE: photoURL was stored on the legacy Firestore user doc; there is no
-    // avatar column in public.users, so only displayName is persisted now.
-    const { displayName } = await req.json();
-    if (!displayName) return NextResponse.json({ ok: true });
+    const { displayName, avatarUrl } = await req.json();
+    if (!displayName && avatarUrl === undefined) {
+      return NextResponse.json({ ok: true });
+    }
 
-    await updateAuthUser(user.uid, { displayName });
-    await updateUser(user.uid, { displayName, updatedBy: user.uid });
+    if (displayName) {
+      await updateAuthUser(user.uid, { displayName });
+    }
+
+    await updateUser(user.uid, {
+      ...(displayName !== undefined ? { displayName } : {}),
+      ...(avatarUrl !== undefined ? { avatarUrl } : {}),
+      updatedBy: user.uid,
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

@@ -22,6 +22,7 @@ export function useAuth() {
       let features: Record<string, boolean> = {};
       let permissions = null;
       let orgSlug: string | null = null;
+      let avatarUrl: string | null = null;
 
       if (ORG_ROLES.has(role)) {
         try {
@@ -33,6 +34,7 @@ export function useAuth() {
             features = data.features ?? {};
             permissions = data.permissions ?? null;
             orgSlug = data.orgSlug ?? null;
+            avatarUrl = data.avatarUrl ?? null;
           }
         } catch {
           // non-critical
@@ -44,6 +46,7 @@ export function useAuth() {
         uid,
         email,
         displayName: '',
+        avatarUrl,
         role,
         organizationId,
         orgSlug,
@@ -66,6 +69,7 @@ export function useAuth() {
             uid: data.uid ?? '',
             email: '',
             displayName: '',
+            avatarUrl: data.avatarUrl ?? null,
             role: data.role,
             organizationId: data.organizationId ?? null,
             orgSlug: data.orgSlug ?? null,

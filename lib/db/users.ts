@@ -15,6 +15,7 @@ function toUser(r: Row): OrgUser {
     email: r.email as string,
     username: r.username as string,
     displayName: r.display_name as string,
+    avatarUrl: (r.avatar_url ?? null) as string | null,
     role: r.role as OrgUser['role'],
     status: (r.status as string) ?? 'active',
     permissions: (r.permissions ?? null) as UserPermissions | null,
@@ -74,6 +75,7 @@ export async function updateUser(
   if (data.email !== undefined) patch.email = data.email;
   if (data.username !== undefined) patch.username = data.username;
   if (data.displayName !== undefined) patch.display_name = data.displayName;
+  if (data.avatarUrl !== undefined) patch.avatar_url = data.avatarUrl;
   if (data.role !== undefined) patch.role = data.role;
   if (data.status !== undefined) patch.status = data.status;
   if (data.permissions !== undefined) patch.permissions = data.permissions;

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
 import { useOrgSlug } from '@/hooks/ui';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { AvatarUpload } from '@/components/shared/AvatarUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/ui';
@@ -33,6 +34,20 @@ export default function ProfilePage() {
 
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
   const [savingName, setSavingName] = useState(false);
+
+  async function handleAvatarChange(url: string | null) {
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatarUrl: url }),
+      });
+      if (!res.ok) throw new Error();
+      if (user) setUser({ ...user, avatarUrl: url });
+    } catch {
+      toast.error('Failed to update picture');
+    }
+  }
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -106,6 +121,13 @@ export default function ProfilePage() {
       <div className="max-w-2xl space-y-6">
         <div className="bg-surface-card rounded-lg border border-border p-6">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Account Info</h2>
+          <div className="mb-6">
+            <AvatarUpload
+              value={user?.avatarUrl ?? null}
+              onChange={handleAvatarChange}
+              fallbackText={user?.displayName || user?.email || '?'}
+            />
+          </div>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Username</label>

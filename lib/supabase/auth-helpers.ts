@@ -19,6 +19,40 @@ const SUPERADMIN_ROLES = new Set<UserRole>([
 ]);
 const ORG_ROLES = new Set<UserRole>(['org_owner', 'admin', 'staff']);
 
+/**
+ * Local-only auth bypass — DO NOT use in any deployed env.
+ * Active only when `next dev` is running AND LOCAL_AUTH_BYPASS_USER_ID
+ * is set in the gitignored .env.local. Cloud dev/staging/prod run
+ * NODE_ENV=production so this short-circuits to null there.
+ */
+async function localAuthBypass(): Promise<AuthUser | null> {
+  if (process.env.NODE_ENV !== 'development') return null;
+  const bypassUid = process.env.LOCAL_AUTH_BYPASS_USER_ID;
+  if (!bypassUid) return null;
+
+  const { data: row, error } = await supabaseAdmin
+    .from('users')
+    .select('role, organization_id, display_name, email, permissions')
+    .eq('id', bypassUid)
+    .maybeSingle();
+  if (error || !row) {
+    console.warn(
+      '[auth] LOCAL_AUTH_BYPASS_USER_ID set but no public.users row for',
+      bypassUid,
+    );
+    return null;
+  }
+
+  return {
+    uid: bypassUid,
+    email: (row.email as string) ?? '',
+    displayName: (row.display_name as string) ?? '',
+    role: (row.role as UserRole) ?? 'staff',
+    organizationId: (row.organization_id as string) ?? null,
+    permissions: (row.permissions as UserPermissions | null) ?? null,
+  };
+}
+
 /** Decode a JWT payload without verifying (getUser() already verified). */
 function decodeJwt(token: string): Record<string, unknown> {
   try {
@@ -45,6 +79,9 @@ function decodeJwt(token: string): Record<string, unknown> {
  */
 export async function verifySessionCookie(): Promise<AuthUser | null> {
   try {
+    const bypass = await localAuthBypass();
+    if (bypass) return bypass;
+
     const supabase = await createClient();
 
     const {

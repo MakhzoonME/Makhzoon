@@ -17,5 +17,5 @@ export function createClient() {
   }
   // Permissive schema (no generated DB types in this env) — see admin.ts.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return createBrowserClient<any, any, any>(url, anonKey);
+  return createBrowserClient<any>(url, anonKey);
 }

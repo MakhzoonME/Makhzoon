@@ -17,7 +17,7 @@ function toUser(r: Row): OrgUser {
     displayName: r.display_name as string,
     avatarUrl: (r.avatar_url ?? null) as string | null,
     role: r.role as OrgUser['role'],
-    status: (r.status as string) ?? 'active',
+    status: (r.status as OrgUser['status']) ?? 'active',
     permissions: (r.permissions ?? null) as UserPermissions | null,
     createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
     createdBy: r.created_by as string,

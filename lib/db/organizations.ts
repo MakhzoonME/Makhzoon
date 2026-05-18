@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { Organization } from '@/types';
+import { Organization, OrgCategory } from '@/types';
 
 // Phase 3 conversion (canonical pattern): Firestore collection →
 // public.organizations. Public function signatures are preserved exactly so
@@ -16,7 +16,7 @@ function toOrg(r: Row): Organization {
     subdomain: r.subdomain as string,
     contactEmail: r.contact_email as string,
     description: (r.description as string) ?? null,
-    category: (r.category as string) ?? null,
+    category: (r.category as OrgCategory) ?? null,
     packageDetails: (r.package_details ?? {}) as Organization['packageDetails'],
     assignedMemberId: (r.assigned_member_id as string) ?? null,
     createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),

@@ -37,11 +37,11 @@
       "branch": null,
       "createdAt": "2026-05-15T12:00:00Z",
       "completedAt": null
-    }
+    },
     {
       "id": "MZ-004",
       "title": "DevOps verification — Supabase migration + Cloudflare Pages setup",
-      "description": "Verify all config files for the Supabase + Cloudflare migration: wrangler.toml, open-next.config.ts, next.config.mjs, proxy.ts, supabase/migrations/, env files, build pipeline, supabase client config. Report what's correct and what needs fixing.",
+      "description": "Verify all config files for the Supabase + Cloudflare migration: wrangler.toml, open-next.config.ts, next.config.mjs, middleware.ts (renamed from proxy.ts — see MZ-013), supabase/migrations/, env files, build pipeline, supabase client config. Status as of 2026-05-18: config files verified; P1/P2 fixes done (MZ-006..MZ-009); 12 pre-existing TS errors fixed; cf:build green, worker.js 2.2K, bundle 71M (well under CF 100MB limit). REMAINING TO CLOSE: (1) `npm run cf:preview` smoke test on macOS — never executed (long-running dev server, manual run required); (2) first Windows CI run on the new build.yml workflow must pass (depends on MZ-012); (3) QA plan Section 1 (schema migration replay against fresh Supabase, RLS policy spot-checks) — out-of-session and requires a sacrificial Supabase project.",
       "status": "in-progress",
       "assignee": "devops",
       "requestedBy": "user",
@@ -141,6 +141,49 @@
       "branch": null,
       "createdAt": "2026-05-16T12:00:00Z",
       "completedAt": "2026-05-16T12:10:00Z"
+    },
+    {
+      "id": "MZ-011",
+      "title": "Deploy Google Drive upload integration to dev",
+      "description": "Land the Drive upload feature (already committed in 4fee262) to dev.makhzoon.me. Steps: (1) Apply supabase/migrations/0007_avatar.sql against the shared Supabase project via SQL Editor — NOTE: shared DB affects dev/staging/prod simultaneously. (2) Set three Worker secrets per env via `npx wrangler secret put` — GOOGLE_DRIVE_CLIENT_EMAIL, GOOGLE_DRIVE_PRIVATE_KEY, GOOGLE_DRIVE_FOLDER_ID (source from .env.local). (3) Run `npm run cf:deploy -- --env dev`. (4) Smoke test avatar upload at dev.makhzoon.me/<locale>/<orgSlug>/profile. (5) Repeat secrets + merge to STGBranch/main when ready. Drive folder: 1y6VunC5Qc0_t7MO5tF_b26eg_VN43Exq (service account has Editor).",
+      "status": "pending",
+      "assignee": "devops",
+      "requestedBy": "user",
+      "files": [
+        "supabase/migrations/0007_avatar.sql",
+        "lib/drive/client.ts",
+        "lib/drive/upload.ts",
+        "app/api/upload/route.ts",
+        "components/shared/AvatarUpload.tsx",
+        "wrangler.toml"
+      ],
+      "branch": "DevBranch",
+      "createdAt": "2026-05-18T00:00:00Z",
+      "completedAt": null
+    },
+    {
+      "id": "MZ-012",
+      "title": "Decide P3 #5 — OpenNext Windows compatibility warning",
+      "description": "Resolution chosen 2026-05-18: do not accept-and-document (colleague builds on Windows daily, so Windows must work). Instead, added a GitHub Actions workflow at .github/workflows/build.yml that runs `npm ci && npx tsc --noEmit && npm run cf:build && bundle-size check` on both ubuntu-latest and windows-latest, triggered on pushes to DevBranch/STGBranch/main and on pull_request. REMAINING TO CLOSE: (1) commit + push the workflow file so GitHub Actions registers it; (2) first windows-latest matrix run must complete green — this is the actual proof Windows builds work end-to-end; (3) colleague confirms his local Windows `npm run cf:build` succeeds after pulling MZ-013's middleware.ts rename.",
+      "status": "in-progress",
+      "assignee": "devops",
+      "requestedBy": "user",
+      "files": [".opencode/qa-plan-supabase-cloudflare.md", ".github/workflows/build.yml"],
+      "branch": "DevBranch",
+      "createdAt": "2026-05-18T00:00:00Z",
+      "completedAt": null
+    },
+    {
+      "id": "MZ-013",
+      "title": "Rename proxy.ts → middleware.ts (Edge runtime for OpenNext CF Workers)",
+      "description": "Incidental fix surfaced during MZ-004 build verification. Next.js 16 introduced `proxy.ts` as an alternative middleware file that defaults to Node.js runtime; @opennextjs/cloudflare 1.19.10 does not yet support Node middleware and aborts with 'Node.js middleware is not currently supported. Consider switching to Edge Middleware.' Fix: renamed proxy.ts → middleware.ts (legacy convention, always Edge runtime), renamed exported function `proxy` → `middleware`. No behavior change — same routing logic, just runs on Edge. The matcher config and all branching is preserved. Colleague on Windows must `git pull` before next build. Status: code change complete; closure waits on first green build on both OS legs of MZ-012's matrix.",
+      "status": "in-progress",
+      "assignee": "devops",
+      "requestedBy": "user",
+      "files": ["middleware.ts"],
+      "branch": "DevBranch",
+      "createdAt": "2026-05-18T00:00:00Z",
+      "completedAt": null
     }
   ]
 }

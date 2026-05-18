@@ -70,7 +70,7 @@ async function loadOrgFawtara(
       id: orgId,
       name: org.name as string,
       contactEmail: (org.contact_email as string) ?? null,
-      fawtara: (org.fawtara as Organization['fawtara']) ?? null,
+      fawtara: (org.fawtara as Organization['fawtara']) ?? undefined,
     },
     secrets: pf
       ? {

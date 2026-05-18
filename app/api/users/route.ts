@@ -53,11 +53,14 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
     const data = parsed.data;
+    // Schema permits username-only invites; auth.users still needs an email,
+    // so synthesize one for username accounts (see lib/supabase/auth-admin.ts).
+    const effectiveEmail = data.email?.trim() || `${data.username!.trim()}@makhzoon.local`;
 
     const tempPassword = randomBytes(16).toString('base64');
 
     const newUser = await createAuthUser({
-      email: data.email,
+      email: effectiveEmail,
       displayName: data.displayName,
       password: tempPassword,
       role: data.role,
@@ -66,7 +69,7 @@ export async function POST(req: NextRequest) {
 
     await createUser(newUser.uid, {
       organizationId: tenant.organizationId,
-      email: data.email,
+      email: effectiveEmail,
       displayName: data.displayName,
       role: data.role,
       status: 'active',
@@ -79,12 +82,12 @@ export async function POST(req: NextRequest) {
       action: 'USER_INVITED',
       module: 'users',
       recordId: newUser.uid,
-      newValue: { email: data.email, role: data.role },
+      newValue: { email: effectiveEmail, role: data.role },
     });
 
     return NextResponse.json({
       id: newUser.uid,
-      email: data.email,
+      email: effectiveEmail,
       displayName: data.displayName,
       role: data.role,
       message: 'User created. They will receive an email to set their password.'

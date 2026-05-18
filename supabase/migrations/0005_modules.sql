@@ -25,6 +25,7 @@ create index if not exists backend_logs_ts_idx on public.backend_logs (timestamp
 create index if not exists backend_logs_org_idx on public.backend_logs (organization_id);
 create index if not exists backend_logs_level_idx on public.backend_logs (level);
 alter table public.backend_logs enable row level security;
+drop policy if exists backend_logs_platform_read on public.backend_logs;
 create policy backend_logs_platform_read on public.backend_logs
   for select using (public.is_platform_admin());
 
@@ -43,6 +44,7 @@ create table if not exists public.contact_sales (
 );
 create index if not exists contact_sales_created_idx on public.contact_sales (created_at desc);
 alter table public.contact_sales enable row level security;
+drop policy if exists contact_sales_platform_read on public.contact_sales;
 create policy contact_sales_platform_read on public.contact_sales
   for select using (public.is_platform_admin());
 
@@ -56,6 +58,7 @@ create table if not exists public.early_access (
 );
 create index if not exists early_access_created_idx on public.early_access (created_at desc);
 alter table public.early_access enable row level security;
+drop policy if exists early_access_platform_read on public.early_access;
 create policy early_access_platform_read on public.early_access
   for select using (public.is_platform_admin());
 
@@ -75,6 +78,7 @@ create table if not exists public.superadmin_users (
 create or replace trigger superadmin_users_set_updated_at before update on public.superadmin_users
   for each row execute function public.set_updated_at();
 alter table public.superadmin_users enable row level security;
+drop policy if exists superadmin_users_platform_all on public.superadmin_users;
 create policy superadmin_users_platform_all on public.superadmin_users
   for all using (public.is_platform_admin()) with check (public.is_platform_admin());
 
@@ -98,8 +102,10 @@ create index if not exists payment_logs_org_idx on public.payment_logs (organiza
 create or replace trigger payment_logs_set_updated_at before update on public.payment_logs
   for each row execute function public.set_updated_at();
 alter table public.payment_logs enable row level security;
+drop policy if exists payment_logs_platform_all on public.payment_logs;
 create policy payment_logs_platform_all on public.payment_logs
   for all using (public.is_platform_admin()) with check (public.is_platform_admin());
+drop policy if exists payment_logs_mgr_read on public.payment_logs;
 create policy payment_logs_mgr_read on public.payment_logs
   for select using (public.is_org_manager(organization_id));
 
@@ -144,18 +150,24 @@ create index if not exists inv_audit_items_audit_idx on public.inventory_audit_i
 
 alter table public.inventory_audits enable row level security;
 alter table public.inventory_audit_items enable row level security;
+drop policy if exists inv_audits_platform_all on public.inventory_audits;
 create policy inv_audits_platform_all on public.inventory_audits
   for all using (public.is_platform_admin()) with check (public.is_platform_admin());
+drop policy if exists inv_audits_mgr_all on public.inventory_audits;
 create policy inv_audits_mgr_all on public.inventory_audits
   for all using (public.is_org_manager(organization_id))
   with check (public.is_org_manager(organization_id));
+drop policy if exists inv_audits_staff_read on public.inventory_audits;
 create policy inv_audits_staff_read on public.inventory_audits
   for select using (public.belongs_to_org(organization_id));
+drop policy if exists inv_audit_items_platform_all on public.inventory_audit_items;
 create policy inv_audit_items_platform_all on public.inventory_audit_items
   for all using (public.is_platform_admin()) with check (public.is_platform_admin());
+drop policy if exists inv_audit_items_mgr_all on public.inventory_audit_items;
 create policy inv_audit_items_mgr_all on public.inventory_audit_items
   for all using (public.is_org_manager(organization_id))
   with check (public.is_org_manager(organization_id));
+drop policy if exists inv_audit_items_staff_read on public.inventory_audit_items;
 create policy inv_audit_items_staff_read on public.inventory_audit_items
   for select using (public.belongs_to_org(organization_id));
 
@@ -193,17 +205,23 @@ create index if not exists ticket_messages_ticket_idx on public.ticket_messages 
 
 alter table public.support_tickets enable row level security;
 alter table public.ticket_messages enable row level security;
+drop policy if exists support_tickets_platform_all on public.support_tickets;
 create policy support_tickets_platform_all on public.support_tickets
   for all using (public.is_platform_admin()) with check (public.is_platform_admin());
+drop policy if exists support_tickets_mgr_all on public.support_tickets;
 create policy support_tickets_mgr_all on public.support_tickets
   for all using (public.is_org_manager(organization_id))
   with check (public.is_org_manager(organization_id));
+drop policy if exists support_tickets_staff_read on public.support_tickets;
 create policy support_tickets_staff_read on public.support_tickets
   for select using (public.belongs_to_org(organization_id));
+drop policy if exists support_tickets_staff_create on public.support_tickets;
 create policy support_tickets_staff_create on public.support_tickets
   for insert with check (public.belongs_to_org(organization_id));
+drop policy if exists ticket_messages_platform_all on public.ticket_messages;
 create policy ticket_messages_platform_all on public.ticket_messages
   for all using (public.is_platform_admin()) with check (public.is_platform_admin());
+drop policy if exists ticket_messages_org_all on public.ticket_messages;
 create policy ticket_messages_org_all on public.ticket_messages
   for all using (public.belongs_to_org(organization_id))
   with check (public.belongs_to_org(organization_id));

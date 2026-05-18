@@ -9,7 +9,7 @@ function toAsset(r: Row): Asset {
     organizationId: r.organization_id as string,
     name: r.name as string,
     category: r.category as string,
-    status: r.status as string,
+    status: r.status as Asset['status'],
     serialNumber: r.serial_number as string,
     purchaseDate: r.purchase_date ? new Date(r.purchase_date as string) : (r.purchase_date as undefined),
     purchaseCost: r.purchase_cost as number,

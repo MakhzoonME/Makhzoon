@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requirePermission } from '@/lib/permissions/require'
 import { InventoryService } from '@/lib/modules/inventory/services/inventory.service'
 import { createInventoryItemSchema } from '@/lib/modules/inventory/validators/schemas'
 
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requirePermission(tenant.user, 'inventory', 'create')
     const body = await req.json()
     const parsed = createInventoryItemSchema.safeParse(body)
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })

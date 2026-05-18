@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requirePermission } from '@/lib/permissions/require';
 import { checkoutSchema } from '@/lib/validations/asset-checkout.schema';
 import * as assetsService from '@/lib/services/assets.service';
 
@@ -24,6 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ass
     const { assetId } = await params;
     const tenant = await resolveTenant();
     const user = tenant.user;
+    requirePermission(user, 'assets', 'checkout');
 
     const body = await req.json();
     const parsed = checkoutSchema.safeParse(body);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requirePermission } from '@/lib/permissions/require';
 import { getUsers, createUser } from '@/lib/db/users';
 import { createAuthUser } from '@/lib/supabase/auth-admin';
 import { auditLog } from '@/lib/platform/audit';
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;
-    if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    requirePermission(user, 'settings', 'users');
 
     if (tenant.subscription?.status && tenant.subscription.status !== 'ACTIVE')
       return NextResponse.json({ error: 'Subscription expired' }, { status: 403 });

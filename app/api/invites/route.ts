@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { hasPermission } from '@/lib/permissions';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { checkResourceLimit } from '@/lib/platform/limits/check-limit';
 import {
@@ -20,7 +21,7 @@ import { generateInviteQRDataUrl } from '@/lib/qr';
 export async function GET(_req: NextRequest) {
   const tenant = await resolveTenant();
   const user = tenant.user;
-  if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner')
+  if (!hasPermission(user, 'settings', 'users'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const invites = await getInvites(tenant.organizationId);
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   const tenant = await resolveTenant();
   const user = tenant.user;
-  if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner')
+  if (!hasPermission(user, 'settings', 'users'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   if (tenant.subscription?.status && tenant.subscription.status !== 'ACTIVE')

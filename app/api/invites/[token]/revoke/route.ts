@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requirePermission } from '@/lib/permissions/require';
 import { getInviteByToken, revokeInvite } from '@/lib/db/invites';
 import { auditLog } from '@/lib/platform/audit';
 
@@ -8,7 +9,7 @@ export async function POST(_req: NextRequest, props: { params: Promise<{ token: 
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;
-    if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    requirePermission(user, 'settings', 'users');
 
     const invite = await getInviteByToken(params.token);
     if (!invite || invite.organizationId !== tenant.organizationId) {

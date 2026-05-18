@@ -66,3 +66,5 @@ agentdb.rvf.lock
 # stray shell brace-expansion / accidental output files
 {,
 x.collectionGroup
+*.bak
+*.orig

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requirePermission } from '@/lib/permissions/require'
 import { SessionsService } from '@/lib/modules/haraka/sessions/sessions.service'
 import { openSessionSchema } from '@/lib/modules/haraka/sessions/schemas'
 
@@ -39,6 +40,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requirePermission(tenant.user, 'pos', 'open_session')
     const body = await req.json()
     const parsed = openSessionSchema.safeParse(body)
     if (!parsed.success) {

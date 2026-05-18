@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requirePermission } from '@/lib/permissions/require'
 import { SessionsService } from '@/lib/modules/haraka/sessions/sessions.service'
 import { closeSessionSchema } from '@/lib/modules/haraka/sessions/schemas'
 
@@ -11,6 +12,7 @@ export async function POST(
 ) {
   try {
     const tenant = await resolveTenant()
+    requirePermission(tenant.user, 'pos', 'close_session')
     const { sessionId } = await params
     const body = await req.json()
     const parsed = closeSessionSchema.safeParse(body)

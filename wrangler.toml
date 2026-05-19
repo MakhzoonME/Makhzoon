@@ -2,17 +2,14 @@
 # Replaces AWS Amplify (amplify.yml removed) and Vercel (vercel.json removed;
 # crons moved to workers/cron). Build/deploy: `npm run cf:deploy`.
 #
-# Branch → environment mapping (Cloudflare has no Pages-style auto preview for
-# Workers; deploy each env explicitly):
+# Branch → environment mapping:
 #   DevBranch  → `wrangler deploy --env dev`     (dev.makhzoon.me)
 #   STGBranch  → `wrangler deploy --env staging` (stage.makhzoon.me)
 #   main       → `wrangler deploy --env production` (app.makhzoon.me)
 #
-# Env vars/secrets are NOT stored here. Set per environment in the Cloudflare
-# dashboard (Workers → Settings → Variables) or via `wrangler secret put`:
-#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
-#   SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, RESEND_FROM_EMAIL,
-#   CRON_SECRET, NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_APP_ENV
+# Vars below in [vars] apply to ALL environments.
+# Override per env in [env.<name>.vars] where values differ.
+# Secrets must still be set via `wrangler secret put --env <name>` or dashboard.
 
 name = "makhzoon"
 main = ".open-next/worker.js"
@@ -26,11 +23,45 @@ binding = "ASSETS"
 [observability]
 enabled = true
 
+# ── Shared vars (all environments) ──────────────────────────────────
+# These are safe as plain text in git. Fill in your actual values.
+[vars]
+RESEND_FROM_EMAIL = "Makhzoon <notifications@your-domain.com>"
+GOOGLE_DRIVE_CLIENT_EMAIL = "your-service-account@your-project.iam.gserviceaccount.com"
+GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"
+
+# ── Dev ─────────────────────────────────────────────────────────────
 [env.dev]
 name = "makhzoondev"
 
+[env.dev.vars]
+NEXT_PUBLIC_SUPABASE_URL = "https://your-dev-project.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-dev-anon-key"
+NEXT_PUBLIC_APP_URL = "https://dev.makhzoon.me"
+NEXT_PUBLIC_APP_ENV = "development"
+GOOGLE_DRIVE_CLIENT_EMAIL = "your-service-account@your-project.iam.gserviceaccount.com"
+GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"
+
+# ── Staging ─────────────────────────────────────────────────────────
 [env.staging]
 name = "makhzoonstg"
 
+[env.staging.vars]
+NEXT_PUBLIC_SUPABASE_URL = "https://your-staging-project.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-staging-anon-key"
+NEXT_PUBLIC_APP_URL = "https://stage.makhzoon.me"
+NEXT_PUBLIC_APP_ENV = "staging"
+GOOGLE_DRIVE_CLIENT_EMAIL = "your-service-account@your-project.iam.gserviceaccount.com"
+GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"
+
+# ── Production ──────────────────────────────────────────────────────
 [env.production]
 name = "makhzoon"
+
+[env.production.vars]
+NEXT_PUBLIC_SUPABASE_URL = "https://your-production-project.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-production-anon-key"
+NEXT_PUBLIC_APP_URL = "https://app.makhzoon.me"
+NEXT_PUBLIC_APP_ENV = "production"
+GOOGLE_DRIVE_CLIENT_EMAIL = "your-service-account@your-project.iam.gserviceaccount.com"
+GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"

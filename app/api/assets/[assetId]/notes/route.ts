@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requirePermission } from '@/lib/permissions/require';
 import { getAssetById } from '@/lib/db/assets';
 import { getAssetNotes, createAssetNote } from '@/lib/db/asset-notes';
 import { auditLog } from '@/lib/platform/audit';
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ assetId:
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;
+    requirePermission(user, 'assets', 'notes');
 
     const asset = await getAssetById(params.assetId);
     if (!asset || asset.organizationId !== user.organizationId) {

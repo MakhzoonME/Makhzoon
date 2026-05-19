@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getOrganizationBySubdomain } from '@/lib/db/organizations';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ subdomain: string }> }) {

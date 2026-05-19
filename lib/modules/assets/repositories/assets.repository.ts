@@ -1,31 +1,69 @@
-import { adminDb } from '@/lib/firebase/admin'
-import { FieldValue, Timestamp } from 'firebase-admin/firestore'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import type { Asset } from '@/types/asset.types'
 import type { CreateAssetInput, UpdateAssetInput } from '@/lib/services/assets.service'
 
-function tsToDate(v: unknown): Date | undefined {
+type Row = Record<string, unknown>
+
+function d(v: unknown): Date | undefined {
   if (!v) return undefined
-  if (v instanceof Timestamp) return v.toDate()
-  if (v instanceof Date) return v
-  if (typeof v === 'string') {
-    const d = new Date(v)
-    return isNaN(d.getTime()) ? undefined : d
-  }
-  return undefined
+  const x = new Date(v as string)
+  return isNaN(x.getTime()) ? undefined : x
 }
 
-function toAsset(id: string, data: FirebaseFirestore.DocumentData): Asset {
+function toAsset(r: Row): Asset {
   return {
-    ...data,
-    id,
-    purchaseDate: tsToDate(data.purchaseDate),
-    createdAt: tsToDate(data.createdAt) ?? new Date(),
-    updatedAt: tsToDate(data.updatedAt) ?? new Date(),
+    id: r.id as string,
+    organizationId: r.organization_id as string,
+    name: r.name as string,
+    category: r.category as string,
+    status: r.status as string,
+    serialNumber: r.serial_number as string,
+    purchaseDate: d(r.purchase_date),
+    purchaseCost: r.purchase_cost as number,
+    assignedTo: r.assigned_to as string,
+    location: r.location as string,
+    notes: r.notes as string,
+    createdAt: d(r.created_at) ?? new Date(),
+    createdBy: r.created_by as string,
+    createdByEmail: r.created_by_email as string,
+    createdByName: r.created_by_name as string,
+    createdByRole: r.created_by_role as string,
+    updatedAt: d(r.updated_at) ?? new Date(),
+    updatedBy: r.updated_by as string,
+    updatedByEmail: r.updated_by_email as string,
+    updatedByName: r.updated_by_name as string,
+    updatedByRole: r.updated_by_role as string,
   } as Asset
 }
 
+// camelCase input field → assets column. purchase_date handled separately.
+const FIELD_COL: Record<string, string> = {
+  name: 'name', category: 'category', status: 'status',
+  serialNumber: 'serial_number', purchaseCost: 'purchase_cost',
+  assignedTo: 'assigned_to', location: 'location', notes: 'notes',
+}
+
+function inputToColumns(input: Record<string, unknown>): Row {
+  const out: Row = {}
+  for (const [k, col] of Object.entries(FIELD_COL)) {
+    if (input[k] !== undefined) out[col] = input[k]
+  }
+  if (input.purchaseDate !== undefined) {
+    out.purchase_date = input.purchaseDate
+      ? new Date(input.purchaseDate as string | Date).toISOString()
+      : null
+  }
+  return out
+}
+
 type SortField = 'name' | 'category' | 'status' | 'serialNumber' | 'assignedTo' | 'location' | 'purchaseDate' | 'createdAt'
+
+const SORT_COLUMN: Record<SortField, string> = {
+  name: 'name', category: 'category', status: 'status',
+  serialNumber: 'serial_number', assignedTo: 'assigned_to',
+  location: 'location', purchaseDate: 'purchase_date', createdAt: 'created_at',
+}
 
 export interface GetAllAssetsOpts {
   status?: string
@@ -38,113 +76,122 @@ export interface GetAllAssetsOpts {
 }
 
 export class AssetsRepository {
-  private col = adminDb.collection('assets')
-
   async getAll(
     tenant: TenantContext,
-    opts?: GetAllAssetsOpts
+    opts?: GetAllAssetsOpts,
   ): Promise<{ items: Asset[]; total: number; page: number; pageSize: number; totalPages: number }> {
     const page = opts?.page ?? 1
     const pageSize = opts?.pageSize ?? 10
-    const sortBy = opts?.sortBy ?? 'createdAt'
-    const sortDir = opts?.sortDir ?? 'desc'
+    const sortCol = SORT_COLUMN[opts?.sortBy ?? 'createdAt']
+    const ascending = (opts?.sortDir ?? 'desc') === 'asc'
 
-    const snap = await this.col.where('organizationId', '==', tenant.organizationId).get()
-    let items: Asset[] = snap.docs.map(d => toAsset(d.id, d.data()))
-
-    if (opts?.status) {
-      items = items.filter(a => a.status === opts.status)
+    const eqMatch: Record<string, string> = {
+      organization_id: tenant.organizationId,
     }
-    if (opts?.category) {
-      items = items.filter(a => a.category === opts.category)
-    }
-    if (opts?.search) {
-      const term = opts.search.toLowerCase()
-      items = items.filter(a =>
-        a.name.toLowerCase().includes(term) ||
-        (a.category ?? '').toLowerCase().includes(term) ||
-        (a.serialNumber ?? '').toLowerCase().includes(term) ||
-        (a.assignedTo ?? '').toLowerCase().includes(term) ||
-        (a.location ?? '').toLowerCase().includes(term)
-      )
-    }
+    if (opts?.status) eqMatch.status = opts.status
+    if (opts?.category) eqMatch.category = opts.category
+    const like = opts?.search ? `%${opts.search}%` : null
+    const orFilter = like
+      ? `name.ilike.${like},category.ilike.${like},serial_number.ilike.${like},assigned_to.ilike.${like},location.ilike.${like}`
+      : null
 
-    const total = items.length
+    let countQ = supabaseAdmin
+      .from('assets')
+      .select('*', { count: 'exact', head: true })
+      .match(eqMatch)
+    if (orFilter) countQ = countQ.or(orFilter)
+    const { count } = await countQ
 
-    items.sort((a, b) => {
-      const aVal = a[sortBy] as unknown
-      const bVal = b[sortBy] as unknown
-      const mult = sortDir === 'asc' ? 1 : -1
-      if (aVal == null && bVal == null) return 0
-      if (aVal == null) return mult
-      if (bVal == null) return -mult
-      if (aVal instanceof Date && bVal instanceof Date) return (aVal.getTime() - bVal.getTime()) * mult
-      if (typeof aVal === 'number' && typeof bVal === 'number') return (aVal - bVal) * mult
-      return String(aVal).localeCompare(String(bVal)) * mult
-    })
-
+    const total = count ?? 0
     const totalPages = Math.max(1, Math.ceil(total / pageSize))
     const safePage = Math.min(page, totalPages)
-    const start = (safePage - 1) * pageSize
-    const pagedItems = items.slice(start, start + pageSize)
+    const from = (safePage - 1) * pageSize
 
-    return { items: pagedItems, total, page: safePage, pageSize, totalPages }
+    let pageQ = supabaseAdmin.from('assets').select('*').match(eqMatch)
+    if (orFilter) pageQ = pageQ.or(orFilter)
+    const { data, error } = await pageQ
+      .order(sortCol, { ascending, nullsFirst: false })
+      .range(from, from + pageSize - 1)
+    if (error) throw error
+
+    return {
+      items: (data ?? []).map(toAsset),
+      total,
+      page: safePage,
+      pageSize,
+      totalPages,
+    }
   }
 
   async getCategories(tenant: TenantContext): Promise<string[]> {
-    const snap = await this.col
-      .where('organizationId', '==', tenant.organizationId)
+    const { data, error } = await supabaseAdmin
+      .from('assets')
       .select('category')
-      .get()
+      .eq('organization_id', tenant.organizationId)
+    if (error) throw error
     const cats = new Set<string>()
-    snap.docs.forEach(d => {
-      const c = d.data().category as string | undefined
+    for (const r of data ?? []) {
+      const c = (r as Row).category as string | undefined
       if (c) cats.add(c)
-    })
+    }
     return Array.from(cats).sort()
   }
 
   async getById(tenant: TenantContext, id: string): Promise<Asset | null> {
-    const snap = await this.col.doc(id).get()
-    if (!snap.exists) return null
-    const asset = toAsset(snap.id, snap.data()!)
-    return asset.organizationId === tenant.organizationId ? asset : null
+    const { data } = await supabaseAdmin
+      .from('assets')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+    if (!data || data.organization_id !== tenant.organizationId) return null
+    return toAsset(data)
   }
 
-  async create(tenant: TenantContext, input: CreateAssetInput): Promise<Asset> {
-    const data = {
-      ...input,
-      organizationId: tenant.organizationId,
-      createdAt: FieldValue.serverTimestamp(),
-      createdBy: tenant.user.uid,
-      createdByEmail: tenant.user.email,
-      createdByName: tenant.user.displayName,
-      createdByRole: tenant.user.role,
-      updatedAt: FieldValue.serverTimestamp(),
-      updatedBy: tenant.user.uid,
-      updatedByEmail: tenant.user.email,
-      updatedByName: tenant.user.displayName,
-      updatedByRole: tenant.user.role,
-    }
-    const ref = await this.col.add(data)
-    const snap = await ref.get()
-    return toAsset(ref.id, snap.data()!)
+  async create(
+    tenant: TenantContext,
+    input: CreateAssetInput,
+  ): Promise<Asset> {
+    const { data, error } = await supabaseAdmin
+      .from('assets')
+      .insert({
+        ...inputToColumns(input as unknown as Record<string, unknown>),
+        organization_id: tenant.organizationId,
+        created_by: tenant.user.uid,
+        created_by_email: tenant.user.email,
+        created_by_name: tenant.user.displayName,
+        created_by_role: tenant.user.role,
+        updated_by: tenant.user.uid,
+        updated_by_email: tenant.user.email,
+        updated_by_name: tenant.user.displayName,
+        updated_by_role: tenant.user.role,
+      })
+      .select('*')
+      .single()
+    if (error) throw error
+    return toAsset(data)
   }
 
-  async update(tenant: TenantContext, id: string, input: UpdateAssetInput): Promise<Asset> {
-    const data = {
-      ...input,
-      updatedAt: FieldValue.serverTimestamp(),
-      updatedBy: tenant.user.uid,
-      updatedByEmail: tenant.user.email,
-      updatedByName: tenant.user.displayName,
-      updatedByRole: tenant.user.role,
-    }
-    await this.col.doc(id).update(data)
+  async update(
+    tenant: TenantContext,
+    id: string,
+    input: UpdateAssetInput,
+  ): Promise<Asset> {
+    const { error } = await supabaseAdmin
+      .from('assets')
+      .update({
+        ...inputToColumns(input as unknown as Record<string, unknown>),
+        updated_by: tenant.user.uid,
+        updated_by_email: tenant.user.email,
+        updated_by_name: tenant.user.displayName,
+        updated_by_role: tenant.user.role,
+      })
+      .eq('id', id)
+    if (error) throw error
     return this.getById(tenant, id) as Promise<Asset>
   }
 
   async delete(_tenant: TenantContext, id: string): Promise<void> {
-    await this.col.doc(id).delete()
+    const { error } = await supabaseAdmin.from('assets').delete().eq('id', id)
+    if (error) throw error
   }
 }

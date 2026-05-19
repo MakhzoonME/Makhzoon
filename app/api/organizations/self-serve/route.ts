@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth } from '@/lib/firebase/admin';
+import { createAuthUser, deleteAuthUser, authEmailExists } from '@/lib/supabase/auth-admin';
 import { createOrganization, subdomainExists } from '@/lib/db/organizations';
 import { createSubscription } from '@/lib/db/subscriptions';
 import { createUser } from '@/lib/db/users';
@@ -27,18 +27,23 @@ export async function POST(req: NextRequest) {
   const { orgName, subdomain, displayName, email, password } = parsed.data;
   const normalizedSub = subdomain.toLowerCase();
 
-  const existingAuth = await adminAuth.getUserByEmail(email).catch(() => null);
-  if (existingAuth) return NextResponse.json({ error: 'An account already exists for this email' }, { status: 409 });
+  if (await authEmailExists(email)) {
+    return NextResponse.json({ error: 'An account already exists for this email' }, { status: 409 });
+  }
 
   if (await subdomainExists(normalizedSub)) {
     return NextResponse.json({ error: 'That workspace ID is already taken' }, { status: 409 });
   }
 
-  const newUser = await adminAuth.createUser({
+  // Create the auth identity first; org id is resolved from public.users by
+  // verifySessionCookie (authoritative), so app_metadata.organization_id is
+  // not required at creation time.
+  const newUser = await createAuthUser({
     email,
-    displayName,
     password,
-    emailVerified: false,
+    displayName,
+    role: 'org_owner',
+    organizationId: null,
   });
 
   let organizationId = '';
@@ -55,14 +60,9 @@ export async function POST(req: NextRequest) {
       updatedBy: newUser.uid,
     });
   } catch (e) {
-    await adminAuth.deleteUser(newUser.uid).catch(() => undefined);
+    await deleteAuthUser(newUser.uid);
     throw e;
   }
-
-  await adminAuth.setCustomUserClaims(newUser.uid, {
-    role: 'org_owner',
-    organizationId,
-  });
 
   await createUser(newUser.uid, {
     organizationId,

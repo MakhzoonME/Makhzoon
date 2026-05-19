@@ -6,6 +6,7 @@ export interface OrgUser {
   email?: string;
   username?: string;
   displayName: string;
+  avatarUrl?: string | null;
   role: 'org_owner' | 'admin' | 'staff';
   status: 'active' | 'deactivated';
   permissions?: UserPermissions | null;

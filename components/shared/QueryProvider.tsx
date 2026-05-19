@@ -1,12 +1,11 @@
 'use client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
-import { auth } from '@/lib/firebase/client';
-import { signOut } from 'firebase/auth';
+import { createClient } from '@/lib/supabase/client';
 
 async function handleUnauthorized() {
   try { sessionStorage.setItem('auth.session_expired', '1'); } catch { /* ignore */ }
-  try { await signOut(auth); } catch { /* ignore */ }
+  try { await createClient().auth.signOut(); } catch { /* ignore */ }
   await fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {});
   const locale = typeof localStorage !== 'undefined' ? (() => { try { const l = JSON.parse(localStorage.getItem('makhzoon-locale') || ''); return l?.state?.locale; } catch { return null; } })() : null;
   window.location.href = `/${locale ?? 'en'}/login`;

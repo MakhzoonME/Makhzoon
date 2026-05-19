@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getPackageById, updatePackage, deletePackage } from '@/lib/db/packages';
 import { queueAuditLog } from '@/lib/audit/logger';
 import { packageUpdateSchema } from '@/lib/validations/package.schema';

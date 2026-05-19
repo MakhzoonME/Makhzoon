@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { z } from 'zod';
+// NOTE: this controller dispatches the legacy Firestore clone workflow
+// (sync-firestore.yml) — obsolete post-migration. Auth swapped to Supabase so
+// it compiles; the workflow itself is removed in Phase 6/7.
 
 // Sync controller for the superadmin UI. Triggers the sync-firestore.yml
 // GitHub Actions workflow via the workflow_dispatch API. We never run the

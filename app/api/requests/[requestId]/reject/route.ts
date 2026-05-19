@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requirePermission } from '@/lib/permissions/require';
 import * as requestsService from '@/lib/modules/requests/services/requests.service';
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ requestId: string }> }) {
   try {
     const tenant = await resolveTenant();
+    requirePermission(tenant.user, 'requests', 'approve');
     const { requestId } = await params;
 
     await requestsService.reject(tenant, requestId);

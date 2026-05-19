@@ -4,11 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
 import { useOrgSlug } from '@/hooks/ui';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { AvatarUpload } from '@/components/shared/AvatarUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/ui';
-import { auth } from '@/lib/firebase/client';
-import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { createClient } from '@/lib/supabase/client';
 import { Save, KeyRound } from 'lucide-react';
 
 /** Display email/username without the synthetic @makhzoon.local suffix */
@@ -34,6 +34,20 @@ export default function ProfilePage() {
 
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
   const [savingName, setSavingName] = useState(false);
+
+  async function handleAvatarChange(url: string | null) {
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatarUrl: url }),
+      });
+      if (!res.ok) throw new Error();
+      if (user) setUser({ ...user, avatarUrl: url });
+    } catch {
+      toast.error('Failed to update picture');
+    }
+  }
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -72,22 +86,29 @@ export default function ProfilePage() {
     }
     setSavingPassword(true);
     try {
-      const currentUser = auth.currentUser;
-      if (!currentUser || !user?.email) throw new Error();
-      const credential = EmailAuthProvider.credential(user.email, currentPassword);
-      await reauthenticateWithCredential(currentUser, credential);
-      await updatePassword(currentUser, newPassword);
+      if (!user?.email) throw new Error();
+      const supabase = createClient();
+      // Re-authenticate by verifying the current password (Supabase has no
+      // explicit reauthenticate-with-credential; a successful sign-in with the
+      // current password serves the same purpose).
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+      if (reauthError) {
+        toast.error('Current password is incorrect');
+        return;
+      }
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      if (updateError) throw updateError;
       toast.success('Password updated');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (err: unknown) {
-      const code = (err as { code?: string }).code;
-      if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
-        toast.error('Current password is incorrect');
-      } else {
-        toast.error('Failed to update password');
-      }
+    } catch {
+      toast.error('Failed to update password');
     } finally {
       setSavingPassword(false);
     }
@@ -100,6 +121,13 @@ export default function ProfilePage() {
       <div className="max-w-2xl space-y-6">
         <div className="bg-surface-card rounded-lg border border-border p-6">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Account Info</h2>
+          <div className="mb-6">
+            <AvatarUpload
+              value={user?.avatarUrl ?? null}
+              onChange={handleAvatarChange}
+              fallbackText={user?.displayName || user?.email || '?'}
+            />
+          </div>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Username</label>

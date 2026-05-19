@@ -1,1 +1,1 @@
-export type { InventoryItem, InventoryTransaction, StockStatus, TransactionType } from '@/types/inventory.types'
+export type { InventoryItem, InventoryTransaction, InventoryUnit, StockStatus, TransactionType } from '@/types/inventory.types'

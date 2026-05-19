@@ -7,9 +7,20 @@
 #   STGBranch  → `wrangler deploy --env staging` (stage.makhzoon.me)
 #   main       → `wrangler deploy --env production` (app.makhzoon.me)
 #
-# Vars below in [vars] apply to ALL environments.
-# Override per env in [env.<name>.vars] where values differ.
-# Secrets must still be set via `wrangler secret put --env <name>` or dashboard.
+# ═══════════════════════════════════════════════════════════════════════
+# IMPORTANT: Secrets (not vars) — set via `wrangler secret put --env <name>`
+# ═══════════════════════════════════════════════════════════════════════
+# The following values are SECRETS (DO NOT put in this file):
+#   SUPABASE_SERVICE_ROLE_KEY   — Supabase service-role key (admin bypass RLS)
+#   RESEND_API_KEY              — Resend transactional email API key
+#   CRON_SECRET                 — Shared Bearer token for cron auth
+#   GOOGLE_DRIVE_PRIVATE_KEY    — Google Drive service-account private key
+#   FAWTARA_SECRET_ENC_KEY      — ZATCA e-invoicing encryption key
+#
+# Vars in [vars] or [env.<name>.vars] are visible to the Worker at runtime.
+# The Google Drive client email & folder ID are safe as vars (they are
+# identifiers, not secrets). The private key IS a secret.
+# ═══════════════════════════════════════════════════════════════════════
 
 name = "makhzoon"
 main = ".open-next/worker.js"
@@ -28,8 +39,8 @@ enabled = true
 name = "makhzoondev"
 
 [env.dev.vars]
-NEXT_PUBLIC_SUPABASE_URL = "https://icepozpnwxnqhdzmpyco.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZXBvenBud3hucWhkem1weWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTkwMTYsImV4cCI6MjA5NDQ5NTAxNn0.yLN0RSvNb_AYRJhM0yLmj3RBJWY_9Xx3IE36CNdGRK8"
+NEXT_PUBLIC_SUPABASE_URL = "https://ebupajukvyhparjkhlhr.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidXBhanVrdnlocGFyamtobGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MjYyOTAsImV4cCI6MjA5NDUwMjI5MH0.qvo7XgzvfMWzJu0dlTX_TrvY-Us74peqPVcx7ZIexhM"
 NEXT_PUBLIC_APP_URL = "https://dev.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "development"
 RESEND_FROM_EMAIL = "Makhzoon Dev <dev-notifications@makhzoon.me>"
@@ -41,8 +52,8 @@ GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"
 name = "makhzoonstg"
 
 [env.staging.vars]
-NEXT_PUBLIC_SUPABASE_URL = "https://your-staging-project.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-staging-anon-key"
+NEXT_PUBLIC_SUPABASE_URL = "https://ebupajukvyhparjkhlhr.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidXBhanVrdnlocGFyamtobGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MjYyOTAsImV4cCI6MjA5NDUwMjI5MH0.qvo7XgzvfMWzJu0dlTX_TrvY-Us74peqPVcx7ZIexhM"
 NEXT_PUBLIC_APP_URL = "https://stage.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "staging"
 RESEND_FROM_EMAIL = "Makhzoon Staging <staging-notifications@makhzoon.me>"
@@ -54,8 +65,38 @@ GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"
 name = "makhzoon"
 
 [env.production.vars]
-NEXT_PUBLIC_SUPABASE_URL = "https://your-production-project.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-production-anon-key"
+NEXT_PUBLIC_SUPABASE_URL = "https://ebupajukvyhparjkhlhr.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidXBhanVrdnlocGFyamtobGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MjYyOTAsImV4cCI6MjA5NDUwMjI5MH0.qvo7XgzvfMWzJu0dlTX_TrvY-Us74peqPVcx7ZIexhM"
+NEXT_PUBLIC_APP_URL = "https://app.makhzoon.me"
+NEXT_PUBLIC_APP_ENV = "production"
+RESEND_FROM_EMAIL = "Makhzoon <notifications@makhzoon.me>"
+GOOGLE_DRIVE_CLIENT_EMAIL = "your-service-account@your-project.iam.gserviceaccount.com"
+GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"
+
+# ── Staging ─────────────────────────────────────────────────────────
+[env.staging]
+name = "makhzoonstg"
+
+[env.staging.vars]
+# NOTE: All 3 environments currently share the same Supabase project.
+# For production isolation, create a separate Supabase project and update.
+NEXT_PUBLIC_SUPABASE_URL = "https://icepozpnwxnqhdzmpyco.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZXBvenBud3hucWhkem1weWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTkwMTYsImV4cCI6MjA5NDQ5NTAxNn0.yLN0RSvNb_AYRJhM0yLmj3RBJWY_9Xx3IE36CNdGRK8"
+NEXT_PUBLIC_APP_URL = "https://stage.makhzoon.me"
+NEXT_PUBLIC_APP_ENV = "staging"
+RESEND_FROM_EMAIL = "Makhzoon Staging <staging-notifications@makhzoon.me>"
+GOOGLE_DRIVE_CLIENT_EMAIL = "your-service-account@your-project.iam.gserviceaccount.com"
+GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"
+
+# ── Production ──────────────────────────────────────────────────────
+[env.production]
+name = "makhzoon"
+
+[env.production.vars]
+# NOTE: All 3 environments currently share the same Supabase project.
+# For production isolation, create a separate Supabase project and update.
+NEXT_PUBLIC_SUPABASE_URL = "https://icepozpnwxnqhdzmpyco.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZXBvenBud3hucWhkem1weWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTkwMTYsImV4cCI6MjA5NDQ5NTAxNn0.yLN0RSvNb_AYRJhM0yLmj3RBJWY_9Xx3IE36CNdGRK8"
 NEXT_PUBLIC_APP_URL = "https://app.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "production"
 RESEND_FROM_EMAIL = "Makhzoon <notifications@makhzoon.me>"

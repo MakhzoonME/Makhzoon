@@ -14,7 +14,7 @@ const SCHEDULE: Record<string, string> = {
 };
 
 export default {
-  async scheduled(event: ScheduledController, env: Env): Promise<void> {
+  async scheduled(event: { cron: string }, env: Env): Promise<void> {
     const path = SCHEDULE[event.cron];
     if (!path) {
       console.error(`[cron] no endpoint mapped for cron "${event.cron}"`);

@@ -24,7 +24,7 @@ export async function createClient() {
 
   // Permissive schema (no generated DB types in this env) — see admin.ts.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return createServerClient<any, any, any>(url, anonKey, {
+  return createServerClient<any, any>(url, anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();

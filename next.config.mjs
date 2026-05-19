@@ -8,11 +8,11 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
-  env: {
-    RESEND_API_KEY: process.env.RESEND_API_KEY,
-    RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
-    CRON_SECRET: process.env.CRON_SECRET,
-  },
+  // NOTE: no `env` block — Next.js `env` inlines values into the CLIENT
+  // bundle. RESEND_API_KEY / CRON_SECRET are server-only secrets read via
+  // process.env at runtime (lib/email/resend.ts, app/api/cron/*); Cloudflare
+  // provides them as Worker runtime vars/secrets. Inlining them would leak
+  // them to the browser.
   async redirects() {
     return [];
   },

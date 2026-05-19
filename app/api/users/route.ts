@@ -53,6 +53,9 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
     const data = parsed.data;
+    if (!data.email) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 422 });
+    }
 
     const tempPassword = randomBytes(16).toString('base64');
 

@@ -19,7 +19,7 @@ function toItem(r: Row, computedQty?: number): InventoryItem {
     name: r.name as string,
     category: r.category as string,
     sku: r.sku as string,
-    unit: r.unit as string,
+    unit: r.unit as InventoryItem['unit'],
     quantityOnHand: qty,
     minimumThreshold: threshold,
     reorderQuantity: r.reorder_quantity as number,

@@ -8,7 +8,7 @@ function toRecord(r: Row): MaintenanceRecord {
     id: r.id as string,
     organizationId: r.organization_id as string,
     assetId: r.asset_id as string,
-    type: r.type as string,
+    type: r.type as MaintenanceRecord['type'],
     description: r.description as string,
     performedBy: r.performed_by as string,
     cost: r.cost as number,

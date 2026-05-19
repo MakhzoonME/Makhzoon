@@ -1,6 +1,5 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { UserRole } from '@/types';
-import { FieldValue } from 'firebase-admin/firestore';
 
 export type AuditAction =
   | 'ASSET_CREATED' | 'ASSET_UPDATED' | 'ASSET_RETIRED' | 'ASSET_DELETED' | 'ASSETS_IMPORTED'
@@ -25,7 +24,13 @@ export type AuditAction =
   | 'INVENTORY_AUDIT_STARTED' | 'INVENTORY_AUDIT_COMPLETED'
   | 'CONFIG_STATUS_CREATED' | 'CONFIG_STATUS_UPDATED' | 'CONFIG_STATUS_DELETED'
   | 'CONFIG_LOCATION_CREATED' | 'CONFIG_LOCATION_UPDATED' | 'CONFIG_LOCATION_DELETED'
-  | 'CONFIG_CATEGORY_CREATED' | 'CONFIG_CATEGORY_UPDATED' | 'CONFIG_CATEGORY_DELETED';
+  | 'CONFIG_CATEGORY_CREATED' | 'CONFIG_CATEGORY_UPDATED' | 'CONFIG_CATEGORY_DELETED'
+  | 'TAX_RATE_CREATED' | 'TAX_RATE_UPDATED' | 'TAX_RATE_DELETED'
+  | 'PURCHASE_CREATED' | 'PURCHASE_UPDATED' | 'PURCHASE_DELETED' | 'PURCHASE_RECEIVED' | 'PURCHASE_CANCELLED'
+  | 'POS_SESSION_OPENED' | 'POS_SESSION_CLOSED'
+  | 'POS_SALE_COMPLETED' | 'POS_SALE_VOIDED' | 'POS_SALE_REFUNDED'
+  | 'POS_CUSTOMER_CREATED' | 'POS_CUSTOMER_UPDATED' | 'POS_CUSTOMER_DELETED'
+  | 'FAWTARA_CONFIG_UPDATED' | 'FAWTARA_SUBMISSION_SENT' | 'FAWTARA_SUBMISSION_FAILED';
 
 interface LogParams {
   organizationId: string;
@@ -39,16 +44,30 @@ interface LogParams {
   transferMode?: boolean;
 }
 
+function toRow(p: LogParams) {
+  return {
+    organization_id: p.organizationId,
+    user_id: p.userId,
+    role: p.role,
+    action: p.action,
+    module: p.module,
+    record_id: p.recordId ?? null,
+    old_value: p.oldValue ?? null,
+    new_value: p.newValue ?? null,
+    transfer_mode: p.transferMode ?? null,
+  };
+}
+
 export async function writeAuditLog(params: LogParams): Promise<void> {
-  await adminDb.collection('auditLogs').add({
-    ...params,
-    timestamp: FieldValue.serverTimestamp(),
-  });
+  const { error } = await supabaseAdmin.from('audit_logs').insert(toRow(params));
+  if (error) throw error;
 }
 
 export function queueAuditLog(params: LogParams): void {
-  adminDb.collection('auditLogs').add({
-    ...params,
-    timestamp: FieldValue.serverTimestamp(),
-  }).catch((err) => console.error('[auditLog] failed to write:', err));
+  supabaseAdmin
+    .from('audit_logs')
+    .insert(toRow(params))
+    .then(({ error }) => {
+      if (error) console.error('[auditLog] failed to write:', error);
+    });
 }

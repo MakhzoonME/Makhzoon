@@ -1,7 +1,15 @@
 'use client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils/cn';
-import { UserPermissions, DEFAULT_STAFF_PERMISSIONS, MODULE_PERMISSIONS_CONFIG } from '@/types';
+import {
+  UserPermissions,
+  DEFAULT_STAFF_PERMISSIONS,
+  MODULE_PERMISSIONS_CONFIG,
+  MODULE_GROUP_LABELS,
+  MODULE_GROUP_ORDER,
+  type ModuleConfig,
+  type ModuleGroup,
+} from '@/types';
 
 interface Props {
   value: UserPermissions;
@@ -61,9 +69,24 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
     return true;
   });
 
+  const groupedModules = useMemo(() => {
+    const map = new Map<ModuleGroup, ModuleConfig[]>();
+    for (const m of visibleModules) {
+      const g: ModuleGroup = m.group ?? 'core';
+      if (!map.has(g)) map.set(g, []);
+      map.get(g)!.push(m);
+    }
+    return MODULE_GROUP_ORDER.filter((g) => map.has(g)).map((g) => ({ group: g, modules: map.get(g)! }));
+  }, [visibleModules]);
+
   return (
-    <div className="space-y-2">
-      {visibleModules.map((mod) => {
+    <div className="space-y-5">
+      {groupedModules.map(({ group, modules }) => (
+        <div key={group} className="space-y-2">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 px-1">
+            {MODULE_GROUP_LABELS[group]}
+          </div>
+          {modules.map((mod) => {
         const modulePerms = value[mod.key] as unknown as Record<string, boolean>;
         const isModuleEnabled = modulePerms?.view === true;
         const isExpanded = expandedModules.has(mod.key);
@@ -141,6 +164,8 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
           </div>
         );
       })}
+        </div>
+      ))}
     </div>
   );
 }

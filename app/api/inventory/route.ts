@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requirePermission } from '@/lib/permissions/require'
 import { InventoryService } from '@/lib/modules/inventory/services/inventory.service'
 import { createInventoryItemSchema } from '@/lib/modules/inventory/validators/schemas'
 
@@ -19,6 +20,7 @@ export async function GET(req: NextRequest) {
       category: searchParams.get('category') ?? undefined,
       stockStatus: searchParams.get('stockStatus') ?? undefined,
       search: searchParams.get('search') ?? undefined,
+      posEnabled: searchParams.get('posEnabled') === 'true' ? true : undefined,
       page: searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined,
       pageSize: searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined,
       sortBy: searchParams.get('sortBy') as never ?? undefined,
@@ -37,6 +39,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requirePermission(tenant.user, 'inventory', 'create')
     const body = await req.json()
     const parsed = createInventoryItemSchema.safeParse(body)
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
@@ -54,6 +57,10 @@ export async function POST(req: NextRequest) {
       supplier: data.supplier || undefined,
       unitCost: data.unitCost ? Number(data.unitCost) : undefined,
       notes: data.notes || undefined,
+      barcode: data.barcode ? data.barcode.trim() : null,
+      posEnabled: data.posEnabled ?? undefined,
+      posPrice: data.posPrice ? Number(data.posPrice) : null,
+      taxRateId: data.taxRateId || null,
     })
 
     return NextResponse.json(result, { status: 201 })

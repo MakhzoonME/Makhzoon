@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth } from '@/lib/firebase/admin';
+import { createAuthUser, authEmailExists } from '@/lib/supabase/auth-admin';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { checkOrigin } from '@/lib/csrf';
 import { getInviteByToken, markInviteAccepted } from '@/lib/db/invites';
@@ -44,40 +44,35 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
     let userEmail: string;
 
     if (invite.email) {
-      const existing = await adminAuth.getUserByEmail(invite.email).catch(() => null);
-      if (existing) {
+      if (await authEmailExists(invite.email)) {
         return NextResponse.json({ error: 'An account already exists for this email' }, { status: 409 });
       }
-      const newUser = await adminAuth.createUser({
+      const newUser = await createAuthUser({
         email: invite.email,
         displayName: invite.displayName,
         password,
-        emailVerified: true,
+        role: invite.role,
+        organizationId: invite.organizationId,
       });
       uid = newUser.uid;
       userEmail = invite.email;
     } else if (invite.username) {
       const syntheticEmail = `${invite.username}@makhzoon.local`;
-      const existing = await adminAuth.getUserByEmail(syntheticEmail).catch(() => null);
-      if (existing) {
+      if (await authEmailExists(syntheticEmail)) {
         return NextResponse.json({ error: 'This username is already taken' }, { status: 409 });
       }
-      const newUser = await adminAuth.createUser({
+      const newUser = await createAuthUser({
         email: syntheticEmail,
         displayName: invite.displayName,
         password,
-        emailVerified: true,
+        role: invite.role,
+        organizationId: invite.organizationId,
       });
       uid = newUser.uid;
       userEmail = syntheticEmail;
     } else {
       return NextResponse.json({ error: 'Invite has no email or username' }, { status: 400 });
     }
-
-    await adminAuth.setCustomUserClaims(uid, {
-      role: invite.role,
-      organizationId: invite.organizationId,
-    });
 
     await createUser(uid, {
       organizationId: invite.organizationId,

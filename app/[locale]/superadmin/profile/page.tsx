@@ -5,8 +5,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/ui';
-import { auth } from '@/lib/firebase/client';
-import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { createClient } from '@/lib/supabase/client';
 import { Save, KeyRound } from 'lucide-react';
 
 export default function SuperAdminProfilePage() {
@@ -52,22 +51,26 @@ export default function SuperAdminProfilePage() {
     }
     setSavingPassword(true);
     try {
-      const currentUser = auth.currentUser;
-      if (!currentUser || !user?.email) throw new Error();
-      const credential = EmailAuthProvider.credential(user.email, currentPassword);
-      await reauthenticateWithCredential(currentUser, credential);
-      await updatePassword(currentUser, newPassword);
+      if (!user?.email) throw new Error();
+      const supabase = createClient();
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+      if (reauthError) {
+        toast.error('Current password is incorrect');
+        return;
+      }
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      if (updateError) throw updateError;
       toast.success('Password updated');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (err: unknown) {
-      const code = (err as { code?: string }).code;
-      if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
-        toast.error('Current password is incorrect');
-      } else {
-        toast.error('Failed to update password');
-      }
+    } catch {
+      toast.error('Failed to update password');
     } finally {
       setSavingPassword(false);
     }

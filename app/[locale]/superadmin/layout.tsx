@@ -7,8 +7,7 @@ import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicat
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase/client';
+import { createClient } from '@/lib/supabase/client';
 import { useTransferStore } from '@/store/transfer.store';
 import { useUiStore } from '@/store/ui.store';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
@@ -68,7 +67,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
     setIsLoggingOut(true);
     try {
       await fetch('/api/auth/session', { method: 'DELETE' });
-      await signOut(auth);
+      await createClient().auth.signOut();
     } catch {
       // ignore — always redirect regardless of errors
     }

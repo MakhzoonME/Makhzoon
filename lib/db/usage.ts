@@ -1,23 +1,25 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { OrgUsage, OrgWithUsage } from '@/types';
 import { getOrganizationsWithSearch } from './organizations';
 import { getSubscriptionsByOrgs } from './subscriptions';
 import { getPackagesByIds } from './packages';
 
+async function countFor(table: string, orgId: string): Promise<number> {
+  const { count } = await supabaseAdmin
+    .from(table)
+    .select('*', { count: 'exact', head: true })
+    .eq('organization_id', orgId);
+  return count ?? 0;
+}
+
 export async function getOrgUsage(orgId: string): Promise<OrgUsage> {
   const [assets, users, warranties, requests] = await Promise.all([
-    adminDb.collection('assets').where('organizationId', '==', orgId).count().get(),
-    adminDb.collection('users').where('organizationId', '==', orgId).count().get(),
-    adminDb.collection('warranties').where('organizationId', '==', orgId).count().get(),
-    adminDb.collection('requests').where('organizationId', '==', orgId).count().get(),
+    countFor('assets', orgId),
+    countFor('users', orgId),
+    countFor('warranties', orgId),
+    countFor('requests', orgId),
   ]);
-  return {
-    organizationId: orgId,
-    assets: assets.data().count,
-    users: users.data().count,
-    warranties: warranties.data().count,
-    requests: requests.data().count,
-  };
+  return { organizationId: orgId, assets, users, warranties, requests };
 }
 
 export async function getAllOrgsUsage(orgIds: string[]): Promise<OrgUsage[]> {
@@ -51,7 +53,9 @@ export async function getAllOrgsWithUsage(filters?: {
     return {
       organization: org,
       subscription: sub,
-      package: sub?.packageId ? packageById.get(sub.packageId) ?? null : null,
+      package: sub?.packageId
+        ? packageById.get(sub.packageId) ?? null
+        : null,
       usage: usageByOrg.get(org.id) ?? {
         organizationId: org.id,
         assets: 0,

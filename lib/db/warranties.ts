@@ -1,52 +1,64 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { Warranty } from '@/types';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
-function toWarranty(id: string, data: FirebaseFirestore.DocumentData): Warranty {
+type Row = Record<string, unknown>;
+
+function toWarranty(r: Row): Warranty {
   return {
-    id,
-    organizationId: data.organizationId,
-    assetId: data.assetId,
-    inventoryItemId: data.inventoryItemId,
-    vendor: data.vendor,
-    startDate: data.startDate instanceof Timestamp ? data.startDate.toDate() : new Date(data.startDate),
-    endDate: data.endDate instanceof Timestamp ? data.endDate.toDate() : new Date(data.endDate),
-    reminder: data.reminder ?? true,
-    notes: data.notes,
-    createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
-    createdBy: data.createdBy,
-    updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
-    updatedBy: data.updatedBy,
+    id: r.id as string,
+    organizationId: r.organization_id as string,
+    assetId: r.asset_id as string,
+    inventoryItemId: r.inventory_item_id as string,
+    vendor: r.vendor as string,
+    startDate: r.start_date ? new Date(r.start_date as string) : new Date(),
+    endDate: r.end_date ? new Date(r.end_date as string) : new Date(),
+    reminder: (r.reminder as boolean) ?? true,
+    notes: r.notes as string,
+    createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
+    createdBy: r.created_by as string,
+    updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
+    updatedBy: r.updated_by as string,
   };
 }
 
-async function attachAssetAndItemNames(warranties: Warranty[]): Promise<Warranty[]> {
-  const uniqueAssetIds = Array.from(new Set(warranties.map((w) => w.assetId).filter((id): id is string => !!id)));
-  const uniqueItemIds = Array.from(new Set(warranties.map((w) => w.inventoryItemId).filter((id): id is string => !!id)));
-
-  const assetNameMap = new Map<string, string>();
-  const itemNameMap = new Map<string, string>();
-
-  if (uniqueAssetIds.length > 0) {
-    const refs = uniqueAssetIds.map((id) => adminDb.collection('assets').doc(id));
-    const assetDocs = await adminDb.getAll(...refs);
-    assetDocs.forEach((doc) => {
-      if (doc.exists) assetNameMap.set(doc.id, (doc.data() as { name: string }).name);
-    });
+async function namesByIds(
+  table: 'assets' | 'inventory_items',
+  ids: string[],
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (ids.length === 0) return map;
+  const { data } = await supabaseAdmin
+    .from(table)
+    .select('id, name')
+    .in('id', ids);
+  for (const d of data ?? []) {
+    const row = d as Row;
+    map.set(row.id as string, row.name as string);
   }
+  return map;
+}
 
-  if (uniqueItemIds.length > 0) {
-    const refs = uniqueItemIds.map((id) => adminDb.collection('inventoryItems').doc(id));
-    const itemDocs = await adminDb.getAll(...refs);
-    itemDocs.forEach((doc) => {
-      if (doc.exists) itemNameMap.set(doc.id, (doc.data() as { name: string }).name);
-    });
-  }
-
+async function attachAssetAndItemNames(
+  warranties: Warranty[],
+): Promise<Warranty[]> {
+  const assetIds = Array.from(
+    new Set(warranties.map((w) => w.assetId).filter((i): i is string => !!i)),
+  );
+  const itemIds = Array.from(
+    new Set(
+      warranties.map((w) => w.inventoryItemId).filter((i): i is string => !!i),
+    ),
+  );
+  const [assetNames, itemNames] = await Promise.all([
+    namesByIds('assets', assetIds),
+    namesByIds('inventory_items', itemIds),
+  ]);
   return warranties.map((w) => ({
     ...w,
-    assetName: w.assetId ? assetNameMap.get(w.assetId) : undefined,
-    inventoryItemName: w.inventoryItemId ? itemNameMap.get(w.inventoryItemId) : undefined,
+    assetName: w.assetId ? assetNames.get(w.assetId) : undefined,
+    inventoryItemName: w.inventoryItemId
+      ? itemNames.get(w.inventoryItemId)
+      : undefined,
   }));
 }
 
@@ -62,21 +74,24 @@ export async function getWarranties(
     pageSize?: number;
     sortBy?: SortField;
     sortDir?: 'asc' | 'desc';
-  }
+  },
 ): Promise<{ items: Warranty[]; total: number; page: number; pageSize: number; totalPages: number }> {
   const page = opts?.page ?? 1;
   const pageSize = opts?.pageSize ?? 10;
   const sortBy = opts?.sortBy ?? 'createdAt';
   const sortDir = opts?.sortDir ?? 'desc';
 
-  let q = adminDb.collection('warranties')
-    .where('organizationId', '==', orgId);
+  let q = supabaseAdmin
+    .from('warranties')
+    .select('*')
+    .eq('organization_id', orgId);
+  if (opts?.assetId) q = q.eq('asset_id', opts.assetId);
+  if (opts?.inventoryItemId)
+    q = q.eq('inventory_item_id', opts.inventoryItemId);
+  const { data, error } = await q;
+  if (error) throw error;
 
-  if (opts?.assetId) q = q.where('assetId', '==', opts.assetId) as typeof q;
-  if (opts?.inventoryItemId) q = q.where('inventoryItemId', '==', opts.inventoryItemId) as typeof q;
-
-  const snap = await q.get();
-  let warranties = snap.docs.map((d) => toWarranty(d.id, d.data()));
+  let warranties = (data ?? []).map(toWarranty);
 
   if (opts?.status) {
     const now = new Date();
@@ -88,18 +103,15 @@ export async function getWarranties(
   }
 
   warranties = await attachAssetAndItemNames(warranties);
-
   const total = warranties.length;
 
   warranties.sort((a, b) => {
     const aVal = a[sortBy];
     const bVal = b[sortBy];
     const mult = sortDir === 'asc' ? 1 : -1;
-
     if (aVal == null && bVal == null) return 0;
     if (aVal == null) return mult;
     if (bVal == null) return -mult;
-
     if (aVal instanceof Date && bVal instanceof Date) {
       return (aVal.getTime() - bVal.getTime()) * mult;
     }
@@ -109,49 +121,92 @@ export async function getWarranties(
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(page, totalPages);
   const start = (safePage - 1) * pageSize;
-  const pagedItems = warranties.slice(start, start + pageSize);
 
-  return { items: pagedItems, total, page: safePage, pageSize, totalPages };
+  return {
+    items: warranties.slice(start, start + pageSize),
+    total,
+    page: safePage,
+    pageSize,
+    totalPages,
+  };
 }
 
 export async function getWarrantyById(id: string): Promise<Warranty | null> {
-  const doc = await adminDb.collection('warranties').doc(id).get();
-  if (!doc.exists) return null;
-  return toWarranty(doc.id, doc.data()!);
+  const { data } = await supabaseAdmin
+    .from('warranties')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  return data ? toWarranty(data) : null;
 }
 
-export async function createWarranty(data: Omit<Warranty, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-  const now = new Date();
-  const ref = await adminDb.collection('warranties').add({
-    ...data,
-    startDate: new Date(data.startDate),
-    endDate: new Date(data.endDate),
-    createdAt: now,
-    updatedAt: now,
-  });
-  return ref.id;
+export async function createWarranty(
+  data: Omit<Warranty, 'id' | 'createdAt' | 'updatedAt'>,
+): Promise<string> {
+  const { data: row, error } = await supabaseAdmin
+    .from('warranties')
+    .insert({
+      organization_id: data.organizationId,
+      asset_id: data.assetId ?? null,
+      inventory_item_id: data.inventoryItemId ?? null,
+      vendor: data.vendor,
+      start_date: new Date(data.startDate).toISOString(),
+      end_date: new Date(data.endDate).toISOString(),
+      reminder: data.reminder ?? true,
+      notes: data.notes,
+      created_by: data.createdBy,
+      updated_by: data.updatedBy,
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return row.id as string;
 }
 
-export async function updateWarranty(id: string, data: Partial<Warranty>): Promise<void> {
-  await adminDb.collection('warranties').doc(id).update({
-    ...data,
-    updatedAt: FieldValue.serverTimestamp(),
-  });
+export async function updateWarranty(
+  id: string,
+  data: Partial<Warranty>,
+): Promise<void> {
+  const patch: Row = {};
+  if (data.assetId !== undefined) patch.asset_id = data.assetId;
+  if (data.inventoryItemId !== undefined)
+    patch.inventory_item_id = data.inventoryItemId;
+  if (data.vendor !== undefined) patch.vendor = data.vendor;
+  if (data.startDate !== undefined)
+    patch.start_date = new Date(data.startDate).toISOString();
+  if (data.endDate !== undefined)
+    patch.end_date = new Date(data.endDate).toISOString();
+  if (data.reminder !== undefined) patch.reminder = data.reminder;
+  if (data.notes !== undefined) patch.notes = data.notes;
+  if (data.updatedBy !== undefined) patch.updated_by = data.updatedBy;
+  const { error } = await supabaseAdmin
+    .from('warranties')
+    .update(patch)
+    .eq('id', id);
+  if (error) throw error;
 }
 
 export async function deleteWarranty(id: string): Promise<void> {
-  await adminDb.collection('warranties').doc(id).delete();
+  const { error } = await supabaseAdmin
+    .from('warranties')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
 }
 
-export async function getExpiringWarranties(orgId: string, days = 30): Promise<Warranty[]> {
+export async function getExpiringWarranties(
+  orgId: string,
+  days = 30,
+): Promise<Warranty[]> {
   const now = new Date();
   const future = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
-  const snap = await adminDb.collection('warranties')
-    .where('organizationId', '==', orgId)
-    .where('endDate', '>=', now)
-    .where('endDate', '<=', future)
-    .orderBy('endDate', 'asc')
-    .get();
-  const warranties = snap.docs.map((d) => toWarranty(d.id, d.data()));
-  return attachAssetAndItemNames(warranties);
+  const { data, error } = await supabaseAdmin
+    .from('warranties')
+    .select('*')
+    .eq('organization_id', orgId)
+    .gte('end_date', now.toISOString())
+    .lte('end_date', future.toISOString())
+    .order('end_date', { ascending: true });
+  if (error) throw error;
+  return attachAssetAndItemNames((data ?? []).map(toWarranty));
 }

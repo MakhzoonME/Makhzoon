@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getEarlyAccessEntries } from '@/lib/db/early-access';
 import { getContactSalesEntries } from '@/lib/db/contact-sales';
 

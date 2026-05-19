@@ -1,10 +1,10 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { ReportsResponse } from '@/types/report.types';
-import { Timestamp } from 'firebase-admin/firestore';
+
+type Row = Record<string, unknown>;
 
 function toDate(v: unknown): Date | undefined {
   if (!v) return undefined;
-  if (v instanceof Timestamp) return v.toDate();
   if (v instanceof Date) return v;
   const d = new Date(v as string | number);
   return Number.isNaN(d.getTime()) ? undefined : d;
@@ -14,14 +14,35 @@ function monthKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-export async function getReportsForOrg(orgId: string): Promise<ReportsResponse> {
-  const [assetsSnap, checkoutsSnap, warrantiesSnap, requestsSnap, maintenanceSnap] = await Promise.all([
-    adminDb.collection('assets').where('organizationId', '==', orgId).get(),
-    adminDb.collection('assetCheckouts').where('organizationId', '==', orgId).get(),
-    adminDb.collection('warranties').where('organizationId', '==', orgId).get(),
-    adminDb.collection('requests').where('organizationId', '==', orgId).where('status', '==', 'PENDING').get(),
-    adminDb.collection('maintenanceRecords').where('organizationId', '==', orgId).get(),
-  ]);
+export async function getReportsForOrg(
+  orgId: string,
+): Promise<ReportsResponse> {
+  const [assets, checkouts, warranties, pendingReqs, maintenance] =
+    await Promise.all([
+      supabaseAdmin.from('assets').select('*').eq('organization_id', orgId),
+      supabaseAdmin
+        .from('asset_checkouts')
+        .select('*')
+        .eq('organization_id', orgId),
+      supabaseAdmin
+        .from('warranties')
+        .select('end_date')
+        .eq('organization_id', orgId),
+      supabaseAdmin
+        .from('requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', orgId)
+        .eq('status', 'PENDING'),
+      supabaseAdmin
+        .from('maintenance_records')
+        .select('*')
+        .eq('organization_id', orgId),
+    ]);
+
+  const assetRows = (assets.data ?? []) as Row[];
+  const checkoutRows = (checkouts.data ?? []) as Row[];
+  const warrantyRows = (warranties.data ?? []) as Row[];
+  const maintenanceRows = (maintenance.data ?? []) as Row[];
 
   let totalAssets = 0;
   let activeAssets = 0;
@@ -31,15 +52,14 @@ export async function getReportsForOrg(orgId: string): Promise<ReportsResponse> 
   const locationMap = new Map<string, number>();
   const activeAssetIds = new Set<string>();
 
-  assetsSnap.docs.forEach((d) => {
-    const a = d.data();
+  for (const a of assetRows) {
     totalAssets++;
     if (a.status === 'Retired') retiredAssets++;
     else {
       activeAssets++;
-      activeAssetIds.add(d.id);
+      activeAssetIds.add(a.id as string);
     }
-    const cost = Number(a.purchaseCost) || 0;
+    const cost = Number(a.purchase_cost) || 0;
     totalValue += cost;
 
     const cat = (a.category as string) || 'Uncategorized';
@@ -50,44 +70,42 @@ export async function getReportsForOrg(orgId: string): Promise<ReportsResponse> 
 
     const loc = (a.location as string) || 'Unassigned';
     locationMap.set(loc, (locationMap.get(loc) ?? 0) + 1);
-  });
+  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   let activeCheckouts = 0;
   let overdueCheckouts = 0;
-  checkoutsSnap.docs.forEach((d) => {
-    const c = d.data();
-    if (!activeAssetIds.has(c.assetId)) return;
-    if (c.returnedAt) return;
+  for (const c of checkoutRows) {
+    if (!activeAssetIds.has(c.asset_id as string)) continue;
+    if (c.returned_at) continue;
     activeCheckouts++;
-    const due = toDate(c.dueDate);
+    const due = toDate(c.due_date);
     if (due && due < today) overdueCheckouts++;
-  });
+  }
 
   const soon = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
   let warrantiesExpiringSoon = 0;
-  warrantiesSnap.docs.forEach((d) => {
-    const end = toDate(d.data().endDate);
+  for (const w of warrantyRows) {
+    const end = toDate(w.end_date);
     if (end && end >= today && end <= soon) warrantiesExpiringSoon++;
-  });
+  }
 
   let maintenanceCost = 0;
   let maintenanceCount = 0;
   const monthMap = new Map<string, { cost: number; count: number }>();
-  maintenanceSnap.docs.forEach((d) => {
-    const m = d.data();
-    if (!activeAssetIds.has(m.assetId)) return;
+  for (const m of maintenanceRows) {
+    if (!activeAssetIds.has(m.asset_id as string)) continue;
     const cost = Number(m.cost) || 0;
     maintenanceCost += cost;
     maintenanceCount++;
-    const date = toDate(m.date) ?? toDate(m.createdAt) ?? new Date();
+    const date = toDate(m.date) ?? toDate(m.created_at) ?? new Date();
     const key = monthKey(date);
     const entry = monthMap.get(key) ?? { cost: 0, count: 0 };
     entry.cost += cost;
     entry.count++;
     monthMap.set(key, entry);
-  });
+  }
 
   const maintenanceByMonth = Array.from(monthMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
@@ -111,7 +129,7 @@ export async function getReportsForOrg(orgId: string): Promise<ReportsResponse> 
       activeCheckouts,
       overdueCheckouts,
       warrantiesExpiringSoon,
-      openRequests: requestsSnap.size,
+      openRequests: pendingReqs.count ?? 0,
       maintenanceCost,
       maintenanceCount,
     },

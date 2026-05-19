@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requirePermission } from '@/lib/permissions/require';
 import { getInventoryAudits, createInventoryAudit } from '@/lib/db/inventory-audits';
 import { getAssets } from '@/lib/db/assets';
 import { auditLog } from '@/lib/platform/audit';
@@ -20,9 +21,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
-    if (tenant.role !== 'admin' && tenant.role !== 'super_admin' && tenant.role !== 'org_owner') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    requirePermission(tenant.user, 'inventory', 'audits');
 
     const body = await req.json();
     const parsed = inventoryAuditSchema.safeParse(body);

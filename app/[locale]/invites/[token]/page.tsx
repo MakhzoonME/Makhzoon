@@ -1,8 +1,7 @@
 'use client';
 import { useEffect, useState, use } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase/client';
+import { createClient } from '@/lib/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -54,12 +53,16 @@ export default function AcceptInvitePage(props: { params: Promise<{ token: strin
   }, [params.token]);
 
   async function finishSession(signInEmail: string, signInPassword: string) {
-    const cred = await signInWithEmailAndPassword(auth, signInEmail, signInPassword);
-    const token = await cred.user.getIdToken(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email: signInEmail,
+      password: signInPassword,
+    });
+    if (error) throw error;
     const sessionRes = await fetch('/api/auth/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken: token }),
+      body: '{}',
     });
     if (!sessionRes.ok) throw new Error('Session creation failed');
     const { orgSlug } = await sessionRes.json();

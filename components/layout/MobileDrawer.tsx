@@ -8,8 +8,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { useTransferStore } from '@/store/transfer.store';
 import { useSubscriptionFeatures } from '@/hooks/org';
-import { auth } from '@/lib/firebase/client';
-import { signOut } from 'firebase/auth';
+import { createClient } from '@/lib/supabase/client';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 
 function DashboardSVG() { return <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden><rect x="2" y="2" width="6" height="7" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="10" y="2" width="6" height="4" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="10" y="8" width="6" height="8" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="2" y="11" width="6" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /></svg>; }
@@ -64,7 +63,7 @@ export function MobileDrawer() {
     setMobileMenuOpen(false);
     try {
       await fetch('/api/auth/session', { method: 'DELETE' });
-      await signOut(auth);
+      await createClient().auth.signOut();
     } catch {
       // ignore — always redirect regardless of errors
     }
@@ -113,8 +112,13 @@ export function MobileDrawer() {
             {user && (
               <div className="px-4 py-3 border-b border-gray-100">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-semibold text-indigo-700 flex-shrink-0">
-                    {user.displayName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase()}
+                  <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-semibold text-indigo-700 flex-shrink-0 overflow-hidden">
+                    {user.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      user.displayName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase()
+                    )}
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{user.displayName || user.email}</p>

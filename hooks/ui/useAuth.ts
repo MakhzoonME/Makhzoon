@@ -1,28 +1,75 @@
 'use client';
 import { useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/lib/firebase/client';
+import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth.store';
 import { AuthUser, UserRole } from '@/types';
 
-const ORG_ROLES = new Set(['org_owner', 'admin', 'staff']);
+const ORG_ROLES = new Set<UserRole>(['org_owner', 'admin', 'staff']);
 
 export function useAuth() {
   const { user, loading, setUser, setLoading } = useAuthStore();
 
   useEffect(() => {
-    // Fallback: if Firebase SDK doesn't fire onAuthStateChanged within 6 seconds
-    // (e.g. IndexedDB deadlock), try /api/auth/me to recover the session.
+    const supabase = createClient();
+    let cancelled = false;
+
+    async function hydrate(
+      uid: string,
+      email: string,
+      role: UserRole,
+      organizationId: string | null,
+    ) {
+      let features: Record<string, boolean> = {};
+      let permissions = null;
+      let orgSlug: string | null = null;
+      let avatarUrl: string | null = null;
+
+      if (ORG_ROLES.has(role)) {
+        try {
+          const res = await fetch('/api/auth/me', {
+            headers: { 'Cache-Control': 'no-cache' },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            features = data.features ?? {};
+            permissions = data.permissions ?? null;
+            orgSlug = data.orgSlug ?? null;
+            avatarUrl = data.avatarUrl ?? null;
+          }
+        } catch {
+          // non-critical
+        }
+      }
+
+      if (cancelled) return;
+      setUser({
+        uid,
+        email,
+        displayName: '',
+        avatarUrl,
+        role,
+        organizationId,
+        orgSlug,
+        permissions,
+        features,
+      } as AuthUser);
+      setLoading(false);
+    }
+
+    // Fallback: recover the session from the server if the SDK is slow.
     const fallbackTimer = setTimeout(async () => {
-      if (!useAuthStore.getState().loading) return; // already resolved
+      if (!useAuthStore.getState().loading) return;
       try {
-        const res = await fetch('/api/auth/me', { headers: { 'Cache-Control': 'no-cache' } });
+        const res = await fetch('/api/auth/me', {
+          headers: { 'Cache-Control': 'no-cache' },
+        });
         if (res.ok) {
           const data = await res.json();
           setUser({
             uid: data.uid ?? '',
             email: '',
             displayName: '',
+            avatarUrl: data.avatarUrl ?? null,
             role: data.role,
             organizationId: data.organizationId ?? null,
             orgSlug: data.orgSlug ?? null,
@@ -38,63 +85,32 @@ export function useAuth() {
       setLoading(false);
     }, 6000);
 
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       clearTimeout(fallbackTimer);
-      if (firebaseUser) {
-        // Force-refresh the ID token so custom claims (role, orgId) are always current
-        await firebaseUser.getIdToken(true);
-        const tokenResult = await firebaseUser.getIdTokenResult();
-        const role = tokenResult.claims.role as UserRole;
-
-        let features: Record<string, boolean> = {};
-        let permissions = null;
-
-        // For org users: fetch features + permissions from API
-        let orgSlug: string | null = null;
-
-        if (ORG_ROLES.has(role)) {
-          try {
-            let res = await fetch('/api/auth/me', {
-              headers: { 'Cache-Control': 'no-cache' },
-            });
-            // Session cookie may have expired — refresh it with a fresh ID token
-            if (res.status === 401) {
-              const freshToken = await firebaseUser.getIdToken(true);
-              await fetch('/api/auth/session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idToken: freshToken }),
-              });
-              res = await fetch('/api/auth/me', { headers: { 'Cache-Control': 'no-cache' } });
-            }
-            if (res.ok) {
-              const data = await res.json();
-              features = data.features ?? {};
-              permissions = data.permissions ?? null;
-              orgSlug = data.orgSlug ?? null;
-            }
-          } catch {
-            // non-critical
-          }
-        }
-
-        const authUser: AuthUser = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email ?? '',
-          displayName: firebaseUser.displayName ?? '',
+      if (session?.user) {
+        const meta = session.user.app_metadata ?? {};
+        const role = (meta.role as UserRole) ?? 'staff';
+        const organizationId =
+          (meta.organization_id as string | undefined) ?? null;
+        void hydrate(
+          session.user.id,
+          session.user.email ?? '',
           role,
-          organizationId: tokenResult.claims.organizationId as string | null,
-          orgSlug,
-          permissions,
-          features,
-        };
-        setUser(authUser);
+          organizationId,
+        );
       } else {
         setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
-    return () => { unsub(); clearTimeout(fallbackTimer); };
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+      clearTimeout(fallbackTimer);
+    };
   }, [setUser, setLoading]);
 
   return { user, loading };

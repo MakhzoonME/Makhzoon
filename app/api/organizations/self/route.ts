@@ -1,8 +1,23 @@
 import { NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getOrganizationById } from '@/lib/db/organizations';
 import { getSuperAdminUserById } from '@/lib/db/superadmin-users';
-import { adminAuth } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+
+/** Legacy PII-scrub pattern from the Firestore clone scripts. No clone exists
+ *  post-migration so this never matches, but the fallback is kept harmless. */
+const SCRUBBED_ORG_EMAIL = /^org-.+@example\.test$/i;
+
+async function resolveOrgOwnerEmail(orgId: string): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from('users')
+    .select('email')
+    .eq('organization_id', orgId)
+    .eq('role', 'org_owner')
+    .limit(1)
+    .maybeSingle();
+  return (data?.email as string) ?? null;
+}
 
 export async function GET() {
   try {
@@ -22,21 +37,17 @@ export async function GET() {
     const org = await getOrganizationById(orgId);
     if (!org) return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
 
+    let contactEmail = org.contactEmail;
+    if (contactEmail && SCRUBBED_ORG_EMAIL.test(contactEmail)) {
+      const ownerEmail = await resolveOrgOwnerEmail(orgId);
+      if (ownerEmail) contactEmail = ownerEmail;
+    }
+
     let accountManager: { id: string; name: string; email: string } | null = null;
     if (org.assignedMemberId) {
       const member = await getSuperAdminUserById(org.assignedMemberId);
       if (member) {
         accountManager = { id: member.id, name: member.displayName ?? '', email: member.email };
-      } else {
-        // Fallback: member may exist only in Firebase Auth (synthetic member)
-        const authUser = await adminAuth.getUser(org.assignedMemberId).catch(() => null);
-        if (authUser) {
-          accountManager = {
-            id: authUser.uid,
-            name: authUser.displayName ?? '',
-            email: authUser.email ?? '',
-          };
-        }
       }
     }
 
@@ -44,7 +55,7 @@ export async function GET() {
       id: org.id,
       name: org.name,
       subdomain: org.subdomain,
-      contactEmail: org.contactEmail,
+      contactEmail,
       description: org.description,
       category: org.category,
       accountManager,

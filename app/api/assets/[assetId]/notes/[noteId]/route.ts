@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requirePermission } from '@/lib/permissions/require';
 import { getAssetNoteById, deleteAssetNote } from '@/lib/db/asset-notes';
 import { auditLog } from '@/lib/platform/audit';
 
@@ -11,6 +12,7 @@ export async function DELETE(
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;
+    requirePermission(user, 'assets', 'notes');
 
     const note = await getAssetNoteById(params.noteId);
     if (!note || note.organizationId !== user.organizationId || note.assetId !== params.assetId) {

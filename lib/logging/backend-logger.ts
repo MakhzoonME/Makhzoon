@@ -1,5 +1,4 @@
-import { adminDb } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export type LogLevel = 'success' | 'warning' | 'error' | 'info';
 
@@ -32,14 +31,24 @@ function resolveLevel(statusCode: number): LogLevel {
  */
 export function writeBackendLog(entry: BackendLogEntry): void {
   const level = entry.level ?? resolveLevel(entry.statusCode);
-  adminDb
-    .collection('backendLogs')
-    .add({
-      ...entry,
+  supabaseAdmin
+    .from('backend_logs')
+    .insert({
+      method: entry.method,
+      path: entry.path,
+      status_code: entry.statusCode,
       level,
-      timestamp: FieldValue.serverTimestamp(),
+      duration_ms: entry.durationMs,
+      user_id: entry.userId ?? null,
+      user_display_name: entry.userDisplayName ?? null,
+      organization_id: entry.organizationId ?? null,
+      organization_name: entry.organizationName ?? null,
+      role: entry.role ?? null,
+      error_message: entry.errorMessage ?? null,
+      request_summary: entry.requestSummary ?? null,
+      response_summary: entry.responseSummary ?? null,
     })
-    .catch(() => {
+    .then(() => {
       // Logging must never crash the request
     });
 }

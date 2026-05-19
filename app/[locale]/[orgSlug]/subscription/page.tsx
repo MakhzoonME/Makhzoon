@@ -77,7 +77,7 @@ export default function SubscriptionPage() {
                   {days > 0 ? (
                     <span className="text-green-700">{t('subscription.days').replace('{days}', String(days))}</span>
                   ) : (
-                    <span className="text-red-600">{t('subscription.expired')}</span>
+                    <span className="text-red-600 dark:text-red-400">{t('subscription.expired')}</span>
                   )}
                 </dd>
               </div>
@@ -125,7 +125,7 @@ export default function SubscriptionPage() {
                   <div key={key} className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-green-500" />
                     <span className="text-gray-800">{label}</span>
-                    <span className="text-xs text-green-600 ml-auto">{t('subscription.enabled')}</span>
+                    <span className="text-xs text-green-600 dark:text-green-400 ml-auto">{t('subscription.enabled')}</span>
                   </div>
                 );
               })}

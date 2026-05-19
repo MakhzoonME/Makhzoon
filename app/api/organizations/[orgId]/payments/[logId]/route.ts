@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getPaymentLogById, deletePaymentLog } from '@/lib/db/payment-logs';
 import { queueAuditLog } from '@/lib/audit/logger';
 

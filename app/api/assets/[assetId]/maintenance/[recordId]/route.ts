@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requirePermission } from '@/lib/permissions/require';
 import { getMaintenanceRecordById, deleteMaintenanceRecord } from '@/lib/db/maintenance-records';
 import { auditLog } from '@/lib/platform/audit';
 
@@ -11,9 +12,7 @@ export async function DELETE(
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;
-    if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    requirePermission(user, 'assets', 'maintenance');
 
     const record = await getMaintenanceRecordById(params.recordId);
     if (!record || record.organizationId !== tenant.organizationId || record.assetId !== params.assetId) {

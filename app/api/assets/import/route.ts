@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { hasPermission } from '@/lib/permissions';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { createAsset } from '@/lib/db/assets';
 import { auditLog } from '@/lib/platform/audit';
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
 
   const tenant = await resolveTenant();
   const user = tenant.user;
-  if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') {
+  if (!hasPermission(user, 'assets', 'import')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

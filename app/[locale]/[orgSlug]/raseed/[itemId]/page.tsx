@@ -242,7 +242,7 @@ export default function InventoryItemDetailPage() {
                       <div className="text-xs text-gray-400">{tx.performedByName || tx.performedByEmail} · {formatDate(tx.performedAt)}</div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className={cn('text-sm font-semibold', tx.type === 'in' ? 'text-emerald-600' : tx.type === 'out' ? 'text-red-500' : 'text-primary-600')}>
+                      <div className={cn('text-sm font-semibold', tx.type === 'in' ? 'text-emerald-600 dark:text-emerald-400' : tx.type === 'out' ? 'text-red-500 dark:text-red-400' : 'text-primary-600 dark:text-primary-400')}>
                         {tx.type === 'in' ? '+' : tx.type === 'out' ? '−' : ''}{tx.quantity} {item.unit}
                       </div>
                       <div className="text-xs text-gray-400">{tx.quantityBefore} → {tx.quantityAfter}</div>

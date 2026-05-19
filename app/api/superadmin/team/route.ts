@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
-import { adminAuth } from '@/lib/firebase/admin';
+import { randomBytes } from 'crypto';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
+import { createAuthUser, authEmailExists } from '@/lib/supabase/auth-admin';
 import {
   getSuperAdminUsers,
   createSuperAdminUser,
@@ -18,33 +19,16 @@ const createMemberSchema = z.object({
 });
 
 const ALLOWED_CALLER_ROLES = new Set(['super_admin', 'makhzoon_admin']);
-const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
 export async function GET() {
   const caller = await verifySessionCookie();
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!ALLOWED_CALLER_ROLES.has(caller.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const firestoreMembers = await getSuperAdminUsers();
-  const firestoreIds = new Set(firestoreMembers.map((m) => m.id));
-
-  const { users: authUsers } = await adminAuth.listUsers(1000);
-  const missing = authUsers.filter(
-    (u) => SUPERADMIN_ROLES.has(u.customClaims?.role) && !firestoreIds.has(u.uid)
-  );
-
-  const syntheticMembers = missing.map((u) => ({
-    id: u.uid,
-    email: u.email ?? '',
-    displayName: u.displayName ?? u.email ?? u.uid,
-    role: (u.customClaims?.role ?? 'super_admin') as MakhzoonRole,
-    status: u.disabled ? 'deactivated' : 'active',
-    createdAt: u.metadata.creationTime ?? new Date().toISOString(),
-    createdBy: 'system',
-    updatedAt: u.metadata.lastRefreshTime ?? new Date().toISOString(),
-  }));
-
-  return NextResponse.json([...syntheticMembers, ...firestoreMembers]);
+  // public.superadmin_users is the single source of truth (greenfield —
+  // there are no Firebase-only "synthetic" members to reconcile).
+  const members = await getSuperAdminUsers();
+  return NextResponse.json(members);
 }
 
 export async function POST(req: NextRequest) {
@@ -68,17 +52,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Makhzoon Admins can only create Support accounts' }, { status: 403 });
   }
 
-  const existing = await adminAuth.getUserByEmail(email).catch(() => null);
-  if (existing) return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
+  if (await authEmailExists(email)) {
+    return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
+  }
 
-  // Create user without a password — they'll set it via password reset link
-  const newUser = await adminAuth.createUser({
+  // Create with a random throwaway password — the member sets their real one
+  // via the password-reset link emailed below.
+  const newUser = await createAuthUser({
     email,
     displayName,
-    emailVerified: true,
+    password: randomBytes(24).toString('base64url'),
+    role: role as MakhzoonRole,
+    organizationId: null,
   });
-
-  await adminAuth.setCustomUserClaims(newUser.uid, { role: role as MakhzoonRole });
 
   await createSuperAdminUser(newUser.uid, {
     email,

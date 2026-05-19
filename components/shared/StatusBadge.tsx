@@ -64,6 +64,17 @@ const statusConfig: Record<string, { variant: BadgeVariant; label: string }> = {
   SUSPENDED:   { variant: 'orange', label: 'Suspended' },
   Suspended:   { variant: 'orange', label: 'Suspended' },
   deactivated: { variant: 'red',    label: 'Deactivated' },
+  /* Purchase statuses */
+  draft:     { variant: 'pending',  label: 'Draft' },
+  received:  { variant: 'approved', label: 'Received' },
+  cancelled: { variant: 'rejected', label: 'Cancelled' },
+  /* POS session statuses */
+  open:      { variant: 'active',   label: 'Open' },
+  closed:    { variant: 'default',  label: 'Closed' },
+  /* POS transaction statuses */
+  completed: { variant: 'approved', label: 'Completed' },
+  refunded:  { variant: 'orange',   label: 'Refunded' },
+  voided:    { variant: 'rejected', label: 'Voided' },
   /* Support ticket statuses */
   OPEN:        { variant: 'info',    label: 'Open' },
   IN_PROGRESS: { variant: 'pending', label: 'In Progress' },

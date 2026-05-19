@@ -1,47 +1,76 @@
-import { adminDb } from '@/lib/firebase/admin';
-import { MaintenanceRecord } from '@/types';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import { MaintenanceRecord, MaintenanceType } from '@/types';
 
-function toRecord(id: string, data: FirebaseFirestore.DocumentData): MaintenanceRecord {
+type Row = Record<string, unknown>;
+
+function toRecord(r: Row): MaintenanceRecord {
   return {
-    id,
-    organizationId: data.organizationId,
-    assetId: data.assetId,
-    type: data.type,
-    description: data.description,
-    performedBy: data.performedBy,
-    cost: data.cost,
-    date: data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date),
-    createdBy: data.createdBy,
-    createdByEmail: data.createdByEmail,
-    createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+    id: r.id as string,
+    organizationId: r.organization_id as string,
+    assetId: r.asset_id as string,
+    type: r.type as MaintenanceType,
+    description: r.description as string,
+    performedBy: r.performed_by as string,
+    cost: r.cost as number,
+    date: r.date ? new Date(r.date as string) : new Date(),
+    createdBy: r.created_by as string,
+    createdByEmail: r.created_by_email as string,
+    createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
   };
 }
 
-export async function getMaintenanceRecords(orgId: string, assetId?: string): Promise<MaintenanceRecord[]> {
-  let q = adminDb.collection('maintenanceRecords')
-    .where('organizationId', '==', orgId)
-    .orderBy('date', 'desc') as FirebaseFirestore.Query;
-  if (assetId) q = q.where('assetId', '==', assetId);
-  const snap = await q.get();
-  return snap.docs.map((d) => toRecord(d.id, d.data()));
+export async function getMaintenanceRecords(
+  orgId: string,
+  assetId?: string,
+): Promise<MaintenanceRecord[]> {
+  let q = supabaseAdmin
+    .from('maintenance_records')
+    .select('*')
+    .eq('organization_id', orgId)
+    .order('date', { ascending: false });
+  if (assetId) q = q.eq('asset_id', assetId);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []).map(toRecord);
 }
 
-export async function getMaintenanceRecordById(id: string): Promise<MaintenanceRecord | null> {
-  const doc = await adminDb.collection('maintenanceRecords').doc(id).get();
-  if (!doc.exists) return null;
-  return toRecord(doc.id, doc.data()!);
+export async function getMaintenanceRecordById(
+  id: string,
+): Promise<MaintenanceRecord | null> {
+  const { data } = await supabaseAdmin
+    .from('maintenance_records')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  return data ? toRecord(data) : null;
 }
 
-export async function createMaintenanceRecord(data: Omit<MaintenanceRecord, 'id' | 'createdAt'>): Promise<string> {
-  const ref = await adminDb.collection('maintenanceRecords').add({
-    ...data,
-    date: new Date(data.date),
-    createdAt: FieldValue.serverTimestamp(),
-  });
-  return ref.id;
+export async function createMaintenanceRecord(
+  data: Omit<MaintenanceRecord, 'id' | 'createdAt'>,
+): Promise<string> {
+  const { data: row, error } = await supabaseAdmin
+    .from('maintenance_records')
+    .insert({
+      organization_id: data.organizationId,
+      asset_id: data.assetId,
+      type: data.type,
+      description: data.description,
+      performed_by: data.performedBy,
+      cost: data.cost,
+      date: new Date(data.date).toISOString(),
+      created_by: data.createdBy,
+      created_by_email: data.createdByEmail,
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return row.id as string;
 }
 
 export async function deleteMaintenanceRecord(id: string): Promise<void> {
-  await adminDb.collection('maintenanceRecords').doc(id).delete();
+  const { error } = await supabaseAdmin
+    .from('maintenance_records')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
 }

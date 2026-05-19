@@ -1,79 +1,116 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { AssetCheckout } from '@/types';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
-function toCheckout(id: string, data: FirebaseFirestore.DocumentData): AssetCheckout {
+type Row = Record<string, unknown>;
+
+function toCheckout(r: Row): AssetCheckout {
   return {
-    id,
-    organizationId: data.organizationId,
-    assetId: data.assetId,
-    checkedOutTo: data.checkedOutTo,
-    checkedOutBy: data.checkedOutBy,
-    checkedOutByEmail: data.checkedOutByEmail,
-    dueDate: data.dueDate instanceof Timestamp ? data.dueDate.toDate() : data.dueDate ? new Date(data.dueDate) : undefined,
-    notes: data.notes,
-    checkedOutAt: data.checkedOutAt instanceof Timestamp ? data.checkedOutAt.toDate() : new Date(),
-    returnedAt: data.returnedAt instanceof Timestamp ? data.returnedAt.toDate() : data.returnedAt ? new Date(data.returnedAt) : undefined,
-    returnedBy: data.returnedBy,
-    returnedByEmail: data.returnedByEmail,
+    id: r.id as string,
+    organizationId: r.organization_id as string,
+    assetId: r.asset_id as string,
+    checkedOutTo: r.checked_out_to as string,
+    checkedOutBy: r.checked_out_by as string,
+    checkedOutByEmail: r.checked_out_by_email as string,
+    dueDate: r.due_date ? new Date(r.due_date as string) : undefined,
+    notes: r.notes as string,
+    checkedOutAt: r.checked_out_at
+      ? new Date(r.checked_out_at as string)
+      : new Date(),
+    returnedAt: r.returned_at ? new Date(r.returned_at as string) : undefined,
+    returnedBy: r.returned_by as string,
+    returnedByEmail: r.returned_by_email as string,
   };
 }
 
-export async function getCheckouts(orgId: string, opts?: { assetId?: string; activeOnly?: boolean }): Promise<AssetCheckout[]> {
-  let q = adminDb.collection('assetCheckouts')
-    .where('organizationId', '==', orgId)
-    .orderBy('checkedOutAt', 'desc') as FirebaseFirestore.Query;
-  if (opts?.assetId) q = q.where('assetId', '==', opts.assetId);
-  const snap = await q.get();
-  let results = snap.docs.map((d) => toCheckout(d.id, d.data()));
-  if (opts?.activeOnly) results = results.filter((c) => !c.returnedAt);
-  return results;
+export async function getCheckouts(
+  orgId: string,
+  opts?: { assetId?: string; activeOnly?: boolean },
+): Promise<AssetCheckout[]> {
+  let q = supabaseAdmin
+    .from('asset_checkouts')
+    .select('*')
+    .eq('organization_id', orgId)
+    .order('checked_out_at', { ascending: false });
+  if (opts?.assetId) q = q.eq('asset_id', opts.assetId);
+  if (opts?.activeOnly) q = q.is('returned_at', null);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []).map(toCheckout);
 }
 
-export async function getActiveCheckoutForAsset(orgId: string, assetId: string): Promise<AssetCheckout | null> {
-  const snap = await adminDb.collection('assetCheckouts')
-    .where('organizationId', '==', orgId)
-    .where('assetId', '==', assetId)
-    .orderBy('checkedOutAt', 'desc')
+export async function getActiveCheckoutForAsset(
+  orgId: string,
+  assetId: string,
+): Promise<AssetCheckout | null> {
+  const { data } = await supabaseAdmin
+    .from('asset_checkouts')
+    .select('*')
+    .eq('organization_id', orgId)
+    .eq('asset_id', assetId)
+    .order('checked_out_at', { ascending: false })
     .limit(1)
-    .get();
-  if (snap.empty) return null;
-  const c = toCheckout(snap.docs[0].id, snap.docs[0].data());
+    .maybeSingle();
+  if (!data) return null;
+  const c = toCheckout(data);
   return c.returnedAt ? null : c;
 }
 
-export async function getCheckoutById(id: string): Promise<AssetCheckout | null> {
-  const doc = await adminDb.collection('assetCheckouts').doc(id).get();
-  if (!doc.exists) return null;
-  return toCheckout(doc.id, doc.data()!);
+export async function getCheckoutById(
+  id: string,
+): Promise<AssetCheckout | null> {
+  const { data } = await supabaseAdmin
+    .from('asset_checkouts')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  return data ? toCheckout(data) : null;
 }
 
 export async function createCheckout(
-  data: Omit<AssetCheckout, 'id' | 'checkedOutAt' | 'returnedAt' | 'returnedBy' | 'returnedByEmail'>
+  data: Omit<
+    AssetCheckout,
+    'id' | 'checkedOutAt' | 'returnedAt' | 'returnedBy' | 'returnedByEmail'
+  >,
 ): Promise<string> {
-  const ref = await adminDb.collection('assetCheckouts').add({
-    ...data,
-    dueDate: data.dueDate ? new Date(data.dueDate) : null,
-    checkedOutAt: FieldValue.serverTimestamp(),
-    returnedAt: null,
-  });
-  return ref.id;
+  const { data: row, error } = await supabaseAdmin
+    .from('asset_checkouts')
+    .insert({
+      organization_id: data.organizationId,
+      asset_id: data.assetId,
+      checked_out_to: data.checkedOutTo,
+      checked_out_by: data.checkedOutBy,
+      checked_out_by_email: data.checkedOutByEmail,
+      due_date: data.dueDate ? new Date(data.dueDate).toISOString() : null,
+      notes: data.notes,
+      returned_at: null,
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return row.id as string;
 }
 
 export async function markReturned(
   id: string,
-  params: { returnedBy: string; returnedByEmail: string }
+  params: { returnedBy: string; returnedByEmail: string },
 ): Promise<void> {
-  await adminDb.collection('assetCheckouts').doc(id).update({
-    returnedAt: FieldValue.serverTimestamp(),
-    returnedBy: params.returnedBy,
-    returnedByEmail: params.returnedByEmail,
-  });
+  const { error } = await supabaseAdmin
+    .from('asset_checkouts')
+    .update({
+      returned_at: new Date().toISOString(),
+      returned_by: params.returnedBy,
+      returned_by_email: params.returnedByEmail,
+    })
+    .eq('id', id);
+  if (error) throw error;
 }
 
 export async function countActiveCheckouts(orgId: string): Promise<number> {
-  const snap = await adminDb.collection('assetCheckouts')
-    .where('organizationId', '==', orgId)
-    .get();
-  return snap.docs.filter((d) => !d.data().returnedAt).length;
+  const { count, error } = await supabaseAdmin
+    .from('asset_checkouts')
+    .select('*', { count: 'exact', head: true })
+    .eq('organization_id', orgId)
+    .is('returned_at', null);
+  if (error) throw error;
+  return count ?? 0;
 }

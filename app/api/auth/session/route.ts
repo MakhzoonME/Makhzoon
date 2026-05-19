@@ -1,88 +1,71 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
+import { getOrganizationById } from '@/lib/db/organizations';
 import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
-import { invalidateCachedSession } from '@/lib/firebase/session-cache';
-import { revokeSession } from '@/lib/firebase/session-revocation';
+import { getUserById } from '@/lib/db/users';
+import { invalidateCachedSession } from '@/lib/supabase/session-cache';
+import { revokeSession } from '@/lib/supabase/session-revocation';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import type { UserRole } from '@/types';
 
-async function verifyWithRetry(idToken: string, attempt = 0) {
+function decodeJwt(token: string): Record<string, unknown> {
   try {
-    return await adminAuth.verifyIdToken(idToken);
-  } catch (err) {
-    if (attempt === 0) {
-      await new Promise((r) => setTimeout(r, 1000));
-      return verifyWithRetry(idToken, 1);
-    }
-    throw err;
+    return JSON.parse(
+      Buffer.from(
+        token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'),
+        'base64',
+      ).toString('utf8'),
+    );
+  } catch {
+    return {};
   }
 }
 
+/**
+ * Establishes the server view of an already-signed-in Supabase session.
+ * The browser client (signInWithPassword via @supabase/ssr) sets the auth
+ * cookies; this endpoint validates them, enforces the org-suspended gate, and
+ * returns the post-login routing payload — preserving the legacy contract
+ * { role, orgSlug, features, permissions } used by the login page.
+ */
 export async function POST(req: NextRequest) {
   try {
-    // SECURITY: Rate limit session creation (5 per IP per 15 minutes)
     const clientIp = getClientIp(req);
-    const rateLimitResult = checkRateLimit(
-      `session:${clientIp}`,
-      5,
-      15 * 60 * 1000,
-      { action: 'sign in' }
-    );
-    if (rateLimitResult) return rateLimitResult;
+    const rl = checkRateLimit(`session:${clientIp}`, 5, 15 * 60 * 1000, {
+      action: 'sign in',
+    });
+    if (rl) return rl;
 
-    const body = await req.json();
-    const { idToken } = body;
-    if (!idToken) return NextResponse.json({ error: 'Missing token' }, { status: 400 });
-
-    let decoded;
-    try {
-      decoded = await verifyWithRetry(idToken);
-    } catch (verifyErr) {
-      const msg = verifyErr instanceof Error ? verifyErr.message : String(verifyErr);
-      const code = (verifyErr as Record<string, unknown>)?.code;
-      console.error('Session: verifyIdToken failed', { code, msg });
-      return NextResponse.json({ error: 'Unauthorized', detail: `verifyIdToken: ${code ?? msg}` }, { status: 401 });
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    if (error || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!decoded.role) {
+    const role = (user.app_metadata?.role as UserRole) ?? undefined;
+    if (!role) {
       return NextResponse.json({ error: 'No account found' }, { status: 403 });
     }
-
-    // 24-hour session (reduced from 5 days for better security)
-    const expiresIn = 60 * 60 * 24 * 1 * 1000; // 1 day
-    let sessionCookie;
-    try {
-      sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
-    } catch (cookieErr) {
-      const msg = cookieErr instanceof Error ? cookieErr.message : String(cookieErr);
-      const code = (cookieErr as Record<string, unknown>)?.code;
-      console.error('Session: createSessionCookie failed', { code, msg });
-      return NextResponse.json({ error: 'Unauthorized', detail: `createSessionCookie: ${code ?? msg}` }, { status: 401 });
-    }
-
-    const cookieStore = await cookies();
-    // Set secure flag in all non-development environments
-    const isSecure = process.env.NODE_ENV !== 'development';
-    cookieStore.set('session', sessionCookie, {
-      maxAge: expiresIn / 1000,
-      httpOnly: true,
-      secure: isSecure,
-      path: '/',
-      sameSite: 'strict',
-    });
+    const orgId =
+      (user.app_metadata?.organization_id as string | undefined) ?? undefined;
 
     let orgSlug: string | null = null;
     let features: Record<string, boolean> = {};
     let orgSuspended = false;
-    const orgId = decoded.organizationId as string | undefined;
+
     if (orgId) {
-      const [orgDoc, subscription] = await Promise.all([
-        adminDb.collection('organizations').doc(orgId).get(),
+      const [org, subscription] = await Promise.all([
+        getOrganizationById(orgId),
         getSubscriptionByOrg(orgId),
       ]);
-      if (orgDoc.exists) orgSlug = (orgDoc.data()?.subdomain as string) ?? null;
-      if (subscription?.features) features = subscription.features as Record<string, boolean>;
-      if (subscription?.status === 'SUSPENDED' && decoded.role !== 'super_admin') {
+      orgSlug = org?.subdomain ?? null;
+      if (subscription?.features)
+        features = subscription.features as Record<string, boolean>;
+      if (subscription?.status === 'SUSPENDED' && role !== 'super_admin') {
         orgSuspended = true;
       }
     }
@@ -90,53 +73,62 @@ export async function POST(req: NextRequest) {
     if (orgSuspended) {
       return NextResponse.json(
         { error: 'Organization suspended', orgSuspended: true },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
     let permissions = null;
-    if (decoded.role === 'staff' && orgId) {
-      const userDoc = await adminDb.collection('users').doc(decoded.uid).get();
-      permissions = userDoc.exists ? (userDoc.data()?.permissions ?? null) : null;
+    if (role === 'staff' && orgId) {
+      const u = await getUserById(user.id);
+      permissions = u?.permissions ?? null;
     }
 
     return NextResponse.json(
-      { role: decoded.role ?? 'staff', orgSlug, features, permissions },
-      { headers: { 'Cache-Control': 'no-store' } }
+      { role, orgSlug, features, permissions },
+      { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (err) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    const errCode = (err as Record<string, unknown>)?.code;
-    console.error('Session creation error:', { message: errMsg, code: errCode, stack: err instanceof Error ? err.stack : undefined });
-    return NextResponse.json({ error: 'Unauthorized', detail: errMsg }, { status: 401 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('Session creation error:', msg);
+    return NextResponse.json(
+      { error: 'Unauthorized', detail: msg },
+      { status: 401 },
+    );
   }
 }
 
 export async function DELETE() {
+  const supabase = await createClient();
   const cookieStore = await cookies();
-  const sessionToken = cookieStore.get('session')?.value;
 
-  // Clear cookies immediately (flags must match original set call)
-  const isSecure = process.env.NODE_ENV !== 'development';
-  cookieStore.set('session', '', { maxAge: 0, path: '/', httpOnly: true, secure: isSecure, sameSite: 'strict' });
-  cookieStore.set('transferOrgId', '', { maxAge: 0, path: '/', httpOnly: true, secure: isSecure, sameSite: 'strict' });
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  // Revoke the session token server-side so it can't be reused
-  if (sessionToken) {
-    invalidateCachedSession(sessionToken);
-    try {
-      // Decode token to get userId for audit purposes
-      const decoded = await adminAuth.verifySessionCookie(sessionToken, false).catch(() => null);
-      const userId = decoded?.uid;
-      if (userId) {
-        // Token expires in 1 day (matches session duration)
-        const expiresAt = new Date(Date.now() + 60 * 60 * 24 * 1000);
-        await revokeSession(sessionToken, userId, expiresAt);
-      }
-    } catch {
-      // If we can't decode, still clear the cookie
+  if (session?.access_token) {
+    invalidateCachedSession(session.access_token);
+    const claims = decodeJwt(session.access_token);
+    const sessionId = (claims.session_id as string) ?? '';
+    const userId = (claims.sub as string) ?? '';
+    if (sessionId && userId) {
+      // Supabase access tokens are ~1h; keep the deny-list row a bit longer.
+      const expiresAt = new Date(Date.now() + 60 * 60 * 24 * 1000);
+      await revokeSession(sessionId, userId, expiresAt);
     }
   }
+
+  // Invalidate refresh tokens server-side, then clear cookies. @supabase/ssr
+  // clears its own auth cookies as part of signOut().
+  await supabase.auth.signOut().catch(() => {});
+
+  const isSecure = process.env.NODE_ENV !== 'development';
+  cookieStore.set('transferOrgId', '', {
+    maxAge: 0,
+    path: '/',
+    httpOnly: true,
+    secure: isSecure,
+    sameSite: 'strict',
+  });
 
   return NextResponse.json({ success: true });
 }

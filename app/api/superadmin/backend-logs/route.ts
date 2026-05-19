@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getBackendLogs } from '@/lib/db/backend-logs';
 import type { LogLevel } from '@/lib/logging/backend-logger';
 

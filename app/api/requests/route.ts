@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requirePermission } from '@/lib/permissions/require';
 import { requestSchema } from '@/lib/validations/request.schema';
 import * as requestsService from '@/lib/modules/requests/services/requests.service';
 
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
+    requirePermission(tenant.user, 'requests', 'create');
 
     const body = await req.json();
     const parsed = requestSchema.safeParse(body);

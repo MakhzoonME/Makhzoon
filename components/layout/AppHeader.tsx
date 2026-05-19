@@ -1,8 +1,7 @@
 'use client';
 import { useState, useSyncExternalStore } from 'react';
 import { useAuthStore } from '@/store/auth.store';
-import { auth } from '@/lib/firebase/client';
-import { signOut } from 'firebase/auth';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
@@ -85,7 +84,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
     setIsLoggingOut(true);
     try {
       await fetch('/api/auth/session', { method: 'DELETE' });
-      await signOut(auth);
+      await createClient().auth.signOut();
     } catch {
       // ignore — always redirect regardless of errors
     }
@@ -154,7 +153,15 @@ export function AppHeader({ orgName }: { orgName?: string }) {
 
           {/* User menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-gray-700 hover:text-gray-900 focus:outline-none px-1 py-1 rounded-md hover:bg-gray-100 transition-colors ml-1 dark:hover:bg-gray-700/40">
+            <DropdownMenuTrigger className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 focus:outline-none px-1 py-1 rounded-md hover:bg-gray-100 transition-colors ml-1 dark:hover:bg-gray-700/40">
+              <div className="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-semibold text-primary-700 flex-shrink-0 overflow-hidden">
+                {user?.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  user?.displayName?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? '?'
+                )}
+              </div>
               <TooltipProvider delayDuration={300}>
                 <Tooltip>
                   <TooltipTrigger asChild>

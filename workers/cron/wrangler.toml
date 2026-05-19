@@ -1,0 +1,34 @@
+# Makhzoon scheduled-jobs Worker. Replaces the Vercel `vercel.json` crons.
+# Deployed separately from the app: `cd workers/cron && npx wrangler deploy`.
+#
+# Required secrets (set via `npx wrangler secret put --env <name>`):
+#   CRON_SECRET  must match the app's CRON_SECRET (Bearer token the
+#                /api/cron/* routes validate)
+
+name = "makhzoon-cron"
+main = "src/index.ts"
+compatibility_date = "2025-05-05"
+
+# Mirrors the old vercel.json schedules exactly:
+#   warranty-alerts      → Mondays 09:00 UTC
+#   subscription-status  → daily 01:00 UTC
+[triggers]
+crons = ["0 9 * * 1", "0 1 * * *"]
+
+[env.dev]
+name = "makhzoon-cron-dev"
+
+[env.dev.vars]
+APP_URL = "https://dev.makhzoon.me"
+
+[env.staging]
+name = "makhzoon-cron-staging"
+
+[env.staging.vars]
+APP_URL = "https://stage.makhzoon.me"
+
+[env.production]
+name = "makhzoon-cron-prod"
+
+[env.production.vars]
+APP_URL = "https://app.makhzoon.me"

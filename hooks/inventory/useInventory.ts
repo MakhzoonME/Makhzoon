@@ -15,6 +15,8 @@ export function useInventoryItems(params?: {
   category?: string;
   stockStatus?: string;
   search?: string;
+  /** When true, only items with posEnabled=true are returned (used by Haraka register). */
+  posEnabled?: boolean;
   page?: number;
   pageSize?: number;
   sortBy?: string;
@@ -24,6 +26,7 @@ export function useInventoryItems(params?: {
   if (params?.category) query.set('category', params.category);
   if (params?.stockStatus) query.set('stockStatus', params.stockStatus);
   if (params?.search) query.set('search', params.search);
+  if (params?.posEnabled) query.set('posEnabled', 'true');
   if (params?.page) query.set('page', String(params.page));
   if (params?.pageSize) query.set('pageSize', String(params.pageSize));
   if (params?.sortBy) query.set('sortBy', params.sortBy);

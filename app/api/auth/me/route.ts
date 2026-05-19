@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
-import { adminDb } from '@/lib/firebase/admin';
+import { getOrganizationById } from '@/lib/db/organizations';
+import { getUserById } from '@/lib/db/users';
 
 export async function GET() {
   try {
@@ -10,15 +11,16 @@ export async function GET() {
 
     let features: Record<string, boolean> = {};
     let orgSlug: string | null = null;
+    let avatarUrl: string | null = null;
 
-    if (user.organizationId) {
-      const [sub, orgDoc] = await Promise.all([
-        getSubscriptionByOrg(user.organizationId),
-        adminDb.collection('organizations').doc(user.organizationId).get(),
-      ]);
-      if (sub?.features) features = sub.features as Record<string, boolean>;
-      if (orgDoc.exists) orgSlug = (orgDoc.data()?.subdomain as string) ?? null;
-    }
+    const [sub, org, dbUser] = await Promise.all([
+      user.organizationId ? getSubscriptionByOrg(user.organizationId) : Promise.resolve(null),
+      user.organizationId ? getOrganizationById(user.organizationId) : Promise.resolve(null),
+      getUserById(user.uid),
+    ]);
+    if (sub?.features) features = sub.features as Record<string, boolean>;
+    orgSlug = org?.subdomain ?? null;
+    avatarUrl = dbUser?.avatarUrl ?? null;
 
     return NextResponse.json(
       {
@@ -26,10 +28,11 @@ export async function GET() {
         role: user.role,
         organizationId: user.organizationId,
         orgSlug,
+        avatarUrl,
         permissions: user.permissions ?? null,
         features,
       },
-      { headers: { 'Cache-Control': 'no-store' } }
+      { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

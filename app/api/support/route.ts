@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requirePermission } from '@/lib/permissions/require';
 import {
   getSupportTickets,
   getAllSupportTickets,
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
     const tenant = await resolveTenant();
     const user = tenant.user;
     if (!tenant.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    requirePermission(user, 'support', 'create');
 
     const body = await req.json();
     const parsed = supportTicketCreateSchema.safeParse(body);

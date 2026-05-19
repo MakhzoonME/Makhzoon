@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { AuthUser } from '@/types';
 
 type Handler = (req: NextRequest, user: AuthUser, context?: { params: Record<string, string> }) => Promise<NextResponse>;

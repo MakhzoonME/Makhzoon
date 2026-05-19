@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { queueAuditLog } from '@/lib/audit/logger';
 import { cookies } from 'next/headers';
-import { adminDb } from '@/lib/firebase/admin';
+import { getOrganizationById } from '@/lib/db/organizations';
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   try {
@@ -13,10 +13,10 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ or
 
     const { orgId } = await params;
 
-    const orgDoc = await adminDb.collection('organizations').doc(orgId).get();
-    if (!orgDoc.exists) return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
-    const subdomain = (orgDoc.data()?.subdomain as string) ?? null;
-    const name = (orgDoc.data()?.name as string) ?? null;
+    const org = await getOrganizationById(orgId);
+    if (!org) return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
+    const subdomain = org.subdomain ?? null;
+    const name = org.name ?? null;
 
     const cookieStore = await cookies();
     const isSecure = process.env.NODE_ENV !== 'development';

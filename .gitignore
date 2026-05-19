@@ -14,6 +14,10 @@
 /.next/
 /out/
 
+# cloudflare workers build output + wrangler local state
+.open-next/
+.wrangler/
+
 # production
 /build
 
@@ -62,3 +66,5 @@ agentdb.rvf.lock
 # stray shell brace-expansion / accidental output files
 {,
 x.collectionGroup
+*.bak
+*.orig

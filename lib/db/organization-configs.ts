@@ -1,4 +1,4 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import {
   ConfigCategory,
   ConfigLocation,
@@ -8,21 +8,24 @@ import {
   DEFAULT_LOCATIONS,
   OrganizationConfig,
 } from '@/types';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { randomBytes } from 'crypto';
 
-const COLLECTION = 'organizationConfigs';
+type Row = Record<string, unknown>;
 
-function toConfig(orgId: string, data: FirebaseFirestore.DocumentData): OrganizationConfig {
+function toConfig(orgId: string, r: Row): OrganizationConfig {
   return {
     organizationId: orgId,
-    assetStatuses: Array.isArray(data.assetStatuses) ? (data.assetStatuses as ConfigStatus[]) : [],
-    locations: Array.isArray(data.locations) ? (data.locations as ConfigLocation[]) : [],
-    categories: Array.isArray(data.categories) ? (data.categories as ConfigCategory[]) : [],
-    createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
-    createdBy: data.createdBy ?? 'system',
-    updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
-    updatedBy: data.updatedBy ?? 'system',
+    assetStatuses: Array.isArray(r.asset_statuses)
+      ? (r.asset_statuses as ConfigStatus[])
+      : [],
+    locations: Array.isArray(r.locations) ? (r.locations as ConfigLocation[]) : [],
+    categories: Array.isArray(r.categories)
+      ? (r.categories as ConfigCategory[])
+      : [],
+    createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
+    createdBy: (r.created_by as string) ?? 'system',
+    updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
+    updatedBy: (r.updated_by as string) ?? 'system',
   };
 }
 
@@ -45,36 +48,40 @@ export async function getOrCreateOrganizationConfig(
   orgId: string,
   actorUid = 'system',
 ): Promise<OrganizationConfig> {
-  const ref = adminDb.collection(COLLECTION).doc(orgId);
-  const snap = await ref.get();
-  if (snap.exists) return toConfig(orgId, snap.data()!);
+  const { data: existing } = await supabaseAdmin
+    .from('organization_configs')
+    .select('*')
+    .eq('organization_id', orgId)
+    .maybeSingle();
+  if (existing) return toConfig(orgId, existing);
 
-  const seed = {
-    organizationId: orgId,
-    assetStatuses: DEFAULT_ASSET_STATUSES,
-    locations: DEFAULT_LOCATIONS,
-    categories: DEFAULT_CATEGORIES,
-    createdBy: actorUid,
-    updatedBy: actorUid,
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  };
-  await ref.set(seed);
-  const fresh = await ref.get();
-  return toConfig(orgId, fresh.data()!);
+  const { data: created, error } = await supabaseAdmin
+    .from('organization_configs')
+    .insert({
+      organization_id: orgId,
+      asset_statuses: DEFAULT_ASSET_STATUSES,
+      locations: DEFAULT_LOCATIONS,
+      categories: DEFAULT_CATEGORIES,
+      created_by: actorUid,
+      updated_by: actorUid,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return toConfig(orgId, created);
 }
 
 async function writeSection(
   orgId: string,
-  section: 'assetStatuses' | 'locations' | 'categories',
+  section: 'asset_statuses' | 'locations' | 'categories',
   next: ConfigStatus[] | ConfigLocation[] | ConfigCategory[],
   actorUid: string,
 ): Promise<void> {
-  await adminDb.collection(COLLECTION).doc(orgId).update({
-    [section]: next,
-    updatedBy: actorUid,
-    updatedAt: FieldValue.serverTimestamp(),
-  });
+  const { error } = await supabaseAdmin
+    .from('organization_configs')
+    .update({ [section]: next, updated_by: actorUid })
+    .eq('organization_id', orgId);
+  if (error) throw error;
 }
 
 /* ── Statuses ───────────────────────────────────────────────────── */
@@ -87,7 +94,9 @@ export async function addStatus(
   const cfg = await getOrCreateOrganizationConfig(orgId, actorUid);
   const labelKey = input.label.trim().toLowerCase();
   if (cfg.assetStatuses.some((s) => s.label.trim().toLowerCase() === labelKey)) {
-    throw Object.assign(new Error('A status with this label already exists'), { code: 'duplicate' });
+    throw Object.assign(new Error('A status with this label already exists'), {
+      code: 'duplicate',
+    });
   }
   const status: ConfigStatus = {
     id: slugifyId(input.label, 'status'),
@@ -95,7 +104,7 @@ export async function addStatus(
     color: input.color,
   };
   const next = [...cfg.assetStatuses, status];
-  await writeSection(orgId, 'assetStatuses', next, actorUid);
+  await writeSection(orgId, 'asset_statuses', next, actorUid);
   return { status, statuses: next };
 }
 
@@ -114,7 +123,10 @@ export async function updateStatus(
     const dupe = cfg.assetStatuses.some(
       (s, i) => i !== idx && s.label.trim().toLowerCase() === labelKey,
     );
-    if (dupe) throw Object.assign(new Error('A status with this label already exists'), { code: 'duplicate' });
+    if (dupe)
+      throw Object.assign(new Error('A status with this label already exists'), {
+        code: 'duplicate',
+      });
   }
 
   const next = cfg.assetStatuses.slice();
@@ -123,7 +135,7 @@ export async function updateStatus(
     ...(patch.label ? { label: patch.label.trim() } : {}),
     ...(patch.color ? { color: patch.color } : {}),
   };
-  await writeSection(orgId, 'assetStatuses', next, actorUid);
+  await writeSection(orgId, 'asset_statuses', next, actorUid);
   return { status: next[idx], statuses: next };
 }
 
@@ -136,10 +148,12 @@ export async function deleteStatus(
   const removed = cfg.assetStatuses.find((s) => s.id === statusId) ?? null;
   if (!removed) return { removed: null, statuses: cfg.assetStatuses };
   if (cfg.assetStatuses.length <= 1) {
-    throw Object.assign(new Error('At least one status is required'), { code: 'min_required' });
+    throw Object.assign(new Error('At least one status is required'), {
+      code: 'min_required',
+    });
   }
   const next = cfg.assetStatuses.filter((s) => s.id !== statusId);
-  await writeSection(orgId, 'assetStatuses', next, actorUid);
+  await writeSection(orgId, 'asset_statuses', next, actorUid);
   return { removed, statuses: next };
 }
 
@@ -153,7 +167,9 @@ export async function addLocation(
   const cfg = await getOrCreateOrganizationConfig(orgId, actorUid);
   const nameKey = input.name.trim().toLowerCase();
   if (cfg.locations.some((l) => l.name.trim().toLowerCase() === nameKey)) {
-    throw Object.assign(new Error('A location with this name already exists'), { code: 'duplicate' });
+    throw Object.assign(new Error('A location with this name already exists'), {
+      code: 'duplicate',
+    });
   }
   const location: ConfigLocation = {
     id: slugifyId(input.name, 'loc'),
@@ -178,7 +194,11 @@ export async function updateLocation(
     const dupe = cfg.locations.some(
       (l, i) => i !== idx && l.name.trim().toLowerCase() === nameKey,
     );
-    if (dupe) throw Object.assign(new Error('A location with this name already exists'), { code: 'duplicate' });
+    if (dupe)
+      throw Object.assign(
+        new Error('A location with this name already exists'),
+        { code: 'duplicate' },
+      );
   }
   const next = cfg.locations.slice();
   next[idx] = { ...next[idx], ...(patch.name ? { name: patch.name.trim() } : {}) };
@@ -209,7 +229,9 @@ export async function addCategory(
   const cfg = await getOrCreateOrganizationConfig(orgId, actorUid);
   const nameKey = input.name.trim().toLowerCase();
   if (cfg.categories.some((c) => c.name.trim().toLowerCase() === nameKey)) {
-    throw Object.assign(new Error('A category with this name already exists'), { code: 'duplicate' });
+    throw Object.assign(new Error('A category with this name already exists'), {
+      code: 'duplicate',
+    });
   }
   const category: ConfigCategory = {
     id: slugifyId(input.name, 'cat'),
@@ -234,7 +256,11 @@ export async function updateCategory(
     const dupe = cfg.categories.some(
       (c, i) => i !== idx && c.name.trim().toLowerCase() === nameKey,
     );
-    if (dupe) throw Object.assign(new Error('A category with this name already exists'), { code: 'duplicate' });
+    if (dupe)
+      throw Object.assign(
+        new Error('A category with this name already exists'),
+        { code: 'duplicate' },
+      );
   }
   const next = cfg.categories.slice();
   next[idx] = { ...next[idx], ...(patch.name ? { name: patch.name.trim() } : {}) };
@@ -251,7 +277,9 @@ export async function deleteCategory(
   const removed = cfg.categories.find((c) => c.id === categoryId) ?? null;
   if (!removed) return { removed: null, categories: cfg.categories };
   if (cfg.categories.length <= 1) {
-    throw Object.assign(new Error('At least one category is required'), { code: 'min_required' });
+    throw Object.assign(new Error('At least one category is required'), {
+      code: 'min_required',
+    });
   }
   const next = cfg.categories.filter((c) => c.id !== categoryId);
   await writeSection(orgId, 'categories', next, actorUid);

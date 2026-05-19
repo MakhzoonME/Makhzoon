@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getOrgUsage } from '@/lib/db/usage';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {

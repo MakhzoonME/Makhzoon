@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySessionCookie } from '@/lib/firebase/auth-helpers';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getSubscriptionByOrg, updateSubscription } from '@/lib/db/subscriptions';
 import { queueAuditLog } from '@/lib/audit/logger';
 import { subscriptionUpdateSchema } from '@/lib/validations/subscription.schema';

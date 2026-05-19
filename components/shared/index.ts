@@ -19,3 +19,6 @@ export { ThemeToggle } from './ThemeToggle';
 export { AppToastProvider as ToastProvider } from './ToastProvider';
 export { UserHoverCard } from './UserHoverCard';
 export type { UserCardData } from './UserHoverCard';
+export { BarcodeInput } from './BarcodeInput';
+export type { BarcodeInputHandle, BarcodeInputProps } from './BarcodeInput';
+export { AvatarUpload } from './AvatarUpload';

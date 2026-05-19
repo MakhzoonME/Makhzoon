@@ -28,8 +28,8 @@ enabled = true
 name = "makhzoondev"
 
 [env.dev.vars]
-NEXT_PUBLIC_SUPABASE_URL = "https://your-dev-project.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-dev-anon-key"
+NEXT_PUBLIC_SUPABASE_URL = "https://icepozpnwxnqhdzmpyco.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZXBvenBud3hucWhkem1weWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTkwMTYsImV4cCI6MjA5NDQ5NTAxNn0.yLN0RSvNb_AYRJhM0yLmj3RBJWY_9Xx3IE36CNdGRK8"
 NEXT_PUBLIC_APP_URL = "https://dev.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "development"
 RESEND_FROM_EMAIL = "Makhzoon Dev <dev-notifications@makhzoon.me>"

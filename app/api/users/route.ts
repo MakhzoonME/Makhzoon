@@ -54,9 +54,6 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
     const data = parsed.data;
-    // Schema permits username-only invites; auth.users still needs an email,
-    // so synthesize one for username accounts (see lib/supabase/auth-admin.ts).
-    const effectiveEmail = data.email?.trim() || `${data.username!.trim()}@makhzoon.local`;
 
     const tempPassword = randomBytes(16).toString('base64');
 

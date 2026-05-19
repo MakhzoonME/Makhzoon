@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requirePermission } from '@/lib/permissions/require';
 import { getInventoryAuditById, getAuditItems, completeAudit } from '@/lib/db/inventory-audits';
 import { auditLog } from '@/lib/platform/audit';
 
@@ -26,9 +27,7 @@ export async function PATCH(req: NextRequest, props: Params) {
   const params = await props.params;
   try {
     const tenant = await resolveTenant();
-    if (tenant.role !== 'admin' && tenant.role !== 'super_admin' && tenant.role !== 'org_owner') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    requirePermission(tenant.user, 'inventory', 'audits');
 
     const audit = await getInventoryAuditById(params.auditId);
     if (!audit || audit.organizationId !== tenant.organizationId) return NextResponse.json({ error: 'Not found' }, { status: 404 });

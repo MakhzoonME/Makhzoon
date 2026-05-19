@@ -112,8 +112,13 @@ export function MobileDrawer() {
             {user && (
               <div className="px-4 py-3 border-b border-gray-100">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-semibold text-indigo-700 flex-shrink-0">
-                    {user.displayName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase()}
+                  <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-semibold text-indigo-700 flex-shrink-0 overflow-hidden">
+                    {user.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      user.displayName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase()
+                    )}
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{user.displayName || user.email}</p>

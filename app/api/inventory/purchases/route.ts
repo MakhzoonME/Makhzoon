@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requirePermission } from '@/lib/permissions/require'
 import { PurchasesService } from '@/lib/modules/inventory/purchases/purchases.service'
 import { createPurchaseSchema } from '@/lib/modules/inventory/purchases/schemas'
 import type { PurchaseStatus } from '@/types'
@@ -29,6 +30,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requirePermission(tenant.user, 'purchases', 'create')
     const body = await req.json()
     const parsed = createPurchaseSchema.safeParse(body)
     if (!parsed.success) {

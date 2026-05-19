@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requirePermission } from '@/lib/permissions/require';
 import { getInventoryAuditById, updateAuditItem } from '@/lib/db/inventory-audits';
 
 interface Params { params: Promise<{ auditId: string }> }
@@ -8,6 +9,7 @@ export async function POST(req: NextRequest, props: Params) {
   const params = await props.params;
   try {
     const tenant = await resolveTenant();
+    requirePermission(tenant.user, 'inventory', 'audits');
 
     const audit = await getInventoryAuditById(params.auditId);
     if (!audit || audit.organizationId !== tenant.organizationId) return NextResponse.json({ error: 'Not found' }, { status: 404 });

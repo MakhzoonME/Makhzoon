@@ -46,11 +46,14 @@ create index if not exists tax_rates_org_idx on public.tax_rates (organization_i
 create or replace trigger tax_rates_set_updated_at before update on public.tax_rates
   for each row execute function public.set_updated_at();
 alter table public.tax_rates enable row level security;
+drop policy if exists tax_rates_platform_all on public.tax_rates;
 create policy tax_rates_platform_all on public.tax_rates
   for all using (public.is_platform_admin()) with check (public.is_platform_admin());
+drop policy if exists tax_rates_mgr_all on public.tax_rates;
 create policy tax_rates_mgr_all on public.tax_rates
   for all using (public.is_org_manager(organization_id))
   with check (public.is_org_manager(organization_id));
+drop policy if exists tax_rates_staff_read on public.tax_rates;
 create policy tax_rates_staff_read on public.tax_rates
   for select using (public.belongs_to_org(organization_id));
 
@@ -85,11 +88,14 @@ create index if not exists purchases_org_idx on public.purchases (organization_i
 create or replace trigger purchases_set_updated_at before update on public.purchases
   for each row execute function public.set_updated_at();
 alter table public.purchases enable row level security;
+drop policy if exists purchases_platform_all on public.purchases;
 create policy purchases_platform_all on public.purchases
   for all using (public.is_platform_admin()) with check (public.is_platform_admin());
+drop policy if exists purchases_mgr_all on public.purchases;
 create policy purchases_mgr_all on public.purchases
   for all using (public.is_org_manager(organization_id))
   with check (public.is_org_manager(organization_id));
+drop policy if exists purchases_staff_read on public.purchases;
 create policy purchases_staff_read on public.purchases
   for select using (public.belongs_to_org(organization_id));
 
@@ -116,11 +122,14 @@ create index if not exists pos_sessions_org_cashier_idx
 create or replace trigger pos_sessions_set_updated_at before update on public.pos_sessions
   for each row execute function public.set_updated_at();
 alter table public.pos_sessions enable row level security;
+drop policy if exists pos_sessions_platform_all on public.pos_sessions;
 create policy pos_sessions_platform_all on public.pos_sessions
   for all using (public.is_platform_admin()) with check (public.is_platform_admin());
+drop policy if exists pos_sessions_mgr_all on public.pos_sessions;
 create policy pos_sessions_mgr_all on public.pos_sessions
   for all using (public.is_org_manager(organization_id))
   with check (public.is_org_manager(organization_id));
+drop policy if exists pos_sessions_staff_rw on public.pos_sessions;
 create policy pos_sessions_staff_rw on public.pos_sessions
   for all using (public.belongs_to_org(organization_id))
   with check (public.belongs_to_org(organization_id));
@@ -161,11 +170,14 @@ create index if not exists pos_tx_parent_idx on public.pos_transactions (parent_
 create or replace trigger pos_tx_set_updated_at before update on public.pos_transactions
   for each row execute function public.set_updated_at();
 alter table public.pos_transactions enable row level security;
+drop policy if exists pos_tx_platform_all on public.pos_transactions;
 create policy pos_tx_platform_all on public.pos_transactions
   for all using (public.is_platform_admin()) with check (public.is_platform_admin());
+drop policy if exists pos_tx_mgr_all on public.pos_transactions;
 create policy pos_tx_mgr_all on public.pos_transactions
   for all using (public.is_org_manager(organization_id))
   with check (public.is_org_manager(organization_id));
+drop policy if exists pos_tx_staff_rw on public.pos_transactions;
 create policy pos_tx_staff_rw on public.pos_transactions
   for all using (public.belongs_to_org(organization_id))
   with check (public.belongs_to_org(organization_id));
@@ -188,11 +200,14 @@ create index if not exists pos_customers_org_idx on public.pos_customers (organi
 create or replace trigger pos_customers_set_updated_at before update on public.pos_customers
   for each row execute function public.set_updated_at();
 alter table public.pos_customers enable row level security;
+drop policy if exists pos_customers_platform_all on public.pos_customers;
 create policy pos_customers_platform_all on public.pos_customers
   for all using (public.is_platform_admin()) with check (public.is_platform_admin());
+drop policy if exists pos_customers_mgr_all on public.pos_customers;
 create policy pos_customers_mgr_all on public.pos_customers
   for all using (public.is_org_manager(organization_id))
   with check (public.is_org_manager(organization_id));
+drop policy if exists pos_customers_staff_rw on public.pos_customers;
 create policy pos_customers_staff_rw on public.pos_customers
   for all using (public.belongs_to_org(organization_id))
   with check (public.belongs_to_org(organization_id));
@@ -212,6 +227,7 @@ create table if not exists public.fawtara_counters (
   updated_at      timestamptz not null default now()
 );
 alter table public.fawtara_counters enable row level security;
+drop policy if exists fawtara_counters_read on public.fawtara_counters;
 create policy fawtara_counters_read on public.fawtara_counters
   for select using (
     public.is_platform_admin() or public.is_org_manager(organization_id)

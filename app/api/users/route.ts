@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requirePermission } from '@/lib/permissions/require';
 import { getUsers, createUser } from '@/lib/db/users';
 import { createAuthUser } from '@/lib/supabase/auth-admin';
 import { auditLog } from '@/lib/platform/audit';
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;
-    if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    requirePermission(user, 'settings', 'users');
 
     if (tenant.subscription?.status && tenant.subscription.status !== 'ACTIVE')
       return NextResponse.json({ error: 'Subscription expired' }, { status: 403 });
@@ -53,14 +54,14 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
     const data = parsed.data;
-    if (!data.email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 422 });
-    }
+    // Schema permits username-only invites; auth.users still needs an email,
+    // so synthesize one for username accounts (see lib/supabase/auth-admin.ts).
+    const effectiveEmail = data.email?.trim() || `${data.username!.trim()}@makhzoon.local`;
 
     const tempPassword = randomBytes(16).toString('base64');
 
     const newUser = await createAuthUser({
-      email: data.email,
+      email: effectiveEmail,
       displayName: data.displayName,
       password: tempPassword,
       role: data.role,
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
 
     await createUser(newUser.uid, {
       organizationId: tenant.organizationId,
-      email: data.email,
+      email: effectiveEmail,
       displayName: data.displayName,
       role: data.role,
       status: 'active',
@@ -82,12 +83,12 @@ export async function POST(req: NextRequest) {
       action: 'USER_INVITED',
       module: 'users',
       recordId: newUser.uid,
-      newValue: { email: data.email, role: data.role },
+      newValue: { email: effectiveEmail, role: data.role },
     });
 
     return NextResponse.json({
       id: newUser.uid,
-      email: data.email,
+      email: effectiveEmail,
       displayName: data.displayName,
       role: data.role,
       message: 'User created. They will receive an email to set their password.'

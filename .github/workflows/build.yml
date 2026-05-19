@@ -1,0 +1,52 @@
+# Verifies that the Next.js + OpenNext Cloudflare Workers build succeeds on
+# both Ubuntu and Windows. The Windows leg is the load-bearing reason for
+# this workflow — closes MZ-012 (OpenNext Windows compatibility).
+#
+# Build only — no deploy, no secrets. Module-level env reads in the repo all
+# have safe defaults, so the runner does not need any Cloudflare or Supabase
+# credentials. Deploy is still manual via `npm run cf:deploy`.
+
+name: Build
+
+on:
+  push:
+    branches: [DevBranch, STGBranch, main]
+  pull_request:
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Cloudflare Workers build
+        run: npm run cf:build
+
+      - name: Verify worker bundle
+        shell: bash
+        run: |
+          test -f .open-next/worker.js || { echo "worker.js missing"; exit 1; }
+          size=$(du -sk .open-next | cut -f1)
+          echo "Bundle size: ${size} KB"
+          # Cloudflare Workers limit is 100MB (102400 KB)
+          if [ "$size" -gt 102400 ]; then
+            echo "Bundle exceeds 100MB limit"; exit 1
+          fi

@@ -1,7 +1,16 @@
 import { AuthUser } from '@/types/auth.types';
 import { UserPermissions } from '@/types/user-permissions.types';
 
-const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin']);
+// Roles that receive full access when no per-user permissions are stored:
+// org-level owners/admins, plus the platform superadmin family (who get full
+// access to any org they enter via the transferOrgId cookie — see auth-helpers).
+const ADMIN_ROLES = new Set([
+  'admin',
+  'org_owner',
+  'super_admin',
+  'makhzoon_admin',
+  'makhzoon_support',
+]);
 
 export function hasPermission(
   user: AuthUser,

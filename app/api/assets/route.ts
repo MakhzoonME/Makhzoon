@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requirePermission } from '@/lib/permissions/require'
 import { AssetsService } from '@/lib/modules/assets/services/assets.service'
 import { createAssetSchema } from '@/lib/modules/assets/validators/schemas'
 
@@ -33,6 +34,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requirePermission(tenant.user, 'assets', 'create')
     const parsed = createAssetSchema.safeParse(await req.json())
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

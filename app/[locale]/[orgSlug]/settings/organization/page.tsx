@@ -3,7 +3,7 @@ import { useOrgInfo } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
-import { useT } from '@/hooks/ui';
+import { useT, useAdminGuard } from '@/hooks/ui';
 
 function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
   const { t } = useT();
@@ -19,8 +19,10 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
 
 export default function OrganizationInfoPage() {
   const { t } = useT();
+  const { isAllowed } = useAdminGuard('settings.orgInfo');
   const { data: org, isLoading } = useOrgInfo();
 
+  if (!isAllowed) return null;
   if (isLoading) return <LoadingSkeleton rows={5} columns={1} />;
 
   return (

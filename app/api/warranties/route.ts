@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requirePermission } from '@/lib/permissions/require';
 import { getAssetById } from '@/lib/db/assets';
 import { getInventoryItemById } from '@/lib/db/inventory';
 import { warrantySchema } from '@/lib/validations/warranty.schema';
@@ -39,6 +40,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
+    requirePermission(tenant.user, 'warranties', 'create');
     const orgId = tenant.organizationId;
 
     const body = await req.json();

@@ -134,7 +134,7 @@ export default function TicketDetailPage() {
             disabled={addMessageMutation.isPending}
           />
           <div className="flex items-center justify-between">
-            <span className={`text-[11px] ${replyBody.length > 1800 ? 'text-amber-600' : 'text-gray-400'}`}>{replyBody.length}/2000</span>
+            <span className={`text-[11px] ${replyBody.length > 1800 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'}`}>{replyBody.length}/2000</span>
             <Button type="submit" size="sm" disabled={addMessageMutation.isPending || !replyBody.trim()}>
               {addMessageMutation.isPending ? 'Sending…' : 'Send Reply'}
             </Button>

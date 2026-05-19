@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
-import { Timestamp } from 'firebase-admin/firestore';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { queueAuditLog } from '@/lib/audit/logger';
 
 export const dynamic = 'force-dynamic';
@@ -14,25 +13,17 @@ export async function GET(req: NextRequest) {
     }
 
     const now = new Date();
-    const snap = await adminDb.collection('subscriptions')
-      .where('status', '==', 'ACTIVE')
-      .where('endDate', '<', Timestamp.fromDate(now))
-      .get();
+    const { data, error } = await supabaseAdmin
+      .from('subscriptions')
+      .update({ status: 'EXPIRED', updated_by: 'system' })
+      .eq('status', 'ACTIVE')
+      .lt('end_date', now.toISOString())
+      .select('organization_id');
+    if (error) throw error;
 
-    const batch = adminDb.batch();
-    const orgIds: string[] = [];
-
-    snap.docs.forEach((doc) => {
-      batch.update(doc.ref, {
-        status: 'EXPIRED',
-        updatedAt: Timestamp.now(),
-        updatedBy: 'system',
-      });
-      const orgId = doc.data().organizationId as string;
-      orgIds.push(orgId);
-    });
-
-    await batch.commit();
+    const orgIds: string[] = (data ?? []).map(
+      (r) => (r as Record<string, unknown>).organization_id as string,
+    );
 
     for (const orgId of orgIds) {
       queueAuditLog({
@@ -46,7 +37,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      expired: snap.docs.length,
+      expired: orgIds.length,
       orgs: orgIds.length,
     });
   } catch (err) {

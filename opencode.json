@@ -1,0 +1,53 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  "agent": {
+    "product-manager": {
+      "description": "Product manager — orchestrates the dev team, plans features, assigns tasks, tracks progress",
+      "mode": "primary",
+      "color": "#1565C0",
+      "prompt": "{file:.opencode/agents/product-manager.md}",
+      "permission": {
+        "task": {
+          "*": "allow"
+        }
+      }
+    },
+    "architect": {
+      "description": "System architect — designs architecture, reviews plans, ensures consistency",
+      "mode": "subagent",
+      "color": "#0F3F5C",
+      "prompt": "{file:.opencode/agents/architect.md}"
+    },
+    "frontend": {
+      "description": "Frontend developer — builds UI, pages, components, animations",
+      "mode": "subagent",
+      "color": "#1A7A9A",
+      "prompt": "{file:.opencode/agents/frontend.md}"
+    },
+    "backend": {
+      "description": "Backend developer — builds API routes, services, auth, business logic",
+      "mode": "subagent",
+      "color": "#00695C",
+      "prompt": "{file:.opencode/agents/backend.md}"
+    },
+    "database": {
+      "description": "Database specialist — Firestore collections, indexes, data modeling",
+      "mode": "subagent",
+      "color": "#E65100",
+      "prompt": "{file:.opencode/agents/database.md}"
+    },
+    "qa": {
+      "description": "QA / code reviewer — testing, linting, security review, type checking",
+      "mode": "subagent",
+      "color": "#6A1B9A",
+      "prompt": "{file:.opencode/agents/qa.md}"
+    },
+    "devops": {
+      "description": "DevOps engineer — deployment, CI/CD, environment config, Railway",
+      "mode": "subagent",
+      "color": "#1B5E20",
+      "prompt": "{file:.opencode/agents/devops.md}"
+    }
+  }
+}

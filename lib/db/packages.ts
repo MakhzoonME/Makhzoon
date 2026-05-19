@@ -1,53 +1,58 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { Package, PackageLimits, FeatureKey } from '@/types';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
-function toPackage(id: string, data: FirebaseFirestore.DocumentData): Package {
+type Row = Record<string, unknown>;
+
+function toPackage(r: Row): Package {
+  const limits = (r.limits ?? {}) as Partial<PackageLimits>;
   return {
-    id,
-    name: data.name,
-    description: data.description ?? '',
-    isActive: data.isActive ?? true,
+    id: r.id as string,
+    name: r.name as string,
+    description: (r.description as string) ?? '',
+    isActive: (r.is_active as boolean) ?? true,
     limits: {
-      maxAssets: data.limits?.maxAssets ?? -1,
-      maxUsers: data.limits?.maxUsers ?? -1,
-      maxWarranties: data.limits?.maxWarranties ?? -1,
-      maxRequests: data.limits?.maxRequests ?? -1,
+      maxAssets: limits.maxAssets ?? -1,
+      maxUsers: limits.maxUsers ?? -1,
+      maxWarranties: limits.maxWarranties ?? -1,
+      maxRequests: limits.maxRequests ?? -1,
     },
-    features: (data.features ?? {}) as Record<FeatureKey, boolean>,
-    createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
-    createdBy: data.createdBy ?? '',
-    updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
-    updatedBy: data.updatedBy ?? '',
+    features: (r.features ?? {}) as Record<FeatureKey, boolean>,
+    createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
+    createdBy: (r.created_by as string) ?? '',
+    updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
+    updatedBy: (r.updated_by as string) ?? '',
   };
 }
 
-export async function getPackages(opts?: { includeInactive?: boolean }): Promise<Package[]> {
-  const snap = await adminDb.collection('packages').orderBy('name', 'asc').get();
-  const all = snap.docs.map((d) => toPackage(d.id, d.data()));
-  return opts?.includeInactive ? all : all.filter((p) => p.isActive);
+export async function getPackages(opts?: {
+  includeInactive?: boolean;
+}): Promise<Package[]> {
+  let q = supabaseAdmin.from('packages').select('*').order('name');
+  if (!opts?.includeInactive) q = q.eq('is_active', true);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []).map(toPackage);
 }
 
-export async function getPackageById(packageId: string): Promise<Package | null> {
-  const doc = await adminDb.collection('packages').doc(packageId).get();
-  if (!doc.exists) return null;
-  return toPackage(doc.id, doc.data()!);
+export async function getPackageById(
+  packageId: string,
+): Promise<Package | null> {
+  const { data } = await supabaseAdmin
+    .from('packages')
+    .select('*')
+    .eq('id', packageId)
+    .maybeSingle();
+  return data ? toPackage(data) : null;
 }
 
 export async function getPackagesByIds(ids: string[]): Promise<Package[]> {
   if (ids.length === 0) return [];
-  const unique = Array.from(new Set(ids));
-  const chunks: string[][] = [];
-  for (let i = 0; i < unique.length; i += 10) chunks.push(unique.slice(i, i + 10));
-  const results: Package[] = [];
-  for (const chunk of chunks) {
-    const snap = await adminDb
-      .collection('packages')
-      .where('__name__', 'in', chunk)
-      .get();
-    results.push(...snap.docs.map((d) => toPackage(d.id, d.data())));
-  }
-  return results;
+  const { data, error } = await supabaseAdmin
+    .from('packages')
+    .select('*')
+    .in('id', Array.from(new Set(ids)));
+  if (error) throw error;
+  return (data ?? []).map(toPackage);
 }
 
 export async function createPackage(
@@ -60,35 +65,51 @@ export async function createPackage(
     features: Record<FeatureKey, boolean>;
   },
 ): Promise<Package> {
-  const ref = adminDb.collection('packages').doc();
-  await ref.set({
-    ...payload,
-    createdBy: userId,
-    updatedBy: userId,
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  });
-  const doc = await ref.get();
-  return toPackage(doc.id, doc.data()!);
+  const { data, error } = await supabaseAdmin
+    .from('packages')
+    .insert({
+      name: payload.name,
+      description: payload.description,
+      is_active: payload.isActive,
+      limits: payload.limits,
+      features: payload.features,
+      created_by: userId,
+      updated_by: userId,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return toPackage(data);
 }
 
 export async function updatePackage(
   packageId: string,
   userId: string,
-  updates: Partial<Pick<Package, 'name' | 'description' | 'isActive' | 'limits' | 'features'>>,
+  updates: Partial<
+    Pick<Package, 'name' | 'description' | 'isActive' | 'limits' | 'features'>
+  >,
 ): Promise<void> {
-  await adminDb.collection('packages').doc(packageId).update({
-    ...updates,
-    updatedBy: userId,
-    updatedAt: FieldValue.serverTimestamp(),
-  });
+  const patch: Row = { updated_by: userId };
+  if (updates.name !== undefined) patch.name = updates.name;
+  if (updates.description !== undefined) patch.description = updates.description;
+  if (updates.isActive !== undefined) patch.is_active = updates.isActive;
+  if (updates.limits !== undefined) patch.limits = updates.limits;
+  if (updates.features !== undefined) patch.features = updates.features;
+  const { error } = await supabaseAdmin
+    .from('packages')
+    .update(patch)
+    .eq('id', packageId);
+  if (error) throw error;
 }
 
-export async function deletePackage(packageId: string, userId: string): Promise<void> {
-  // Soft delete: keep historical references intact
-  await adminDb.collection('packages').doc(packageId).update({
-    isActive: false,
-    updatedBy: userId,
-    updatedAt: FieldValue.serverTimestamp(),
-  });
+export async function deletePackage(
+  packageId: string,
+  userId: string,
+): Promise<void> {
+  // Soft delete: keep historical references intact.
+  const { error } = await supabaseAdmin
+    .from('packages')
+    .update({ is_active: false, updated_by: userId })
+    .eq('id', packageId);
+  if (error) throw error;
 }

@@ -2,7 +2,13 @@
 import { useAdminGuard } from '@/hooks/ui';
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
-  const { isAllowed } = useAdminGuard('settings.orgInfo');
+  const { isAllowed } = useAdminGuard([
+    'settings.orgInfo',
+    'settings.subscription',
+    'settings.users',
+    'settings.taxRates',
+    'settings.fawtara',
+  ]);
 
   if (!isAllowed) {
     return (

@@ -1,58 +1,70 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { InventoryAudit, InventoryAuditItem } from '@/types';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
-function toAudit(id: string, d: FirebaseFirestore.DocumentData): InventoryAudit {
+type Row = Record<string, unknown>;
+
+function toAudit(r: Row): InventoryAudit {
   return {
-    id,
-    organizationId: d.organizationId,
-    title: d.title,
-    status: d.status,
-    notes: d.notes,
-    totalAssets: d.totalAssets ?? 0,
-    foundCount: d.foundCount ?? 0,
-    missingCount: d.missingCount ?? 0,
-    pendingCount: d.pendingCount ?? 0,
-    startedBy: d.startedBy,
-    startedByName: d.startedByName,
-    completedAt: d.completedAt instanceof Timestamp ? d.completedAt.toDate() : undefined,
-    createdAt: d.createdAt instanceof Timestamp ? d.createdAt.toDate() : new Date(),
-    updatedAt: d.updatedAt instanceof Timestamp ? d.updatedAt.toDate() : new Date(),
+    id: r.id as string,
+    organizationId: r.organization_id as string,
+    title: r.title as string,
+    status: r.status as InventoryAudit['status'],
+    notes: r.notes as string,
+    totalAssets: (r.total_assets as number) ?? 0,
+    foundCount: (r.found_count as number) ?? 0,
+    missingCount: (r.missing_count as number) ?? 0,
+    pendingCount: (r.pending_count as number) ?? 0,
+    startedBy: r.started_by as string,
+    startedByName: r.started_by_name as string,
+    completedAt: r.completed_at
+      ? new Date(r.completed_at as string)
+      : undefined,
+    createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
+    updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
   };
 }
 
-function toAuditItem(id: string, d: FirebaseFirestore.DocumentData): InventoryAuditItem {
+function toAuditItem(r: Row): InventoryAuditItem {
   return {
-    id,
-    auditId: d.auditId,
-    organizationId: d.organizationId,
-    assetId: d.assetId,
-    assetName: d.assetName,
-    assetCategory: d.assetCategory,
-    assetSerial: d.assetSerial,
-    assetLocation: d.assetLocation,
-    assetAssignedTo: d.assetAssignedTo,
-    status: d.status,
-    note: d.note,
-    checkedAt: d.checkedAt instanceof Timestamp ? d.checkedAt.toDate() : undefined,
-    checkedBy: d.checkedBy,
-    checkedByName: d.checkedByName,
+    id: r.id as string,
+    auditId: r.audit_id as string,
+    organizationId: r.organization_id as string,
+    assetId: r.asset_id as string,
+    assetName: r.asset_name as string,
+    assetCategory: r.asset_category as string,
+    assetSerial: r.asset_serial as string,
+    assetLocation: r.asset_location as string,
+    assetAssignedTo: r.asset_assigned_to as string,
+    status: r.status as InventoryAuditItem['status'],
+    note: r.note as string,
+    checkedAt: r.checked_at ? new Date(r.checked_at as string) : undefined,
+    checkedBy: r.checked_by as string,
+    checkedByName: r.checked_by_name as string,
   };
 }
 
-export async function getInventoryAudits(orgId: string): Promise<InventoryAudit[]> {
-  const snap = await adminDb.collection('inventoryAudits')
-    .where('organizationId', '==', orgId)
-    .orderBy('createdAt', 'desc')
-    .limit(50)
-    .get();
-  return snap.docs.map((d) => toAudit(d.id, d.data()));
+export async function getInventoryAudits(
+  orgId: string,
+): Promise<InventoryAudit[]> {
+  const { data, error } = await supabaseAdmin
+    .from('inventory_audits')
+    .select('*')
+    .eq('organization_id', orgId)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []).map(toAudit);
 }
 
-export async function getInventoryAuditById(id: string): Promise<InventoryAudit | null> {
-  const doc = await adminDb.collection('inventoryAudits').doc(id).get();
-  if (!doc.exists) return null;
-  return toAudit(doc.id, doc.data()!);
+export async function getInventoryAuditById(
+  id: string,
+): Promise<InventoryAudit | null> {
+  const { data } = await supabaseAdmin
+    .from('inventory_audits')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  return data ? toAudit(data) : null;
 }
 
 export async function createInventoryAudit(data: {
@@ -61,56 +73,70 @@ export async function createInventoryAudit(data: {
   notes?: string;
   startedBy: string;
   startedByName?: string;
-  assets: Array<{ id: string; name: string; category: string; serialNumber?: string; location?: string; assignedTo?: string }>;
+  assets: Array<{
+    id: string;
+    name: string;
+    category: string;
+    serialNumber?: string;
+    location?: string;
+    assignedTo?: string;
+  }>;
 }): Promise<string> {
   const total = data.assets.length;
-  const auditRef = adminDb.collection('inventoryAudits').doc();
-
-  await adminDb.runTransaction(async (t) => {
-    t.set(auditRef, {
-      organizationId: data.organizationId,
+  const { data: audit, error } = await supabaseAdmin
+    .from('inventory_audits')
+    .insert({
+      organization_id: data.organizationId,
       title: data.title,
       notes: data.notes ?? null,
       status: 'in_progress',
-      totalAssets: total,
-      foundCount: 0,
-      missingCount: 0,
-      pendingCount: total,
-      startedBy: data.startedBy,
-      startedByName: data.startedByName ?? null,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    });
+      total_assets: total,
+      found_count: 0,
+      missing_count: 0,
+      pending_count: total,
+      started_by: data.startedBy,
+      started_by_name: data.startedByName ?? null,
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  const auditId = audit.id as string;
 
-    for (const asset of data.assets) {
-      const itemRef = adminDb.collection('inventoryAuditItems').doc();
-      t.set(itemRef, {
-        auditId: auditRef.id,
-        organizationId: data.organizationId,
-        assetId: asset.id,
-        assetName: asset.name,
-        assetCategory: asset.category,
-        assetSerial: asset.serialNumber ?? null,
-        assetLocation: asset.location ?? null,
-        assetAssignedTo: asset.assignedTo ?? null,
-        status: 'pending',
-        note: null,
-        checkedAt: null,
-        checkedBy: null,
-        checkedByName: null,
-      });
-    }
-  });
+  if (total > 0) {
+    const items = data.assets.map((a) => ({
+      audit_id: auditId,
+      organization_id: data.organizationId,
+      asset_id: a.id,
+      asset_name: a.name,
+      asset_category: a.category,
+      asset_serial: a.serialNumber ?? null,
+      asset_location: a.location ?? null,
+      asset_assigned_to: a.assignedTo ?? null,
+      status: 'pending',
+      note: null,
+      checked_at: null,
+      checked_by: null,
+      checked_by_name: null,
+    }));
+    const { error: itemsErr } = await supabaseAdmin
+      .from('inventory_audit_items')
+      .insert(items);
+    if (itemsErr) throw itemsErr;
+  }
 
-  return auditRef.id;
+  return auditId;
 }
 
-export async function getAuditItems(auditId: string): Promise<InventoryAuditItem[]> {
-  const snap = await adminDb.collection('inventoryAuditItems')
-    .where('auditId', '==', auditId)
-    .orderBy('assetName', 'asc')
-    .get();
-  return snap.docs.map((d) => toAuditItem(d.id, d.data()));
+export async function getAuditItems(
+  auditId: string,
+): Promise<InventoryAuditItem[]> {
+  const { data, error } = await supabaseAdmin
+    .from('inventory_audit_items')
+    .select('*')
+    .eq('audit_id', auditId)
+    .order('asset_name', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map(toAuditItem);
 }
 
 export async function updateAuditItem(
@@ -118,53 +144,67 @@ export async function updateAuditItem(
   auditId: string,
   status: 'found' | 'missing',
   actor: { uid: string; displayName?: string },
-  note?: string
+  note?: string,
 ): Promise<void> {
-  await adminDb.runTransaction(async (t) => {
-    const itemRef = adminDb.collection('inventoryAuditItems').doc(auditItemId);
-    const auditRef = adminDb.collection('inventoryAudits').doc(auditId);
+  // NOTE: was a Firestore multi-doc transaction. Read-modify-write here;
+  // acceptable for the internal/staging scope. Harden via an RPC later.
+  const [{ data: item }, { data: audit }] = await Promise.all([
+    supabaseAdmin
+      .from('inventory_audit_items')
+      .select('status')
+      .eq('id', auditItemId)
+      .maybeSingle(),
+    supabaseAdmin
+      .from('inventory_audits')
+      .select('found_count, missing_count, pending_count')
+      .eq('id', auditId)
+      .maybeSingle(),
+  ]);
+  if (!item || !audit) throw new Error('Not found');
 
-    const [itemSnap, auditSnap] = await Promise.all([t.get(itemRef), t.get(auditRef)]);
-    if (!itemSnap.exists || !auditSnap.exists) throw new Error('Not found');
+  const prevStatus = item.status as string;
+  const delta = { found: 0, missing: 0, pending: 0 };
+  if (prevStatus === 'pending') delta.pending = -1;
+  else if (prevStatus === 'found') delta.found = -1;
+  else if (prevStatus === 'missing') delta.missing = -1;
+  if (status === 'found') delta.found += 1;
+  else delta.missing += 1;
 
-    const prevStatus = itemSnap.data()!.status as string;
-    const audit = auditSnap.data()!;
-
-    const delta = { foundCount: 0, missingCount: 0, pendingCount: 0 };
-    if (prevStatus === 'pending') delta.pendingCount = -1;
-    else if (prevStatus === 'found') delta.foundCount = -1;
-    else if (prevStatus === 'missing') delta.missingCount = -1;
-
-    if (status === 'found') delta.foundCount += 1;
-    else delta.missingCount += 1;
-
-    t.update(itemRef, {
+  const { error: itemErr } = await supabaseAdmin
+    .from('inventory_audit_items')
+    .update({
       status,
       note: note ?? null,
-      checkedAt: FieldValue.serverTimestamp(),
-      checkedBy: actor.uid,
-      checkedByName: actor.displayName ?? null,
-    });
+      checked_at: new Date().toISOString(),
+      checked_by: actor.uid,
+      checked_by_name: actor.displayName ?? null,
+    })
+    .eq('id', auditItemId);
+  if (itemErr) throw itemErr;
 
-    const newFound = (audit.foundCount ?? 0) + delta.foundCount;
-    const newMissing = (audit.missingCount ?? 0) + delta.missingCount;
-    const newPending = (audit.pendingCount ?? 0) + delta.pendingCount;
-    const allChecked = newPending === 0;
+  const newFound = ((audit.found_count as number) ?? 0) + delta.found;
+  const newMissing = ((audit.missing_count as number) ?? 0) + delta.missing;
+  const newPending = ((audit.pending_count as number) ?? 0) + delta.pending;
+  const allChecked = newPending === 0;
 
-    t.update(auditRef, {
-      foundCount: newFound,
-      missingCount: newMissing,
-      pendingCount: newPending,
-      ...(allChecked ? { status: 'completed', completedAt: FieldValue.serverTimestamp() } : {}),
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-  });
+  const { error: auditErr } = await supabaseAdmin
+    .from('inventory_audits')
+    .update({
+      found_count: newFound,
+      missing_count: newMissing,
+      pending_count: newPending,
+      ...(allChecked
+        ? { status: 'completed', completed_at: new Date().toISOString() }
+        : {}),
+    })
+    .eq('id', auditId);
+  if (auditErr) throw auditErr;
 }
 
 export async function completeAudit(auditId: string): Promise<void> {
-  await adminDb.collection('inventoryAudits').doc(auditId).update({
-    status: 'completed',
-    completedAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  });
+  const { error } = await supabaseAdmin
+    .from('inventory_audits')
+    .update({ status: 'completed', completed_at: new Date().toISOString() })
+    .eq('id', auditId);
+  if (error) throw error;
 }

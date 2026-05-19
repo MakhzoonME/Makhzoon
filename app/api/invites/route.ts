@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { hasPermission } from '@/lib/permissions';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { checkResourceLimit } from '@/lib/platform/limits/check-limit';
 import {
@@ -11,7 +12,7 @@ import {
 } from '@/lib/db/invites';
 import { getOrganizationById } from '@/lib/db/organizations';
 import { createInviteSchema } from '@/lib/validations/invite.schema';
-import { adminAuth } from '@/lib/firebase/admin';
+import { authEmailExists } from '@/lib/supabase/auth-admin';
 import { sendEmail } from '@/lib/email/resend';
 import { inviteEmail } from '@/lib/email/templates';
 import { auditLog } from '@/lib/platform/audit';
@@ -20,7 +21,7 @@ import { generateInviteQRDataUrl } from '@/lib/qr';
 export async function GET(_req: NextRequest) {
   const tenant = await resolveTenant();
   const user = tenant.user;
-  if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner')
+  if (!hasPermission(user, 'settings', 'users'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const invites = await getInvites(tenant.organizationId);
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   const tenant = await resolveTenant();
   const user = tenant.user;
-  if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner')
+  if (!hasPermission(user, 'settings', 'users'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   if (tenant.subscription?.status && tenant.subscription.status !== 'ACTIVE')
@@ -56,8 +57,7 @@ export async function POST(req: NextRequest) {
   const normalizedUsername = username ? username.toLowerCase() : undefined;
 
   if (normalizedEmail) {
-    const existing = await adminAuth.getUserByEmail(normalizedEmail).catch(() => null);
-    if (existing) {
+    if (await authEmailExists(normalizedEmail)) {
       // SECURITY: Don't reveal if user exists (prevents user enumeration)
       return NextResponse.json({ error: 'This email cannot be invited' }, { status: 409 });
     }
@@ -68,8 +68,7 @@ export async function POST(req: NextRequest) {
   }
   if (normalizedUsername) {
     const syntheticEmail = `${normalizedUsername}@makhzoon.local`;
-    const existing = await adminAuth.getUserByEmail(syntheticEmail).catch(() => null);
-    if (existing) {
+    if (await authEmailExists(syntheticEmail)) {
       // SECURITY: Don't reveal if username exists
       return NextResponse.json({ error: 'This username cannot be invited' }, { status: 409 });
     }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requirePermission } from '@/lib/permissions/require';
 import { getAssetById } from '@/lib/db/assets';
 import { getMaintenanceRecords, createMaintenanceRecord } from '@/lib/db/maintenance-records';
 import { auditLog } from '@/lib/platform/audit';
@@ -29,9 +30,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ assetId:
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;
-    if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    requirePermission(user, 'assets', 'maintenance');
 
     const asset = await getAssetById(params.assetId);
     if (!asset || asset.organizationId !== user.organizationId) {

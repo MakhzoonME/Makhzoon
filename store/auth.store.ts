@@ -28,6 +28,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         user: {
           ...current,
+          avatarUrl: data.avatarUrl ?? current.avatarUrl ?? null,
           features: data.features ?? {},
           permissions: data.permissions ?? current.permissions,
         },
@@ -46,6 +47,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         user: {
           ...current,
+          avatarUrl: data.avatarUrl ?? current.avatarUrl ?? null,
           role: data.role ?? current.role,
           organizationId: data.organizationId ?? current.organizationId,
           orgSlug: data.orgSlug ?? current.orgSlug,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requirePermission } from '@/lib/permissions/require'
 import { InventoryService } from '@/lib/modules/inventory/services/inventory.service'
 import { createInventoryItemSchema } from '@/lib/modules/inventory/validators/schemas'
 
@@ -24,6 +25,7 @@ export async function PATCH(req: NextRequest, props: Params) {
   const params = await props.params;
   try {
     const tenant = await resolveTenant()
+    requirePermission(tenant.user, 'inventory', 'update')
     const body = await req.json()
     const parsed = createInventoryItemSchema.safeParse(body)
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
@@ -53,6 +55,7 @@ export async function DELETE(_req: NextRequest, props: Params) {
   const params = await props.params;
   try {
     const tenant = await resolveTenant()
+    requirePermission(tenant.user, 'inventory', 'delete')
     await service.delete(tenant, params.itemId)
     return NextResponse.json({ ok: true })
   } catch (err) {

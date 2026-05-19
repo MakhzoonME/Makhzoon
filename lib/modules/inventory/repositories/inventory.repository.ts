@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
-import type { InventoryItem, InventoryTransaction, StockStatus, TransactionType } from '../types'
+import type { InventoryItem, InventoryTransaction, InventoryUnit, StockStatus, TransactionType } from '../types'
 
 type Row = Record<string, unknown>
 
@@ -19,7 +19,7 @@ function toItem(r: Row, computedQty?: number): InventoryItem {
     name: r.name as string,
     category: r.category as string,
     sku: r.sku as string,
-    unit: r.unit as InventoryItem['unit'],
+    unit: r.unit as InventoryUnit,
     quantityOnHand: qty,
     minimumThreshold: threshold,
     reorderQuantity: r.reorder_quantity as number,

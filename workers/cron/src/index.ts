@@ -7,6 +7,14 @@ interface Env {
   CRON_SECRET: string;
 }
 
+// Minimal local declaration — avoids pulling @cloudflare/workers-types into
+// the app's tsconfig just for one usage. Matches the runtime contract.
+interface ScheduledController {
+  cron: string;
+  scheduledTime: number;
+  noRetry(): void;
+}
+
 // cron expression → endpoint path. Must match workers/cron/wrangler.toml.
 const SCHEDULE: Record<string, string> = {
   '0 9 * * 1': '/api/cron/warranty-alerts',

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requirePermission } from '@/lib/permissions/require'
 import { PurchasesService } from '@/lib/modules/inventory/purchases/purchases.service'
 
 const service = new PurchasesService()
@@ -16,6 +17,7 @@ export async function POST(
 ) {
   try {
     const tenant = await resolveTenant()
+    requirePermission(tenant.user, 'purchases', 'receive')
     const { purchaseId } = await params
     const result = await service.receive(tenant, purchaseId)
     return NextResponse.json(result)

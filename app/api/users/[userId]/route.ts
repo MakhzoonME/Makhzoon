@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { hasPermission } from '@/lib/permissions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { updateAuthUser, setAuthUserActive, revokeAuthUserSessions, deleteAuthUser } from '@/lib/supabase/auth-admin';
 import { getUserById, updateUser } from '@/lib/db/users';
@@ -11,7 +12,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ userId:
   const tenant = await resolveTenant().catch(() => null);
   const caller = tenant?.user;
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (caller.role !== 'admin' && caller.role !== 'super_admin' && caller.role !== 'org_owner')
+  if (!hasPermission(caller, 'settings', 'users'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   if (tenant?.subscription?.status && tenant.subscription.status !== 'ACTIVE')
@@ -65,7 +66,7 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ userId
   const tenant = await resolveTenant().catch(() => null);
   const caller = tenant?.user;
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (caller.role !== 'admin' && caller.role !== 'super_admin' && caller.role !== 'org_owner')
+  if (!hasPermission(caller, 'settings', 'users'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   if (tenant?.subscription?.status && tenant.subscription.status !== 'ACTIVE')

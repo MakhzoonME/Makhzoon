@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { MaintenanceRecord } from '@/types';
+import { MaintenanceRecord, MaintenanceType } from '@/types';
 
 type Row = Record<string, unknown>;
 
@@ -8,7 +8,7 @@ function toRecord(r: Row): MaintenanceRecord {
     id: r.id as string,
     organizationId: r.organization_id as string,
     assetId: r.asset_id as string,
-    type: r.type as MaintenanceRecord['type'],
+    type: r.type as MaintenanceType,
     description: r.description as string,
     performedBy: r.performed_by as string,
     cost: r.cost as number,

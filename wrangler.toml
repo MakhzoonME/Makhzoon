@@ -27,10 +27,10 @@ binding = "ASSETS"
 enabled = true
 
 [env.dev]
-name = "makhzoon-dev"
+name = "makhzoondev"
 
 [env.staging]
-name = "makhzoon-staging"
+name = "makhzoonstg"
 
 [env.production]
-name = "makhzoon-prod"
+name = "makhzoon"

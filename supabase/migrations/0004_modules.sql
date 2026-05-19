@@ -32,6 +32,7 @@ create index if not exists audit_logs_user_idx on public.audit_logs (user_id);
 create index if not exists audit_logs_action_idx on public.audit_logs (action);
 alter table public.audit_logs enable row level security;
 -- firestore: super_admin read; admin read own org; org_owner excluded; write:false
+drop policy if exists audit_logs_read on public.audit_logs;
 create policy audit_logs_read on public.audit_logs
   for select using (
     public.is_platform_admin()
@@ -60,11 +61,14 @@ create index if not exists warranties_org_end_idx on public.warranties (organiza
 create or replace trigger warranties_set_updated_at before update on public.warranties
   for each row execute function public.set_updated_at();
 alter table public.warranties enable row level security;
+drop policy if exists warranties_platform_all on public.warranties;
 create policy warranties_platform_all on public.warranties
   for all using (public.is_platform_admin()) with check (public.is_platform_admin());
+drop policy if exists warranties_mgr_all on public.warranties;
 create policy warranties_mgr_all on public.warranties
   for all using (public.is_org_manager(organization_id))
   with check (public.is_org_manager(organization_id));
+drop policy if exists warranties_staff_read on public.warranties;
 create policy warranties_staff_read on public.warranties
   for select using (public.belongs_to_org(organization_id));
 
@@ -92,13 +96,17 @@ create index if not exists requests_org_creator_idx on public.requests (organiza
 create or replace trigger requests_set_updated_at before update on public.requests
   for each row execute function public.set_updated_at();
 alter table public.requests enable row level security;
+drop policy if exists requests_platform_all on public.requests;
 create policy requests_platform_all on public.requests
   for all using (public.is_platform_admin()) with check (public.is_platform_admin());
+drop policy if exists requests_mgr_all on public.requests;
 create policy requests_mgr_all on public.requests
   for all using (public.is_org_manager(organization_id))
   with check (public.is_org_manager(organization_id));
+drop policy if exists requests_staff_read on public.requests;
 create policy requests_staff_read on public.requests
   for select using (public.belongs_to_org(organization_id));
+drop policy if exists requests_staff_create on public.requests;
 create policy requests_staff_create on public.requests
   for insert with check (public.belongs_to_org(organization_id));
 
@@ -115,15 +123,20 @@ create table if not exists public.asset_notes (
 create index if not exists asset_notes_org_asset_idx
   on public.asset_notes (organization_id, asset_id, created_at desc);
 alter table public.asset_notes enable row level security;
+drop policy if exists asset_notes_platform_all on public.asset_notes;
 create policy asset_notes_platform_all on public.asset_notes
   for all using (public.is_platform_admin()) with check (public.is_platform_admin());
+drop policy if exists asset_notes_mgr_all on public.asset_notes;
 create policy asset_notes_mgr_all on public.asset_notes
   for all using (public.is_org_manager(organization_id))
   with check (public.is_org_manager(organization_id));
+drop policy if exists asset_notes_staff_read on public.asset_notes;
 create policy asset_notes_staff_read on public.asset_notes
   for select using (public.belongs_to_org(organization_id));
+drop policy if exists asset_notes_staff_create on public.asset_notes;
 create policy asset_notes_staff_create on public.asset_notes
   for insert with check (public.belongs_to_org(organization_id));
+drop policy if exists asset_notes_staff_delete_own on public.asset_notes;
 create policy asset_notes_staff_delete_own on public.asset_notes
   for delete using (
     public.belongs_to_org(organization_id) and created_by = auth.uid()
@@ -146,11 +159,14 @@ create table if not exists public.maintenance_records (
 create index if not exists maint_org_asset_idx
   on public.maintenance_records (organization_id, asset_id, date desc);
 alter table public.maintenance_records enable row level security;
+drop policy if exists maint_platform_all on public.maintenance_records;
 create policy maint_platform_all on public.maintenance_records
   for all using (public.is_platform_admin()) with check (public.is_platform_admin());
+drop policy if exists maint_mgr_all on public.maintenance_records;
 create policy maint_mgr_all on public.maintenance_records
   for all using (public.is_org_manager(organization_id))
   with check (public.is_org_manager(organization_id));
+drop policy if exists maint_staff_read on public.maintenance_records;
 create policy maint_staff_read on public.maintenance_records
   for select using (public.belongs_to_org(organization_id));
 
@@ -172,15 +188,20 @@ create table if not exists public.asset_checkouts (
 create index if not exists checkouts_org_asset_idx
   on public.asset_checkouts (organization_id, asset_id, checked_out_at desc);
 alter table public.asset_checkouts enable row level security;
+drop policy if exists checkouts_platform_all on public.asset_checkouts;
 create policy checkouts_platform_all on public.asset_checkouts
   for all using (public.is_platform_admin()) with check (public.is_platform_admin());
+drop policy if exists checkouts_mgr_all on public.asset_checkouts;
 create policy checkouts_mgr_all on public.asset_checkouts
   for all using (public.is_org_manager(organization_id))
   with check (public.is_org_manager(organization_id));
+drop policy if exists checkouts_staff_read on public.asset_checkouts;
 create policy checkouts_staff_read on public.asset_checkouts
   for select using (public.belongs_to_org(organization_id));
+drop policy if exists checkouts_staff_create on public.asset_checkouts;
 create policy checkouts_staff_create on public.asset_checkouts
   for insert with check (public.belongs_to_org(organization_id));
+drop policy if exists checkouts_staff_update on public.asset_checkouts;
 create policy checkouts_staff_update on public.asset_checkouts
   for update using (public.belongs_to_org(organization_id))
   with check (public.belongs_to_org(organization_id));

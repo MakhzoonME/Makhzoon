@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requirePermission } from '@/lib/permissions/require'
 import { TransactionsService } from '@/lib/modules/haraka/transactions/transactions.service'
 import { completeSaleSchema } from '@/lib/modules/haraka/transactions/schemas'
 
@@ -26,6 +27,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requirePermission(tenant.user, 'pos', 'process_sale')
     const body = await req.json()
     const parsed = completeSaleSchema.safeParse(body)
     if (!parsed.success) {

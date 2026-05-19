@@ -23,13 +23,6 @@ binding = "ASSETS"
 [observability]
 enabled = true
 
-# ── Shared vars (all environments) ──────────────────────────────────
-# These are safe as plain text in git. Fill in your actual values.
-[vars]
-RESEND_FROM_EMAIL = "Makhzoon <notifications@your-domain.com>"
-GOOGLE_DRIVE_CLIENT_EMAIL = "your-service-account@your-project.iam.gserviceaccount.com"
-GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"
-
 # ── Dev ─────────────────────────────────────────────────────────────
 [env.dev]
 name = "makhzoondev"
@@ -39,6 +32,7 @@ NEXT_PUBLIC_SUPABASE_URL = "https://your-dev-project.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-dev-anon-key"
 NEXT_PUBLIC_APP_URL = "https://dev.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "development"
+RESEND_FROM_EMAIL = "Makhzoon Dev <dev-notifications@makhzoon.me>"
 GOOGLE_DRIVE_CLIENT_EMAIL = "your-service-account@your-project.iam.gserviceaccount.com"
 GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"
 
@@ -51,6 +45,7 @@ NEXT_PUBLIC_SUPABASE_URL = "https://your-staging-project.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-staging-anon-key"
 NEXT_PUBLIC_APP_URL = "https://stage.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "staging"
+RESEND_FROM_EMAIL = "Makhzoon Staging <staging-notifications@makhzoon.me>"
 GOOGLE_DRIVE_CLIENT_EMAIL = "your-service-account@your-project.iam.gserviceaccount.com"
 GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"
 
@@ -63,5 +58,6 @@ NEXT_PUBLIC_SUPABASE_URL = "https://your-production-project.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-production-anon-key"
 NEXT_PUBLIC_APP_URL = "https://app.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "production"
+RESEND_FROM_EMAIL = "Makhzoon <notifications@makhzoon.me>"
 GOOGLE_DRIVE_CLIENT_EMAIL = "your-service-account@your-project.iam.gserviceaccount.com"
 GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"

@@ -1,4 +1,4 @@
-import { google, drive_v3 } from 'googleapis';
+import { drive, drive_v3, auth } from '@googleapis/drive';
 
 function requireEnv(name: string): string {
   const v = process.env[name];
@@ -10,12 +10,12 @@ let cached: drive_v3.Drive | null = null;
 
 export function getDrive(): drive_v3.Drive {
   if (cached) return cached;
-  const auth = new google.auth.JWT({
+  const jwt = new auth.JWT({
     email: requireEnv('GOOGLE_DRIVE_CLIENT_EMAIL'),
     key: requireEnv('GOOGLE_DRIVE_PRIVATE_KEY').replace(/\\n/g, '\n'),
     scopes: ['https://www.googleapis.com/auth/drive.file'],
   });
-  cached = google.drive({ version: 'v3', auth });
+  cached = drive({ version: 'v3', auth: jwt });
   return cached;
 }
 

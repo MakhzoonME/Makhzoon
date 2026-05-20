@@ -196,6 +196,24 @@
       "branch": null,
       "createdAt": "2026-05-18T20:30:00Z",
       "completedAt": null
+    },
+    {
+      "id": "MZ-015",
+      "title": "Full deployment configuration — Cloudflare Workers + Supabase",
+      "description": "Configure all environments for Cloudflare Workers deployment with Supabase backend. Fix wrangler.toml placeholders, update cron worker config, enhance CI/CD workflow with cron deploy + secret provisioning, add npm scripts, create comprehensive deploy-all.ps1 script, verify migration compatibility.",
+      "status": "done",
+      "assignee": "devops",
+      "requestedBy": "user",
+      "files": [
+        "wrangler.toml",
+        "workers/cron/wrangler.toml",
+        ".github/workflows/deploy.yml",
+        "package.json",
+        "C:\\Users\\Asus Zenbook\\Desktop\\deploy-all.ps1"
+      ],
+      "branch": "DevBranch",
+      "createdAt": "2026-05-20T00:00:00Z",
+      "completedAt": "2026-05-20T00:00:00Z"
     }
   ]
 }

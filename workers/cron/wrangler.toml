@@ -1,13 +1,23 @@
 # Makhzoon scheduled-jobs Worker. Replaces the Vercel `vercel.json` crons.
-# Deployed separately from the app: `cd workers/cron && npx wrangler deploy`.
+# Deployed separately from the app:
+#   cd workers/cron && npx wrangler deploy --env dev
 #
-# Required secrets (set via `npx wrangler secret put --env <name>`):
-#   CRON_SECRET  must match the app's CRON_SECRET (Bearer token the
-#                /api/cron/* routes validate)
+# ═══════════════════════════════════════════════════════════════════════
+# REQUIRED SECRETS (set via `npx wrangler secret put --env <name>`):
+# ═══════════════════════════════════════════════════════════════════════
+#   CRON_SECRET  — must match the app's CRON_SECRET (Bearer token the
+#                  /api/cron/* routes validate)
+#
+#   CRON_SECRET must be set for EVERY environment (dev, staging, production)
+#   because each has a different APP_URL pointing at the corresponding
+#   app environment. The cron worker uses CRON_SECRET in the Authorization
+#   header when calling the app's /api/cron/* endpoints.
+# ═══════════════════════════════════════════════════════════════════════
 
 name = "makhzoon-cron"
 main = "src/index.ts"
-compatibility_date = "2025-05-05"
+compatibility_date = "2026-05-01"
+compatibility_flags = ["nodejs_compat"]
 
 # Mirrors the old vercel.json schedules exactly:
 #   warranty-alerts      → Mondays 09:00 UTC

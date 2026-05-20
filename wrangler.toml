@@ -72,33 +72,3 @@ NEXT_PUBLIC_APP_ENV = "production"
 RESEND_FROM_EMAIL = "Makhzoon <notifications@makhzoon.me>"
 GOOGLE_DRIVE_CLIENT_EMAIL = "your-service-account@your-project.iam.gserviceaccount.com"
 GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"
-
-# ── Staging ─────────────────────────────────────────────────────────
-[env.staging]
-name = "makhzoonstg"
-
-[env.staging.vars]
-# NOTE: All 3 environments currently share the same Supabase project.
-# For production isolation, create a separate Supabase project and update.
-NEXT_PUBLIC_SUPABASE_URL = "https://icepozpnwxnqhdzmpyco.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZXBvenBud3hucWhkem1weWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTkwMTYsImV4cCI6MjA5NDQ5NTAxNn0.yLN0RSvNb_AYRJhM0yLmj3RBJWY_9Xx3IE36CNdGRK8"
-NEXT_PUBLIC_APP_URL = "https://stage.makhzoon.me"
-NEXT_PUBLIC_APP_ENV = "staging"
-RESEND_FROM_EMAIL = "Makhzoon Staging <staging-notifications@makhzoon.me>"
-GOOGLE_DRIVE_CLIENT_EMAIL = "your-service-account@your-project.iam.gserviceaccount.com"
-GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"
-
-# ── Production ──────────────────────────────────────────────────────
-[env.production]
-name = "makhzoon"
-
-[env.production.vars]
-# NOTE: All 3 environments currently share the same Supabase project.
-# For production isolation, create a separate Supabase project and update.
-NEXT_PUBLIC_SUPABASE_URL = "https://icepozpnwxnqhdzmpyco.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljZXBvenBud3hucWhkem1weWNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTkwMTYsImV4cCI6MjA5NDQ5NTAxNn0.yLN0RSvNb_AYRJhM0yLmj3RBJWY_9Xx3IE36CNdGRK8"
-NEXT_PUBLIC_APP_URL = "https://app.makhzoon.me"
-NEXT_PUBLIC_APP_ENV = "production"
-RESEND_FROM_EMAIL = "Makhzoon <notifications@makhzoon.me>"
-GOOGLE_DRIVE_CLIENT_EMAIL = "your-service-account@your-project.iam.gserviceaccount.com"
-GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"

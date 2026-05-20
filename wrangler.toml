@@ -44,8 +44,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOi
 NEXT_PUBLIC_APP_URL = "https://dev.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "development"
 RESEND_FROM_EMAIL = "Makhzoon Dev <dev-notifications@makhzoon.me>"
-GOOGLE_DRIVE_CLIENT_EMAIL = "your-service-account@your-project.iam.gserviceaccount.com"
-GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"
+GOOGLE_DRIVE_CLIENT_EMAIL = "makhzoonme-prod@makhzoonme-prod-496318.iam.gserviceaccount.com"
+GOOGLE_DRIVE_FOLDER_ID = "1y6VunC5Qc0_t7MO5tF_b26eg_VN43Exq"
 
 # ── Staging ─────────────────────────────────────────────────────────
 [env.staging]
@@ -57,8 +57,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOi
 NEXT_PUBLIC_APP_URL = "https://stage.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "staging"
 RESEND_FROM_EMAIL = "Makhzoon Staging <staging-notifications@makhzoon.me>"
-GOOGLE_DRIVE_CLIENT_EMAIL = "your-service-account@your-project.iam.gserviceaccount.com"
-GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"
+GOOGLE_DRIVE_CLIENT_EMAIL = "makhzoonme-prod@makhzoonme-prod-496318.iam.gserviceaccount.com"
+GOOGLE_DRIVE_FOLDER_ID = "1y6VunC5Qc0_t7MO5tF_b26eg_VN43Exq"
 
 # ── Production ──────────────────────────────────────────────────────
 [env.production]
@@ -70,5 +70,5 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOi
 NEXT_PUBLIC_APP_URL = "https://app.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "production"
 RESEND_FROM_EMAIL = "Makhzoon <notifications@makhzoon.me>"
-GOOGLE_DRIVE_CLIENT_EMAIL = "your-service-account@your-project.iam.gserviceaccount.com"
-GOOGLE_DRIVE_FOLDER_ID = "your-drive-folder-id"
+GOOGLE_DRIVE_CLIENT_EMAIL = "makhzoonme-prod@makhzoonme-prod-496318.iam.gserviceaccount.com"
+GOOGLE_DRIVE_FOLDER_ID = "1y6VunC5Qc0_t7MO5tF_b26eg_VN43Exq"

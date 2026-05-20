@@ -37,6 +37,7 @@ enabled = true
 # ── Dev ─────────────────────────────────────────────────────────────
 [env.dev]
 name = "makhzoondev"
+routes = ["dev.makhzoon.me/*"]
 
 [env.dev.vars]
 NEXT_PUBLIC_SUPABASE_URL = "https://ebupajukvyhparjkhlhr.supabase.co"

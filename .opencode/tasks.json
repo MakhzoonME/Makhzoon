@@ -146,7 +146,7 @@
       "id": "MZ-011",
       "title": "Deploy Google Drive upload integration to dev",
       "description": "Land the Drive upload feature (already committed in 4fee262) to dev.makhzoon.me. Steps: (1) Apply supabase/migrations/0007_avatar.sql against the shared Supabase project via SQL Editor — NOTE: shared DB affects dev/staging/prod simultaneously. (2) Set three Worker secrets per env via `npx wrangler secret put` — GOOGLE_DRIVE_CLIENT_EMAIL, GOOGLE_DRIVE_PRIVATE_KEY, GOOGLE_DRIVE_FOLDER_ID (source from .env.local). (3) Run `npm run cf:deploy -- --env dev`. (4) Smoke test avatar upload at dev.makhzoon.me/<locale>/<orgSlug>/profile. (5) Repeat secrets + merge to STGBranch/main when ready. Drive folder: 1y6VunC5Qc0_t7MO5tF_b26eg_VN43Exq (service account has Editor).",
-      "status": "pending",
+      "status": "done",
       "assignee": "devops",
       "requestedBy": "user",
       "files": [
@@ -155,11 +155,12 @@
         "lib/drive/upload.ts",
         "app/api/upload/route.ts",
         "components/shared/AvatarUpload.tsx",
-        "wrangler.toml"
+        "wrangler.toml",
+        ".env.local"
       ],
       "branch": "DevBranch",
       "createdAt": "2026-05-18T00:00:00Z",
-      "completedAt": null
+      "completedAt": "2026-05-20T23:00:00Z"
     },
     {
       "id": "MZ-012",
@@ -188,14 +189,32 @@
     {
       "id": "MZ-014",
       "title": "Remove legacy Firebase GitHub Actions workflows from main",
-      "description": "Background: commit e70811e (refactor: remove legacy seeding scripts and storage rules) deleted .github/workflows/deploy-mirror-functions.yml and .github/workflows/sync-firestore.yml from DevBranch, but those files still exist on `main`. GitHub's scheduler keeps running them on cron, and every run fails (Firebase project removed). The Actions dashboard shows daily red-X notifications. Action: from a fresh branch off main, delete both .yml files, open a PR to main, merge. Low-risk — these workflows are dead code. Files to remove: .github/workflows/deploy-mirror-functions.yml, .github/workflows/sync-firestore.yml.",
-      "status": "pending",
+      "description": "Background: commit e70811e (refactor: remove legacy seeding scripts and storage rules) deleted .github/workflows/deploy-mirror-functions.yml and .github/workflows/sync-firestore.yml from DevBranch. These files were already deleted from main (verified — both paths return 'does not exist in origin/main'). No action needed.",
+      "status": "done",
       "assignee": "devops",
       "requestedBy": "user",
       "files": [".github/workflows/deploy-mirror-functions.yml", ".github/workflows/sync-firestore.yml"],
       "branch": null,
       "createdAt": "2026-05-18T20:30:00Z",
-      "completedAt": null
+      "completedAt": "2026-05-20T22:00:00Z"
+    },
+    {
+      "id": "MZ-015",
+      "title": "Full deployment configuration — Cloudflare Workers + Supabase",
+      "description": "Configure all environments for Cloudflare Workers deployment with Supabase backend. Fix wrangler.toml placeholders, update cron worker config, enhance CI/CD workflow with cron deploy + secret provisioning, add npm scripts, create comprehensive deploy-all.ps1 script, verify migration compatibility.",
+      "status": "done",
+      "assignee": "devops",
+      "requestedBy": "user",
+      "files": [
+        "wrangler.toml",
+        "workers/cron/wrangler.toml",
+        ".github/workflows/deploy.yml",
+        "package.json",
+        "C:\\Users\\Asus Zenbook\\Desktop\\deploy-all.ps1"
+      ],
+      "branch": "DevBranch",
+      "createdAt": "2026-05-20T00:00:00Z",
+      "completedAt": "2026-05-20T00:00:00Z"
     }
   ]
 }

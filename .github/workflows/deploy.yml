@@ -1,14 +1,22 @@
-# Deploys the Next.js + OpenNext app to Cloudflare Workers.
+# Deploys the Next.js + OpenNext app to Cloudflare Workers
+# AND the cron worker (workers/cron) to Cloudflare Workers.
+#
 # Branch → environment mapping mirrors wrangler.toml:
 #   DevBranch → makhzoon-dev      (dev.makhzoon.me)
 #   STGBranch → makhzoon-staging  (stage.makhzoon.me)
 #   main      → makhzoon-prod     (app.makhzoon.me)
 #
-# Requires repo secrets (Settings → Secrets and variables → Actions):
-#   CLOUDFLARE_API_TOKEN  — "Edit Cloudflare Workers" token
-#   CLOUDFLARE_ACCOUNT_ID — Cloudflare account ID
-# Server-side env (Supabase service key, RESEND_*, CRON_SECRET) live as
-# Worker secrets set per env in the Cloudflare dashboard, not here.
+# ═══════════════════════════════════════════════════════════════════════
+# REQUIRED REPO SECRETS (Settings → Secrets and variables → Actions):
+# ═══════════════════════════════════════════════════════════════════════
+#   CLOUDFLARE_API_TOKEN   — "Edit Cloudflare Workers" token
+#   CLOUDFLARE_ACCOUNT_ID  — Cloudflare account ID
+#
+# Worker secrets (RESEND_API_KEY, CRON_SECRET, SUPABASE_SERVICE_ROLE_KEY,
+# GOOGLE_DRIVE_PRIVATE_KEY, FAWTARA_SECRET_ENC_KEY) are set per env via
+# `wrangler secret put` in the deploy step below. Those values come from
+# GitHub Actions secrets with the suffix _{ENV} (e.g. RESEND_API_KEY_DEV).
+# ═══════════════════════════════════════════════════════════════════════
 
 name: Deploy
 
@@ -21,13 +29,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  map-env:
+    name: Map branch to environment
+    runs-on: ubuntu-latest
+    outputs:
+      env: ${{ steps.map.outputs.env }}
+      env_name: ${{ steps.map.outputs.env_name }}
+      app_url: ${{ steps.map.outputs.app_url }}
+    steps:
+      - id: map
+        run: |
+          case "${{ github.ref }}" in
+            refs/heads/DevBranch)
+              echo "env=dev" >> $GITHUB_OUTPUT
+              echo "env_name=dev" >> $GITHUB_OUTPUT
+              echo "app_url=https://dev.makhzoon.me" >> $GITHUB_OUTPUT
+              ;;
+            refs/heads/STGBranch)
+              echo "env=staging" >> $GITHUB_OUTPUT
+              echo "env_name=staging" >> $GITHUB_OUTPUT
+              echo "app_url=https://stage.makhzoon.me" >> $GITHUB_OUTPUT
+              ;;
+            refs/heads/main)
+              echo "env=production" >> $GITHUB_OUTPUT
+              echo "env_name=production" >> $GITHUB_OUTPUT
+              echo "app_url=https://app.makhzoon.me" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
   deploy:
     name: Deploy to Cloudflare Workers
+    needs: map-env
+    if: needs.map-env.outputs.env != ''
     runs-on: ubuntu-latest
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ENV: ${{ needs.map-env.outputs.env }}
+      ENV_UPPER: ${{ needs.map-env.outputs.env_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -39,14 +79,80 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Deploy (dev)
-        if: github.ref == 'refs/heads/DevBranch'
-        run: npm run cf:deploy:dev
+      - name: Deploy main app worker
+        run: npm run cf:deploy:${{ needs.map-env.outputs.env }}
 
-      - name: Deploy (staging)
-        if: github.ref == 'refs/heads/STGBranch'
-        run: npm run cf:deploy:staging
+      # ── Set Worker secrets (if GitHub secret exists for this env) ──
+      # Naming convention: SECRET_NAME_{DEV|STAGING|PRODUCTION}
+      # e.g. RESEND_API_KEY_DEV, CRON_SECRET_STAGING, etc.
+      - name: Set Worker secrets
+        shell: bash
+        run: |
+          env_upper=$(echo "${{ needs.map-env.outputs.env }}" | tr '[:lower:]' '[:upper:]')
+          
+          put_secret() {
+            local name=$1
+            local secret_name="${name}_${env_upper}"
+            local value="${!secret_name}"
+            if [ -n "$value" ]; then
+              echo "$value" | npx wrangler secret put "$name" --env "${{ needs.map-env.outputs.env }}" || true
+              echo "  ✅ $name set from $secret_name"
+            else
+              echo "  ⚠️  ${secret_name} not set — skipping $name (needs manual 'wrangler secret put --env ...')"
+            fi
+          }
+          
+          # Map env name to the suffix used in GitHub secret names
+          put_secret "RESEND_API_KEY"
+          put_secret "CRON_SECRET"
+          put_secret "SUPABASE_SERVICE_ROLE_KEY"
+          put_secret "GOOGLE_DRIVE_CLIENT_EMAIL"
+          put_secret "GOOGLE_DRIVE_PRIVATE_KEY"
+          put_secret "GOOGLE_DRIVE_FOLDER_ID"
+          put_secret "FAWTARA_SECRET_ENC_KEY"
+        env:
+          RESEND_API_KEY_DEV: ${{ secrets.RESEND_API_KEY_DEV }}
+          RESEND_API_KEY_STAGING: ${{ secrets.RESEND_API_KEY_STAGING }}
+          RESEND_API_KEY_PRODUCTION: ${{ secrets.RESEND_API_KEY_PRODUCTION }}
+          CRON_SECRET_DEV: ${{ secrets.CRON_SECRET_DEV }}
+          CRON_SECRET_STAGING: ${{ secrets.CRON_SECRET_STAGING }}
+          CRON_SECRET_PRODUCTION: ${{ secrets.CRON_SECRET_PRODUCTION }}
+          SUPABASE_SERVICE_ROLE_KEY_DEV: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_DEV }}
+          SUPABASE_SERVICE_ROLE_KEY_STAGING: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_STAGING }}
+          SUPABASE_SERVICE_ROLE_KEY_PRODUCTION: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_PRODUCTION }}
+          GOOGLE_DRIVE_CLIENT_EMAIL_DEV: ${{ secrets.GOOGLE_DRIVE_CLIENT_EMAIL_DEV }}
+          GOOGLE_DRIVE_CLIENT_EMAIL_STAGING: ${{ secrets.GOOGLE_DRIVE_CLIENT_EMAIL_STAGING }}
+          GOOGLE_DRIVE_CLIENT_EMAIL_PRODUCTION: ${{ secrets.GOOGLE_DRIVE_CLIENT_EMAIL_PRODUCTION }}
+          GOOGLE_DRIVE_PRIVATE_KEY_DEV: ${{ secrets.GOOGLE_DRIVE_PRIVATE_KEY_DEV }}
+          GOOGLE_DRIVE_PRIVATE_KEY_STAGING: ${{ secrets.GOOGLE_DRIVE_PRIVATE_KEY_STAGING }}
+          GOOGLE_DRIVE_PRIVATE_KEY_PRODUCTION: ${{ secrets.GOOGLE_DRIVE_PRIVATE_KEY_PRODUCTION }}
+          GOOGLE_DRIVE_FOLDER_ID_DEV: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID_DEV }}
+          GOOGLE_DRIVE_FOLDER_ID_STAGING: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID_STAGING }}
+          GOOGLE_DRIVE_FOLDER_ID_PRODUCTION: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID_PRODUCTION }}
+          FAWTARA_SECRET_ENC_KEY_DEV: ${{ secrets.FAWTARA_SECRET_ENC_KEY_DEV }}
+          FAWTARA_SECRET_ENC_KEY_STAGING: ${{ secrets.FAWTARA_SECRET_ENC_KEY_STAGING }}
+          FAWTARA_SECRET_ENC_KEY_PRODUCTION: ${{ secrets.FAWTARA_SECRET_ENC_KEY_PRODUCTION }}
 
-      - name: Deploy (production)
-        if: github.ref == 'refs/heads/main'
-        run: npm run cf:deploy:prod
+      # ── Deploy cron worker ─────────────────────────────────────────
+      - name: Deploy cron worker
+        working-directory: workers/cron
+        run: npx wrangler deploy --env ${{ needs.map-env.outputs.env }}
+
+      # ── Set cron worker secrets ────────────────────────────────────
+      - name: Set cron worker CRON_SECRET
+        working-directory: workers/cron
+        shell: bash
+        run: |
+          env_upper=$(echo "${{ needs.map-env.outputs.env }}" | tr '[:lower:]' '[:upper:]')
+          secret_var="CRON_SECRET_${env_upper}"
+          value="${!secret_var}"
+          if [ -n "$value" ]; then
+            echo "$value" | npx wrangler secret put CRON_SECRET --env "${{ needs.map-env.outputs.env }}"
+            echo "  ✅ Cron CRON_SECRET set from $secret_var"
+          else
+            echo "  ⚠️  $secret_var not set — skipping cron CRON_SECRET"
+          fi
+        env:
+          CRON_SECRET_DEV: ${{ secrets.CRON_SECRET_DEV }}
+          CRON_SECRET_STAGING: ${{ secrets.CRON_SECRET_STAGING }}
+          CRON_SECRET_PRODUCTION: ${{ secrets.CRON_SECRET_PRODUCTION }}

@@ -67,7 +67,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
     setIsLoggingOut(true);
     try {
       await fetch('/api/auth/session', { method: 'DELETE' });
-      await createClient().auth.signOut();
+      const supabase = await createClient(); await supabase.auth.signOut();
     } catch {
       // ignore — always redirect regardless of errors
     }

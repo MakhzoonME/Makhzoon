@@ -87,7 +87,7 @@ export default function ProfilePage() {
     setSavingPassword(true);
     try {
       if (!user?.email) throw new Error();
-      const supabase = createClient();
+      const supabase = await createClient();
       // Re-authenticate by verifying the current password (Supabase has no
       // explicit reauthenticate-with-credential; a successful sign-in with the
       // current password serves the same purpose).

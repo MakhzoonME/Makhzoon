@@ -41,8 +41,8 @@ jobs:
     steps:
       - id: map
         run: |
-          SUPABASE_URL="https://ebupajukvyhparjkhlhr.supabase.co"
-          SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidXBhanVrdnlocGFyamtobGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MjYyOTAsImV4cCI6MjA5NDUwMjI5MH0.qvo7XgzvfMWzJu0dlTX_TrvY-Us74peqPVcx7ZIexhM"
+          SUPABASE_URL="https://ncjzozvzjtyycdlwohtr.supabase.co"
+          SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0"
           case "${{ github.ref }}" in
             refs/heads/DevBranch)
               echo "env=dev" >> $GITHUB_OUTPUT

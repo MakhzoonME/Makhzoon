@@ -4,8 +4,6 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth.store';
 import { AuthUser, UserRole } from '@/types';
 
-const ORG_ROLES = new Set<UserRole>(['org_owner', 'admin', 'staff']);
-
 export function useAuth() {
   const { user, loading, setUser, setLoading } = useAuthStore();
 
@@ -24,22 +22,22 @@ export function useAuth() {
       let permissions = null;
       let orgSlug: string | null = null;
       let avatarUrl: string | null = null;
+      let resolvedRole = role;
 
-      if (ORG_ROLES.has(role)) {
-        try {
-          const res = await fetch('/api/auth/me', {
-            headers: { 'Cache-Control': 'no-cache' },
-          });
-          if (res.ok) {
-            const data = await res.json();
-            features = data.features ?? {};
-            permissions = data.permissions ?? null;
-            orgSlug = data.orgSlug ?? null;
-            avatarUrl = data.avatarUrl ?? null;
-          }
-        } catch {
-          // non-critical
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { 'Cache-Control': 'no-cache' },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          resolvedRole = data.role ?? role;
+          features = data.features ?? {};
+          permissions = data.permissions ?? null;
+          orgSlug = data.orgSlug ?? null;
+          avatarUrl = data.avatarUrl ?? null;
         }
+      } catch {
+        // non-critical
       }
 
       if (cancelled) return;
@@ -48,7 +46,7 @@ export function useAuth() {
         email,
         displayName: '',
         avatarUrl,
-        role,
+        role: resolvedRole,
         organizationId,
         orgSlug,
         permissions,

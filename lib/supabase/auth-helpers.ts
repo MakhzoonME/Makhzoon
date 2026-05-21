@@ -116,11 +116,34 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
       baseEmail = user.email ?? '';
     }
 
-    let role = ((claims.app_metadata as Record<string, unknown>)?.role ??
-      'staff') as UserRole;
+    let role = ((claims.app_metadata as Record<string, unknown>)?.role as
+      UserRole | undefined) ?? undefined;
     let organizationId =
       ((claims.app_metadata as Record<string, unknown>)
         ?.organization_id as string | undefined) ?? null;
+
+    if (!role) {
+      const { data: saRow } = await supabaseAdmin
+        .from('superadmin_users')
+        .select('role')
+        .eq('id', baseUid)
+        .maybeSingle();
+      if (saRow) {
+        role = saRow.role as UserRole;
+      } else {
+        const { data: appRow } = await supabaseAdmin
+          .from('users')
+          .select('role, organization_id')
+          .eq('id', baseUid)
+          .maybeSingle();
+        if (appRow) {
+          role = appRow.role as UserRole;
+          if (!organizationId) organizationId = appRow.organization_id as string | null;
+        }
+      }
+    }
+
+    role ??= 'staff' as UserRole;
 
     // Superadmin family may act as a tenant admin via transferOrgId.
     if (SUPERADMIN_ROLES.has(role)) {

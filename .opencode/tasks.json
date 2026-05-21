@@ -2,6 +2,31 @@
   "schema": 1,
   "tasks": [
     {
+      "id": "MZ-016",
+      "title": "Fix HTTP 500 login page — Turbopack IIFE bug with NEXT_PUBLIC_* env var inlining",
+      "description": "Login page returns HTTP 500 because Turbopack inlines NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY into the client chunk module factory, generating a broken IIFE where string values are passed as the module context parameter (e.i is not a function). Fix: restructure lib/supabase/client.ts to use dynamic import() of @supabase/ssr, which forces a separate chunk boundary and prevents the IIFE collision. Update all 11 files / 13 callers to await the now-async createClient().",
+      "status": "done",
+      "assignee": "frontend",
+      "requestedBy": "user",
+      "files": [
+        "lib/supabase/client.ts",
+        "lib/utils/api-fetch.ts",
+        "hooks/ui/useAuth.ts",
+        "app/[locale]/(auth)/login/page.tsx",
+        "app/[locale]/(auth)/signup/page.tsx",
+        "app/[locale]/superadmin/profile/page.tsx",
+        "app/[locale]/superadmin/layout.tsx",
+        "app/[locale]/[orgSlug]/profile/page.tsx",
+        "app/[locale]/invites/[token]/page.tsx",
+        "components/shared/QueryProvider.tsx",
+        "components/layout/MobileDrawer.tsx",
+        "components/layout/AppHeader.tsx"
+      ],
+      "branch": null,
+      "createdAt": "2026-05-21T12:00:00Z",
+      "completedAt": "2026-05-21T13:30:00Z"
+    },
+    {
       "id": "MZ-001",
       "title": "Example: Add warranty alert email template",
       "description": "Create Resend email template for warranty expiry alerts",

@@ -53,7 +53,7 @@ export default function AcceptInvitePage(props: { params: Promise<{ token: strin
   }, [params.token]);
 
   async function finishSession(signInEmail: string, signInPassword: string) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { error } = await supabase.auth.signInWithPassword({
       email: signInEmail,
       password: signInPassword,

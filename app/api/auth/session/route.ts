@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getOrganizationById } from '@/lib/db/organizations';
 import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
 import { getUserById } from '@/lib/db/users';
@@ -46,12 +47,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const role = (user.app_metadata?.role as UserRole) ?? undefined;
-    if (!role) {
-      return NextResponse.json({ error: 'No account found' }, { status: 403 });
-    }
-    const orgId =
+    let role = (user.app_metadata?.role as UserRole) ?? undefined;
+    let orgId =
       (user.app_metadata?.organization_id as string | undefined) ?? undefined;
+
+    if (!role) {
+      const { data: saUser } = await supabaseAdmin
+        .from('superadmin_users')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (saUser) {
+        role = saUser.role as UserRole;
+      } else {
+        const { data: appUser } = await supabaseAdmin
+          .from('users')
+          .select('role, organization_id')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (appUser) {
+          role = appUser.role as UserRole;
+          if (!orgId) orgId = appUser.organization_id as string | undefined;
+        }
+      }
+
+      if (!role) {
+        return NextResponse.json({ error: 'No account found' }, { status: 403 });
+      }
+    }
 
     let orgSlug: string | null = null;
     let features: Record<string, boolean> = {};

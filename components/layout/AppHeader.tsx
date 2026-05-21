@@ -84,7 +84,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
     setIsLoggingOut(true);
     try {
       await fetch('/api/auth/session', { method: 'DELETE' });
-      await createClient().auth.signOut();
+      const supabase = await createClient(); await supabase.auth.signOut();
     } catch {
       // ignore — always redirect regardless of errors
     }

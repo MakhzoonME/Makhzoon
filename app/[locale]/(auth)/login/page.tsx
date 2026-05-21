@@ -104,7 +104,7 @@ function ForgotPasswordModal({ open, onClose }: { open: boolean; onClose: () => 
     setError('');
     setLoading(true);
     try {
-      const supabase = createClient();
+      const supabase = await createClient();
       const { error } = await supabase.auth.resetPasswordForEmail(
         resetEmail.trim(),
         {
@@ -412,7 +412,7 @@ export default function LoginPage() {
     setEmailError('');
     setEmailLoading(true);
     try {
-      const supabase = createClient();
+      const supabase = await createClient();
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password: emailPassword,
@@ -435,7 +435,7 @@ export default function LoginPage() {
       // Username accounts are backed by a synthetic email (preserved 1:1 from
       // the Firebase model) so Supabase email/password sign-in works as-is.
       const syntheticEmail = `${username.trim().toLowerCase()}@makhzoon.local`;
-      const supabase = createClient();
+      const supabase = await createClient();
       const { error } = await supabase.auth.signInWithPassword({
         email: syntheticEmail,
         password: usernamePassword,

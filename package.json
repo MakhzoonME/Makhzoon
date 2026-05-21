@@ -15,6 +15,7 @@
     "cf:deploy:dev": "opennextjs-cloudflare build && opennextjs-cloudflare deploy -- --env dev",
     "cf:deploy:staging": "opennextjs-cloudflare build && opennextjs-cloudflare deploy -- --env staging",
     "cf:deploy:prod": "opennextjs-cloudflare build && opennextjs-cloudflare deploy -- --env production",
+    "cf:deploy:production": "opennextjs-cloudflare build && opennextjs-cloudflare deploy -- --env production",
     "cf:deploy:cron:dev": "cd workers/cron && npx wrangler deploy --env dev",
     "cf:deploy:cron:staging": "cd workers/cron && npx wrangler deploy --env staging",
     "cf:deploy:cron:prod": "cd workers/cron && npx wrangler deploy --env production",

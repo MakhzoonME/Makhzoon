@@ -64,7 +64,7 @@ GOOGLE_DRIVE_FOLDER_ID = "1y6VunC5Qc0_t7MO5tF_b26eg_VN43Exq"
 # ── Production ──────────────────────────────────────────────────────
 [env.production]
 name = "makhzoon"
-routes = ["app.makhzoon.me/*"]
+routes = ["app.makhzoon.me/*", "makhzoon.me/*", "www.makhzoon.me/*"]
 
 [env.production.vars]
 NEXT_PUBLIC_SUPABASE_URL = "https://ncjzozvzjtyycdlwohtr.supabase.co"

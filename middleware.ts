@@ -50,8 +50,11 @@ export async function middleware(req: NextRequest) {
   if (!locale) {
     const detected = detectLocale(req);
     const url = req.nextUrl.clone();
-    const destination = isAppHost ? `/${detected}/login` : `/${detected}`;
-    url.pathname = `${destination}${pathname === '/' ? '' : pathname}`;
+    if (isAppHost && pathname !== '/') {
+      url.pathname = `/${detected}${pathname}`;
+    } else {
+      url.pathname = `/${detected}${pathname === '/' ? '' : pathname}`;
+    }
     return NextResponse.redirect(url);
   }
 
@@ -65,12 +68,10 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // App hosts — never show marketing pages; root and marketing paths go to login
+  // App hosts — allow root and marketing pages (consistent across all branches)
   if (isAppHost) {
     if (rest === '/' || MARKETING_ONLY_PATHS.has(rest)) {
-      const url = req.nextUrl.clone();
-      url.pathname = `/${locale}/login`;
-      return NextResponse.redirect(url);
+      return NextResponse.next();
     }
   }
 

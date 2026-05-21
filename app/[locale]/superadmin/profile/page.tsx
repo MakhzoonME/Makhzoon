@@ -52,7 +52,7 @@ export default function SuperAdminProfilePage() {
     setSavingPassword(true);
     try {
       if (!user?.email) throw new Error();
-      const supabase = createClient();
+      const supabase = await createClient();
       const { error: reauthError } = await supabase.auth.signInWithPassword({
         email: user.email,
         password: currentPassword,

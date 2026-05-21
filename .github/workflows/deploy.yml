@@ -36,24 +36,34 @@ jobs:
       env: ${{ steps.map.outputs.env }}
       env_name: ${{ steps.map.outputs.env_name }}
       app_url: ${{ steps.map.outputs.app_url }}
+      supabase_url: ${{ steps.map.outputs.supabase_url }}
+      supabase_anon_key: ${{ steps.map.outputs.supabase_anon_key }}
     steps:
       - id: map
         run: |
+          SUPABASE_URL="https://ebupajukvyhparjkhlhr.supabase.co"
+          SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidXBhanVrdnlocGFyamtobGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MjYyOTAsImV4cCI6MjA5NDUwMjI5MH0.qvo7XgzvfMWzJu0dlTX_TrvY-Us74peqPVcx7ZIexhM"
           case "${{ github.ref }}" in
             refs/heads/DevBranch)
               echo "env=dev" >> $GITHUB_OUTPUT
               echo "env_name=dev" >> $GITHUB_OUTPUT
               echo "app_url=https://dev.makhzoon.me" >> $GITHUB_OUTPUT
+              echo "supabase_url=$SUPABASE_URL" >> $GITHUB_OUTPUT
+              echo "supabase_anon_key=$SUPABASE_ANON_KEY" >> $GITHUB_OUTPUT
               ;;
             refs/heads/STGBranch)
               echo "env=staging" >> $GITHUB_OUTPUT
               echo "env_name=staging" >> $GITHUB_OUTPUT
               echo "app_url=https://stage.makhzoon.me" >> $GITHUB_OUTPUT
+              echo "supabase_url=$SUPABASE_URL" >> $GITHUB_OUTPUT
+              echo "supabase_anon_key=$SUPABASE_ANON_KEY" >> $GITHUB_OUTPUT
               ;;
             refs/heads/main)
               echo "env=production" >> $GITHUB_OUTPUT
               echo "env_name=production" >> $GITHUB_OUTPUT
               echo "app_url=https://app.makhzoon.me" >> $GITHUB_OUTPUT
+              echo "supabase_url=$SUPABASE_URL" >> $GITHUB_OUTPUT
+              echo "supabase_anon_key=$SUPABASE_ANON_KEY" >> $GITHUB_OUTPUT
               ;;
           esac
 
@@ -78,6 +88,15 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Write .env.local for build-time NEXT_PUBLIC_* vars
+        run: |
+          cat > .env.local << 'EOF'
+          NEXT_PUBLIC_SUPABASE_URL=${{ needs.map-env.outputs.supabase_url }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ needs.map-env.outputs.supabase_anon_key }}
+          NEXT_PUBLIC_APP_URL=${{ needs.map-env.outputs.app_url }}
+          NEXT_PUBLIC_APP_ENV=${{ needs.map-env.outputs.env }}
+          EOF
 
       - name: Deploy main app worker
         run: npm run cf:deploy:${{ needs.map-env.outputs.env }}

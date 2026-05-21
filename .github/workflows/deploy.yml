@@ -3,7 +3,7 @@
 #
 # Branch → environment mapping mirrors wrangler.toml:
 #   DevBranch → makhzoon-dev      (dev.makhzoon.me)
-#   STGBranch → makhzoon-staging  (stage.makhzoon.me)
+#   STGBranch → makhzoon-staging  (stg.makhzoon.me)
 #   main      → makhzoon-prod     (app.makhzoon.me)
 #
 # ═══════════════════════════════════════════════════════════════════════
@@ -54,7 +54,7 @@ jobs:
             refs/heads/STGBranch)
               echo "env=staging" >> $GITHUB_OUTPUT
               echo "env_name=staging" >> $GITHUB_OUTPUT
-              echo "app_url=https://stage.makhzoon.me" >> $GITHUB_OUTPUT
+              echo "app_url=https://stg.makhzoon.me" >> $GITHUB_OUTPUT
               echo "supabase_url=$SUPABASE_URL" >> $GITHUB_OUTPUT
               echo "supabase_anon_key=$SUPABASE_ANON_KEY" >> $GITHUB_OUTPUT
               ;;

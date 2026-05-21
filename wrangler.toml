@@ -4,7 +4,7 @@
 #
 # Branch → environment mapping:
 #   DevBranch  → `wrangler deploy --env dev`     (dev.makhzoon.me)
-#   STGBranch  → `wrangler deploy --env staging` (stage.makhzoon.me)
+#   STGBranch  → `wrangler deploy --env staging` (stg.makhzoon.me)
 #   main       → `wrangler deploy --env production` (app.makhzoon.me)
 #
 # ═══════════════════════════════════════════════════════════════════════
@@ -51,12 +51,12 @@ GOOGLE_DRIVE_FOLDER_ID = "1y6VunC5Qc0_t7MO5tF_b26eg_VN43Exq"
 # ── Staging ─────────────────────────────────────────────────────────
 [env.staging]
 name = "makhzoonstg"
-routes = ["stage.makhzoon.me/*"]
+routes = ["stg.makhzoon.me/*"]
 
 [env.staging.vars]
 NEXT_PUBLIC_SUPABASE_URL = "https://ebupajukvyhparjkhlhr.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidXBhanVrdnlocGFyamtobGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MjYyOTAsImV4cCI6MjA5NDUwMjI5MH0.qvo7XgzvfMWzJu0dlTX_TrvY-Us74peqPVcx7ZIexhM"
-NEXT_PUBLIC_APP_URL = "https://stage.makhzoon.me"
+NEXT_PUBLIC_APP_URL = "https://stg.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "staging"
 RESEND_FROM_EMAIL = "Makhzoon Staging <staging-notifications@makhzoon.me>"
 GOOGLE_DRIVE_CLIENT_EMAIL = "makhzoonme-prod@makhzoonme-prod-496318.iam.gserviceaccount.com"

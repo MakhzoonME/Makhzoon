@@ -35,7 +35,7 @@ APP_URL = "https://dev.makhzoon.me"
 name = "makhzoon-cron-staging"
 
 [env.staging.vars]
-APP_URL = "https://stage.makhzoon.me"
+APP_URL = "https://stg.makhzoon.me"
 
 [env.production]
 name = "makhzoon-cron-prod"

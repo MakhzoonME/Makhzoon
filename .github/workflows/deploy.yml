@@ -91,9 +91,9 @@ jobs:
 
       - name: Write .env.local for build-time NEXT_PUBLIC_* vars
         run: |
-          cat > .env.local << 'EOF'
-          NEXT_PUBLIC_SUPABASE_URL=${{ needs.map-env.outputs.supabase_url }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ needs.map-env.outputs.supabase_anon_key }}
+          cat > .env.local << EOF
+          NEXT_PUBLIC_SUPABASE_URL=https://ebupajukvyhparjkhlhr.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidXBhanVrdnlocGFyamtobGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MjYyOTAsImV4cCI6MjA5NDUwMjI5MH0.qvo7XgzvfMWzJu0dlTX_TrvY-Us74peqPVcx7ZIexhM
           NEXT_PUBLIC_APP_URL=${{ needs.map-env.outputs.app_url }}
           NEXT_PUBLIC_APP_ENV=${{ needs.map-env.outputs.env }}
           EOF

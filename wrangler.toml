@@ -40,8 +40,8 @@ name = "makhzoondev"
 routes = ["dev.makhzoon.me/*"]
 
 [env.dev.vars]
-NEXT_PUBLIC_SUPABASE_URL = "https://ebupajukvyhparjkhlhr.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidXBhanVrdnlocGFyamtobGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MjYyOTAsImV4cCI6MjA5NDUwMjI5MH0.qvo7XgzvfMWzJu0dlTX_TrvY-Us74peqPVcx7ZIexhM"
+NEXT_PUBLIC_SUPABASE_URL = "https://ncjzozvzjtyycdlwohtr.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0"
 NEXT_PUBLIC_APP_URL = "https://dev.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "development"
 RESEND_FROM_EMAIL = "Makhzoon Dev <dev-notifications@makhzoon.me>"
@@ -53,8 +53,8 @@ GOOGLE_DRIVE_FOLDER_ID = "1y6VunC5Qc0_t7MO5tF_b26eg_VN43Exq"
 name = "makhzoonstg"
 
 [env.staging.vars]
-NEXT_PUBLIC_SUPABASE_URL = "https://ebupajukvyhparjkhlhr.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidXBhanVrdnlocGFyamtobGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MjYyOTAsImV4cCI6MjA5NDUwMjI5MH0.qvo7XgzvfMWzJu0dlTX_TrvY-Us74peqPVcx7ZIexhM"
+NEXT_PUBLIC_SUPABASE_URL = "https://ncjzozvzjtyycdlwohtr.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0"
 NEXT_PUBLIC_APP_URL = "https://stage.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "staging"
 RESEND_FROM_EMAIL = "Makhzoon Staging <staging-notifications@makhzoon.me>"
@@ -67,8 +67,8 @@ name = "makhzoon"
 routes = ["app.makhzoon.me/*"]
 
 [env.production.vars]
-NEXT_PUBLIC_SUPABASE_URL = "https://ebupajukvyhparjkhlhr.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidXBhanVrdnlocGFyamtobGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MjYyOTAsImV4cCI6MjA5NDUwMjI5MH0.qvo7XgzvfMWzJu0dlTX_TrvY-Us74peqPVcx7ZIexhM"
+NEXT_PUBLIC_SUPABASE_URL = "https://ncjzozvzjtyycdlwohtr.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0"
 NEXT_PUBLIC_APP_URL = "https://app.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "production"
 RESEND_FROM_EMAIL = "Makhzoon <notifications@makhzoon.me>"

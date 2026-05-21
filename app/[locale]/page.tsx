@@ -131,6 +131,7 @@ export default function ComingSoonPage() {
           aria-hidden
           className="pointer-events-none fixed z-30 rounded-full"
           style={{
+            top: 0, left: 0,
             x: glowX, y: glowY,
             width: 400, height: 400,
             background: 'radial-gradient(circle, rgba(99,102,241,0.10) 0%, transparent 70%)',

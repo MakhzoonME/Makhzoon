@@ -63,7 +63,7 @@ export function MobileDrawer() {
     setMobileMenuOpen(false);
     try {
       await fetch('/api/auth/session', { method: 'DELETE' });
-      await createClient().auth.signOut();
+      const supabase = await createClient(); await supabase.auth.signOut();
     } catch {
       // ignore — always redirect regardless of errors
     }

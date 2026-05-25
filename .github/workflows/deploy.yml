@@ -98,8 +98,17 @@ jobs:
           NEXT_PUBLIC_APP_ENV=${{ needs.map-env.outputs.env }}
           EOF
 
+      # NEXT_PUBLIC_* vars passed via step env: so they land in `process.env`
+      # before Next.js's env loader runs. The `.env.local` write above is kept
+      # as a fallback, but process.env wins and sidesteps a Turbopack quirk
+      # where dynamic-import + .env.local sometimes fails to inline values.
       - name: Deploy main app worker
         run: npm run cf:deploy:${{ needs.map-env.outputs.env }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ needs.map-env.outputs.supabase_url }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ needs.map-env.outputs.supabase_anon_key }}
+          NEXT_PUBLIC_APP_URL: ${{ needs.map-env.outputs.app_url }}
+          NEXT_PUBLIC_APP_ENV: ${{ needs.map-env.outputs.env }}
 
       # ── Set Worker secrets (if GitHub secret exists for this env) ──
       # Naming convention: SECRET_NAME_{DEV|STAGING|PRODUCTION}

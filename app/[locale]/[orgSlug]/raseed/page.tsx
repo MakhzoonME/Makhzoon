@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useOrgSlug } from '@/hooks/ui';
 import { useInventoryItems, useInventoryCategories } from '@/hooks/inventory';
+import { useList } from '@/hooks/lists';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { FilterBar } from '@/components/shared/FilterBar';
@@ -82,7 +83,14 @@ export default function InventoryPage() {
     sortBy: sortDir === 'none' ? undefined : sortBy,
     sortDir: sortDir === 'none' ? undefined : sortDir,
   });
-  const { data: categories } = useInventoryCategories();
+  const { data: usedCategories } = useInventoryCategories();
+  const { data: listCategories = [] } = useList('inventory_category');
+  const categories = Array.from(
+    new Set([
+      ...listCategories.map((c) => c.label),
+      ...(usedCategories ?? []),
+    ])
+  ).sort((a, b) => a.localeCompare(b));
   const items = inventoryData?.items ?? [];
 
   const updateUrl = useCallback((params: Record<string, string>) => {
@@ -160,6 +168,7 @@ export default function InventoryPage() {
       if (!res.ok) throw new Error();
       toast.success(t('inventory.itemDeleted'));
       qc.invalidateQueries({ queryKey: ['inventory'] });
+      qc.invalidateQueries({ queryKey: ['inventory-categories'] });
       setDeleteTarget(null);
     } catch {
       toast.error(t('inventory.itemDeleteFailed'));
@@ -228,13 +237,13 @@ export default function InventoryPage() {
           {outCount > 0 && (
             <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 dark:text-red-700">
               <AlertTriangle className="h-4 w-4" strokeWidth={1.75} />
-              <span><strong>{outCount}</strong> {outCount > 1 ? t('inventory.itemsOutOfStockPlural').replace('{count}', String(outCount)) : t('inventory.itemsOutOfStock').replace('{count}', String(outCount))}</span>
+              <span>{outCount > 1 ? t('inventory.itemsOutOfStockPlural').replace('{count}', String(outCount)) : t('inventory.itemsOutOfStock').replace('{count}', String(outCount))}</span>
             </div>
           )}
           {lowCount > 0 && (
             <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 dark:text-amber-700">
               <AlertTriangle className="h-4 w-4" strokeWidth={1.75} />
-              <span><strong>{lowCount}</strong> {lowCount > 1 ? t('inventory.itemsRunningLowPlural').replace('{count}', String(lowCount)) : t('inventory.itemsRunningLow').replace('{count}', String(lowCount))}</span>
+              <span>{lowCount > 1 ? t('inventory.itemsRunningLowPlural').replace('{count}', String(lowCount)) : t('inventory.itemsRunningLow').replace('{count}', String(lowCount))}</span>
             </div>
           )}
         </div>

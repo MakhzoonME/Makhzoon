@@ -317,7 +317,16 @@ export function AppSidebar() {
                   <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pr-6' : 'pl-6')}>
                     {visibleSubItems.map((sub) => {
                       const fullHref  = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
-                      const subActive = pathname === fullHref || pathname.startsWith(fullHref + '/');
+                      const subActive = (() => {
+                        if (pathname === fullHref) return true;
+                        if (!pathname.startsWith(fullHref + '/')) return false;
+                        if (group.href && sub.href === group.href) {
+                          const rest = pathname.slice(fullHref.length + 1);
+                          const nextSegment = rest.split('/')[0];
+                          if (nextSegment && visibleSubItems.some(s => s.href === `${group.href}/${nextSegment}`)) return false;
+                        }
+                        return true;
+                      })();
                       const subLabel  = t(sub.labelKey as MessageKey, sub.label);
                       return (
                         <Link

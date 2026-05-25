@@ -13,7 +13,7 @@ export function useList(listKey: ListKey) {
       const body = await res.json();
       return (body.items ?? []) as ResolvedListItem[];
     },
-    staleTime: 60_000,
+    staleTime: 0,
     gcTime: 5 * 60_000,
   });
 }

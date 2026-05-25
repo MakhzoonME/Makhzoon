@@ -25,6 +25,9 @@ export interface NavGroupConfig {
   label: string;
   labelKey: MessageKey;
   adminOnly?: boolean;
+  featureKey?: string;
+  moduleColor?: string;
+  moduleName?: string;
   items: NavItemConfig[];
 }
 
@@ -34,19 +37,22 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
   { href: '/dashboard',    label: 'Dashboard',    labelKey: 'nav.dashboard',    featureKey: 'dashboard' },
   { href: '/usool',        label: 'Usool',        labelKey: 'nav.assets',       featureKey: 'assets',    moduleColor: '#00695C', moduleName: 'أصول' },
   {
-    href: '/raseed', label: 'Raseed', labelKey: 'nav.inventory', featureKey: 'inventory',
-    moduleColor: '#E65100', moduleName: 'رصيد',
-    children: [
+    type: 'group', href: '/raseed', label: 'Raseed', labelKey: 'nav.inventory',
+    featureKey: 'inventory', moduleColor: '#E65100', moduleName: 'رصيد',
+    items: [
+      { href: '/raseed', label: 'Raseed', labelKey: 'nav.inventory',
+        featureKey: 'inventory', moduleColor: '#E65100', moduleName: 'رصيد' },
       { href: '/raseed/purchases', label: 'Purchases', labelKey: 'nav.purchases',
         featureKey: 'inventory', permissionKey: 'purchases.view',
         moduleColor: '#BF360C', moduleName: 'مشتريات' },
     ],
   },
   {
-    href: '/haraka', label: 'Haraka', labelKey: 'nav.pos', featureKey: 'pos',
-    permissionKey: 'pos.open_session',
-    moduleColor: '#C2185B', moduleName: 'حركة',
-    children: [
+    type: 'group', href: '/haraka', label: 'Haraka', labelKey: 'nav.pos',
+    featureKey: 'pos', moduleColor: '#C2185B', moduleName: 'حركة',
+    items: [
+      { href: '/haraka', label: 'Haraka', labelKey: 'nav.pos',
+        featureKey: 'pos', moduleColor: '#C2185B', moduleName: 'حركة' },
       { href: '/haraka/customers', label: 'Customers', labelKey: 'nav.customers',
         featureKey: 'pos', permissionKey: 'pos.process_sale',
         moduleColor: '#AD1457', moduleName: 'عملاء' },

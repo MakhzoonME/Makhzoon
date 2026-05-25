@@ -102,11 +102,19 @@ jobs:
       # before Next.js's env loader runs. The `.env.local` write above is kept
       # as a fallback, but process.env wins and sidesteps a Turbopack quirk
       # where dynamic-import + .env.local sometimes fails to inline values.
+      #
+      # NEXT_PUBLIC_SUPABASE_ANON_KEY is hardcoded inline (not routed through
+      # `needs.map-env.outputs.*`) because GitHub Actions strips JWT-shaped
+      # values when they cross the job-outputs boundary, yielding an empty
+      # string in the consuming job. The anon key is a public token (anon
+      # role; designed for client bundles, RLS-gated server-side), so it is
+      # safe to keep inline in the workflow. Regression history: see commits
+      # e00932f (original fix) and 74aedb8 (regression).
       - name: Deploy main app worker
         run: npm run cf:deploy:${{ needs.map-env.outputs.env }}
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ needs.map-env.outputs.supabase_url }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ needs.map-env.outputs.supabase_anon_key }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0
           NEXT_PUBLIC_APP_URL: ${{ needs.map-env.outputs.app_url }}
           NEXT_PUBLIC_APP_ENV: ${{ needs.map-env.outputs.env }}
 

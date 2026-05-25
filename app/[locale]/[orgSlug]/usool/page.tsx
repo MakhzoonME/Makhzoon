@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 // useEffect retained for debounced-search → URL commit only.
-import { Plus, Pencil, ArchiveX, Trash2, Upload } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload } from 'lucide-react';
 import { useOrgSlug } from '@/hooks/ui';
 import { useAssets } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
@@ -17,6 +17,7 @@ import { AssetForm } from '@/components/assets/AssetForm';
 import { ImportAssetsDrawer } from '@/components/assets/ImportAssetsDrawer';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { Asset } from '@/types';
 import { hasPermission } from '@/lib/permissions';
 import { formatDate } from '@/lib/utils/date';
@@ -128,14 +129,6 @@ export default function AssetsPage() {
                   </Button>
                 </SubscriptionGate>
               )}
-              {a.status === 'Active' && (
-                <SubscriptionGate>
-                  <Button size="sm" variant="ghost" className="text-amber-500 hover:text-amber-600 hover:bg-amber-50" onClick={(e) => { e.stopPropagation(); setActionTarget(a); }}
-                    title={t('assets.retire')}>
-                    <ArchiveX className="w-3.5 h-3.5" />
-                  </Button>
-                </SubscriptionGate>
-              )}
               {a.status === 'Retired' && (
                 <SubscriptionGate>
                   <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setActionTarget(a); }}
@@ -230,14 +223,7 @@ export default function AssetsPage() {
         onSearchChange={handleSearchChange}
         filters={
           <div className="flex items-center gap-2">
-            <Select value={status || 'all'} onValueChange={handleStatusChange}>
-              <SelectTrigger className="w-36"><SelectValue placeholder={t('col.status')} /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('assets.allStatuses')}</SelectItem>
-                <SelectItem value="Active">{t('val.active')}</SelectItem>
-                <SelectItem value="Retired">{t('assets.retired')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <ConfigSelect listKey="asset_status" value={status || 'all'} onValueChange={handleStatusChange} includeAll allLabel={t('assets.allStatuses')} className="w-36" />
             <Select value={category || 'all'} onValueChange={handleCategoryChange}>
               <SelectTrigger className="w-36"><SelectValue placeholder={t('col.category')} /></SelectTrigger>
               <SelectContent>

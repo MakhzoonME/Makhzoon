@@ -9,10 +9,20 @@ import { inviteUserSchema } from '@/lib/validations/user.schema';
 import { hasPermission } from '@/lib/platform/permissions';
 import { checkResourceLimit } from '@/lib/platform/limits/check-limit';
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;
+    const { searchParams } = new URL(req.url);
+    const isAssignable = searchParams.get('assignable') === 'true';
+
+    if (isAssignable) {
+      const users = await getUsers(tenant.organizationId);
+      return NextResponse.json(users, {
+        headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
+      });
+    }
+
     const isAdmin = user.role === 'admin' || user.role === 'super_admin' || user.role === 'org_owner';
     const canViewUsers = isAdmin || hasPermission(tenant, 'settings', 'users');
     if (!canViewUsers) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

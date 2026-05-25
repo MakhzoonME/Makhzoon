@@ -67,10 +67,11 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
     adminOnly: true,
     items: [
       { href: '/settings/organization', label: 'Organization Info', labelKey: 'nav.orgInfo',       permissionKey: 'settings.orgInfo' },
+      { href: '/settings/lists',        label: 'Lists',             labelKey: 'nav.lists',         permissionKey: 'settings.orgInfo' },
       { href: '/subscription',          label: 'Subscription',      labelKey: 'nav.subscription',  permissionKey: 'settings.subscription' },
       { href: '/users',                 label: 'Users',             labelKey: 'nav.users',         permissionKey: 'settings.users' },
-      { href: '/settings/tax-rates',    label: 'Tax Rates',         labelKey: 'nav.taxRates',      permissionKey: 'settings.taxRates' },
-      { href: '/settings/fawtara',      label: 'Fawtara',           labelKey: 'nav.fawtara',       permissionKey: 'settings.fawtara' },
+      { href: '/settings/tax-rates',    label: 'Tax Rates',         labelKey: 'nav.taxRates',      permissionKey: 'settings.taxRates', featureKey: 'pos' },
+      { href: '/settings/jo-fotara',    label: 'Jo Fotara',         labelKey: 'nav.fawtara',       permissionKey: 'settings.fawtara', featureKey: 'pos' },
     ],
   },
 ];

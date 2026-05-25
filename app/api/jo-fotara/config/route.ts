@@ -24,7 +24,7 @@ export async function GET() {
     return NextResponse.json({ config })
   } catch (err) {
     if (err instanceof NextResponse) return err
-    console.error('[GET /api/fawtara/config]', err)
+    console.error('[GET /api/jo-fotara/config]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -45,7 +45,7 @@ export async function PATCH(req: NextRequest) {
     if (err instanceof Error) {
       return NextResponse.json({ error: err.message }, { status: 400 })
     }
-    console.error('[PATCH /api/fawtara/config]', err)
+    console.error('[PATCH /api/jo-fotara/config]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

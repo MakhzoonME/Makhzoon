@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { ScanBarcode } from 'lucide-react';
 import { useOrgSlug, useT } from '@/hooks/ui';
-import { inventoryItemSchema, InventoryItemFormData, INVENTORY_UNITS } from '@/lib/validations/inventory.schema';
+import { inventoryItemSchema, InventoryItemFormData } from '@/lib/validations/inventory.schema';
 import { InventoryItem } from '@/types';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
@@ -126,12 +127,7 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
           <FormField control={form.control} name="unit" render={({ field }) => (
             <FormItem>
               <FormLabel>Unit *</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl><SelectTrigger><SelectValue placeholder="Select unit" /></SelectTrigger></FormControl>
-                <SelectContent>
-                  {INVENTORY_UNITS.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <ConfigSelect listKey="inventory_unit" value={field.value} onValueChange={field.onChange} placeholder="Select unit" />
               <FormMessage />
             </FormItem>
           )} />

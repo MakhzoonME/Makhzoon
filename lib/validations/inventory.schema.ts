@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+// Legacy default unit catalog. Units are now managed via the config-driven
+// lists (list_key 'inventory_unit'); kept here only as a seed/fallback.
 export const INVENTORY_UNITS = ['each', 'box', 'pack', 'pair', 'roll', 'liter', 'kg', 'meter', 'sheet', 'set'] as const;
 
 /**
@@ -12,7 +14,7 @@ export const inventoryItemSchema = z.object({
   name: z.string().min(2).max(100),
   category: z.string().min(1, 'Category is required'),
   sku: z.string().optional(),
-  unit: z.enum(INVENTORY_UNITS),
+  unit: z.string().min(1, 'Unit is required'),
   quantityOnHand: z.coerce.number().min(0, 'Quantity cannot be negative'),
   minimumThreshold: z.coerce.number().min(0, 'Threshold cannot be negative'),
   reorderQuantity: z.coerce.number().min(0).optional().or(z.literal('')),

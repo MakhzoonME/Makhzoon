@@ -49,6 +49,7 @@ declare
   pkg_starter   uuid;
   pkg_business  uuid;
   pkg_enterprise uuid;
+  pkg_id        uuid;
 
 begin
   -- ═══════════════════════════════════════════════════════════════════
@@ -168,15 +169,19 @@ begin
     );
 
     -- ── Subscription (rotate through statuses) ───────────────────
-    insert into public.subscriptions (organization_id, package_id, features, package_details, start_date, end_date, status, created_by)
-    values (
-      org_id,
-      case
+    pkg_id := case
         when i <= 7  then pkg_starter
         when i <= 14 then pkg_business
         else              pkg_enterprise
-      end,
-      '{}'::jsonb,
+      end;
+    insert into public.subscriptions (organization_id, package_id, features, package_details, start_date, end_date, status, created_by)
+    values (
+      org_id,
+      pkg_id,
+      -- Subscription features are the org's source of truth for module gating
+      -- (read by the sidebar / auth routes). Seed them from the package so the
+      -- plan's modules actually appear; '{}' here would hide every module.
+      (select features from public.packages where id = pkg_id),
       '{}'::jsonb,
       '2025-01-01'::timestamptz,
       case

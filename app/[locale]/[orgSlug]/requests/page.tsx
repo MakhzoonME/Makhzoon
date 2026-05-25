@@ -9,7 +9,7 @@ import { FilterBar } from '@/components/shared/FilterBar';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { StatusBadge, SubscriptionGate } from '@/components/shared';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { Request } from '@/types';
 import { formatDate } from '@/lib/utils/date';
 import { toast } from '@/hooks/ui';
@@ -149,25 +149,8 @@ export default function RequestsPage() {
       <FilterBar
         filters={
           <div className="flex items-center gap-2">
-            <Select value={status || 'all'} onValueChange={handleStatusChange}>
-              <SelectTrigger className="w-32"><SelectValue placeholder={t('col.status')} /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('requests.allStatuses')}</SelectItem>
-                <SelectItem value="PENDING">{t('requests.pending')}</SelectItem>
-                <SelectItem value="APPROVED">{t('requests.approved')}</SelectItem>
-                <SelectItem value="REJECTED">{t('requests.rejected')}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={type || 'all'} onValueChange={handleTypeChange}>
-              <SelectTrigger className="w-40"><SelectValue placeholder={t('requests.type')} /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('requests.allTypes')}</SelectItem>
-                <SelectItem value="REFILL">Refill</SelectItem>
-                <SelectItem value="RETIRE">Retire</SelectItem>
-                <SelectItem value="BUY_NEW">Buy New</SelectItem>
-                <SelectItem value="EXTEND_WARRANTY">Extend Warranty</SelectItem>
-              </SelectContent>
-            </Select>
+            <ConfigSelect listKey="request_status" value={status || 'all'} onValueChange={handleStatusChange} includeAll allLabel={t('requests.allStatuses')} className="w-32" />
+            <ConfigSelect listKey="request_type" value={type || 'all'} onValueChange={handleTypeChange} includeAll allLabel={t('requests.allTypes')} className="w-40" />
           </div>
         }
       />

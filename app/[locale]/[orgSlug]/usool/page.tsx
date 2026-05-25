@@ -154,6 +154,7 @@ export default function AssetsPage() {
       await fetch(`/api/assets/${actionTarget.id}`, { method: 'DELETE' });
       toast.success(isRetired ? t('assets.deleteDone') : t('assets.retireDone'));
       qc.invalidateQueries({ queryKey: ['assets'] });
+      qc.invalidateQueries({ queryKey: ['asset-categories'] });
       qc.removeQueries({ queryKey: ['assets', actionTarget.id] });
       setActionTarget(null);
     } catch {

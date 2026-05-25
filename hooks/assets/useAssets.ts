@@ -63,6 +63,6 @@ export function useAssetCategories() {
       const data = await res.json();
       return data.categories ?? [];
     },
-    staleTime: 5 * 60_000,
+    staleTime: 0,
   });
 }

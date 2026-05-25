@@ -97,6 +97,7 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
       toast.success(asset ? 'Asset updated' : 'Asset added successfully');
 
       qc.invalidateQueries({ queryKey: ['assets'] });
+      qc.invalidateQueries({ queryKey: ['asset-categories'] });
       if (asset?.id) qc.invalidateQueries({ queryKey: ['assets', asset.id] });
 
       if (onSuccess) {

@@ -17,6 +17,7 @@ import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useInventoryCategories } from '@/hooks/inventory';
+import { useList } from '@/hooks/lists';
 import { useTaxRates } from '@/hooks/haraka';
 interface Props { item?: InventoryItem; onSuccess?: () => void; onCancel?: () => void; onDirtyChange?: (dirty: boolean) => void; }
 
@@ -26,7 +27,14 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
   const { locale } = useT();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const { data: categories = [] } = useInventoryCategories();
+  const { data: usedCategories = [] } = useInventoryCategories();
+  const { data: listCategories = [] } = useList('inventory_category');
+  const categories = Array.from(
+    new Set([
+      ...listCategories.map((c) => c.label),
+      ...usedCategories,
+    ])
+  ).sort((a, b) => a.localeCompare(b));
   const { data: taxRatesData } = useTaxRates();
   const taxRates = taxRatesData?.taxRates ?? [];
 
@@ -78,6 +86,7 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
       toast.success(item ? 'Item updated' : 'Item added');
 
       qc.invalidateQueries({ queryKey: ['inventory'] });
+      qc.invalidateQueries({ queryKey: ['inventory-categories'] });
 
       if (onSuccess) {
         onSuccess();

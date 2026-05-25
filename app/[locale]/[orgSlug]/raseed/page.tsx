@@ -254,7 +254,7 @@ export default function InventoryPage() {
               </SelectContent>
             </Select>
             <Select value={stockFilter || 'all'} onValueChange={handleStockChange}>
-              <SelectTrigger className="w-36"><SelectValue placeholder={t('inventory.allStock')} /></SelectTrigger>
+              <SelectTrigger className="w-44"><SelectValue placeholder={t('inventory.allStock')} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('inventory.allStock')}</SelectItem>
                 <SelectItem value="ok">{t('inventory.inStock')}</SelectItem>

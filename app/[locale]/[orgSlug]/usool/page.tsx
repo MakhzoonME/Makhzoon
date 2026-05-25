@@ -223,9 +223,9 @@ export default function AssetsPage() {
         onSearchChange={handleSearchChange}
         filters={
           <div className="flex items-center gap-2">
-            <ConfigSelect listKey="asset_status" value={status || 'all'} onValueChange={handleStatusChange} includeAll allLabel={t('assets.allStatuses')} className="w-36" />
+            <ConfigSelect listKey="asset_status" value={status || 'all'} onValueChange={handleStatusChange} includeAll allLabel={t('assets.allStatuses')} className="w-44" />
             <Select value={category || 'all'} onValueChange={handleCategoryChange}>
-              <SelectTrigger className="w-36"><SelectValue placeholder={t('col.category')} /></SelectTrigger>
+              <SelectTrigger className="w-44"><SelectValue placeholder={t('col.category')} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('assets.allCategories')}</SelectItem>
                 {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}

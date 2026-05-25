@@ -37,33 +37,31 @@ jobs:
       env_name: ${{ steps.map.outputs.env_name }}
       app_url: ${{ steps.map.outputs.app_url }}
       supabase_url: ${{ steps.map.outputs.supabase_url }}
-      supabase_anon_key: ${{ steps.map.outputs.supabase_anon_key }}
+      # NOTE: supabase_anon_key intentionally not exposed as a job output —
+      # GitHub Actions auto-redacts JWT-shaped values when they cross the
+      # `needs.<job>.outputs.*` boundary (the consumer reads an empty string).
+      # The anon key is set inline in the deploy step's env: block instead.
     steps:
       - id: map
         run: |
-          SUPABASE_URL="https://ncjzozvzjtyycdlwohtr.supabase.co"
-          SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0"
           case "${{ github.ref }}" in
             refs/heads/DevBranch)
               echo "env=dev" >> $GITHUB_OUTPUT
               echo "env_name=dev" >> $GITHUB_OUTPUT
               echo "app_url=https://dev.makhzoon.me" >> $GITHUB_OUTPUT
-              echo "supabase_url=$SUPABASE_URL" >> $GITHUB_OUTPUT
-              echo "supabase_anon_key=$SUPABASE_ANON_KEY" >> $GITHUB_OUTPUT
+              echo "supabase_url=https://rtrhpgaddgsymgilavoq.supabase.co" >> $GITHUB_OUTPUT
               ;;
             refs/heads/STGBranch)
               echo "env=staging" >> $GITHUB_OUTPUT
               echo "env_name=staging" >> $GITHUB_OUTPUT
               echo "app_url=https://stg.makhzoon.me" >> $GITHUB_OUTPUT
-              echo "supabase_url=$SUPABASE_URL" >> $GITHUB_OUTPUT
-              echo "supabase_anon_key=$SUPABASE_ANON_KEY" >> $GITHUB_OUTPUT
+              echo "supabase_url=https://ncjzozvzjtyycdlwohtr.supabase.co" >> $GITHUB_OUTPUT
               ;;
             refs/heads/main)
               echo "env=production" >> $GITHUB_OUTPUT
               echo "env_name=production" >> $GITHUB_OUTPUT
               echo "app_url=https://app.makhzoon.me" >> $GITHUB_OUTPUT
-              echo "supabase_url=$SUPABASE_URL" >> $GITHUB_OUTPUT
-              echo "supabase_anon_key=$SUPABASE_ANON_KEY" >> $GITHUB_OUTPUT
+              echo "supabase_url=https://ncjzozvzjtyycdlwohtr.supabase.co" >> $GITHUB_OUTPUT
               ;;
           esac
 
@@ -89,32 +87,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Write .env.local for build-time NEXT_PUBLIC_* vars
-        run: |
-          cat > .env.local << 'EOF'
-          NEXT_PUBLIC_SUPABASE_URL=${{ needs.map-env.outputs.supabase_url }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ needs.map-env.outputs.supabase_anon_key }}
-          NEXT_PUBLIC_APP_URL=${{ needs.map-env.outputs.app_url }}
-          NEXT_PUBLIC_APP_ENV=${{ needs.map-env.outputs.env }}
-          EOF
-
       # NEXT_PUBLIC_* vars passed via step env: so they land in `process.env`
-      # before Next.js's env loader runs. The `.env.local` write above is kept
-      # as a fallback, but process.env wins and sidesteps a Turbopack quirk
-      # where dynamic-import + .env.local sometimes fails to inline values.
+      # before Next.js's env loader runs (process.env takes priority over .env
+      # files and sidesteps a Turbopack quirk where dynamic-import + .env.local
+      # sometimes fails to inline values).
       #
-      # NEXT_PUBLIC_SUPABASE_ANON_KEY is hardcoded inline (not routed through
-      # `needs.map-env.outputs.*`) because GitHub Actions strips JWT-shaped
-      # values when they cross the job-outputs boundary, yielding an empty
-      # string in the consuming job. The anon key is a public token (anon
-      # role; designed for client bundles, RLS-gated server-side), so it is
-      # safe to keep inline in the workflow. Regression history: see commits
-      # e00932f (original fix) and 74aedb8 (regression).
+      # NEXT_PUBLIC_SUPABASE_ANON_KEY is hardcoded inline per branch (not
+      # routed through `needs.map-env.outputs.*`) because GitHub Actions
+      # auto-redacts JWT-shaped values when they cross the job-outputs
+      # boundary, yielding an empty string in the consuming job. The anon key
+      # is a public token (anon role; designed for client bundles, RLS-gated
+      # server-side), so inline in the workflow is no exposure increase.
+      # Regression history: e00932f (original fix) → 74aedb8 (regression) →
+      # e5d1b45 (refix). See also project_gha_jwt_outputs_gotcha memory.
+      #
+      # Per-env Supabase branch: DevBranch → rtrhpgaddgsymgilavoq (dev branch
+      # DB), STGBranch/main → ncjzozvzjtyycdlwohtr (main branch DB). One
+      # Supabase project, branched per env: auth.users is shared across
+      # branches, but public.* is per-branch.
       - name: Deploy main app worker
         run: npm run cf:deploy:${{ needs.map-env.outputs.env }}
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ needs.map-env.outputs.supabase_url }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref == 'refs/heads/DevBranch' && 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0cmhwZ2FkZGdzeW1naWxhdm9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzMTU4ODcsImV4cCI6MjA5NDg5MTg4N30.K_znq4A8cFOfLGPhgzwY_VcvVMjxw_8tReW-HW25BNA' || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0' }}
           NEXT_PUBLIC_APP_URL: ${{ needs.map-env.outputs.app_url }}
           NEXT_PUBLIC_APP_ENV: ${{ needs.map-env.outputs.env }}
 

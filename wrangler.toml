@@ -40,8 +40,10 @@ name = "makhzoondev"
 routes = ["dev.makhzoon.me/*"]
 
 [env.dev.vars]
-NEXT_PUBLIC_SUPABASE_URL = "https://ncjzozvzjtyycdlwohtr.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0"
+# Dev env uses the dev Supabase branch (rtrhpgaddgsymgilavoq). One Supabase
+# project, branched per env — auth.users is shared, public.* is per-branch.
+NEXT_PUBLIC_SUPABASE_URL = "https://rtrhpgaddgsymgilavoq.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0cmhwZ2FkZGdzeW1naWxhdm9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzMTU4ODcsImV4cCI6MjA5NDg5MTg4N30.K_znq4A8cFOfLGPhgzwY_VcvVMjxw_8tReW-HW25BNA"
 NEXT_PUBLIC_APP_URL = "https://dev.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "development"
 RESEND_FROM_EMAIL = "Makhzoon Dev <dev-notifications@makhzoon.me>"

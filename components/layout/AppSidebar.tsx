@@ -240,6 +240,7 @@ export function AppSidebar() {
               const isOpen = openGroups[group.href] ?? false;
               const label  = t(group.labelKey as MessageKey, group.label);
               const visibleSubItems = group.items.filter((sub) => {
+                if (sub.featureKey && !features[sub.featureKey]) return false;
                 if (canSeeAdmin) return true;
                 if (!sub.permissionKey) return true;
                 return !!user && hasPermByKey(user, sub.permissionKey);

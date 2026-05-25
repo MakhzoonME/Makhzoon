@@ -1,0 +1,251 @@
+'use client';
+import { useState } from 'react';
+import { Plus, Trash2, Pencil } from 'lucide-react';
+import { PageHeader } from '@/components/shared';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { useList, useUpsertOrgListItem, useDeleteOrgListItem } from '@/hooks/lists';
+import { toast, useAdminGuard, useT } from '@/hooks/ui';
+import { LIST_REGISTRY, LIST_KEYS, type ListKey } from '@/types';
+import { cn } from '@/lib/utils/cn';
+import type { ResolvedListItem } from '@/types';
+
+// Org-admins customize their org's FREE, org-scoped lists. Platform-scoped
+// (org_industry) and system lists are not editable per-org.
+const ORG_KEYS = LIST_KEYS.filter(
+  (k) => LIST_REGISTRY[k].scope === 'org' && !LIST_REGISTRY[k].isSystem,
+);
+
+export default function OrgListsPage() {
+  const { isAllowed } = useAdminGuard('settings.orgInfo');
+  const { locale } = useT();
+  const isAr = locale === 'ar';
+  const [selected, setSelected] = useState<ListKey>(ORG_KEYS[0] ?? 'asset_category');
+  const meta = LIST_REGISTRY[selected];
+
+  const { data: items = [], isLoading } = useList(selected);
+  const upsertMut = useUpsertOrgListItem();
+  const deleteMut = useDeleteOrgListItem();
+
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState('');
+  const [nameAr, setNameAr] = useState('');
+  const [addColor, setAddColor] = useState('');
+
+  const [editingItem, setEditingItem] = useState<ResolvedListItem | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editNameAr, setEditNameAr] = useState('');
+  const [editColor, setEditColor] = useState('');
+
+  if (!isAllowed) return null;
+
+  async function add() {
+    const value = name.trim();
+    if (!value) return;
+    try {
+      await upsertMut.mutateAsync({
+        listKey: selected,
+        value,
+        label: value,
+        labelAr: nameAr.trim() || null,
+        color: addColor || null,
+        isCustom: true,
+      } as never);
+      toast.success('Added');
+      setAdding(false);
+      setName('');
+      setNameAr('');
+      setAddColor('');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Add failed');
+    }
+  }
+
+  async function remove(value: string, isCustom: boolean) {
+    try {
+      if (isCustom) {
+        await deleteMut.mutateAsync({ listKey: selected, value });
+      } else {
+        await upsertMut.mutateAsync({
+          listKey: selected,
+          value,
+          enabled: false,
+        } as never);
+      }
+      toast.success('Removed');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Remove failed');
+    }
+  }
+
+  function startEdit(item: ResolvedListItem) {
+    setEditingItem(item);
+    setEditName(item.label);
+    setEditNameAr(item.labelAr ?? '');
+    setEditColor(item.color ?? '');
+  }
+
+  async function saveEdit() {
+    if (!editingItem || !editName.trim()) return;
+    try {
+      await upsertMut.mutateAsync({
+        listKey: selected,
+        value: editingItem.value,
+        label: editName.trim(),
+        labelAr: editNameAr.trim() || null,
+        color: editColor || null,
+        isCustom: editingItem.isCustom,
+      } as never);
+      toast.success('Updated');
+      setEditingItem(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Update failed');
+    }
+  }
+
+  return (
+    <div>
+      <PageHeader
+        title="Lists"
+        description="Customize the dropdown options for your organization. Defaults are inherited from the platform; items you add are specific to your organization."
+      />
+
+      <div className="flex flex-col md:flex-row gap-6 mt-4">
+        <aside className="md:w-52 flex-shrink-0 space-y-0.5">
+          {ORG_KEYS.map((k) => (
+            <button
+              key={k}
+              onClick={() => setSelected(k)}
+              className={cn(
+                'w-full text-start text-sm rounded-md px-2.5 py-1.5 transition-colors',
+                selected === k ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-600 hover:bg-surface-page',
+              )}
+            >
+              {LIST_REGISTRY[k].label}
+            </button>
+          ))}
+        </aside>
+
+        <section className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="t-h2 text-gray-900">{meta.label}</h2>
+            <Button size="sm" onClick={() => setAdding(true)}>
+              <Plus className="h-4 w-4 me-1" /> Add item
+            </Button>
+          </div>
+
+          <div className="rounded-lg border border-border divide-y divide-border">
+            {isLoading && <div className="p-4 text-sm text-gray-500">Loading…</div>}
+            {!isLoading && items.length === 0 && (
+              <div className="p-4 text-sm text-gray-500">No items yet.</div>
+            )}
+            {items.map((item) => (
+              <div key={item.value} className="flex items-center gap-3 px-3 py-2.5">
+                <span
+                  className="h-4 w-4 rounded-full border border-border flex-shrink-0"
+                  style={{ background: item.color ?? 'transparent' }}
+                />
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm text-gray-900">{isAr ? item.labelAr || item.label : item.label}</span>
+                  <span className="ms-2 text-xs text-gray-400 font-mono">{item.value}</span>
+                </div>
+                <Badge variant={item.isCustom ? 'blue' : 'default'}>
+                  {item.isCustom ? 'Custom' : 'Default'}
+                </Badge>
+                <Button variant="ghost" size="icon" onClick={() => startEdit(item)} aria-label="Edit">
+                  <Pencil className="h-4 w-4 text-gray-500" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => remove(item.value, item.isCustom)} aria-label={item.isCustom ? 'Remove' : 'Hide'}>
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <Dialog open={adding} onOpenChange={setAdding}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add to {meta.label}</DialogTitle>
+            <DialogDescription>This item will be available only to your organization.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Name</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Vehicles" />
+            </div>
+            <div>
+              <Label>Name (Arabic, optional)</Label>
+              <Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} placeholder="التسمية" dir="rtl" />
+            </div>
+            <div>
+              <Label>Color (optional)</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={addColor || '#000000'}
+                  onChange={(e) => setAddColor(e.target.value)}
+                  className="h-9 w-9 rounded cursor-pointer border border-border"
+                />
+                {addColor && (
+                  <Button variant="ghost" size="sm" onClick={() => setAddColor('')}>Clear</Button>
+                )}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setAdding(false)}>Cancel</Button>
+              <Button onClick={add} disabled={upsertMut.isPending || !name.trim()}>Add</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingItem} onOpenChange={(o) => !o && setEditingItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit {meta.label} item</DialogTitle>
+            <DialogDescription>Update the label, Arabic name, or color.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Name</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="e.g. Vehicles" />
+            </div>
+            <div>
+              <Label>Name (Arabic, optional)</Label>
+              <Input value={editNameAr} onChange={(e) => setEditNameAr(e.target.value)} placeholder="التسمية" dir="rtl" />
+            </div>
+            <div>
+              <Label>Color</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={editColor || '#000000'}
+                  onChange={(e) => setEditColor(e.target.value)}
+                  className="h-9 w-9 rounded cursor-pointer border border-border"
+                />
+                {editColor && (
+                  <Button variant="ghost" size="sm" onClick={() => setEditColor('')}>Clear</Button>
+                )}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setEditingItem(null)}>Cancel</Button>
+              <Button onClick={saveEdit} disabled={upsertMut.isPending || !editName.trim()}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

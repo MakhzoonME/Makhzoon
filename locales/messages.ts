@@ -21,7 +21,7 @@ const en = {
   'nav.support':       'Support',
   'nav.auditLogs':     'Audit Logs',
   'nav.taxRates':      'Tax Rates',
-  'nav.fawtara':       'Fawtara (e-invoicing)',
+  'nav.fawtara':       'Jo Fotara (e-invoicing)',
   'nav.customers':     'Customers',
   'nav.harakaReports': 'POS Reports',
   // Superadmin
@@ -31,6 +31,7 @@ const en = {
   'nav.sync':          'Environment Sync',
   'nav.backendLogs':   'Backend Logs',
   'nav.leads':         'Leads',
+  'nav.lists':         'Lists',
   'nav.settings':      'Settings',
   'nav.orgInfo':       'Organization Info',
 
@@ -625,6 +626,7 @@ const ar: Record<keyof typeof en, string> = {
   'nav.sync':          'مزامنة البيئات',
   'nav.backendLogs':   'سجلات النظام',
   'nav.leads':         'العملاء المحتملون',
+  'nav.lists':         'القوائم',
   'nav.settings':      'الإعدادات',
   'nav.orgInfo':       'معلومات المنظمة',
 

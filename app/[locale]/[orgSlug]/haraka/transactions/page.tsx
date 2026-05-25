@@ -79,7 +79,7 @@ export default function TransactionsListPage() {
 
       <FilterBar
         filters={
-          <ConfigSelect listKey="pos_txn_status" value={status} onValueChange={(v) => { setStatus(v as StatusFilter); setPage(1); }} includeAll allLabel="All" className="w-36" />
+          <ConfigSelect listKey="pos_txn_status" value={status} onValueChange={(v) => { setStatus(v as StatusFilter); setPage(1); }} includeAll allLabel="All" className="w-44" />
         }
       />
 

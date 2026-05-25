@@ -88,7 +88,7 @@ export default function WarrantiesPage() {
       />
       <FilterBar
         filters={
-          <ConfigSelect listKey="warranty_status" value={status || 'all'} onValueChange={handleStatusChange} includeAll allLabel={t('warranties.allStatuses')} className="w-36" />
+          <ConfigSelect listKey="warranty_status" value={status || 'all'} onValueChange={handleStatusChange} includeAll allLabel={t('warranties.allStatuses')} className="w-44" />
         }
       />
       <div className="bg-surface-card rounded-lg border border-border">

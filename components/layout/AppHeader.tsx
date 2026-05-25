@@ -117,7 +117,16 @@ export function AppHeader({ orgName }: { orgName?: string }) {
           {orgName && (
             <>
               <span className="text-gray-400 select-none">/</span>
-              <span className="text-sm text-gray-600 truncate max-w-[160px]">{orgName}</span>
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-sm text-gray-600 truncate max-w-[160px]">{orgName}</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="font-normal text-xs">
+                    {orgName}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </>
           )}
         </div>

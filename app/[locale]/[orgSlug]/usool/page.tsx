@@ -111,7 +111,7 @@ export default function AssetsPage() {
   const columns: ColumnDef<Asset>[] = [
     { key: 'name', header: t('col.name'), sortable: true, render: (a) => <button className="font-medium text-primary-600 hover:text-primary-700 hover:underline text-left" onClick={() => router.push(`/${locale}/${orgSlug}/usool/${a.id}`)}>{a.name}</button> },
     { key: 'category', header: t('col.category'), sortable: true, render: (a) => a.category },
-    { key: 'status', header: t('col.status'), sortable: true, render: (a) => <StatusBadge status={a.status} /> },
+    { key: 'status', header: t('col.status'), sortable: true, render: (a) => <StatusBadge status={a.status} marker="dot" /> },
     { key: 'serialNumber', header: t('col.serialNumber'), sortable: true, render: (a) => a.serialNumber ? <span className="font-mono text-xs text-gray-600">{a.serialNumber}</span> : <span className="text-gray-400">—</span> },
     { key: 'assignedTo', header: t('col.assignedTo'), sortable: true, render: (a) => a.assignedTo || <span className="text-gray-400">—</span> },
     { key: 'location', header: t('col.location'), sortable: true, render: (a) => a.location || <span className="text-gray-400">—</span> },

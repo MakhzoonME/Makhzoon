@@ -90,6 +90,16 @@ function AuditSVG() {
     </svg>
   );
 }
+function PosSVG() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+      <rect x="2" y="3" width="14" height="12" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" />
+      <circle cx="9" cy="9" r="2" stroke="currentColor" strokeWidth="1.3" fill="none" />
+      <path d="M5 7v4M13 7v4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M7 5l2 2 2-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 function SettingsSVG() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -131,6 +141,7 @@ const NAV_ICONS: Record<string, React.FC> = {
   '/reports':      ReportsSVG,
   '/support':      SupportSVG,
   '/audit-logs':   AuditSVG,
+  '/haraka':       PosSVG,
   '/settings':     SettingsSVG,
 };
 
@@ -158,6 +169,7 @@ export function AppSidebar() {
 
   const visibleEntries = ORG_NAV_ENTRIES.filter((entry): entry is NavEntry => {
     if ('type' in entry && entry.type === 'group') {
+      if (entry.featureKey && !features[entry.featureKey]) return false;
       if (!entry.adminOnly || canSeeAdmin) return true;
       // Staff: show group if any sub-item permission is granted
       return user?.role === 'staff' && !!user && entry.items.some(
@@ -259,16 +271,20 @@ export function AppSidebar() {
                     'group w-full relative flex items-center rounded-lg text-[14px] transition-colors duration-150 h-9',
                     ICON_INDENT,
                     hasActiveChild
-                      ? 'text-primary-700 font-semibold bg-primary-50'
+                      ? 'font-semibold'
                       : 'text-gray-600 hover:bg-surface-page hover:text-gray-900',
                   )}
+                  style={hasActiveChild && group.moduleColor ? { color: group.moduleColor, background: `${group.moduleColor}14` } : undefined}
                 >
                   <span className={cn(
                     'relative z-10 flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110',
-                    hasActiveChild ? 'text-primary-700' : '',
+                    hasActiveChild ? '' : '',
                   )}>
                     <Icon />
                   </span>
+                  {hasActiveChild && group.moduleColor && (
+                    <span className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r', isRtl ? 'left-0 rounded-r-none rounded-l' : 'left-0')} style={{ background: group.moduleColor }} />
+                  )}
                   <motion.span
                     animate={{ width: sidebarCollapsed ? 0 : 'auto', opacity: sidebarCollapsed ? 0 : 1 }}
                     transition={sidebarCollapsed
@@ -311,14 +327,16 @@ export function AppSidebar() {
                           className={cn(
                             'group relative flex items-center rounded-md text-sm py-1.5 px-2.5 transition-colors duration-150',
                             subActive
-                              ? 'text-primary-700 font-semibold'
+                              ? 'font-semibold'
                               : 'text-gray-500 hover:bg-surface-page hover:text-gray-900',
                           )}
+                          style={subActive && sub.moduleColor ? { color: sub.moduleColor } : undefined}
                         >
                           {subActive && (
                             <motion.span
                               layoutId="sidebar-active-pill"
-                              className="absolute inset-0 rounded-md bg-primary-50"
+                              className="absolute inset-0 rounded-md"
+                              style={sub.moduleColor ? { background: `${sub.moduleColor}14` } : undefined}
                               transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                             />
                           )}

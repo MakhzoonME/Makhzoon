@@ -296,12 +296,15 @@ begin
         asset_id, org_id,
         asset_pool[1 + ((j - 1 + i) % array_length(asset_pool, 1))],
         cats[1 + ((j - 1) % array_length(cats, 1))],
+        -- Title Case matches platform_list_items canonical values (migration
+        -- 0008) and the retire/checkout guards in lib/services/assets.service.ts
+        -- which key off the exact strings 'Active' / 'Retired'.
         case (j % 4)
-          when 0 then 'active'
-          when 1 then 'active'
-          when 2 then 'inactive'
-          when 3 then 'maintenance'
-          else        'retired'
+          when 0 then 'Active'
+          when 1 then 'Active'
+          when 2 then 'Inactive'
+          when 3 then 'Maintenance'
+          else        'Retired'
         end,
         'SN-' || i || '-' || lpad(j::text, 4, '0'),
         '2024-01-01'::timestamptz + make_interval(months => j - 1),

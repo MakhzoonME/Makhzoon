@@ -12,6 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import {
@@ -178,62 +180,64 @@ export default function ListsPage() {
             <DialogDescription>{meta.label}</DialogDescription>
           </DialogHeader>
           {editing && (
-            <div className="space-y-4">
-              <div>
-                <Label>Value {(!!editing.id || meta.isSystem) && <span className="text-gray-400">(locked)</span>}</Label>
-                <Input
-                  value={editing.value}
-                  disabled={!!editing.id || meta.isSystem}
-                  onChange={(e) => setEditing({ ...editing, value: e.target.value })}
-                  placeholder="Stored value, e.g. Active"
-                  className="font-mono"
-                />
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <Label>Label (English)</Label>
+            <>
+              <DialogBody className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>Value {(!!editing.id || meta.isSystem) && <span className="text-gray-400">(locked)</span>}</Label>
                   <Input
-                    value={editing.label}
-                    onChange={(e) => setEditing({ ...editing, label: e.target.value })}
-                    placeholder="Display label"
-                  />
-                </div>
-                <div className="flex-1">
-                  <Label>Label (Arabic)</Label>
-                  <Input
-                    value={editing.labelAr}
-                    onChange={(e) => setEditing({ ...editing, labelAr: e.target.value })}
-                    placeholder="التسمية"
-                    dir="rtl"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <Label>Color (hex, optional)</Label>
-                  <Input
-                    value={editing.color}
-                    onChange={(e) => setEditing({ ...editing, color: e.target.value })}
-                    placeholder="#22c55e"
+                    value={editing.value}
+                    disabled={!!editing.id || meta.isSystem}
+                    onChange={(e) => setEditing({ ...editing, value: e.target.value })}
+                    placeholder="Stored value, e.g. Active"
                     className="font-mono"
                   />
                 </div>
-                <div className="w-24">
-                  <Label>Order</Label>
-                  <Input
-                    type="number"
-                    value={editing.sortOrder}
-                    onChange={(e) => setEditing({ ...editing, sortOrder: Number(e.target.value) })}
-                  />
+                <div className="flex gap-3">
+                  <div className="flex-1 space-y-1.5">
+                    <Label>Label (English)</Label>
+                    <Input
+                      value={editing.label}
+                      onChange={(e) => setEditing({ ...editing, label: e.target.value })}
+                      placeholder="Display label"
+                    />
+                  </div>
+                  <div className="flex-1 space-y-1.5">
+                    <Label>Label (Arabic)</Label>
+                    <Input
+                      value={editing.labelAr}
+                      onChange={(e) => setEditing({ ...editing, labelAr: e.target.value })}
+                      placeholder="التسمية"
+                      dir="rtl"
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
+                <div className="flex gap-3">
+                  <div className="flex-1 space-y-1.5">
+                    <Label>Color (hex, optional)</Label>
+                    <Input
+                      value={editing.color}
+                      onChange={(e) => setEditing({ ...editing, color: e.target.value })}
+                      placeholder="#22c55e"
+                      className="font-mono"
+                    />
+                  </div>
+                  <div className="w-24 space-y-1.5">
+                    <Label>Order</Label>
+                    <Input
+                      type="number"
+                      value={editing.sortOrder}
+                      onChange={(e) => setEditing({ ...editing, sortOrder: Number(e.target.value) })}
+                    />
+                  </div>
+                </div>
+              </DialogBody>
+              <DialogFooter>
                 <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
                 <Button onClick={save} disabled={createMut.isPending || updateMut.isPending || !editing.label.trim() || (!editing.id && !editing.value.trim())}>
                   Save
                 </Button>
-              </div>
-            </div>
+              </DialogFooter>
+            </>
           )}
         </DialogContent>
       </Dialog>

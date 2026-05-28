@@ -12,6 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { useList, useUpsertOrgListItem, useDeleteOrgListItem } from '@/hooks/lists';
 import { toast, useAdminGuard, useT } from '@/hooks/ui';
@@ -179,16 +181,16 @@ export default function OrgListsPage() {
             <DialogTitle>Add to {meta.label}</DialogTitle>
             <DialogDescription>This item will be available only to your organization.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
+          <DialogBody className="space-y-4">
+            <div className="space-y-1.5">
               <Label>Name</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Vehicles" />
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>Name (Arabic, optional)</Label>
               <Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} placeholder="التسمية" dir="rtl" />
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>Color (optional)</Label>
               <div className="flex items-center gap-2">
                 <input
@@ -202,11 +204,11 @@ export default function OrgListsPage() {
                 )}
               </div>
             </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setAdding(false)}>Cancel</Button>
-              <Button onClick={add} disabled={upsertMut.isPending || !name.trim()}>Add</Button>
-            </div>
-          </div>
+          </DialogBody>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAdding(false)}>Cancel</Button>
+            <Button onClick={add} disabled={upsertMut.isPending || !name.trim()}>Add</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -216,16 +218,16 @@ export default function OrgListsPage() {
             <DialogTitle>Edit {meta.label} item</DialogTitle>
             <DialogDescription>Update the label, Arabic name, or color.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
+          <DialogBody className="space-y-4">
+            <div className="space-y-1.5">
               <Label>Name</Label>
               <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="e.g. Vehicles" />
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>Name (Arabic, optional)</Label>
               <Input value={editNameAr} onChange={(e) => setEditNameAr(e.target.value)} placeholder="التسمية" dir="rtl" />
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>Color</Label>
               <div className="flex items-center gap-2">
                 <input
@@ -239,11 +241,11 @@ export default function OrgListsPage() {
                 )}
               </div>
             </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setEditingItem(null)}>Cancel</Button>
-              <Button onClick={saveEdit} disabled={upsertMut.isPending || !editName.trim()}>Save</Button>
-            </div>
-          </div>
+          </DialogBody>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingItem(null)}>Cancel</Button>
+            <Button onClick={saveEdit} disabled={upsertMut.isPending || !editName.trim()}>Save</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

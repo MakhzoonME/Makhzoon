@@ -200,10 +200,18 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
           className="flex-1 min-h-screen bg-surface-page transition-all duration-[260ms] overflow-x-hidden"
           style={!isMobile ? (isRtl ? { marginRight: sidebarW } : { marginLeft: sidebarW }) : undefined}
         >
-          {/* Top nav bar */}
+          {/* Top nav bar — fixed to the viewport, sidebar-aware offset so it stays accessible on every page */}
           <div
-            className="sticky top-0 z-20 h-12 flex items-center justify-between px-4 gap-3"
-            style={{ background: '#0D1F36', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+            className="fixed top-0 z-20 h-12 flex items-center justify-between px-4 gap-3 transition-[left,right] duration-[260ms]"
+            style={{
+              background: '#0D1F36',
+              borderBottom: '1px solid rgba(255,255,255,0.07)',
+              ...(isMobile
+                ? { left: 0, right: 0 }
+                : isRtl
+                ? { right: sidebarW, left: 0 }
+                : { left: sidebarW, right: 0 }),
+            }}
           >
             {/* Left: mobile hamburger OR desktop title */}
             <div className="flex items-center gap-3">
@@ -240,7 +248,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
             </div>
           </div>
 
-          <div className="px-6 py-6 max-w-7xl">
+          <div className="px-6 pt-[72px] pb-6 max-w-7xl">
             {children}
           </div>
         </main>

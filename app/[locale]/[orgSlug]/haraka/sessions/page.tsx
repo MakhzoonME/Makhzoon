@@ -6,7 +6,7 @@ import { Plus } from 'lucide-react';
 import { PageHeader, DataTable, FilterBar, StatusBadge, SubscriptionGate } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { useSessions } from '@/hooks/haraka';
 import type { PosSession } from '@/types';
 
@@ -63,14 +63,7 @@ export default function SessionsListPage() {
 
       <FilterBar
         filters={
-          <Select value={status} onValueChange={(v) => setStatus(v as 'open' | 'closed' | 'all')}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="open">Open</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
+          <ConfigSelect listKey="pos_session_status" value={status} onValueChange={(v) => setStatus(v as 'open' | 'closed' | 'all')} includeAll allLabel="All" className="w-32" />
         }
       />
 

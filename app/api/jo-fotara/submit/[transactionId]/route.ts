@@ -20,7 +20,7 @@ export async function POST(
     if (err instanceof Error) {
       return NextResponse.json({ error: err.message }, { status: 400 })
     }
-    console.error('[POST /api/fawtara/submit/[id]]', err)
+    console.error('[POST /api/jo-fotara/submit/[id]]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

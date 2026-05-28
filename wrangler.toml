@@ -40,10 +40,10 @@ name = "makhzoondev"
 routes = ["dev.makhzoon.me/*"]
 
 [env.dev.vars]
-# Dev env uses the dev Supabase branch (khgpzlesmcxjrkukaxrp). One Supabase
-# project, branched per env — auth.users is shared, public.* is per-branch.
-NEXT_PUBLIC_SUPABASE_URL = "https://khgpzlesmcxjrkukaxrp.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoZ3B6bGVzbWN4anJrdWtheHJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODIyMTksImV4cCI6MjA5NTU1ODIxOX0.UYMlNrDQyOuGTiUl9hziMf1-BCh18bMrzsRybK2qIp0"
+# Dev env uses the dev Supabase persistent branch (ltujtoabnewoypittoku).
+# One Supabase project, branched per env — public.* is per-branch.
+NEXT_PUBLIC_SUPABASE_URL = "https://ltujtoabnewoypittoku.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dWp0b2FibmV3b3lwaXR0b2t1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODg0MTcsImV4cCI6MjA5NTU2NDQxN30.gZ15djtZQyMAp6Mw_CeYqxQpQjmDty1geHBWLaw2_CY"
 NEXT_PUBLIC_APP_URL = "https://dev.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "development"
 RESEND_FROM_EMAIL = "Makhzoon Dev <dev-notifications@makhzoon.me>"

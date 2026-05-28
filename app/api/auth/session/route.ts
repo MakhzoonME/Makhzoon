@@ -10,6 +10,8 @@ import { revokeSession } from '@/lib/supabase/session-revocation';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import type { UserRole } from '@/types';
 
+const ORG_ROLES = new Set<UserRole>(['org_owner', 'admin', 'staff']);
+
 function decodeJwt(token: string): Record<string, unknown> {
   try {
     return JSON.parse(
@@ -57,23 +59,27 @@ export async function POST(req: NextRequest) {
         .select('role')
         .eq('id', user.id)
         .maybeSingle();
-      if (saUser) {
-        role = saUser.role as UserRole;
-      } else {
-        const { data: appUser } = await supabaseAdmin
-          .from('users')
-          .select('role, organization_id')
-          .eq('id', user.id)
-          .maybeSingle();
-        if (appUser) {
-          role = appUser.role as UserRole;
-          if (!orgId) orgId = appUser.organization_id as string | undefined;
-        }
-      }
+      if (saUser) role = saUser.role as UserRole;
+    }
 
-      if (!role) {
-        return NextResponse.json({ error: 'No account found' }, { status: 403 });
+    // public.users is authoritative for org-scoped accounts. Resolve from it
+    // whenever role is still unknown OR organization_id is missing — the latter
+    // happens when app_metadata carries `role` but not `organization_id` (e.g.
+    // after a role edit, which writes role-only). Mirrors verifySessionCookie().
+    if (!role || (!orgId && ORG_ROLES.has(role))) {
+      const { data: appUser } = await supabaseAdmin
+        .from('users')
+        .select('role, organization_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (appUser) {
+        role ??= appUser.role as UserRole;
+        if (!orgId) orgId = (appUser.organization_id as string | null) ?? undefined;
       }
+    }
+
+    if (!role) {
+      return NextResponse.json({ error: 'No account found' }, { status: 403 });
     }
 
     let orgSlug: string | null = null;

@@ -31,7 +31,7 @@ declare
   i int; j int; k int;
 
   -- ── Constants ──────────────────────────────────────────────────────
-  cats       text[] := array['devices','hardware','furniture','software'];
+  cats       text[] := array['Devices','Hardware','Furniture','Software'];
   locs       text[] := array['Main Office','Warehouse','Branch Office','Remote'];
   vendors_t  text[] := array['TechMart Solutions','Office Depot Pro','Global Systems Inc','Digital Warehouse','Corporate Supplies Co'];
   units_t    text[] := array['each','box','pack','pair','roll'];
@@ -49,6 +49,7 @@ declare
   pkg_starter   uuid;
   pkg_business  uuid;
   pkg_enterprise uuid;
+  pkg_id        uuid;
 
 begin
   -- ═══════════════════════════════════════════════════════════════════
@@ -77,11 +78,39 @@ begin
   -- ═══════════════════════════════════════════════════════════════════
   -- 2. Superadmin (platform access)
   -- ═══════════════════════════════════════════════════════════════════
-  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, role, aud, created_at, updated_at)
-    values (superadmin_id, 'superadmin@test.com',
-            crypt('QAZwsx@1212', gen_salt('bf', 10)),
-            now(), '{"display_name":"Super Admin"}'::jsonb,
-            'authenticated', 'authenticated', now(), now());
+  -- NOTE on the auth.users insert shape:
+  -- GoTrue's Go driver scans the eight token columns (`confirmation_token`,
+  -- `recovery_token`, `email_change`, `email_change_token_new`,
+  -- `email_change_token_current`, `phone_change`, `phone_change_token`,
+  -- `reauthentication_token`) into plain `string` — NULL crashes the row
+  -- scan with "converting NULL to string is unsupported" → login fails with
+  -- "Database error querying schema". Always seed them as ''. Also:
+  --   - `instance_id` must equal the default GoTrue tenant or login can't
+  --     find the user (silently returns invalid_credentials).
+  --   - `raw_app_meta_data.providers` must list 'email' so GoTrue knows
+  --     password auth is enabled for this user.
+  --   - A matching auth.identities row with email_verified:true is required
+  --     by modern GoTrue for the password grant.
+  insert into auth.users (
+    instance_id, id, email, encrypted_password, email_confirmed_at,
+    raw_user_meta_data, raw_app_meta_data,
+    confirmation_token, recovery_token, email_change, email_change_token_new,
+    email_change_token_current, phone_change, phone_change_token, reauthentication_token,
+    role, aud, created_at, updated_at
+  ) values (
+    '00000000-0000-0000-0000-000000000000', superadmin_id, 'superadmin@test.com',
+    crypt('QAZwsx@1212', gen_salt('bf', 10)),
+    now(), '{"display_name":"Super Admin"}'::jsonb,
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '', '', '', '', '', '', '', '',
+    'authenticated', 'authenticated', now(), now()
+  );
+  insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+  values (
+    gen_random_uuid(), superadmin_id::text, superadmin_id,
+    jsonb_build_object('sub', superadmin_id::text, 'email', 'superadmin@test.com', 'email_verified', true),
+    'email', now(), now(), now()
+  );
   insert into public.users (id, email, display_name, role, status) values
     (superadmin_id, 'superadmin@test.com', 'Super Admin', 'super_admin', 'active');
   insert into public.superadmin_users (id, email, display_name, role, status) values
@@ -140,15 +169,19 @@ begin
     );
 
     -- ── Subscription (rotate through statuses) ───────────────────
-    insert into public.subscriptions (organization_id, package_id, features, package_details, start_date, end_date, status, created_by)
-    values (
-      org_id,
-      case
+    pkg_id := case
         when i <= 7  then pkg_starter
         when i <= 14 then pkg_business
         else              pkg_enterprise
-      end,
-      '{}'::jsonb,
+      end;
+    insert into public.subscriptions (organization_id, package_id, features, package_details, start_date, end_date, status, created_by)
+    values (
+      org_id,
+      pkg_id,
+      -- Subscription features are the org's source of truth for module gating
+      -- (read by the sidebar / auth routes). Seed them from the package so the
+      -- plan's modules actually appear; '{}' here would hide every module.
+      (select features from public.packages where id = pkg_id),
       '{}'::jsonb,
       '2025-01-01'::timestamptz,
       case
@@ -166,35 +199,83 @@ begin
       (org_id, 'VAT 5%',  0.05, false, superadmin_id);
 
     -- ── Auth: Owner ─────────────────────────────────────────────
+    -- (See superadmin block above for why this insert sets every
+    -- token column to '' and includes instance_id, raw_app_meta_data,
+    -- and the matching auth.identities row.)
     owner_id := gen_random_uuid();
     owner_ids := array_append(owner_ids, owner_id);
-    insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, role, aud, created_at, updated_at)
-      values (owner_id, 'owner' || i || '@test.com',
-              crypt('QAZwsx@1212', gen_salt('bf', 10)),
-              now(), format('{"display_name":"Owner %s"}', i)::jsonb,
-              'authenticated', 'authenticated', now(), now());
+    insert into auth.users (
+      instance_id, id, email, encrypted_password, email_confirmed_at,
+      raw_user_meta_data, raw_app_meta_data,
+      confirmation_token, recovery_token, email_change, email_change_token_new,
+      email_change_token_current, phone_change, phone_change_token, reauthentication_token,
+      role, aud, created_at, updated_at
+    ) values (
+      '00000000-0000-0000-0000-000000000000', owner_id, 'owner' || i || '@test.com',
+      crypt('QAZwsx@1212', gen_salt('bf', 10)),
+      now(), format('{"display_name":"Owner %s"}', i)::jsonb,
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '', '', '', '', '', '', '', '',
+      'authenticated', 'authenticated', now(), now()
+    );
+    insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+    values (
+      gen_random_uuid(), owner_id::text, owner_id,
+      jsonb_build_object('sub', owner_id::text, 'email', 'owner' || i || '@test.com', 'email_verified', true),
+      'email', now(), now(), now()
+    );
     insert into public.users (id, organization_id, email, display_name, role, status, created_by) values
       (owner_id, org_id, 'owner' || i || '@test.com', 'Owner ' || i, 'org_owner', 'active', superadmin_id);
 
     -- ── Auth: Admin ─────────────────────────────────────────────
     admin_id := gen_random_uuid();
     admin_ids := array_append(admin_ids, admin_id);
-    insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, role, aud, created_at, updated_at)
-      values (admin_id, 'admin' || i || '@test.com',
-              crypt('QAZwsx@1212', gen_salt('bf', 10)),
-              now(), format('{"display_name":"Admin %s"}', i)::jsonb,
-              'authenticated', 'authenticated', now(), now());
+    insert into auth.users (
+      instance_id, id, email, encrypted_password, email_confirmed_at,
+      raw_user_meta_data, raw_app_meta_data,
+      confirmation_token, recovery_token, email_change, email_change_token_new,
+      email_change_token_current, phone_change, phone_change_token, reauthentication_token,
+      role, aud, created_at, updated_at
+    ) values (
+      '00000000-0000-0000-0000-000000000000', admin_id, 'admin' || i || '@test.com',
+      crypt('QAZwsx@1212', gen_salt('bf', 10)),
+      now(), format('{"display_name":"Admin %s"}', i)::jsonb,
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '', '', '', '', '', '', '', '',
+      'authenticated', 'authenticated', now(), now()
+    );
+    insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+    values (
+      gen_random_uuid(), admin_id::text, admin_id,
+      jsonb_build_object('sub', admin_id::text, 'email', 'admin' || i || '@test.com', 'email_verified', true),
+      'email', now(), now(), now()
+    );
     insert into public.users (id, organization_id, email, display_name, role, status, created_by) values
       (admin_id, org_id, 'admin' || i || '@test.com', 'Admin ' || i, 'admin', 'active', owner_id);
 
     -- ── Auth: Staff ─────────────────────────────────────────────
     staff_id := gen_random_uuid();
     staff_ids := array_append(staff_ids, staff_id);
-    insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_user_meta_data, role, aud, created_at, updated_at)
-      values (staff_id, 'staff' || i || '@test.com',
-              crypt('QAZwsx@1212', gen_salt('bf', 10)),
-              now(), format('{"display_name":"Staff %s"}', i)::jsonb,
-              'authenticated', 'authenticated', now(), now());
+    insert into auth.users (
+      instance_id, id, email, encrypted_password, email_confirmed_at,
+      raw_user_meta_data, raw_app_meta_data,
+      confirmation_token, recovery_token, email_change, email_change_token_new,
+      email_change_token_current, phone_change, phone_change_token, reauthentication_token,
+      role, aud, created_at, updated_at
+    ) values (
+      '00000000-0000-0000-0000-000000000000', staff_id, 'staff' || i || '@test.com',
+      crypt('QAZwsx@1212', gen_salt('bf', 10)),
+      now(), format('{"display_name":"Staff %s"}', i)::jsonb,
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '', '', '', '', '', '', '', '',
+      'authenticated', 'authenticated', now(), now()
+    );
+    insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+    values (
+      gen_random_uuid(), staff_id::text, staff_id,
+      jsonb_build_object('sub', staff_id::text, 'email', 'staff' || i || '@test.com', 'email_verified', true),
+      'email', now(), now(), now()
+    );
     insert into public.users (id, organization_id, email, display_name, role, status, created_by) values
       (staff_id, org_id, 'staff' || i || '@test.com', 'Staff ' || i, 'staff', 'active', superadmin_id);
 
@@ -338,7 +419,7 @@ begin
           when 5 then 'Expanding File Folders (Box of 25)'
           else        'Office Glue Sticks (Pack of 20)'
         end,
-        case j when 1 then 'supplies' when 2 then 'supplies' when 3 then 'tools' when 4 then 'supplies' when 5 then 'supplies' else 'supplies' end,
+        case j when 1 then 'Consumables' when 2 then 'Consumables' when 3 then 'Spare Parts' when 4 then 'Consumables' when 5 then 'Consumables' else 'Consumables' end,
         'SKU-' || i || '-' || lpad(j::text, 3, '0'),
         units_t[1 + ((j - 1) % array_length(units_t, 1))],
         case (j % 3)

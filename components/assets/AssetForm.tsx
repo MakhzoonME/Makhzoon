@@ -11,12 +11,12 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
-import { useAssetCategories } from '@/hooks/assets';
-import { useOrgConfig } from '@/hooks/org';
-import { useAuthStore } from '@/store/auth.store';
+import { useAssignableUsers } from '@/hooks/users';
+import type { OrgUser } from '@/types';
 interface AssetFormProps {
   asset?: Asset;
   onSuccess?: () => void;
@@ -30,18 +30,13 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
   const { locale } = useT();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const { user } = useAuthStore();
-  const { data: usedCategories = [] } = useAssetCategories();
-  const { data: orgConfig } = useOrgConfig(user?.organizationId ?? undefined);
-
-  // Merge categories from org config with categories already in use, dedupe.
-  const categoryOptions = Array.from(
-    new Set([
-      ...(orgConfig?.categories.map((c) => c.name) ?? []),
-      ...(usedCategories as string[]),
-    ]),
-  ).sort((a, b) => a.localeCompare(b));
-  const locationOptions = orgConfig?.locations.map((l) => l.name) ?? [];
+  const { data: allUsers = [] } = useAssignableUsers();
+  function canAccessAssets(u: OrgUser) {
+    const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin', 'makhzoon_admin', 'makhzoon_support']);
+    if (ADMIN_ROLES.has(u.role)) return true;
+    return u.permissions?.assets?.view === true;
+  }
+  const assignableUsers = allUsers.filter(canAccessAssets);
 
   const form = useForm<AssetFormData>({
     resolver: zodResolver(assetSchema),
@@ -90,6 +85,7 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
       toast.success(asset ? 'Asset updated' : 'Asset added successfully');
 
       qc.invalidateQueries({ queryKey: ['assets'] });
+      qc.invalidateQueries({ queryKey: ['asset-categories'] });
       if (asset?.id) qc.invalidateQueries({ queryKey: ['assets', asset.id] });
 
       if (onSuccess) {
@@ -119,16 +115,7 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
           <FormField control={form.control} name="category" render={({ field }) => (
             <FormItem>
               <FormLabel>Category *</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {categoryOptions.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ConfigSelect listKey="asset_category" value={field.value} onValueChange={field.onChange} placeholder="Select category" />
               <FormMessage />
             </FormItem>
           )} />
@@ -136,13 +123,7 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
           <FormField control={form.control} name="status" render={({ field }) => (
             <FormItem>
               <FormLabel>Status *</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
-                <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Retired">Retired</SelectItem>
-                </SelectContent>
-              </Select>
+              <ConfigSelect listKey="asset_status" value={field.value} onValueChange={field.onChange} placeholder="Select status" />
               <FormMessage />
             </FormItem>
           )} />
@@ -176,7 +157,17 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
           <FormField control={form.control} name="assignedTo" render={({ field }) => (
             <FormItem>
               <FormLabel>Assigned To</FormLabel>
-              <FormControl><Input {...field} placeholder="Employee name" /></FormControl>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger><SelectValue placeholder="Select user" /></SelectTrigger>
+                <SelectContent>
+                  {assignableUsers.length === 0 && (
+                    <SelectItem value="__none" disabled>No users found</SelectItem>
+                  )}
+                  {assignableUsers.map((u: OrgUser) => (
+                    <SelectItem key={u.id} value={u.displayName}>{u.displayName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )} />
@@ -184,12 +175,7 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
           <FormField control={form.control} name="location" render={({ field }) => (
             <FormItem>
               <FormLabel>Location</FormLabel>
-              <FormControl>
-                <Input {...field} list="locations" placeholder="Office 1, Floor 2..." />
-              </FormControl>
-              <datalist id="locations">
-                {locationOptions.map((l) => <option key={l} value={l} />)}
-              </datalist>
+              <ConfigSelect listKey="location" value={field.value} onValueChange={field.onChange} placeholder="Select location" />
               <FormMessage />
             </FormItem>
           )} />

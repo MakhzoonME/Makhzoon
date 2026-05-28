@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 // useEffect retained for debounced-search → URL commit only.
-import { Plus, Pencil, ArchiveX, Trash2, Upload } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload } from 'lucide-react';
 import { useOrgSlug } from '@/hooks/ui';
 import { useAssets } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
@@ -17,6 +17,7 @@ import { AssetForm } from '@/components/assets/AssetForm';
 import { ImportAssetsDrawer } from '@/components/assets/ImportAssetsDrawer';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { Asset } from '@/types';
 import { hasPermission } from '@/lib/permissions';
 import { formatDate } from '@/lib/utils/date';
@@ -26,7 +27,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { useDebounce } from '@/hooks/ui';
 import { useAssetCategories } from '@/hooks/assets';
-import { useOrgConfig } from '@/hooks/org';
+import { useList } from '@/hooks/lists';
 
 function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
   const qs = new URLSearchParams();
@@ -75,10 +76,10 @@ export default function AssetsPage() {
     sortDir: sortDir === 'none' ? undefined : sortDir,
   });
   const { data: usedCategories = [] } = useAssetCategories();
-  const { data: orgConfig } = useOrgConfig(user?.organizationId ?? undefined);
+  const { data: listCategories = [] } = useList('asset_category');
   const categories = Array.from(
     new Set([
-      ...(orgConfig?.categories.map((c) => c.name) ?? []),
+      ...listCategories.map((c) => c.label),
       ...usedCategories,
     ])
   ).sort((a, b) => a.localeCompare(b));
@@ -110,7 +111,7 @@ export default function AssetsPage() {
   const columns: ColumnDef<Asset>[] = [
     { key: 'name', header: t('col.name'), sortable: true, render: (a) => <button className="font-medium text-primary-600 hover:text-primary-700 hover:underline text-left" onClick={() => router.push(`/${locale}/${orgSlug}/usool/${a.id}`)}>{a.name}</button> },
     { key: 'category', header: t('col.category'), sortable: true, render: (a) => a.category },
-    { key: 'status', header: t('col.status'), sortable: true, render: (a) => <StatusBadge status={a.status} /> },
+    { key: 'status', header: t('col.status'), sortable: true, render: (a) => <StatusBadge status={a.status} marker="dot" /> },
     { key: 'serialNumber', header: t('col.serialNumber'), sortable: true, render: (a) => a.serialNumber ? <span className="font-mono text-xs text-gray-600">{a.serialNumber}</span> : <span className="text-gray-400">—</span> },
     { key: 'assignedTo', header: t('col.assignedTo'), sortable: true, render: (a) => a.assignedTo || <span className="text-gray-400">—</span> },
     { key: 'location', header: t('col.location'), sortable: true, render: (a) => a.location || <span className="text-gray-400">—</span> },
@@ -125,14 +126,6 @@ export default function AssetsPage() {
                 <SubscriptionGate>
                   <Button size="sm" variant="ghost" aria-label="Edit asset" onClick={(e) => { e.stopPropagation(); setEditTarget(a); setDrawerOpen(true); }}>
                     <Pencil className="w-3.5 h-3.5" />
-                  </Button>
-                </SubscriptionGate>
-              )}
-              {a.status === 'Active' && (
-                <SubscriptionGate>
-                  <Button size="sm" variant="ghost" className="text-amber-500 hover:text-amber-600 hover:bg-amber-50" onClick={(e) => { e.stopPropagation(); setActionTarget(a); }}
-                    title={t('assets.retire')}>
-                    <ArchiveX className="w-3.5 h-3.5" />
                   </Button>
                 </SubscriptionGate>
               )}
@@ -161,6 +154,7 @@ export default function AssetsPage() {
       await fetch(`/api/assets/${actionTarget.id}`, { method: 'DELETE' });
       toast.success(isRetired ? t('assets.deleteDone') : t('assets.retireDone'));
       qc.invalidateQueries({ queryKey: ['assets'] });
+      qc.invalidateQueries({ queryKey: ['asset-categories'] });
       qc.removeQueries({ queryKey: ['assets', actionTarget.id] });
       setActionTarget(null);
     } catch {
@@ -230,16 +224,9 @@ export default function AssetsPage() {
         onSearchChange={handleSearchChange}
         filters={
           <div className="flex items-center gap-2">
-            <Select value={status || 'all'} onValueChange={handleStatusChange}>
-              <SelectTrigger className="w-36"><SelectValue placeholder={t('col.status')} /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('assets.allStatuses')}</SelectItem>
-                <SelectItem value="Active">{t('val.active')}</SelectItem>
-                <SelectItem value="Retired">{t('assets.retired')}</SelectItem>
-              </SelectContent>
-            </Select>
+            <ConfigSelect listKey="asset_status" value={status || 'all'} onValueChange={handleStatusChange} includeAll allLabel={t('assets.allStatuses')} className="w-44" />
             <Select value={category || 'all'} onValueChange={handleCategoryChange}>
-              <SelectTrigger className="w-36"><SelectValue placeholder={t('col.category')} /></SelectTrigger>
+              <SelectTrigger className="w-44"><SelectValue placeholder={t('col.category')} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('assets.allCategories')}</SelectItem>
                 {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}

@@ -22,3 +22,4 @@ export * from './user-permissions.types';
 export * from './superadmin-permissions.types';
 export * from './pos.types';
 export * from './purchase.types';
+export * from './managed-lists.types';

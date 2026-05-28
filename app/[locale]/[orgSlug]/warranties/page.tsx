@@ -3,13 +3,12 @@ import { useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useOrgSlug } from '@/hooks/ui';
 import { useWarranties } from '@/hooks/warranties';
-import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { FilterBar } from '@/components/shared/FilterBar';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { Warranty } from '@/types';
 import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
 import { useT } from '@/hooks/ui';
@@ -89,14 +88,7 @@ export default function WarrantiesPage() {
       />
       <FilterBar
         filters={
-          <Select value={status || 'all'} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-36"><SelectValue placeholder={t('col.status')} /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('warranties.allStatuses')}</SelectItem>
-              <SelectItem value="active">{t('warranties.active')}</SelectItem>
-              <SelectItem value="expired">{t('warranties.expired')}</SelectItem>
-            </SelectContent>
-          </Select>
+          <ConfigSelect listKey="warranty_status" value={status || 'all'} onValueChange={handleStatusChange} includeAll allLabel={t('warranties.allStatuses')} className="w-44" />
         }
       />
       <div className="bg-surface-card rounded-lg border border-border">

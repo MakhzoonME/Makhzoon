@@ -16,6 +16,7 @@ import { BottomNav } from '@/components/layout/BottomNav';
 import { MobileDrawer } from '@/components/layout/MobileDrawer';
 import { useTransferStore } from '@/store/transfer.store';
 import { useUiStore } from '@/store/ui.store';
+import { useOrgInfo } from '@/hooks/org';
 
 export default function OrgLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -23,9 +24,10 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   const params = useParams<{ locale: string; orgSlug: string }>();
   const locale = params?.locale ?? 'en';
   const orgSlug = params.orgSlug as string;
-  const { active, orgName, setTransfer } = useTransferStore();
+  const { active, orgName: transferOrgName, setTransfer } = useTransferStore();
   const { sidebarCollapsed } = useUiStore();
   const refreshFromServer = useAuthStore((s) => s.refreshFromServer);
+  const { data: orgInfo } = useOrgInfo();
   const { dir } = useT();
   const isRtl = dir === 'rtl';
 
@@ -62,6 +64,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
 
   const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
   const showBanner = SUPERADMIN_ROLES.has(user.role) && active;
+  const orgName = (SUPERADMIN_ROLES.has(user.role) && active) ? transferOrgName : orgInfo?.name;
   const sidebarWidth = sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
 
   return (

@@ -9,7 +9,7 @@ export function useFawtaraConfig() {
   return useQuery<{ config: FawtaraConfig }>({
     queryKey: CONFIG_KEY,
     queryFn: async () => {
-      const res = await fetch('/api/fawtara/config');
+      const res = await fetch('/api/jo-fotara/config');
       if (!res.ok) throw new Error('Failed to fetch Fawtara config');
       return res.json();
     },
@@ -23,7 +23,7 @@ export function useUpdateFawtaraConfig() {
     mutationFn: async (
       body: Partial<FawtaraConfig> & { clientId?: string | null; clientSecret?: string | null },
     ) => {
-      const res = await fetch('/api/fawtara/config', {
+      const res = await fetch('/api/jo-fotara/config', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -42,7 +42,7 @@ export function useResubmitFawtara() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (transactionId: string) => {
-      const res = await fetch(`/api/fawtara/submit/${transactionId}`, { method: 'POST' });
+      const res = await fetch(`/api/jo-fotara/submit/${transactionId}`, { method: 'POST' });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(typeof err.error === 'string' ? err.error : 'Resubmit failed');

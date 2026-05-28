@@ -13,10 +13,12 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { useTaxRates, useCreateTaxRate, useUpdateTaxRate, useDeleteTaxRate } from '@/hooks/haraka';
 import { taxRateSchema, type TaxRateFormData } from '@/lib/modules/haraka/tax/schemas';
 import { toast, useAdminGuard } from '@/hooks/ui';
+import { useAuthStore } from '@/hooks/ui';
 import type { TaxRate } from '@/types';
 
 export default function TaxRatesPage() {
   const { isAllowed } = useAdminGuard('settings.taxRates');
+  const user = useAuthStore((s) => s.user);
   const { data, isLoading } = useTaxRates();
   const createMut = useCreateTaxRate();
   const updateMut = useUpdateTaxRate();

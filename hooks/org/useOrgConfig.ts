@@ -11,7 +11,7 @@ export function useOrgConfig(orgId: string | undefined) {
       if (!res.ok) throw new Error('Failed to load configuration');
       return res.json();
     },
-    staleTime: 60_000,
+    staleTime: 0,
     gcTime: 5 * 60_000,
   });
 }

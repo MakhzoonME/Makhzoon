@@ -38,11 +38,15 @@ const VARIANT_ICON: Record<BadgeVariant, LucideIcon> = {
 
 const statusConfig: Record<string, { variant: BadgeVariant; label: string }> = {
   /* Asset statuses */
-  Active:  { variant: 'active',   label: 'Active' },
-  ACTIVE:  { variant: 'active',   label: 'Active' },
-  active:  { variant: 'active',   label: 'Active' },
-  Retired: { variant: 'retired',  label: 'Retired' },
-  retired: { variant: 'retired',  label: 'Retired' },
+  Active:      { variant: 'active',  label: 'Active' },
+  ACTIVE:      { variant: 'active',  label: 'Active' },
+  active:      { variant: 'active',  label: 'Active' },
+  Inactive:    { variant: 'default', label: 'Inactive' },
+  inactive:    { variant: 'default', label: 'Inactive' },
+  Maintenance: { variant: 'orange',  label: 'Maintenance' },
+  maintenance: { variant: 'orange',  label: 'Maintenance' },
+  Retired:     { variant: 'retired', label: 'Retired' },
+  retired:     { variant: 'retired', label: 'Retired' },
   /* Request statuses */
   PENDING:  { variant: 'pending',  label: 'Pending' },
   Pending:  { variant: 'pending',  label: 'Pending' },

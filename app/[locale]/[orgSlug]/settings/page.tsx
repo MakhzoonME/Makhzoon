@@ -18,7 +18,7 @@ const SETTINGS_ORDER: Array<{ permKey: string; path: string }> = [
   { permKey: 'settings.subscription', path: '/subscription' },
   { permKey: 'settings.users',        path: '/users' },
   { permKey: 'settings.taxRates',     path: '/settings/tax-rates' },
-  { permKey: 'settings.fawtara',      path: '/settings/fawtara' },
+  { permKey: 'settings.fawtara',      path: '/settings/jo-fotara' },
 ];
 
 export default function SettingsIndexPage() {

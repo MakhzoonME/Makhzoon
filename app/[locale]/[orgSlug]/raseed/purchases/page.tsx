@@ -6,7 +6,7 @@ import { Plus } from 'lucide-react';
 import { PageHeader, DataTable, FilterBar } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { usePurchases } from '@/hooks/inventory';
 import { PurchaseStatusBadge } from '@/components/inventory/purchases/PurchaseStatusBadge';
 import type { Purchase, PurchaseStatus } from '@/types';
@@ -65,15 +65,7 @@ export default function PurchasesListPage() {
         searchValue={search}
         onSearchChange={setSearch}
         filters={
-          <Select value={status} onValueChange={(v) => setStatus(v as PurchaseStatus | 'all')}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="received">Received</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
+          <ConfigSelect listKey="purchase_status" value={status} onValueChange={(v) => setStatus(v as PurchaseStatus | 'all')} includeAll allLabel="All statuses" className="w-40" />
         }
       />
 

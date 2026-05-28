@@ -16,8 +16,6 @@ import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
-import { useInventoryCategories } from '@/hooks/inventory';
-import { useList } from '@/hooks/lists';
 import { useTaxRates } from '@/hooks/haraka';
 interface Props { item?: InventoryItem; onSuccess?: () => void; onCancel?: () => void; onDirtyChange?: (dirty: boolean) => void; }
 
@@ -27,14 +25,6 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
   const { locale } = useT();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const { data: usedCategories = [] } = useInventoryCategories();
-  const { data: listCategories = [] } = useList('inventory_category');
-  const categories = Array.from(
-    new Set([
-      ...listCategories.map((c) => c.label),
-      ...usedCategories,
-    ])
-  ).sort((a, b) => a.localeCompare(b));
   const { data: taxRatesData } = useTaxRates();
   const taxRates = taxRatesData?.taxRates ?? [];
 
@@ -115,12 +105,7 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
           <FormField control={form.control} name="category" render={({ field }) => (
             <FormItem>
               <FormLabel>Category *</FormLabel>
-              <FormControl>
-                <Input {...field} list="inv-categories" placeholder="e.g. Stationery" />
-              </FormControl>
-              <datalist id="inv-categories">
-                {categories.map((c: string) => <option key={c} value={c} />)}
-              </datalist>
+              <ConfigSelect listKey="inventory_category" value={field.value} onValueChange={field.onChange} placeholder="Select category" />
               <FormMessage />
             </FormItem>
           )} />

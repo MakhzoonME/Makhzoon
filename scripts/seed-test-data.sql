@@ -31,7 +31,7 @@ declare
   i int; j int; k int;
 
   -- ── Constants ──────────────────────────────────────────────────────
-  cats       text[] := array['devices','hardware','furniture','software'];
+  cats       text[] := array['Devices','Hardware','Furniture','Software'];
   locs       text[] := array['Main Office','Warehouse','Branch Office','Remote'];
   vendors_t  text[] := array['TechMart Solutions','Office Depot Pro','Global Systems Inc','Digital Warehouse','Corporate Supplies Co'];
   units_t    text[] := array['each','box','pack','pair','roll'];
@@ -419,7 +419,7 @@ begin
           when 5 then 'Expanding File Folders (Box of 25)'
           else        'Office Glue Sticks (Pack of 20)'
         end,
-        case j when 1 then 'supplies' when 2 then 'supplies' when 3 then 'tools' when 4 then 'supplies' when 5 then 'supplies' else 'supplies' end,
+        case j when 1 then 'Consumables' when 2 then 'Consumables' when 3 then 'Spare Parts' when 4 then 'Consumables' when 5 then 'Consumables' else 'Consumables' end,
         'SKU-' || i || '-' || lpad(j::text, 3, '0'),
         units_t[1 + ((j - 1) % array_length(units_t, 1))],
         case (j % 3)

@@ -15,9 +15,6 @@ import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
-import { useAuthStore } from '@/store/auth.store';
-import { useAssetCategories } from '@/hooks/assets';
-import { useOrgConfig } from '@/hooks/org';
 import { useAssignableUsers } from '@/hooks/users';
 import type { OrgUser } from '@/types';
 interface AssetFormProps {
@@ -33,15 +30,6 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
   const { locale } = useT();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const user = useAuthStore((s) => s.user);
-  const { data: usedCategories = [] } = useAssetCategories();
-  const { data: orgConfig } = useOrgConfig(user?.organizationId ?? undefined);
-  const categories = Array.from(
-    new Set([
-      ...(orgConfig?.categories.map((c) => c.name) ?? []),
-      ...usedCategories,
-    ])
-  ).sort((a, b) => a.localeCompare(b));
   const { data: allUsers = [] } = useAssignableUsers();
   function canAccessAssets(u: OrgUser) {
     const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin', 'makhzoon_admin', 'makhzoon_support']);
@@ -127,17 +115,7 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
           <FormField control={form.control} name="category" render={({ field }) => (
             <FormItem>
               <FormLabel>Category *</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                <SelectContent>
-                  {categories.length === 0 && (
-                    <SelectItem value="__none" disabled>No categories found</SelectItem>
-                  )}
-                  {categories.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ConfigSelect listKey="asset_category" value={field.value} onValueChange={field.onChange} placeholder="Select category" />
               <FormMessage />
             </FormItem>
           )} />

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { PageHeader, DataTable, FilterBar, StatusBadge } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { useTransactions } from '@/hooks/haraka';
 import { useAdminGuard } from '@/hooks/ui';
 import type { PosTransaction } from '@/types';
@@ -61,7 +61,7 @@ export default function TransactionsListPage() {
     },
     {
       key: 'fawtara',
-      header: 'Fawtara',
+      header: 'Jo Fotara',
       render: (t) => (t.fawtara ? <StatusBadge status={t.fawtara.status} /> : <span className="text-gray-400 text-xs">—</span>),
     },
   ];
@@ -79,15 +79,7 @@ export default function TransactionsListPage() {
 
       <FilterBar
         filters={
-          <Select value={status} onValueChange={(v) => { setStatus(v as StatusFilter); setPage(1); }}>
-            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="refunded">Refunded</SelectItem>
-              <SelectItem value="voided">Voided</SelectItem>
-            </SelectContent>
-          </Select>
+          <ConfigSelect listKey="pos_txn_status" value={status} onValueChange={(v) => { setStatus(v as StatusFilter); setPage(1); }} includeAll allLabel="All" className="w-44" />
         }
       />
 

@@ -1,0 +1,109 @@
+// Config-driven dropdown lists (see migration 0008_managed_lists.sql).
+// Two tiers: platform defaults (superadmin) + per-org overrides/additions.
+
+/** Every managed list. FREE lists are fully editable; SYSTEM lists are
+ *  code-owned values with editable label/color/order/visibility only. */
+export type ListKey =
+  // Bucket A — free lists
+  | 'asset_status'
+  | 'asset_category'
+  | 'location'
+  | 'inventory_unit'
+  | 'inventory_category'
+  | 'vendor'
+  | 'org_industry'
+  // Bucket B — system lists (value locked)
+  | 'request_status'
+  | 'request_type'
+  | 'purchase_status'
+  | 'inventory_movement'
+  | 'pos_txn_status'
+  | 'pos_session_status'
+  | 'warranty_status'
+  | 'warranty_target'
+  | 'maintenance_type';
+
+/** Where a list is administered. 'org' lists support per-org overrides;
+ *  'platform' lists are global (e.g. org_industry, system enums). */
+export type ListScope = 'org' | 'platform';
+
+export interface ListMeta {
+  key: ListKey;
+  /** Human label for the superadmin Lists portal. */
+  label: string;
+  scope: ListScope;
+  /** true → SYSTEM list: value locked, no add/remove (label/color/order only). */
+  isSystem: boolean;
+  /** Optional note shown in the portal. */
+  description?: string;
+}
+
+/** Single source of truth for the portal: which lists exist and how they behave. */
+export const LIST_REGISTRY: Record<ListKey, ListMeta> = {
+  asset_status:       { key: 'asset_status',       label: 'Asset Statuses',      scope: 'org',      isSystem: false },
+  asset_category:     { key: 'asset_category',     label: 'Asset Categories',    scope: 'org',      isSystem: false },
+  location:           { key: 'location',           label: 'Locations',           scope: 'org',      isSystem: false },
+  inventory_unit:     { key: 'inventory_unit',     label: 'Inventory Units',     scope: 'org',      isSystem: false },
+  inventory_category: { key: 'inventory_category', label: 'Inventory Categories', scope: 'org',     isSystem: false },
+  vendor:             { key: 'vendor',             label: 'Vendors / Suppliers', scope: 'org',      isSystem: false },
+  org_industry:       { key: 'org_industry',       label: 'Organization Industries', scope: 'platform', isSystem: false },
+
+  request_status:     { key: 'request_status',     label: 'Request Statuses',    scope: 'platform', isSystem: true,  description: 'Drives the approval flow — values locked.' },
+  request_type:       { key: 'request_type',       label: 'Request Types',       scope: 'platform', isSystem: true,  description: 'Branches request handling — values locked.' },
+  purchase_status:    { key: 'purchase_status',    label: 'Purchase Statuses',   scope: 'platform', isSystem: true,  description: 'Purchase-order lifecycle — values locked.' },
+  inventory_movement: { key: 'inventory_movement', label: 'Inventory Movements', scope: 'platform', isSystem: true,  description: 'Stock math — values locked.' },
+  pos_txn_status:     { key: 'pos_txn_status',     label: 'POS Transaction Statuses', scope: 'platform', isSystem: true, description: 'POS lifecycle — values locked.' },
+  pos_session_status: { key: 'pos_session_status', label: 'POS Session Statuses', scope: 'platform', isSystem: true, description: 'POS lifecycle — values locked.' },
+  warranty_status:    { key: 'warranty_status',    label: 'Warranty Statuses',   scope: 'platform', isSystem: true,  description: 'Computed from dates — values locked.' },
+  warranty_target:    { key: 'warranty_target',    label: 'Warranty Coverage',   scope: 'platform', isSystem: true,  description: 'Asset vs inventory — values locked.' },
+  maintenance_type:   { key: 'maintenance_type',   label: 'Maintenance Types',   scope: 'platform', isSystem: true,  description: 'Has color logic — values locked.' },
+};
+
+export const LIST_KEYS = Object.keys(LIST_REGISTRY) as ListKey[];
+
+/** Row in platform_list_items (superadmin catalog + defaults). */
+export interface PlatformListItem {
+  id: string;
+  listKey: ListKey;
+  value: string;
+  label: string;
+  labelAr: string | null;
+  color: string | null;
+  sortOrder: number;
+  enabled: boolean;
+  isSystem: boolean;
+  createdAt: Date;
+  createdBy: string | null;
+  updatedAt: Date;
+  updatedBy: string | null;
+}
+
+/** Row in org_list_items (per-org addition or override). */
+export interface OrgListItem {
+  id: string;
+  organizationId: string;
+  listKey: ListKey;
+  value: string;
+  label: string | null;
+  labelAr: string | null;
+  color: string | null;
+  sortOrder: number | null;
+  enabled: boolean;
+  isCustom: boolean;
+  createdAt: Date;
+  createdBy: string | null;
+  updatedAt: Date;
+  updatedBy: string | null;
+}
+
+/** The effective item an org sees after platform defaults + org overrides. */
+export interface ResolvedListItem {
+  value: string;
+  label: string;
+  labelAr: string | null;
+  color: string | null;
+  /** true when the value originates from a SYSTEM (code-owned) list. */
+  isSystem: boolean;
+  /** true when contributed/overridden by the org (vs a pure platform default). */
+  isCustom: boolean;
+}

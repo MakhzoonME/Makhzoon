@@ -72,7 +72,7 @@ export default function FawtaraSettingsPage() {
         clientId: values.clientId ? values.clientId : undefined,
         clientSecret: values.clientSecret ? values.clientSecret : undefined,
       });
-      toast.success('Fawtara settings updated');
+      toast.success('Jo Fotara settings updated');
       form.setValue('clientId', '');
       form.setValue('clientSecret', '');
     } catch (err) {
@@ -86,7 +86,7 @@ export default function FawtaraSettingsPage() {
   return (
     <div className="p-6 max-w-2xl space-y-6">
       <PageHeader
-        title="Fawtara (Jordan e-invoicing)"
+        title="Jo Fotara (Jordan e-invoicing)"
         description="Configure Jordan's ISTD e-invoicing integration. Disabled by default; turn on once credentials are saved."
       />
 
@@ -99,7 +99,7 @@ export default function FawtaraSettingsPage() {
         <div>
           {config?.enabled ? (
             <>
-              <strong>Enabled.</strong> Every completed POS sale will be submitted to Fawtara{' '}
+              <strong>Enabled.</strong> Every completed POS sale will be submitted to Jo Fotara{' '}
               <strong>({config.mode})</strong>.{' '}
               {!config.hasClientCredentials && (
                 <>
@@ -126,7 +126,7 @@ export default function FawtaraSettingsPage() {
                   <Switch checked={field.value} onCheckedChange={field.onChange} />
                 </FormControl>
                 <div>
-                  <FormLabel className="!mt-0">Enable Fawtara submission</FormLabel>
+                  <FormLabel className="!mt-0">Enable Jo Fotara submission</FormLabel>
                   <p className="text-xs text-gray-500">
                     Master switch. When off, every sale records <code>status: skipped</code> and prints without QR.
                   </p>
@@ -212,7 +212,7 @@ export default function FawtaraSettingsPage() {
                 </FormControl>
                 <div>
                   <FormLabel className="!mt-0">VAT-registered</FormLabel>
-                  <p className="text-xs text-gray-500">Required by Fawtara if the organization charges VAT.</p>
+                  <p className="text-xs text-gray-500">Required by Jo Fotara if the organization charges VAT.</p>
                 </div>
                 <FormMessage />
               </FormItem>

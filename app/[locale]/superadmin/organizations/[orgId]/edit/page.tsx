@@ -174,15 +174,6 @@ export default function EditOrganizationPage(props: { params: Promise<{ orgId: s
           { label: 'Organizations', href: `/${locale}/superadmin` },
           { label: 'Edit', href: '' },
         ]}
-        actions={
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => router.push(`/${locale}/superadmin/organizations/${orgId}/configuration`)}
-          >
-            Configuration
-          </Button>
-        }
       />
 
       <Card className="max-w-2xl">

@@ -158,7 +158,7 @@ export default function AuditDetailPage() {
   const [completing, setCompleting] = useState(false);
   const [search, setSearch] = useState('');
 
-  const auditsHref = `/${locale}/${orgSlug}/raseed/audits`;
+  const auditsHref = `/${locale}/${orgSlug}/usool/audits`;
 
   if (isLoading) return <LoadingSkeleton />;
   if (!data) return <div className="p-6 text-gray-500">Audit not found.</div>;
@@ -201,7 +201,7 @@ export default function AuditDetailPage() {
     <div>
       <PageHeader
         title={audit.title}
-        breadcrumb={[{ label: 'Inventory', href: `/${locale}/${orgSlug}/raseed` }, { label: 'Audits', href: `/${locale}/${orgSlug}/raseed/audits` }, { label: audit.title, href: `/${locale}/${orgSlug}/raseed/audits/${auditId}` }]}
+        breadcrumb={[{ label: 'Usool', href: `/${locale}/${orgSlug}/usool` }, { label: 'Audits', href: `/${locale}/${orgSlug}/usool/audits` }, { label: audit.title, href: `/${locale}/${orgSlug}/usool/audits/${auditId}` }]}
         actions={
           completed ? (
             <Button size="sm" onClick={() => router.push(auditsHref)}>

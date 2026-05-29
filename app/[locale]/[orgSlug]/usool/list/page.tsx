@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 // useEffect retained for debounced-search → URL commit only.
-import { Plus, Pencil, Trash2, Upload } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload, ClipboardCheck } from 'lucide-react';
 import { useOrgSlug } from '@/hooks/ui';
 import { useAssets } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
@@ -202,8 +202,11 @@ export default function AssetsListPage() {
           { label: t('nav.assets'), href: `/${locale}/${orgSlug}/usool` },
           { label: t('nav.assetsList'), href: `/${locale}/${orgSlug}/usool/list` },
         ]}
-        actions={(isAdmin || canCreateAsset) ? (
+        actions={
           <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/usool/audits`)}>
+              <ClipboardCheck className="w-4 h-4" /><span className="ms-1">{t('audits.title')}</span>
+            </Button>
             {isAdmin && (
               <SubscriptionGate>
                 <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
@@ -219,7 +222,7 @@ export default function AssetsListPage() {
               </SubscriptionGate>
             )}
           </div>
-        ) : undefined}
+        }
       />
 
       <FilterBar

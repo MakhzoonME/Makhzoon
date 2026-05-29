@@ -35,9 +35,9 @@ export default function InventoryAuditsPage() {
       <PageHeader
         title={t('audits.title')}
         description={t('audits.subtitle')}
-        breadcrumb={[{ label: t('nav.inventory'), href: `/${locale}/${orgSlug}/raseed` }, { label: t('audits.breadcrumb'), href: `/${locale}/${orgSlug}/raseed/audits` }]}
+        breadcrumb={[{ label: t('nav.assets'), href: `/${locale}/${orgSlug}/usool` }, { label: t('audits.breadcrumb'), href: `/${locale}/${orgSlug}/usool/audits` }]}
         actions={isAdmin ? (
-          <Button size="sm" onClick={() => router.push(`/${locale}/${orgSlug}/raseed/audits/new`)}>
+          <Button size="sm" onClick={() => router.push(`/${locale}/${orgSlug}/usool/audits/new`)}>
             <Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('audits.startAudit')}</span>
           </Button>
         ) : undefined}
@@ -56,7 +56,7 @@ export default function InventoryAuditsPage() {
               <div
                 key={audit.id}
                 className="bg-surface-card border border-border rounded-xl p-5 cursor-pointer hover:border-primary-300 transition-colors"
-                onClick={() => router.push(`/${locale}/${orgSlug}/raseed/audits/${audit.id}`)}
+                onClick={() => router.push(`/${locale}/${orgSlug}/usool/audits/${audit.id}`)}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">

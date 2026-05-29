@@ -33,7 +33,7 @@ export default function NewAuditPage() {
       const { id } = await res.json();
       toast.success('Audit started');
       qc.invalidateQueries({ queryKey: ['inventory-audits'] });
-      router.push(`/${locale}/${orgSlug}/raseed/audits/${id}`);
+      router.push(`/${locale}/${orgSlug}/usool/audits/${id}`);
     } catch {
       toast.error('Failed to start audit');
     } finally {
@@ -45,7 +45,7 @@ export default function NewAuditPage() {
     <div>
       <PageHeader
         title="Start Physical Audit"
-        breadcrumb={[{ label: 'Inventory', href: `/${locale}/${orgSlug}/raseed` }, { label: 'Audits', href: `/${locale}/${orgSlug}/raseed/audits` }, { label: 'New', href: `/${locale}/${orgSlug}/raseed/audits/new` }]}
+        breadcrumb={[{ label: 'Usool', href: `/${locale}/${orgSlug}/usool` }, { label: 'Audits', href: `/${locale}/${orgSlug}/usool/audits` }, { label: 'New', href: `/${locale}/${orgSlug}/usool/audits/new` }]}
       />
       <div className="max-w-lg">
         <div className="bg-[var(--primary-50)] border border-[var(--primary-100)] rounded-lg p-4 mb-6 flex items-start gap-3">

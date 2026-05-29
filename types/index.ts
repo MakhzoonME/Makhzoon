@@ -17,6 +17,7 @@ export * from './package.types';
 export * from './payment-log.types';
 export * from './inventory.types';
 export * from './inventory-audit.types';
+export * from './stock-audit.types';
 export * from './organization-config.types';
 export * from './user-permissions.types';
 export * from './superadmin-permissions.types';

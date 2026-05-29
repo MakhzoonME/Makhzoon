@@ -87,19 +87,19 @@ export default function TransactionDetailPage(props: Props) {
           <div className="flex items-center gap-2">
             <StatusBadge status={tx.status} />
             <Button variant="outline" size="sm" onClick={() => window.print()}>
-              <Printer size={14} className="mr-1" /> Print
+              <Printer size={14} className="me-1" /> Print
             </Button>
             {isMutable && canRefund && (
               <SubscriptionGate>
                 <Button variant="outline" size="sm" onClick={() => setConfirmRefund(true)}>
-                  <RotateCcw size={14} className="mr-1" /> Refund
+                  <RotateCcw size={14} className="me-1" /> Refund
                 </Button>
               </SubscriptionGate>
             )}
             {isMutable && canVoid && (
               <SubscriptionGate>
                 <Button variant="destructive" size="sm" onClick={() => setConfirmVoid(true)}>
-                  <Ban size={14} className="mr-1" /> Void
+                  <Ban size={14} className="me-1" /> Void
                 </Button>
               </SubscriptionGate>
             )}
@@ -111,7 +111,7 @@ export default function TransactionDetailPage(props: Props) {
                   disabled={resubmitMut.isPending}
                   onClick={doResubmit}
                 >
-                  <Send size={14} className="mr-1" />
+                  <Send size={14} className="me-1" />
                   {resubmitMut.isPending ? 'Resubmitting…' : 'Resubmit to Fawtara'}
                 </Button>
               </SubscriptionGate>
@@ -141,13 +141,13 @@ export default function TransactionDetailPage(props: Props) {
         <CardContent className="p-0">
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-surface-muted/40">
-              <tr className="text-left">
+              <tr className="text-start">
                 <th className="py-2 px-4 font-medium">Item</th>
-                <th className="py-2 px-2 font-medium text-right">Qty</th>
-                <th className="py-2 px-2 font-medium text-right">Unit</th>
-                <th className="py-2 px-2 font-medium text-right">Tax</th>
-                <th className="py-2 px-2 font-medium text-right">Disc.</th>
-                <th className="py-2 px-4 font-medium text-right">Total</th>
+                <th className="py-2 px-2 font-medium text-end">Qty</th>
+                <th className="py-2 px-2 font-medium text-end">Unit</th>
+                <th className="py-2 px-2 font-medium text-end">Tax</th>
+                <th className="py-2 px-2 font-medium text-end">Disc.</th>
+                <th className="py-2 px-4 font-medium text-end">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -157,11 +157,11 @@ export default function TransactionDetailPage(props: Props) {
                     <div className="font-medium">{line.inventoryItemName}</div>
                     {line.sku && <div className="text-xs text-gray-500">SKU: {line.sku}</div>}
                   </td>
-                  <td className="py-2 px-2 text-right font-mono">{line.quantity}</td>
-                  <td className="py-2 px-2 text-right font-mono">{fmt(line.unitPrice)}</td>
-                  <td className="py-2 px-2 text-right font-mono">{fmt(line.taxAmount)}</td>
-                  <td className="py-2 px-2 text-right font-mono">{fmt(line.discountAmount)}</td>
-                  <td className="py-2 px-4 text-right font-mono">{fmt(line.lineTotal)}</td>
+                  <td className="py-2 px-2 text-end font-mono">{line.quantity}</td>
+                  <td className="py-2 px-2 text-end font-mono">{fmt(line.unitPrice)}</td>
+                  <td className="py-2 px-2 text-end font-mono">{fmt(line.taxAmount)}</td>
+                  <td className="py-2 px-2 text-end font-mono">{fmt(line.discountAmount)}</td>
+                  <td className="py-2 px-4 text-end font-mono">{fmt(line.lineTotal)}</td>
                 </tr>
               ))}
             </tbody>

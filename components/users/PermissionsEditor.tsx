@@ -5,11 +5,12 @@ import {
   UserPermissions,
   DEFAULT_STAFF_PERMISSIONS,
   MODULE_PERMISSIONS_CONFIG,
-  MODULE_GROUP_LABELS,
+  MODULE_GROUP_LABEL_KEYS,
   MODULE_GROUP_ORDER,
   type ModuleConfig,
   type ModuleGroup,
 } from '@/types';
+import { useT } from '@/hooks/ui';
 
 interface Props {
   value: UserPermissions;
@@ -30,6 +31,7 @@ function ChevronSVG({ open }: { open: boolean }) {
 }
 
 export function PermissionsEditor({ value, onChange, availableFeatures }: Props) {
+  const { t } = useT();
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
 
   function toggleModule(key: string) {
@@ -84,7 +86,7 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
       {groupedModules.map(({ group, modules }) => (
         <div key={group} className="space-y-2">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 px-1">
-            {MODULE_GROUP_LABELS[group]}
+            {t(MODULE_GROUP_LABEL_KEYS[group])}
           </div>
           {modules.map((mod) => {
         const modulePerms = value[mod.key] as unknown as Record<string, boolean>;
@@ -113,18 +115,18 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
                   hasAnyOp ? 'bg-primary-600' : 'bg-gray-300'
                 )}
                 style={{ width: 32, height: 18 }}
-                aria-label={`${hasAnyOp ? 'Disable' : 'Enable'} ${mod.label}`}
+                aria-label={`${hasAnyOp ? t('common.no') : t('common.yes')} ${t(mod.labelKey)}`}
               >
                 <span
                   className={cn(
-                    'absolute top-0.5 rounded-full bg-surface-card shadow transition-transform duration-200',
-                    hasAnyOp ? 'translate-x-[14px]' : 'translate-x-[2px]'
+                    'absolute top-0.5 rounded-full bg-surface-card shadow transition-[inset-inline-start] duration-200',
+                    hasAnyOp ? 'start-[16px]' : 'start-[2px]'
                   )}
                   style={{ width: 14, height: 14 }}
                 />
               </button>
               <span className={cn('text-sm flex-1 font-medium', hasAnyOp ? 'text-gray-900' : 'text-gray-400')}>
-                {mod.label}
+                {t(mod.labelKey)}
               </span>
               {hasAnyOp && (
                 <span className="text-xs text-gray-400">
@@ -155,7 +157,7 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
                         onChange={(e) => setOp(mod.key, op.key, e.target.checked)}
                         className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:cursor-not-allowed"
                       />
-                      <span className={cn('text-gray-600', checked && 'text-gray-900 font-medium')}>{op.label}</span>
+                      <span className={cn('text-gray-600', checked && 'text-gray-900 font-medium')}>{t(op.labelKey)}</span>
                     </label>
                   );
                 })}

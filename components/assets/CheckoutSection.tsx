@@ -90,7 +90,7 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
         <UserCheckSVG />
         <h2 className="text-sm font-semibold text-gray-900">Checkout</h2>
         {active && (
-          <span className={`text-[11px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-full ml-auto ${overdue ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
+          <span className={`text-[11px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-full ms-auto ${overdue ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
             {overdue ? 'Overdue' : 'Checked out'}
           </span>
         )}
@@ -115,7 +115,7 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
           <div className="flex justify-end mt-3">
             <Button size="sm" variant="outline" onClick={handleReturn} disabled={returnMut.isPending}>
               <ArrowDownLeftSVG />
-              <span className="ml-1">{returnMut.isPending ? 'Returning…' : 'Mark returned'}</span>
+              <span className="ms-1">{returnMut.isPending ? 'Returning…' : 'Mark returned'}</span>
             </Button>
           </div>
         </div>
@@ -149,7 +149,7 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
         <div className="px-5 py-4 flex items-center justify-between">
           <p className="text-sm text-gray-500">Not currently checked out.</p>
           <Button size="sm" onClick={() => setShowForm(true)}>
-            <ArrowUpRightSVG /><span className="ml-1">Check out</span>
+            <ArrowUpRightSVG /><span className="ms-1">Check out</span>
           </Button>
         </div>
       )}

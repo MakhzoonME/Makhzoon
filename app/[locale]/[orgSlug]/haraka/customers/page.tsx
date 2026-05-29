@@ -7,12 +7,13 @@ import { PageHeader, DataTable, FilterBar, ConfirmDialog } from '@/components/sh
 import type { ColumnDef } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { useCustomers, useDeleteCustomer } from '@/hooks/haraka';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
 import type { PosCustomer } from '@/types';
 
 export default function CustomersListPage() {
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string }>();
+  const { t } = useT();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const { data, isLoading } = useCustomers({ search: search || undefined, page, pageSize: 20 });
@@ -25,18 +26,18 @@ export default function CustomersListPage() {
     if (!confirmDelete) return;
     try {
       await deleteMut.mutateAsync(confirmDelete.id);
-      toast.success('Customer deleted');
+      toast.success(t('common.deleted'));
       setConfirmDelete(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Delete failed');
+      toast.error(err instanceof Error ? err.message : t('common.deleteFailed'));
     }
   }
 
   const columns: ColumnDef<PosCustomer>[] = [
-    { key: 'name', header: 'Name', sortable: true, render: (c) => c.name },
-    { key: 'phone', header: 'Phone', render: (c) => c.phone ?? '—' },
-    { key: 'email', header: 'Email', render: (c) => c.email ?? '—' },
-    { key: 'taxNumber', header: 'Tax #', render: (c) => c.taxNumber ?? '—' },
+    { key: 'name', header: t('col.name'), sortable: true, render: (c) => c.name },
+    { key: 'phone', header: t('col.phone'), render: (c) => c.phone ?? '—' },
+    { key: 'email', header: t('col.email'), render: (c) => c.email ?? '—' },
+    { key: 'taxNumber', header: t('col.taxNumber'), render: (c) => c.taxNumber ?? '—' },
     {
       key: 'actions',
       header: '',
@@ -49,7 +50,7 @@ export default function CustomersListPage() {
               e.stopPropagation();
               router.push(`${base}/${c.id}/edit`);
             }}
-            aria-label="Edit"
+            aria-label={t('common.edit')}
           >
             <Pencil size={14} />
           </Button>
@@ -60,7 +61,7 @@ export default function CustomersListPage() {
               e.stopPropagation();
               setConfirmDelete(c);
             }}
-            aria-label="Delete"
+            aria-label={t('common.delete')}
           >
             <Trash2 size={14} />
           </Button>
@@ -72,21 +73,21 @@ export default function CustomersListPage() {
   return (
     <div className="p-6">
       <PageHeader
-        title="Customers"
-        description="Per-organization address book used to attach a customer to a sale."
+        title={t('customers.title')}
+        description={t('customers.subtitle')}
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/haraka` },
-          { label: 'Customers', href: '#' },
+          { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/haraka` },
+          { label: t('customers.title'), href: '#' },
         ]}
         actions={
           <Button onClick={() => router.push(`${base}/new`)}>
-            <Plus size={16} className="mr-1" /> Add customer
+            <Plus size={16} className="me-1" /> {t('customers.addCustomer')}
           </Button>
         }
       />
 
       <FilterBar
-        searchPlaceholder="Search by name, phone, email, tax #"
+        searchPlaceholder={t('customers.searchPlaceholder')}
         searchValue={search}
         onSearchChange={(v) => {
           setSearch(v);
@@ -101,8 +102,8 @@ export default function CustomersListPage() {
         isLoading={isLoading}
         emptyMessage={
           search
-            ? 'No matching customers.'
-            : 'No customers yet — add one or create from the register.'
+            ? t('customers.noMatching')
+            : t('customers.noCustomers')
         }
         onRowClick={(c) => router.push(`${base}/${c.id}`)}
         pagination={
@@ -121,13 +122,13 @@ export default function CustomersListPage() {
       <ConfirmDialog
         open={!!confirmDelete}
         onOpenChange={(v) => !v && setConfirmDelete(null)}
-        title="Delete customer?"
+        title={t('customers.deleteTitle')}
         description={
           confirmDelete
-            ? `"${confirmDelete.name}" will be removed. Past sales referencing this customer keep their snapshotted name.`
+            ? t('customers.deleteDesc').replace('{name}', confirmDelete.name)
             : ''
         }
-        confirmLabel="Delete"
+        confirmLabel={t('common.delete')}
         onConfirm={onDelete}
         loading={deleteMut.isPending}
       />

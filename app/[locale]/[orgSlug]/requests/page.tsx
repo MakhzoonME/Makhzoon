@@ -7,12 +7,13 @@ import { PageHeader, StatCard, OverviewSection, DataTable, StatusBadge } from '@
 import type { ColumnDef } from '@/components/shared';
 import { formatDate } from '@/lib/utils/date';
 import { Request } from '@/types';
+import type { MessageKey } from '@/locales/messages';
 
-const typeLabels: Record<string, string> = {
-  REFILL: 'Refill',
-  RETIRE: 'Retire',
-  BUY_NEW: 'Buy New',
-  EXTEND_WARRANTY: 'Extend Warranty',
+const typeKeys: Record<string, MessageKey> = {
+  REFILL: 'requestType.REFILL',
+  RETIRE: 'requestType.RETIRE',
+  BUY_NEW: 'requestType.BUY_NEW',
+  EXTEND_WARRANTY: 'requestType.EXTEND_WARRANTY',
 };
 
 function useRequestsOverview() {
@@ -74,7 +75,7 @@ function StatusBreakdown({ pending, approved, rejected, total, isLoading }: { pe
             <div className="h-1.5 rounded-full bg-surface-sidebar overflow-hidden">
               <div className={`h-full rounded-full ${r.bar} transition-all duration-500`} style={{ width: `${pct}%` }} />
             </div>
-            <span className={`text-xs font-medium tabular-nums text-right ${r.text}`}>{r.count} · {pct}%</span>
+            <span className={`text-xs font-medium tabular-nums text-end ${r.text}`}>{r.count} · {pct}%</span>
           </div>
         );
       })}
@@ -97,7 +98,7 @@ export default function RequestsOverviewPage() {
   const base = `/${locale}/${orgSlug}/requests`;
 
   const recentColumns: ColumnDef<Request>[] = [
-    { key: 'type', header: t('requests.type'), render: (r) => <span className="font-medium text-xs bg-[var(--primary-100)] text-[var(--primary-700)] px-2 py-0.5 rounded-full">{typeLabels[r.type] ?? r.type}</span> },
+    { key: 'type', header: t('requests.type'), render: (r) => <span className="font-medium text-xs bg-[var(--primary-100)] text-[var(--primary-700)] px-2 py-0.5 rounded-full">{typeKeys[r.type] ? t(typeKeys[r.type]) : r.type}</span> },
     {
       key: 'reference', header: t('requests.reference'),
       render: (r) => {

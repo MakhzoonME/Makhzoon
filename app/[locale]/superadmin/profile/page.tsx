@@ -102,7 +102,7 @@ export default function SuperAdminProfilePage() {
             </div>
             <Button type="submit" size="sm" disabled={savingName || !displayName.trim()}>
               <Save className="h-3.5 w-3.5" strokeWidth={1.75} />
-              <span className="ml-1">{savingName ? 'Saving...' : 'Save'}</span>
+              <span className="ms-1">{savingName ? 'Saving...' : 'Save'}</span>
             </Button>
           </form>
         </div>
@@ -125,7 +125,7 @@ export default function SuperAdminProfilePage() {
             </div>
             <Button type="submit" size="sm" disabled={savingPassword || !currentPassword || !newPassword || !confirmPassword}>
               <KeyRound className="h-3.5 w-3.5" strokeWidth={1.75} />
-              <span className="ml-1">{savingPassword ? 'Updating...' : 'Update Password'}</span>
+              <span className="ms-1">{savingPassword ? 'Updating...' : 'Update Password'}</span>
             </Button>
           </form>
         </div>

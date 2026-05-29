@@ -289,7 +289,7 @@ export default function SuperAdminTeamPage() {
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
             <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
-          <span className="ml-1">{t('team.addMember')}</span>
+          <span className="ms-1">{t('team.addMember')}</span>
         </Button>
       </div>
 
@@ -304,12 +304,12 @@ export default function SuperAdminTeamPage() {
 
       <div className="bg-surface-card border border-border rounded-lg p-3 flex flex-wrap gap-2">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             value={searchInput}
             onChange={(e) => { setSearchInput(e.target.value); syncAllToUrl({ search: e.target.value }); }}
             placeholder="Search by name or email"
-            className="pl-8"
+            className="ps-8"
           />
         </div>
         {searchInput && (
@@ -339,7 +339,7 @@ export default function SuperAdminTeamPage() {
                 return (
                   <th
                     key={key}
-                    className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer select-none hover:text-gray-700"
+                    className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer select-none hover:text-gray-700"
                     onClick={() => handleSortChange(key, nextDir)}
                   >
                     <span className="inline-flex items-center gap-1">
@@ -387,7 +387,7 @@ export default function SuperAdminTeamPage() {
                   <tr key={m.id} className="hover:bg-surface-page transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-900">
                       {m.displayName}
-                      {isSelf && <span className="ml-2 text-xs text-gray-400">({t('team.you')})</span>}
+                      {isSelf && <span className="ms-2 text-xs text-gray-400">({t('team.you')})</span>}
                     </td>
                     <td className="px-4 py-3 text-gray-600">{m.email}</td>
                     <td className="px-4 py-3">
@@ -403,7 +403,7 @@ export default function SuperAdminTeamPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(new Date(m.createdAt))}</td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-end">
                       {editable && (
                         <div className="flex items-center justify-end gap-1">
                           <Button
@@ -528,11 +528,11 @@ export default function SuperAdminTeamPage() {
                   onChange={(e) => setAddForm((f) => ({ ...f, password: e.target.value }))}
                   required
                   minLength={8}
-                  className="pr-20"
+                  className="pe-20"
                 />
                 <button
                   type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-primary-600 hover:text-primary-800"
+                  className="absolute end-2 top-1/2 -translate-y-1/2 text-xs text-primary-600 hover:text-primary-800"
                   onClick={() => setShowPassword((v) => !v)}
                 >
                   {showPassword ? t('team.hide') : t('team.show')}

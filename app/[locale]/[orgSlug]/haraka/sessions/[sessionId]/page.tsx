@@ -74,13 +74,13 @@ export default function SessionDetailPage(props: Props) {
               <Button
                 onClick={() => router.push(`/${params.locale}/${params.orgSlug}/haraka/register`)}
               >
-                <ShoppingCart size={14} className="mr-1" /> Open register
+                <ShoppingCart size={14} className="me-1" /> Open register
               </Button>
             )}
             {isOpen && (
               <SubscriptionGate>
                 <Button variant="outline" onClick={() => setClosing(true)}>
-                  <Lock size={14} className="mr-1" /> Close session
+                  <Lock size={14} className="me-1" /> Close session
                 </Button>
               </SubscriptionGate>
             )}

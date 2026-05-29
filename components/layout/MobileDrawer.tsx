@@ -10,6 +10,8 @@ import { useTransferStore } from '@/store/transfer.store';
 import { useSubscriptionFeatures } from '@/hooks/org';
 import { createClient } from '@/lib/supabase/client';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
+import { useT } from '@/hooks/ui';
+import type { MessageKey } from '@/locales/messages';
 
 function DashboardSVG() { return <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden><rect x="2" y="2" width="6" height="7" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="10" y="2" width="6" height="4" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="10" y="8" width="6" height="8" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="2" y="11" width="6" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /></svg>; }
 function AssetsSVG() { return <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden><path d="M15 5.5L9 2.5 3 5.5v7L9 15.5l6-3v-7z" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M9 2.5v13M3 5.5l6 3.5 6-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
@@ -24,19 +26,19 @@ function AuditSVG() { return <svg width="18" height="18" viewBox="0 0 18 18" fil
 function XSvg() { return <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>; }
 function LogOutSVG() { return <svg width="15" height="15" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M5 2H2.5A1.5 1.5 0 0 0 1 3.5v7A1.5 1.5 0 0 0 2.5 12H5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /><path d="M9 4.5L12 7l-3 2.5M12 7H5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
 
-interface NavItem { href: string; label: string; Icon: React.FC; adminOnly?: boolean; featureKey?: string; }
+interface NavItem { href: string; labelKey: MessageKey; Icon: React.FC; adminOnly?: boolean; featureKey?: string; }
 
 const navItems: NavItem[] = [
-  { href: '/dashboard',    label: 'Dashboard',    Icon: DashboardSVG,                            featureKey: 'dashboard' },
-  { href: '/usool',        label: 'Usool',        Icon: AssetsSVG,                               featureKey: 'assets' },
-  { href: '/raseed',       label: 'Raseed',       Icon: InventorySVG,                            featureKey: 'inventory' },
-  { href: '/warranties',   label: 'Warranties',   Icon: WarrantySVG,    featureKey: 'warranties' },
-  { href: '/requests',     label: 'Requests',     Icon: RequestsSVG,    featureKey: 'requests' },
-  { href: '/reports',      label: 'Reports',      Icon: ReportsSVG,     adminOnly: true,         featureKey: 'reports' },
-  { href: '/users',        label: 'Users',        Icon: UsersSVG,       adminOnly: true },
-  { href: '/subscription', label: 'Subscription', Icon: SubscriptionSVG, adminOnly: true },
-  { href: '/support',      label: 'Support',      Icon: SupportSVG,     featureKey: 'support' },
-  { href: '/audit-logs',   label: 'Audit Logs',   Icon: AuditSVG,       adminOnly: true,         featureKey: 'auditLogs' },
+  { href: '/dashboard',    labelKey: 'nav.dashboard',    Icon: DashboardSVG,                            featureKey: 'dashboard' },
+  { href: '/usool',        labelKey: 'nav.assets',       Icon: AssetsSVG,                               featureKey: 'assets' },
+  { href: '/raseed',       labelKey: 'nav.inventory',    Icon: InventorySVG,                            featureKey: 'inventory' },
+  { href: '/warranties',   labelKey: 'nav.warranties',   Icon: WarrantySVG,    featureKey: 'warranties' },
+  { href: '/requests',     labelKey: 'nav.requests',     Icon: RequestsSVG,    featureKey: 'requests' },
+  { href: '/reports',      labelKey: 'nav.reports',      Icon: ReportsSVG,     adminOnly: true,         featureKey: 'reports' },
+  { href: '/users',        labelKey: 'nav.users',        Icon: UsersSVG,       adminOnly: true },
+  { href: '/subscription', labelKey: 'nav.subscription', Icon: SubscriptionSVG, adminOnly: true },
+  { href: '/support',      labelKey: 'nav.support',      Icon: SupportSVG,     featureKey: 'support' },
+  { href: '/audit-logs',   labelKey: 'nav.auditLogs',    Icon: AuditSVG,       adminOnly: true,         featureKey: 'auditLogs' },
 ];
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
@@ -48,6 +50,8 @@ export function MobileDrawer() {
   const { user } = useAuthStore();
   const { mobileMenuOpen, setMobileMenuOpen } = useUiStore();
   const features = useSubscriptionFeatures();
+  const { t, dir } = useT();
+  const offscreen = dir === 'rtl' ? '100%' : '-100%';
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
@@ -86,23 +90,23 @@ export function MobileDrawer() {
           />
           {/* Drawer panel */}
           <motion.aside
-            initial={{ x: '-100%' }}
+            initial={{ x: offscreen }}
             animate={{ x: 0 }}
-            exit={{ x: '-100%' }}
+            exit={{ x: offscreen }}
             transition={{ duration: 0.28, ease: EASE_OUT }}
-            className="fixed left-0 top-0 bottom-0 z-50 w-72 bg-white flex flex-col shadow-xl md:hidden"
+            className="fixed start-0 top-0 bottom-0 z-50 w-72 bg-white flex flex-col shadow-xl md:hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <MakhzoonMark size={24} />
-                <span className="text-sm font-semibold text-gray-900">Makhzoon</span>
+                <span className="text-sm font-semibold text-gray-900">{t('brand.name')}</span>
               </div>
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
                 className="p-1.5 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-                aria-label="Close menu"
+                aria-label={t('common.close')}
               >
                 <XSvg />
               </button>
@@ -122,7 +126,15 @@ export function MobileDrawer() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{user.displayName || user.email}</p>
-                    <p className="text-xs text-gray-500 capitalize">{user.role?.replace('_', ' ')}</p>
+                    <p className="text-xs text-gray-500">{
+                      user.role === 'super_admin' ? t('role.superAdmin') :
+                      user.role === 'makhzoon_admin' ? t('role.makhzoonAdmin') :
+                      user.role === 'makhzoon_support' ? t('role.makhzoonSupport') :
+                      user.role === 'org_owner' ? t('role.orgOwner') :
+                      user.role === 'admin' ? t('role.admin') :
+                      user.role === 'staff' ? t('role.staff') :
+                      (user.role as string | undefined)?.replace('_', ' ')
+                    }</p>
                   </div>
                 </div>
               </div>
@@ -130,7 +142,7 @@ export function MobileDrawer() {
 
             {/* Nav items */}
             <nav className="flex-1 overflow-y-auto p-2.5 space-y-0.5">
-              {visibleItems.map(({ href, label, Icon }) => {
+              {visibleItems.map(({ href, labelKey, Icon }) => {
                 const fullHref = `/${orgSlug}${href}`;
                 const active = pathname === fullHref || pathname.startsWith(fullHref + '/');
                 return (
@@ -146,7 +158,7 @@ export function MobileDrawer() {
                     )}
                   >
                     <Icon />
-                    <span>{label}</span>
+                    <span>{t(labelKey)}</span>
                   </Link>
                 );
               })}
@@ -161,7 +173,7 @@ export function MobileDrawer() {
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <LogOutSVG />
-                <span>{isLoggingOut ? '…' : 'Sign out'}</span>
+                <span>{isLoggingOut ? '…' : t('common.signOut')}</span>
               </button>
             </div>
           </motion.aside>

@@ -180,12 +180,12 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
               <FormLabel>Barcode</FormLabel>
               <FormControl>
                 <div className="relative">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                  <span className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
                     <ScanBarcode size={16} aria-hidden />
                   </span>
                   <Input
                     {...field}
-                    className="pl-8 font-mono"
+                    className="ps-8 font-mono"
                     placeholder="Scan or type a barcode (EAN, UPC, Code128...)"
                     autoComplete="off"
                     spellCheck={false}

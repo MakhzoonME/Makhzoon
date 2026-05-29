@@ -15,7 +15,7 @@ import { useBarcodeLookup } from '@/hooks/inventory';
 import { useTaxRates, useCurrentSession, useCompleteSale } from '@/hooks/haraka';
 import { useAuthStore } from '@/store/auth.store';
 import { priceCart } from '@/lib/modules/haraka/pricing/calc';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
 import { printRaw } from '@/lib/modules/haraka/printing/webusb-transport';
 import { buildReceipt } from '@/lib/modules/haraka/printing/receipt-template';
 import type { InventoryItem, PosTransaction } from '@/types';
@@ -36,6 +36,7 @@ import type { InventoryItem, PosTransaction } from '@/types';
 export default function RegisterPage() {
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string }>();
+  const { t } = useT();
   const { user } = useAuthStore();
   const { data: sessionData, isLoading: sessionLoading } = useCurrentSession();
   const { data: taxData } = useTaxRates();
@@ -159,20 +160,20 @@ export default function RegisterPage() {
   return (
     <div className="h-[calc(100vh-3.5rem)] flex flex-col">
       <PageHeader
-        title="Register"
-        description={sessionData?.session ? `Session ${sessionData.session.id.slice(0, 8)}` : ''}
+        title={t('register.title')}
+        description={sessionData?.session ? t('register.sessionLabel').replace('{id}', sessionData.session.id.slice(0, 8)) : ''}
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/haraka` },
-          { label: 'Register', href: '#' },
+          { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/haraka` },
+          { label: t('register.title'), href: '#' },
         ]}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setPrinterOpen(true)}>
-              <Printer size={14} className="mr-1" /> Printer
+              <Printer size={14} className="me-1" /> {t('register.printer')}
             </Button>
             {lastTx && (
               <Button variant="outline" size="sm" onClick={() => printReceipt(lastTx)}>
-                <Receipt size={14} className="mr-1" /> Reprint last
+                <Receipt size={14} className="me-1" /> {t('register.reprintLast')}
               </Button>
             )}
             {sessionData?.session && (
@@ -185,7 +186,7 @@ export default function RegisterPage() {
                   )
                 }
               >
-                <Lock size={14} className="mr-1" /> Close session
+                <Lock size={14} className="me-1" /> {t('register.closeSession')}
               </Button>
             )}
           </div>
@@ -197,7 +198,7 @@ export default function RegisterPage() {
         <div className="flex flex-col gap-3 min-h-0">
           <BarcodeInput
             onResolve={handleScan}
-            placeholder="Scan barcode to add to cart, or pick a product below"
+            placeholder={t('register.scanPlaceholder')}
             autoFocus
           />
           <ProductGrid onPick={pickItem} />
@@ -206,7 +207,7 @@ export default function RegisterPage() {
         {/* Right: cart */}
         <aside className="border border-border rounded-xl bg-surface-page p-4 flex flex-col min-h-0">
           <CustomerPicker />
-          <div className="text-sm font-medium mt-3 mb-2">Cart ({lines.length})</div>
+          <div className="text-sm font-medium mt-3 mb-2">{t('register.cart')} ({lines.length})</div>
           <Cart />
 
           <SubscriptionGate className="mt-3 block">

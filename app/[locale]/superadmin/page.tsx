@@ -220,7 +220,7 @@ export default function SuperAdminPage() {
               enterTransferMode(r.organization.id, r.organization.name);
             }}
           >
-            <ArrowRight className="h-3.5 w-3.5 mr-1" /> {t('orgs.enter')}
+            <ArrowRight className="h-3.5 w-3.5 me-1" /> {t('orgs.enter')}
           </Button>
           <Button
             size="sm"
@@ -255,7 +255,7 @@ export default function SuperAdminPage() {
         title={t('nav.organizations')}
         actions={
           <Button size="sm" onClick={() => router.push(`/${locale}/superadmin/organizations/new`)}>
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-4 w-4 me-1" />
             {t('orgs.createOrg')}
           </Button>
         }
@@ -263,12 +263,12 @@ export default function SuperAdminPage() {
 
       <div className="bg-surface-card border border-border rounded-lg p-3 flex flex-wrap gap-2 mb-4">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t('orgs.searchPlaceholder')}
-            className="pl-8"
+            className="ps-8"
           />
         </div>
         <select

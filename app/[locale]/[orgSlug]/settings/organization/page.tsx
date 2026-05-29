@@ -10,7 +10,7 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
   return (
     <div className="flex justify-between py-2.5 border-b border-border last:border-0">
       <dt className="text-sm text-gray-500">{label}</dt>
-      <dd className="text-sm font-medium text-gray-900 text-right max-w-[60%] break-words">
+      <dd className="text-sm font-medium text-gray-900 text-end max-w-[60%] break-words">
         {value || t('settings.notSet')}
       </dd>
     </div>

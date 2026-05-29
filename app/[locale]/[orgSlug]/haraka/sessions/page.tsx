@@ -55,7 +55,7 @@ export default function SessionsListPage() {
         actions={
           <SubscriptionGate>
             <Button onClick={() => router.push(`/${params.locale}/${params.orgSlug}/haraka/sessions/new`)}>
-              <Plus size={16} className="mr-1" /> Open session
+              <Plus size={16} className="me-1" /> Open session
             </Button>
           </SubscriptionGate>
         }

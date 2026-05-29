@@ -314,7 +314,7 @@ export function AppSidebar() {
                   transition={{ duration: 0.2, ease: EASE_SLIDE }}
                   style={{ overflow: 'hidden' }}
                 >
-                  <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pr-6' : 'pl-6')}>
+                  <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pe-6' : 'ps-6')}>
                     {visibleSubItems.map((sub) => {
                       const fullHref  = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
                       const subActive = (() => {
@@ -444,7 +444,7 @@ export function AppSidebar() {
             });
 
             const childList = !sidebarCollapsed && visibleChildren.length > 0 ? (
-              <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pr-6' : 'pl-6')}>
+              <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pe-6' : 'ps-6')}>
                 {visibleChildren.map((sub) => {
                   const subHref  = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
                   const subActive = pathname === subHref || pathname.startsWith(subHref + '/');

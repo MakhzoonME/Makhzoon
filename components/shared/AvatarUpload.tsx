@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
 import { Camera, Loader2, X } from 'lucide-react';
 
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
@@ -15,6 +15,7 @@ interface Props {
 }
 
 export function AvatarUpload({ value, onChange, fallbackText }: Props) {
+  const { t } = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -28,11 +29,11 @@ export function AvatarUpload({ value, onChange, fallbackText }: Props) {
     if (!file) return;
 
     if (!ACCEPTED.includes(file.type)) {
-      toast.error('Only JPEG, PNG, or WebP images are allowed');
+      toast.error(t('avatar.invalidType'));
       return;
     }
     if (file.size > MAX_SIZE) {
-      toast.error('Image must be 5 MB or smaller');
+      toast.error(t('avatar.tooLarge'));
       return;
     }
 
@@ -48,9 +49,9 @@ export function AvatarUpload({ value, onChange, fallbackText }: Props) {
       }
       const data = (await res.json()) as { url: string };
       onChange(data.url);
-      toast.success('Picture uploaded');
+      toast.success(t('avatar.uploaded'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Upload failed');
+      toast.error(err instanceof Error ? err.message : t('avatar.uploadFailed'));
     } finally {
       setUploading(false);
     }
@@ -79,7 +80,7 @@ export function AvatarUpload({ value, onChange, fallbackText }: Props) {
           <button
             type="button"
             onClick={clear}
-            aria-label="Remove picture"
+            aria-label={t('avatar.removePicture')}
             className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-surface-card text-gray-500 shadow ring-1 ring-border hover:text-red-600"
           >
             <X className="h-3.5 w-3.5" strokeWidth={2} />
@@ -94,9 +95,9 @@ export function AvatarUpload({ value, onChange, fallbackText }: Props) {
           ) : (
             <Camera className="h-3.5 w-3.5" strokeWidth={1.75} />
           )}
-          <span className="ms-1">{uploading ? 'Uploading…' : value ? 'Change picture' : 'Upload picture'}</span>
+          <span className="ms-1">{uploading ? t('avatar.uploading') : value ? t('avatar.change') : t('avatar.upload')}</span>
         </Button>
-        <p className="text-[11px] text-gray-500">JPEG, PNG, or WebP up to 5 MB.</p>
+        <p className="text-[11px] text-gray-500">{t('avatar.formatHint')}</p>
       </div>
 
       <input

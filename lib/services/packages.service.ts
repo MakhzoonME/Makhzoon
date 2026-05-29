@@ -9,19 +9,58 @@ import {
 import { queueAuditLog } from '@/lib/audit/logger';
 import { getUserContext } from './base.service';
 
+import type { PackageLimits, PackagePricing, FeatureKey, InclusionKey } from '@/types';
+
+interface LimitsInput {
+  maxAssets?: number;
+  maxUsers?: number;
+  maxWarranties?: number;
+  maxRequests?: number;
+  maxSpaces?: number;
+  maxInventoryItems?: number;
+}
+
 export interface CreatePackageInput {
   name: string;
   description: string;
-  limits?: { maxAssets?: number; maxUsers?: number; maxWarranties?: number; maxRequests?: number };
+  pricing?: Partial<PackagePricing>;
+  trialDays?: number;
+  sortOrder?: number;
+  limits?: LimitsInput;
   features?: Record<string, boolean>;
+  inclusions?: Record<string, boolean>;
 }
 
 export interface UpdatePackageInput {
   name?: string;
   description?: string;
   isActive?: boolean;
-  limits?: { maxAssets?: number; maxUsers?: number; maxWarranties?: number; maxRequests?: number };
+  pricing?: Partial<PackagePricing>;
+  trialDays?: number;
+  sortOrder?: number;
+  limits?: LimitsInput;
   features?: Record<string, boolean>;
+  inclusions?: Record<string, boolean>;
+}
+
+function normalizeLimits(limits?: LimitsInput): PackageLimits {
+  return {
+    maxAssets: limits?.maxAssets ?? -1,
+    maxUsers: limits?.maxUsers ?? -1,
+    maxWarranties: limits?.maxWarranties ?? -1,
+    maxRequests: limits?.maxRequests ?? -1,
+    maxSpaces: limits?.maxSpaces ?? -1,
+    maxInventoryItems: limits?.maxInventoryItems ?? -1,
+  };
+}
+
+function normalizePricing(pricing?: Partial<PackagePricing>): PackagePricing {
+  return {
+    monthlyPrice: pricing?.monthlyPrice ?? null,
+    annualPrice: pricing?.annualPrice ?? null,
+    currency: pricing?.currency ?? 'USD',
+    isCustom: pricing?.isCustom ?? false,
+  };
 }
 
 export async function getAllPackages() {
@@ -34,18 +73,16 @@ export async function getPackageDetails(packageId: string) {
 
 export async function createPackageWithAudit(user: AuthUser, data: CreatePackageInput) {
   const userContext = getUserContext(user);
-  const limits = data.limits ?? { maxAssets: -1, maxUsers: -1, maxWarranties: -1, maxRequests: -1 };
   const pkg = await dbCreatePackage(userContext.uid, {
     name: data.name,
     description: data.description,
     isActive: true,
-    limits: {
-      maxAssets: limits.maxAssets ?? -1,
-      maxUsers: limits.maxUsers ?? -1,
-      maxWarranties: limits.maxWarranties ?? -1,
-      maxRequests: limits.maxRequests ?? -1,
-    },
-    features: data.features ?? {},
+    pricing: normalizePricing(data.pricing),
+    trialDays: data.trialDays ?? 0,
+    sortOrder: data.sortOrder ?? 0,
+    limits: normalizeLimits(data.limits),
+    features: (data.features ?? {}) as Record<FeatureKey, boolean>,
+    inclusions: (data.inclusions ?? {}) as Record<InclusionKey, boolean>,
   });
 
   queueAuditLog({
@@ -72,14 +109,8 @@ export async function updatePackageWithAudit(
   const userContext = getUserContext(user);
   const updates = {
     ...data,
-    ...(data.limits && {
-      limits: {
-        maxAssets: data.limits.maxAssets ?? -1,
-        maxUsers: data.limits.maxUsers ?? -1,
-        maxWarranties: data.limits.maxWarranties ?? -1,
-        maxRequests: data.limits.maxRequests ?? -1,
-      },
-    }),
+    ...(data.pricing && { pricing: normalizePricing(data.pricing) }),
+    ...(data.limits && { limits: normalizeLimits(data.limits) }),
   };
   await dbUpdatePackage(packageId, userContext.uid, updates as never);
 

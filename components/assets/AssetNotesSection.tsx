@@ -58,7 +58,7 @@ export function AssetNotesSection({ assetId }: { assetId: string }) {
       <div className="px-5 py-4 border-b border-border flex items-center gap-2">
         <MessageSquareSVG />
         <h2 className="text-sm font-semibold text-gray-900">Notes</h2>
-        <span className="text-xs text-gray-400 ml-auto">{notes.length} total</span>
+        <span className="text-xs text-gray-400 ms-auto">{notes.length} total</span>
       </div>
 
       <form onSubmit={handleSubmit} className="px-5 py-4 border-b border-border bg-surface-page/50">

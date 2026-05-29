@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { formatDate, daysUntil } from '@/lib/utils/date';
 import { Asset, Warranty, Request } from '@/types';
+import { MessageKey } from '@/locales/messages';
 
 /* ── Inline SVG icons ───────────────────────────────────────────── */
 function ActiveIcon() {
@@ -65,13 +66,6 @@ function XIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
       <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-function ArrowRightIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-      <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -163,6 +157,7 @@ function SkeletonValue() {
 
 /* ── AssetBreakdownBar ───────────────────────────────────────────── */
 function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: boolean }) {
+  const { t } = useT();
   const categories: Record<string, number> = {};
   for (const a of assets) {
     if (a.status === 'Retired') continue;
@@ -193,7 +188,7 @@ function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: 
   }
 
   if (sorted.length === 0) {
-    return <p className="text-sm text-gray-500 py-4 text-center">No assets to display.</p>;
+    return <p className="text-sm text-gray-500 py-4 text-center">{t('dashboard.noAssets')}</p>;
   }
 
   return (
@@ -210,7 +205,7 @@ function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: 
                 style={{ width: `${pct}%` }}
               />
             </div>
-            <span className={`text-xs font-medium tabular-nums text-right ${tone.text}`}>
+            <span className={`text-xs font-medium tabular-nums text-end ${tone.text}`}>
               {count} · {pct}%
             </span>
           </div>
@@ -222,6 +217,7 @@ function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: 
 
 /* ── ActivityFeed ────────────────────────────────────────────────── */
 function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: boolean }) {
+  const { t, locale } = useT();
   const [now] = useState(() => Date.now());
 
   function getInitials(name?: string, email?: string): string {
@@ -235,10 +231,11 @@ function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: bool
     const diffMin = Math.floor(diffMs / 60_000);
     const diffH   = Math.floor(diffMs / 3_600_000);
     const diffD   = Math.floor(diffMs / 86_400_000);
-    if (diffMin < 2) return 'just now';
-    if (diffMin < 60) return `${diffMin}m ago`;
-    if (diffH < 24) return `${diffH}h ago`;
-    if (diffD === 1) return 'Yesterday';
+    if (diffMin < 2) return t('time.justNow');
+    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+    if (diffMin < 60) return rtf.format(-diffMin, 'minute');
+    if (diffH < 24) return rtf.format(-diffH, 'hour');
+    if (diffD === 1) return rtf.format(-1, 'day');
     return formatDate(d);
   }
 
@@ -259,7 +256,7 @@ function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: bool
   }
 
   if (logs.length === 0) {
-    return <p className="text-sm text-gray-500 py-4 text-center">No recent activity.</p>;
+    return <p className="text-sm text-gray-500 py-4 text-center">{t('dashboard.noActivity')}</p>;
   }
 
   const ACTION_COLOR: Record<string, string> = {
@@ -273,7 +270,7 @@ function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: bool
   return (
     <div className="space-y-4">
       {logs.map((log) => {
-        const actor = log.actorName || log.actorEmail || 'System';
+        const actor = log.actorName || log.actorEmail || t('common.system');
         const initials = getInitials(log.actorName, log.actorEmail);
         const actionColor = ACTION_COLOR[log.action?.toLowerCase()] ?? 'text-gray-600';
         return (
@@ -303,11 +300,11 @@ function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: bool
 }
 
 /* ── PendingRequestsTable (admin only) ───────────────────────────── */
-const typeLabels: Record<string, string> = {
-  REFILL: 'Refill',
-  RETIRE: 'Retire',
-  BUY_NEW: 'Buy New',
-  EXTEND_WARRANTY: 'Extend Warranty',
+const typeKeys: Record<string, MessageKey> = {
+  REFILL: 'requestType.REFILL',
+  RETIRE: 'requestType.RETIRE',
+  BUY_NEW: 'requestType.BUY_NEW',
+  EXTEND_WARRANTY: 'requestType.EXTEND_WARRANTY',
 };
 
 const typeTones: Record<string, string> = {
@@ -333,19 +330,20 @@ function PendingRequestsTable({
   onReject: (id: string) => void;
 }) {
   const router = useRouter();
+  const { t } = useT();
   const columns: ColumnDef<Request>[] = [
     {
       key: 'type',
-      header: 'Type',
+      header: t('requests.type'),
       render: (r) => (
         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${typeTones[r.type] ?? 'bg-gray-100 text-gray-700'}`}>
-          {typeLabels[r.type] ?? r.type}
+          {typeKeys[r.type] ? t(typeKeys[r.type]) : r.type}
         </span>
       ),
     },
     {
       key: 'asset',
-      header: 'Asset',
+      header: t('col.asset'),
       render: (r) => (
         <span className="font-medium text-gray-900 text-sm">
           {r.assetName ?? r.inventoryItemName ?? '—'}
@@ -354,7 +352,7 @@ function PendingRequestsTable({
     },
     {
       key: 'by',
-      header: 'Requested by',
+      header: t('requests.submittedBy'),
       render: (r) => (
         <span className="text-sm text-gray-600">
           {r.createdByName ?? r.createdByEmail ?? r.createdBy}
@@ -369,14 +367,14 @@ function PendingRequestsTable({
           <div className="flex items-center gap-1 justify-end">
             <button
               onClick={(e) => { e.stopPropagation(); onApprove(r.id); }}
-              aria-label="Approve request"
+              aria-label={t('common.approve')}
               className="h-7 w-7 rounded-md flex items-center justify-center text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors duration-150"
             >
               <CheckIcon />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onReject(r.id); }}
-              aria-label="Reject request"
+              aria-label={t('common.reject')}
               className="h-7 w-7 rounded-md flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors duration-150"
             >
               <XIcon />
@@ -391,7 +389,7 @@ function PendingRequestsTable({
       data={requests}
       columns={columns}
       isLoading={isLoading}
-      emptyMessage="No pending requests."
+      emptyMessage={t('dashboard.noPendingRequests')}
       onRowClick={() => router.push(`/${locale}/${orgSlug}/requests/list`)}
       keyExtractor={(r) => r.id}
     />
@@ -435,7 +433,7 @@ export default function DashboardPage() {
         const d = daysUntil(w.endDate);
         return (
           <span className={`font-semibold tabular-nums text-sm ${d < 7 ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'}`}>
-            {d < 0 ? `${Math.abs(d)}d ago` : `${d}d`}
+            {d < 0 ? `${Math.abs(d)}${t('time.dayShort')} ${t('time.ago')}` : `${d}${t('time.dayShort')}`}
           </span>
         );
       },
@@ -448,7 +446,7 @@ export default function DashboardPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-            {t(getGreetingKey())}, {firstName}
+            {t(getGreetingKey())}{locale === 'ar' ? '،' : ','} {firstName}
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {t('dashboard.subtitle')}
@@ -479,9 +477,9 @@ export default function DashboardPage() {
           icon={<InboxIcon />}
           iconBg="var(--yellow-50)"
           iconColor="var(--yellow-700)"
-          label="Pending Requests"
+          label={t('dashboard.pendingRequests')}
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{pendingRequests.length}</p>}
-          sub={!isLoading && pendingRequests.length > 0 ? 'need review' : undefined}
+          sub={!isLoading && pendingRequests.length > 0 ? t('dashboard.needReview') : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/requests/list?status=PENDING`)}
         />
         <StatCard
@@ -493,7 +491,7 @@ export default function DashboardPage() {
             isLoading ? <SkeletonValue /> : (
               <p className="text-2xl font-bold text-gray-900 tabular-nums">
                 {expiringWarranties.length}
-                <span className="text-sm font-normal text-gray-500 ml-1">soon</span>
+                <span className="text-sm font-normal text-gray-500 ms-1">{t('dashboard.soon')}</span>
               </p>
             )
           }
@@ -507,13 +505,12 @@ export default function DashboardPage() {
         <Card className="lg:col-span-3">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-semibold text-gray-900">Asset breakdown</h2>
+              <h2 className="text-sm font-semibold text-gray-900">{t('dashboard.assetBreakdown')}</h2>
               <button
                 onClick={() => router.push(`/${locale}/${orgSlug}/usool/list`)}
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
               >
-                {t('dashboard.viewAll')} <ArrowRightIcon />
-              </button>
+                {t('dashboard.viewAll')}              </button>
             </div>
             <AssetBreakdownBar assets={totalAssets} isLoading={isLoading} />
           </CardContent>
@@ -523,13 +520,12 @@ export default function DashboardPage() {
         <Card className="lg:col-span-2">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-semibold text-gray-900">Recent activity</h2>
+              <h2 className="text-sm font-semibold text-gray-900">{t('dashboard.recentActivity')}</h2>
               <button
                 onClick={() => router.push(`/${locale}/${orgSlug}/audit-logs`)}
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
               >
-                View all <ArrowRightIcon />
-              </button>
+                {t('dashboard.viewAll')}              </button>
             </div>
             <ActivityFeed logs={auditLogs} isLoading={isLoading} />
           </CardContent>
@@ -547,8 +543,7 @@ export default function DashboardPage() {
                 onClick={() => router.push(`/${locale}/${orgSlug}/warranties`)}
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
               >
-                {t('dashboard.viewAll')} <ArrowRightIcon />
-              </button>
+                {t('dashboard.viewAll')}              </button>
             </div>
             <DataTable
               data={expiringWarranties.slice(0, 5)}
@@ -566,7 +561,7 @@ export default function DashboardPage() {
             <CardContent className="p-0">
               <div className="px-5 py-4 border-b border-border flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <h2 className="text-sm font-semibold text-gray-900">Pending requests</h2>
+                  <h2 className="text-sm font-semibold text-gray-900">{t('dashboard.pendingRequests')}</h2>
                   {!isLoading && pendingRequests.length > 0 && (
                     <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[11px] font-semibold tabular-nums">
                       {pendingRequests.length}
@@ -577,8 +572,7 @@ export default function DashboardPage() {
                   onClick={() => router.push(`/${locale}/${orgSlug}/requests/list?status=PENDING`)}
                   className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
                 >
-                  Open queue <ArrowRightIcon />
-                </button>
+                  {t('dashboard.openQueue')}                </button>
               </div>
               <PendingRequestsTable
                 requests={pendingRequests}

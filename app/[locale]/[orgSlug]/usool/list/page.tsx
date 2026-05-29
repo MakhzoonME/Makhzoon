@@ -109,7 +109,7 @@ export default function AssetsListPage() {
   const canCreateAsset = !!user && hasPermission(user, 'assets', 'create');
 
   const columns: ColumnDef<Asset>[] = [
-    { key: 'name', header: t('col.name'), sortable: true, render: (a) => <button className="font-medium text-primary-600 hover:text-primary-700 hover:underline text-left" onClick={() => router.push(`/${locale}/${orgSlug}/usool/${a.id}`)}>{a.name}</button> },
+    { key: 'name', header: t('col.name'), sortable: true, render: (a) => <button className="font-medium text-primary-600 hover:text-primary-700 hover:underline text-start" onClick={() => router.push(`/${locale}/${orgSlug}/usool/${a.id}`)}>{a.name}</button> },
     { key: 'category', header: t('col.category'), sortable: true, render: (a) => a.category },
     { key: 'status', header: t('col.status'), sortable: true, render: (a) => <StatusBadge status={a.status} marker="dot" /> },
     { key: 'serialNumber', header: t('col.serialNumber'), sortable: true, render: (a) => a.serialNumber ? <span className="font-mono text-xs text-gray-600">{a.serialNumber}</span> : <span className="text-gray-400">—</span> },
@@ -124,7 +124,7 @@ export default function AssetsListPage() {
             <>
               {a.status !== 'Retired' && (
                 <SubscriptionGate>
-                  <Button size="sm" variant="ghost" aria-label="Edit asset" onClick={(e) => { e.stopPropagation(); setEditTarget(a); setDrawerOpen(true); }}>
+                  <Button size="sm" variant="ghost" aria-label={t('common.edit')} onClick={(e) => { e.stopPropagation(); setEditTarget(a); setDrawerOpen(true); }}>
                     <Pencil className="w-3.5 h-3.5" />
                   </Button>
                 </SubscriptionGate>
@@ -296,10 +296,10 @@ export default function AssetsListPage() {
       <ConfirmDialog
         open={showDiscardDrawer}
         onOpenChange={setShowDiscardDrawer}
-        title="Discard changes?"
-        description="You have unsaved changes. Are you sure you want to discard them?"
-        confirmLabel="Discard"
-        cancelLabel="Keep editing"
+        title={t('common.discardTitle')}
+        description={t('common.discardDesc')}
+        confirmLabel={t('common.discard')}
+        cancelLabel={t('common.keepEditing')}
         onConfirm={() => { setShowDiscardDrawer(false); closeDrawer(); }}
         variant="destructive"
       />

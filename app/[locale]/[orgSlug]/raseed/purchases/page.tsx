@@ -9,11 +9,13 @@ import { Button } from '@/components/ui/button';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { usePurchases } from '@/hooks/inventory';
 import { PurchaseStatusBadge } from '@/components/inventory/purchases/PurchaseStatusBadge';
+import { useT } from '@/hooks/ui';
 import type { Purchase, PurchaseStatus } from '@/types';
 
 export default function PurchasesListPage() {
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string }>();
+  const { t } = useT();
   const [status, setStatus] = useState<PurchaseStatus | 'all'>('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -28,44 +30,44 @@ export default function PurchasesListPage() {
   const columns: ColumnDef<Purchase>[] = [
     {
       key: 'invoiceDate',
-      header: 'Date',
+      header: t('col.date'),
       sortable: true,
       render: (p) => new Date(p.invoiceDate).toLocaleDateString(),
     },
-    { key: 'supplierName', header: 'Supplier', sortable: true, render: (p) => p.supplierName },
-    { key: 'invoiceNumber', header: 'Invoice #', render: (p) => p.invoiceNumber || '—' },
-    { key: 'lines', header: 'Lines', render: (p) => String(p.lines.length) },
+    { key: 'supplierName', header: t('col.supplier'), sortable: true, render: (p) => p.supplierName },
+    { key: 'invoiceNumber', header: t('col.invoiceNumber'), render: (p) => p.invoiceNumber || '—' },
+    { key: 'lines', header: t('col.lines'), render: (p) => String(p.lines.length) },
     {
       key: 'total',
-      header: 'Total',
+      header: t('col.total'),
       sortable: true,
       render: (p) => p.total.toFixed(2),
     },
-    { key: 'status', header: 'Status', render: (p) => <PurchaseStatusBadge status={p.status} /> },
+    { key: 'status', header: t('col.status'), render: (p) => <PurchaseStatusBadge status={p.status} /> },
   ];
 
   return (
     <div className="p-6">
       <PageHeader
-        title="Purchases"
-        description="Record stock-in from suppliers. Receiving a purchase increases inventory levels."
+        title={t('nav.purchases')}
+        description={t('purchases.subtitle')}
         breadcrumb={[
-          { label: 'Raseed', href: `/${params.locale}/${params.orgSlug}/raseed` },
-          { label: 'Purchases', href: '#' },
+          { label: t('nav.inventory'), href: `/${params.locale}/${params.orgSlug}/raseed` },
+          { label: t('nav.purchases'), href: '#' },
         ]}
         actions={
           <Button onClick={() => router.push(`/${params.locale}/${params.orgSlug}/raseed/purchases/new`)}>
-            <Plus size={16} className="mr-1" /> New purchase
+            <Plus size={16} className="me-1" /> {t('purchases.newPurchase')}
           </Button>
         }
       />
 
       <FilterBar
-        searchPlaceholder="Search supplier or invoice…"
+        searchPlaceholder={t('purchases.searchPlaceholder')}
         searchValue={search}
         onSearchChange={setSearch}
         filters={
-          <ConfigSelect listKey="purchase_status" value={status} onValueChange={(v) => setStatus(v as PurchaseStatus | 'all')} includeAll allLabel="All statuses" className="w-40" />
+          <ConfigSelect listKey="purchase_status" value={status} onValueChange={(v) => setStatus(v as PurchaseStatus | 'all')} includeAll allLabel={t('requests.allStatuses')} className="w-40" />
         }
       />
 
@@ -74,7 +76,7 @@ export default function PurchasesListPage() {
         data={data?.items ?? []}
         keyExtractor={(p) => p.id}
         isLoading={isLoading}
-        emptyMessage="No purchases yet — create one to record your first supplier delivery."
+        emptyMessage={t('purchases.noPurchases')}
         onRowClick={(p) => router.push(`/${params.locale}/${params.orgSlug}/raseed/purchases/${p.id}`)}
         pagination={
           data

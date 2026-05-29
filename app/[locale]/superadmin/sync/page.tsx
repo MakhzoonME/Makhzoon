@@ -127,7 +127,7 @@ export default function SyncPage() {
               onClick={() => setPending(pair)}
               disabled={dispatchMutation.isPending}
             >
-              <RefreshCw className={cn('h-3.5 w-3.5 mr-1', dispatchMutation.isPending && 'animate-spin')} />
+              <RefreshCw className={cn('h-3.5 w-3.5 me-1', dispatchMutation.isPending && 'animate-spin')} />
               Run sync
             </Button>
           </div>
@@ -145,10 +145,10 @@ export default function SyncPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-page">
-                  <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Title</th>
-                  <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Event</th>
-                  <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                  <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Started</th>
+                  <th className="text-start px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Title</th>
+                  <th className="text-start px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Event</th>
+                  <th className="text-start px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                  <th className="text-start px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Started</th>
                   <th className="px-3 py-2" />
                 </tr>
               </thead>
@@ -165,14 +165,14 @@ export default function SyncPage() {
                     <td className="px-3 py-2 text-xs text-gray-500">
                       {new Date(r.started).toLocaleString()}
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-3 py-2 text-end">
                       <a
                         href={r.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary-600 hover:text-primary-700 inline-flex items-center text-xs"
                       >
-                        Logs <ExternalLink className="h-3 w-3 ml-1" />
+                        Logs <ExternalLink className="h-3 w-3 ms-1" />
                       </a>
                     </td>
                   </tr>

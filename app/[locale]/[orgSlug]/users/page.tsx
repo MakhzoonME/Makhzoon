@@ -24,6 +24,7 @@ import { PermissionsEditor } from '@/components/users/PermissionsEditor';
 import { useSubscriptionFeatures } from '@/hooks/org';
 import { UserPermissions, DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from '@/types';
 import { useT } from '@/hooks/ui';
+import type { MessageKey } from '@/locales/messages';
 import { Plus, Pencil, Trash2, MailX } from 'lucide-react';
 
 
@@ -38,11 +39,19 @@ const ROLE_STYLE: Record<string, string> = {
   staff:       'bg-surface-page text-gray-600',
 };
 
-const ROLE_LABEL: Record<string, string> = {
-  admin: 'Admin',
-  super_admin: 'Super Admin',
-  org_owner: 'Owner',
-  staff: 'Staff',
+const ROLE_KEY: Record<string, MessageKey> = {
+  admin: 'role.admin',
+  super_admin: 'role.superAdmin',
+  org_owner: 'role.orgOwner',
+  staff: 'role.staff',
+};
+
+const STATUS_KEY: Record<string, MessageKey> = {
+  active: 'userStatus.active',
+  deactivated: 'userStatus.deactivated',
+  pending: 'userStatus.pending',
+  expired: 'userStatus.expired',
+  revoked: 'userStatus.revoked',
 };
 
 const STATUS_STYLE: Record<string, string> = {
@@ -54,17 +63,19 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 function RoleBadge({ role }: { role: string }) {
+  const { t } = useT();
   return (
     <span className={cn('inline-block px-2 py-0.5 rounded-full text-xs font-semibold', ROLE_STYLE[role] ?? 'bg-surface-page text-gray-600')}>
-      {ROLE_LABEL[role] ?? role.replace('_', ' ')}
+      {ROLE_KEY[role] ? t(ROLE_KEY[role]) : role.replace('_', ' ')}
     </span>
   );
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useT();
   return (
-    <span className={cn('inline-block px-2 py-0.5 rounded-full text-xs font-semibold capitalize', STATUS_STYLE[status] ?? 'bg-surface-page text-gray-600')}>
-      {status}
+    <span className={cn('inline-block px-2 py-0.5 rounded-full text-xs font-semibold', STATUS_STYLE[status] ?? 'bg-surface-page text-gray-600')}>
+      {STATUS_KEY[status] ? t(STATUS_KEY[status]) : status}
     </span>
   );
 }
@@ -120,10 +131,10 @@ export default function UsersPage() {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error ?? 'Failed to revoke invite');
       }
-      toast.success(`Invite for ${invite.email ?? invite.username} revoked.`);
+      toast.success(t('common.removed'));
       qc.invalidateQueries({ queryKey: ['invites'] });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to revoke invite');
+      toast.error(err instanceof Error ? err.message : t('common.removeFailed'));
     } finally {
       setRevoking(null);
     }
@@ -153,11 +164,11 @@ export default function UsersPage() {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error ?? 'Failed to update role');
       }
-      toast.success('Role updated');
+      toast.success(t('common.updated'));
       qc.invalidateQueries({ queryKey: ['users'] });
       setEditTarget(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update role');
+      toast.error(err instanceof Error ? err.message : t('common.updateFailed'));
     } finally {
       setSavingRole(false);
     }
@@ -176,14 +187,11 @@ export default function UsersPage() {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error ?? (permanent ? 'Failed to delete user' : 'Failed to deactivate user'));
       }
-      toast.success(permanent
-        ? `${target.displayName || target.email} deleted permanently`
-        : `${target.displayName || target.email} deactivated`
-      );
+      toast.success(permanent ? t('common.deleted') : t('common.updated'));
       qc.invalidateQueries({ queryKey: ['users'] });
       setDeleteTarget(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed');
+      toast.error(err instanceof Error ? err.message : t('common.failed'));
     } finally {
       setDeleting(false);
     }
@@ -197,7 +205,7 @@ export default function UsersPage() {
           canInvite
             ? (
               <SubscriptionGate>
-                <Button size="sm" onClick={() => setShowInvite(true)}><Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ml-1">{t('users.inviteUser')}</span></Button>
+                <Button size="sm" onClick={() => setShowInvite(true)}><Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('users.inviteUser')}</span></Button>
               </SubscriptionGate>
             )
             : undefined
@@ -208,11 +216,11 @@ export default function UsersPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-page">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.name')}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.emailUsername')}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.role')}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.status')}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.joined')}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.name')}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.emailUsername')}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.role')}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.status')}</th>
+              <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.joined')}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -243,7 +251,7 @@ export default function UsersPage() {
                       <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
                       <td className="px-4 py-3"><StatusBadge status={u.status} /></td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(u.createdAt)}</td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-end">
                         {editable && (
                           <div className="flex items-center justify-end gap-1">
                             {u.status !== 'deactivated' && (
@@ -300,7 +308,7 @@ export default function UsersPage() {
                     <td className="px-4 py-3"><RoleBadge role={inv.role} /></td>
                     <td className="px-4 py-3"><StatusBadge status="pending" /></td>
                     <td className="px-4 py-3 text-gray-400 text-xs">{t('users.expires')} {formatDate(inv.expiresAt)}</td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-end">
                       {isAdmin && (
                         <SubscriptionGate>
                           <Button

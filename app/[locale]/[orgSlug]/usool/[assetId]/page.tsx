@@ -62,7 +62,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
   const { assetId } = params;
   const router = useRouter();
   const orgSlug = useOrgSlug();
-  const { locale } = useT();
+  const { t, locale } = useT();
   const { user } = useAuthStore();
   const qc = useQueryClient();
   const { data: asset, isLoading, error } = useAsset(assetId);
@@ -132,17 +132,17 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
           <div className="flex gap-2">
             {asset.status !== 'Retired' && (
               <Button variant="outline" size="sm" onClick={() => setEditAssetOpen(true)}>
-                <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ml-1">Edit</span>
+                <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ms-1">Edit</span>
               </Button>
             )}
             {asset.status === 'Active' && (
               <Button variant="destructive" size="sm" onClick={() => setShowRetire(true)}>
-                <Archive className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ml-1.5">Retire</span>
+                <Archive className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ms-1.5">Retire</span>
               </Button>
             )}
             {asset.status === 'Retired' && (
               <Button variant="destructive" size="sm" onClick={() => setShowRetire(true)}>
-                <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ml-1.5">Delete permanently</span>
+                <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ms-1.5">Delete permanently</span>
               </Button>
             )}
           </div>
@@ -216,7 +216,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
                       <TooltipTrigger asChild>
                         <span tabIndex={0}>
                           <Button size="sm" variant="ghost" disabled aria-disabled="true" className="pointer-events-none opacity-50">
-                            <PlusSVG /><span className="ml-1">Add warranty</span>
+                            <PlusSVG /><span className="ms-1">Add warranty</span>
                           </Button>
                         </span>
                       </TooltipTrigger>
@@ -227,7 +227,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
               }
               return (
                 <Button size="sm" variant="ghost" onClick={() => setAddWarrantyOpen(true)}>
-                  <PlusSVG /><span className="ml-1">Add warranty</span>
+                  <PlusSVG /><span className="ms-1">Add warranty</span>
                 </Button>
               );
             })()}
@@ -300,21 +300,21 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
         loading={retiring}
       />
 
-      <FormDrawer open={editAssetOpen} onOpenChange={setEditAssetOpen} title="Edit Asset">
+      <FormDrawer open={editAssetOpen} onOpenChange={setEditAssetOpen} title={t('assets.editAsset')}>
         <AssetForm asset={asset} onSuccess={() => setEditAssetOpen(false)} />
       </FormDrawer>
 
       <FormDrawer
         open={!!editWarrantyTarget}
         onOpenChange={(o) => { if (!o) setEditWarrantyTarget(null); }}
-        title="Edit Warranty"
+        title={t('warranties.editWarranty')}
       >
         {editWarrantyTarget && (
           <WarrantyForm warranty={editWarrantyTarget} onSuccess={() => setEditWarrantyTarget(null)} />
         )}
       </FormDrawer>
 
-      <FormDrawer open={addWarrantyOpen} onOpenChange={setAddWarrantyOpen} title="Add Warranty">
+      <FormDrawer open={addWarrantyOpen} onOpenChange={setAddWarrantyOpen} title={t('warranties.addWarranty')}>
         <WarrantyForm
           defaultAssetId={assetId}
           onSuccess={() => setAddWarrantyOpen(false)}

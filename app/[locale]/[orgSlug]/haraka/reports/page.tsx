@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { PageHeader, ExportButton, LoadingSkeleton } from '@/components/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { useAdminGuard } from '@/hooks/ui';
+import { useAdminGuard, useT } from '@/hooks/ui';
 import { useHarakaReport, buildReportExportUrl, type AggregateGroupBy, type AggregateBucket } from '@/hooks/haraka';
 
 interface DateRange {
@@ -33,6 +33,7 @@ function toInput(d: Date): string {
 export default function HarakaReportsPage() {
   const { isAllowed } = useAdminGuard('pos.view_reports');
   const params = useParams<{ locale: string; orgSlug: string }>();
+  const { t } = useT();
 
   const [range, setRange] = useState<DateRange>(() => {
     const to = new Date();
@@ -51,11 +52,11 @@ export default function HarakaReportsPage() {
   return (
     <div className="p-6 space-y-6">
       <PageHeader
-        title="Haraka reports"
-        description="Sales rollups for the selected date range. Exports are CSV per widget."
+        title={t('nav.harakaReports')}
+        description={t('reports.subtitle')}
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/haraka` },
-          { label: 'Reports', href: '#' },
+          { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/haraka` },
+          { label: t('nav.harakaReports'), href: '#' },
         ]}
       />
 
@@ -73,11 +74,12 @@ export default function HarakaReportsPage() {
 }
 
 function DateRangePicker({ range, onChange }: { range: DateRange; onChange: (r: DateRange) => void }) {
+  const { t } = useT();
   return (
     <Card>
       <CardContent className="p-4 flex flex-wrap items-end gap-4">
         <div>
-          <label className="text-xs text-gray-500 block mb-1">From</label>
+          <label className="text-xs text-gray-500 block mb-1">{t('reports.from')}</label>
           <Input
             type="date"
             value={toInput(range.from)}
@@ -85,7 +87,7 @@ function DateRangePicker({ range, onChange }: { range: DateRange; onChange: (r: 
           />
         </div>
         <div>
-          <label className="text-xs text-gray-500 block mb-1">To</label>
+          <label className="text-xs text-gray-500 block mb-1">{t('reports.to')}</label>
           <Input
             type="date"
             value={toInput(range.to)}
@@ -99,14 +101,15 @@ function DateRangePicker({ range, onChange }: { range: DateRange; onChange: (r: 
 }
 
 function PresetButtons({ onChange }: { onChange: (r: DateRange) => void }) {
+  const { t } = useT();
   const presets: Array<{ label: string; days: number }> = [
-    { label: 'Today', days: 0 },
+    { label: t('reports.today'), days: 0 },
     { label: '7d', days: 7 },
     { label: '30d', days: 30 },
     { label: '90d', days: 90 },
   ];
   return (
-    <div className="flex items-center gap-1.5 ml-auto">
+    <div className="flex items-center gap-1.5 ms-auto">
       {presets.map((p) => (
         <button
           key={p.label}
@@ -169,7 +172,7 @@ function WidgetShell({
 function EmptyOrLoading({
   isLoading,
   empty,
-  emptyLabel = 'No data in the selected range.',
+  emptyLabel,
   children,
 }: {
   isLoading: boolean;
@@ -177,19 +180,21 @@ function EmptyOrLoading({
   emptyLabel?: string;
   children: React.ReactNode;
 }) {
+  const { t } = useT();
   if (isLoading) return <LoadingSkeleton rows={5} columns={1} />;
-  if (empty) return <div className="text-sm text-gray-500 py-8 text-center">{emptyLabel}</div>;
+  if (empty) return <div className="text-sm text-gray-500 py-8 text-center">{emptyLabel ?? t('reports.noData')}</div>;
   return <>{children}</>;
 }
 
 function SalesByDayWidget({ range }: WidgetProps) {
+  const { t } = useT();
   const { data, isLoading } = useHarakaReport({ groupBy: 'day', from: range.from, to: range.to });
   const buckets = data?.buckets ?? [];
   const maxTotal = buckets.reduce((acc, b) => Math.max(acc, b.total), 0) || 1;
   return (
     <WidgetShell
-      title="Sales by day"
-      description={`Daily revenue across ${buckets.length} day${buckets.length === 1 ? '' : 's'}.`}
+      title={t('reports.salesByDay')}
+      description={t('reports.salesByDayDesc').replace('{count}', String(buckets.length))}
       range={range}
       groupBy="day"
       filename="sales-by-day.csv"
@@ -205,8 +210,8 @@ function SalesByDayWidget({ range }: WidgetProps) {
                   style={{ width: `${(b.total / maxTotal) * 100}%` }}
                 />
               </div>
-              <span className="w-20 text-right font-mono">{fmt(b.total)}</span>
-              <span className="w-12 text-right text-gray-400">×{b.count}</span>
+              <span className="w-20 text-end font-mono">{fmt(b.total)}</span>
+              <span className="w-12 text-end text-gray-400">×{b.count}</span>
             </div>
           ))}
         </div>
@@ -217,12 +222,13 @@ function SalesByDayWidget({ range }: WidgetProps) {
 }
 
 function TopItemsWidget({ range }: WidgetProps) {
+  const { t } = useT();
   const { data, isLoading } = useHarakaReport({ groupBy: 'item', from: range.from, to: range.to, topN: 10 });
   const buckets = data?.buckets ?? [];
   return (
     <WidgetShell
-      title="Top-selling items"
-      description="Top 10 items by revenue."
+      title={t('reports.topItems')}
+      description={t('reports.topItemsDesc')}
       range={range}
       groupBy="item"
       topN={10}
@@ -231,18 +237,18 @@ function TopItemsWidget({ range }: WidgetProps) {
       <EmptyOrLoading isLoading={isLoading} empty={buckets.length === 0}>
         <table className="w-full text-sm">
           <thead className="border-b border-border">
-            <tr className="text-left text-xs text-gray-500">
-              <th className="py-1.5 font-medium">Item</th>
-              <th className="py-1.5 font-medium text-right">Qty</th>
-              <th className="py-1.5 font-medium text-right">Revenue</th>
+            <tr className="text-start text-xs text-gray-500">
+              <th className="py-1.5 font-medium">{t('reports.item')}</th>
+              <th className="py-1.5 font-medium text-end">{t('reports.qty')}</th>
+              <th className="py-1.5 font-medium text-end">{t('reports.revenue')}</th>
             </tr>
           </thead>
           <tbody>
             {buckets.map((b) => (
               <tr key={b.key} className="border-b border-border last:border-0">
                 <td className="py-1.5 truncate max-w-[200px]">{b.label}</td>
-                <td className="py-1.5 text-right font-mono">{b.quantity ?? 0}</td>
-                <td className="py-1.5 text-right font-mono">{fmt(b.total)}</td>
+                <td className="py-1.5 text-end font-mono">{b.quantity ?? 0}</td>
+                <td className="py-1.5 text-end font-mono">{fmt(b.total)}</td>
               </tr>
             ))}
           </tbody>
@@ -253,30 +259,32 @@ function TopItemsWidget({ range }: WidgetProps) {
 }
 
 function SalesByCashierWidget({ range }: WidgetProps) {
+  const { t } = useT();
   const { data, isLoading } = useHarakaReport({ groupBy: 'cashier', from: range.from, to: range.to });
   const buckets = data?.buckets ?? [];
   return (
     <WidgetShell
-      title="Sales by cashier"
-      description="Revenue and sale count per cashier."
+      title={t('reports.salesByCashier')}
+      description={t('reports.salesByCashierDesc')}
       range={range}
       groupBy="cashier"
       filename="sales-by-cashier.csv"
     >
       <EmptyOrLoading isLoading={isLoading} empty={buckets.length === 0}>
-        <BucketTable buckets={buckets} keyHeader="Cashier" />
+        <BucketTable buckets={buckets} keyHeader={t('reports.cashier')} />
       </EmptyOrLoading>
     </WidgetShell>
   );
 }
 
 function SalesByPaymentMethodWidget({ range }: WidgetProps) {
+  const { t } = useT();
   const { data, isLoading } = useHarakaReport({ groupBy: 'paymentMethod', from: range.from, to: range.to });
   const buckets = data?.buckets ?? [];
   return (
     <WidgetShell
-      title="Sales by payment method"
-      description="Money in, split by tender."
+      title={t('reports.salesByPayment')}
+      description={t('reports.salesByPaymentDesc')}
       range={range}
       groupBy="paymentMethod"
       filename="sales-by-payment-method.csv"
@@ -284,18 +292,18 @@ function SalesByPaymentMethodWidget({ range }: WidgetProps) {
       <EmptyOrLoading isLoading={isLoading} empty={buckets.length === 0}>
         <table className="w-full text-sm">
           <thead className="border-b border-border">
-            <tr className="text-left text-xs text-gray-500">
-              <th className="py-1.5 font-medium">Method</th>
-              <th className="py-1.5 font-medium text-right">Count</th>
-              <th className="py-1.5 font-medium text-right">Total</th>
+            <tr className="text-start text-xs text-gray-500">
+              <th className="py-1.5 font-medium">{t('reports.method')}</th>
+              <th className="py-1.5 font-medium text-end">{t('reports.count')}</th>
+              <th className="py-1.5 font-medium text-end">{t('col.total')}</th>
             </tr>
           </thead>
           <tbody>
             {buckets.map((b) => (
               <tr key={b.key} className="border-b border-border last:border-0">
                 <td className="py-1.5 capitalize">{b.label}</td>
-                <td className="py-1.5 text-right font-mono">{b.count}</td>
-                <td className="py-1.5 text-right font-mono">{fmt(b.total)}</td>
+                <td className="py-1.5 text-end font-mono">{b.count}</td>
+                <td className="py-1.5 text-end font-mono">{fmt(b.total)}</td>
               </tr>
             ))}
           </tbody>
@@ -306,18 +314,19 @@ function SalesByPaymentMethodWidget({ range }: WidgetProps) {
 }
 
 function SessionSummariesWidget({ range }: WidgetProps) {
+  const { t } = useT();
   const { data, isLoading } = useHarakaReport({ groupBy: 'session', from: range.from, to: range.to });
   const buckets = data?.buckets ?? [];
   return (
     <WidgetShell
-      title="Session summaries"
-      description="Roll-up of sales per cash-drawer session in the range."
+      title={t('reports.sessionSummaries')}
+      description={t('reports.sessionSummariesDesc')}
       range={range}
       groupBy="session"
       filename="session-summaries.csv"
     >
       <EmptyOrLoading isLoading={isLoading} empty={buckets.length === 0}>
-        <BucketTable buckets={buckets} keyHeader="Session" mono />
+        <BucketTable buckets={buckets} keyHeader={t('reports.session')} mono />
       </EmptyOrLoading>
     </WidgetShell>
   );
@@ -332,15 +341,16 @@ function BucketTable({
   keyHeader: string;
   mono?: boolean;
 }) {
+  const { t } = useT();
   return (
     <table className="w-full text-sm">
       <thead className="border-b border-border">
-        <tr className="text-left text-xs text-gray-500">
+        <tr className="text-start text-xs text-gray-500">
           <th className="py-1.5 font-medium">{keyHeader}</th>
-          <th className="py-1.5 font-medium text-right">Sales</th>
-          <th className="py-1.5 font-medium text-right">Subtotal</th>
-          <th className="py-1.5 font-medium text-right">Tax</th>
-          <th className="py-1.5 font-medium text-right">Total</th>
+          <th className="py-1.5 font-medium text-end">{t('reports.sales')}</th>
+          <th className="py-1.5 font-medium text-end">{t('reports.subtotal')}</th>
+          <th className="py-1.5 font-medium text-end">{t('reports.tax')}</th>
+          <th className="py-1.5 font-medium text-end">{t('col.total')}</th>
         </tr>
       </thead>
       <tbody>
@@ -349,10 +359,10 @@ function BucketTable({
             <td className={`py-1.5 truncate max-w-[180px] ${mono ? 'font-mono text-xs' : ''}`}>
               {b.label}
             </td>
-            <td className="py-1.5 text-right font-mono">{b.count}</td>
-            <td className="py-1.5 text-right font-mono">{fmt(b.subtotal)}</td>
-            <td className="py-1.5 text-right font-mono">{fmt(b.taxAmount)}</td>
-            <td className="py-1.5 text-right font-mono">{fmt(b.total)}</td>
+            <td className="py-1.5 text-end font-mono">{b.count}</td>
+            <td className="py-1.5 text-end font-mono">{fmt(b.subtotal)}</td>
+            <td className="py-1.5 text-end font-mono">{fmt(b.taxAmount)}</td>
+            <td className="py-1.5 text-end font-mono">{fmt(b.total)}</td>
           </tr>
         ))}
       </tbody>
@@ -361,19 +371,20 @@ function BucketTable({
 }
 
 function Totals({ data }: { data: { transactions: number; subtotal: number; taxAmount: number; total: number } }) {
+  const { t } = useT();
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 pt-4 mt-3 border-t border-border text-xs">
       <span className="text-gray-500">
-        Sales: <span className="font-mono text-gray-900">{data.transactions}</span>
+        {t('reports.sales')}: <span className="font-mono text-gray-900">{data.transactions}</span>
       </span>
       <span className="text-gray-500">
-        Subtotal: <span className="font-mono text-gray-900">{fmt(data.subtotal)}</span>
+        {t('reports.subtotal')}: <span className="font-mono text-gray-900">{fmt(data.subtotal)}</span>
       </span>
       <span className="text-gray-500">
-        Tax: <span className="font-mono text-gray-900">{fmt(data.taxAmount)}</span>
+        {t('reports.tax')}: <span className="font-mono text-gray-900">{fmt(data.taxAmount)}</span>
       </span>
       <span className="text-gray-500">
-        Total: <span className="font-mono text-gray-900 font-semibold">{fmt(data.total)}</span>
+        {t('col.total')}: <span className="font-mono text-gray-900 font-semibold">{fmt(data.total)}</span>
       </span>
     </div>
   );

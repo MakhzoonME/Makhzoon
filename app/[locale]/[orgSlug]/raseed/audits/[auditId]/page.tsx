@@ -68,10 +68,10 @@ function ItemRow({ item, auditId, completed }: { item: InventoryAuditItem; audit
             className="h-7 text-xs w-36"
           />
           <Button size="sm" variant="outline" className="h-7 text-xs text-emerald-700 border-emerald-200 hover:bg-emerald-50" disabled={loading} onClick={() => mark('found')}>
-            <CheckCircle2 className="h-4 w-4" strokeWidth={1.75} /><span className="ml-1">Found</span>
+            <CheckCircle2 className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">Found</span>
           </Button>
           <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50" disabled={loading} onClick={() => mark('missing')}>
-            <XCircle className="h-4 w-4" strokeWidth={1.75} /><span className="ml-1">Missing</span>
+            <XCircle className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">Missing</span>
           </Button>
         </div>
       )}
@@ -137,7 +137,7 @@ export default function AuditDetailPage() {
         breadcrumb={[{ label: 'Inventory', href: `/${locale}/${orgSlug}/raseed` }, { label: 'Audits', href: `/${locale}/${orgSlug}/raseed/audits` }, { label: audit.title, href: `/${locale}/${orgSlug}/raseed/audits/${auditId}` }]}
         actions={!completed && audit.pendingCount === 0 ? (
           <Button size="sm" onClick={handleComplete} disabled={completing}>
-            <CheckCheck className="h-4 w-4" strokeWidth={1.75} /><span className="ml-1">{completing ? 'Completing...' : 'Complete Audit'}</span>
+            <CheckCheck className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{completing ? 'Completing...' : 'Complete Audit'}</span>
           </Button>
         ) : undefined}
       />

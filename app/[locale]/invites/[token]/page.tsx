@@ -157,7 +157,7 @@ export default function AcceptInvitePage(props: { params: Promise<{ token: strin
             <div className="flex items-center gap-2.5 text-gray-700">
               <span className="text-gray-400"><Shield className="h-3.5 w-3.5" strokeWidth={1.75} /></span>
               <span
-                className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full"
+                className="ms-auto text-xs font-medium px-2 py-0.5 rounded-full"
                 style={{
                   background:
                     info.role === 'org_owner'

@@ -97,14 +97,14 @@ export function MaintenanceSection({ assetId }: { assetId: string }) {
       <div className="px-5 py-4 border-b border-border flex items-center gap-2">
         <WrenchSVG />
         <h2 className="text-sm font-semibold text-gray-900">Maintenance</h2>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ms-auto flex items-center gap-3">
           <span className="text-xs text-gray-400">
             {records.length} record{records.length === 1 ? '' : 's'}
             {totalCost > 0 && ` · ${totalCost.toFixed(2)} JOD`}
           </span>
           {isAdmin && (
             <Button size="sm" variant="outline" onClick={() => setShowForm((v) => !v)}>
-              <PlusSVG /><span className="ml-1">{showForm ? 'Cancel' : 'Add'}</span>
+              <PlusSVG /><span className="ms-1">{showForm ? 'Cancel' : 'Add'}</span>
             </Button>
           )}
         </div>
@@ -172,7 +172,7 @@ export function MaintenanceSection({ assetId }: { assetId: string }) {
                       </span>
                       <span className="text-xs text-gray-400">{formatDate(r.date)}</span>
                       {r.cost !== undefined && r.cost !== null && (
-                        <span className="text-xs font-medium text-gray-600 ml-auto">{r.cost.toFixed(2)} JOD</span>
+                        <span className="text-xs font-medium text-gray-600 ms-auto">{r.cost.toFixed(2)} JOD</span>
                       )}
                     </div>
                     <p className="text-sm text-gray-900">{r.description}</p>

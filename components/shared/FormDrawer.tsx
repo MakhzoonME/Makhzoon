@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { useT } from '@/hooks/ui';
 
 interface FormDrawerProps {
   open: boolean;
@@ -15,6 +16,7 @@ interface FormDrawerProps {
 }
 
 export function FormDrawer({ open, onOpenChange, onCloseAttempt, title, description, children, width = 'lg' }: FormDrawerProps) {
+  const { t } = useT();
   const [isRtl, setIsRtl] = useState(false);
   const widthClass = { md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl' }[width];
 
@@ -57,7 +59,7 @@ export function FormDrawer({ open, onOpenChange, onCloseAttempt, title, descript
             </div>
             <DialogPrimitive.Close
               className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-surface-page transition-colors focus:outline-none focus:ring-[3px] focus:ring-primary-500/20"
-              aria-label="Close"
+              aria-label={t('common.close')}
             >
               <X className="h-4 w-4" strokeWidth={1.75} />
             </DialogPrimitive.Close>

@@ -48,7 +48,7 @@ export default function InventoryItemDetailPage() {
   const { itemId } = useParams<{ itemId: string }>();
   const router = useRouter();
   const orgSlug = useOrgSlug();
-  const { locale } = useT();
+  const { t, locale } = useT();
   const { user } = useAuthStore();
   const qc = useQueryClient();
 
@@ -90,10 +90,10 @@ export default function InventoryItemDetailPage() {
   if (isLoading) return <LoadingSkeleton />;
   if (!item) return (
     <ErrorState
-      title="Item not found"
-      message="This inventory item may have been deleted or you don't have access to it."
-      hint="If you followed a link from another page, that link may be out of date."
-      action={{ label: 'Back to inventory', onClick: () => router.push(`/${locale}/${orgSlug}/raseed`) }}
+      title={t('inventory.itemNotFound')}
+      message={t('inventory.itemNotFoundDesc')}
+      hint={t('inventory.itemNotFoundHint')}
+      action={{ label: t('inventory.backToInventory'), onClick: () => router.push(`/${locale}/${orgSlug}/raseed`) }}
     />
   );
 
@@ -155,12 +155,12 @@ export default function InventoryItemDetailPage() {
         actions={(
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={() => setReqOpen(true)}>
-              <span className="mr-1">Request Refill</span>
+              <span className="me-1">Request Refill</span>
             </Button>
             {isAdmin && (
               <>
                 <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
-                  <Pencil className="h-4 w-4" strokeWidth={1.75} /><span className="ml-1">Edit</span>
+                  <Pencil className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">Edit</span>
                 </Button>
                 <Button size="sm" variant="destructive" onClick={() => setDeleteConfirm(true)}>
                   <span>Delete Item</span>
@@ -241,7 +241,7 @@ export default function InventoryItemDetailPage() {
                       )}
                       <div className="text-xs text-gray-400">{tx.performedByName || tx.performedByEmail} · {formatDate(tx.performedAt)}</div>
                     </div>
-                    <div className="text-right flex-shrink-0">
+                    <div className="text-end flex-shrink-0">
                       <div className={cn('text-sm font-semibold', tx.type === 'in' ? 'text-emerald-600 dark:text-emerald-400' : tx.type === 'out' ? 'text-red-500 dark:text-red-400' : 'text-primary-600 dark:text-primary-400')}>
                         {tx.type === 'in' ? '+' : tx.type === 'out' ? '−' : ''}{tx.quantity} {item.unit}
                       </div>
@@ -325,7 +325,7 @@ export default function InventoryItemDetailPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Note (optional)</label>
-                  <Input value={txNote} onChange={(e) => setTxNote(e.target.value)} placeholder="Additional details..." />
+                  <Input value={txNote} onChange={(e) => setTxNote(e.target.value)} placeholder={t('inventory.additionalDetails')} />
                 </div>
                 <Button type="submit" className="w-full" disabled={submitting}>
                   {submitting ? 'Updating...' : 'Update Stock'}
@@ -343,9 +343,9 @@ export default function InventoryItemDetailPage() {
       <ConfirmDialog
         open={deleteConfirm}
         onOpenChange={(o) => !o && setDeleteConfirm(false)}
-        title="Delete Item"
-        description={`Delete "${item.name}"? This cannot be undone.`}
-        confirmLabel="Delete"
+        title={t('inventory.deleteItem')}
+        description={`${t('common.delete')} "${item.name}"?`}
+        confirmLabel={t('common.delete')}
         onConfirm={handleDelete}
         loading={deleting}
       />
@@ -360,14 +360,14 @@ export default function InventoryItemDetailPage() {
       <FormDrawer
         open={!!editWarrantyTarget}
         onOpenChange={(o) => { if (!o) setEditWarrantyTarget(null); }}
-        title="Edit Warranty"
+        title={t('warranties.editWarranty')}
       >
         {editWarrantyTarget && (
           <WarrantyForm warranty={editWarrantyTarget} onSuccess={() => setEditWarrantyTarget(null)} />
         )}
       </FormDrawer>
 
-      <FormDrawer open={addWarrantyOpen} onOpenChange={setAddWarrantyOpen} title="Add Warranty">
+      <FormDrawer open={addWarrantyOpen} onOpenChange={setAddWarrantyOpen} title={t('warranties.addWarranty')}>
         <WarrantyForm
           defaultInventoryItemId={item.id}
           onSuccess={() => setAddWarrantyOpen(false)}

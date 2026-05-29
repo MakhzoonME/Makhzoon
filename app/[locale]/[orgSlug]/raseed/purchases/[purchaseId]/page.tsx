@@ -70,14 +70,14 @@ export default function PurchaseDetailPage(props: Props) {
                   variant="outline"
                   onClick={() => router.push(`/${params.locale}/${params.orgSlug}/raseed/purchases/${purchase.id}/edit`)}
                 >
-                  <Pencil size={14} className="mr-1" /> Edit
+                  <Pencil size={14} className="me-1" /> Edit
                 </Button>
                 <Button
                   onClick={() => setConfirmReceive(true)}
                   disabled={unresolved.length > 0}
                   title={unresolved.length > 0 ? 'Resolve all line items first' : ''}
                 >
-                  <PackageCheck size={14} className="mr-1" /> Receive
+                  <PackageCheck size={14} className="me-1" /> Receive
                 </Button>
                 <Button variant="ghost" onClick={() => setConfirmDelete(true)}>
                   <Trash2 size={14} />
@@ -121,15 +121,15 @@ export default function PurchaseDetailPage(props: Props) {
 
       <div className="overflow-x-auto border rounded-lg">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-800 text-left">
+          <thead className="bg-gray-50 dark:bg-gray-800 text-start">
             <tr>
               <th className="px-3 py-2 font-medium w-8">#</th>
               <th className="px-3 py-2 font-medium">Item</th>
               <th className="px-3 py-2 font-medium">Barcode / SKU</th>
               <th className="px-3 py-2 font-medium w-20">Qty</th>
               <th className="px-3 py-2 font-medium w-24">Unit cost</th>
-              <th className="px-3 py-2 font-medium w-24 text-right">Tax</th>
-              <th className="px-3 py-2 font-medium w-24 text-right">Total</th>
+              <th className="px-3 py-2 font-medium w-24 text-end">Tax</th>
+              <th className="px-3 py-2 font-medium w-24 text-end">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -139,7 +139,7 @@ export default function PurchaseDetailPage(props: Props) {
                 <td className="px-3 py-2">
                   {line.itemName}
                   {!line.itemId && (
-                    <span className="ml-2 text-xs text-amber-600">(unresolved)</span>
+                    <span className="ms-2 text-xs text-amber-600">(unresolved)</span>
                   )}
                 </td>
                 <td className="px-3 py-2 font-mono text-xs text-gray-500">
@@ -147,20 +147,20 @@ export default function PurchaseDetailPage(props: Props) {
                 </td>
                 <td className="px-3 py-2">{line.quantity}</td>
                 <td className="px-3 py-2 font-mono">{line.unitCost.toFixed(2)}</td>
-                <td className="px-3 py-2 text-right font-mono">{line.taxAmount.toFixed(2)}</td>
-                <td className="px-3 py-2 text-right font-mono">{line.lineTotal.toFixed(2)}</td>
+                <td className="px-3 py-2 text-end font-mono">{line.taxAmount.toFixed(2)}</td>
+                <td className="px-3 py-2 text-end font-mono">{line.lineTotal.toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
           <tfoot className="border-t bg-gray-50 dark:bg-gray-800 font-medium">
             <tr>
-              <td colSpan={5} className="px-3 py-2 text-right">Subtotal</td>
-              <td className="px-3 py-2 text-right font-mono">{purchase.taxTotal.toFixed(2)}</td>
-              <td className="px-3 py-2 text-right font-mono">{purchase.subtotal.toFixed(2)}</td>
+              <td colSpan={5} className="px-3 py-2 text-end">Subtotal</td>
+              <td className="px-3 py-2 text-end font-mono">{purchase.taxTotal.toFixed(2)}</td>
+              <td className="px-3 py-2 text-end font-mono">{purchase.subtotal.toFixed(2)}</td>
             </tr>
             <tr>
-              <td colSpan={6} className="px-3 py-2 text-right">Total</td>
-              <td className="px-3 py-2 text-right font-mono font-semibold">{purchase.total.toFixed(2)}</td>
+              <td colSpan={6} className="px-3 py-2 text-end">Total</td>
+              <td className="px-3 py-2 text-end font-mono font-semibold">{purchase.total.toFixed(2)}</td>
             </tr>
           </tfoot>
         </table>

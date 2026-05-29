@@ -67,7 +67,7 @@ function StockBreakdown({ ok, low, out, total, isLoading }: { ok: number; low: n
             <div className="h-1.5 rounded-full bg-surface-sidebar overflow-hidden">
               <div className={`h-full rounded-full ${r.bar} transition-all duration-500`} style={{ width: `${pct}%` }} />
             </div>
-            <span className={`text-xs font-medium tabular-nums text-right ${r.text}`}>{r.count} · {pct}%</span>
+            <span className={`text-xs font-medium tabular-nums text-end ${r.text}`}>{r.count} · {pct}%</span>
           </div>
         );
       })}

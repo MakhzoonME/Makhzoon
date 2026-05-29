@@ -60,10 +60,10 @@ export default function CustomerDetailPage() {
         actions={
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => router.push(`${base}/${customer.id}/edit`)}>
-              <Pencil size={14} className="mr-1" /> Edit
+              <Pencil size={14} className="me-1" /> Edit
             </Button>
             <Button variant="outline" onClick={() => setConfirmDelete(true)}>
-              <Trash2 size={14} className="mr-1" /> Delete
+              <Trash2 size={14} className="me-1" /> Delete
             </Button>
           </div>
         }

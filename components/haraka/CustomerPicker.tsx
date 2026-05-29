@@ -14,7 +14,7 @@ import { useDebounce } from '@/hooks/ui';
 import { useCustomers, useCreateCustomer } from '@/hooks/haraka';
 import { CustomerForm } from '@/components/haraka/CustomerForm';
 import { usePosCart } from '@/store/pos-cart.store';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
 import type { CustomerFormData } from '@/lib/modules/haraka/customers/schemas';
 import type { PosCustomer } from '@/types';
 
@@ -25,6 +25,7 @@ import type { PosCustomer } from '@/types';
  * `setCustomer`, which then flows into the completed sale.
  */
 export function CustomerPicker() {
+  const { t } = useT();
   const customer = usePosCart((s) => s.customer);
   const setCustomer = usePosCart((s) => s.setCustomer);
   const [open, setOpen] = useState(false);
@@ -44,7 +45,7 @@ export function CustomerPicker() {
             size="sm"
             variant="ghost"
             className="h-7 w-7 p-0"
-            aria-label="Remove customer"
+            aria-label={t('common.remove')}
             onClick={() => setCustomer(null)}
           >
             <X size={12} />
@@ -64,7 +65,7 @@ export function CustomerPicker() {
         className="w-full justify-start"
         onClick={() => setOpen(true)}
       >
-        <UserPlus size={14} className="mr-2" /> Add customer
+        <UserPlus size={14} className="me-2" /> Add customer
       </Button>
       <CustomerPickerDialog open={open} onOpenChange={setOpen} />
     </>
@@ -134,12 +135,12 @@ function CustomerPickerDialog({
         {mode === 'search' ? (
           <div className="space-y-3">
             <div className="relative">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+              <span className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
                 <Search size={14} />
               </span>
               <Input
                 autoFocus
-                className="pl-8"
+                className="ps-8"
                 placeholder="Search by name, phone, email, tax #"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -161,7 +162,7 @@ function CustomerPickerDialog({
                     key={c.id}
                     type="button"
                     onClick={() => pick(c)}
-                    className="w-full text-left px-3 py-2 hover:bg-surface-subtle"
+                    className="w-full text-start px-3 py-2 hover:bg-surface-subtle"
                   >
                     <div className="text-sm font-medium">{c.name}</div>
                     <div className="text-xs text-gray-500">
@@ -179,7 +180,7 @@ function CustomerPickerDialog({
                 size="sm"
                 onClick={() => setMode('new')}
               >
-                <UserPlus size={14} className="mr-1" /> New customer
+                <UserPlus size={14} className="me-1" /> New customer
               </Button>
               <Button type="button" variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
                 Cancel

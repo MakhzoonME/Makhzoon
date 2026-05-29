@@ -11,6 +11,7 @@ import { StatusBadge, SubscriptionGate } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { Request } from '@/types';
+import type { MessageKey } from '@/locales/messages';
 import { formatDate } from '@/lib/utils/date';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -24,11 +25,11 @@ function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
   return `${pathname}${qs.toString() ? '?' + qs.toString() : ''}`;
 }
 
-const typeLabels: Record<string, string> = {
-  REFILL: 'Refill',
-  RETIRE: 'Retire',
-  BUY_NEW: 'Buy New',
-  EXTEND_WARRANTY: 'Extend Warranty',
+const typeKeys: Record<string, MessageKey> = {
+  REFILL: 'requestType.REFILL',
+  RETIRE: 'requestType.RETIRE',
+  BUY_NEW: 'requestType.BUY_NEW',
+  EXTEND_WARRANTY: 'requestType.EXTEND_WARRANTY',
 };
 
 export default function RequestsListPage() {
@@ -108,7 +109,7 @@ export default function RequestsListPage() {
   }
 
   const columns: ColumnDef<Request>[] = [
-    { key: 'type', header: t('requests.type'), sortable: true, render: (r) => <span className="font-medium text-xs bg-[var(--primary-100)] text-[var(--primary-700)] px-2 py-0.5 rounded-full">{typeLabels[r.type] ?? r.type}</span> },
+    { key: 'type', header: t('requests.type'), sortable: true, render: (r) => <span className="font-medium text-xs bg-[var(--primary-100)] text-[var(--primary-700)] px-2 py-0.5 rounded-full">{typeKeys[r.type] ? t(typeKeys[r.type]) : r.type}</span> },
     {
       key: 'assetId', header: t('requests.reference'),
       render: (r) => {

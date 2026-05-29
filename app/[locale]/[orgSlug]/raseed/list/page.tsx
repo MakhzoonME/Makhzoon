@@ -122,7 +122,7 @@ export default function InventoryListPage() {
       key: 'name', header: t('inventory.item'), sortable: true,
       render: (i) => (
         <div>
-          <button className="font-medium text-primary-600 hover:underline text-left" onClick={() => router.push(`/${locale}/${orgSlug}/raseed/${i.id}`)}>
+          <button className="font-medium text-primary-600 hover:underline text-start" onClick={() => router.push(`/${locale}/${orgSlug}/raseed/${i.id}`)}>
             {i.name}
           </button>
           {i.sku && <div className="text-xs text-gray-400 font-mono">{i.sku}</div>}
@@ -225,7 +225,7 @@ export default function InventoryListPage() {
             </Button>
             <SubscriptionGate>
               <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
-                <Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ml-1">{t('inventory.addItem')}</span>
+                <Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('inventory.addItem')}</span>
               </Button>
             </SubscriptionGate>
           </div>
@@ -329,10 +329,10 @@ export default function InventoryListPage() {
       <ConfirmDialog
         open={showDiscardDrawer}
         onOpenChange={setShowDiscardDrawer}
-        title="Discard changes?"
-        description="You have unsaved changes. Are you sure you want to discard them?"
-        confirmLabel="Discard"
-        cancelLabel="Keep editing"
+        title={t('common.discardTitle')}
+        description={t('common.discardDesc')}
+        confirmLabel={t('common.discard')}
+        cancelLabel={t('common.keepEditing')}
         onConfirm={() => { setShowDiscardDrawer(false); closeDrawer(); }}
         variant="destructive"
       />

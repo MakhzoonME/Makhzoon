@@ -292,7 +292,23 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                 ))}
               </select>
               {selectedPackage && (
-                <p className="text-xs text-gray-500 line-clamp-3">{selectedPackage.description}</p>
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-500 line-clamp-3">{selectedPackage.description}</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
+                    <span>
+                      <span className="text-gray-400">Price:</span>{' '}
+                      {selectedPackage.pricing.isCustom
+                        ? `Custom${selectedPackage.pricing.monthlyPrice != null ? ` (from ${selectedPackage.pricing.monthlyPrice} ${selectedPackage.pricing.currency})` : ''}`
+                        : selectedPackage.pricing.monthlyPrice != null
+                          ? `${selectedPackage.pricing.monthlyPrice} ${selectedPackage.pricing.currency}/mo${selectedPackage.pricing.annualPrice != null ? ` · ${selectedPackage.pricing.annualPrice} ${selectedPackage.pricing.currency}/yr` : ''}`
+                          : '—'}
+                    </span>
+                    <span>
+                      <span className="text-gray-400">Trial:</span>{' '}
+                      {selectedPackage.trialDays > 0 ? `${selectedPackage.trialDays}d` : 'none'}
+                    </span>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -309,6 +325,16 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                 label="Users"
                 current={usage?.users ?? 0}
                 max={selectedPackage?.limits.maxUsers ?? -1}
+              />
+              <UsageBar
+                label="Spaces"
+                current={usage?.spaces ?? 0}
+                max={selectedPackage?.limits.maxSpaces ?? -1}
+              />
+              <UsageBar
+                label="Inventory Items"
+                current={usage?.inventoryItems ?? 0}
+                max={selectedPackage?.limits.maxInventoryItems ?? -1}
               />
               <UsageBar
                 label="Warranties"
@@ -352,7 +378,7 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-gray-900">Payment Log</h3>
                 <Button size="sm" onClick={() => setPaymentOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1" /> Record Payment
+                  <Plus className="h-4 w-4 me-1" /> Record Payment
                 </Button>
               </div>
               <DataTable

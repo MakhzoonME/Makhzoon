@@ -172,13 +172,19 @@ export class InventoryService {
 
     if ((openReqs.data?.length ?? 0) > 0) {
       throw NextResponse.json(
-        { error: 'Cannot delete inventory item with open requests. Resolve or reject them first.' },
+        {
+          error: 'Cannot delete inventory item with open requests. Resolve or reject them first.',
+          code: 'INVENTORY_DELETE_OPEN_REQUESTS',
+        },
         { status: 409 },
       )
     }
     if ((activeWarranties.data?.length ?? 0) > 0) {
       throw NextResponse.json(
-        { error: 'Cannot delete inventory item with an active warranty. Delete or let the warranty expire first.' },
+        {
+          error: 'Cannot delete inventory item with an active warranty. Delete or let the warranty expire first.',
+          code: 'INVENTORY_DELETE_ACTIVE_WARRANTY',
+        },
         { status: 409 },
       )
     }

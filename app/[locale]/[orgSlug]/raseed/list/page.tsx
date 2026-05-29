@@ -165,7 +165,18 @@ export default function InventoryListPage() {
     setDeleting(true);
     try {
       const res = await fetch(`/api/inventory/${deleteTarget.id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+        const key =
+          body.code === 'INVENTORY_DELETE_OPEN_REQUESTS'
+            ? 'inventory.deleteBlockedOpenRequests'
+            : body.code === 'INVENTORY_DELETE_ACTIVE_WARRANTY'
+              ? 'inventory.deleteBlockedActiveWarranty'
+              : null;
+        toast.error(key ? t(key) : (body.error || t('inventory.itemDeleteFailed')));
+        setDeleteTarget(null);
+        return;
+      }
       toast.success(t('inventory.itemDeleted'));
       qc.invalidateQueries({ queryKey: ['inventory'] });
       qc.invalidateQueries({ queryKey: ['inventory-categories'] });

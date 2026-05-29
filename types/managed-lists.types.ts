@@ -11,6 +11,7 @@ export type ListKey =
   | 'location'
   | 'inventory_unit'
   | 'inventory_category'
+  | 'inventory_storage_location'
   | 'vendor'
   | 'org_industry'
   // Bucket B — system lists (value locked)
@@ -48,6 +49,7 @@ export const LIST_REGISTRY: Record<ListKey, ListMeta> = {
   location:           { key: 'location',           label: 'Locations',           labelKey: 'managedList.location',           scope: 'org',      isSystem: false },
   inventory_unit:     { key: 'inventory_unit',     label: 'Inventory Units',     labelKey: 'managedList.inventory_unit',     scope: 'org',      isSystem: false },
   inventory_category: { key: 'inventory_category', label: 'Inventory Categories', labelKey: 'managedList.inventory_category', scope: 'org',     isSystem: false },
+  inventory_storage_location: { key: 'inventory_storage_location', label: 'Inventory Storage Locations', labelKey: 'managedList.inventory_storage_location', scope: 'org', isSystem: false },
   vendor:             { key: 'vendor',             label: 'Vendors / Suppliers', labelKey: 'managedList.vendor',             scope: 'org',      isSystem: false },
   org_industry:       { key: 'org_industry',       label: 'Organization Industries', labelKey: 'managedList.org_industry',   scope: 'platform', isSystem: false },
 

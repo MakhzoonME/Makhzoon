@@ -26,6 +26,7 @@ const en = {
   'nav.harakaReports': 'POS Reports',
   'nav.overview':      'Overview',
   'nav.assetsList':    'Asset Register',
+  'nav.assetAudits':   'Audits',
   'nav.inventoryList': 'Stock Items',
   'nav.requestsList':  'All Requests',
   // Superadmin
@@ -1002,12 +1003,12 @@ const en = {
   'avatar.formatHint':           'JPEG, PNG, or WebP up to 5 MB.',
   'avatar.removePicture':        'Remove picture',
 
-  // ── Inventory Audits page ─────────────────────────────────────────
-  'audits.title':                'Inventory Audits',
-  'audits.subtitle':             'Periodic counts to reconcile actual stock against system records.',
+  // ── Asset Audits page ─────────────────────────────────────────────
+  'audits.title':                'Asset Audits',
+  'audits.subtitle':             'Walk the Asset Register and mark each asset found or missing.',
   'audits.breadcrumb':           'Audits',
   'audits.startAudit':           'Start Audit',
-  'audits.noAudits':             'No audits yet. Start your first audit to reconcile stock.',
+  'audits.noAudits':             'No audits yet. Start your first audit to verify your asset register.',
   'audits.statusDraft':          'Draft',
   'audits.statusInProgress':     'In Progress',
   'audits.statusCompleted':      'Completed',
@@ -1061,6 +1062,7 @@ const ar: Record<keyof typeof en, string> = {
   'nav.harakaReports': 'تقارير المبيعات',
   'nav.overview':      'نظرة عامة',
   'nav.assetsList':    'سجل الأصول',
+  'nav.assetAudits':   'المراجعات',
   'nav.inventoryList': 'الأصناف',
   'nav.requestsList':  'كل الطلبات',
   'nav.organizations': 'المنظمات',
@@ -2038,12 +2040,12 @@ const ar: Record<keyof typeof en, string> = {
   'avatar.formatHint':           'JPEG أو PNG أو WebP بحد أقصى 5 ميغابايت.',
   'avatar.removePicture':        'إزالة الصورة',
 
-  // ── Inventory Audits page ─────────────────────────────────────────
-  'audits.title':                'مراجعات المخزون',
-  'audits.subtitle':             'جرد دوري لمطابقة المخزون الفعلي مع سجلات النظام.',
+  // ── Asset Audits page ─────────────────────────────────────────────
+  'audits.title':                'مراجعات الأصول',
+  'audits.subtitle':             'تصفح سجل الأصول وحدّد ما هو موجود وما هو مفقود.',
   'audits.breadcrumb':           'المراجعات',
   'audits.startAudit':           'بدء مراجعة',
-  'audits.noAudits':             'لا توجد مراجعات بعد. ابدأ أول مراجعة لمطابقة المخزون.',
+  'audits.noAudits':             'لا توجد مراجعات بعد. ابدأ أول مراجعة للتحقق من سجل الأصول.',
   'audits.statusDraft':          'مسودة',
   'audits.statusInProgress':     'قيد التنفيذ',
   'audits.statusCompleted':      'مكتملة',

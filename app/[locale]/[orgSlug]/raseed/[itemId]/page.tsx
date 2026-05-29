@@ -76,12 +76,22 @@ export default function InventoryItemDetailPage() {
     setDeleting(true);
     try {
       const res = await fetch(`/api/inventory/${itemId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error();
-      toast.success('Item deleted');
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+        const key =
+          body.code === 'INVENTORY_DELETE_OPEN_REQUESTS'
+            ? 'inventory.deleteBlockedOpenRequests'
+            : body.code === 'INVENTORY_DELETE_ACTIVE_WARRANTY'
+              ? 'inventory.deleteBlockedActiveWarranty'
+              : null;
+        toast.error(key ? t(key) : (body.error || t('inventory.itemDeleteFailed')));
+        return;
+      }
+      toast.success(t('inventory.itemDeleted'));
       qc.invalidateQueries({ queryKey: ['inventory'] });
       router.push(`/${locale}/${orgSlug}/raseed`);
     } catch {
-      toast.error('Failed to delete item');
+      toast.error(t('inventory.itemDeleteFailed'));
     } finally {
       setDeleting(false);
     }

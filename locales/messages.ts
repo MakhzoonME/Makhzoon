@@ -426,6 +426,8 @@ const en = {
   'inventory.deleteItemDesc':  'Delete "{name}"? This cannot be undone.',
   'inventory.itemDeleted':     'Item deleted',
   'inventory.itemDeleteFailed':'Failed to delete item',
+  'inventory.deleteBlockedOpenRequests': "Can't delete: this item has open requests. Resolve or reject them first.",
+  'inventory.deleteBlockedActiveWarranty': "Can't delete: this item has an active warranty. Delete the warranty or wait for it to expire.",
 
   // ── Warranties page (extra) ───────────────────────────────────────
   'warranties.startDate':      'Start Date',
@@ -1453,6 +1455,8 @@ const ar: Record<keyof typeof en, string> = {
   'inventory.deleteItemDesc':  'حذف "{name}"؟ لا يمكن التراجع.',
   'inventory.itemDeleted':     'تم حذف العنصر',
   'inventory.itemDeleteFailed':'فشل حذف العنصر',
+  'inventory.deleteBlockedOpenRequests': 'لا يمكن الحذف: يوجد طلبات مفتوحة على هذا العنصر. عالجها أو ارفضها أولاً.',
+  'inventory.deleteBlockedActiveWarranty': 'لا يمكن الحذف: يوجد ضمان فعّال على هذا العنصر. احذف الضمان أو انتظر انتهاءه.',
 
   // ── Warranties page (extra) ───────────────────────────────────────
   'warranties.startDate':      'تاريخ البداية',

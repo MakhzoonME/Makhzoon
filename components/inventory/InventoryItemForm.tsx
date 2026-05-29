@@ -161,7 +161,14 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
           <FormField control={form.control} name="location" render={({ field }) => (
             <FormItem>
               <FormLabel>Storage Location</FormLabel>
-              <FormControl><Input {...field} placeholder="Storage room A, Shelf 2..." /></FormControl>
+              <FormControl>
+                <ConfigSelect
+                  listKey="inventory_storage_location"
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Select storage location"
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )} />

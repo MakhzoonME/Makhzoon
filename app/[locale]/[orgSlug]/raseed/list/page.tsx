@@ -239,16 +239,38 @@ export default function InventoryListPage() {
       {(lowCount > 0 || outCount > 0) && (
         <div className="mb-4 flex gap-3 flex-wrap">
           {outCount > 0 && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 dark:text-red-700">
+            <button
+              type="button"
+              onClick={() => handleStockChange(stockFilter === 'out' ? 'all' : 'out')}
+              aria-pressed={stockFilter === 'out'}
+              className={cn(
+                'flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors cursor-pointer',
+                'bg-red-50 border-red-200 text-red-700 dark:text-red-700',
+                'hover:bg-red-100 hover:border-red-300',
+                'focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-1',
+                stockFilter === 'out' && 'ring-2 ring-red-400 bg-red-100',
+              )}
+            >
               <AlertTriangle className="h-4 w-4" strokeWidth={1.75} />
               <span>{outCount > 1 ? t('inventory.itemsOutOfStockPlural').replace('{count}', String(outCount)) : t('inventory.itemsOutOfStock').replace('{count}', String(outCount))}</span>
-            </div>
+            </button>
           )}
           {lowCount > 0 && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 dark:text-amber-700">
+            <button
+              type="button"
+              onClick={() => handleStockChange(stockFilter === 'low' ? 'all' : 'low')}
+              aria-pressed={stockFilter === 'low'}
+              className={cn(
+                'flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors cursor-pointer',
+                'bg-amber-50 border-amber-200 text-amber-700 dark:text-amber-700',
+                'hover:bg-amber-100 hover:border-amber-300',
+                'focus:outline-none focus:ring-2 focus:ring-amber-300 focus:ring-offset-1',
+                stockFilter === 'low' && 'ring-2 ring-amber-400 bg-amber-100',
+              )}
+            >
               <AlertTriangle className="h-4 w-4" strokeWidth={1.75} />
               <span>{lowCount > 1 ? t('inventory.itemsRunningLowPlural').replace('{count}', String(lowCount)) : t('inventory.itemsRunningLow').replace('{count}', String(lowCount))}</span>
-            </div>
+            </button>
           )}
         </div>
       )}

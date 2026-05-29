@@ -199,7 +199,13 @@ export async function deleteAssetWithAudit(user: AuthUser, assetId: string) {
     });
   } else {
     // Retire active assets
-    await dbUpdateAsset(assetId, { status: 'Retired', updatedBy: userContext.uid });
+    await dbUpdateAsset(assetId, {
+      status: 'Retired',
+      updatedBy: userContext.uid,
+      updatedByEmail: userContext.email,
+      updatedByName: userContext.displayName,
+      updatedByRole: userContext.role,
+    });
     queueAuditLog({
       organizationId: asset.organizationId,
       userId: userContext.uid,
@@ -267,7 +273,13 @@ export async function createAssetCheckout(
     notes: data.notes?.trim() || undefined,
   });
 
-  await dbUpdateAsset(assetId, { assignedTo: data.checkedOutTo.trim(), updatedBy: userContext.uid });
+  await dbUpdateAsset(assetId, {
+    assignedTo: data.checkedOutTo.trim(),
+    updatedBy: userContext.uid,
+    updatedByEmail: userContext.email,
+    updatedByName: userContext.displayName,
+    updatedByRole: userContext.role,
+  });
 
   queueAuditLog({
     organizationId: user.organizationId!,
@@ -303,7 +315,13 @@ export async function returnAssetCheckout(
     returnedBy: userContext.uid,
     returnedByEmail: userContext.email!,
   });
-  await dbUpdateAsset(assetId, { assignedTo: undefined, updatedBy: userContext.uid });
+  await dbUpdateAsset(assetId, {
+    assignedTo: undefined,
+    updatedBy: userContext.uid,
+    updatedByEmail: userContext.email,
+    updatedByName: userContext.displayName,
+    updatedByRole: userContext.role,
+  });
 
   queueAuditLog({
     organizationId: user.organizationId!,

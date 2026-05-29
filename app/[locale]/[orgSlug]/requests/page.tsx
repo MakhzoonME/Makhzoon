@@ -1,28 +1,12 @@
 'use client';
-import { useState, useCallback } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/ui';
-import { useRequests } from '@/hooks/requests';
-import { useAuthStore } from '@/store/auth.store';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { FilterBar } from '@/components/shared/FilterBar';
-import { DataTable, ColumnDef } from '@/components/shared/DataTable';
-import { StatusBadge, SubscriptionGate } from '@/components/shared';
-import { Button } from '@/components/ui/button';
-import { ConfigSelect } from '@/components/shared/ConfigSelect';
-import { Request } from '@/types';
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { Inbox, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { useOrgSlug, useT } from '@/hooks/ui';
+import { PageHeader, StatCard, OverviewSection, DataTable, StatusBadge } from '@/components/shared';
+import type { ColumnDef } from '@/components/shared';
 import { formatDate } from '@/lib/utils/date';
-import { toast } from '@/hooks/ui';
-import { useQueryClient } from '@tanstack/react-query';
-import { useT } from '@/hooks/ui';
-import { Check, X } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-
-function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
-  const qs = new URLSearchParams();
-  Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, v); });
-  return `${pathname}${qs.toString() ? '?' + qs.toString() : ''}`;
-}
+import { Request } from '@/types';
 
 const typeLabels: Record<string, string> = {
   REFILL: 'Refill',
@@ -31,149 +15,162 @@ const typeLabels: Record<string, string> = {
   EXTEND_WARRANTY: 'Extend Warranty',
 };
 
-export default function RequestsPage() {
-  const { t, locale } = useT();
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const orgSlug = useOrgSlug();
-  const { user } = useAuthStore();
-  const qc = useQueryClient();
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
-
-  const status = searchParams.get('status') ?? '';
-  const type = searchParams.get('type') ?? '';
-  const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
-  const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10;
-  const sortBy = searchParams.get('sortBy') ?? 'createdAt';
-  const sortDir = (searchParams.get('sortDir') === 'asc' ? 'asc' : searchParams.get('sortDir') === 'none' ? 'none' : 'desc') as 'asc' | 'desc' | 'none';
-
-  const [processing, setProcessing] = useState<string | null>(null);
-
-  const { data: requestsData, isLoading } = useRequests({
-    status: status || undefined,
-    type: type || undefined,
-    page,
-    pageSize,
-    sortBy: sortDir === 'none' ? undefined : sortBy,
-    sortDir: sortDir === 'none' ? undefined : sortDir,
+function useRequestsOverview() {
+  return useQuery({
+    queryKey: ['requests-overview'],
+    queryFn: async () => {
+      const [allRes, pendingRes, approvedRes, rejectedRes] = await Promise.all([
+        fetch('/api/requests?pageSize=6&sortBy=createdAt&sortDir=desc'),
+        fetch('/api/requests?status=PENDING&pageSize=1'),
+        fetch('/api/requests?status=APPROVED&pageSize=1'),
+        fetch('/api/requests?status=REJECTED&pageSize=1'),
+      ]);
+      const allBody = allRes.ok ? await allRes.json() : { items: [], total: 0 };
+      const recent: Request[] = Array.isArray(allBody?.items) ? allBody.items : [];
+      const total = allBody?.total ?? 0;
+      const pending = pendingRes.ok ? (await pendingRes.json())?.total ?? 0 : 0;
+      const approved = approvedRes.ok ? (await approvedRes.json())?.total ?? 0 : 0;
+      const rejected = rejectedRes.ok ? (await rejectedRes.json())?.total ?? 0 : 0;
+      return { total, pending, approved, rejected, recent };
+    },
+    staleTime: 30_000,
   });
-  const requests = requestsData?.items ?? [];
+}
 
-  const updateUrl = useCallback((params: Record<string, string>) => {
-    const url = syncFiltersToUrl(pathname, params);
-    router.replace(url, { scroll: false });
-  }, [pathname, router]);
+function StatusBreakdown({ pending, approved, rejected, total, isLoading }: { pending: number; approved: number; rejected: number; total: number; isLoading: boolean }) {
+  const { t } = useT();
+  const denom = total || 1;
+  const rows = [
+    { label: t('overview.pending'), count: pending, bar: 'bg-amber-400', text: 'text-amber-700 dark:text-amber-400' },
+    { label: t('overview.approved'), count: approved, bar: 'bg-emerald-500', text: 'text-emerald-700 dark:text-emerald-400' },
+    { label: t('overview.rejected'), count: rejected, bar: 'bg-red-500', text: 'text-red-700 dark:text-red-400' },
+  ];
 
-  async function handleDecision(requestId: string, action: 'approve' | 'reject') {
-    setProcessing(requestId);
-    try {
-      const res = await fetch(`/api/requests/${requestId}/${action}`, { method: 'POST' });
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        throw new Error(e.error ?? `Failed to ${action} request`);
-      }
-      toast.success(action === 'approve' ? t('requests.approved') : t('requests.rejected'));
-      qc.invalidateQueries({ queryKey: ['requests'] });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : `Failed to ${action} request`);
-    } finally {
-      setProcessing(null);
-    }
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="grid grid-cols-[100px_1fr_64px] gap-3 items-center">
+            <div className="h-4 bg-surface-sidebar rounded animate-pulse" />
+            <div className="h-1.5 bg-surface-sidebar rounded-full animate-pulse" />
+            <div className="h-4 w-12 bg-surface-sidebar rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
   }
 
-  function syncAllToUrl(next: Partial<Record<'status' | 'type' | 'page' | 'pageSize' | 'sortBy' | 'sortDir', string>>) {
-    updateUrl({
-      status: next.status ?? status,
-      type: next.type ?? type,
-      page: next.page ?? String(page),
-      pageSize: next.pageSize ?? String(pageSize),
-      sortBy: next.sortBy ?? sortBy,
-      sortDir: next.sortDir ?? sortDir,
-    });
+  if (total === 0) {
+    return <p className="text-sm text-gray-500 py-4 text-center">{t('requests.noRequests')}</p>;
   }
 
-  function handleStatusChange(v: string) {
-    const next = v === 'all' ? '' : v;
-    syncAllToUrl({ status: next, page: '1' });
-  }
+  return (
+    <div className="space-y-3">
+      {rows.map((r) => {
+        const pct = Math.round((r.count / denom) * 100);
+        return (
+          <div key={r.label} className="grid grid-cols-[100px_1fr_64px] gap-3 items-center py-1 border-b border-border last:border-0">
+            <span className="text-sm font-medium text-gray-700 truncate">{r.label}</span>
+            <div className="h-1.5 rounded-full bg-surface-sidebar overflow-hidden">
+              <div className={`h-full rounded-full ${r.bar} transition-all duration-500`} style={{ width: `${pct}%` }} />
+            </div>
+            <span className={`text-xs font-medium tabular-nums text-right ${r.text}`}>{r.count} · {pct}%</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
-  function handleTypeChange(v: string) {
-    const next = v === 'all' ? '' : v;
-    syncAllToUrl({ type: next, page: '1' });
-  }
+export default function RequestsOverviewPage() {
+  const router = useRouter();
+  const orgSlug = useOrgSlug();
+  const { t, locale } = useT();
+  const { data, isLoading } = useRequestsOverview();
 
-  function handleSortChange(sortByField: string, dir: 'asc' | 'desc' | 'none') {
-    syncAllToUrl({ sortBy: sortByField, sortDir: dir === 'none' ? '' : dir });
-  }
+  const total = data?.total ?? 0;
+  const pending = data?.pending ?? 0;
+  const approved = data?.approved ?? 0;
+  const rejected = data?.rejected ?? 0;
+  const recent = data?.recent ?? [];
 
-  const columns: ColumnDef<Request>[] = [
-    { key: 'type', header: t('requests.type'), sortable: true, render: (r) => <span className="font-medium text-xs bg-[var(--primary-100)] text-[var(--primary-700)] px-2 py-0.5 rounded-full">{typeLabels[r.type] ?? r.type}</span> },
+  const base = `/${locale}/${orgSlug}/requests`;
+
+  const recentColumns: ColumnDef<Request>[] = [
+    { key: 'type', header: t('requests.type'), render: (r) => <span className="font-medium text-xs bg-[var(--primary-100)] text-[var(--primary-700)] px-2 py-0.5 rounded-full">{typeLabels[r.type] ?? r.type}</span> },
     {
-      key: 'assetId', header: t('requests.reference'),
+      key: 'reference', header: t('requests.reference'),
       render: (r) => {
-        if (r.assetId) return <button className="text-primary-600 hover:underline" onClick={() => router.push(`/${locale}/${orgSlug}/usool/${r.assetId}`)}>{r.assetName ?? r.assetId}</button>;
-        if (r.inventoryItemId) return <button className="text-primary-600 hover:underline" onClick={() => router.push(`/${locale}/${orgSlug}/raseed/${r.inventoryItemId}`)}>{r.inventoryItemName ?? r.inventoryItemId}</button>;
+        if (r.assetId) return <button className="text-primary-600 hover:underline text-sm" onClick={() => router.push(`/${locale}/${orgSlug}/usool/${r.assetId}`)}>{r.assetName ?? r.assetId}</button>;
+        if (r.inventoryItemId) return <button className="text-primary-600 hover:underline text-sm" onClick={() => router.push(`/${locale}/${orgSlug}/raseed/${r.inventoryItemId}`)}>{r.inventoryItemName ?? r.inventoryItemId}</button>;
         return <span className="text-gray-400">—</span>;
-      }
+      },
     },
-    { key: 'createdBy', header: t('requests.submittedBy'), sortable: true, render: (r) => r.createdByName ?? r.createdByEmail ?? r.createdBy },
-    { key: 'createdAt', header: t('col.date'), sortable: true, render: (r) => formatDate(r.createdAt) },
-    { key: 'description', header: t('requests.description'), render: (r) => (
-      <TooltipProvider delayDuration={300}><Tooltip><TooltipTrigger asChild><span className="text-gray-600 block truncate max-w-[280px]">{r.description}</span></TooltipTrigger><TooltipContent>{r.description}</TooltipContent></Tooltip></TooltipProvider>
-    ) },
-    { key: 'status', header: t('col.status'), sortable: true, render: (r) => <StatusBadge status={r.status} /> },
-    {
-      key: 'actions', header: t('col.actions'),
-      render: (r) => isAdmin && r.status === 'PENDING' ? (
-        <div className="flex gap-1">
-          <SubscriptionGate>
-            <Button size="sm" variant="ghost" className="text-green-600 hover:bg-green-50" disabled={processing === r.id} onClick={(e) => { e.stopPropagation(); handleDecision(r.id, 'approve'); }}>
-              <Check className="h-4 w-4" strokeWidth={1.75} />
-            </Button>
-          </SubscriptionGate>
-          <SubscriptionGate>
-            <Button size="sm" variant="ghost" className="text-red-500 hover:bg-red-50" disabled={processing === r.id} onClick={(e) => { e.stopPropagation(); handleDecision(r.id, 'reject'); }}>
-              <X className="h-4 w-4" strokeWidth={1.75} />
-            </Button>
-          </SubscriptionGate>
-        </div>
-      ) : null
-    },
+    { key: 'createdBy', header: t('requests.submittedBy'), render: (r) => <span className="text-sm text-gray-600">{r.createdByName ?? r.createdByEmail ?? r.createdBy}</span> },
+    { key: 'createdAt', header: t('col.date'), render: (r) => <span className="text-sm text-gray-500 tabular-nums">{formatDate(r.createdAt)}</span> },
+    { key: 'status', header: t('col.status'), render: (r) => <StatusBadge status={r.status} /> },
   ];
 
   return (
-    <div>
-      <PageHeader title={t('nav.requests')} />
+    <div className="space-y-6">
+      <PageHeader title={t('nav.requests')} description={t('overview.requests.subtitle')} />
 
-      <FilterBar
-        filters={
-          <div className="flex items-center gap-2">
-            <ConfigSelect listKey="request_status" value={status || 'all'} onValueChange={handleStatusChange} includeAll allLabel={t('requests.allStatuses')} className="w-32" />
-            <ConfigSelect listKey="request_type" value={type || 'all'} onValueChange={handleTypeChange} includeAll allLabel={t('requests.allTypes')} className="w-40" />
-          </div>
-        }
-      />
-
-      <div className="bg-surface-card rounded-lg border border-border">
-        <DataTable
-          data={requests}
-          columns={columns}
-          isLoading={isLoading}
-          emptyMessage={t('requests.noRequests')}
-          keyExtractor={(r) => r.id}
-          pagination={requestsData ? {
-            page: requestsData.page,
-            pageSize: requestsData.pageSize,
-            total: requestsData.total,
-            totalPages: requestsData.totalPages,
-            onPageChange: (p) => syncAllToUrl({ page: String(p) }),
-            onPageSizeChange: (s) => syncAllToUrl({ pageSize: String(s), page: '1' }),
-            onSortChange: handleSortChange,
-            currentSortBy: sortBy,
-            currentSortDir: sortDir,
-          } : undefined}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          icon={<Clock className="w-[18px] h-[18px]" />}
+          iconBg="var(--yellow-50)" iconColor="var(--yellow-700)"
+          label={t('overview.pending')}
+          value={pending}
+          sub={pending > 0 ? t('overview.needReview') : undefined}
+          loading={isLoading}
+          onClick={() => router.push(`${base}/list?status=PENDING`)}
         />
+        <StatCard
+          icon={<CheckCircle2 className="w-[18px] h-[18px]" />}
+          iconBg="var(--green-50)" iconColor="var(--green-700)"
+          label={t('overview.approved')}
+          value={approved}
+          loading={isLoading}
+          onClick={() => router.push(`${base}/list?status=APPROVED`)}
+        />
+        <StatCard
+          icon={<XCircle className="w-[18px] h-[18px]" />}
+          iconBg="var(--red-50)" iconColor="var(--red-700)"
+          label={t('overview.rejected')}
+          value={rejected}
+          loading={isLoading}
+          onClick={() => router.push(`${base}/list?status=REJECTED`)}
+        />
+        <StatCard
+          icon={<Inbox className="w-[18px] h-[18px]" />}
+          iconBg="var(--primary-50)" iconColor="var(--primary-700)"
+          label={t('overview.totalRequests')}
+          value={total}
+          loading={isLoading}
+          onClick={() => router.push(`${base}/list`)}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <OverviewSection
+          className="lg:col-span-3"
+          title={t('overview.recentRequests')}
+          actionLabel={t('dashboard.viewAll')}
+          onAction={() => router.push(`${base}/list`)}
+          padded={false}
+        >
+          <DataTable
+            data={recent}
+            columns={recentColumns}
+            isLoading={isLoading}
+            emptyMessage={t('requests.noRequests')}
+            keyExtractor={(r) => r.id}
+          />
+        </OverviewSection>
+
+        <OverviewSection className="lg:col-span-2" title={t('overview.byStatus')}>
+          <StatusBreakdown pending={pending} approved={approved} rejected={rejected} total={total} isLoading={isLoading} />
+        </OverviewSection>
       </div>
     </div>
   );

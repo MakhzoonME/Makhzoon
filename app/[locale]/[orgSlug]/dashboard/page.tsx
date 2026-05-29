@@ -7,7 +7,6 @@ import { useAuthStore } from '@/store/auth.store';
 import { useT } from '@/hooks/ui';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
-import { Button } from '@/components/ui/button';
 import { formatDate, daysUntil } from '@/lib/utils/date';
 import { Asset, Warranty, Request } from '@/types';
 
@@ -393,7 +392,7 @@ function PendingRequestsTable({
       columns={columns}
       isLoading={isLoading}
       emptyMessage="No pending requests."
-      onRowClick={() => router.push(`/${locale}/${orgSlug}/requests`)}
+      onRowClick={() => router.push(`/${locale}/${orgSlug}/requests/list`)}
       keyExtractor={(r) => r.id}
     />
   );
@@ -465,7 +464,7 @@ export default function DashboardPage() {
           iconColor="var(--primary-700)"
           label={t('dashboard.totalAssets')}
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{totalAssets.length}</p>}
-          onClick={() => router.push(`/${locale}/${orgSlug}/usool`)}
+          onClick={() => router.push(`/${locale}/${orgSlug}/usool/list`)}
         />
         <StatCard
           icon={<ActiveIcon />}
@@ -474,7 +473,7 @@ export default function DashboardPage() {
           label={t('dashboard.active')}
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{activeAssets.length}</p>}
           sub={!isLoading && totalAssets.length > 0 ? `${Math.round((activeAssets.length / totalAssets.length) * 100)}${t('dashboard.percentOfTotal')}` : undefined}
-          onClick={() => router.push(`/${locale}/${orgSlug}/usool?status=Active`)}
+          onClick={() => router.push(`/${locale}/${orgSlug}/usool/list?status=Active`)}
         />
         <StatCard
           icon={<InboxIcon />}
@@ -483,7 +482,7 @@ export default function DashboardPage() {
           label="Pending Requests"
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{pendingRequests.length}</p>}
           sub={!isLoading && pendingRequests.length > 0 ? 'need review' : undefined}
-          onClick={() => router.push(`/${locale}/${orgSlug}/requests`)}
+          onClick={() => router.push(`/${locale}/${orgSlug}/requests/list?status=PENDING`)}
         />
         <StatCard
           icon={<WarningIcon />}
@@ -510,7 +509,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-sm font-semibold text-gray-900">Asset breakdown</h2>
               <button
-                onClick={() => router.push(`/${locale}/${orgSlug}/usool`)}
+                onClick={() => router.push(`/${locale}/${orgSlug}/usool/list`)}
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
               >
                 {t('dashboard.viewAll')} <ArrowRightIcon />
@@ -575,7 +574,7 @@ export default function DashboardPage() {
                   )}
                 </div>
                 <button
-                  onClick={() => router.push(`/${locale}/${orgSlug}/requests`)}
+                  onClick={() => router.push(`/${locale}/${orgSlug}/requests/list?status=PENDING`)}
                   className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
                 >
                   Open queue <ArrowRightIcon />

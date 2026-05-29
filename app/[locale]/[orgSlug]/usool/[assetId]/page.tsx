@@ -14,7 +14,7 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
 import { Asset, Warranty } from '@/types';
 import { RequestActionPanel } from '@/components/assets/RequestActionPanel';
-import { Pencil } from 'lucide-react';
+import { Pencil, Archive, Trash2 } from 'lucide-react';
 import { AssetNotesSection } from '@/components/assets/AssetNotesSection';
 import { MaintenanceSection } from '@/components/assets/MaintenanceSection';
 import { CheckoutSection } from '@/components/assets/CheckoutSection';
@@ -44,9 +44,6 @@ function ArrowUpRightSVG() {
 }
 function UploadSVG() {
   return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 10V3M5 6l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M2 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>;
-}
-function TrashSVG() {
-  return <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M2 3.5h10M5.5 3.5V2.5h3v1M4 3.5l.75 8h4.5L10 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 
 /* ── KV row ──────────────────────────────────────────────────────── */
@@ -140,12 +137,12 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
             )}
             {asset.status === 'Active' && (
               <Button variant="destructive" size="sm" onClick={() => setShowRetire(true)}>
-                <TrashSVG /><span className="ml-1.5">Retire</span>
+                <Archive className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ml-1.5">Retire</span>
               </Button>
             )}
             {asset.status === 'Retired' && (
               <Button variant="destructive" size="sm" onClick={() => setShowRetire(true)}>
-                Delete permanently
+                <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ml-1.5">Delete permanently</span>
               </Button>
             )}
           </div>

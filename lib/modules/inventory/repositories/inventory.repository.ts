@@ -109,7 +109,11 @@ export class InventoryRepository {
     let items: InventoryItem[] = (data ?? []).map((r) => toItem(r))
 
     if (opts?.category) items = items.filter((i) => i.category === opts.category)
-    if (opts?.stockStatus) items = items.filter((i) => i.stockStatus === opts.stockStatus)
+    if (opts?.stockStatus) {
+      // Accepts a single status ('low') or a comma-separated set ('low,out').
+      const wanted = new Set(opts.stockStatus.split(',').map((s) => s.trim()).filter(Boolean))
+      if (wanted.size > 0) items = items.filter((i) => wanted.has(i.stockStatus))
+    }
     if (opts?.posEnabled === true) items = items.filter((i) => i.posEnabled === true)
     if (opts?.search) {
       const term = opts.search.toLowerCase()

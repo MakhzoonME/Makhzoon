@@ -10,6 +10,7 @@ import { useBarcodeLookup } from '@/hooks/inventory';
 import { useTaxRates } from '@/hooks/haraka';
 import { toast, useT } from '@/hooks/ui';
 import type { PurchaseLineFormData } from '@/lib/modules/inventory/purchases/schemas';
+import { InventoryItemPicker } from './InventoryItemPicker';
 
 interface Props {
   value: PurchaseLineFormData[];
@@ -166,11 +167,27 @@ export function PurchaseLinesEditor({ value, onChange }: Props) {
                   <td className="px-3 py-2 text-gray-500">{idx + 1}</td>
                   <td className="px-3 py-2">
                     <div className="space-y-1">
-                      <Input
-                        value={line.itemName}
-                        onChange={(e) => updateLine(idx, { itemName: e.target.value })}
-                        placeholder="Item name"
-                      />
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={line.itemName}
+                          onChange={(e) => updateLine(idx, { itemName: e.target.value, itemId: null })}
+                          placeholder="Item name"
+                          className="flex-1"
+                        />
+                        <InventoryItemPicker
+                          selectedItemId={line.itemId ?? null}
+                          onPick={(it) =>
+                            updateLine(idx, {
+                              itemId: it.id,
+                              itemName: it.name,
+                              sku: it.sku ?? null,
+                              barcode: it.barcode ?? line.barcode ?? '',
+                              unitCost: line.unitCost > 0 ? line.unitCost : (it.unitCost ?? 0),
+                              taxRateId: line.taxRateId || (it.taxRateId ?? ''),
+                            })
+                          }
+                        />
+                      </div>
                       {line.barcode && (
                         <div className="flex items-center gap-1 text-xs text-gray-500 font-mono">
                           <ScanBarcode size={12} aria-hidden /> {line.barcode}

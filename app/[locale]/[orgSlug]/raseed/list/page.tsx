@@ -19,7 +19,7 @@ import { useDebounce } from '@/hooks/ui';
 import { InventoryItem } from '@/types';
 import { RequestInventoryModal } from '@/components/inventory/RequestInventoryModal';
 import { useT } from '@/hooks/ui';
-import { Plus, Pencil, Trash2, AlertTriangle, ClipboardCheck, FileText } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, ClipboardCheck, FileText, X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
@@ -180,6 +180,21 @@ export default function InventoryListPage() {
   const lowCount = items.filter((i) => i.stockStatus === 'low').length;
   const outCount = items.filter((i) => i.stockStatus === 'out').length;
 
+  // stockFilter is comma-separated, e.g. "low" or "low,out". A Set makes
+  // toggling each banner independent (clicking one doesn't clear the other).
+  const stockFilterSet = new Set(stockFilter.split(',').map((s) => s.trim()).filter(Boolean));
+  const stockMultiActive = stockFilterSet.size > 1;
+
+  function toggleStockValue(value: 'low' | 'out' | 'ok') {
+    const next = new Set(stockFilterSet);
+    if (next.has(value)) next.delete(value); else next.add(value);
+    syncAllToUrl({ stockStatus: Array.from(next).join(','), page: '1' });
+  }
+
+  function clearStockFilter() {
+    syncAllToUrl({ stockStatus: '', page: '1' });
+  }
+
   function syncAllToUrl(next: Partial<Record<'search' | 'category' | 'stockStatus' | 'page' | 'pageSize' | 'sortBy' | 'sortDir', string>>) {
     updateUrl({
       search: next.search ?? search,
@@ -237,39 +252,51 @@ export default function InventoryListPage() {
       />
 
       {(lowCount > 0 || outCount > 0) && (
-        <div className="mb-4 flex gap-3 flex-wrap">
+        <div className="mb-4 flex gap-3 flex-wrap items-center">
           {outCount > 0 && (
             <button
               type="button"
-              onClick={() => handleStockChange(stockFilter === 'out' ? 'all' : 'out')}
-              aria-pressed={stockFilter === 'out'}
+              onClick={() => toggleStockValue('out')}
+              aria-pressed={stockFilterSet.has('out')}
               className={cn(
                 'flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors cursor-pointer',
                 'bg-red-50 border-red-200 text-red-700 dark:text-red-700',
                 'hover:bg-red-100 hover:border-red-300',
                 'focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-1',
-                stockFilter === 'out' && 'ring-2 ring-red-400 bg-red-100',
+                stockFilterSet.has('out') && 'ring-2 ring-red-400 bg-red-100',
               )}
             >
               <AlertTriangle className="h-4 w-4" strokeWidth={1.75} />
               <span>{outCount > 1 ? t('inventory.itemsOutOfStockPlural').replace('{count}', String(outCount)) : t('inventory.itemsOutOfStock').replace('{count}', String(outCount))}</span>
+              {stockFilterSet.has('out') && <X className="h-3.5 w-3.5 ms-1 opacity-70" strokeWidth={2} aria-hidden />}
             </button>
           )}
           {lowCount > 0 && (
             <button
               type="button"
-              onClick={() => handleStockChange(stockFilter === 'low' ? 'all' : 'low')}
-              aria-pressed={stockFilter === 'low'}
+              onClick={() => toggleStockValue('low')}
+              aria-pressed={stockFilterSet.has('low')}
               className={cn(
                 'flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors cursor-pointer',
                 'bg-amber-50 border-amber-200 text-amber-700 dark:text-amber-700',
                 'hover:bg-amber-100 hover:border-amber-300',
                 'focus:outline-none focus:ring-2 focus:ring-amber-300 focus:ring-offset-1',
-                stockFilter === 'low' && 'ring-2 ring-amber-400 bg-amber-100',
+                stockFilterSet.has('low') && 'ring-2 ring-amber-400 bg-amber-100',
               )}
             >
               <AlertTriangle className="h-4 w-4" strokeWidth={1.75} />
               <span>{lowCount > 1 ? t('inventory.itemsRunningLowPlural').replace('{count}', String(lowCount)) : t('inventory.itemsRunningLow').replace('{count}', String(lowCount))}</span>
+              {stockFilterSet.has('low') && <X className="h-3.5 w-3.5 ms-1 opacity-70" strokeWidth={2} aria-hidden />}
+            </button>
+          )}
+          {stockFilterSet.size > 0 && (
+            <button
+              type="button"
+              onClick={clearStockFilter}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
+            >
+              <X className="h-3.5 w-3.5" strokeWidth={2} />
+              {t('inventory.clearStockFilter')}
             </button>
           )}
         </div>
@@ -288,8 +315,13 @@ export default function InventoryListPage() {
                 {(categories ?? []).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={stockFilter || 'all'} onValueChange={handleStockChange}>
-              <SelectTrigger className="w-44"><SelectValue placeholder={t('inventory.allStock')} /></SelectTrigger>
+            <Select
+              value={stockMultiActive ? stockFilter : (stockFilter || 'all')}
+              onValueChange={handleStockChange}
+            >
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder={stockMultiActive ? t('inventory.multipleStock') : t('inventory.allStock')} />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('inventory.allStock')}</SelectItem>
                 <SelectItem value="ok">{t('inventory.inStock')}</SelectItem>

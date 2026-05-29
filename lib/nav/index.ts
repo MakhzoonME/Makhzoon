@@ -43,6 +43,9 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
         featureKey: 'assets', moduleColor: '#00695C', moduleName: 'أصول' },
       { href: '/usool/list', label: 'Asset Register', labelKey: 'nav.assetsList',
         featureKey: 'assets', moduleColor: '#00695C', moduleName: 'أصول' },
+      { href: '/usool/audits', label: 'Audits', labelKey: 'nav.assetAudits',
+        featureKey: 'assets', permissionKey: 'inventory.audits',
+        moduleColor: '#00695C', moduleName: 'أصول' },
     ],
   },
   {

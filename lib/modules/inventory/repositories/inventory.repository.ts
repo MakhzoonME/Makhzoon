@@ -108,12 +108,8 @@ export class InventoryRepository {
 
     let items: InventoryItem[] = (data ?? []).map((r) => toItem(r))
 
+    // Cheap, item-only filters first so we only ledger-look-up what survives.
     if (opts?.category) items = items.filter((i) => i.category === opts.category)
-    if (opts?.stockStatus) {
-      // Accepts a single status ('low') or a comma-separated set ('low,out').
-      const wanted = new Set(opts.stockStatus.split(',').map((s) => s.trim()).filter(Boolean))
-      if (wanted.size > 0) items = items.filter((i) => wanted.has(i.stockStatus))
-    }
     if (opts?.posEnabled === true) items = items.filter((i) => i.posEnabled === true)
     if (opts?.search) {
       const term = opts.search.toLowerCase()
@@ -126,6 +122,33 @@ export class InventoryRepository {
       )
     }
 
+    // Quantity is ledger-derived. Fetch the latest quantity_after per item in
+    // one batched query, then recompute quantityOnHand + stockStatus so the
+    // list agrees with the detail page.
+    if (items.length > 0) {
+      const ids = items.map((i) => i.id)
+      const { data: txs } = await supabaseAdmin
+        .from('inventory_transactions')
+        .select('item_id, quantity_after, performed_at')
+        .in('item_id', ids)
+        .order('performed_at', { ascending: false })
+      const latestQty = new Map<string, number>()
+      for (const t of txs ?? []) {
+        const k = t.item_id as string
+        if (!latestQty.has(k)) latestQty.set(k, (t.quantity_after as number) ?? 0)
+      }
+      items = items.map((i) => {
+        const q = latestQty.get(i.id) ?? i.quantityOnHand
+        return { ...i, quantityOnHand: q, stockStatus: stockStatus(q, i.minimumThreshold) }
+      })
+    }
+
+    if (opts?.stockStatus) {
+      // Accepts a single status ('low') or a comma-separated set ('low,out').
+      const wanted = new Set(opts.stockStatus.split(',').map((s) => s.trim()).filter(Boolean))
+      if (wanted.size > 0) items = items.filter((i) => wanted.has(i.stockStatus))
+    }
+
     const total = items.length
     items.sort((a, b) => {
       const aVal = a[sortBy]
@@ -134,6 +157,7 @@ export class InventoryRepository {
       if (aVal == null && bVal == null) return 0
       if (aVal == null) return mult
       if (bVal == null) return -mult
+      if (aVal instanceof Date && bVal instanceof Date) return (aVal.getTime() - bVal.getTime()) * mult
       if (typeof aVal === 'number' && typeof bVal === 'number') return (aVal - bVal) * mult
       return String(aVal).localeCompare(String(bVal)) * mult
     })

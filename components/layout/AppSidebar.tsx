@@ -147,8 +147,8 @@ const NAV_ICONS: Record<string, React.FC> = {
 
 const EASE_OUT   = [0.16, 1, 0.3, 1] as const;
 const EASE_SLIDE = [0.4, 0, 0.2, 1] as const;
-// Icon is 18px. Collapsed sidebar is 68px. Center = (68-18)/2 = 25px padding-left.
-const ICON_INDENT = 'pl-[25px]';
+// Icon is 18px. Collapsed sidebar is 68px. Center = (68-18)/2 = 25px inline-start padding.
+const ICON_INDENT = 'ps-[25px]';
 export const SIDEBAR_WIDTH_EXPANDED  = 240;
 export const SIDEBAR_WIDTH_COLLAPSED = 68;
 
@@ -283,7 +283,7 @@ export function AppSidebar() {
                     <Icon />
                   </span>
                   {hasActiveChild && group.moduleColor && (
-                    <span className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r', isRtl ? 'left-0 rounded-r-none rounded-l' : 'left-0')} style={{ background: group.moduleColor }} />
+                    <span className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')} style={{ background: group.moduleColor }} />
                   )}
                   <motion.span
                     animate={{ width: sidebarCollapsed ? 0 : 'auto', opacity: sidebarCollapsed ? 0 : 1 }}
@@ -376,7 +376,7 @@ export function AppSidebar() {
 
             /* ── Regular item ───────────────────────────────────── */
             const navEntry = entry as NavItemConfig;
-            const { href, label: itemLabel, labelKey, moduleColor, moduleName } = navEntry;
+            const { href, label: itemLabel, labelKey, moduleColor } = navEntry;
             const Icon = NAV_ICONS[href] ?? DashboardSVG;
             const fullHref = orgSlug ? withLocale(locale, `/${orgSlug}${href}`) : withLocale(locale, href);
             const active   = pathname === fullHref || pathname.startsWith(fullHref + '/');
@@ -404,7 +404,7 @@ export function AppSidebar() {
                       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                     />
                     <span
-                      className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r', isRtl ? 'left-0 rounded-r-none rounded-l' : 'left-0')}
+                      className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')}
                       style={{ background: moduleColor ?? 'var(--primary-600)' }}
                     />
                   </>

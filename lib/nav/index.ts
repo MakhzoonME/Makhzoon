@@ -35,12 +35,23 @@ export type NavEntry = NavItemConfig | NavGroupConfig;
 
 export const ORG_NAV_ENTRIES: NavEntry[] = [
   { href: '/dashboard',    label: 'Dashboard',    labelKey: 'nav.dashboard',    featureKey: 'dashboard' },
-  { href: '/usool',        label: 'Usool',        labelKey: 'nav.assets',       featureKey: 'assets',    moduleColor: '#00695C', moduleName: 'أصول' },
+  {
+    type: 'group', href: '/usool', label: 'Usool', labelKey: 'nav.assets',
+    featureKey: 'assets', moduleColor: '#00695C', moduleName: 'أصول',
+    items: [
+      { href: '/usool', label: 'Overview', labelKey: 'nav.overview',
+        featureKey: 'assets', moduleColor: '#00695C', moduleName: 'أصول' },
+      { href: '/usool/list', label: 'Asset Register', labelKey: 'nav.assetsList',
+        featureKey: 'assets', moduleColor: '#00695C', moduleName: 'أصول' },
+    ],
+  },
   {
     type: 'group', href: '/raseed', label: 'Raseed', labelKey: 'nav.inventory',
     featureKey: 'inventory', moduleColor: '#E65100', moduleName: 'رصيد',
     items: [
-      { href: '/raseed', label: 'Raseed', labelKey: 'nav.inventory',
+      { href: '/raseed', label: 'Overview', labelKey: 'nav.overview',
+        featureKey: 'inventory', moduleColor: '#E65100', moduleName: 'رصيد' },
+      { href: '/raseed/list', label: 'Stock Items', labelKey: 'nav.inventoryList',
         featureKey: 'inventory', moduleColor: '#E65100', moduleName: 'رصيد' },
       { href: '/raseed/purchases', label: 'Purchases', labelKey: 'nav.purchases',
         featureKey: 'inventory', permissionKey: 'purchases.view',
@@ -51,7 +62,7 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
     type: 'group', href: '/haraka', label: 'Haraka', labelKey: 'nav.pos',
     featureKey: 'pos', moduleColor: '#C2185B', moduleName: 'حركة',
     items: [
-      { href: '/haraka', label: 'Haraka', labelKey: 'nav.pos',
+      { href: '/haraka', label: 'Overview', labelKey: 'nav.overview',
         featureKey: 'pos', moduleColor: '#C2185B', moduleName: 'حركة' },
       { href: '/haraka/customers', label: 'Customers', labelKey: 'nav.customers',
         featureKey: 'pos', permissionKey: 'pos.process_sale',
@@ -61,7 +72,14 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
         moduleColor: '#AD1457', moduleName: 'تقارير' },
     ],
   },
-  { href: '/requests',     label: 'Requests',     labelKey: 'nav.requests',     featureKey: 'requests' },
+  {
+    type: 'group', href: '/requests', label: 'Requests', labelKey: 'nav.requests',
+    featureKey: 'requests',
+    items: [
+      { href: '/requests', label: 'Overview', labelKey: 'nav.overview', featureKey: 'requests' },
+      { href: '/requests/list', label: 'All Requests', labelKey: 'nav.requestsList', featureKey: 'requests' },
+    ],
+  },
   { href: '/reports',      label: 'Reports',      labelKey: 'nav.reports',      adminOnly: true, featureKey: 'reports' },
   { href: '/support',      label: 'Support',      labelKey: 'nav.support',      featureKey: 'support' },
   { href: '/audit-logs',   label: 'Audit Logs',   labelKey: 'nav.auditLogs',    adminOnly: true, featureKey: 'auditLogs' },

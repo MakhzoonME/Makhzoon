@@ -94,7 +94,7 @@ export function AvatarUpload({ value, onChange, fallbackText }: Props) {
           ) : (
             <Camera className="h-3.5 w-3.5" strokeWidth={1.75} />
           )}
-          <span className="ml-1">{uploading ? 'Uploading…' : value ? 'Change picture' : 'Upload picture'}</span>
+          <span className="ms-1">{uploading ? 'Uploading…' : value ? 'Change picture' : 'Upload picture'}</span>
         </Button>
         <p className="text-[11px] text-gray-500">JPEG, PNG, or WebP up to 5 MB.</p>
       </div>

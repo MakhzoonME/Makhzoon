@@ -699,6 +699,10 @@ const en = {
   'purchases.newPurchase':       'New purchase',
   'purchases.searchPlaceholder': 'Search supplier or invoice…',
   'purchases.noPurchases':       'No purchases yet — create one to record your first supplier delivery.',
+  'purchases.pickItem':          'Pick item',
+  'purchases.changeItem':        'Change',
+  'purchases.searchInventory':   'Search inventory…',
+  'purchases.noItemsFound':      'No matching items.',
 
   // ── Haraka Customers page ─────────────────────────────────────────
   'customers.title':             'Customers',
@@ -1730,6 +1734,10 @@ const ar: Record<keyof typeof en, string> = {
   'purchases.newPurchase':       'عملية شراء جديدة',
   'purchases.searchPlaceholder': 'بحث عن مورد أو فاتورة...',
   'purchases.noPurchases':       'لا توجد عمليات شراء بعد — أنشئ واحدة لتسجيل أول إمدادات.',
+  'purchases.pickItem':          'اختر صنفاً',
+  'purchases.changeItem':        'تغيير',
+  'purchases.searchInventory':   'ابحث في المخزون...',
+  'purchases.noItemsFound':      'لا توجد أصناف مطابقة.',
 
   // ── Haraka Customers page ─────────────────────────────────────────
   'customers.title':             'العملاء',

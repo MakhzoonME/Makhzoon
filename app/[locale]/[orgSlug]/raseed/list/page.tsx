@@ -19,7 +19,7 @@ import { useDebounce } from '@/hooks/ui';
 import { InventoryItem } from '@/types';
 import { RequestInventoryModal } from '@/components/inventory/RequestInventoryModal';
 import { useT } from '@/hooks/ui';
-import { Plus, Pencil, Trash2, AlertTriangle, ClipboardCheck, FileText, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, FileText, X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
@@ -241,21 +241,12 @@ export default function InventoryListPage() {
           { label: t('nav.inventoryList'), href: `/${locale}/${orgSlug}/raseed/list` },
         ]}
         actions={isAdmin ? (
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/raseed/audits`)}>
-              <ClipboardCheck className="h-4 w-4" strokeWidth={1.75} /> {t('inventory.audits')}
+          <SubscriptionGate>
+            <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
+              <Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('inventory.addItem')}</span>
             </Button>
-            <SubscriptionGate>
-              <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
-                <Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('inventory.addItem')}</span>
-              </Button>
-            </SubscriptionGate>
-          </div>
-        ) : (
-          <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/raseed/audits`)}>
-            <ClipboardCheck className="h-4 w-4" strokeWidth={1.75} /> {t('inventory.audits')}
-          </Button>
-        )}
+          </SubscriptionGate>
+        ) : undefined}
       />
 
       {(lowCount > 0 || outCount > 0) && (

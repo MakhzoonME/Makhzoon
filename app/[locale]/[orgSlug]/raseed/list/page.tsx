@@ -191,10 +191,6 @@ export default function InventoryListPage() {
     syncAllToUrl({ stockStatus: Array.from(next).join(','), page: '1' });
   }
 
-  function clearStockFilter() {
-    syncAllToUrl({ stockStatus: '', page: '1' });
-  }
-
   function syncAllToUrl(next: Partial<Record<'search' | 'category' | 'stockStatus' | 'page' | 'pageSize' | 'sortBy' | 'sortDir', string>>) {
     updateUrl({
       search: next.search ?? search,
@@ -287,16 +283,6 @@ export default function InventoryListPage() {
               <AlertTriangle className="h-4 w-4" strokeWidth={1.75} />
               <span>{lowCount > 1 ? t('inventory.itemsRunningLowPlural').replace('{count}', String(lowCount)) : t('inventory.itemsRunningLow').replace('{count}', String(lowCount))}</span>
               {stockFilterSet.has('low') && <X className="h-3.5 w-3.5 ms-1 opacity-70" strokeWidth={2} aria-hidden />}
-            </button>
-          )}
-          {stockFilterSet.size > 0 && (
-            <button
-              type="button"
-              onClick={clearStockFilter}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
-            >
-              <X className="h-3.5 w-3.5" strokeWidth={2} />
-              {t('inventory.clearStockFilter')}
             </button>
           )}
         </div>

@@ -59,6 +59,9 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/raseed/purchases', label: 'Purchases', labelKey: 'nav.purchases',
         featureKey: 'inventory', permissionKey: 'purchases.view',
         moduleColor: '#BF360C', moduleName: 'مشتريات' },
+      { href: '/raseed/audits', label: 'Stock Audits', labelKey: 'nav.stockAudits',
+        featureKey: 'inventory', permissionKey: 'inventory.audits',
+        moduleColor: '#BF360C', moduleName: 'مراجعات' },
     ],
   },
   {

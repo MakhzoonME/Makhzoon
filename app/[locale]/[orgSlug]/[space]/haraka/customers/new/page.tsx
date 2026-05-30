@@ -9,9 +9,9 @@ import type { CustomerFormData } from '@/lib/modules/haraka/customers/schemas';
 
 export default function NewCustomerPage() {
   const router = useRouter();
-  const params = useParams<{ locale: string; orgSlug: string }>();
+  const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const createMut = useCreateCustomer();
-  const base = `/${params.locale}/${params.orgSlug}/haraka/customers`;
+  const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka/customers`;
 
   async function handleSubmit(values: CustomerFormData) {
     try {
@@ -28,7 +28,7 @@ export default function NewCustomerPage() {
       <PageHeader
         title="New customer"
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/haraka` },
+          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
           { label: 'Customers', href: base },
           { label: 'New', href: '#' },
         ]}

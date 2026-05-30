@@ -35,7 +35,7 @@ import type { InventoryItem, PosTransaction } from '@/types';
  */
 export default function RegisterPage() {
   const router = useRouter();
-  const params = useParams<{ locale: string; orgSlug: string }>();
+  const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
   const { user } = useAuthStore();
   const { data: sessionData, isLoading: sessionLoading } = useCurrentSession();
@@ -56,7 +56,7 @@ export default function RegisterPage() {
   // No session → bounce back to the landing page so the cashier opens one.
   useEffect(() => {
     if (!sessionLoading && !sessionData?.session) {
-      router.replace(`/${params.locale}/${params.orgSlug}/haraka`);
+      router.replace(`/${params.locale}/${params.orgSlug}/${params.space}/haraka`);
     }
   }, [sessionLoading, sessionData?.session, router, params.locale, params.orgSlug]);
 
@@ -163,7 +163,7 @@ export default function RegisterPage() {
         title={t('register.title')}
         description={sessionData?.session ? t('register.sessionLabel').replace('{id}', sessionData.session.id.slice(0, 8)) : ''}
         breadcrumb={[
-          { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/haraka` },
+          { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
           { label: t('register.title'), href: '#' },
         ]}
         actions={
@@ -182,7 +182,7 @@ export default function RegisterPage() {
                 size="sm"
                 onClick={() =>
                   router.push(
-                    `/${params.locale}/${params.orgSlug}/haraka/sessions/${sessionData.session!.id}`,
+                    `/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions/${sessionData.session!.id}`,
                   )
                 }
               >

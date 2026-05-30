@@ -2,7 +2,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 // useEffect retained for debounced-search → URL commit only.
-import { Plus, Pencil, Trash2, Upload, ClipboardCheck } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload, ClipboardCheck, ArrowRight, X, Copy } from 'lucide-react';
+import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
+import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
+import { useAccessibleSpaces } from '@/hooks/spaces';
 import { useOrgSlug, useSpace } from '@/hooks/ui';
 import { useAssets } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
@@ -61,6 +64,11 @@ export default function AssetsListPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [formDirty, setFormDirty] = useState(false);
   const [showDiscardDrawer, setShowDiscardDrawer] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [dupeOpen, setDupeOpen] = useState(false);
+  const { data: spaceList } = useAccessibleSpaces();
+  const hasMultipleSpaces = (spaceList?.items?.length ?? 0) > 1;
 
   function closeDrawer() { setDrawerOpen(false); setEditTarget(null); setFormDirty(false); }
   function handleDrawerCloseRequest() {
@@ -249,6 +257,36 @@ export default function AssetsListPage() {
         ) : undefined}
       />
 
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between gap-3 mb-3 px-4 py-2 bg-primary-50 border border-primary-100 rounded-lg">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="h-7 w-7 rounded-md flex items-center justify-center text-primary-700 hover:bg-primary-100 transition-colors"
+              aria-label={t('common.clear')}
+            >
+              <X className="h-3.5 w-3.5" strokeWidth={2} />
+            </button>
+            <span className="text-sm font-medium text-primary-900">
+              {t('bulk.selected').replace('{count}', String(selectedIds.size))}
+            </span>
+          </div>
+          {hasMultipleSpaces && isAdmin && (
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setDupeOpen(true)}>
+                <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
+                <span className="ms-1">{t('duplicate.bulk')}</span>
+              </Button>
+              <Button size="sm" onClick={() => setMoveOpen(true)}>
+                <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                <span className="ms-1">{t('move.bulkMove')}</span>
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="bg-surface-card rounded-lg border border-border">
         <DataTable
           data={assets}
@@ -257,6 +295,7 @@ export default function AssetsListPage() {
           emptyMessage={t('assets.noAssets')}
           onRowClick={(a) => router.push(`/${locale}/${orgSlug}/${space}/usool/${a.id}`)}
           keyExtractor={(a) => a.id}
+          selection={hasMultipleSpaces && isAdmin ? { selectedIds, onChange: setSelectedIds } : undefined}
           pagination={assetsData ? {
             page: assetsData.page,
             pageSize: assetsData.pageSize,
@@ -309,6 +348,24 @@ export default function AssetsListPage() {
       />
 
       <ImportAssetsDrawer open={importOpen} onOpenChange={setImportOpen} />
+
+      <MoveResourceDialog
+        open={moveOpen}
+        onOpenChange={setMoveOpen}
+        type="asset"
+        ids={[...selectedIds]}
+        recordLabel={t('bulk.selected').replace('{count}', String(selectedIds.size))}
+        onMoved={() => setSelectedIds(new Set())}
+      />
+
+      <DuplicateResourceDialog
+        open={dupeOpen}
+        onOpenChange={setDupeOpen}
+        type="asset"
+        ids={[...selectedIds]}
+        recordLabel={t('bulk.selected').replace('{count}', String(selectedIds.size))}
+        onDuplicated={() => setSelectedIds(new Set())}
+      />
     </div>
   );
 }

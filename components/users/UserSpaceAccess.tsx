@@ -1,10 +1,11 @@
 'use client';
-import { useEffect } from 'react';
-import { Lock } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { Lock, AlertTriangle } from 'lucide-react';
 import { useT } from '@/hooks/ui';
 import { useAllSpaces } from '@/hooks/spaces';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils/cn';
+import { toast } from '@/hooks/ui';
 
 /**
  * "Space access" section for the user-config popup.
@@ -41,12 +42,23 @@ export function UserSpaceAccess({
 
   const selected = new Set(value.spaceIds);
   const allDisabled = value.allSpaces;
+  const ownerRestricted = role === 'org_owner' && !value.allSpaces;
+  const warnedRef = useRef(false);
 
   function toggle(spaceId: string) {
     const next = new Set(selected);
     if (next.has(spaceId)) next.delete(spaceId);
     else next.add(spaceId);
     onChange({ allSpaces: value.allSpaces, spaceIds: [...next] });
+  }
+
+  function handleAllSpacesChange(checked: boolean) {
+    if (!checked && role === 'org_owner' && !warnedRef.current) {
+      toast.info(t('userSpaces.ownerRestrictWarn'));
+      warnedRef.current = true;
+    }
+    if (checked) warnedRef.current = false;
+    onChange({ allSpaces: checked, spaceIds: value.spaceIds });
   }
 
   return (
@@ -58,10 +70,17 @@ export function UserSpaceAccess({
         </div>
         <Switch
           checked={value.allSpaces}
-          onCheckedChange={(checked: boolean) => onChange({ allSpaces: checked, spaceIds: value.spaceIds })}
+          onCheckedChange={handleAllSpacesChange}
           aria-label={t('userSpaces.accessAll')}
         />
       </div>
+
+      {ownerRestricted && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-2">
+          <AlertTriangle className="h-3.5 w-3.5 text-amber-700 mt-0.5 flex-shrink-0" strokeWidth={1.75} />
+          <p className="text-xs text-amber-900">{t('userSpaces.ownerRestrictHint')}</p>
+        </div>
+      )}
 
       <div className={cn('space-y-1.5 rounded-lg border border-border p-3', allDisabled && 'opacity-50')}>
         <p className="text-xs font-medium text-gray-700 uppercase tracking-wide">

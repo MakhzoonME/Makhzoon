@@ -10,7 +10,7 @@ import { PurchaseStatusBadge } from '@/components/inventory/purchases/PurchaseSt
 import { toast } from '@/hooks/ui';
 
 interface Props {
-  params: Promise<{ locale: string; orgSlug: string; purchaseId: string }>;
+  params: Promise<{ locale: string; orgSlug: string; space: string; purchaseId: string }>;
 }
 
 export default function PurchaseDetailPage(props: Props) {
@@ -40,7 +40,7 @@ export default function PurchaseDetailPage(props: Props) {
     try {
       await deleteMut.mutateAsync(purchase.id);
       toast.success('Purchase deleted');
-      router.push(`/${params.locale}/${params.orgSlug}/raseed/purchases`);
+      router.push(`/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Delete failed');
     }
@@ -57,8 +57,8 @@ export default function PurchaseDetailPage(props: Props) {
         title={`Purchase from ${purchase.supplierName}`}
         description={purchase.invoiceNumber ? `Invoice ${purchase.invoiceNumber}` : 'No invoice number'}
         breadcrumb={[
-          { label: 'Raseed', href: `/${params.locale}/${params.orgSlug}/raseed` },
-          { label: 'Purchases', href: `/${params.locale}/${params.orgSlug}/raseed/purchases` },
+          { label: 'Raseed', href: `/${params.locale}/${params.orgSlug}/${params.space}/raseed` },
+          { label: 'Purchases', href: `/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases` },
           { label: purchase.supplierName, href: '#' },
         ]}
         actions={
@@ -68,7 +68,7 @@ export default function PurchaseDetailPage(props: Props) {
               <>
                 <Button
                   variant="outline"
-                  onClick={() => router.push(`/${params.locale}/${params.orgSlug}/raseed/purchases/${purchase.id}/edit`)}
+                  onClick={() => router.push(`/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases/${purchase.id}/edit`)}
                 >
                   <Pencil size={14} className="me-1" /> Edit
                 </Button>

@@ -7,7 +7,7 @@ import { PurchaseForm } from '@/components/inventory/purchases/PurchaseForm';
 import { usePurchase } from '@/hooks/inventory';
 
 interface Props {
-  params: Promise<{ locale: string; orgSlug: string; purchaseId: string }>;
+  params: Promise<{ locale: string; orgSlug: string; space: string; purchaseId: string }>;
 }
 
 export default function EditPurchasePage(props: Props) {
@@ -31,18 +31,18 @@ export default function EditPurchasePage(props: Props) {
         title={`Edit purchase`}
         description={data.purchase.supplierName}
         breadcrumb={[
-          { label: 'Raseed', href: `/${params.locale}/${params.orgSlug}/raseed` },
-          { label: 'Purchases', href: `/${params.locale}/${params.orgSlug}/raseed/purchases` },
+          { label: 'Raseed', href: `/${params.locale}/${params.orgSlug}/${params.space}/raseed` },
+          { label: 'Purchases', href: `/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases` },
           {
             label: data.purchase.supplierName,
-            href: `/${params.locale}/${params.orgSlug}/raseed/purchases/${params.purchaseId}`,
+            href: `/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases/${params.purchaseId}`,
           },
           { label: 'Edit', href: '#' },
         ]}
       />
       <PurchaseForm
         purchase={data.purchase}
-        onSuccess={() => router.push(`/${params.locale}/${params.orgSlug}/raseed/purchases/${params.purchaseId}`)}
+        onSuccess={() => router.push(`/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases/${params.purchaseId}`)}
       />
     </div>
   );

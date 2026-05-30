@@ -13,7 +13,7 @@ import { toast } from '@/hooks/ui';
 
 export default function NewSessionPage() {
   const router = useRouter();
-  const params = useParams<{ locale: string; orgSlug: string }>();
+  const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const openMut = useOpenSession();
 
   const form = useForm<OpenSessionFormData>({
@@ -25,7 +25,7 @@ export default function NewSessionPage() {
     try {
       const res = await openMut.mutateAsync(values);
       toast.success('Session opened');
-      router.push(`/${params.locale}/${params.orgSlug}/haraka/sessions/${res.id}`);
+      router.push(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions/${res.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to open session');
     }
@@ -37,8 +37,8 @@ export default function NewSessionPage() {
         title="Open new session"
         description="Count your starting cash and enter the amount below. This becomes the opening float."
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/haraka` },
-          { label: 'Sessions', href: `/${params.locale}/${params.orgSlug}/haraka/sessions` },
+          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
+          { label: 'Sessions', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions` },
           { label: 'New', href: '#' },
         ]}
       />

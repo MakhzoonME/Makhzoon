@@ -129,9 +129,12 @@ export default function UsersPage() {
   ];
 
   function canEditUser(target: OrgUser): boolean {
+    // Owners and super admins can edit anyone, including themselves and other owners.
+    if (isOwnerOrSuperAdmin) return true;
+    // Non-owners cannot edit themselves.
     if (target.id === currentUser?.uid) return false;
-    // Admin cannot edit owners; only owner/super_admin can
-    if (target.role === 'org_owner' && !isOwnerOrSuperAdmin) return false;
+    // Admin cannot edit owners.
+    if (target.role === 'org_owner') return false;
     return isAdmin;
   }
 

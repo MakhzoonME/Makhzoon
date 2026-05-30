@@ -116,11 +116,14 @@ export async function GET(req: NextRequest) {
     const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined;
 
     const isOrgUser = user.role === 'admin' || user.role === 'org_owner';
-    // Audit logs are hard-scoped to the active space. The client fetch wrapper
-    // sends x-space-slug; map to id and filter. Platform admins see all spaces.
+    // Audit logs are hard-scoped to the active space by default. The client
+    // fetch wrapper sends x-space-slug; map to id and filter. Pass
+    // ?allSpaces=true (admin/owner) to see logs across every accessible space.
+    // Platform admins always see all spaces.
+    const allSpaces = searchParams.get('allSpaces') === 'true';
     const spaceSlug = req.headers.get('x-space-slug') ?? undefined;
     let spaceId: string | undefined;
-    if (isOrgUser && spaceSlug && orgId) {
+    if (isOrgUser && !allSpaces && spaceSlug && orgId) {
       const { supabaseAdmin } = await import('@/lib/supabase/admin');
       const { data: s } = await supabaseAdmin
         .from('spaces')

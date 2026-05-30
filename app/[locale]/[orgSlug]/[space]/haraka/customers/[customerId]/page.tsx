@@ -1,21 +1,32 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, ArrowRight, Copy } from 'lucide-react';
 import { useState } from 'react';
 import { PageHeader, ConfirmDialog } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { useCustomer, useDeleteCustomer } from '@/hooks/haraka';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
+import { useAuthStore } from '@/store/auth.store';
+import { useAccessibleSpaces } from '@/hooks/spaces';
+import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
+import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
 
 export default function CustomerDetailPage() {
   const router = useRouter();
-  const params = useParams<{ locale: string; orgSlug: string; customerId: string }>();
+  const params = useParams<{ locale: string; orgSlug: string; space: string; customerId: string }>();
   const { data, isLoading } = useCustomer(params.customerId);
   const deleteMut = useDeleteCustomer();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [dupeOpen, setDupeOpen] = useState(false);
+  const { t } = useT();
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'admin' || user?.role === 'org_owner' || user?.role === 'super_admin';
+  const { data: spaceList } = useAccessibleSpaces();
+  const hasMultipleSpaces = (spaceList?.items?.length ?? 0) > 1;
 
-  const base = `/${params.locale}/${params.orgSlug}/haraka/customers`;
+  const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka/customers`;
   const customer = data?.customer;
 
   async function onDelete() {
@@ -53,7 +64,7 @@ export default function CustomerDetailPage() {
         title={customer.name}
         description="Customer details"
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/haraka` },
+          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
           { label: 'Customers', href: base },
           { label: customer.name, href: '#' },
         ]}
@@ -62,6 +73,16 @@ export default function CustomerDetailPage() {
             <Button variant="outline" onClick={() => router.push(`${base}/${customer.id}/edit`)}>
               <Pencil size={14} className="me-1" /> Edit
             </Button>
+            {hasMultipleSpaces && isAdmin && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setMoveOpen(true)}>
+                  <ArrowRight size={14} className="me-1" /> {t('move.button')}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setDupeOpen(true)}>
+                  <Copy size={14} className="me-1" /> {t('duplicate.button')}
+                </Button>
+              </>
+            )}
             <Button variant="outline" onClick={() => setConfirmDelete(true)}>
               <Trash2 size={14} className="me-1" /> Delete
             </Button>
@@ -93,6 +114,23 @@ export default function CustomerDetailPage() {
         confirmLabel="Delete"
         onConfirm={onDelete}
         loading={deleteMut.isPending}
+      />
+
+      <MoveResourceDialog
+        open={moveOpen}
+        onOpenChange={setMoveOpen}
+        type="customer"
+        ids={[customer.id]}
+        recordLabel={customer.name}
+        onMoved={() => router.replace(base)}
+      />
+
+      <DuplicateResourceDialog
+        open={dupeOpen}
+        onOpenChange={setDupeOpen}
+        type="customer"
+        ids={[customer.id]}
+        recordLabel={customer.name}
       />
     </div>
   );

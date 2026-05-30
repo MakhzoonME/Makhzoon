@@ -13,7 +13,7 @@ type StatusFilter = 'all' | 'completed' | 'refunded' | 'voided';
 
 export default function TransactionsListPage() {
   const router = useRouter();
-  const params = useParams<{ locale: string; orgSlug: string }>();
+  const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { isAllowed } = useAdminGuard('pos.view_reports');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [page, setPage] = useState(1);
@@ -72,7 +72,7 @@ export default function TransactionsListPage() {
         title="Transactions"
         description="All sales, refunds and voids across the organization."
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/haraka` },
+          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
           { label: 'Transactions', href: '#' },
         ]}
       />
@@ -89,7 +89,7 @@ export default function TransactionsListPage() {
         keyExtractor={(t) => t.id}
         isLoading={isLoading}
         emptyMessage="No transactions in the selected range."
-        onRowClick={(t) => router.push(`/${params.locale}/${params.orgSlug}/haraka/transactions/${t.id}`)}
+        onRowClick={(t) => router.push(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/transactions/${t.id}`)}
         pagination={
           data
             ? {

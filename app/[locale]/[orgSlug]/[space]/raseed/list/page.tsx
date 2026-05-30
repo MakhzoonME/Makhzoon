@@ -19,7 +19,10 @@ import { useDebounce } from '@/hooks/ui';
 import { InventoryItem } from '@/types';
 import { RequestInventoryModal } from '@/components/inventory/RequestInventoryModal';
 import { useT } from '@/hooks/ui';
-import { Plus, Pencil, Trash2, AlertTriangle, FileText, X, ClipboardCheck } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, FileText, X, ClipboardCheck, ArrowRight, Copy } from 'lucide-react';
+import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
+import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
+import { useAccessibleSpaces } from '@/hooks/spaces';
 import { cn } from '@/lib/utils/cn';
 
 function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
@@ -69,6 +72,11 @@ export default function InventoryListPage() {
   const [reqTarget, setReqTarget] = useState<InventoryItem | null>(null);
   const [formDirty, setFormDirty] = useState(false);
   const [showDiscardDrawer, setShowDiscardDrawer] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [dupeOpen, setDupeOpen] = useState(false);
+  const { data: spaceList } = useAccessibleSpaces();
+  const hasMultipleSpaces = (spaceList?.items?.length ?? 0) > 1;
 
   function closeDrawer() { setDrawerOpen(false); setEditTarget(null); setFormDirty(false); }
   function handleDrawerCloseRequest() {
@@ -330,6 +338,36 @@ export default function InventoryListPage() {
         }
       />
 
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between gap-3 mb-3 px-4 py-2 bg-primary-50 border border-primary-100 rounded-lg">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="h-7 w-7 rounded-md flex items-center justify-center text-primary-700 hover:bg-primary-100 transition-colors"
+              aria-label={t('common.clear')}
+            >
+              <X className="h-3.5 w-3.5" strokeWidth={2} />
+            </button>
+            <span className="text-sm font-medium text-primary-900">
+              {t('bulk.selected').replace('{count}', String(selectedIds.size))}
+            </span>
+          </div>
+          {hasMultipleSpaces && isAdmin && (
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setDupeOpen(true)}>
+                <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
+                <span className="ms-1">{t('duplicate.bulk')}</span>
+              </Button>
+              <Button size="sm" onClick={() => setMoveOpen(true)}>
+                <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                <span className="ms-1">{t('move.bulkMove')}</span>
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="bg-surface-card rounded-lg border border-border">
         <DataTable
           data={items}
@@ -338,6 +376,7 @@ export default function InventoryListPage() {
           emptyMessage={t('inventory.noItems')}
           onRowClick={(i) => router.push(`/${locale}/${orgSlug}/${space}/raseed/${i.id}`)}
           keyExtractor={(i) => i.id}
+          selection={hasMultipleSpaces && isAdmin ? { selectedIds, onChange: setSelectedIds } : undefined}
           pagination={inventoryData ? {
             page: inventoryData.page,
             pageSize: inventoryData.pageSize,
@@ -393,6 +432,24 @@ export default function InventoryListPage() {
         onOpenChange={(o) => !o && setReqTarget(null)}
         itemId={reqTarget?.id ?? ''}
         itemName={reqTarget?.name ?? ''}
+      />
+
+      <MoveResourceDialog
+        open={moveOpen}
+        onOpenChange={setMoveOpen}
+        type="inventory"
+        ids={[...selectedIds]}
+        recordLabel={t('bulk.selected').replace('{count}', String(selectedIds.size))}
+        onMoved={() => setSelectedIds(new Set())}
+      />
+
+      <DuplicateResourceDialog
+        open={dupeOpen}
+        onOpenChange={setDupeOpen}
+        type="inventory"
+        ids={[...selectedIds]}
+        recordLabel={t('bulk.selected').replace('{count}', String(selectedIds.size))}
+        onDuplicated={() => setSelectedIds(new Set())}
       />
     </div>
   );

@@ -32,7 +32,7 @@ function toInput(d: Date): string {
 
 export default function HarakaReportsPage() {
   const { isAllowed } = useAdminGuard('pos.view_reports');
-  const params = useParams<{ locale: string; orgSlug: string }>();
+  const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
 
   const [range, setRange] = useState<DateRange>(() => {
@@ -55,7 +55,7 @@ export default function HarakaReportsPage() {
         title={t('nav.harakaReports')}
         description={t('reports.subtitle')}
         breadcrumb={[
-          { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/haraka` },
+          { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
           { label: t('nav.harakaReports'), href: '#' },
         ]}
       />

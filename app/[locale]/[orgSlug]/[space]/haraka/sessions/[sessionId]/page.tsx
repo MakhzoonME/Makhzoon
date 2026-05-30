@@ -15,7 +15,7 @@ import { closeSessionSchema, type CloseSessionFormData } from '@/lib/modules/har
 import { toast } from '@/hooks/ui';
 
 interface Props {
-  params: Promise<{ locale: string; orgSlug: string; sessionId: string }>;
+  params: Promise<{ locale: string; orgSlug: string; space: string; sessionId: string }>;
 }
 
 function fmt(n: number) {
@@ -63,8 +63,8 @@ export default function SessionDetailPage(props: Props) {
         title={`Session ${session.id.slice(0, 8)}`}
         description={`Opened ${new Date(session.openedAt).toLocaleString()} by ${session.cashierName}`}
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/haraka` },
-          { label: 'Sessions', href: `/${params.locale}/${params.orgSlug}/haraka/sessions` },
+          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
+          { label: 'Sessions', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions` },
           { label: session.id.slice(0, 8), href: '#' },
         ]}
         actions={
@@ -72,7 +72,7 @@ export default function SessionDetailPage(props: Props) {
             <StatusBadge status={session.status} />
             {isOpen && (
               <Button
-                onClick={() => router.push(`/${params.locale}/${params.orgSlug}/haraka/register`)}
+                onClick={() => router.push(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/register`)}
               >
                 <ShoppingCart size={14} className="me-1" /> Open register
               </Button>

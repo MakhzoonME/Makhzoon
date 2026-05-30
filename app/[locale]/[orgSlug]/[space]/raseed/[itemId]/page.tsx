@@ -22,8 +22,9 @@ import { WarrantyForm } from '@/components/warranties/WarrantyForm';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { Pencil, ArrowUpCircle, ArrowDownCircle, RefreshCw, AlertTriangle, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
+import { Pencil, ArrowUpCircle, ArrowDownCircle, RefreshCw, AlertTriangle, TrendingUp, TrendingDown, ArrowRight, Copy } from 'lucide-react';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
+import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
 import { useAccessibleSpaces } from '@/hooks/spaces';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
@@ -68,6 +69,7 @@ export default function InventoryItemDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
+  const [dupeOpen, setDupeOpen] = useState(false);
   const [reqOpen, setReqOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -177,6 +179,7 @@ export default function InventoryItemDetailPage() {
                   <Pencil className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">Edit</span>
                 </Button>
                 <MoveInventoryButton onClick={() => setMoveOpen(true)} />
+                <DuplicateInventoryButton onClick={() => setDupeOpen(true)} />
                 <Button size="sm" variant="destructive" onClick={() => setDeleteConfirm(true)}>
                   <span>Delete Item</span>
                 </Button>
@@ -395,6 +398,16 @@ export default function InventoryItemDetailPage() {
         type="inventory"
         ids={[item.id]}
         recordLabel={item.name}
+        availableQty={item.quantityOnHand}
+        unit={item.unit}
+      />
+
+      <DuplicateResourceDialog
+        open={dupeOpen}
+        onOpenChange={setDupeOpen}
+        type="inventory"
+        ids={[item.id]}
+        recordLabel={item.name}
       />
     </div>
   );
@@ -409,6 +422,19 @@ function MoveInventoryButton({ onClick }: { onClick: () => void }) {
   return (
     <Button size="sm" variant="outline" onClick={onClick}>
       <ArrowRight className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('move.button')}</span>
+    </Button>
+  );
+}
+
+/** Inventory Duplicate button — hidden when only one accessible space exists. */
+function DuplicateInventoryButton({ onClick }: { onClick: () => void }) {
+  const { t } = useT();
+  const { data } = useAccessibleSpaces();
+  const count = data?.items?.length ?? 0;
+  if (count <= 1) return null;
+  return (
+    <Button size="sm" variant="outline" onClick={onClick}>
+      <Copy className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('duplicate.button')}</span>
     </Button>
   );
 }

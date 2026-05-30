@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { Plus, Pencil, Archive, Undo2, Lock } from 'lucide-react';
+import { Plus, Pencil, Archive, Undo2, Lock, Users, Info } from 'lucide-react';
+import { SpaceMembersDrawer } from '@/components/spaces/SpaceMembersDrawer';
 import { useT } from '@/hooks/ui';
 import { useAdminGuard } from '@/hooks/ui';
 import {
@@ -26,8 +27,10 @@ export default function SpacesSettingsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [renameTarget, setRenameTarget] = useState<Space | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Space | null>(null);
+  const [membersTarget, setMembersTarget] = useState<Space | null>(null);
 
   const spaces = data?.items ?? [];
+  const onlyDefault = !isLoading && spaces.length === 1 && spaces[0]?.isDefault;
 
   const columns: ColumnDef<Space>[] = [
     {
@@ -46,12 +49,29 @@ export default function SpacesSettingsPage() {
       ),
     },
     { key: 'slug', header: t('spaces.slug'), render: (s) => <span className="font-mono text-xs text-gray-600">{s.slug}</span> },
+    {
+      key: 'memberCount',
+      header: t('spaces.members'),
+      render: (s) => (
+        <button
+          type="button"
+          onClick={() => setMembersTarget(s)}
+          className="inline-flex items-center gap-1 text-xs text-gray-700 hover:text-primary-700"
+        >
+          <Users className="h-3 w-3" strokeWidth={2} />
+          <span>{s.memberCount ?? 0}</span>
+        </button>
+      ),
+    },
     { key: 'status', header: t('col.status'), render: (s) => <StatusBadge status={s.status} marker="dot" /> },
     {
       key: 'actions',
       header: t('col.actions'),
       render: (s) => (
         <div className="flex items-center gap-1 justify-end">
+          <Button size="sm" variant="ghost" onClick={() => setMembersTarget(s)} aria-label={t('spaces.members')}>
+            <Users className="h-3.5 w-3.5" strokeWidth={1.75} />
+          </Button>
           <Button size="sm" variant="ghost" onClick={() => setRenameTarget(s)} aria-label={t('spaces.rename')}>
             <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} />
           </Button>
@@ -96,6 +116,16 @@ export default function SpacesSettingsPage() {
           </Button>
         )}
       />
+
+      {onlyDefault && (
+        <div className="mb-3 flex items-start gap-2 rounded-lg bg-primary-50 border border-primary-100 px-3 py-2.5">
+          <Info className="h-4 w-4 text-primary-700 mt-0.5 flex-shrink-0" strokeWidth={1.75} />
+          <div className="text-sm text-primary-900">
+            <p className="font-medium">{t('spaces.gettingStartedTitle')}</p>
+            <p className="text-xs text-primary-800 mt-0.5">{t('spaces.gettingStartedDesc')}</p>
+          </div>
+        </div>
+      )}
 
       <div className="bg-surface-card rounded-lg border border-border">
         <DataTable
@@ -167,6 +197,12 @@ export default function SpacesSettingsPage() {
           });
         }}
         loading={updateMut.isPending}
+      />
+
+      <SpaceMembersDrawer
+        open={!!membersTarget}
+        onOpenChange={(o) => !o && setMembersTarget(null)}
+        space={membersTarget}
       />
     </div>
   );

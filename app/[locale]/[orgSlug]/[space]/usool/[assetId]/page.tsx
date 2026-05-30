@@ -14,8 +14,9 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
 import { Asset, Warranty } from '@/types';
 import { RequestActionPanel } from '@/components/assets/RequestActionPanel';
-import { Pencil, Archive, Trash2, ArrowRight } from 'lucide-react';
+import { Pencil, Archive, Trash2, ArrowRight, Copy } from 'lucide-react';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
+import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
 import { useAccessibleSpaces } from '@/hooks/spaces';
 import { AssetNotesSection } from '@/components/assets/AssetNotesSection';
 import { MaintenanceSection } from '@/components/assets/MaintenanceSection';
@@ -75,6 +76,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
   const [retiring, setRetiring] = useState(false);
   const [editAssetOpen, setEditAssetOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
+  const [dupeOpen, setDupeOpen] = useState(false);
   const [editWarrantyTarget, setEditWarrantyTarget] = useState<Warranty | null>(null);
   const [addWarrantyOpen, setAddWarrantyOpen] = useState(false);
 
@@ -140,6 +142,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
               </Button>
             )}
             {asset.status !== 'Retired' && <MoveAssetButton onClick={() => setMoveOpen(true)} />}
+            {asset.status !== 'Retired' && <DuplicateAssetButton onClick={() => setDupeOpen(true)} />}
             {asset.status === 'Active' && (
               <Button variant="destructive" size="sm" onClick={() => setShowRetire(true)}>
                 <Archive className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ms-1.5">Retire</span>
@@ -333,6 +336,14 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
         ids={[assetId]}
         recordLabel={asset?.name ?? ''}
       />
+
+      <DuplicateResourceDialog
+        open={dupeOpen}
+        onOpenChange={setDupeOpen}
+        type="asset"
+        ids={[assetId]}
+        recordLabel={asset?.name ?? ''}
+      />
     </div>
   );
 }
@@ -346,6 +357,19 @@ function MoveAssetButton({ onClick }: { onClick: () => void }) {
   return (
     <Button variant="outline" size="sm" onClick={onClick}>
       <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ms-1">{t('move.button')}</span>
+    </Button>
+  );
+}
+
+/** Duplicate button — hidden when the org has only one accessible space. */
+function DuplicateAssetButton({ onClick }: { onClick: () => void }) {
+  const { t } = useT();
+  const { data } = useAccessibleSpaces();
+  const count = data?.items?.length ?? 0;
+  if (count <= 1) return null;
+  return (
+    <Button variant="outline" size="sm" onClick={onClick}>
+      <Copy className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ms-1">{t('duplicate.button')}</span>
     </Button>
   );
 }

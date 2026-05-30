@@ -66,7 +66,7 @@ export async function listAccessible(tenant: TenantContext): Promise<Space[]> {
   return (data ?? []).map((r) => toSpace(r as SpaceRow));
 }
 
-/** Org-wide list including archived. Admin/owner only. */
+/** Org-wide list including archived, with `memberCount` per row. Admin/owner only. */
 export async function listAllForOrg(tenant: TenantContext): Promise<Space[]> {
   if (!isOrgManager(tenant) && !isPlatformAdmin(tenant))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -77,7 +77,18 @@ export async function listAllForOrg(tenant: TenantContext): Promise<Space[]> {
     .order('is_default', { ascending: false })
     .order('name', { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((r) => toSpace(r as SpaceRow));
+  const spaces = (data ?? []).map((r) => toSpace(r as SpaceRow));
+
+  // Member counts. One round-trip; group on the client.
+  const { data: memberRows } = await supabaseAdmin
+    .from('space_members')
+    .select('space_id')
+    .eq('organization_id', tenant.organizationId);
+  const counts = new Map<string, number>();
+  for (const m of (memberRows ?? []) as Array<{ space_id: string }>) {
+    counts.set(m.space_id, (counts.get(m.space_id) ?? 0) + 1);
+  }
+  return spaces.map((s) => ({ ...s, memberCount: counts.get(s.id) ?? 0 }));
 }
 
 export async function create(

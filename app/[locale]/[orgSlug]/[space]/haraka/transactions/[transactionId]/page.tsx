@@ -12,7 +12,7 @@ import { hasPermission } from '@/lib/permissions';
 import type { PosTransaction } from '@/types';
 
 interface Props {
-  params: Promise<{ locale: string; orgSlug: string; transactionId: string }>;
+  params: Promise<{ locale: string; orgSlug: string; space: string; transactionId: string }>;
 }
 
 function fmt(n: number) {
@@ -79,8 +79,8 @@ export default function TransactionDetailPage(props: Props) {
         title={`Receipt #${tx.receiptNumber}`}
         description={`Sold ${fmtDate(tx.createdAt)} by ${tx.cashierName}`}
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/haraka` },
-          { label: 'Sessions', href: `/${params.locale}/${params.orgSlug}/haraka/sessions` },
+          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
+          { label: 'Sessions', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions` },
           { label: `#${tx.receiptNumber}`, href: '#' },
         ]}
         actions={

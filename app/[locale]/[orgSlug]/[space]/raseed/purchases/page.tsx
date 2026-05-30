@@ -14,7 +14,7 @@ import type { Purchase, PurchaseStatus } from '@/types';
 
 export default function PurchasesListPage() {
   const router = useRouter();
-  const params = useParams<{ locale: string; orgSlug: string }>();
+  const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
   const [status, setStatus] = useState<PurchaseStatus | 'all'>('all');
   const [search, setSearch] = useState('');
@@ -52,11 +52,11 @@ export default function PurchasesListPage() {
         title={t('nav.purchases')}
         description={t('purchases.subtitle')}
         breadcrumb={[
-          { label: t('nav.inventory'), href: `/${params.locale}/${params.orgSlug}/raseed` },
+          { label: t('nav.inventory'), href: `/${params.locale}/${params.orgSlug}/${params.space}/raseed` },
           { label: t('nav.purchases'), href: '#' },
         ]}
         actions={
-          <Button onClick={() => router.push(`/${params.locale}/${params.orgSlug}/raseed/purchases/new`)}>
+          <Button onClick={() => router.push(`/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases/new`)}>
             <Plus size={16} className="me-1" /> {t('purchases.newPurchase')}
           </Button>
         }
@@ -77,7 +77,7 @@ export default function PurchasesListPage() {
         keyExtractor={(p) => p.id}
         isLoading={isLoading}
         emptyMessage={t('purchases.noPurchases')}
-        onRowClick={(p) => router.push(`/${params.locale}/${params.orgSlug}/raseed/purchases/${p.id}`)}
+        onRowClick={(p) => router.push(`/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases/${p.id}`)}
         pagination={
           data
             ? {

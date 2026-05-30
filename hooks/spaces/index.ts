@@ -128,6 +128,40 @@ export function useRemoveSpaceMember() {
   });
 }
 
+export function useDuplicateResources() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: {
+      type: 'asset' | 'inventory' | 'request' | 'customer';
+      ids: string[];
+      targetSpaceId: string;
+    }) => {
+      const res = await fetch('/api/spaces/duplicate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vars),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(typeof err.error === 'string' ? err.error : 'Failed to duplicate');
+      }
+      return res.json() as Promise<{ ok: true; duplicated: number; newIds: string[] }>;
+    },
+    onSuccess: (_d, vars) => {
+      // Invalidate the affected module's caches so the target space's
+      // list refetches if the user is viewing it.
+      const cacheKeyByType: Record<typeof vars.type, readonly string[]> = {
+        asset: ['assets'],
+        inventory: ['inventory'],
+        request: ['requests'],
+        customer: ['haraka', 'customers'],
+      };
+      qc.invalidateQueries({ queryKey: cacheKeyByType[vars.type] });
+    },
+  });
+}
+
+
 /* ── Per-user space access (admin only) ────────────────────────── */
 
 interface UserSpaceAccess { allSpaces: boolean; spaceIds: string[] }
@@ -148,7 +182,15 @@ export function useUserSpaceAccess(userId: string | undefined) {
 export function useMoveResources() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: { type: 'asset' | 'inventory'; ids: string[]; targetSpaceId: string }) => {
+    mutationFn: async (vars: {
+      type: 'asset' | 'inventory' | 'request' | 'customer';
+      ids: string[];
+      targetSpaceId: string;
+      /** Inventory only. 'move' = whole-record reassign, 'transfer-qty' = paired ledger. */
+      mode?: 'move' | 'transfer-qty';
+      /** Required when mode='transfer-qty'. */
+      qty?: number;
+    }) => {
       const res = await fetch('/api/spaces/move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -158,16 +200,16 @@ export function useMoveResources() {
         const err = await res.json().catch(() => ({}));
         throw new Error(typeof err.error === 'string' ? err.error : 'Failed to move');
       }
-      return res.json() as Promise<{ ok: true; moved: number }>;
+      return res.json() as Promise<{ ok: true; mode: 'move' | 'transfer-qty'; moved: number; qty?: number }>;
     },
     onSuccess: (_d, vars) => {
-      // Invalidate the affected modules' caches. The moved record(s) may
-      // now be invisible from this space, so list queries refetch.
-      if (vars.type === 'asset') {
-        qc.invalidateQueries({ queryKey: ['assets'] });
-      } else {
-        qc.invalidateQueries({ queryKey: ['inventory'] });
-      }
+      const cacheKeyByType: Record<typeof vars.type, readonly string[]> = {
+        asset: ['assets'],
+        inventory: ['inventory'],
+        request: ['requests'],
+        customer: ['haraka', 'customers'],
+      };
+      qc.invalidateQueries({ queryKey: cacheKeyByType[vars.type] });
     },
   });
 }

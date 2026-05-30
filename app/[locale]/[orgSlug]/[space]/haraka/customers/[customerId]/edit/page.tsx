@@ -9,11 +9,11 @@ import type { CustomerFormData } from '@/lib/modules/haraka/customers/schemas';
 
 export default function EditCustomerPage() {
   const router = useRouter();
-  const params = useParams<{ locale: string; orgSlug: string; customerId: string }>();
+  const params = useParams<{ locale: string; orgSlug: string; space: string; customerId: string }>();
   const { data, isLoading } = useCustomer(params.customerId);
   const updateMut = useUpdateCustomer();
 
-  const base = `/${params.locale}/${params.orgSlug}/haraka/customers`;
+  const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka/customers`;
   const customer = data?.customer;
 
   async function handleSubmit(values: CustomerFormData) {
@@ -39,7 +39,7 @@ export default function EditCustomerPage() {
       <PageHeader
         title={`Edit ${customer.name}`}
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/haraka` },
+          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
           { label: 'Customers', href: base },
           { label: customer.name, href: `${base}/${customer.id}` },
           { label: 'Edit', href: '#' },

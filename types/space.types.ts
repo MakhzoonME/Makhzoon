@@ -20,6 +20,8 @@ export interface Space {
   createdBy: string;
   updatedAt: Date;
   updatedBy: string;
+  /** Populated only by `listAllForOrg` for the spaces-management table. */
+  memberCount?: number;
 }
 
 /**

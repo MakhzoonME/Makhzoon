@@ -16,7 +16,10 @@ import { formatDate } from '@/lib/utils/date';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useT } from '@/hooks/ui';
-import { Check, X } from 'lucide-react';
+import { Check, X, ArrowRight, Copy } from 'lucide-react';
+import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
+import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
+import { useAccessibleSpaces } from '@/hooks/spaces';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
@@ -51,6 +54,11 @@ export default function RequestsListPage() {
   const sortDir = (searchParams.get('sortDir') === 'asc' ? 'asc' : searchParams.get('sortDir') === 'none' ? 'none' : 'desc') as 'asc' | 'desc' | 'none';
 
   const [processing, setProcessing] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [dupeOpen, setDupeOpen] = useState(false);
+  const { data: spaceList } = useAccessibleSpaces();
+  const hasMultipleSpaces = (spaceList?.items?.length ?? 0) > 1;
 
   const { data: requestsData, isLoading } = useRequests({
     status: status || undefined,
@@ -163,6 +171,36 @@ export default function RequestsListPage() {
         }
       />
 
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between gap-3 mb-3 px-4 py-2 bg-primary-50 border border-primary-100 rounded-lg">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="h-7 w-7 rounded-md flex items-center justify-center text-primary-700 hover:bg-primary-100 transition-colors"
+              aria-label={t('common.clear')}
+            >
+              <X className="h-3.5 w-3.5" strokeWidth={2} />
+            </button>
+            <span className="text-sm font-medium text-primary-900">
+              {t('bulk.selected').replace('{count}', String(selectedIds.size))}
+            </span>
+          </div>
+          {hasMultipleSpaces && isAdmin && (
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setDupeOpen(true)}>
+                <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
+                <span className="ms-1">{t('duplicate.bulk')}</span>
+              </Button>
+              <Button size="sm" onClick={() => setMoveOpen(true)}>
+                <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                <span className="ms-1">{t('move.bulkMove')}</span>
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="bg-surface-card rounded-lg border border-border">
         <DataTable
           data={requests}
@@ -170,6 +208,7 @@ export default function RequestsListPage() {
           isLoading={isLoading}
           emptyMessage={t('requests.noRequests')}
           keyExtractor={(r) => r.id}
+          selection={hasMultipleSpaces && isAdmin ? { selectedIds, onChange: setSelectedIds } : undefined}
           pagination={requestsData ? {
             page: requestsData.page,
             pageSize: requestsData.pageSize,
@@ -183,6 +222,24 @@ export default function RequestsListPage() {
           } : undefined}
         />
       </div>
+
+      <MoveResourceDialog
+        open={moveOpen}
+        onOpenChange={setMoveOpen}
+        type="request"
+        ids={[...selectedIds]}
+        recordLabel={t('bulk.selected').replace('{count}', String(selectedIds.size))}
+        onMoved={() => setSelectedIds(new Set())}
+      />
+
+      <DuplicateResourceDialog
+        open={dupeOpen}
+        onOpenChange={setDupeOpen}
+        type="request"
+        ids={[...selectedIds]}
+        recordLabel={t('bulk.selected').replace('{count}', String(selectedIds.size))}
+        onDuplicated={() => setSelectedIds(new Set())}
+      />
     </div>
   );
 }

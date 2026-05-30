@@ -12,7 +12,7 @@ import type { PosSession } from '@/types';
 
 export default function SessionsListPage() {
   const router = useRouter();
-  const params = useParams<{ locale: string; orgSlug: string }>();
+  const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const [status, setStatus] = useState<'open' | 'closed' | 'all'>('all');
   const [page, setPage] = useState(1);
   const { data, isLoading } = useSessions({
@@ -49,12 +49,12 @@ export default function SessionsListPage() {
         title="POS sessions"
         description="History of cash-drawer sessions. Open a new one to start selling."
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/haraka` },
+          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
           { label: 'Sessions', href: '#' },
         ]}
         actions={
           <SubscriptionGate>
-            <Button onClick={() => router.push(`/${params.locale}/${params.orgSlug}/haraka/sessions/new`)}>
+            <Button onClick={() => router.push(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions/new`)}>
               <Plus size={16} className="me-1" /> Open session
             </Button>
           </SubscriptionGate>
@@ -73,7 +73,7 @@ export default function SessionsListPage() {
         keyExtractor={(s) => s.id}
         isLoading={isLoading}
         emptyMessage="No sessions yet."
-        onRowClick={(s) => router.push(`/${params.locale}/${params.orgSlug}/haraka/sessions/${s.id}`)}
+        onRowClick={(s) => router.push(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions/${s.id}`)}
         pagination={
           data
             ? {

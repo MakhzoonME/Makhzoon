@@ -40,10 +40,11 @@ export default function OrgAuditLogsPage() {
   const { orgId: transferOrgId } = useTransferMode();
   const orgId = user?.role === 'super_admin' ? (transferOrgId ?? undefined) : undefined;
   const [filters, setFilters] = useState({ userId: '', action: '', dateFrom: '', dateTo: '' });
+  const [scope, setScope] = useState<'space' | 'all'>('space');
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const { data, isLoading } = useAuditLogs({ ...filters, orgId, page, pageSize });
+  const { data, isLoading } = useAuditLogs({ ...filters, orgId, page, pageSize, scope });
   const logs = data?.logs ?? [];
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 1;
@@ -111,7 +112,25 @@ export default function OrgAuditLogsPage() {
     <div>
       <PageHeader title={t('nav.auditLogs')} />
 
-      <div className="bg-surface-card rounded-lg border border-border p-4 mb-4">
+      <div className="bg-surface-card rounded-lg border border-border p-4 mb-4 space-y-3">
+        {(user?.role === 'admin' || user?.role === 'org_owner') && (
+          <div className="inline-flex items-center rounded-md border border-border p-0.5 bg-surface-page">
+            <button
+              type="button"
+              onClick={() => { setScope('space'); setPage(1); }}
+              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${scope === 'space' ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-surface-card'}`}
+            >
+              {t('auditLogs.scopeSpace')}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setScope('all'); setPage(1); }}
+              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${scope === 'all' ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-surface-card'}`}
+            >
+              {t('auditLogs.scopeAll')}
+            </button>
+          </div>
+        )}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {filterFields.map(({ key, label, type }) => (
             <div key={key} className="space-y-1">

@@ -13,7 +13,13 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ re
     const request = await requestsService.approve(tenant, requestId);
 
     if (request.type === 'RETIRE' && request.assetId) {
-      await updateAsset(request.assetId, { status: 'Retired', updatedBy: tenant.userId });
+      await updateAsset(request.assetId, {
+        status: 'Retired',
+        updatedBy: tenant.user.uid,
+        updatedByEmail: tenant.user.email,
+        updatedByName: tenant.user.displayName,
+        updatedByRole: tenant.user.role,
+      });
     }
 
     return NextResponse.json({ success: true });

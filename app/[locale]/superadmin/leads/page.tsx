@@ -46,7 +46,7 @@ export default function LeadsPage() {
           <button
             type="button"
             onClick={() => openInvite(entry.email, [entry.firstName, entry.lastName].filter(Boolean).join(' ') || undefined)}
-            className="ml-auto flex-shrink-0 p-1.5 rounded-md text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors"
+            className="ms-auto flex-shrink-0 p-1.5 rounded-md text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors"
             title={t('leads.inviteToOrg')}
           >
             <InviteSVG />
@@ -123,7 +123,7 @@ export default function LeadsPage() {
         <button
           type="button"
           onClick={() => openInvite(entry.email, [entry.firstName, entry.lastName].filter(Boolean).join(' ') || entry.name)}
-          className="ml-auto flex-shrink-0 p-1.5 rounded-md text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors"
+          className="ms-auto flex-shrink-0 p-1.5 rounded-md text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors"
           title={t('leads.inviteToOrg')}
         >
           <InviteSVG />
@@ -173,7 +173,7 @@ export default function LeadsPage() {
           >
             {t('leads.earlyAccessTab')}
             {earlyAccess.length > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-primary-100 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 text-[11px] font-semibold tabular-nums">
+              <span className="ms-2 inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-primary-100 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 text-[11px] font-semibold tabular-nums">
                 {earlyAccess.length}
               </span>
             )}
@@ -189,7 +189,7 @@ export default function LeadsPage() {
           >
             {t('leads.contactSalesTab')}
             {contactSales.length > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-primary-100 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 text-[11px] font-semibold tabular-nums">
+              <span className="ms-2 inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-primary-100 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 text-[11px] font-semibold tabular-nums">
                 {contactSales.length}
               </span>
             )}

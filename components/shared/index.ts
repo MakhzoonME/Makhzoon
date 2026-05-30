@@ -11,6 +11,8 @@ export { LanguageToggle } from './LanguageToggle';
 export { LoadingSkeleton } from './LoadingSkeleton';
 export { LocaleProvider } from './LocaleProvider';
 export { PageHeader } from './PageHeader';
+export { StatCard, OverviewSection } from './Overview';
+export type { StatCardProps, OverviewSectionProps } from './Overview';
 export { QueryProvider } from './QueryProvider';
 export { StatusBadge } from './StatusBadge';
 export { SubscriptionGate, useIsSubscriptionRestricted } from './SubscriptionGate';

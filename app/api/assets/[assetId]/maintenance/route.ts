@@ -44,6 +44,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ assetId:
     const { type, description, performedBy, cost, date } = parsed.data;
     const id = await createMaintenanceRecord({
       organizationId: user.organizationId,
+      spaceId: tenant.spaceId,
       assetId: params.assetId,
       type,
       description,

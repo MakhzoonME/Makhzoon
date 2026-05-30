@@ -88,7 +88,7 @@ export default function SuperAdminTicketDetailPage(props: { params: Promise<{ ti
             <div className="flex items-center gap-2">
               <StatusBadge status={ticket.status} />
               <StatusBadge status={ticket.priority} />
-              <span className="text-xs text-gray-500 ml-auto">
+              <span className="text-xs text-gray-500 ms-auto">
                 Created {formatDate(new Date(ticket.createdAt))}
               </span>
             </div>
@@ -163,7 +163,7 @@ export default function SuperAdminTicketDetailPage(props: { params: Promise<{ ti
                     >
                       {isAdmin ? 'Super Admin' : 'Org User'}
                     </span>
-                    <span className="text-xs text-gray-500 ml-auto">
+                    <span className="text-xs text-gray-500 ms-auto">
                       {formatDate(new Date(m.createdAt))}
                     </span>
                   </div>

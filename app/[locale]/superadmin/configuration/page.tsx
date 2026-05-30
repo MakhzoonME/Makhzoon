@@ -25,6 +25,8 @@ import {
   FEATURE_KEYS,
   FEATURE_LABELS,
   FEATURE_DESCRIPTIONS,
+  INCLUSION_KEYS,
+  INCLUSION_LABELS,
   type Package,
   type FeatureKey,
 } from '@/types';
@@ -98,6 +100,51 @@ export default function ConfigurationPage() {
           <Badge variant="green">{t('config.active')}</Badge>
         ) : (
           <Badge variant="default">{t('config.inactive')}</Badge>
+        ),
+    },
+    {
+      key: 'price',
+      header: t('config.price'),
+      render: (p) => {
+        if (p.pricing.isCustom) {
+          return (
+            <span className="text-sm text-gray-900">
+              {t('config.custom')}
+              {p.pricing.monthlyPrice != null && (
+                <span className="text-xs text-gray-500">
+                  {' '}
+                  ({t('config.from')} {p.pricing.monthlyPrice} {p.pricing.currency})
+                </span>
+              )}
+            </span>
+          );
+        }
+        if (p.pricing.monthlyPrice == null) return <span className="text-gray-400">—</span>;
+        return (
+          <div>
+            <p className="text-sm font-medium text-gray-900">
+              {p.pricing.monthlyPrice} {p.pricing.currency}
+              <span className="text-xs text-gray-500">/mo</span>
+            </p>
+            {p.pricing.annualPrice != null && (
+              <p className="text-[11px] text-gray-500">
+                {p.pricing.annualPrice} {p.pricing.currency}/yr
+              </p>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'trial',
+      header: t('config.trial'),
+      render: (p) =>
+        p.trialDays > 0 ? (
+          <span className="text-sm text-gray-700">
+            {p.trialDays} {t('config.daysShort')}
+          </span>
+        ) : (
+          <span className="text-gray-400">{t('config.none')}</span>
         ),
     },
     {
@@ -194,7 +241,7 @@ export default function ConfigurationPage() {
               {t('config.showInactive')}
             </label>
             <Button size="sm" onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="h-4 w-4 me-1" />
               {t('config.newPackage')}
             </Button>
           </div>
@@ -210,31 +257,59 @@ export default function ConfigurationPage() {
           </div>
         </>
       ) : (
-        <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-surface-page border-b border-border">
-              <tr>
-                <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                  {t('config.featureKey')}
-                </th>
-                <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                  {t('config.featureLabel')}
-                </th>
-                <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                  {t('config.featureDesc')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {FEATURE_KEYS.map((k) => (
-                <tr key={k} className="border-b border-border">
-                  <td className="px-4 py-3 font-mono text-xs text-primary-700">{k}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{FEATURE_LABELS[k]}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{FEATURE_DESCRIPTIONS[k]}</td>
+        <div className="space-y-6">
+          <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-surface-page border-b border-border">
+                <tr>
+                  <th className="px-4 py-2 text-start text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    {t('config.featureKey')}
+                  </th>
+                  <th className="px-4 py-2 text-start text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    {t('config.featureLabel')}
+                  </th>
+                  <th className="px-4 py-2 text-start text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    {t('config.featureDesc')}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {FEATURE_KEYS.map((k) => (
+                  <tr key={k} className="border-b border-border">
+                    <td className="px-4 py-3 font-mono text-xs text-primary-700">{k}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{FEATURE_LABELS[k]}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{FEATURE_DESCRIPTIONS[k]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">{t('config.inclusionsRef')}</h3>
+            <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-surface-page border-b border-border">
+                  <tr>
+                    <th className="px-4 py-2 text-start text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                      {t('config.featureKey')}
+                    </th>
+                    <th className="px-4 py-2 text-start text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                      {t('config.featureLabel')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {INCLUSION_KEYS.map((k) => (
+                    <tr key={k} className="border-b border-border">
+                      <td className="px-4 py-3 font-mono text-xs text-primary-700">{k}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{INCLUSION_LABELS[k]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
 

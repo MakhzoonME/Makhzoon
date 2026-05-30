@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { ScanBarcode } from 'lucide-react';
-import { useOrgSlug, useT } from '@/hooks/ui';
+import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
 import { inventoryItemSchema, InventoryItemFormData } from '@/lib/validations/inventory.schema';
 import { InventoryItem } from '@/types';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -22,6 +22,7 @@ interface Props { item?: InventoryItem; onSuccess?: () => void; onCancel?: () =>
 export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: Props) {
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const space = useSpace();
   const { locale } = useT();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
@@ -81,7 +82,7 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
       if (onSuccess) {
         onSuccess();
       } else {
-        router.push(`/${locale}/${orgSlug}/raseed/${item?.id ?? result.id}`);
+        router.push(`/${locale}/${orgSlug}/${space}/raseed/${item?.id ?? result.id}`);
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong');
@@ -161,7 +162,14 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
           <FormField control={form.control} name="location" render={({ field }) => (
             <FormItem>
               <FormLabel>Storage Location</FormLabel>
-              <FormControl><Input {...field} placeholder="Storage room A, Shelf 2..." /></FormControl>
+              <FormControl>
+                <ConfigSelect
+                  listKey="inventory_storage_location"
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Select storage location"
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )} />
@@ -180,12 +188,12 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
               <FormLabel>Barcode</FormLabel>
               <FormControl>
                 <div className="relative">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                  <span className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
                     <ScanBarcode size={16} aria-hidden />
                   </span>
                   <Input
                     {...field}
-                    className="pl-8 font-mono"
+                    className="ps-8 font-mono"
                     placeholder="Scan or type a barcode (EAN, UPC, Code128...)"
                     autoComplete="off"
                     spellCheck={false}

@@ -3,6 +3,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useTransferStore } from '@/store/transfer.store';
 import { useSubscription } from '@/hooks/org';
 import { useOrgUsage } from '@/hooks/org';
+import { usePackages } from '@/hooks/superadmin';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -10,19 +11,18 @@ import { UsageBar } from '@/components/features/subscription';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { formatDate, daysUntil } from '@/lib/utils/date';
 import { useT, useAdminGuard } from '@/hooks/ui';
+import { INCLUSION_KEYS, INCLUSION_LABEL_KEYS } from '@/types';
+import type { MessageKey } from '@/locales/messages';
 
-function getFeatureLabelKey(feature: string): string {
-  const keyMap: Record<string, string> = {
-    warranties: 'subscription.warranties',
-    requests: 'subscription.requests',
-    reports: 'subscription.feature.reports',
-    maintenance: 'subscription.feature.maintenance',
-    checkouts: 'subscription.feature.checkouts',
-    notes: 'subscription.feature.notes',
-    support: 'subscription.feature.support',
-  };
-  return keyMap[feature] || feature;
-}
+const FEATURE_LABEL_KEY: Record<string, MessageKey> = {
+  warranties: 'subscription.warranties',
+  requests: 'subscription.requests',
+  reports: 'subscription.feature.reports',
+  maintenance: 'subscription.feature.maintenance',
+  checkouts: 'subscription.feature.checkouts',
+  notes: 'subscription.feature.notes',
+  support: 'subscription.feature.support',
+};
 
 export default function SubscriptionPage() {
   const { t } = useT();
@@ -39,10 +39,22 @@ export default function SubscriptionPage() {
 
   const { data: sub, isLoading: subLoading } = useSubscription(orgId);
   const { data: usage, isLoading: usageLoading } = useOrgUsage(orgId);
+  const { data: packages = [] } = usePackages();
 
   if (!isAllowed) return <div className="flex items-center justify-center h-48"><div className="h-7 w-7 rounded-full border-2 border-primary-600 border-t-transparent animate-spin" /></div>;
   if (subLoading) return <LoadingSkeleton rows={4} columns={2} />;
 
+  const pkg = packages.find((p) => p.id === sub?.packageId) ?? null;
+  const limits = pkg?.limits;
+  const priceText = pkg
+    ? pkg.pricing.isCustom
+      ? pkg.pricing.monthlyPrice != null
+        ? `${t('subscription.from')} ${pkg.pricing.monthlyPrice} ${pkg.pricing.currency}/${t('subscription.mo')}`
+        : t('subscription.customPrice')
+      : pkg.pricing.monthlyPrice != null
+        ? `${pkg.pricing.monthlyPrice} ${pkg.pricing.currency}/${t('subscription.mo')}`
+        : '—'
+    : null;
   const days = sub ? daysUntil(new Date(sub.endDate)) : 0;
   const enabledFeatures = Object.entries(sub?.features ?? {}).filter(([, v]) => v);
   const disabledFeatures = Object.entries(sub?.features ?? {}).filter(([, v]) => !v);
@@ -59,6 +71,26 @@ export default function SubscriptionPage() {
           </h2>
           {sub ? (
             <dl className="space-y-3 text-sm">
+              {pkg && (
+                <div className="flex justify-between py-2 border-b border-border">
+                  <dt className="text-gray-500">{t('subscription.plan')}</dt>
+                  <dd className="font-medium">{pkg.name}</dd>
+                </div>
+              )}
+              {priceText && (
+                <div className="flex justify-between py-2 border-b border-border">
+                  <dt className="text-gray-500">{t('subscription.price')}</dt>
+                  <dd className="font-medium">{priceText}</dd>
+                </div>
+              )}
+              {pkg && pkg.trialDays > 0 && (
+                <div className="flex justify-between py-2 border-b border-border">
+                  <dt className="text-gray-500">{t('subscription.trial')}</dt>
+                  <dd className="font-medium">
+                    {t('subscription.trialDays').replace('{days}', String(pkg.trialDays))}
+                  </dd>
+                </div>
+              )}
               <div className="flex justify-between py-2 border-b border-border">
                 <dt className="text-gray-500">{t('subscription.status')}</dt>
                 <dd><StatusBadge status={sub.status} /></dd>
@@ -98,16 +130,43 @@ export default function SubscriptionPage() {
             <LoadingSkeleton rows={4} columns={1} />
           ) : usage ? (
             <div className="space-y-4">
-              <UsageBar label={t('subscription.assets')} current={usage.assets} max={-1} />
-              <UsageBar label={t('subscription.users')} current={usage.users} max={-1} />
-              <UsageBar label={t('subscription.warranties')} current={usage.warranties} max={-1} />
-              <UsageBar label={t('subscription.requests')} current={usage.requests} max={-1} />
+              <UsageBar label={t('subscription.assets')} current={usage.assets} max={limits?.maxAssets ?? -1} />
+              <UsageBar label={t('subscription.users')} current={usage.users} max={limits?.maxUsers ?? -1} />
+              <UsageBar label={t('subscription.spaces')} current={usage.spaces} max={limits?.maxSpaces ?? -1} />
+              <UsageBar label={t('subscription.inventoryItems')} current={usage.inventoryItems} max={limits?.maxInventoryItems ?? -1} />
+              <UsageBar label={t('subscription.warranties')} current={usage.warranties} max={limits?.maxWarranties ?? -1} />
+              <UsageBar label={t('subscription.requests')} current={usage.requests} max={limits?.maxRequests ?? -1} />
             </div>
           ) : (
             <p className="text-sm text-gray-500">{t('subscription.usageUnavailable')}</p>
           )}
         </CardContent>
       </Card>
+
+      {/* Plan inclusions */}
+      {pkg && (
+        <Card className="max-w-2xl">
+          <CardContent className="p-6">
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">
+              {t('subscription.inclusions')}
+            </h2>
+            <div className="space-y-2 text-sm">
+              {INCLUSION_KEYS.map((key) => {
+                const on = pkg.inclusions?.[key] ?? false;
+                return (
+                  <div key={key} className="flex items-center gap-2">
+                    <span className={`h-2 w-2 rounded-full ${on ? 'bg-green-500' : 'bg-gray-300'}`} />
+                    <span className={on ? 'text-gray-800' : 'text-gray-400'}>{t(INCLUSION_LABEL_KEYS[key])}</span>
+                    <span className={`text-xs ms-auto ${on ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`}>
+                      {on ? t('subscription.enabled') : t('subscription.disabled')}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Feature flags */}
       {sub && Object.keys(sub.features ?? {}).length > 0 && (
@@ -118,26 +177,22 @@ export default function SubscriptionPage() {
             </h2>
             <div className="space-y-2 text-sm">
               {enabledFeatures.map(([key]) => {
-                const featureLabelKey = getFeatureLabelKey(key);
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const label = t(featureLabelKey as any);
+                const label = FEATURE_LABEL_KEY[key] ? t(FEATURE_LABEL_KEY[key]) : key;
                 return (
                   <div key={key} className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-green-500" />
                     <span className="text-gray-800">{label}</span>
-                    <span className="text-xs text-green-600 dark:text-green-400 ml-auto">{t('subscription.enabled')}</span>
+                    <span className="text-xs text-green-600 dark:text-green-400 ms-auto">{t('subscription.enabled')}</span>
                   </div>
                 );
               })}
               {disabledFeatures.map(([key]) => {
-                const featureLabelKey = getFeatureLabelKey(key);
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const label = t(featureLabelKey as any);
+                const label = FEATURE_LABEL_KEY[key] ? t(FEATURE_LABEL_KEY[key]) : key;
                 return (
                   <div key={key} className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-gray-300" />
                     <span className="text-gray-400">{label}</span>
-                    <span className="text-xs text-gray-400 ml-auto">{t('subscription.disabled')}</span>
+                    <span className="text-xs text-gray-400 ms-auto">{t('subscription.disabled')}</span>
                   </div>
                 );
               })}

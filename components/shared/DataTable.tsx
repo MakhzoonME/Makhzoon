@@ -33,6 +33,15 @@ interface DataTableProps<T> {
   onRowClick?: (row: T) => void;
   pagination?: PaginationConfig;
   keyExtractor?: (row: T) => string;
+  /**
+   * Optional row selection. When provided, the table renders a checkbox
+   * column at the start, with a select-all header for the current page.
+   * `keyExtractor` is required when `selection` is set.
+   */
+  selection?: {
+    selectedIds: Set<string>;
+    onChange: (next: Set<string>) => void;
+  };
 }
 
 export function DataTable<T>({
@@ -43,9 +52,30 @@ export function DataTable<T>({
   onRowClick,
   pagination,
   keyExtractor,
+  selection,
 }: DataTableProps<T>) {
   const { t } = useT();
-  if (isLoading) return <LoadingSkeleton rows={5} columns={columns.length} />;
+  if (isLoading) return <LoadingSkeleton rows={5} columns={columns.length + (selection ? 1 : 0)} />;
+
+  // Selection helpers (only used when `selection` is provided).
+  const pageIds: string[] = selection && keyExtractor ? data.map((r) => keyExtractor(r)) : [];
+  const allOnPageSelected = pageIds.length > 0 && pageIds.every((id) => selection!.selectedIds.has(id));
+  const someOnPageSelected = pageIds.some((id) => selection?.selectedIds.has(id));
+
+  function toggleAllOnPage() {
+    if (!selection) return;
+    const next = new Set(selection.selectedIds);
+    if (allOnPageSelected) pageIds.forEach((id) => next.delete(id));
+    else pageIds.forEach((id) => next.add(id));
+    selection.onChange(next);
+  }
+  function toggleRow(id: string) {
+    if (!selection) return;
+    const next = new Set(selection.selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    selection.onChange(next);
+  }
 
   function handleSort(col: ColumnDef<T>) {
     if (!col.sortable || !pagination?.onSortChange) return;
@@ -88,6 +118,18 @@ export function DataTable<T>({
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-border">
+              {selection && (
+                <th className="ps-4 pe-2 py-3 w-[36px]">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all on page"
+                    checked={allOnPageSelected}
+                    ref={(el) => { if (el) el.indeterminate = !allOnPageSelected && someOnPageSelected; }}
+                    onChange={toggleAllOnPage}
+                    className="h-4 w-4 rounded border-border accent-primary-600"
+                  />
+                </th>
+              )}
               {columns.map((col) => (
                 <th
                   key={col.key}
@@ -105,17 +147,31 @@ export function DataTable<T>({
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={columns.length}>
+                <td colSpan={columns.length + (selection ? 1 : 0)}>
                   <EmptyState title={emptyMessage} />
                 </td>
               </tr>
             ) : (
-              data.map((row, i) => (
+              data.map((row, i) => {
+                const rowId = keyExtractor ? keyExtractor(row) : String(i);
+                const isSelected = selection?.selectedIds.has(rowId) ?? false;
+                return (
                 <tr
-                  key={keyExtractor ? keyExtractor(row) : i}
-                  className={`border-b border-border hover:bg-gray-100 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+                  key={rowId}
+                  className={`border-b border-border hover:bg-gray-100 transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${isSelected ? 'bg-primary-50/40' : ''}`}
                   onClick={() => onRowClick?.(row)}
                 >
+                  {selection && (
+                    <td className="ps-4 pe-2 py-3 w-[36px]" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        aria-label="Select row"
+                        checked={isSelected}
+                        onChange={() => toggleRow(rowId)}
+                        className="h-4 w-4 rounded border-border accent-primary-600"
+                      />
+                    </td>
+                  )}
                   {columns.map((col) => {
                     const content = col.render(row);
                     const isPlainText = typeof content === 'string' || typeof content === 'number';
@@ -135,7 +191,8 @@ export function DataTable<T>({
                     );
                   })}
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>

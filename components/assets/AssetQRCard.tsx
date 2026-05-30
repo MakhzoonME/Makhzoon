@@ -33,12 +33,12 @@ function PrinterSVG() {
 
 type QRResponse = { dataUrl: string; url: string };
 
-export function AssetQRCard({ assetId, assetName, orgSlug, locale }: { assetId: string; assetName: string; orgSlug: string; locale: string }) {
+export function AssetQRCard({ assetId, assetName, orgSlug, locale, space = 'default' }: { assetId: string; assetName: string; orgSlug: string; locale: string; space?: string }) {
   const { data, isLoading } = useQuery<QRResponse>({
-    queryKey: ['asset-qr', assetId, orgSlug, locale],
+    queryKey: ['asset-qr', assetId, orgSlug, locale, space],
     queryFn: async () => {
       const origin = window.location.origin;
-      const assetPageUrl = `${origin}/${locale}/${orgSlug}/usool/${assetId}`;
+      const assetPageUrl = `${origin}/${locale}/${orgSlug}/${space}/usool/${assetId}`;
       const res = await fetch(`/api/assets/${assetId}/qr?url=${encodeURIComponent(assetPageUrl)}`);
       if (!res.ok) throw new Error('Failed to generate QR');
       return res.json();
@@ -102,10 +102,10 @@ export function AssetQRCard({ assetId, assetName, orgSlug, locale }: { assetId: 
             <p className="text-[11px] text-gray-500 mt-2 text-center break-all max-w-full">{data.url}</p>
             <div className="flex gap-2 mt-3">
               <Button size="sm" variant="outline" onClick={handleDownload}>
-                <DownloadSVG /> <span className="ml-1">Download</span>
+                <DownloadSVG /> <span className="ms-1">Download</span>
               </Button>
               <Button size="sm" variant="outline" onClick={handlePrint}>
-                <PrinterSVG /> <span className="ml-1">Print</span>
+                <PrinterSVG /> <span className="ms-1">Print</span>
               </Button>
             </div>
           </>

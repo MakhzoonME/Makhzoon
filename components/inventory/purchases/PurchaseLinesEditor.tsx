@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BarcodeInput } from '@/components/shared';
 import { useBarcodeLookup } from '@/hooks/inventory';
 import { useTaxRates } from '@/hooks/haraka';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
 import type { PurchaseLineFormData } from '@/lib/modules/inventory/purchases/schemas';
+import { InventoryItemPicker } from './InventoryItemPicker';
 
 interface Props {
   value: PurchaseLineFormData[];
@@ -40,6 +41,7 @@ function emptyLine(): PurchaseLineFormData {
  * Manual workflow: the "Add line" button inserts a blank line for free-form entry.
  */
 export function PurchaseLinesEditor({ value, onChange }: Props) {
+  const { t } = useT();
   const { lookup } = useBarcodeLookup();
   const { data: taxData } = useTaxRates();
   const taxRates = taxData?.taxRates ?? [];
@@ -129,20 +131,20 @@ export function PurchaseLinesEditor({ value, onChange }: Props) {
           />
         </div>
         <Button type="button" variant="outline" onClick={addBlankLine}>
-          <Plus size={14} className="mr-1" /> Add line manually
+          <Plus size={14} className="me-1" /> Add line manually
         </Button>
       </div>
 
       <div className="overflow-x-auto border rounded-lg">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-800 text-left">
+          <thead className="bg-gray-50 dark:bg-gray-800 text-start">
             <tr>
               <th className="px-3 py-2 font-medium w-8">#</th>
               <th className="px-3 py-2 font-medium">Item / Barcode</th>
               <th className="px-3 py-2 font-medium w-24">Qty</th>
               <th className="px-3 py-2 font-medium w-28">Unit cost</th>
               <th className="px-3 py-2 font-medium w-40">Tax rate</th>
-              <th className="px-3 py-2 font-medium w-24 text-right">Line total</th>
+              <th className="px-3 py-2 font-medium w-24 text-end">Line total</th>
               <th className="px-3 py-2 w-8"></th>
             </tr>
           </thead>
@@ -165,15 +167,31 @@ export function PurchaseLinesEditor({ value, onChange }: Props) {
                   <td className="px-3 py-2 text-gray-500">{idx + 1}</td>
                   <td className="px-3 py-2">
                     <div className="space-y-1">
-                      <Input
-                        value={line.itemName}
-                        onChange={(e) => updateLine(idx, { itemName: e.target.value })}
-                        placeholder="Item name"
-                      />
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={line.itemName}
+                          onChange={(e) => updateLine(idx, { itemName: e.target.value, itemId: null })}
+                          placeholder="Item name"
+                          className="flex-1"
+                        />
+                        <InventoryItemPicker
+                          selectedItemId={line.itemId ?? null}
+                          onPick={(it) =>
+                            updateLine(idx, {
+                              itemId: it.id,
+                              itemName: it.name,
+                              sku: it.sku ?? null,
+                              barcode: it.barcode ?? line.barcode ?? '',
+                              unitCost: line.unitCost > 0 ? line.unitCost : (it.unitCost ?? 0),
+                              taxRateId: line.taxRateId || (it.taxRateId ?? ''),
+                            })
+                          }
+                        />
+                      </div>
                       {line.barcode && (
                         <div className="flex items-center gap-1 text-xs text-gray-500 font-mono">
                           <ScanBarcode size={12} aria-hidden /> {line.barcode}
-                          {unresolved && <span className="text-amber-600 ml-2">(new item)</span>}
+                          {unresolved && <span className="text-amber-600 ms-2">(new item)</span>}
                         </div>
                       )}
                     </div>
@@ -214,14 +232,14 @@ export function PurchaseLinesEditor({ value, onChange }: Props) {
                       </SelectContent>
                     </Select>
                   </td>
-                  <td className="px-3 py-2 text-right font-mono">{lineTotal.toFixed(2)}</td>
+                  <td className="px-3 py-2 text-end font-mono">{lineTotal.toFixed(2)}</td>
                   <td className="px-3 py-2">
                     <Button
                       size="sm"
                       variant="ghost"
                       type="button"
                       onClick={() => removeLine(idx)}
-                      aria-label="Remove line"
+                      aria-label={t('common.remove')}
                     >
                       <Trash2 size={14} />
                     </Button>
@@ -233,10 +251,10 @@ export function PurchaseLinesEditor({ value, onChange }: Props) {
           {value.length > 0 && (
             <tfoot>
               <tr className="border-t bg-gray-50 dark:bg-gray-800">
-                <td colSpan={5} className="px-3 py-2 text-right font-medium">
+                <td colSpan={5} className="px-3 py-2 text-end font-medium">
                   Subtotal (excl. tax)
                 </td>
-                <td className="px-3 py-2 text-right font-mono font-semibold">{subtotal.toFixed(2)}</td>
+                <td className="px-3 py-2 text-end font-mono font-semibold">{subtotal.toFixed(2)}</td>
                 <td />
               </tr>
             </tfoot>

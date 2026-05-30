@@ -168,6 +168,7 @@ export class PurchasesRepository {
       .from('purchases')
       .insert({
         organization_id: tenant.organizationId,
+        space_id: tenant.spaceId,
         supplier_name: input.supplierName,
         supplier_contact: input.supplierContact ?? null,
         invoice_number: input.invoiceNumber ?? null,
@@ -303,6 +304,7 @@ export class PurchasesRepository {
 
       const { error: txErr } = await supabaseAdmin.from('inventory_transactions').insert({
         organization_id: tenant.organizationId,
+        space_id: tenant.spaceId,
         item_id: iid,
         item_name: line.itemName,
         type: 'in',

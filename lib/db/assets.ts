@@ -44,6 +44,7 @@ const SORT_COLUMN: Record<SortField, string> = {
 export async function getAssets(
   orgId: string,
   opts?: {
+    spaceId?: string;
     status?: string;
     category?: string;
     search?: string;
@@ -65,6 +66,7 @@ export async function getAssets(
     ? `name.ilike.${like},serial_number.ilike.${like},assigned_to.ilike.${like},location.ilike.${like},category.ilike.${like}`
     : null;
   const eqMatch: Record<string, string> = { organization_id: orgId };
+  if (opts?.spaceId) eqMatch.space_id = opts.spaceId;
   if (opts?.status) eqMatch.status = opts.status;
   if (opts?.category) eqMatch.category = opts.category;
 
@@ -106,12 +108,13 @@ export async function getAssetById(id: string): Promise<Asset | null> {
 }
 
 export async function createAsset(
-  data: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>,
+  data: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'> & { spaceId?: string },
 ): Promise<string> {
   const { data: row, error } = await supabaseAdmin
     .from('assets')
     .insert({
       organization_id: data.organizationId,
+      space_id: data.spaceId,
       name: data.name,
       category: data.category,
       status: data.status,

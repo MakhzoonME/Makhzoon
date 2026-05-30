@@ -70,12 +70,13 @@ export async function createCheckout(
   data: Omit<
     AssetCheckout,
     'id' | 'checkedOutAt' | 'returnedAt' | 'returnedBy' | 'returnedByEmail'
-  >,
+  > & { spaceId?: string },
 ): Promise<string> {
   const { data: row, error } = await supabaseAdmin
     .from('asset_checkouts')
     .insert({
       organization_id: data.organizationId,
+      space_id: data.spaceId,
       asset_id: data.assetId,
       checked_out_to: data.checkedOutTo,
       checked_out_by: data.checkedOutBy,

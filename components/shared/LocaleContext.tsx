@@ -1,5 +1,6 @@
 'use client';
 import { createContext, useContext } from 'react';
+import { DirectionProvider } from '@radix-ui/react-direction';
 import { Locale } from '@/locales/messages';
 
 interface LocaleContextValue {
@@ -27,7 +28,7 @@ export function LocaleContextProvider({
 }) {
   return (
     <LocaleContext.Provider value={{ locale, dir }}>
-      {children}
+      <DirectionProvider dir={dir}>{children}</DirectionProvider>
     </LocaleContext.Provider>
   );
 }

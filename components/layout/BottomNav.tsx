@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 import { useUiStore } from '@/store/ui.store';
+import { useSpace } from '@/hooks/ui';
 import { cn } from '@/lib/utils/cn';
 
 function DashboardSVG() { return <svg width="22" height="22" viewBox="0 0 18 18" fill="none" aria-hidden><rect x="2" y="2" width="6" height="7" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="10" y="2" width="6" height="4" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="10" y="8" width="6" height="8" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="2" y="11" width="6" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /></svg>; }
@@ -22,12 +23,13 @@ export function BottomNav() {
   const params = useParams<{ locale: string; orgSlug: string }>();
   const locale = params?.locale ?? 'en';
   const orgSlug = (params?.orgSlug as string) ?? '';
+  const space = useSpace();
   const { setMobileMenuOpen } = useUiStore();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-surface-card border-t border-border flex md:hidden" style={{ height: 64, paddingBottom: 'env(safe-area-inset-bottom, 4px)' }}>
       {PRIMARY_NAV.map(({ href, label, Icon }) => {
-        const fullHref = `/${locale}/${orgSlug}${href}`;
+        const fullHref = `/${locale}/${orgSlug}/${space}${href}`;
         const active = pathname === fullHref || pathname.startsWith(fullHref + '/');
         return (
           <Link

@@ -5,7 +5,7 @@ import { Command } from 'cmdk';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAssets } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
-import { useOrgSlug } from '@/hooks/ui';
+import { useOrgSlug, useSpace } from '@/hooks/ui';
 import { Asset } from '@/types';
 import { cn } from '@/lib/utils/cn';
 
@@ -20,20 +20,22 @@ function SearchSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fi
 function PlusSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>; }
 function UploadSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 10V3M5 6l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M2 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>; }
 
-const NAV_GROUPS = [
+type PaletteEntry = { href: string; label: string; icon: React.FC; scope?: 'space' | 'org' };
+
+const NAV_GROUPS: PaletteEntry[] = [
   { href: '/dashboard', label: 'Dashboard', icon: DashboardSVG },
   { href: '/usool', label: 'Usool', icon: PackageSVG },
   { href: '/warranties', label: 'Warranties', icon: ShieldCheckSVG },
   { href: '/requests', label: 'Requests', icon: ClipboardListSVG },
 ];
 
-const ADMIN_NAV = [
-  { href: '/users', label: 'Users', icon: UsersSVG },
-  { href: '/subscription', label: 'Subscription', icon: CreditCardSVG },
+const ADMIN_NAV: PaletteEntry[] = [
+  { href: '/users', label: 'Users', icon: UsersSVG, scope: 'org' },
+  { href: '/subscription', label: 'Subscription', icon: CreditCardSVG, scope: 'org' },
   { href: '/reports', label: 'Reports', icon: FileTextSVG },
 ];
 
-const ACTIONS = [
+const ACTIONS: PaletteEntry[] = [
   { href: '/usool/new', label: 'Create asset', icon: PlusSVG },
   { href: '/usool/import', label: 'Import assets from CSV', icon: UploadSVG },
   { href: '/warranties/new', label: 'Add warranty', icon: PlusSVG },
@@ -42,6 +44,7 @@ const ACTIONS = [
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const space = useSpace();
   const params = useParams<{ locale: string }>();
   const locale = params?.locale ?? 'en';
   const { user } = useAuthStore();
@@ -56,9 +59,12 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     onOpenChange(next);
   }
 
-  function go(path: string) {
+  function go(path: string, scope: 'space' | 'org' = 'space') {
     handleOpenChange(false);
-    router.push(`/${locale}/${orgSlug}${path}`);
+    const url = scope === 'org'
+      ? `/${locale}/${orgSlug}${path}`
+      : `/${locale}/${orgSlug}/${space}${path}`;
+    router.push(url);
   }
 
   return (
@@ -87,17 +93,17 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
 
               <Command.Group heading="Navigation" className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:text-gray-400">
                 {NAV_GROUPS.map((item) => (
-                  <PaletteItem key={item.href} onSelect={() => go(item.href)} icon={item.icon} label={item.label} />
+                  <PaletteItem key={item.href} onSelect={() => go(item.href, item.scope)} icon={item.icon} label={item.label} />
                 ))}
                 {isAdmin && ADMIN_NAV.map((item) => (
-                  <PaletteItem key={item.href} onSelect={() => go(item.href)} icon={item.icon} label={item.label} />
+                  <PaletteItem key={item.href} onSelect={() => go(item.href, item.scope)} icon={item.icon} label={item.label} />
                 ))}
               </Command.Group>
 
               {isAdmin && (
                 <Command.Group heading="Actions" className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:text-gray-400">
                   {ACTIONS.map((item) => (
-                    <PaletteItem key={item.href} onSelect={() => go(item.href)} icon={item.icon} label={item.label} />
+                    <PaletteItem key={item.href} onSelect={() => go(item.href, item.scope)} icon={item.icon} label={item.label} />
                   ))}
                 </Command.Group>
               )}

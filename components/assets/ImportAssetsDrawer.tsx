@@ -224,7 +224,7 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead className="bg-surface-page border-b border-border">
-                  <tr>{headers.map((h) => <th key={h} className="text-left px-3 py-2 font-medium text-gray-500 whitespace-nowrap">{h}</th>)}</tr>
+                  <tr>{headers.map((h) => <th key={h} className="text-start px-3 py-2 font-medium text-gray-500 whitespace-nowrap">{h}</th>)}</tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {preview.map((r, i) => (

@@ -1,3 +1,5 @@
+import type { MessageKey } from '@/locales/messages';
+
 export type FeatureKey =
   | 'dashboard'
   | 'assets'
@@ -63,6 +65,53 @@ export interface PackageLimits {
   maxUsers: number;
   maxWarranties: number;
   maxRequests: number;
+  maxSpaces: number;
+  maxInventoryItems: number;
+}
+
+// Plan inclusions — support level / onboarding perks shown on pricing.
+// Distinct from FEATURE_KEYS, which gate access to app modules.
+export type InclusionKey =
+  | 'csvExport'
+  | 'emailSupport'
+  | 'prioritySupport'
+  | 'dedicatedOnboarding'
+  | 'customSla';
+
+export const INCLUSION_KEYS: InclusionKey[] = [
+  'csvExport',
+  'emailSupport',
+  'prioritySupport',
+  'dedicatedOnboarding',
+  'customSla',
+];
+
+export const INCLUSION_LABELS: Record<InclusionKey, string> = {
+  csvExport: 'CSV export',
+  emailSupport: 'Email support',
+  prioritySupport: 'Priority support',
+  dedicatedOnboarding: 'Dedicated onboarding',
+  customSla: 'Custom SLA',
+};
+
+export const INCLUSION_LABEL_KEYS: Record<InclusionKey, MessageKey> = {
+  csvExport: 'inclusion.csvExport',
+  emailSupport: 'inclusion.emailSupport',
+  prioritySupport: 'inclusion.prioritySupport',
+  dedicatedOnboarding: 'inclusion.dedicatedOnboarding',
+  customSla: 'inclusion.customSla',
+};
+
+export interface PackagePricing {
+  // Per-month price. null = not offered on this cycle (e.g. custom plans).
+  monthlyPrice: number | null;
+  // Total per-year price (already reflecting any annual discount).
+  annualPrice: number | null;
+  // ISO currency code, e.g. 'USD', 'JOD'.
+  currency: string;
+  // Custom / "contact sales" pricing (Enterprise). When true the displayed
+  // monthlyPrice (if any) is treated as a "from" floor.
+  isCustom: boolean;
 }
 
 export interface Package {
@@ -70,8 +119,14 @@ export interface Package {
   name: string;
   description: string;
   isActive: boolean;
+  pricing: PackagePricing;
+  // Free-trial length in days (e.g. 90 = 3-month trial). 0 = no trial.
+  trialDays: number;
+  // Display order on the pricing page / tier lists (ascending).
+  sortOrder: number;
   limits: PackageLimits;
   features: Record<FeatureKey, boolean>;
+  inclusions: Record<InclusionKey, boolean>;
   createdAt: Date;
   createdBy: string;
   updatedAt: Date;

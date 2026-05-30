@@ -5,6 +5,7 @@ import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { format, parse, isValid, startOfDay } from 'date-fns';
 import { Calendar, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { useT } from '@/hooks/ui';
 
 interface DatePickerProps {
   value?: string;        // expects "yyyy-MM-dd" or empty string
@@ -15,8 +16,10 @@ interface DatePickerProps {
   error?: boolean;
 }
 
-export function DatePicker({ value, onChange, placeholder = 'Pick a date', className, disabled, error }: DatePickerProps) {
+export function DatePicker({ value, onChange, placeholder, className, disabled, error }: DatePickerProps) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
+  const finalPlaceholder = placeholder ?? t('common.pickDate');
 
   const parsed = value ? parse(value, 'yyyy-MM-dd', new Date()) : undefined;
   const selected = parsed && isValid(parsed) ? parsed : undefined;
@@ -56,7 +59,7 @@ export function DatePicker({ value, onChange, placeholder = 'Pick a date', class
             className,
           )}
         >
-          <span className="text-gray-700 dark:text-gray-700">{selected ? format(selected, 'dd MMM yyyy') : <span className="text-gray-400 dark:text-gray-600">{placeholder}</span>}</span>
+          <span className="text-gray-700 dark:text-gray-700">{selected ? format(selected, 'dd MMM yyyy') : <span className="text-gray-400 dark:text-gray-600">{finalPlaceholder}</span>}</span>
           <span className="flex items-center gap-1 flex-shrink-0 text-gray-400 dark:text-gray-600">
             {selected && !disabled && (
               <span
@@ -65,7 +68,7 @@ export function DatePicker({ value, onChange, placeholder = 'Pick a date', class
                 onKeyDown={(e) => e.key === 'Enter' && handleClear(e as unknown as React.MouseEvent)}
                 onClick={handleClear}
                 className="hover:text-gray-700 dark:hover:text-gray-500 transition-colors"
-                aria-label="Clear date"
+                aria-label={t('common.clear')}
               >
                 <X className="h-3 w-3" strokeWidth={1.75} />
               </span>

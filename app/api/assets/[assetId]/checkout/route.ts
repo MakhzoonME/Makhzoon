@@ -31,7 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ass
     const parsed = checkoutSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
-    const result = await assetsService.createAssetCheckout(user, assetId, parsed.data);
+    const result = await assetsService.createAssetCheckout(user, assetId, parsed.data, tenant.spaceId);
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : '';

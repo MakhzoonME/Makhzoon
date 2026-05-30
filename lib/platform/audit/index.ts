@@ -14,6 +14,7 @@ export const auditLog = {
   async create({ tenant, module, action, recordId, oldValue, newValue }: AuditCreateParams) {
     await writeAuditLog({
       organizationId: tenant.organizationId,
+      spaceId: tenant.spaceId,
       userId: tenant.userId,
       role: tenant.role,
       action,
@@ -26,6 +27,7 @@ export const auditLog = {
   queue({ tenant, module, action, recordId, oldValue, newValue }: AuditCreateParams) {
     queueAuditLog({
       organizationId: tenant.organizationId,
+      spaceId: tenant.spaceId,
       userId: tenant.userId,
       role: tenant.role,
       action,

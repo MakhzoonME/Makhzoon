@@ -11,9 +11,11 @@ import { useUiStore } from '@/store/ui.store';
 import { useTransferStore } from '@/store/transfer.store';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { useOrgSlug, useT } from '@/hooks/ui';
+import { MessageKey } from '@/locales/messages';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
 import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
+import { SpaceSwitcher } from '@/components/layout/SpaceSwitcher';
 
 /* ── Inline SVG icons ───────────────────────────────────────────── */
 function BurgerSVG() {
@@ -57,13 +59,13 @@ function LogOutSVG() {
   );
 }
 
-const roleConfig: Record<string, { variant: 'blue' | 'default'; label: string }> = {
-  super_admin:       { variant: 'blue', label: 'Super Admin' },
-  makhzoon_admin:    { variant: 'blue', label: 'Makhzoon Admin' },
-  makhzoon_support:  { variant: 'blue', label: 'Makhzoon Support' },
-  org_owner:         { variant: 'blue', label: 'Owner' },
-  admin:             { variant: 'blue', label: 'Admin' },
-  staff:             { variant: 'default', label: 'Staff' },
+const roleConfig: Record<string, { variant: 'blue' | 'default'; labelKey: MessageKey }> = {
+  super_admin:       { variant: 'blue', labelKey: 'role.superAdmin' },
+  makhzoon_admin:    { variant: 'blue', labelKey: 'role.makhzoonAdmin' },
+  makhzoon_support:  { variant: 'blue', labelKey: 'role.makhzoonSupport' },
+  org_owner:         { variant: 'blue', labelKey: 'role.orgOwner' },
+  admin:             { variant: 'blue', labelKey: 'role.admin' },
+  staff:             { variant: 'default', labelKey: 'role.staff' },
 };
 
 export function AppHeader({ orgName }: { orgName?: string }) {
@@ -102,8 +104,8 @@ export function AppHeader({ orgName }: { orgName?: string }) {
         <button
           type="button"
           onClick={() => setMobileMenuOpen(true)}
-          aria-label="Open menu"
-          className="md:hidden p-1.5 -ml-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95 transition-all duration-150 dark:hover:bg-gray-700/40"
+          aria-label={t('common.menu')}
+          className="md:hidden p-1.5 -ms-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95 transition-all duration-150 dark:hover:bg-gray-700/40"
         >
           <BurgerSVG />
         </button>
@@ -127,6 +129,8 @@ export function AppHeader({ orgName }: { orgName?: string }) {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+              <span className="text-gray-400 select-none hidden sm:inline">/</span>
+              <SpaceSwitcher />
             </>
           )}
         </div>
@@ -138,7 +142,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
             className="hidden md:flex items-center gap-2 w-full max-w-md rounded-lg border border-border bg-surface-input px-3 py-1.5 text-sm text-gray-500 hover:bg-surface-sidebar hover:border-border-strong transition-colors duration-150"
           >
             <SearchSVG />
-            <span className="flex-1 text-left">{t('common.search')}</span>
+            <span className="flex-1 text-start">{t('common.search')}</span>
             <kbd className="inline-flex h-5 items-center rounded border border-border bg-surface-card px-1.5 text-[10px] font-mono text-gray-500">{shortcutLabel}</kbd>
           </button>
         </div>
@@ -158,11 +162,11 @@ export function AppHeader({ orgName }: { orgName?: string }) {
           <ThemeToggle />
           <LanguageToggle />
 
-          <Badge variant={rc.variant}>{rc.label}</Badge>
+          <Badge variant={rc.variant}>{t(rc.labelKey)}</Badge>
 
           {/* User menu */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 focus:outline-none px-1 py-1 rounded-md hover:bg-gray-100 transition-colors ml-1 dark:hover:bg-gray-700/40">
+            <DropdownMenuTrigger className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 focus:outline-none px-1 py-1 rounded-md hover:bg-gray-100 transition-colors ms-1 dark:hover:bg-gray-700/40">
               <div className="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-semibold text-primary-700 flex-shrink-0 overflow-hidden">
                 {user?.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element

@@ -16,6 +16,7 @@ import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
 import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
 import { SpaceSwitcher } from '@/components/layout/SpaceSwitcher';
+import { useAccessibleSpaces } from '@/hooks/spaces';
 
 /* ── Inline SVG icons ───────────────────────────────────────────── */
 function BurgerSVG() {
@@ -81,6 +82,8 @@ export function AppHeader({ orgName }: { orgName?: string }) {
   );
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { t, locale } = useT();
+  const { data: spaceList } = useAccessibleSpaces();
+  const hasAnySpace = (spaceList?.items?.length ?? 0) > 0;
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -96,6 +99,14 @@ export function AppHeader({ orgName }: { orgName?: string }) {
 
   const role = user?.role ?? 'staff';
   const rc   = roleConfig[role] ?? roleConfig.staff;
+
+  // Strip the synthetic `@makhzoon.local` suffix so the displayed identity
+  // remains a plain username for users created without a real email.
+  const cleanIdentity = (v?: string | null) => (v ?? '').replace(/@makhzoon\.local$/i, '').trim();
+  const displayName = user?.displayName?.trim() || '';
+  const identity = cleanIdentity(user?.email);
+  const triggerLabel = displayName || identity || '—';
+  const initial = (displayName || identity)?.[0]?.toUpperCase() ?? '?';
 
   return (
     <>
@@ -129,8 +140,12 @@ export function AppHeader({ orgName }: { orgName?: string }) {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <span className="text-gray-400 select-none hidden sm:inline">/</span>
-              <SpaceSwitcher />
+              {hasAnySpace && (
+                <>
+                  <span className="text-gray-400 select-none hidden sm:inline">/</span>
+                  <SpaceSwitcher />
+                </>
+              )}
             </>
           )}
         </div>
@@ -172,24 +187,27 @@ export function AppHeader({ orgName }: { orgName?: string }) {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  user?.displayName?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? '?'
+                  initial
                 )}
               </div>
               <TooltipProvider delayDuration={300}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="hidden sm:block max-w-[140px] truncate">{user?.displayName || user?.email}</span>
+                    <span className="hidden sm:block max-w-[140px] truncate">{triggerLabel}</span>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="font-normal text-xs">
-                    {user?.email}
+                    {identity || displayName}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
               <ChevronDownSVG />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel className="font-normal">
-                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                {displayName && (
+                  <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
+                )}
+                <p className="text-xs text-gray-500 truncate">{identity}</p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => router.push(`/${locale}/${orgSlug}/profile`)} className="gap-2">

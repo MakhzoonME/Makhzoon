@@ -9,7 +9,7 @@ import { inventoryAuditSchema } from '@/lib/validations/inventory.schema';
 export async function GET() {
   try {
     const tenant = await resolveTenant();
-    const audits = await getInventoryAudits(tenant.organizationId);
+    const audits = await getInventoryAudits(tenant.organizationId, tenant.spaceId);
     return NextResponse.json({ audits });
   } catch (err) {
     if (err instanceof NextResponse) return err;
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
 
     const id = await createInventoryAudit({
       organizationId: tenant.organizationId,
+      spaceId: tenant.spaceId,
       title: parsed.data.title,
       notes: parsed.data.notes,
       startedBy: tenant.userId,

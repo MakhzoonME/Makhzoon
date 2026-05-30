@@ -72,6 +72,7 @@ const SORT_COLUMN: Record<SortField, string> = {
 export async function getInventoryItems(
   orgId: string,
   opts?: {
+    spaceId?: string;
     category?: string;
     stockStatus?: string;
     search?: string;
@@ -87,6 +88,7 @@ export async function getInventoryItems(
   const ascending = (opts?.sortDir ?? 'desc') === 'asc';
 
   const eqMatch: Record<string, string> = { organization_id: orgId };
+  if (opts?.spaceId) eqMatch.space_id = opts.spaceId;
   if (opts?.category) eqMatch.category = opts.category;
   if (opts?.stockStatus) eqMatch.stock_status = opts.stockStatus;
   const like = opts?.search ? `%${opts.search}%` : null;
@@ -134,13 +136,14 @@ export async function getInventoryItemById(
 }
 
 export async function createInventoryItem(
-  data: Omit<InventoryItem, 'id' | 'stockStatus' | 'createdAt' | 'updatedAt'>,
+  data: Omit<InventoryItem, 'id' | 'stockStatus' | 'createdAt' | 'updatedAt'> & { spaceId?: string },
 ): Promise<string> {
   const status = stockStatus(data.quantityOnHand, data.minimumThreshold);
   const { data: row, error } = await supabaseAdmin
     .from('inventory_items')
     .insert({
       organization_id: data.organizationId,
+      space_id: data.spaceId,
       name: data.name,
       category: data.category,
       sku: data.sku,

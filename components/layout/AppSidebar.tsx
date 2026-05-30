@@ -7,7 +7,8 @@ import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, withLocale } from '@/lib/nav';
+import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, buildNavUrl } from '@/lib/nav';
+import { useSpace } from '@/hooks/ui';
 import { hasModuleAccess, hasPermByKey } from '@/lib/permissions';
 import { UserPermissions } from '@/types';
 import { useT } from '@/hooks/ui';
@@ -159,6 +160,7 @@ export function AppSidebar() {
   const orgSlug   = (params?.orgSlug as string) ?? '';
   const { user }  = useAuthStore();
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
+  const space = useSpace();
   const { t, dir } = useT();
   const isRtl = dir === 'rtl';
 
@@ -191,7 +193,7 @@ export function AppSidebar() {
   for (const entry of visibleEntries) {
     if (!('type' in entry) || entry.type !== 'group') continue;
     const hasActive = entry.items.some((sub) => {
-      const full = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
+      const full = buildNavUrl({ locale, orgSlug, space, entry: sub });
       return pathname === full || pathname.startsWith(full + '/');
     });
     if (hasActive) autoOpenGroups[entry.href] = true;
@@ -258,7 +260,7 @@ export function AppSidebar() {
                 return !!user && hasPermByKey(user, sub.permissionKey);
               });
               const hasActiveChild = visibleSubItems.some((sub) => {
-                const full = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
+                const full = buildNavUrl({ locale, orgSlug, space, entry: sub });
                 return pathname === full || pathname.startsWith(full + '/');
               });
 
@@ -316,7 +318,7 @@ export function AppSidebar() {
                 >
                   <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pe-6' : 'ps-6')}>
                     {visibleSubItems.map((sub) => {
-                      const fullHref  = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
+                      const fullHref  = buildNavUrl({ locale, orgSlug, space, entry: sub });
                       const subActive = (() => {
                         if (pathname === fullHref) return true;
                         if (!pathname.startsWith(fullHref + '/')) return false;
@@ -378,7 +380,7 @@ export function AppSidebar() {
             const navEntry = entry as NavItemConfig;
             const { href, label: itemLabel, labelKey, moduleColor } = navEntry;
             const Icon = NAV_ICONS[href] ?? DashboardSVG;
-            const fullHref = orgSlug ? withLocale(locale, `/${orgSlug}${href}`) : withLocale(locale, href);
+            const fullHref = buildNavUrl({ locale, orgSlug, space, entry: navEntry });
             const active   = pathname === fullHref || pathname.startsWith(fullHref + '/');
             const translatedLabel = t(labelKey as MessageKey, itemLabel);
 
@@ -446,7 +448,7 @@ export function AppSidebar() {
             const childList = !sidebarCollapsed && visibleChildren.length > 0 ? (
               <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pe-6' : 'ps-6')}>
                 {visibleChildren.map((sub) => {
-                  const subHref  = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
+                  const subHref  = buildNavUrl({ locale, orgSlug, space, entry: sub });
                   const subActive = pathname === subHref || pathname.startsWith(subHref + '/');
                   const subLabel = t(sub.labelKey as MessageKey, sub.label);
                   return (

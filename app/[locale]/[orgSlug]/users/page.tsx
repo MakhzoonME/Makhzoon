@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useUsers } from '@/hooks/users';
 import { useInvites } from '@/hooks/users';
 import { useAuthStore } from '@/store/auth.store';
@@ -21,6 +21,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { PermissionsEditor } from '@/components/users/PermissionsEditor';
+import { UserSpaceAccess } from '@/components/users/UserSpaceAccess';
+import { useUserSpaceAccess, useUpdateUserSpaceAccess } from '@/hooks/spaces';
 import { useSubscriptionFeatures } from '@/hooks/org';
 import { UserPermissions, DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from '@/types';
 import { useT } from '@/hooks/ui';
@@ -93,6 +95,16 @@ export default function UsersPage() {
   const [editPermissions, setEditPermissions] = useState<UserPermissions>(DEFAULT_STAFF_PERMISSIONS);
   const [showEditPerms, setShowEditPerms] = useState(false);
   const [savingRole, setSavingRole] = useState(false);
+  const [editSpaceAccess, setEditSpaceAccess] = useState<{ allSpaces: boolean; spaceIds: string[] }>({ allSpaces: false, spaceIds: [] });
+  const { data: serverSpaceAccess } = useUserSpaceAccess(editTarget?.id);
+  const updateSpaceAccessMut = useUpdateUserSpaceAccess();
+  // Sync space access from server when the GET resolves for the current target.
+  useEffect(() => {
+    if (editTarget && serverSpaceAccess) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setEditSpaceAccess(serverSpaceAccess);
+    }
+  }, [editTarget, serverSpaceAccess]);
   const features = useSubscriptionFeatures();
   const [deleteTarget, setDeleteTarget] = useState<{ user: OrgUser; permanent: boolean } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -149,6 +161,7 @@ export default function UsersPage() {
     setEditRole(u.role);
     setEditPermissions(u.permissions ?? defaultPermsForRole(u.role));
     setShowEditPerms(false);
+    setEditSpaceAccess({ allSpaces: u.role === 'org_owner', spaceIds: [] });
   }
 
   async function handleSaveRole() {
@@ -164,6 +177,12 @@ export default function UsersPage() {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error ?? 'Failed to update role');
       }
+      // Persist space access (allSpaces + spaceIds) in the same save.
+      await updateSpaceAccessMut.mutateAsync({
+        userId: editTarget.id,
+        allSpaces: editSpaceAccess.allSpaces,
+        spaceIds: editSpaceAccess.spaceIds,
+      });
       toast.success(t('common.updated'));
       qc.invalidateQueries({ queryKey: ['users'] });
       setEditTarget(null);
@@ -383,6 +402,16 @@ export default function UsersPage() {
                   availableFeatures={features}
                 />
               )}
+            </div>
+
+            {/* Space access */}
+            <div className="space-y-2 pt-1">
+              <p className="text-sm font-medium text-gray-900">{t('userSpaces.title')}</p>
+              <UserSpaceAccess
+                value={editSpaceAccess}
+                onChange={setEditSpaceAccess}
+                role={editRole}
+              />
             </div>
           </div>
           <DialogFooter>

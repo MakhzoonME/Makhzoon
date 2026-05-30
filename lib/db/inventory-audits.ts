@@ -45,11 +45,14 @@ function toAuditItem(r: Row): InventoryAuditItem {
 
 export async function getInventoryAudits(
   orgId: string,
+  spaceId?: string,
 ): Promise<InventoryAudit[]> {
-  const { data, error } = await supabaseAdmin
+  let q = supabaseAdmin
     .from('inventory_audits')
     .select('*')
-    .eq('organization_id', orgId)
+    .eq('organization_id', orgId);
+  if (spaceId) q = q.eq('space_id', spaceId);
+  const { data, error } = await q
     .order('created_at', { ascending: false })
     .limit(50);
   if (error) throw error;
@@ -69,6 +72,7 @@ export async function getInventoryAuditById(
 
 export async function createInventoryAudit(data: {
   organizationId: string;
+  spaceId?: string;
   title: string;
   notes?: string;
   startedBy: string;
@@ -87,6 +91,7 @@ export async function createInventoryAudit(data: {
     .from('inventory_audits')
     .insert({
       organization_id: data.organizationId,
+      space_id: data.spaceId,
       title: data.title,
       notes: data.notes ?? null,
       status: 'in_progress',
@@ -106,6 +111,7 @@ export async function createInventoryAudit(data: {
     const items = data.assets.map((a) => ({
       audit_id: auditId,
       organization_id: data.organizationId,
+      space_id: data.spaceId,
       asset_id: a.id,
       asset_name: a.name,
       asset_category: a.category,

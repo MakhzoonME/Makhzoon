@@ -244,7 +244,8 @@ export async function getAssetCheckouts(user: AuthUser, assetId: string) {
 export async function createAssetCheckout(
   user: AuthUser,
   assetId: string,
-  data: { checkedOutTo: string; dueDate?: string; notes?: string }
+  data: { checkedOutTo: string; dueDate?: string; notes?: string },
+  spaceId?: string,
 ) {
   await requirePermission(user, 'assets', 'update');
   await requireActiveSubscription(user.organizationId!, user);
@@ -265,6 +266,7 @@ export async function createAssetCheckout(
   const userContext = getUserContext(user);
   const id = await dbCreateCheckout({
     organizationId: user.organizationId!,
+    spaceId,
     assetId,
     checkedOutTo: data.checkedOutTo.trim(),
     checkedOutBy: userContext.uid,
@@ -351,7 +353,8 @@ export async function getAssetMaintenance(user: AuthUser, assetId: string) {
 export async function createAssetMaintenance(
   user: AuthUser,
   assetId: string,
-  data: { type: string; description: string; cost?: number; performedBy?: string; date?: string }
+  data: { type: string; description: string; cost?: number; performedBy?: string; date?: string },
+  spaceId?: string,
 ) {
   await requirePermission(user, 'assets', 'update');
   await requireActiveSubscription(user.organizationId!, user);
@@ -366,6 +369,7 @@ export async function createAssetMaintenance(
   const id = await dbCreateMaintenance(
     {
       organizationId: user.organizationId!,
+      spaceId,
       assetId,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       type: data.type as any,

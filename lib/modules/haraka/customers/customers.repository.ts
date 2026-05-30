@@ -36,10 +36,12 @@ export interface CustomerInput {
 
 export class CustomersRepository {
   async list(tenant: TenantContext, opts?: CustomerListOpts) {
-    const { data, error } = await supabaseAdmin
+    let q = supabaseAdmin
       .from('pos_customers')
       .select('*')
       .eq('organization_id', tenant.organizationId)
+    if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
+    const { data, error } = await q
     if (error) throw error
     let items = (data ?? []).map(toCustomer)
 
@@ -79,6 +81,7 @@ export class CustomersRepository {
       .eq('id', id)
       .maybeSingle()
     if (!data || data.organization_id !== tenant.organizationId) return null
+    if (tenant.spaceId && data.space_id !== tenant.spaceId) return null
     return toCustomer(data)
   }
 
@@ -90,6 +93,7 @@ export class CustomersRepository {
       .from('pos_customers')
       .insert({
         organization_id: tenant.organizationId,
+        space_id: tenant.spaceId,
         name: input.name,
         phone: input.phone ?? null,
         email: input.email ?? null,

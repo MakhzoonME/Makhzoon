@@ -107,16 +107,25 @@ export interface AggregateResult {
  * read-modify-write on the single pos_receipt_counters row — acceptable for
  * the internal/staging scope (harden via an RPC for concurrent registers).
  */
-async function allocateReceiptNumber(orgId: string): Promise<string> {
-  const { data } = await supabaseAdmin
+async function allocateReceiptNumber(orgId: string, spaceId?: string): Promise<string> {
+  // Receipt counter is per-space (each branch has its own sequence). For
+  // backward compatibility before Script 3 runs, when spaceId is absent we
+  // fall back to a single org-wide row (legacy behavior).
+  let readQ = supabaseAdmin
     .from('pos_receipt_counters')
     .select('last_receipt_number')
     .eq('organization_id', orgId)
-    .maybeSingle()
+  if (spaceId) readQ = readQ.eq('space_id', spaceId)
+  const { data } = await readQ.maybeSingle()
   const next = (data ? Number(data.last_receipt_number ?? 0) : 0) + 1
   const { error } = await supabaseAdmin.from('pos_receipt_counters').upsert(
-    { organization_id: orgId, last_receipt_number: next, updated_at: new Date().toISOString() },
-    { onConflict: 'organization_id' },
+    {
+      organization_id: orgId,
+      space_id: spaceId,
+      last_receipt_number: next,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: spaceId ? 'organization_id,space_id' : 'organization_id' },
   )
   if (error) throw error
   return `R-${String(next).padStart(6, '0')}`
@@ -326,7 +335,7 @@ export class TransactionsRepository {
       running.set(line.itemId, after)
     }
 
-    const receiptNumber = await allocateReceiptNumber(tenant.organizationId)
+    const receiptNumber = await allocateReceiptNumber(tenant.organizationId, tenant.spaceId)
     const now = new Date().toISOString()
     const items = priced.lines.map((l) => ({
       inventoryItemId: l.itemId,
@@ -346,6 +355,7 @@ export class TransactionsRepository {
       .from('pos_transactions')
       .insert({
         organization_id: tenant.organizationId,
+        space_id: tenant.spaceId,
         session_id: input.sessionId,
         location_id: session.location_id ?? 'default',
         cashier_id: tenant.userId,
@@ -385,6 +395,7 @@ export class TransactionsRepository {
       before.set(line.itemId, a)
       const { error: invErr } = await supabaseAdmin.from('inventory_transactions').insert({
         organization_id: tenant.organizationId,
+        space_id: tenant.spaceId,
         item_id: line.itemId,
         item_name: line.itemName,
         type: 'out',
@@ -447,6 +458,7 @@ export class TransactionsRepository {
       const threshold = Number(item.minimum_threshold ?? 0)
       const { error: invErr } = await supabaseAdmin.from('inventory_transactions').insert({
         organization_id: tenant.organizationId,
+        space_id: tenant.spaceId,
         item_id: line.inventoryItemId,
         item_name: line.inventoryItemName,
         type: 'in',
@@ -498,7 +510,7 @@ export class TransactionsRepository {
     const refundTaxTotal = refundedLines.reduce((acc, l) => acc + l.taxAmount, 0)
     const refundDiscountTotal = refundedLines.reduce((acc, l) => acc + l.discountAmount, 0)
     const refundTotal = refundedLines.reduce((acc, l) => acc + l.lineTotal, 0)
-    const receiptNumber = await allocateReceiptNumber(tenant.organizationId)
+    const receiptNumber = await allocateReceiptNumber(tenant.organizationId, tenant.spaceId)
     const fullyRefunded = refundedLines.length === orig.items.length
 
     // Cash-first split mirroring the original payment mix.
@@ -519,6 +531,7 @@ export class TransactionsRepository {
       .from('pos_transactions')
       .insert({
         organization_id: tenant.organizationId,
+        space_id: tenant.spaceId,
         session_id: orig.sessionId,
         location_id: orig.locationId ?? 'default',
         cashier_id: tenant.userId,
@@ -569,6 +582,7 @@ export class TransactionsRepository {
       const threshold = Number(item.minimum_threshold ?? 0)
       const { error: invErr } = await supabaseAdmin.from('inventory_transactions').insert({
         organization_id: tenant.organizationId,
+        space_id: tenant.spaceId,
         item_id: line.inventoryItemId,
         item_name: line.inventoryItemName,
         type: 'in',

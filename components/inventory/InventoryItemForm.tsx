@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { ScanBarcode } from 'lucide-react';
-import { useOrgSlug, useT } from '@/hooks/ui';
+import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
 import { inventoryItemSchema, InventoryItemFormData } from '@/lib/validations/inventory.schema';
 import { InventoryItem } from '@/types';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -22,6 +22,7 @@ interface Props { item?: InventoryItem; onSuccess?: () => void; onCancel?: () =>
 export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: Props) {
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const space = useSpace();
   const { locale } = useT();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
@@ -81,7 +82,7 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
       if (onSuccess) {
         onSuccess();
       } else {
-        router.push(`/${locale}/${orgSlug}/raseed/${item?.id ?? result.id}`);
+        router.push(`/${locale}/${orgSlug}/${space}/raseed/${item?.id ?? result.id}`);
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong');

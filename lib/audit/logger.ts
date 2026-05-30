@@ -36,6 +36,8 @@ export type AuditAction =
 
 interface LogParams {
   organizationId: string;
+  /** Space the action happened in. Required after Script 3 (audit_logs.space_id NOT NULL). */
+  spaceId?: string;
   userId: string;
   role: UserRole;
   action: AuditAction;
@@ -49,6 +51,7 @@ interface LogParams {
 function toRow(p: LogParams) {
   return {
     organization_id: p.organizationId,
+    space_id: p.spaceId ?? null,
     user_id: p.userId,
     role: p.role,
     action: p.action,

@@ -100,10 +100,12 @@ export class InventoryRepository {
     const sortBy = opts?.sortBy ?? 'createdAt'
     const sortDir = opts?.sortDir ?? 'desc'
 
-    const { data, error } = await supabaseAdmin
+    let listQ = supabaseAdmin
       .from('inventory_items')
       .select('*')
       .eq('organization_id', tenant.organizationId)
+    if (tenant.spaceId) listQ = listQ.eq('space_id', tenant.spaceId)
+    const { data, error } = await listQ
     if (error) throw error
 
     let items: InventoryItem[] = (data ?? []).map((r) => toItem(r))
@@ -169,25 +171,26 @@ export class InventoryRepository {
   }
 
   async findByBarcode(tenant: TenantContext, barcode: string): Promise<InventoryItem | null> {
-    const { data } = await supabaseAdmin
+    let q = supabaseAdmin
       .from('inventory_items')
       .select('*')
       .eq('organization_id', tenant.organizationId)
       .eq('barcode', barcode)
-      .limit(1)
-      .maybeSingle()
+    if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
+    const { data } = await q.limit(1).maybeSingle()
     if (!data) return null
     const qty = await computeQuantity(data.id as string, (data.quantity_on_hand as number) ?? 0)
     return toItem(data, qty)
   }
 
   async barcodeExists(tenant: TenantContext, barcode: string, excludeId?: string): Promise<boolean> {
-    const { data } = await supabaseAdmin
+    let q = supabaseAdmin
       .from('inventory_items')
       .select('id')
       .eq('organization_id', tenant.organizationId)
       .eq('barcode', barcode)
-      .limit(2)
+    if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
+    const { data } = await q.limit(2)
     if (!data || data.length === 0) return false
     return data.some((d) => (d as Row).id !== excludeId)
   }
@@ -199,6 +202,7 @@ export class InventoryRepository {
       .eq('id', id)
       .maybeSingle()
     if (!data || data.organization_id !== tenant.organizationId) return null
+    if (tenant.spaceId && data.space_id !== tenant.spaceId) return null
     const qty = await computeQuantity(id, (data.quantity_on_hand as number) ?? 0)
     return toItem(data, qty)
   }
@@ -227,6 +231,7 @@ export class InventoryRepository {
       .from('inventory_items')
       .insert({
         organization_id: tenant.organizationId,
+        space_id: tenant.spaceId,
         name: input.name,
         category: input.category,
         sku: input.sku ?? null,
@@ -257,6 +262,7 @@ export class InventoryRepository {
     if (input.quantityOnHand > 0) {
       const { error: txErr } = await supabaseAdmin.from('inventory_transactions').insert({
         organization_id: tenant.organizationId,
+        space_id: tenant.spaceId,
         item_id: id,
         item_name: input.name,
         type: 'in',
@@ -380,6 +386,7 @@ export class InventoryRepository {
 
     const { error: txErr } = await supabaseAdmin.from('inventory_transactions').insert({
       organization_id: tenant.organizationId,
+      space_id: tenant.spaceId,
       item_id: itemId,
       item_name: itemRow.name,
       type,

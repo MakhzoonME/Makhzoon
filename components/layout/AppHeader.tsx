@@ -15,6 +15,7 @@ import { MessageKey } from '@/locales/messages';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
 import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
+import { SpaceSwitcher } from '@/components/layout/SpaceSwitcher';
 
 /* ── Inline SVG icons ───────────────────────────────────────────── */
 function BurgerSVG() {
@@ -128,6 +129,8 @@ export function AppHeader({ orgName }: { orgName?: string }) {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+              <span className="text-gray-400 select-none hidden sm:inline">/</span>
+              <SpaceSwitcher />
             </>
           )}
         </div>

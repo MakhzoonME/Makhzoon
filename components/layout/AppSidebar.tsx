@@ -273,20 +273,25 @@ export function AppSidebar() {
                     'group w-full relative flex items-center rounded-lg text-[14px] transition-colors duration-150 h-9',
                     ICON_INDENT,
                     hasActiveChild
-                      ? 'font-semibold'
+                      ? 'font-semibold text-primary-700'
                       : 'text-gray-600 hover:bg-surface-page hover:text-gray-900',
                   )}
-                  style={hasActiveChild && group.moduleColor ? { color: group.moduleColor, background: `${group.moduleColor}14` } : undefined}
                 >
-                  <span className={cn(
-                    'relative z-10 flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110',
-                    hasActiveChild ? '' : '',
-                  )}>
+                  {hasActiveChild && (
+                    <>
+                      <motion.span
+                        layoutId="sidebar-active-group-pill"
+                        className="absolute inset-0 rounded-lg bg-primary-50"
+                        transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                      />
+                      <span
+                        className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r bg-primary-600', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')}
+                      />
+                    </>
+                  )}
+                  <span className="relative z-10 flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
                     <Icon />
                   </span>
-                  {hasActiveChild && group.moduleColor && (
-                    <span className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')} style={{ background: group.moduleColor }} />
-                  )}
                   <motion.span
                     animate={{ width: sidebarCollapsed ? 0 : 'auto', opacity: sidebarCollapsed ? 0 : 1 }}
                     transition={sidebarCollapsed
@@ -338,16 +343,14 @@ export function AppSidebar() {
                           className={cn(
                             'group relative flex items-center rounded-md text-sm py-1.5 px-2.5 transition-colors duration-150',
                             subActive
-                              ? 'font-semibold'
+                              ? 'font-semibold text-primary-700'
                               : 'text-gray-500 hover:bg-surface-page hover:text-gray-900',
                           )}
-                          style={subActive && sub.moduleColor ? { color: sub.moduleColor } : undefined}
                         >
                           {subActive && (
                             <motion.span
                               layoutId="sidebar-active-pill"
-                              className="absolute inset-0 rounded-md"
-                              style={sub.moduleColor ? { background: `${sub.moduleColor}14` } : undefined}
+                              className="absolute inset-0 rounded-md bg-primary-50"
                               transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                             />
                           )}
@@ -378,7 +381,7 @@ export function AppSidebar() {
 
             /* ── Regular item ───────────────────────────────────── */
             const navEntry = entry as NavItemConfig;
-            const { href, label: itemLabel, labelKey, moduleColor } = navEntry;
+            const { href, label: itemLabel, labelKey } = navEntry;
             const Icon = NAV_ICONS[href] ?? DashboardSVG;
             const fullHref = buildNavUrl({ locale, orgSlug, space, entry: navEntry });
             const active   = pathname === fullHref || pathname.startsWith(fullHref + '/');
@@ -392,33 +395,23 @@ export function AppSidebar() {
                   'group relative flex items-center rounded-lg text-[14px] transition-colors duration-150 h-9',
                   ICON_INDENT,
                   active
-                    ? 'font-semibold'
+                    ? 'font-semibold text-primary-700'
                     : 'text-gray-600 hover:bg-surface-page hover:text-gray-900',
                 )}
-                style={active && moduleColor ? { color: moduleColor } : undefined}
               >
                 {active && (
                   <>
                     <motion.span
                       layoutId="sidebar-active-pill"
-                      className="absolute inset-0 rounded-lg"
-                      style={{ background: moduleColor ? `${moduleColor}14` : 'var(--primary-50)' }}
+                      className="absolute inset-0 rounded-lg bg-primary-50"
                       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                     />
                     <span
-                      className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')}
-                      style={{ background: moduleColor ?? 'var(--primary-600)' }}
+                      className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r bg-primary-600', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')}
                     />
                   </>
                 )}
-                <span
-                  className={cn(
-                    'relative z-10 flex-shrink-0 transition-transform duration-200 ease-out',
-                    'group-hover:scale-110',
-                    !active && !moduleColor ? '' : '',
-                  )}
-                  style={active && moduleColor ? { color: moduleColor } : undefined}
-                >
+                <span className="relative z-10 flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
                   <Icon />
                 </span>
                 <motion.span
@@ -462,13 +455,11 @@ export function AppSidebar() {
                           ? 'text-primary-700 font-semibold'
                           : 'text-gray-500 hover:bg-surface-page hover:text-gray-900',
                       )}
-                      style={subActive && sub.moduleColor ? { color: sub.moduleColor } : undefined}
                     >
                       {subActive && (
                         <motion.span
                           layoutId="sidebar-active-pill-child"
-                          className="absolute inset-0 rounded-md"
-                          style={{ background: sub.moduleColor ? `${sub.moduleColor}14` : 'var(--primary-50)' }}
+                          className="absolute inset-0 rounded-md bg-primary-50"
                           transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                         />
                       )}

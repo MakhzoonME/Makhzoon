@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
     try {
       await createAsset({
         organizationId: tenant.organizationId,
+        spaceId: tenant.spaceId,
         name: d.name,
         category: d.category,
         status: d.status,
@@ -76,7 +77,13 @@ export async function POST(req: NextRequest) {
         location: d.location || undefined,
         notes: d.notes || undefined,
         createdBy: user.uid,
+        createdByEmail: user.email,
+        createdByName: user.displayName,
+        createdByRole: user.role,
         updatedBy: user.uid,
+        updatedByEmail: user.email,
+        updatedByName: user.displayName,
+        updatedByRole: user.role,
       });
       imported++;
     } catch (e) {

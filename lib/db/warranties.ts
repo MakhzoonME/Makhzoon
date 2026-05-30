@@ -67,6 +67,7 @@ type SortField = 'vendor' | 'startDate' | 'endDate' | 'assetId' | 'createdAt';
 export async function getWarranties(
   orgId: string,
   opts?: {
+    spaceId?: string;
     status?: string;
     assetId?: string;
     inventoryItemId?: string;
@@ -85,6 +86,7 @@ export async function getWarranties(
     .from('warranties')
     .select('*')
     .eq('organization_id', orgId);
+  if (opts?.spaceId) q = q.eq('space_id', opts.spaceId);
   if (opts?.assetId) q = q.eq('asset_id', opts.assetId);
   if (opts?.inventoryItemId)
     q = q.eq('inventory_item_id', opts.inventoryItemId);
@@ -141,12 +143,13 @@ export async function getWarrantyById(id: string): Promise<Warranty | null> {
 }
 
 export async function createWarranty(
-  data: Omit<Warranty, 'id' | 'createdAt' | 'updatedAt'>,
+  data: Omit<Warranty, 'id' | 'createdAt' | 'updatedAt'> & { spaceId?: string },
 ): Promise<string> {
   const { data: row, error } = await supabaseAdmin
     .from('warranties')
     .insert({
       organization_id: data.organizationId,
+      space_id: data.spaceId,
       asset_id: data.assetId ?? null,
       inventory_item_id: data.inventoryItemId ?? null,
       vendor: data.vendor,
@@ -197,13 +200,16 @@ export async function deleteWarranty(id: string): Promise<void> {
 export async function getExpiringWarranties(
   orgId: string,
   days = 30,
+  spaceId?: string,
 ): Promise<Warranty[]> {
   const now = new Date();
   const future = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
-  const { data, error } = await supabaseAdmin
+  let baseQ = supabaseAdmin
     .from('warranties')
     .select('*')
-    .eq('organization_id', orgId)
+    .eq('organization_id', orgId);
+  if (spaceId) baseQ = baseQ.eq('space_id', spaceId);
+  const { data, error } = await baseQ
     .gte('end_date', now.toISOString())
     .lte('end_date', future.toISOString())
     .order('end_date', { ascending: true });

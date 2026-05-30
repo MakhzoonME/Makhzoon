@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useFawtaraConfig, useUpdateFawtaraConfig } from '@/hooks/haraka';
-import { toast, useAdminGuard } from '@/hooks/ui';
+import { toast, useAdminGuard, useT } from '@/hooks/ui';
 import type { FawtaraConfig } from '@/types';
 
 interface FormShape {
@@ -26,6 +26,7 @@ interface FormShape {
 
 export default function FawtaraSettingsPage() {
   const { isAllowed } = useAdminGuard('settings.fawtara');
+  const { t } = useT();
   const { data, isLoading } = useFawtaraConfig();
   const updateMut = useUpdateFawtaraConfig();
   const config: FawtaraConfig | undefined = data?.config;
@@ -72,22 +73,22 @@ export default function FawtaraSettingsPage() {
         clientId: values.clientId ? values.clientId : undefined,
         clientSecret: values.clientSecret ? values.clientSecret : undefined,
       });
-      toast.success('Jo Fotara settings updated');
+      toast.success(t('common.updated'));
       form.setValue('clientId', '');
       form.setValue('clientSecret', '');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Update failed');
+      toast.error(err instanceof Error ? err.message : t('common.updateFailed'));
     }
   }
 
   if (!isAllowed) return null;
-  if (isLoading) return <div className="p-6">Loading…</div>;
+  if (isLoading) return <div className="p-6">{t('common.loading')}</div>;
 
   return (
     <div className="p-6 max-w-2xl space-y-6">
       <PageHeader
-        title="Jo Fotara (Jordan e-invoicing)"
-        description="Configure Jordan's ISTD e-invoicing integration. Disabled by default; turn on once credentials are saved."
+        title={t('fawtara.title')}
+        description={t('fawtara.subtitle')}
       />
 
       <div
@@ -99,17 +100,17 @@ export default function FawtaraSettingsPage() {
         <div>
           {config?.enabled ? (
             <>
-              <strong>Enabled.</strong> Every completed POS sale will be submitted to Jo Fotara{' '}
+              <strong>{t('fawtara.enabledLead')}</strong> {t('fawtara.enabledDesc')}{' '}
               <strong>({config.mode})</strong>.{' '}
               {!config.hasClientCredentials && (
                 <>
-                  <strong>Warning:</strong> no client credentials are stored — submissions will fail until you save them below.
+                  <strong>{t('fawtara.warning')}</strong> {t('fawtara.noCredsWarning')}
                 </>
               )}
             </>
           ) : (
             <>
-              <strong>Disabled.</strong> Sales complete normally without e-invoicing. Toggle below to enable.
+              <strong>{t('fawtara.disabledLead')}</strong> {t('fawtara.disabledDesc')}
             </>
           )}
         </div>
@@ -126,9 +127,9 @@ export default function FawtaraSettingsPage() {
                   <Switch checked={field.value} onCheckedChange={field.onChange} />
                 </FormControl>
                 <div>
-                  <FormLabel className="!mt-0">Enable Jo Fotara submission</FormLabel>
+                  <FormLabel className="!mt-0">{t('fawtara.enableLabel')}</FormLabel>
                   <p className="text-xs text-gray-500">
-                    Master switch. When off, every sale records <code>status: skipped</code> and prints without QR.
+                    {t('fawtara.enableHelp')}
                   </p>
                 </div>
                 <FormMessage />
@@ -142,14 +143,14 @@ export default function FawtaraSettingsPage() {
               name="mode"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Mode</FormLabel>
+                  <FormLabel>{t('fawtara.mode')}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="sandbox">Sandbox</SelectItem>
-                      <SelectItem value="production">Production</SelectItem>
+                      <SelectItem value="sandbox">{t('fawtara.sandbox')}</SelectItem>
+                      <SelectItem value="production">{t('fawtara.production')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -161,14 +162,14 @@ export default function FawtaraSettingsPage() {
               name="invoiceTypeDefault"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Default invoice type</FormLabel>
+                  <FormLabel>{t('fawtara.invoiceType')}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="general">General</SelectItem>
-                      <SelectItem value="income">Income</SelectItem>
+                      <SelectItem value="general">{t('fawtara.general')}</SelectItem>
+                      <SelectItem value="income">{t('fawtara.income')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -183,7 +184,7 @@ export default function FawtaraSettingsPage() {
               name="taxpayerNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Taxpayer number (الرقم الضريبي)</FormLabel>
+                  <FormLabel>{t('fawtara.taxpayerNumber')}</FormLabel>
                   <FormControl><Input {...field} placeholder="e.g. 12345678" className="font-mono" /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -194,7 +195,7 @@ export default function FawtaraSettingsPage() {
               name="activityNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Activity number</FormLabel>
+                  <FormLabel>{t('fawtara.activityNumber')}</FormLabel>
                   <FormControl><Input {...field} placeholder="e.g. 9876" className="font-mono" /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -211,8 +212,8 @@ export default function FawtaraSettingsPage() {
                   <Switch checked={field.value} onCheckedChange={field.onChange} />
                 </FormControl>
                 <div>
-                  <FormLabel className="!mt-0">VAT-registered</FormLabel>
-                  <p className="text-xs text-gray-500">Required by Jo Fotara if the organization charges VAT.</p>
+                  <FormLabel className="!mt-0">{t('fawtara.vatRegistered')}</FormLabel>
+                  <p className="text-xs text-gray-500">{t('fawtara.vatRegHelp')}</p>
                 </div>
                 <FormMessage />
               </FormItem>
@@ -222,14 +223,14 @@ export default function FawtaraSettingsPage() {
           <div className="rounded-lg border border-border p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 font-medium">
-                <KeyRound size={16} /> Client credentials
+                <KeyRound size={16} /> {t('fawtara.clientCreds')}
               </div>
               <span className="text-xs text-gray-500">
-                {config?.hasClientCredentials ? 'Set ✓ — leave blank to keep' : 'Not yet set'}
+                {config?.hasClientCredentials ? t('fawtara.credsSet') : t('fawtara.credsNotSet')}
               </span>
             </div>
             <p className="text-xs text-gray-500">
-              Provided by ISTD when your organization is onboarded. Stored server-side and never returned to the browser.
+              {t('fawtara.credsHelp')}
             </p>
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -237,7 +238,7 @@ export default function FawtaraSettingsPage() {
                 name="clientId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Client ID</FormLabel>
+                    <FormLabel>{t('fawtara.clientId')}</FormLabel>
                     <FormControl>
                       <Input {...field} type={showSecrets ? 'text' : 'password'} placeholder="••••••••" autoComplete="off" />
                     </FormControl>
@@ -250,7 +251,7 @@ export default function FawtaraSettingsPage() {
                 name="clientSecret"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Client Secret</FormLabel>
+                    <FormLabel>{t('fawtara.clientSecret')}</FormLabel>
                     <FormControl>
                       <Input {...field} type={showSecrets ? 'text' : 'password'} placeholder="••••••••" autoComplete="off" />
                     </FormControl>
@@ -261,13 +262,13 @@ export default function FawtaraSettingsPage() {
             </div>
             <label className="flex items-center gap-2 text-xs text-gray-500">
               <input type="checkbox" checked={showSecrets} onChange={(e) => setShowSecrets(e.target.checked)} />
-              Show secrets while typing
+              {t('fawtara.showSecrets')}
             </label>
           </div>
 
           <div className="flex gap-2">
             <Button type="submit" disabled={updateMut.isPending}>
-              {updateMut.isPending ? 'Saving…' : 'Save settings'}
+              {updateMut.isPending ? t('common.saving') : t('fawtara.saveSettings')}
             </Button>
           </div>
         </form>

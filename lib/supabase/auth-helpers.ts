@@ -154,13 +154,14 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
     let displayName = '';
     let email = baseEmail;
     let permissions: UserPermissions | null = null;
+    let allSpaces = false;
 
     // public.users is authoritative for org-scoped accounts (mirrors the
     // legacy "Firestore is authoritative" behavior).
     if (ORG_ROLES.has(role)) {
       const { data: row } = await supabaseAdmin
         .from('users')
-        .select('role, organization_id, display_name, email, permissions')
+        .select('role, organization_id, display_name, email, permissions, all_spaces')
         .eq('id', baseUid)
         .maybeSingle();
       if (row) {
@@ -169,6 +170,7 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
         displayName = (row.display_name as string) ?? '';
         email = (row.email as string) ?? email;
       }
+      allSpaces = (row?.all_spaces as boolean | null) ?? false;
 
       if (organizationId) {
         const cachedPerms = getCachedPermissions(baseUid);
@@ -189,6 +191,7 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
       role,
       organizationId,
       permissions,
+      allSpaces: ORG_ROLES.has(role) ? allSpaces : undefined,
     };
 
     if (!cached) setCachedSession(accessToken, authUser);

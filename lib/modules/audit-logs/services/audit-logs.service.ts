@@ -16,5 +16,5 @@ export interface AuditLogsParams {
 export async function getAll(tenant: TenantContext, params?: AuditLogsParams) {
   if (!hasPermission(tenant, 'auditLogs', 'view'))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  return getAuditLogs({ orgId: tenant.organizationId, ...params });
+  return getAuditLogs({ orgId: tenant.organizationId, spaceId: tenant.spaceId, ...params });
 }

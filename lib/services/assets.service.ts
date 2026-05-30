@@ -199,7 +199,13 @@ export async function deleteAssetWithAudit(user: AuthUser, assetId: string) {
     });
   } else {
     // Retire active assets
-    await dbUpdateAsset(assetId, { status: 'Retired', updatedBy: userContext.uid });
+    await dbUpdateAsset(assetId, {
+      status: 'Retired',
+      updatedBy: userContext.uid,
+      updatedByEmail: userContext.email,
+      updatedByName: userContext.displayName,
+      updatedByRole: userContext.role,
+    });
     queueAuditLog({
       organizationId: asset.organizationId,
       userId: userContext.uid,
@@ -238,7 +244,8 @@ export async function getAssetCheckouts(user: AuthUser, assetId: string) {
 export async function createAssetCheckout(
   user: AuthUser,
   assetId: string,
-  data: { checkedOutTo: string; dueDate?: string; notes?: string }
+  data: { checkedOutTo: string; dueDate?: string; notes?: string },
+  spaceId?: string,
 ) {
   await requirePermission(user, 'assets', 'update');
   await requireActiveSubscription(user.organizationId!, user);
@@ -259,6 +266,7 @@ export async function createAssetCheckout(
   const userContext = getUserContext(user);
   const id = await dbCreateCheckout({
     organizationId: user.organizationId!,
+    spaceId,
     assetId,
     checkedOutTo: data.checkedOutTo.trim(),
     checkedOutBy: userContext.uid,
@@ -267,7 +275,13 @@ export async function createAssetCheckout(
     notes: data.notes?.trim() || undefined,
   });
 
-  await dbUpdateAsset(assetId, { assignedTo: data.checkedOutTo.trim(), updatedBy: userContext.uid });
+  await dbUpdateAsset(assetId, {
+    assignedTo: data.checkedOutTo.trim(),
+    updatedBy: userContext.uid,
+    updatedByEmail: userContext.email,
+    updatedByName: userContext.displayName,
+    updatedByRole: userContext.role,
+  });
 
   queueAuditLog({
     organizationId: user.organizationId!,
@@ -303,7 +317,13 @@ export async function returnAssetCheckout(
     returnedBy: userContext.uid,
     returnedByEmail: userContext.email!,
   });
-  await dbUpdateAsset(assetId, { assignedTo: undefined, updatedBy: userContext.uid });
+  await dbUpdateAsset(assetId, {
+    assignedTo: undefined,
+    updatedBy: userContext.uid,
+    updatedByEmail: userContext.email,
+    updatedByName: userContext.displayName,
+    updatedByRole: userContext.role,
+  });
 
   queueAuditLog({
     organizationId: user.organizationId!,
@@ -333,7 +353,8 @@ export async function getAssetMaintenance(user: AuthUser, assetId: string) {
 export async function createAssetMaintenance(
   user: AuthUser,
   assetId: string,
-  data: { type: string; description: string; cost?: number; performedBy?: string; date?: string }
+  data: { type: string; description: string; cost?: number; performedBy?: string; date?: string },
+  spaceId?: string,
 ) {
   await requirePermission(user, 'assets', 'update');
   await requireActiveSubscription(user.organizationId!, user);
@@ -348,6 +369,7 @@ export async function createAssetMaintenance(
   const id = await dbCreateMaintenance(
     {
       organizationId: user.organizationId!,
+      spaceId,
       assetId,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       type: data.type as any,

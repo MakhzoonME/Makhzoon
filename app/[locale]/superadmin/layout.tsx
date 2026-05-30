@@ -153,7 +153,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                   href={href}
                   title={collapsed ? label : undefined}
                   className={cn(
-                    'group relative flex items-center rounded-lg text-sm transition-colors duration-150 h-9 pl-[25px]',
+                    'group relative flex items-center rounded-lg text-sm transition-colors duration-150 h-9 ps-[25px]',
                     active ? 'bg-blue-800/80 text-blue-100 font-medium' : 'text-blue-300 hover:bg-blue-900 hover:text-blue-100',
                   )}
                 >

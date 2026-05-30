@@ -47,7 +47,7 @@ interface UserHoverCardProps {
 }
 
 export function UserHoverCard({ user, label, className }: UserHoverCardProps) {
-  const displayLabel = label ?? user.name ?? user.email ?? user.uid;
+  const displayLabel = label ?? user.name ?? user.email ?? 'Unknown user';
   const roleInfo = user.role ? (ROLE_LABELS[user.role] ?? { label: user.role, className: 'bg-surface-page text-gray-600' }) : null;
 
   return (

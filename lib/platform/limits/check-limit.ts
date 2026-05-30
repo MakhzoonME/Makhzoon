@@ -3,13 +3,15 @@ import { getPackageById } from '@/lib/db/packages'
 import { getOrgUsage } from '@/lib/db/usage'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 
-type LimitedResource = 'assets' | 'users' | 'warranties' | 'requests'
+type LimitedResource = 'assets' | 'users' | 'warranties' | 'requests' | 'spaces' | 'inventoryItems'
 
-const LIMIT_KEYS: Record<LimitedResource, 'maxAssets' | 'maxUsers' | 'maxWarranties' | 'maxRequests'> = {
+const LIMIT_KEYS: Record<LimitedResource, keyof import('@/types').PackageLimits> = {
   assets: 'maxAssets',
   users: 'maxUsers',
   warranties: 'maxWarranties',
   requests: 'maxRequests',
+  spaces: 'maxSpaces',
+  inventoryItems: 'maxInventoryItems',
 }
 
 export async function checkResourceLimit(tenant: TenantContext, resource: LimitedResource): Promise<void> {

@@ -1,0 +1,245 @@
+'use client';
+import { useState, useCallback } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useOrgSlug, useSpace } from '@/hooks/ui';
+import { useRequests } from '@/hooks/requests';
+import { useAuthStore } from '@/store/auth.store';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { FilterBar } from '@/components/shared/FilterBar';
+import { DataTable, ColumnDef } from '@/components/shared/DataTable';
+import { StatusBadge, SubscriptionGate } from '@/components/shared';
+import { Button } from '@/components/ui/button';
+import { ConfigSelect } from '@/components/shared/ConfigSelect';
+import { Request } from '@/types';
+import type { MessageKey } from '@/locales/messages';
+import { formatDate } from '@/lib/utils/date';
+import { toast } from '@/hooks/ui';
+import { useQueryClient } from '@tanstack/react-query';
+import { useT } from '@/hooks/ui';
+import { Check, X, ArrowRight, Copy } from 'lucide-react';
+import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
+import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
+import { useAccessibleSpaces } from '@/hooks/spaces';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+
+function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v) qs.set(k, v); });
+  return `${pathname}${qs.toString() ? '?' + qs.toString() : ''}`;
+}
+
+const typeKeys: Record<string, MessageKey> = {
+  REFILL: 'requestType.REFILL',
+  RETIRE: 'requestType.RETIRE',
+  BUY_NEW: 'requestType.BUY_NEW',
+  EXTEND_WARRANTY: 'requestType.EXTEND_WARRANTY',
+};
+
+export default function RequestsListPage() {
+  const { t, locale } = useT();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const orgSlug = useOrgSlug();
+  const space = useSpace();
+  const { user } = useAuthStore();
+  const qc = useQueryClient();
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
+
+  const status = searchParams.get('status') ?? '';
+  const type = searchParams.get('type') ?? '';
+  const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
+  const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10;
+  const sortBy = searchParams.get('sortBy') ?? 'createdAt';
+  const sortDir = (searchParams.get('sortDir') === 'asc' ? 'asc' : searchParams.get('sortDir') === 'none' ? 'none' : 'desc') as 'asc' | 'desc' | 'none';
+
+  const [processing, setProcessing] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [dupeOpen, setDupeOpen] = useState(false);
+  const { data: spaceList } = useAccessibleSpaces();
+  const hasMultipleSpaces = (spaceList?.items?.length ?? 0) > 1;
+
+  const { data: requestsData, isLoading } = useRequests({
+    status: status || undefined,
+    type: type || undefined,
+    page,
+    pageSize,
+    sortBy: sortDir === 'none' ? undefined : sortBy,
+    sortDir: sortDir === 'none' ? undefined : sortDir,
+  });
+  const requests = requestsData?.items ?? [];
+
+  const updateUrl = useCallback((params: Record<string, string>) => {
+    const url = syncFiltersToUrl(pathname, params);
+    router.replace(url, { scroll: false });
+  }, [pathname, router]);
+
+  async function handleDecision(requestId: string, action: 'approve' | 'reject') {
+    setProcessing(requestId);
+    try {
+      const res = await fetch(`/api/requests/${requestId}/${action}`, { method: 'POST' });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error ?? `Failed to ${action} request`);
+      }
+      toast.success(action === 'approve' ? t('requests.approved') : t('requests.rejected'));
+      qc.invalidateQueries({ queryKey: ['requests'] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `Failed to ${action} request`);
+    } finally {
+      setProcessing(null);
+    }
+  }
+
+  function syncAllToUrl(next: Partial<Record<'status' | 'type' | 'page' | 'pageSize' | 'sortBy' | 'sortDir', string>>) {
+    updateUrl({
+      status: next.status ?? status,
+      type: next.type ?? type,
+      page: next.page ?? String(page),
+      pageSize: next.pageSize ?? String(pageSize),
+      sortBy: next.sortBy ?? sortBy,
+      sortDir: next.sortDir ?? sortDir,
+    });
+  }
+
+  function handleStatusChange(v: string) {
+    const next = v === 'all' ? '' : v;
+    syncAllToUrl({ status: next, page: '1' });
+  }
+
+  function handleTypeChange(v: string) {
+    const next = v === 'all' ? '' : v;
+    syncAllToUrl({ type: next, page: '1' });
+  }
+
+  function handleSortChange(sortByField: string, dir: 'asc' | 'desc' | 'none') {
+    syncAllToUrl({ sortBy: sortByField, sortDir: dir === 'none' ? '' : dir });
+  }
+
+  const columns: ColumnDef<Request>[] = [
+    { key: 'type', header: t('requests.type'), sortable: true, render: (r) => <span className="font-medium text-xs bg-[var(--primary-100)] text-[var(--primary-700)] px-2 py-0.5 rounded-full">{typeKeys[r.type] ? t(typeKeys[r.type]) : r.type}</span> },
+    {
+      key: 'assetId', header: t('requests.reference'),
+      render: (r) => {
+        if (r.assetId) return <button className="text-primary-600 hover:underline" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/${r.assetId}`)}>{r.assetName ?? r.assetId}</button>;
+        if (r.inventoryItemId) return <button className="text-primary-600 hover:underline" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/${r.inventoryItemId}`)}>{r.inventoryItemName ?? r.inventoryItemId}</button>;
+        return <span className="text-gray-400">—</span>;
+      }
+    },
+    { key: 'createdBy', header: t('requests.submittedBy'), sortable: true, render: (r) => r.createdByName ?? r.createdByEmail ?? r.createdBy },
+    { key: 'createdAt', header: t('col.date'), sortable: true, render: (r) => formatDate(r.createdAt) },
+    { key: 'description', header: t('requests.description'), render: (r) => (
+      <TooltipProvider delayDuration={300}><Tooltip><TooltipTrigger asChild><span className="text-gray-600 block truncate max-w-[280px]">{r.description}</span></TooltipTrigger><TooltipContent>{r.description}</TooltipContent></Tooltip></TooltipProvider>
+    ) },
+    { key: 'status', header: t('col.status'), sortable: true, render: (r) => <StatusBadge status={r.status} /> },
+    {
+      key: 'actions', header: t('col.actions'),
+      render: (r) => isAdmin && r.status === 'PENDING' ? (
+        <div className="flex gap-1">
+          <SubscriptionGate>
+            <Button size="sm" variant="ghost" className="text-green-600 hover:bg-green-50" disabled={processing === r.id} onClick={(e) => { e.stopPropagation(); handleDecision(r.id, 'approve'); }}>
+              <Check className="h-4 w-4" strokeWidth={1.75} />
+            </Button>
+          </SubscriptionGate>
+          <SubscriptionGate>
+            <Button size="sm" variant="ghost" className="text-red-500 hover:bg-red-50" disabled={processing === r.id} onClick={(e) => { e.stopPropagation(); handleDecision(r.id, 'reject'); }}>
+              <X className="h-4 w-4" strokeWidth={1.75} />
+            </Button>
+          </SubscriptionGate>
+        </div>
+      ) : null
+    },
+  ];
+
+  return (
+    <div>
+      <PageHeader
+        title={t('nav.requestsList')}
+        breadcrumb={[
+          { label: t('nav.requests'), href: `/${locale}/${orgSlug}/${space}/requests` },
+          { label: t('nav.requestsList'), href: `/${locale}/${orgSlug}/${space}/requests/list` },
+        ]}
+      />
+
+      <FilterBar
+        filters={
+          <div className="flex items-center gap-2">
+            <ConfigSelect listKey="request_status" value={status || 'all'} onValueChange={handleStatusChange} includeAll allLabel={t('requests.allStatuses')} className="w-32" />
+            <ConfigSelect listKey="request_type" value={type || 'all'} onValueChange={handleTypeChange} includeAll allLabel={t('requests.allTypes')} className="w-40" />
+          </div>
+        }
+      />
+
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between gap-3 mb-3 px-4 py-2 bg-primary-50 border border-primary-100 rounded-lg">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="h-7 w-7 rounded-md flex items-center justify-center text-primary-700 hover:bg-primary-100 transition-colors"
+              aria-label={t('common.clear')}
+            >
+              <X className="h-3.5 w-3.5" strokeWidth={2} />
+            </button>
+            <span className="text-sm font-medium text-primary-900">
+              {t('bulk.selected').replace('{count}', String(selectedIds.size))}
+            </span>
+          </div>
+          {hasMultipleSpaces && isAdmin && (
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setDupeOpen(true)}>
+                <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
+                <span className="ms-1">{t('duplicate.bulk')}</span>
+              </Button>
+              <Button size="sm" onClick={() => setMoveOpen(true)}>
+                <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                <span className="ms-1">{t('move.bulkMove')}</span>
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="bg-surface-card rounded-lg border border-border">
+        <DataTable
+          data={requests}
+          columns={columns}
+          isLoading={isLoading}
+          emptyMessage={t('requests.noRequests')}
+          keyExtractor={(r) => r.id}
+          selection={hasMultipleSpaces && isAdmin ? { selectedIds, onChange: setSelectedIds } : undefined}
+          pagination={requestsData ? {
+            page: requestsData.page,
+            pageSize: requestsData.pageSize,
+            total: requestsData.total,
+            totalPages: requestsData.totalPages,
+            onPageChange: (p) => syncAllToUrl({ page: String(p) }),
+            onPageSizeChange: (s) => syncAllToUrl({ pageSize: String(s), page: '1' }),
+            onSortChange: handleSortChange,
+            currentSortBy: sortBy,
+            currentSortDir: sortDir,
+          } : undefined}
+        />
+      </div>
+
+      <MoveResourceDialog
+        open={moveOpen}
+        onOpenChange={setMoveOpen}
+        type="request"
+        ids={[...selectedIds]}
+        recordLabel={t('bulk.selected').replace('{count}', String(selectedIds.size))}
+        onMoved={() => setSelectedIds(new Set())}
+      />
+
+      <DuplicateResourceDialog
+        open={dupeOpen}
+        onOpenChange={setDupeOpen}
+        type="request"
+        ids={[...selectedIds]}
+        recordLabel={t('bulk.selected').replace('{count}', String(selectedIds.size))}
+        onDuplicated={() => setSelectedIds(new Set())}
+      />
+    </div>
+  );
+}

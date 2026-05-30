@@ -19,10 +19,14 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ userId:
     return NextResponse.json({ error: 'Subscription expired' }, { status: 403 });
 
   const isSuperAdmin = caller.role === 'super_admin';
+  const isOwnerOrSuperAdmin = caller.role === 'org_owner' || isSuperAdmin;
   const orgId = tenant?.organizationId ?? caller.organizationId;
 
   const { userId } = params;
-  if (userId === caller.uid) return NextResponse.json({ error: 'You cannot change your own role' }, { status: 400 });
+  // Owners and super admins can edit themselves; others cannot.
+  if (userId === caller.uid && !isOwnerOrSuperAdmin) {
+    return NextResponse.json({ error: 'You cannot change your own role' }, { status: 400 });
+  }
 
   const targetUser = await getUserById(userId);
   if (!targetUser) return NextResponse.json({ error: 'User not found' }, { status: 404 });

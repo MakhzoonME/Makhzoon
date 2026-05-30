@@ -12,7 +12,7 @@ import { FormDrawer } from '@/components/shared/FormDrawer';
 import { InventoryItemForm } from '@/components/inventory/InventoryItemForm';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ConfirmDialog, SubscriptionGate } from '@/components/shared';
+import { ConfirmDialog, SubscriptionGate, BulkActionsBar } from '@/components/shared';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/ui';
@@ -23,6 +23,7 @@ import { Plus, Pencil, Trash2, AlertTriangle, FileText, X, ClipboardCheck, Arrow
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
 import { useAccessibleSpaces } from '@/hooks/spaces';
+import { hasPermission } from '@/lib/permissions';
 import { cn } from '@/lib/utils/cn';
 
 function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
@@ -75,6 +76,8 @@ export default function InventoryListPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [moveOpen, setMoveOpen] = useState(false);
   const [dupeOpen, setDupeOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const { data: spaceList } = useAccessibleSpaces();
   const hasMultipleSpaces = (spaceList?.items?.length ?? 0) > 1;
 
@@ -123,6 +126,10 @@ export default function InventoryListPage() {
   }, [debouncedSearchInput]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
+  const canBulkDelete = !!user && hasPermission(user, 'inventory', 'bulk_delete');
+  const canBulkMove = !!user && hasPermission(user, 'inventory', 'bulk_move');
+  const canBulkDuplicate = !!user && hasPermission(user, 'inventory', 'bulk_duplicate');
+  const showSelection = canBulkDelete || canBulkMove || canBulkDuplicate;
 
   const stockLabels = { inStock: t('inventory.inStock'), lowStock: t('inventory.lowStock'), outOfStock: t('inventory.outOfStock') };
 
@@ -168,6 +175,26 @@ export default function InventoryListPage() {
       ),
     },
   ];
+
+  async function handleBulkDelete() {
+    if (selectedIds.size === 0) return;
+    setBulkDeleting(true);
+    const ids = [...selectedIds];
+    const results = await Promise.allSettled(
+      ids.map((id) => fetch(`/api/inventory/${id}`, { method: 'DELETE' }).then((r) => {
+        if (!r.ok) throw new Error(String(r.status));
+      })),
+    );
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    const ok = ids.length - failed;
+    if (ok > 0) toast.success(t('bulk.deleteSuccess').replace('{count}', String(ok)));
+    if (failed > 0) toast.error(t('bulk.deletePartial').replace('{count}', String(failed)));
+    qc.invalidateQueries({ queryKey: ['inventory'] });
+    qc.invalidateQueries({ queryKey: ['inventory-categories'] });
+    setSelectedIds(new Set());
+    setBulkDeleteOpen(false);
+    setBulkDeleting(false);
+  }
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -338,35 +365,26 @@ export default function InventoryListPage() {
         }
       />
 
-      {selectedIds.size > 0 && (
-        <div className="flex items-center justify-between gap-3 mb-3 px-4 py-2 bg-primary-50 border border-primary-100 rounded-lg">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setSelectedIds(new Set())}
-              className="h-7 w-7 rounded-md flex items-center justify-center text-primary-700 hover:bg-primary-100 transition-colors"
-              aria-label={t('common.clear')}
-            >
-              <X className="h-3.5 w-3.5" strokeWidth={2} />
-            </button>
-            <span className="text-sm font-medium text-primary-900">
-              {t('bulk.selected').replace('{count}', String(selectedIds.size))}
-            </span>
-          </div>
-          {hasMultipleSpaces && isAdmin && (
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => setDupeOpen(true)}>
-                <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
-                <span className="ms-1">{t('duplicate.bulk')}</span>
-              </Button>
-              <Button size="sm" onClick={() => setMoveOpen(true)}>
-                <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
-                <span className="ms-1">{t('move.bulkMove')}</span>
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+      <BulkActionsBar count={selectedIds.size} onClear={() => setSelectedIds(new Set())}>
+        {hasMultipleSpaces && canBulkDuplicate && (
+          <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={() => setDupeOpen(true)}>
+            <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
+            <span className="ms-1">{t('duplicate.bulk')}</span>
+          </Button>
+        )}
+        {hasMultipleSpaces && canBulkMove && (
+          <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={() => setMoveOpen(true)}>
+            <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+            <span className="ms-1">{t('move.bulkMove')}</span>
+          </Button>
+        )}
+        {canBulkDelete && (
+          <Button size="sm" variant="ghost" className="text-red-300 hover:bg-red-500/15 hover:text-red-200" onClick={() => setBulkDeleteOpen(true)}>
+            <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+            <span className="ms-1">{t('bulk.delete')}</span>
+          </Button>
+        )}
+      </BulkActionsBar>
 
       <div className="bg-surface-card rounded-lg border border-border">
         <DataTable
@@ -376,7 +394,7 @@ export default function InventoryListPage() {
           emptyMessage={t('inventory.noItems')}
           onRowClick={(i) => router.push(`/${locale}/${orgSlug}/${space}/raseed/${i.id}`)}
           keyExtractor={(i) => i.id}
-          selection={hasMultipleSpaces && isAdmin ? { selectedIds, onChange: setSelectedIds } : undefined}
+          selection={showSelection ? { selectedIds, onChange: setSelectedIds } : undefined}
           pagination={inventoryData ? {
             page: inventoryData.page,
             pageSize: inventoryData.pageSize,
@@ -390,6 +408,17 @@ export default function InventoryListPage() {
           } : undefined}
         />
       </div>
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title={t('bulk.deleteTitle')}
+        description={t('bulk.deleteDesc').replace('{count}', String(selectedIds.size))}
+        confirmLabel={t('bulk.delete')}
+        variant="destructive"
+        onConfirm={handleBulkDelete}
+        loading={bulkDeleting}
+      />
 
       <ConfirmDialog
         open={!!deleteTarget}

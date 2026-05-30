@@ -2,14 +2,15 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, ArrowRight, X, Copy } from 'lucide-react';
-import { PageHeader, DataTable, FilterBar, ConfirmDialog } from '@/components/shared';
+import { Plus, Pencil, Trash2, ArrowRight, Copy } from 'lucide-react';
+import { PageHeader, DataTable, FilterBar, ConfirmDialog, BulkActionsBar } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { useCustomers, useDeleteCustomer } from '@/hooks/haraka';
 import { toast, useT } from '@/hooks/ui';
 import { useAuthStore } from '@/store/auth.store';
 import { useAccessibleSpaces } from '@/hooks/spaces';
+import { hasPermission } from '@/lib/permissions';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
 import type { PosCustomer } from '@/types';
@@ -26,12 +27,33 @@ export default function CustomersListPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [moveOpen, setMoveOpen] = useState(false);
   const [dupeOpen, setDupeOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const { user } = useAuthStore();
-  const isAdmin = user?.role === 'admin' || user?.role === 'org_owner' || user?.role === 'super_admin';
+  const canBulkDelete = !!user && hasPermission(user, 'pos', 'customers_bulk_delete');
+  const canBulkMove = !!user && hasPermission(user, 'pos', 'customers_bulk_move');
+  const canBulkDuplicate = !!user && hasPermission(user, 'pos', 'customers_bulk_duplicate');
+  const showSelection = canBulkDelete || canBulkMove || canBulkDuplicate;
   const { data: spaceList } = useAccessibleSpaces();
   const hasMultipleSpaces = (spaceList?.items?.length ?? 0) > 1;
 
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka/customers`;
+
+  async function handleBulkDelete() {
+    if (selectedIds.size === 0) return;
+    setBulkDeleting(true);
+    const ids = [...selectedIds];
+    const results = await Promise.allSettled(
+      ids.map((id) => deleteMut.mutateAsync(id)),
+    );
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    const ok = ids.length - failed;
+    if (ok > 0) toast.success(t('bulk.deleteSuccess').replace('{count}', String(ok)));
+    if (failed > 0) toast.error(t('bulk.deletePartial').replace('{count}', String(failed)));
+    setSelectedIds(new Set());
+    setBulkDeleteOpen(false);
+    setBulkDeleting(false);
+  }
 
   async function onDelete() {
     if (!confirmDelete) return;
@@ -106,35 +128,26 @@ export default function CustomersListPage() {
         }}
       />
 
-      {selectedIds.size > 0 && (
-        <div className="flex items-center justify-between gap-3 mb-3 px-4 py-2 bg-primary-50 border border-primary-100 rounded-lg">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setSelectedIds(new Set())}
-              className="h-7 w-7 rounded-md flex items-center justify-center text-primary-700 hover:bg-primary-100 transition-colors"
-              aria-label={t('common.clear')}
-            >
-              <X className="h-3.5 w-3.5" strokeWidth={2} />
-            </button>
-            <span className="text-sm font-medium text-primary-900">
-              {t('bulk.selected').replace('{count}', String(selectedIds.size))}
-            </span>
-          </div>
-          {hasMultipleSpaces && isAdmin && (
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => setDupeOpen(true)}>
-                <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
-                <span className="ms-1">{t('duplicate.bulk')}</span>
-              </Button>
-              <Button size="sm" onClick={() => setMoveOpen(true)}>
-                <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
-                <span className="ms-1">{t('move.bulkMove')}</span>
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+      <BulkActionsBar count={selectedIds.size} onClear={() => setSelectedIds(new Set())}>
+        {hasMultipleSpaces && canBulkDuplicate && (
+          <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={() => setDupeOpen(true)}>
+            <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
+            <span className="ms-1">{t('duplicate.bulk')}</span>
+          </Button>
+        )}
+        {hasMultipleSpaces && canBulkMove && (
+          <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={() => setMoveOpen(true)}>
+            <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+            <span className="ms-1">{t('move.bulkMove')}</span>
+          </Button>
+        )}
+        {canBulkDelete && (
+          <Button size="sm" variant="ghost" className="text-red-300 hover:bg-red-500/15 hover:text-red-200" onClick={() => setBulkDeleteOpen(true)}>
+            <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+            <span className="ms-1">{t('bulk.delete')}</span>
+          </Button>
+        )}
+      </BulkActionsBar>
 
       <DataTable<PosCustomer>
         columns={columns}
@@ -147,7 +160,7 @@ export default function CustomersListPage() {
             : t('customers.noCustomers')
         }
         onRowClick={(c) => router.push(`${base}/${c.id}`)}
-        selection={hasMultipleSpaces && isAdmin ? { selectedIds, onChange: setSelectedIds } : undefined}
+        selection={showSelection ? { selectedIds, onChange: setSelectedIds } : undefined}
         pagination={
           data
             ? {
@@ -173,6 +186,17 @@ export default function CustomersListPage() {
         confirmLabel={t('common.delete')}
         onConfirm={onDelete}
         loading={deleteMut.isPending}
+      />
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title={t('bulk.deleteTitle')}
+        description={t('bulk.deleteDesc').replace('{count}', String(selectedIds.size))}
+        confirmLabel={t('bulk.delete')}
+        variant="destructive"
+        onConfirm={handleBulkDelete}
+        loading={bulkDeleting}
       />
 
       <MoveResourceDialog

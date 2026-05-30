@@ -25,22 +25,23 @@ export function SpaceSwitcher() {
   const currentSlug = (params?.space as string) || null;
   const spaces = data?.items ?? [];
 
-  // Only render when we're inside a space-scoped route AND the user has
-  // more than one accessible space. (One space is the default empty
-  // state — switcher would only have one option.)
-  if (!currentSlug) return null;
-  if (!isLoading && spaces.length <= 1) return null;
+  // Hide while the list is loading and we have nothing to show yet.
+  if (isLoading && spaces.length === 0) return null;
+  // Nothing to switch into.
+  if (spaces.length === 0) return null;
 
-  const current = spaces.find((s) => s.slug === currentSlug);
-  const label = current?.name ?? currentSlug;
+  const current = currentSlug ? spaces.find((s) => s.slug === currentSlug) : undefined;
+  const label = current?.name ?? (currentSlug ? currentSlug : t('spaces.pickSpace'));
 
   function switchTo(slug: string) {
     if (!params?.locale || !params?.orgSlug) return;
-    const prefix = `/${params.locale}/${params.orgSlug}/${currentSlug}`;
+    const prefix = currentSlug
+      ? `/${params.locale}/${params.orgSlug}/${currentSlug}`
+      : null;
     const next = `/${params.locale}/${params.orgSlug}/${slug}`;
     // Replace only the [space] segment; preserve the rest of the path
     // + query so the user stays on the same module/sub-route.
-    const newPath = pathname.startsWith(prefix)
+    const newPath = prefix && pathname.startsWith(prefix)
       ? next + pathname.slice(prefix.length)
       : `${next}/dashboard`;
     router.push(newPath);

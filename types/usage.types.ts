@@ -8,6 +8,8 @@ export interface OrgUsage {
   users: number;
   warranties: number;
   requests: number;
+  spaces: number;
+  inventoryItems: number;
 }
 
 export interface OrgWithUsage {

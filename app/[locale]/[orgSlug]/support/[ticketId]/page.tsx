@@ -14,9 +14,10 @@ import {
   useAddTicketMessage,
 } from '@/hooks/support';
 import { formatDate, formatDateTime } from '@/lib/utils/date';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
 
 export default function TicketDetailPage() {
+  const { t } = useT();
   const { ticketId } = useParams<{ ticketId: string }>();
   const [replyBody, setReplyBody] = useState('');
 
@@ -30,9 +31,9 @@ export default function TicketDetailPage() {
   async function handleClose() {
     try {
       await updateMutation.mutateAsync({ status: 'CLOSED' });
-      toast.success('Ticket closed.');
+      toast.success(t('ticket.closed'));
     } catch {
-      toast.error('Failed to close ticket. Please try again.');
+      toast.error(t('ticket.closeFailed'));
     }
   }
 
@@ -41,14 +42,14 @@ export default function TicketDetailPage() {
     try {
       await addMessageMutation.mutateAsync(replyBody);
       setReplyBody('');
-      toast.success('Reply sent.');
+      toast.success(t('ticket.replySent'));
     } catch {
-      toast.error('Failed to send reply. Please try again.');
+      toast.error(t('ticket.replyFailed'));
     }
   }
 
   if (ticketLoading) return <LoadingSkeleton rows={6} columns={1} />;
-  if (!ticket) return <p className="text-sm text-gray-500 p-6">Ticket not found.</p>;
+  if (!ticket) return <p className="text-sm text-gray-500 p-6">{t('ticket.notFound')}</p>;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -62,7 +63,7 @@ export default function TicketDetailPage() {
               onClick={handleClose}
               disabled={updateMutation.isPending}
             >
-              Close Ticket
+              {t('ticket.closeTicket')}
             </Button>
           ) : undefined
         }
@@ -71,26 +72,26 @@ export default function TicketDetailPage() {
       {/* Metadata */}
       <Card>
         <CardContent className="p-6">
-          <h3 className="text-xs font-semibold uppercase text-gray-500 mb-4">Details</h3>
+          <h3 className="text-xs font-semibold uppercase text-gray-500 mb-4">{t('ticket.details')}</h3>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div>
-              <dt className="text-gray-500">Status</dt>
+              <dt className="text-gray-500">{t('support.status')}</dt>
               <dd className="mt-0.5"><StatusBadge status={ticket.status} /></dd>
             </div>
             <div>
-              <dt className="text-gray-500">Priority</dt>
+              <dt className="text-gray-500">{t('support.priority')}</dt>
               <dd className="mt-0.5"><StatusBadge status={ticket.priority} /></dd>
             </div>
             <div>
-              <dt className="text-gray-500">Submitted</dt>
+              <dt className="text-gray-500">{t('ticket.submitted')}</dt>
               <dd className="mt-0.5 font-medium">{formatDate(new Date(ticket.createdAt))}</dd>
             </div>
             <div>
-              <dt className="text-gray-500">Last Updated</dt>
+              <dt className="text-gray-500">{t('ticket.lastUpdated')}</dt>
               <dd className="mt-0.5 font-medium">{formatDate(new Date(ticket.updatedAt))}</dd>
             </div>
             <div className="col-span-2">
-              <dt className="text-gray-500">Description</dt>
+              <dt className="text-gray-500">{t('support.description')}</dt>
               <dd className="mt-1 text-gray-900 whitespace-pre-wrap">{ticket.description}</dd>
             </div>
           </dl>
@@ -100,10 +101,10 @@ export default function TicketDetailPage() {
       {/* Message thread */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-gray-700">
-          Conversation {messagesLoading ? '…' : `(${messages.length})`}
+          {t('ticket.conversation')} {messagesLoading ? '…' : `(${messages.length})`}
         </h3>
         {messages.length === 0 && !messagesLoading && (
-          <p className="text-sm text-gray-500">No replies yet.</p>
+          <p className="text-sm text-gray-500">{t('ticket.noReplies')}</p>
         )}
         {messages.map((msg) => (
           <div
@@ -113,7 +114,7 @@ export default function TicketDetailPage() {
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <span className="font-medium text-gray-800">{msg.authorName}</span>
               <span className="capitalize bg-surface-page px-1.5 py-0.5 rounded">{msg.authorRole}</span>
-              <span className="ml-auto">{formatDateTime(new Date(msg.createdAt))}</span>
+              <span className="ms-auto">{formatDateTime(new Date(msg.createdAt))}</span>
             </div>
             <p className="text-sm text-gray-900 whitespace-pre-wrap">{msg.body}</p>
           </div>
@@ -126,7 +127,7 @@ export default function TicketDetailPage() {
           <Textarea
             value={replyBody}
             onChange={(e) => setReplyBody(e.target.value)}
-            placeholder="Write a reply…"
+            placeholder={t('ticket.writeReply')}
             rows={4}
             required
             minLength={1}
@@ -136,13 +137,13 @@ export default function TicketDetailPage() {
           <div className="flex items-center justify-between">
             <span className={`text-[11px] ${replyBody.length > 1800 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'}`}>{replyBody.length}/2000</span>
             <Button type="submit" size="sm" disabled={addMessageMutation.isPending || !replyBody.trim()}>
-              {addMessageMutation.isPending ? 'Sending…' : 'Send Reply'}
+              {addMessageMutation.isPending ? t('ticket.sending') : t('ticket.sendReply')}
             </Button>
           </div>
         </form>
       )}
       {isClosed && (
-        <p className="text-sm text-gray-400 text-center py-2">This ticket is closed.</p>
+        <p className="text-sm text-gray-400 text-center py-2">{t('ticket.isClosed')}</p>
       )}
     </div>
   );

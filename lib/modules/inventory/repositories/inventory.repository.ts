@@ -100,16 +100,18 @@ export class InventoryRepository {
     const sortBy = opts?.sortBy ?? 'createdAt'
     const sortDir = opts?.sortDir ?? 'desc'
 
-    const { data, error } = await supabaseAdmin
+    let listQ = supabaseAdmin
       .from('inventory_items')
       .select('*')
       .eq('organization_id', tenant.organizationId)
+    if (tenant.spaceId) listQ = listQ.eq('space_id', tenant.spaceId)
+    const { data, error } = await listQ
     if (error) throw error
 
     let items: InventoryItem[] = (data ?? []).map((r) => toItem(r))
 
+    // Cheap, item-only filters first so we only ledger-look-up what survives.
     if (opts?.category) items = items.filter((i) => i.category === opts.category)
-    if (opts?.stockStatus) items = items.filter((i) => i.stockStatus === opts.stockStatus)
     if (opts?.posEnabled === true) items = items.filter((i) => i.posEnabled === true)
     if (opts?.search) {
       const term = opts.search.toLowerCase()
@@ -122,6 +124,33 @@ export class InventoryRepository {
       )
     }
 
+    // Quantity is ledger-derived. Fetch the latest quantity_after per item in
+    // one batched query, then recompute quantityOnHand + stockStatus so the
+    // list agrees with the detail page.
+    if (items.length > 0) {
+      const ids = items.map((i) => i.id)
+      const { data: txs } = await supabaseAdmin
+        .from('inventory_transactions')
+        .select('item_id, quantity_after, performed_at')
+        .in('item_id', ids)
+        .order('performed_at', { ascending: false })
+      const latestQty = new Map<string, number>()
+      for (const t of txs ?? []) {
+        const k = t.item_id as string
+        if (!latestQty.has(k)) latestQty.set(k, (t.quantity_after as number) ?? 0)
+      }
+      items = items.map((i) => {
+        const q = latestQty.get(i.id) ?? i.quantityOnHand
+        return { ...i, quantityOnHand: q, stockStatus: stockStatus(q, i.minimumThreshold) }
+      })
+    }
+
+    if (opts?.stockStatus) {
+      // Accepts a single status ('low') or a comma-separated set ('low,out').
+      const wanted = new Set(opts.stockStatus.split(',').map((s) => s.trim()).filter(Boolean))
+      if (wanted.size > 0) items = items.filter((i) => wanted.has(i.stockStatus))
+    }
+
     const total = items.length
     items.sort((a, b) => {
       const aVal = a[sortBy]
@@ -130,6 +159,7 @@ export class InventoryRepository {
       if (aVal == null && bVal == null) return 0
       if (aVal == null) return mult
       if (bVal == null) return -mult
+      if (aVal instanceof Date && bVal instanceof Date) return (aVal.getTime() - bVal.getTime()) * mult
       if (typeof aVal === 'number' && typeof bVal === 'number') return (aVal - bVal) * mult
       return String(aVal).localeCompare(String(bVal)) * mult
     })
@@ -141,25 +171,26 @@ export class InventoryRepository {
   }
 
   async findByBarcode(tenant: TenantContext, barcode: string): Promise<InventoryItem | null> {
-    const { data } = await supabaseAdmin
+    let q = supabaseAdmin
       .from('inventory_items')
       .select('*')
       .eq('organization_id', tenant.organizationId)
       .eq('barcode', barcode)
-      .limit(1)
-      .maybeSingle()
+    if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
+    const { data } = await q.limit(1).maybeSingle()
     if (!data) return null
     const qty = await computeQuantity(data.id as string, (data.quantity_on_hand as number) ?? 0)
     return toItem(data, qty)
   }
 
   async barcodeExists(tenant: TenantContext, barcode: string, excludeId?: string): Promise<boolean> {
-    const { data } = await supabaseAdmin
+    let q = supabaseAdmin
       .from('inventory_items')
       .select('id')
       .eq('organization_id', tenant.organizationId)
       .eq('barcode', barcode)
-      .limit(2)
+    if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
+    const { data } = await q.limit(2)
     if (!data || data.length === 0) return false
     return data.some((d) => (d as Row).id !== excludeId)
   }
@@ -171,6 +202,7 @@ export class InventoryRepository {
       .eq('id', id)
       .maybeSingle()
     if (!data || data.organization_id !== tenant.organizationId) return null
+    if (tenant.spaceId && data.space_id !== tenant.spaceId) return null
     const qty = await computeQuantity(id, (data.quantity_on_hand as number) ?? 0)
     return toItem(data, qty)
   }
@@ -199,6 +231,7 @@ export class InventoryRepository {
       .from('inventory_items')
       .insert({
         organization_id: tenant.organizationId,
+        space_id: tenant.spaceId,
         name: input.name,
         category: input.category,
         sku: input.sku ?? null,
@@ -229,6 +262,7 @@ export class InventoryRepository {
     if (input.quantityOnHand > 0) {
       const { error: txErr } = await supabaseAdmin.from('inventory_transactions').insert({
         organization_id: tenant.organizationId,
+        space_id: tenant.spaceId,
         item_id: id,
         item_name: input.name,
         type: 'in',
@@ -352,6 +386,7 @@ export class InventoryRepository {
 
     const { error: txErr } = await supabaseAdmin.from('inventory_transactions').insert({
       organization_id: tenant.organizationId,
+      space_id: tenant.spaceId,
       item_id: itemId,
       item_name: itemRow.name,
       type,

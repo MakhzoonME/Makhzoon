@@ -1,9 +1,10 @@
 'use client';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAuditLogs } from '@/hooks/org';
-import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useT } from '@/hooks/ui';
+import type { MessageKey } from '@/locales/messages';
 
 
 function XSVGIcon() {
@@ -21,30 +22,30 @@ function ActivitySVGIcon() {
   );
 }
 
-const ACTION_LABEL: Record<string, string> = {
-  ASSET_CREATED: 'Created asset',
-  ASSET_UPDATED: 'Updated asset',
-  ASSET_RETIRED: 'Retired asset',
-  WARRANTY_CREATED: 'Added warranty',
-  WARRANTY_UPDATED: 'Updated warranty',
-  WARRANTY_DELETED: 'Removed warranty',
-  REQUEST_SUBMITTED: 'Filed request',
-  REQUEST_APPROVED: 'Approved request',
-  REQUEST_REJECTED: 'Rejected request',
-  USER_INVITED: 'Invited user',
-  USER_UPDATED: 'Updated user',
-  USER_DEACTIVATED: 'Deactivated user',
-  ORGANIZATION_CREATED: 'Created organization',
-  ORGANIZATION_UPDATED: 'Updated organization',
-  SUBSCRIPTION_UPDATED: 'Updated subscription',
-  ASSET_NOTE_ADDED: 'Added note',
-  ASSET_NOTE_DELETED: 'Removed note',
-  MAINTENANCE_ADDED: 'Logged maintenance',
-  MAINTENANCE_DELETED: 'Removed maintenance record',
-  ASSET_CHECKED_OUT: 'Checked out asset',
-  ASSET_CHECKED_IN: 'Returned asset',
-  INVITE_SENT: 'Sent invite',
-  INVITE_ACCEPTED: 'Accepted invite',
+const ACTION_KEY: Record<string, MessageKey> = {
+  ASSET_CREATED: 'audit.action.ASSET_CREATED',
+  ASSET_UPDATED: 'audit.action.ASSET_UPDATED',
+  ASSET_RETIRED: 'audit.action.ASSET_RETIRED',
+  WARRANTY_CREATED: 'audit.action.WARRANTY_CREATED',
+  WARRANTY_UPDATED: 'audit.action.WARRANTY_UPDATED',
+  WARRANTY_DELETED: 'audit.action.WARRANTY_DELETED',
+  REQUEST_SUBMITTED: 'audit.action.REQUEST_SUBMITTED',
+  REQUEST_APPROVED: 'audit.action.REQUEST_APPROVED',
+  REQUEST_REJECTED: 'audit.action.REQUEST_REJECTED',
+  USER_INVITED: 'audit.action.USER_INVITED',
+  USER_UPDATED: 'audit.action.USER_UPDATED',
+  USER_DEACTIVATED: 'audit.action.USER_DEACTIVATED',
+  ORGANIZATION_CREATED: 'audit.action.ORGANIZATION_CREATED',
+  ORGANIZATION_UPDATED: 'audit.action.ORGANIZATION_UPDATED',
+  SUBSCRIPTION_UPDATED: 'audit.action.SUBSCRIPTION_UPDATED',
+  ASSET_NOTE_ADDED: 'audit.action.ASSET_NOTE_ADDED',
+  ASSET_NOTE_DELETED: 'audit.action.ASSET_NOTE_DELETED',
+  MAINTENANCE_ADDED: 'audit.action.MAINTENANCE_ADDED',
+  MAINTENANCE_DELETED: 'audit.action.MAINTENANCE_DELETED',
+  ASSET_CHECKED_OUT: 'audit.action.ASSET_CHECKED_OUT',
+  ASSET_CHECKED_IN: 'audit.action.ASSET_CHECKED_IN',
+  INVITE_SENT: 'audit.action.INVITE_SENT',
+  INVITE_ACCEPTED: 'audit.action.INVITE_ACCEPTED',
 };
 
 export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
@@ -53,6 +54,21 @@ export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
   const locale = params?.locale ?? 'en';
   const orgSlug = params?.orgSlug ?? '';
   const recent = (data?.logs ?? []).slice(0, 30);
+  const { t } = useT();
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+
+  function relativeTime(ts: string | number | Date): string {
+    const d = new Date(ts);
+    const diffMs = Date.now() - d.getTime();
+    const diffMin = Math.floor(diffMs / 60_000);
+    const diffH = Math.floor(diffMs / 3_600_000);
+    const diffD = Math.floor(diffMs / 86_400_000);
+    if (diffMin < 2) return t('time.justNow');
+    if (diffMin < 60) return rtf.format(-diffMin, 'minute');
+    if (diffH < 24) return rtf.format(-diffH, 'hour');
+    if (diffD < 30) return rtf.format(-diffD, 'day');
+    return d.toLocaleDateString(locale);
+  }
 
   function buildModuleHref(module: string, recordId: string): string {
     const base = orgSlug ? `/${locale}/${orgSlug}` : `/${locale}`;
@@ -71,17 +87,17 @@ export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/30 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
-          className="fixed right-0 top-0 z-50 h-full w-full sm:max-w-md bg-surface-card border-l border-border shadow-lg flex flex-col data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right duration-200"
+          className="fixed end-0 top-0 z-50 h-full w-full sm:max-w-md bg-surface-card border-s border-border shadow-lg flex flex-col data-[state=open]:animate-in data-[state=closed]:animate-out ltr:data-[state=closed]:slide-out-to-right rtl:data-[state=closed]:slide-out-to-left ltr:data-[state=open]:slide-in-from-right rtl:data-[state=open]:slide-in-from-left duration-200"
           aria-describedby={undefined}
         >
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <div className="flex items-center gap-2">
               <ActivitySVGIcon />
-              <DialogPrimitive.Title className="text-sm font-semibold text-gray-900">Recent activity</DialogPrimitive.Title>
+              <DialogPrimitive.Title className="text-sm font-semibold text-gray-900">{t('dashboard.recentActivity')}</DialogPrimitive.Title>
             </div>
             <DialogPrimitive.Close className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-surface-page">
               <XSVGIcon />
-              <span className="sr-only">Close</span>
+              <span className="sr-only">{t('common.close')}</span>
             </DialogPrimitive.Close>
           </div>
 
@@ -93,15 +109,13 @@ export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
                 ))}
               </div>
             ) : recent.length === 0 ? (
-              <p className="p-6 text-sm text-gray-400 text-center">No activity yet.</p>
+              <p className="p-6 text-sm text-gray-400 text-center">{t('audit.noActivity')}</p>
             ) : (
               <ul className="divide-y divide-border">
                 {recent.map((log) => {
-                  const label = ACTION_LABEL[log.action] ?? log.action;
+                  const label = ACTION_KEY[log.action] ? t(ACTION_KEY[log.action]) : log.action;
                   const href = log.recordId ? buildModuleHref(log.module, log.recordId) : '';
-                  const timeAgo = log.timestamp
-                    ? formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })
-                    : '';
+                  const timeAgo = log.timestamp ? relativeTime(log.timestamp) : '';
                   const inner = (
                     <div className="px-5 py-3 hover:bg-surface-page transition-colors">
                       <p className="text-sm text-gray-900 font-medium">{label}</p>
@@ -132,7 +146,7 @@ export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
               onClick={() => onOpenChange(false)}
               className="text-xs text-primary-600 hover:underline font-medium"
             >
-              View all logs →
+              {t('audit.viewAllLogs')}
             </Link>
           </div>
         </DialogPrimitive.Content>

@@ -12,14 +12,42 @@ async function countFor(table: string, orgId: string): Promise<number> {
   return count ?? 0;
 }
 
+// "Spaces" = distinct branches/locations. There is no dedicated table, so we
+// derive it from the distinct non-empty `location` values on assets.
+async function countSpaces(orgId: string): Promise<number> {
+  const { data } = await supabaseAdmin
+    .from('assets')
+    .select('location')
+    .eq('organization_id', orgId)
+    .not('location', 'is', null);
+  if (!data) return 0;
+  const distinct = new Set(
+    data
+      .map((r) => (r.location as string | null)?.trim().toLowerCase())
+      .filter((v): v is string => !!v),
+  );
+  return distinct.size;
+}
+
 export async function getOrgUsage(orgId: string): Promise<OrgUsage> {
-  const [assets, users, warranties, requests] = await Promise.all([
-    countFor('assets', orgId),
-    countFor('users', orgId),
-    countFor('warranties', orgId),
-    countFor('requests', orgId),
-  ]);
-  return { organizationId: orgId, assets, users, warranties, requests };
+  const [assets, users, warranties, requests, inventoryItems, spaces] =
+    await Promise.all([
+      countFor('assets', orgId),
+      countFor('users', orgId),
+      countFor('warranties', orgId),
+      countFor('requests', orgId),
+      countFor('inventory_items', orgId),
+      countSpaces(orgId),
+    ]);
+  return {
+    organizationId: orgId,
+    assets,
+    users,
+    warranties,
+    requests,
+    inventoryItems,
+    spaces,
+  };
 }
 
 export async function getAllOrgsUsage(orgIds: string[]): Promise<OrgUsage[]> {
@@ -62,6 +90,8 @@ export async function getAllOrgsWithUsage(filters?: {
         users: 0,
         warranties: 0,
         requests: 0,
+        spaces: 0,
+        inventoryItems: 0,
       },
     };
   });

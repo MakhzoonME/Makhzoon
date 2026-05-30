@@ -23,6 +23,7 @@ const SUPERADMIN_ROLES = ['super_admin', 'makhzoon_admin', 'makhzoon_support'];
 
 export async function getAuditLogs(opts?: {
   orgId?: string;
+  spaceId?: string;
   userId?: string;
   action?: string;
   dateFrom?: string;
@@ -39,6 +40,7 @@ export async function getAuditLogs(opts?: {
   const build = () => {
     let x = supabaseAdmin.from('audit_logs').select('*', { count: 'exact' });
     if (opts?.orgId) x = x.eq('organization_id', opts.orgId);
+    if (opts?.spaceId) x = x.eq('space_id', opts.spaceId);
     if (opts?.userId) x = x.eq('user_id', opts.userId);
     if (opts?.action) x = x.eq('action', opts.action);
     if (opts?.dateFrom)

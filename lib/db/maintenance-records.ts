@@ -46,12 +46,13 @@ export async function getMaintenanceRecordById(
 }
 
 export async function createMaintenanceRecord(
-  data: Omit<MaintenanceRecord, 'id' | 'createdAt'>,
+  data: Omit<MaintenanceRecord, 'id' | 'createdAt'> & { spaceId?: string },
 ): Promise<string> {
   const { data: row, error } = await supabaseAdmin
     .from('maintenance_records')
     .insert({
       organization_id: data.organizationId,
+      space_id: data.spaceId,
       asset_id: data.assetId,
       type: data.type,
       description: data.description,

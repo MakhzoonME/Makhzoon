@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { computeChange } from '@/lib/modules/haraka/pricing/calc';
+import { useT } from '@/hooks/ui';
 
 export interface PaymentLine {
   method: 'cash' | 'card';
@@ -29,6 +30,7 @@ interface Props {
  * change).
  */
 export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading }: Props) {
+  const { t } = useT();
   const [payments, setPayments] = useState<PaymentLine[]>([{ method: 'cash', amount: 0 }]);
 
   useEffect(() => {
@@ -97,7 +99,7 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading }:
                     variant="ghost"
                     className="h-8 w-8 p-0"
                     onClick={() => removeRow(idx)}
-                    aria-label="Remove payment"
+                    aria-label={t('common.remove')}
                   >
                     <X size={14} />
                   </Button>
@@ -108,10 +110,10 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading }:
 
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={() => addRow('cash')} type="button">
-              <Banknote size={14} className="mr-1" /> Add cash
+              <Banknote size={14} className="me-1" /> Add cash
             </Button>
             <Button size="sm" variant="outline" onClick={() => addRow('card')} type="button">
-              <CreditCard size={14} className="mr-1" /> Add card
+              <CreditCard size={14} className="me-1" /> Add card
             </Button>
           </div>
 

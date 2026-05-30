@@ -181,7 +181,7 @@ export default function BackendLogsPage() {
             {t('backendLogs.autoRefresh')}
           </label>
           <Button size="sm" variant="outline" onClick={fetchLogs} disabled={loading}>
-            <RefreshCw className={cn('h-4 w-4 mr-1.5', loading && 'animate-spin')} />
+            <RefreshCw className={cn('h-4 w-4 me-1.5', loading && 'animate-spin')} />
             {t('backendLogs.refresh')}
           </Button>
         </div>
@@ -216,10 +216,10 @@ export default function BackendLogsPage() {
                 value={userSearch}
                 onChange={(e) => syncAllToUrl({ userSearch: e.target.value })}
                 placeholder={t('backendLogs.searchUser')}
-                className="h-8 text-xs pr-7"
+                className="h-8 text-xs pe-7"
               />
               {userSearch && (
-                <button onClick={() => syncAllToUrl({ userSearch: '' })} className="absolute right-2 top-1/2 -translate-y-1/2">
+                <button onClick={() => syncAllToUrl({ userSearch: '' })} className="absolute end-2 top-1/2 -translate-y-1/2">
                   <X className="h-3 w-3 text-gray-400" />
                 </button>
               )}
@@ -233,10 +233,10 @@ export default function BackendLogsPage() {
                 value={orgId}
                 onChange={(e) => syncAllToUrl({ orgId: e.target.value })}
                 placeholder={t('backendLogs.filterOrg')}
-                className="h-8 text-xs pr-7"
+                className="h-8 text-xs pe-7"
               />
               {orgId && (
-                <button onClick={() => syncAllToUrl({ orgId: '' })} className="absolute right-2 top-1/2 -translate-y-1/2">
+                <button onClick={() => syncAllToUrl({ orgId: '' })} className="absolute end-2 top-1/2 -translate-y-1/2">
                   <X className="h-3 w-3 text-gray-400" />
                 </button>
               )}
@@ -284,7 +284,7 @@ export default function BackendLogsPage() {
           </span>
           {hasActiveFilters && (
             <Button size="sm" variant="ghost" onClick={clearFilters} className="h-7 text-xs text-gray-500">
-              <X className="h-3 w-3 mr-1" />
+              <X className="h-3 w-3 me-1" />
               {t('backendLogs.clearFilters')}
             </Button>
           )}
@@ -347,16 +347,16 @@ export default function BackendLogsPage() {
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-surface-page border-b border-border text-gray-500 uppercase tracking-wide">
-                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.time')}</th>
-                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.method')}</th>
-                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.path')}</th>
-                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.status')}</th>
-                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.level')}</th>
-                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.duration')}</th>
-                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.user')}</th>
-                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.organization')}</th>
-                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.role')}</th>
-                <th className="px-3 py-2.5 text-left font-medium">{t('backendLogs.error')}</th>
+                <th className="px-3 py-2.5 text-start font-medium">{t('backendLogs.time')}</th>
+                <th className="px-3 py-2.5 text-start font-medium">{t('backendLogs.method')}</th>
+                <th className="px-3 py-2.5 text-start font-medium">{t('backendLogs.path')}</th>
+                <th className="px-3 py-2.5 text-start font-medium">{t('backendLogs.status')}</th>
+                <th className="px-3 py-2.5 text-start font-medium">{t('backendLogs.level')}</th>
+                <th className="px-3 py-2.5 text-start font-medium">{t('backendLogs.duration')}</th>
+                <th className="px-3 py-2.5 text-start font-medium">{t('backendLogs.user')}</th>
+                <th className="px-3 py-2.5 text-start font-medium">{t('backendLogs.organization')}</th>
+                <th className="px-3 py-2.5 text-start font-medium">{t('backendLogs.role')}</th>
+                <th className="px-3 py-2.5 text-start font-medium">{t('backendLogs.error')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

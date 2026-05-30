@@ -12,4 +12,7 @@ export interface AuthUser {
   orgSlug?: string | null;
   permissions?: UserPermissions | null;
   features?: Record<string, boolean>;
+  /** Spaces feature — populated once PR-3 wires up resolveTenant. Until then undefined. */
+  allSpaces?: boolean;
+  accessibleSpaceIds?: string[];
 }

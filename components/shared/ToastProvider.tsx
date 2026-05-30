@@ -51,7 +51,7 @@ export function AppToastProvider({ children }: { children: React.ReactNode }) {
             <ToastIconSlot variant={variant}>
               {TONE_ICONS[variant]}
             </ToastIconSlot>
-            <div className="flex-1 min-w-0 pr-4">
+            <div className="flex-1 min-w-0 pe-4">
               <ToastTitle>{t.title}</ToastTitle>
               {t.description && <ToastDescription>{t.description}</ToastDescription>}
             </div>

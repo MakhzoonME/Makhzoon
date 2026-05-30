@@ -22,6 +22,7 @@ export type AuditAction =
   | 'INVENTORY_ITEM_CREATED' | 'INVENTORY_ITEM_UPDATED' | 'INVENTORY_ITEM_DELETED'
   | 'INVENTORY_TRANSACTION_CREATED'
   | 'INVENTORY_AUDIT_STARTED' | 'INVENTORY_AUDIT_COMPLETED'
+  | 'STOCK_AUDIT_STARTED' | 'STOCK_AUDIT_COMPLETED'
   | 'CONFIG_STATUS_CREATED' | 'CONFIG_STATUS_UPDATED' | 'CONFIG_STATUS_DELETED'
   | 'CONFIG_LOCATION_CREATED' | 'CONFIG_LOCATION_UPDATED' | 'CONFIG_LOCATION_DELETED'
   | 'CONFIG_CATEGORY_CREATED' | 'CONFIG_CATEGORY_UPDATED' | 'CONFIG_CATEGORY_DELETED'
@@ -35,6 +36,8 @@ export type AuditAction =
 
 interface LogParams {
   organizationId: string;
+  /** Space the action happened in. Required after Script 3 (audit_logs.space_id NOT NULL). */
+  spaceId?: string;
   userId: string;
   role: UserRole;
   action: AuditAction;
@@ -48,6 +51,7 @@ interface LogParams {
 function toRow(p: LogParams) {
   return {
     organization_id: p.organizationId,
+    space_id: p.spaceId ?? null,
     user_id: p.userId,
     role: p.role,
     action: p.action,

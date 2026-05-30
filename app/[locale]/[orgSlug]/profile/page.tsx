@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
-import { useOrgSlug } from '@/hooks/ui';
+import { useOrgSlug, useT } from '@/hooks/ui';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { AvatarUpload } from '@/components/shared/AvatarUpload';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ function displayIdentity(email?: string | null): string {
 export default function ProfilePage() {
   const { user, setUser } = useAuthStore();
   const orgSlug = useOrgSlug();
+  const { t } = useT();
   const { data: orgData } = useQuery({
     queryKey: ['org-by-slug', orgSlug],
     queryFn: async () => {
@@ -45,7 +46,7 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error();
       if (user) setUser({ ...user, avatarUrl: url });
     } catch {
-      toast.error('Failed to update picture');
+      toast.error(t('common.updateFailed'));
     }
   }
 
@@ -66,9 +67,9 @@ export default function ProfilePage() {
       });
       if (!res.ok) throw new Error();
       if (user) setUser({ ...user, displayName });
-      toast.success('Name updated');
+      toast.success(t('common.updated'));
     } catch {
-      toast.error('Failed to update name');
+      toast.error(t('common.updateFailed'));
     } finally {
       setSavingName(false);
     }
@@ -77,11 +78,11 @@ export default function ProfilePage() {
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error(t('profile.passwordsDontMatch'));
       return;
     }
     if (newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error(t('profile.passwordMinLength'));
       return;
     }
     setSavingPassword(true);
@@ -96,19 +97,19 @@ export default function ProfilePage() {
         password: currentPassword,
       });
       if (reauthError) {
-        toast.error('Current password is incorrect');
+        toast.error(t('profile.currentIncorrect'));
         return;
       }
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
       if (updateError) throw updateError;
-      toast.success('Password updated');
+      toast.success(t('common.updated'));
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch {
-      toast.error('Failed to update password');
+      toast.error(t('common.updateFailed'));
     } finally {
       setSavingPassword(false);
     }
@@ -116,11 +117,11 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <PageHeader title="Profile" />
+      <PageHeader title={t('common.profile')} />
 
       <div className="max-w-2xl space-y-6">
         <div className="bg-surface-card rounded-lg border border-border p-6">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Account Info</h2>
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">{t('profile.accountInfo')}</h2>
           <div className="mb-6">
             <AvatarUpload
               value={user?.avatarUrl ?? null}
@@ -130,44 +131,44 @@ export default function ProfilePage() {
           </div>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Username</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('profile.username')}</label>
               <Input value={displayIdentity(user?.email)} disabled />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Company</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('profile.company')}</label>
               <Input value={orgData?.name ?? (orgSlug ?? '')} disabled />
             </div>
           </div>
           <form onSubmit={handleSaveName} className="flex items-end gap-3">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Display Name</label>
-              <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" required />
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('profile.displayName')}</label>
+              <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder={t('profile.yourName')} required />
             </div>
             <Button type="submit" size="sm" disabled={savingName || !displayName.trim()}>
               <Save className="h-3.5 w-3.5" strokeWidth={1.75} />
-              <span className="ml-1">{savingName ? 'Saving...' : 'Save'}</span>
+              <span className="ms-1">{savingName ? t('common.saving') : t('common.save')}</span>
             </Button>
           </form>
         </div>
 
         <div className="bg-surface-card rounded-lg border border-border p-6">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Change Password</h2>
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">{t('profile.changePassword')}</h2>
           <form onSubmit={handleChangePassword} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Current Password</label>
-              <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Current password" required />
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('profile.currentPassword')}</label>
+              <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder={t('profile.currentPassword')} required />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">New Password</label>
-              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New password (min 6 chars)" required />
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('profile.newPassword')}</label>
+              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t('profile.newPasswordHint')} required />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Confirm New Password</label>
-              <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" required />
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('profile.confirmPassword')}</label>
+              <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder={t('profile.confirmHint')} required />
             </div>
             <Button type="submit" size="sm" disabled={savingPassword}>
               <KeyRound className="h-3.5 w-3.5" strokeWidth={1.75} />
-              <span className="ml-1">{savingPassword ? 'Updating...' : 'Update Password'}</span>
+              <span className="ms-1">{savingPassword ? t('profile.updating') : t('profile.updatePassword')}</span>
             </Button>
           </form>
         </div>

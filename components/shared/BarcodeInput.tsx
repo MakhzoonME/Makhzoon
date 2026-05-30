@@ -110,12 +110,12 @@ export const BarcodeInput = forwardRef<BarcodeInputHandle, BarcodeInputProps>(
 
     return (
       <div className={`relative ${className ?? ''}`}>
-        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+        <span className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
           <ScanBarcode size={16} aria-hidden />
         </span>
         <Input
           ref={inputRef}
-          className="pl-8"
+          className="ps-8"
           placeholder={placeholder}
           value={value}
           onChange={(e) => setValue(e.target.value)}

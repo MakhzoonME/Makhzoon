@@ -30,12 +30,13 @@ export async function getAssetNotes(
 }
 
 export async function createAssetNote(
-  data: Omit<AssetNote, 'id' | 'createdAt'>,
+  data: Omit<AssetNote, 'id' | 'createdAt'> & { spaceId?: string },
 ): Promise<string> {
   const { data: row, error } = await supabaseAdmin
     .from('asset_notes')
     .insert({
       organization_id: data.organizationId,
+      space_id: data.spaceId,
       asset_id: data.assetId,
       text: data.text,
       created_by: data.createdBy,

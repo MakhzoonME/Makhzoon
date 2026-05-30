@@ -24,11 +24,11 @@ export function FilterBar({ searchPlaceholder = 'Search...', searchValue, onSear
     <div className="flex items-center gap-3 mb-4">
       {onSearchChange && (
         <div className="relative max-w-xs w-full">
-          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+          <span className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
             <SearchSVG />
           </span>
           <Input
-            className="pl-8"
+            className="ps-8"
             placeholder={searchPlaceholder}
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}

@@ -7,7 +7,8 @@ import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, withLocale } from '@/lib/nav';
+import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, buildNavUrl } from '@/lib/nav';
+import { useSpace } from '@/hooks/ui';
 import { hasModuleAccess, hasPermByKey } from '@/lib/permissions';
 import { UserPermissions } from '@/types';
 import { useT } from '@/hooks/ui';
@@ -147,8 +148,8 @@ const NAV_ICONS: Record<string, React.FC> = {
 
 const EASE_OUT   = [0.16, 1, 0.3, 1] as const;
 const EASE_SLIDE = [0.4, 0, 0.2, 1] as const;
-// Icon is 18px. Collapsed sidebar is 68px. Center = (68-18)/2 = 25px padding-left.
-const ICON_INDENT = 'pl-[25px]';
+// Icon is 18px. Collapsed sidebar is 68px. Center = (68-18)/2 = 25px inline-start padding.
+const ICON_INDENT = 'ps-[25px]';
 export const SIDEBAR_WIDTH_EXPANDED  = 240;
 export const SIDEBAR_WIDTH_COLLAPSED = 68;
 
@@ -159,6 +160,7 @@ export function AppSidebar() {
   const orgSlug   = (params?.orgSlug as string) ?? '';
   const { user }  = useAuthStore();
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
+  const space = useSpace();
   const { t, dir } = useT();
   const isRtl = dir === 'rtl';
 
@@ -191,7 +193,7 @@ export function AppSidebar() {
   for (const entry of visibleEntries) {
     if (!('type' in entry) || entry.type !== 'group') continue;
     const hasActive = entry.items.some((sub) => {
-      const full = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
+      const full = buildNavUrl({ locale, orgSlug, space, entry: sub });
       return pathname === full || pathname.startsWith(full + '/');
     });
     if (hasActive) autoOpenGroups[entry.href] = true;
@@ -258,7 +260,7 @@ export function AppSidebar() {
                 return !!user && hasPermByKey(user, sub.permissionKey);
               });
               const hasActiveChild = visibleSubItems.some((sub) => {
-                const full = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
+                const full = buildNavUrl({ locale, orgSlug, space, entry: sub });
                 return pathname === full || pathname.startsWith(full + '/');
               });
 
@@ -271,20 +273,25 @@ export function AppSidebar() {
                     'group w-full relative flex items-center rounded-lg text-[14px] transition-colors duration-150 h-9',
                     ICON_INDENT,
                     hasActiveChild
-                      ? 'font-semibold'
+                      ? 'font-semibold text-primary-700'
                       : 'text-gray-600 hover:bg-surface-page hover:text-gray-900',
                   )}
-                  style={hasActiveChild && group.moduleColor ? { color: group.moduleColor, background: `${group.moduleColor}14` } : undefined}
                 >
-                  <span className={cn(
-                    'relative z-10 flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110',
-                    hasActiveChild ? '' : '',
-                  )}>
+                  {hasActiveChild && (
+                    <>
+                      <motion.span
+                        layoutId="sidebar-active-group-pill"
+                        className="absolute inset-0 rounded-lg bg-primary-50"
+                        transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                      />
+                      <span
+                        className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r bg-primary-600', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')}
+                      />
+                    </>
+                  )}
+                  <span className="relative z-10 flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
                     <Icon />
                   </span>
-                  {hasActiveChild && group.moduleColor && (
-                    <span className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r', isRtl ? 'left-0 rounded-r-none rounded-l' : 'left-0')} style={{ background: group.moduleColor }} />
-                  )}
                   <motion.span
                     animate={{ width: sidebarCollapsed ? 0 : 'auto', opacity: sidebarCollapsed ? 0 : 1 }}
                     transition={sidebarCollapsed
@@ -314,9 +321,9 @@ export function AppSidebar() {
                   transition={{ duration: 0.2, ease: EASE_SLIDE }}
                   style={{ overflow: 'hidden' }}
                 >
-                  <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pr-6' : 'pl-6')}>
+                  <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pe-6' : 'ps-6')}>
                     {visibleSubItems.map((sub) => {
-                      const fullHref  = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
+                      const fullHref  = buildNavUrl({ locale, orgSlug, space, entry: sub });
                       const subActive = (() => {
                         if (pathname === fullHref) return true;
                         if (!pathname.startsWith(fullHref + '/')) return false;
@@ -336,16 +343,14 @@ export function AppSidebar() {
                           className={cn(
                             'group relative flex items-center rounded-md text-sm py-1.5 px-2.5 transition-colors duration-150',
                             subActive
-                              ? 'font-semibold'
+                              ? 'font-semibold text-primary-700'
                               : 'text-gray-500 hover:bg-surface-page hover:text-gray-900',
                           )}
-                          style={subActive && sub.moduleColor ? { color: sub.moduleColor } : undefined}
                         >
                           {subActive && (
                             <motion.span
                               layoutId="sidebar-active-pill"
-                              className="absolute inset-0 rounded-md"
-                              style={sub.moduleColor ? { background: `${sub.moduleColor}14` } : undefined}
+                              className="absolute inset-0 rounded-md bg-primary-50"
                               transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                             />
                           )}
@@ -376,9 +381,9 @@ export function AppSidebar() {
 
             /* ── Regular item ───────────────────────────────────── */
             const navEntry = entry as NavItemConfig;
-            const { href, label: itemLabel, labelKey, moduleColor, moduleName } = navEntry;
+            const { href, label: itemLabel, labelKey } = navEntry;
             const Icon = NAV_ICONS[href] ?? DashboardSVG;
-            const fullHref = orgSlug ? withLocale(locale, `/${orgSlug}${href}`) : withLocale(locale, href);
+            const fullHref = buildNavUrl({ locale, orgSlug, space, entry: navEntry });
             const active   = pathname === fullHref || pathname.startsWith(fullHref + '/');
             const translatedLabel = t(labelKey as MessageKey, itemLabel);
 
@@ -390,33 +395,23 @@ export function AppSidebar() {
                   'group relative flex items-center rounded-lg text-[14px] transition-colors duration-150 h-9',
                   ICON_INDENT,
                   active
-                    ? 'font-semibold'
+                    ? 'font-semibold text-primary-700'
                     : 'text-gray-600 hover:bg-surface-page hover:text-gray-900',
                 )}
-                style={active && moduleColor ? { color: moduleColor } : undefined}
               >
                 {active && (
                   <>
                     <motion.span
                       layoutId="sidebar-active-pill"
-                      className="absolute inset-0 rounded-lg"
-                      style={{ background: moduleColor ? `${moduleColor}14` : 'var(--primary-50)' }}
+                      className="absolute inset-0 rounded-lg bg-primary-50"
                       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                     />
                     <span
-                      className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r', isRtl ? 'left-0 rounded-r-none rounded-l' : 'left-0')}
-                      style={{ background: moduleColor ?? 'var(--primary-600)' }}
+                      className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r bg-primary-600', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')}
                     />
                   </>
                 )}
-                <span
-                  className={cn(
-                    'relative z-10 flex-shrink-0 transition-transform duration-200 ease-out',
-                    'group-hover:scale-110',
-                    !active && !moduleColor ? '' : '',
-                  )}
-                  style={active && moduleColor ? { color: moduleColor } : undefined}
-                >
+                <span className="relative z-10 flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
                   <Icon />
                 </span>
                 <motion.span
@@ -444,9 +439,9 @@ export function AppSidebar() {
             });
 
             const childList = !sidebarCollapsed && visibleChildren.length > 0 ? (
-              <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pr-6' : 'pl-6')}>
+              <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pe-6' : 'ps-6')}>
                 {visibleChildren.map((sub) => {
-                  const subHref  = orgSlug ? withLocale(locale, `/${orgSlug}${sub.href}`) : withLocale(locale, sub.href);
+                  const subHref  = buildNavUrl({ locale, orgSlug, space, entry: sub });
                   const subActive = pathname === subHref || pathname.startsWith(subHref + '/');
                   const subLabel = t(sub.labelKey as MessageKey, sub.label);
                   return (
@@ -460,13 +455,11 @@ export function AppSidebar() {
                           ? 'text-primary-700 font-semibold'
                           : 'text-gray-500 hover:bg-surface-page hover:text-gray-900',
                       )}
-                      style={subActive && sub.moduleColor ? { color: sub.moduleColor } : undefined}
                     >
                       {subActive && (
                         <motion.span
                           layoutId="sidebar-active-pill-child"
-                          className="absolute inset-0 rounded-md"
-                          style={{ background: sub.moduleColor ? `${sub.moduleColor}14` : 'var(--primary-50)' }}
+                          className="absolute inset-0 rounded-md bg-primary-50"
                           transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                         />
                       )}

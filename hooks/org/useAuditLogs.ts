@@ -18,6 +18,8 @@ interface AuditLogsParams {
   dateTo?: string;
   page?: number;
   pageSize?: number;
+  /** `'space'` (default) restricts to the active space. `'all'` returns logs across every accessible space. */
+  scope?: 'space' | 'all';
 }
 
 export function useAuditLogs(params?: AuditLogsParams) {
@@ -29,6 +31,7 @@ export function useAuditLogs(params?: AuditLogsParams) {
   if (params?.dateTo) query.set('dateTo', params.dateTo);
   if (params?.page) query.set('page', String(params.page));
   if (params?.pageSize) query.set('pageSize', String(params.pageSize));
+  if (params?.scope === 'all') query.set('allSpaces', 'true');
 
   return useQuery<AuditLogsResponse>({
     queryKey: ['audit-logs', params],

@@ -1,5 +1,6 @@
 // Config-driven dropdown lists (see migration 0008_managed_lists.sql).
 // Two tiers: platform defaults (superadmin) + per-org overrides/additions.
+import type { MessageKey } from '@/locales/messages';
 
 /** Every managed list. FREE lists are fully editable; SYSTEM lists are
  *  code-owned values with editable label/color/order/visibility only. */
@@ -10,6 +11,7 @@ export type ListKey =
   | 'location'
   | 'inventory_unit'
   | 'inventory_category'
+  | 'inventory_storage_location'
   | 'vendor'
   | 'org_industry'
   // Bucket B — system lists (value locked)
@@ -29,8 +31,10 @@ export type ListScope = 'org' | 'platform';
 
 export interface ListMeta {
   key: ListKey;
-  /** Human label for the superadmin Lists portal. */
+  /** Human label for the superadmin Lists portal (English fallback). */
   label: string;
+  /** Translation key used by org-facing pages. */
+  labelKey: MessageKey;
   scope: ListScope;
   /** true → SYSTEM list: value locked, no add/remove (label/color/order only). */
   isSystem: boolean;
@@ -40,23 +44,24 @@ export interface ListMeta {
 
 /** Single source of truth for the portal: which lists exist and how they behave. */
 export const LIST_REGISTRY: Record<ListKey, ListMeta> = {
-  asset_status:       { key: 'asset_status',       label: 'Asset Statuses',      scope: 'org',      isSystem: false },
-  asset_category:     { key: 'asset_category',     label: 'Asset Categories',    scope: 'org',      isSystem: false },
-  location:           { key: 'location',           label: 'Locations',           scope: 'org',      isSystem: false },
-  inventory_unit:     { key: 'inventory_unit',     label: 'Inventory Units',     scope: 'org',      isSystem: false },
-  inventory_category: { key: 'inventory_category', label: 'Inventory Categories', scope: 'org',     isSystem: false },
-  vendor:             { key: 'vendor',             label: 'Vendors / Suppliers', scope: 'org',      isSystem: false },
-  org_industry:       { key: 'org_industry',       label: 'Organization Industries', scope: 'platform', isSystem: false },
+  asset_status:       { key: 'asset_status',       label: 'Asset Statuses',      labelKey: 'managedList.asset_status',       scope: 'org',      isSystem: false },
+  asset_category:     { key: 'asset_category',     label: 'Asset Categories',    labelKey: 'managedList.asset_category',     scope: 'org',      isSystem: false },
+  location:           { key: 'location',           label: 'Locations',           labelKey: 'managedList.location',           scope: 'org',      isSystem: false },
+  inventory_unit:     { key: 'inventory_unit',     label: 'Inventory Units',     labelKey: 'managedList.inventory_unit',     scope: 'org',      isSystem: false },
+  inventory_category: { key: 'inventory_category', label: 'Inventory Categories', labelKey: 'managedList.inventory_category', scope: 'org',     isSystem: false },
+  inventory_storage_location: { key: 'inventory_storage_location', label: 'Inventory Storage Locations', labelKey: 'managedList.inventory_storage_location', scope: 'org', isSystem: false },
+  vendor:             { key: 'vendor',             label: 'Vendors / Suppliers', labelKey: 'managedList.vendor',             scope: 'org',      isSystem: false },
+  org_industry:       { key: 'org_industry',       label: 'Organization Industries', labelKey: 'managedList.org_industry',   scope: 'platform', isSystem: false },
 
-  request_status:     { key: 'request_status',     label: 'Request Statuses',    scope: 'platform', isSystem: true,  description: 'Drives the approval flow — values locked.' },
-  request_type:       { key: 'request_type',       label: 'Request Types',       scope: 'platform', isSystem: true,  description: 'Branches request handling — values locked.' },
-  purchase_status:    { key: 'purchase_status',    label: 'Purchase Statuses',   scope: 'platform', isSystem: true,  description: 'Purchase-order lifecycle — values locked.' },
-  inventory_movement: { key: 'inventory_movement', label: 'Inventory Movements', scope: 'platform', isSystem: true,  description: 'Stock math — values locked.' },
-  pos_txn_status:     { key: 'pos_txn_status',     label: 'POS Transaction Statuses', scope: 'platform', isSystem: true, description: 'POS lifecycle — values locked.' },
-  pos_session_status: { key: 'pos_session_status', label: 'POS Session Statuses', scope: 'platform', isSystem: true, description: 'POS lifecycle — values locked.' },
-  warranty_status:    { key: 'warranty_status',    label: 'Warranty Statuses',   scope: 'platform', isSystem: true,  description: 'Computed from dates — values locked.' },
-  warranty_target:    { key: 'warranty_target',    label: 'Warranty Coverage',   scope: 'platform', isSystem: true,  description: 'Asset vs inventory — values locked.' },
-  maintenance_type:   { key: 'maintenance_type',   label: 'Maintenance Types',   scope: 'platform', isSystem: true,  description: 'Has color logic — values locked.' },
+  request_status:     { key: 'request_status',     label: 'Request Statuses',    labelKey: 'managedList.request_status',     scope: 'platform', isSystem: true,  description: 'Drives the approval flow — values locked.' },
+  request_type:       { key: 'request_type',       label: 'Request Types',       labelKey: 'managedList.request_type',       scope: 'platform', isSystem: true,  description: 'Branches request handling — values locked.' },
+  purchase_status:    { key: 'purchase_status',    label: 'Purchase Statuses',   labelKey: 'managedList.purchase_status',    scope: 'platform', isSystem: true,  description: 'Purchase-order lifecycle — values locked.' },
+  inventory_movement: { key: 'inventory_movement', label: 'Inventory Movements', labelKey: 'managedList.inventory_movement', scope: 'platform', isSystem: true,  description: 'Stock math — values locked.' },
+  pos_txn_status:     { key: 'pos_txn_status',     label: 'POS Transaction Statuses', labelKey: 'managedList.pos_txn_status', scope: 'platform', isSystem: true, description: 'POS lifecycle — values locked.' },
+  pos_session_status: { key: 'pos_session_status', label: 'POS Session Statuses', labelKey: 'managedList.pos_session_status', scope: 'platform', isSystem: true, description: 'POS lifecycle — values locked.' },
+  warranty_status:    { key: 'warranty_status',    label: 'Warranty Statuses',   labelKey: 'managedList.warranty_status',    scope: 'platform', isSystem: true,  description: 'Computed from dates — values locked.' },
+  warranty_target:    { key: 'warranty_target',    label: 'Warranty Coverage',   labelKey: 'managedList.warranty_target',    scope: 'platform', isSystem: true,  description: 'Asset vs inventory — values locked.' },
+  maintenance_type:   { key: 'maintenance_type',   label: 'Maintenance Types',   labelKey: 'managedList.maintenance_type',   scope: 'platform', isSystem: true,  description: 'Has color logic — values locked.' },
 };
 
 export const LIST_KEYS = Object.keys(LIST_REGISTRY) as ListKey[];

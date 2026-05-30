@@ -43,6 +43,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ assetId:
 
     const id = await createAssetNote({
       organizationId: user.organizationId,
+      spaceId: tenant.spaceId,
       assetId: params.assetId,
       text: parsed.data.text,
       createdBy: user.uid,

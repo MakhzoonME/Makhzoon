@@ -12,12 +12,13 @@ import { Switch } from '@/components/ui/switch';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useTaxRates, useCreateTaxRate, useUpdateTaxRate, useDeleteTaxRate } from '@/hooks/haraka';
 import { taxRateSchema, type TaxRateFormData } from '@/lib/modules/haraka/tax/schemas';
-import { toast, useAdminGuard } from '@/hooks/ui';
+import { toast, useAdminGuard, useT } from '@/hooks/ui';
 import { useAuthStore } from '@/hooks/ui';
 import type { TaxRate } from '@/types';
 
 export default function TaxRatesPage() {
   const { isAllowed } = useAdminGuard('settings.taxRates');
+  const { t } = useT();
   const user = useAuthStore((s) => s.user);
   const { data, isLoading } = useTaxRates();
   const createMut = useCreateTaxRate();
@@ -51,14 +52,14 @@ export default function TaxRatesPage() {
     try {
       if (editing) {
         await updateMut.mutateAsync({ id: editing.id, patch: values });
-        toast.success('Tax rate updated');
+        toast.success(t('common.updated'));
       } else {
         await createMut.mutateAsync(values);
-        toast.success('Tax rate created');
+        toast.success(t('common.created'));
       }
       setDrawerOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Save failed');
+      toast.error(err instanceof Error ? err.message : t('common.saveFailed'));
     }
   }
 
@@ -66,35 +67,35 @@ export default function TaxRatesPage() {
     if (!confirmDelete) return;
     try {
       await deleteMut.mutateAsync(confirmDelete.id);
-      toast.success('Tax rate deleted');
+      toast.success(t('common.deleted'));
       setConfirmDelete(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Delete failed');
+      toast.error(err instanceof Error ? err.message : t('common.deleteFailed'));
     }
   }
 
   const columns: ColumnDef<TaxRate>[] = [
-    { key: 'name', header: 'Name', sortable: true, render: (r) => r.name },
+    { key: 'name', header: t('col.name'), sortable: true, render: (r) => r.name },
     {
       key: 'rate',
-      header: 'Rate',
+      header: t('col.rate'),
       sortable: true,
       render: (r) => `${(r.rate * 100).toFixed(2)}%`,
     },
     {
       key: 'isDefault',
-      header: 'Default',
-      render: (r) => (r.isDefault ? 'Yes' : '—'),
+      header: t('col.default'),
+      render: (r) => (r.isDefault ? t('common.yes') : '—'),
     },
     {
       key: 'actions',
       header: '',
       render: (r) => (
         <div className="flex gap-1 justify-end">
-          <Button size="sm" variant="ghost" onClick={() => openEdit(r)} aria-label="Edit">
+          <Button size="sm" variant="ghost" onClick={() => openEdit(r)} aria-label={t('common.edit')}>
             <Pencil size={14} />
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(r)} aria-label="Delete">
+          <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(r)} aria-label={t('common.delete')}>
             <Trash2 size={14} />
           </Button>
         </div>
@@ -107,11 +108,11 @@ export default function TaxRatesPage() {
   return (
     <div className="p-6">
       <PageHeader
-        title="Tax Rates"
-        description="Configure VAT and other tax rates used by Raseed items, Purchases, and Haraka POS."
+        title={t('nav.taxRates')}
+        description={t('taxRates.subtitle')}
         actions={
           <Button onClick={openCreate}>
-            <Plus size={16} className="mr-1" /> Add tax rate
+            <Plus size={16} className="me-1" /> {t('taxRates.addTaxRate')}
           </Button>
         }
       />
@@ -121,13 +122,13 @@ export default function TaxRatesPage() {
         data={rates}
         keyExtractor={(r) => r.id}
         isLoading={isLoading}
-        emptyMessage="No tax rates yet — create one to start applying tax in Raseed and Haraka."
+        emptyMessage={t('taxRates.noTaxRates')}
       />
 
       <FormDrawer
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
-        title={editing ? 'Edit tax rate' : 'Add tax rate'}
+        title={editing ? t('taxRates.editTaxRate') : t('taxRates.addTaxRate')}
       >
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -136,7 +137,7 @@ export default function TaxRatesPage() {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name *</FormLabel>
+                  <FormLabel>{t('taxRates.nameRequired')}</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="VAT 16%" />
                   </FormControl>
@@ -150,7 +151,7 @@ export default function TaxRatesPage() {
               name="rate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Rate (fraction, e.g. 0.16 for 16%) *</FormLabel>
+                  <FormLabel>{t('taxRates.rateLabel')}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -175,9 +176,9 @@ export default function TaxRatesPage() {
                     <Switch checked={!!field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                   <div>
-                    <FormLabel className="!mt-0">Default tax rate</FormLabel>
+                    <FormLabel className="!mt-0">{t('taxRates.defaultTaxRate')}</FormLabel>
                     <p className="text-xs text-gray-500">
-                      Applied automatically to new items that don&apos;t specify a rate. Only one default allowed.
+                      {t('taxRates.defaultHelp')}
                     </p>
                   </div>
                   <FormMessage />
@@ -187,10 +188,10 @@ export default function TaxRatesPage() {
 
             <div className="flex gap-2 pt-2">
               <Button type="submit" disabled={createMut.isPending || updateMut.isPending}>
-                {createMut.isPending || updateMut.isPending ? 'Saving...' : editing ? 'Save changes' : 'Create'}
+                {createMut.isPending || updateMut.isPending ? t('common.saving') : editing ? t('common.saveChanges') : t('common.create')}
               </Button>
               <Button type="button" variant="outline" onClick={() => setDrawerOpen(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           </form>
@@ -200,13 +201,13 @@ export default function TaxRatesPage() {
       <ConfirmDialog
         open={!!confirmDelete}
         onOpenChange={(v) => !v && setConfirmDelete(null)}
-        title="Delete tax rate?"
+        title={t('taxRates.deleteTitle')}
         description={
           confirmDelete
-            ? `"${confirmDelete.name}" will be removed. Existing items using this rate will fall back to "No tax" until reassigned.`
+            ? t('taxRates.deleteDesc').replace('{name}', confirmDelete.name)
             : ''
         }
-        confirmLabel="Delete"
+        confirmLabel={t('common.delete')}
         onConfirm={onDelete}
         loading={deleteMut.isPending}
       />

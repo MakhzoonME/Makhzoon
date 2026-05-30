@@ -35,7 +35,8 @@ export default function SettingsIndexPage() {
       return;
     }
     const target = SETTINGS_ORDER.find((s) => hasPermByKey(user, s.permKey));
-    router.replace(`${base}${target ? target.path : '/dashboard'}`);
+    // Dashboard is space-scoped; fall back to the org's Default space.
+    router.replace(`${base}${target ? target.path : '/default/dashboard'}`);
   }, [loading, user, router, params.locale, params.orgSlug]);
 
   return (

@@ -85,6 +85,7 @@ type SortField = 'type' | 'status' | 'createdAt' | 'decisionAt';
 export async function getRequests(
   orgId: string,
   opts?: {
+    spaceId?: string;
     status?: string;
     type?: string;
     userId?: string;
@@ -103,13 +104,14 @@ export async function getRequests(
     .from('requests')
     .select('*')
     .eq('organization_id', orgId);
+  if (opts?.spaceId) q = q.eq('space_id', opts.spaceId);
   if (opts?.status) q = q.eq('status', opts.status);
   if (opts?.type) q = q.eq('type', opts.type);
   if (opts?.userId) q = q.eq('created_by', opts.userId);
   const { data, error } = await q;
   if (error) throw error;
 
-  let requests = await enrichRequests((data ?? []).map(toRequest));
+  const requests = await enrichRequests((data ?? []).map(toRequest));
   const total = requests.length;
 
   requests.sort((a, b) => {
@@ -148,12 +150,13 @@ export async function getRequestById(id: string): Promise<Request | null> {
 }
 
 export async function createRequest(
-  data: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>,
+  data: Omit<Request, 'id' | 'createdAt' | 'updatedAt'> & { spaceId?: string },
 ): Promise<string> {
   const { data: row, error } = await supabaseAdmin
     .from('requests')
     .insert({
       organization_id: data.organizationId,
+      space_id: data.spaceId,
       type: data.type,
       asset_id: data.assetId ?? null,
       warranty_id: data.warrantyId ?? null,

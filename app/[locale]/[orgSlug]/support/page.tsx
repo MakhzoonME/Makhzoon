@@ -70,7 +70,7 @@ export default function SupportPage() {
         title={t('nav.support')}
         actions={
           <Button size="sm" onClick={() => setShowNew(true)}>
-            <Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ml-1">{t('support.submitTicket')}</span>
+            <Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('support.submitTicket')}</span>
           </Button>
         }
       />

@@ -116,15 +116,15 @@ export function PrinterSettingsDialog({ open, onOpenChange }: Props) {
             <div className="flex gap-2">
               {paired ? (
                 <Button variant="outline" onClick={unpair} disabled={busy}>
-                  <Unplug size={14} className="mr-1" /> Unpair
+                  <Unplug size={14} className="me-1" /> Unpair
                 </Button>
               ) : (
                 <Button onClick={handlePair} disabled={busy}>
-                  <Plug2 size={14} className="mr-1" /> Pair printer
+                  <Plug2 size={14} className="me-1" /> Pair printer
                 </Button>
               )}
               <Button variant="outline" onClick={handleTestPrint} disabled={busy || !paired}>
-                <TestTube2 size={14} className="mr-1" /> Test print
+                <TestTube2 size={14} className="me-1" /> Test print
               </Button>
             </div>
           </div>

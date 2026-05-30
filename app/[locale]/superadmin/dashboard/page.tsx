@@ -133,7 +133,7 @@ export default function SuperAdminDashboardPage() {
               enterTransferMode(r.organization.id, r.organization.name);
             }}
           >
-            <ArrowRight className="h-3.5 w-3.5 mr-1" /> {t('superDash.enter')}
+            <ArrowRight className="h-3.5 w-3.5 me-1" /> {t('superDash.enter')}
           </Button>
           <Link href={`/${locale}/superadmin/organizations/${r.organization.id}/edit`}>
             <Button size="sm" variant="ghost">{t('superDash.edit')}</Button>

@@ -88,6 +88,7 @@ export class AssetsRepository {
     const eqMatch: Record<string, string> = {
       organization_id: tenant.organizationId,
     }
+    if (tenant.spaceId) eqMatch.space_id = tenant.spaceId
     if (opts?.status) eqMatch.status = opts.status
     if (opts?.category) eqMatch.category = opts.category
     const like = opts?.search ? `%${opts.search}%` : null
@@ -124,10 +125,12 @@ export class AssetsRepository {
   }
 
   async getCategories(tenant: TenantContext): Promise<string[]> {
-    const { data, error } = await supabaseAdmin
+    let q = supabaseAdmin
       .from('assets')
       .select('category')
       .eq('organization_id', tenant.organizationId)
+    if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
+    const { data, error } = await q
     if (error) throw error
     const cats = new Set<string>()
     for (const r of data ?? []) {
@@ -144,6 +147,7 @@ export class AssetsRepository {
       .eq('id', id)
       .maybeSingle()
     if (!data || data.organization_id !== tenant.organizationId) return null
+    if (tenant.spaceId && data.space_id !== tenant.spaceId) return null
     return toAsset(data)
   }
 
@@ -156,6 +160,7 @@ export class AssetsRepository {
       .insert({
         ...inputToColumns(input as unknown as Record<string, unknown>),
         organization_id: tenant.organizationId,
+        space_id: tenant.spaceId,
         created_by: tenant.user.uid,
         created_by_email: tenant.user.email,
         created_by_name: tenant.user.displayName,

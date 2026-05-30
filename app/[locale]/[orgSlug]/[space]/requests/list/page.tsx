@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { FilterBar } from '@/components/shared/FilterBar';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
-import { StatusBadge, SubscriptionGate } from '@/components/shared';
+import { StatusBadge, SubscriptionGate, BulkActionsBar } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { Request } from '@/types';
@@ -20,6 +20,7 @@ import { Check, X, ArrowRight, Copy } from 'lucide-react';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
 import { useAccessibleSpaces } from '@/hooks/spaces';
+import { hasPermission } from '@/lib/permissions';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
@@ -45,6 +46,9 @@ export default function RequestsListPage() {
   const { user } = useAuthStore();
   const qc = useQueryClient();
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
+  const canBulkMove = !!user && hasPermission(user, 'requests', 'bulk_move');
+  const canBulkDuplicate = !!user && hasPermission(user, 'requests', 'bulk_duplicate');
+  const showSelection = canBulkMove || canBulkDuplicate;
 
   const status = searchParams.get('status') ?? '';
   const type = searchParams.get('type') ?? '';
@@ -171,35 +175,20 @@ export default function RequestsListPage() {
         }
       />
 
-      {selectedIds.size > 0 && (
-        <div className="flex items-center justify-between gap-3 mb-3 px-4 py-2 bg-primary-50 border border-primary-100 rounded-lg">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setSelectedIds(new Set())}
-              className="h-7 w-7 rounded-md flex items-center justify-center text-primary-700 hover:bg-primary-100 transition-colors"
-              aria-label={t('common.clear')}
-            >
-              <X className="h-3.5 w-3.5" strokeWidth={2} />
-            </button>
-            <span className="text-sm font-medium text-primary-900">
-              {t('bulk.selected').replace('{count}', String(selectedIds.size))}
-            </span>
-          </div>
-          {hasMultipleSpaces && isAdmin && (
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => setDupeOpen(true)}>
-                <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
-                <span className="ms-1">{t('duplicate.bulk')}</span>
-              </Button>
-              <Button size="sm" onClick={() => setMoveOpen(true)}>
-                <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
-                <span className="ms-1">{t('move.bulkMove')}</span>
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+      <BulkActionsBar count={selectedIds.size} onClear={() => setSelectedIds(new Set())}>
+        {hasMultipleSpaces && canBulkDuplicate && (
+          <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={() => setDupeOpen(true)}>
+            <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
+            <span className="ms-1">{t('duplicate.bulk')}</span>
+          </Button>
+        )}
+        {hasMultipleSpaces && canBulkMove && (
+          <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={() => setMoveOpen(true)}>
+            <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+            <span className="ms-1">{t('move.bulkMove')}</span>
+          </Button>
+        )}
+      </BulkActionsBar>
 
       <div className="bg-surface-card rounded-lg border border-border">
         <DataTable
@@ -208,7 +197,7 @@ export default function RequestsListPage() {
           isLoading={isLoading}
           emptyMessage={t('requests.noRequests')}
           keyExtractor={(r) => r.id}
-          selection={hasMultipleSpaces && isAdmin ? { selectedIds, onChange: setSelectedIds } : undefined}
+          selection={hasMultipleSpaces && showSelection ? { selectedIds, onChange: setSelectedIds } : undefined}
           pagination={requestsData ? {
             page: requestsData.page,
             pageSize: requestsData.pageSize,

@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
     try {
       await createAsset({
         organizationId: tenant.organizationId,
+        spaceId: tenant.spaceId,
         name: d.name,
         category: d.category,
         status: d.status,

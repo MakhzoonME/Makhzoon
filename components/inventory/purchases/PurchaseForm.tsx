@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug, useT, toast } from '@/hooks/ui';
+import { useOrgSlug, useSpace, useT, toast } from '@/hooks/ui';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -35,6 +35,7 @@ function toISODate(d: Date | string | undefined | null): string {
 export function PurchaseForm({ purchase, onSuccess, onCancel }: Props) {
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const space = useSpace();
   const { locale } = useT();
   const [loading, setLoading] = useState(false);
 
@@ -84,7 +85,7 @@ export function PurchaseForm({ purchase, onSuccess, onCancel }: Props) {
         toast.success('Purchase created as draft');
       }
       if (onSuccess) onSuccess(id);
-      else router.push(`/${locale}/${orgSlug}/raseed/purchases/${id}`);
+      else router.push(`/${locale}/${orgSlug}/${space}/raseed/purchases/${id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save purchase');
     } finally {

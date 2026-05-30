@@ -10,7 +10,7 @@ import { useTransferStore } from '@/store/transfer.store';
 import { useSubscriptionFeatures } from '@/hooks/org';
 import { createClient } from '@/lib/supabase/client';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
-import { useT } from '@/hooks/ui';
+import { useT, useSpace } from '@/hooks/ui';
 import type { MessageKey } from '@/locales/messages';
 
 function DashboardSVG() { return <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden><rect x="2" y="2" width="6" height="7" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="10" y="2" width="6" height="4" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="10" y="8" width="6" height="8" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="2" y="11" width="6" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /></svg>; }
@@ -26,7 +26,7 @@ function AuditSVG() { return <svg width="18" height="18" viewBox="0 0 18 18" fil
 function XSvg() { return <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>; }
 function LogOutSVG() { return <svg width="15" height="15" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M5 2H2.5A1.5 1.5 0 0 0 1 3.5v7A1.5 1.5 0 0 0 2.5 12H5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /><path d="M9 4.5L12 7l-3 2.5M12 7H5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
 
-interface NavItem { href: string; labelKey: MessageKey; Icon: React.FC; adminOnly?: boolean; featureKey?: string; }
+interface NavItem { href: string; labelKey: MessageKey; Icon: React.FC; adminOnly?: boolean; featureKey?: string; scope?: 'space' | 'org'; }
 
 const navItems: NavItem[] = [
   { href: '/dashboard',    labelKey: 'nav.dashboard',    Icon: DashboardSVG,                            featureKey: 'dashboard' },
@@ -35,9 +35,9 @@ const navItems: NavItem[] = [
   { href: '/warranties',   labelKey: 'nav.warranties',   Icon: WarrantySVG,    featureKey: 'warranties' },
   { href: '/requests',     labelKey: 'nav.requests',     Icon: RequestsSVG,    featureKey: 'requests' },
   { href: '/reports',      labelKey: 'nav.reports',      Icon: ReportsSVG,     adminOnly: true,         featureKey: 'reports' },
-  { href: '/users',        labelKey: 'nav.users',        Icon: UsersSVG,       adminOnly: true },
-  { href: '/subscription', labelKey: 'nav.subscription', Icon: SubscriptionSVG, adminOnly: true },
-  { href: '/support',      labelKey: 'nav.support',      Icon: SupportSVG,     featureKey: 'support' },
+  { href: '/users',        labelKey: 'nav.users',        Icon: UsersSVG,       adminOnly: true,                                    scope: 'org' },
+  { href: '/subscription', labelKey: 'nav.subscription', Icon: SubscriptionSVG, adminOnly: true,                                    scope: 'org' },
+  { href: '/support',      labelKey: 'nav.support',      Icon: SupportSVG,     featureKey: 'support',                              scope: 'org' },
   { href: '/audit-logs',   labelKey: 'nav.auditLogs',    Icon: AuditSVG,       adminOnly: true,         featureKey: 'auditLogs' },
 ];
 
@@ -47,6 +47,7 @@ export function MobileDrawer() {
   const pathname = usePathname();
   const params = useParams();
   const orgSlug = (params?.orgSlug as string) ?? '';
+  const space = useSpace();
   const { user } = useAuthStore();
   const { mobileMenuOpen, setMobileMenuOpen } = useUiStore();
   const features = useSubscriptionFeatures();
@@ -142,8 +143,10 @@ export function MobileDrawer() {
 
             {/* Nav items */}
             <nav className="flex-1 overflow-y-auto p-2.5 space-y-0.5">
-              {visibleItems.map(({ href, labelKey, Icon }) => {
-                const fullHref = `/${orgSlug}${href}`;
+              {visibleItems.map(({ href, labelKey, Icon, scope }) => {
+                const fullHref = scope === 'org'
+                  ? `/${orgSlug}${href}`
+                  : `/${orgSlug}/${space}${href}`;
                 const active = pathname === fullHref || pathname.startsWith(fullHref + '/');
                 return (
                   <Link

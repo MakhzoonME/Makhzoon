@@ -21,7 +21,7 @@ export interface CreateRequestInput {
 export async function getAll(tenant: TenantContext, filters?: Parameters<typeof getRequests>[1]) {
   if (!hasPermission(tenant, 'requests', 'view'))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  return getRequests(tenant.organizationId, filters);
+  return getRequests(tenant.organizationId, { ...filters, spaceId: tenant.spaceId });
 }
 
 export async function getById(tenant: TenantContext, requestId: string) {
@@ -42,6 +42,7 @@ export async function create(tenant: TenantContext, data: CreateRequestInput) {
 
   const id = await dbCreateRequest({
     organizationId: tenant.organizationId,
+    spaceId: tenant.spaceId,
     ...data,
     status: 'PENDING',
     createdBy: tenant.userId,

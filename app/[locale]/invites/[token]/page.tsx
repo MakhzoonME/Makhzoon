@@ -67,7 +67,9 @@ export default function AcceptInvitePage(props: { params: Promise<{ token: strin
     if (!sessionRes.ok) throw new Error('Session creation failed');
     const { orgSlug } = await sessionRes.json();
     if (!orgSlug) throw new Error('Your workspace could not be found. Please contact support.');
-    router.push(`/${locale}/${orgSlug}/dashboard`);
+    // After accepting an invite, land on the org's Default space dashboard.
+    // PR-3 will resolve the user's preferred space from session state.
+    router.push(`/${locale}/${orgSlug}/default/dashboard`);
   }
 
   async function handleAccept(e: React.FormEvent) {

@@ -135,6 +135,7 @@ export class StockAuditRepository {
       .from('stock_audits')
       .insert({
         organization_id: tenant.organizationId,
+        space_id: tenant.spaceId,
         title: input.title,
         notes: input.notes ?? null,
         status: 'in_progress',
@@ -158,6 +159,7 @@ export class StockAuditRepository {
       return {
         audit_id: auditId,
         organization_id: tenant.organizationId,
+        space_id: tenant.spaceId,
         inventory_item_id: id,
         item_name: it.name as string,
         item_sku: (it.sku as string) ?? null,
@@ -294,6 +296,7 @@ export class StockAuditRepository {
         .from('inventory_transactions')
         .insert({
           organization_id: tenant.organizationId,
+          space_id: tenant.spaceId,
           item_id: it.inventoryItemId,
           item_name: itemRow.name as string,
           type: 'adjustment',

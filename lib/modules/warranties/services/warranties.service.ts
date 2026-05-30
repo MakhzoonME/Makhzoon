@@ -34,7 +34,7 @@ export interface UpdateWarrantyInput {
 export async function getAll(tenant: TenantContext, opts?: Parameters<typeof getWarranties>[1]) {
   if (!hasPermission(tenant, 'warranties', 'view'))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  return getWarranties(tenant.organizationId, opts);
+  return getWarranties(tenant.organizationId, { ...opts, spaceId: tenant.spaceId });
 }
 
 export async function getById(tenant: TenantContext, warrantyId: string) {
@@ -55,6 +55,7 @@ export async function create(tenant: TenantContext, data: CreateWarrantyInput) {
 
   const id = await dbCreateWarranty({
     organizationId: tenant.organizationId,
+    spaceId: tenant.spaceId,
     ...data,
     reminder: data.reminder ?? false,
     createdBy: tenant.userId,
@@ -114,5 +115,5 @@ export async function del(tenant: TenantContext, warrantyId: string) {
 export async function getExpiring(tenant: TenantContext, days: number) {
   if (!hasPermission(tenant, 'warranties', 'view'))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  return getExpiringWarranties(tenant.organizationId, days);
+  return getExpiringWarranties(tenant.organizationId, days, tenant.spaceId);
 }

@@ -36,6 +36,7 @@ export class SessionsRepository {
       .from('pos_sessions')
       .select('*')
       .eq('organization_id', tenant.organizationId)
+    if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
     if (opts?.status) q = q.eq('status', opts.status)
     if (opts?.cashierId) q = q.eq('cashier_id', opts.cashierId)
     const { data, error } = await q
@@ -69,20 +70,21 @@ export class SessionsRepository {
       .eq('id', id)
       .maybeSingle()
     if (!data || data.organization_id !== tenant.organizationId) return null
+    if (tenant.spaceId && data.space_id !== tenant.spaceId) return null
     return toSession(data)
   }
 
   async findOpenForCashier(
     tenant: TenantContext,
   ): Promise<PosSession | null> {
-    const { data } = await supabaseAdmin
+    let q = supabaseAdmin
       .from('pos_sessions')
       .select('*')
       .eq('organization_id', tenant.organizationId)
       .eq('cashier_id', tenant.userId)
       .eq('status', 'open')
-      .limit(1)
-      .maybeSingle()
+    if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
+    const { data } = await q.limit(1).maybeSingle()
     return data ? toSession(data) : null
   }
 
@@ -102,6 +104,7 @@ export class SessionsRepository {
       .from('pos_sessions')
       .insert({
         organization_id: tenant.organizationId,
+        space_id: tenant.spaceId,
         location_id: input.locationId ?? 'default',
         cashier_id: tenant.userId,
         cashier_name: tenant.user.displayName ?? tenant.user.email ?? '',

@@ -73,6 +73,10 @@ const en = {
   'spaces.ownersNoteHere':     'Owners are excluded — they already access every space.',
   'spaces.gettingStartedTitle': 'Only the Default space exists.',
   'spaces.gettingStartedDesc':  'Create another space to keep separate branches, warehouses, or stores fully isolated. Users with "Access all spaces" turned on will see every space you create.',
+  'spaces.initialMembers':      'Grant access',
+  'spaces.initialMembersHint':  'Choose users who should immediately access the new space. Owners (and any user with "Access all spaces" on) are already granted access automatically.',
+  'spaces.memberAddPartial':    '{count} member(s) could not be added — open the Members panel to retry.',
+  'spaces.pickSpace':           'Pick a space',
 
   'userSpaces.title':          'Space access',
   'userSpaces.accessAll':      'Access all spaces',
@@ -113,6 +117,11 @@ const en = {
   'move.transferSuccess':  'Transferred {qty} unit(s).',
   'move.bulkMove':         'Move to space',
   'bulk.selected':         '{count} selected',
+  'bulk.delete':           'Delete',
+  'bulk.deleteTitle':      'Delete selected records?',
+  'bulk.deleteDesc':       'You are about to permanently delete {count} record(s). This cannot be undone.',
+  'bulk.deleteSuccess':    'Deleted {count} record(s).',
+  'bulk.deletePartial':    '{count} record(s) could not be deleted.',
 
   // ── Duplicate-to-space feature ───────────────────────────────────
   'duplicate.button':           'Duplicate',
@@ -1018,6 +1027,9 @@ const en = {
   'permOp.assets.checkout':     'Check In / Out',
   'permOp.assets.maintenance':  'Maintenance Records',
   'permOp.assets.notes':        'Asset Notes',
+  'permOp.assets.bulk_delete':    'Bulk delete assets',
+  'permOp.assets.bulk_move':      'Bulk move assets to space',
+  'permOp.assets.bulk_duplicate': 'Bulk duplicate assets to space',
 
   'permOp.inventory.view':         'View Inventory',
   'permOp.inventory.create':       'Add Items',
@@ -1025,6 +1037,9 @@ const en = {
   'permOp.inventory.delete':       'Delete Items',
   'permOp.inventory.transactions': 'Record Transactions',
   'permOp.inventory.audits':       'Manage Audits',
+  'permOp.inventory.bulk_delete':    'Bulk delete items',
+  'permOp.inventory.bulk_move':      'Bulk move items to space',
+  'permOp.inventory.bulk_duplicate': 'Bulk duplicate items to space',
 
   'permOp.warranties.view':   'View Warranties',
   'permOp.warranties.create': 'Add Warranties',
@@ -1034,6 +1049,8 @@ const en = {
   'permOp.requests.view':    'View Requests',
   'permOp.requests.create':  'Submit Requests',
   'permOp.requests.approve': 'Approve / Reject',
+  'permOp.requests.bulk_move':      'Bulk move requests to space',
+  'permOp.requests.bulk_duplicate': 'Bulk duplicate requests to space',
 
   'permOp.reports.view':     'View Reports',
   'permOp.support.view':     'View Tickets',
@@ -1055,6 +1072,9 @@ const en = {
   'permOp.pos.void_transaction': 'Void Transactions',
   'permOp.pos.view_reports':     'View Reports',
   'permOp.pos.fawtara_submit':   'Resubmit to Fawtara',
+  'permOp.pos.customers_bulk_delete':    'Bulk delete customers',
+  'permOp.pos.customers_bulk_move':      'Bulk move customers to space',
+  'permOp.pos.customers_bulk_duplicate': 'Bulk duplicate customers to space',
 
   'permOp.settings.orgInfo':      'Organization Info',
   'permOp.settings.subscription': 'Subscription',
@@ -1264,6 +1284,10 @@ const ar: Record<keyof typeof en, string> = {
   'spaces.ownersNoteHere':     'المالكون مستثنون — لديهم وصول إلى كل المساحات تلقائيًا.',
   'spaces.gettingStartedTitle': 'لا توجد سوى المساحة الافتراضية.',
   'spaces.gettingStartedDesc':  'أنشئ مساحة أخرى لعزل الفروع أو المستودعات أو المتاجر بشكل كامل. سيرى المستخدمون المفعَّل لديهم «الوصول إلى كل المساحات» كل ما تنشئه.',
+  'spaces.initialMembers':      'منح الوصول',
+  'spaces.initialMembersHint':  'اختر المستخدمين الذين ستمنحهم وصولًا فوريًا للمساحة الجديدة. المالكون (وأي مستخدم مفعّل لديه «الوصول إلى كل المساحات») يحصلون على الوصول تلقائيًا.',
+  'spaces.memberAddPartial':    'تعذّر إضافة {count} عضو/أعضاء — افتح لوحة الأعضاء لإعادة المحاولة.',
+  'spaces.pickSpace':           'اختر مساحة',
 
   'userSpaces.title':          'الوصول إلى المساحات',
   'userSpaces.accessAll':      'الوصول إلى كل المساحات',
@@ -1304,6 +1328,11 @@ const ar: Record<keyof typeof en, string> = {
   'move.transferSuccess':  'تم تحويل {qty} وحدة/وحدات.',
   'move.bulkMove':         'نقل إلى مساحة',
   'bulk.selected':         'محدد {count}',
+  'bulk.delete':           'حذف',
+  'bulk.deleteTitle':      'حذف السجلات المحددة؟',
+  'bulk.deleteDesc':       'سيتم حذف {count} سجل/سجلات نهائيًا. لا يمكن التراجع عن هذا الإجراء.',
+  'bulk.deleteSuccess':    'تم حذف {count} سجل/سجلات.',
+  'bulk.deletePartial':    'تعذّر حذف {count} سجل/سجلات.',
 
   // ── Duplicate-to-space feature ───────────────────────────────────
   'duplicate.button':           'تكرار',
@@ -2210,6 +2239,9 @@ const ar: Record<keyof typeof en, string> = {
   'permOp.assets.checkout':     'إدخال / إخراج',
   'permOp.assets.maintenance':  'سجلات الصيانة',
   'permOp.assets.notes':        'ملاحظات الأصول',
+  'permOp.assets.bulk_delete':    'حذف جماعي للأصول',
+  'permOp.assets.bulk_move':      'نقل جماعي للأصول بين المساحات',
+  'permOp.assets.bulk_duplicate': 'تكرار جماعي للأصول بين المساحات',
 
   'permOp.inventory.view':         'عرض المخزون',
   'permOp.inventory.create':       'إضافة أصناف',
@@ -2217,6 +2249,9 @@ const ar: Record<keyof typeof en, string> = {
   'permOp.inventory.delete':       'حذف الأصناف',
   'permOp.inventory.transactions': 'تسجيل حركات',
   'permOp.inventory.audits':       'إدارة المراجعات',
+  'permOp.inventory.bulk_delete':    'حذف جماعي للأصناف',
+  'permOp.inventory.bulk_move':      'نقل جماعي للأصناف بين المساحات',
+  'permOp.inventory.bulk_duplicate': 'تكرار جماعي للأصناف بين المساحات',
 
   'permOp.warranties.view':   'عرض الضمانات',
   'permOp.warranties.create': 'إضافة ضمانات',
@@ -2226,6 +2261,8 @@ const ar: Record<keyof typeof en, string> = {
   'permOp.requests.view':    'عرض الطلبات',
   'permOp.requests.create':  'تقديم طلبات',
   'permOp.requests.approve': 'موافقة / رفض',
+  'permOp.requests.bulk_move':      'نقل جماعي للطلبات بين المساحات',
+  'permOp.requests.bulk_duplicate': 'تكرار جماعي للطلبات بين المساحات',
 
   'permOp.reports.view':     'عرض التقارير',
   'permOp.support.view':     'عرض التذاكر',
@@ -2247,6 +2284,9 @@ const ar: Record<keyof typeof en, string> = {
   'permOp.pos.void_transaction': 'إلغاء معاملات',
   'permOp.pos.view_reports':     'عرض التقارير',
   'permOp.pos.fawtara_submit':   'إعادة الإرسال إلى Fawtara',
+  'permOp.pos.customers_bulk_delete':    'حذف جماعي للعملاء',
+  'permOp.pos.customers_bulk_move':      'نقل جماعي للعملاء بين المساحات',
+  'permOp.pos.customers_bulk_duplicate': 'تكرار جماعي للعملاء بين المساحات',
 
   'permOp.settings.orgInfo':      'معلومات المنظمة',
   'permOp.settings.subscription': 'الاشتراك',

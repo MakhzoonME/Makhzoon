@@ -9,6 +9,9 @@ export interface AssetPermissions {
   checkout: boolean;
   maintenance: boolean;
   notes: boolean;
+  bulk_delete: boolean;
+  bulk_move: boolean;
+  bulk_duplicate: boolean;
 }
 
 export interface InventoryPermissions {
@@ -18,6 +21,9 @@ export interface InventoryPermissions {
   delete: boolean;
   transactions: boolean;
   audits: boolean;
+  bulk_delete: boolean;
+  bulk_move: boolean;
+  bulk_duplicate: boolean;
 }
 
 export interface WarrantyPermissions {
@@ -31,6 +37,8 @@ export interface RequestPermissions {
   view: boolean;
   create: boolean;
   approve: boolean;
+  bulk_move: boolean;
+  bulk_duplicate: boolean;
 }
 
 export interface ReportsPermissions {
@@ -55,6 +63,9 @@ export interface PosPermissions {
   void_transaction: boolean;
   view_reports: boolean;
   fawtara_submit: boolean;
+  customers_bulk_delete: boolean;
+  customers_bulk_move: boolean;
+  customers_bulk_duplicate: boolean;
 }
 
 export interface PurchasePermissions {
@@ -93,30 +104,30 @@ export interface UserPermissions {
 }
 
 export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
-  assets:    { view: true,  create: true,  update: true,  delete: true,  import: true,  checkout: true,  maintenance: true,  notes: true  },
-  inventory: { view: true,  create: true,  update: true,  delete: true,  transactions: true,  audits: true  },
+  assets:    { view: true,  create: true,  update: true,  delete: true,  import: true,  checkout: true,  maintenance: true,  notes: true,  bulk_delete: true,  bulk_move: true,  bulk_duplicate: true  },
+  inventory: { view: true,  create: true,  update: true,  delete: true,  transactions: true,  audits: true,  bulk_delete: true,  bulk_move: true,  bulk_duplicate: true  },
   purchases: { view: true,  create: true,  update: true,  delete: true,  receive: true },
   warranties:{ view: true,  create: true,  update: true,  delete: true  },
-  requests:  { view: true,  create: true,  approve: true  },
+  requests:  { view: true,  create: true,  approve: true,  bulk_move: true,  bulk_duplicate: true  },
   reports:   { view: true  },
   support:   { view: true,  create: true  },
   auditLogs: { view: true  },
   leads:     { view: true  },
-  pos:       { open_session: true, close_session: true, process_sale: true, apply_discount: true, issue_refund: true, void_transaction: true, view_reports: true, fawtara_submit: true },
+  pos:       { open_session: true, close_session: true, process_sale: true, apply_discount: true, issue_refund: true, void_transaction: true, view_reports: true, fawtara_submit: true, customers_bulk_delete: true, customers_bulk_move: true, customers_bulk_duplicate: true },
   settings:  { view: true,  orgInfo: true,  subscription: true,  users: true,  taxRates: true,  fawtara: true  },
 };
 
 export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
-  assets:    { view: true,  create: false, update: false, delete: false, import: false, checkout: false, maintenance: false, notes: false },
-  inventory: { view: true,  create: false, update: false, delete: false, transactions: false, audits: false },
+  assets:    { view: true,  create: false, update: false, delete: false, import: false, checkout: false, maintenance: false, notes: false, bulk_delete: false, bulk_move: false, bulk_duplicate: false },
+  inventory: { view: true,  create: false, update: false, delete: false, transactions: false, audits: false, bulk_delete: false, bulk_move: false, bulk_duplicate: false },
   purchases: { view: false, create: false, update: false, delete: false, receive: false },
   warranties:{ view: true,  create: false, update: false, delete: false },
-  requests:  { view: true,  create: true,  approve: false },
+  requests:  { view: true,  create: true,  approve: false, bulk_move: false, bulk_duplicate: false },
   reports:   { view: false },
   support:   { view: true,  create: true },
   auditLogs: { view: false },
   leads:     { view: true  },
-  pos:       { open_session: false, close_session: false, process_sale: false, apply_discount: false, issue_refund: false, void_transaction: false, view_reports: false, fawtara_submit: false },
+  pos:       { open_session: false, close_session: false, process_sale: false, apply_discount: false, issue_refund: false, void_transaction: false, view_reports: false, fawtara_submit: false, customers_bulk_delete: false, customers_bulk_move: false, customers_bulk_duplicate: false },
   settings:  { view: false, orgInfo: false, subscription: false, users: false, taxRates: false, fawtara: false },
 };
 
@@ -163,14 +174,17 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     featureKey: 'assets',
     group: 'core',
     operations: [
-      { key: 'view',        label: 'View Assets',         labelKey: 'permOp.assets.view' },
-      { key: 'create',      label: 'Add Assets',          labelKey: 'permOp.assets.create',      requiresView: true },
-      { key: 'update',      label: 'Edit Assets',         labelKey: 'permOp.assets.update',      requiresView: true },
-      { key: 'delete',      label: 'Delete Assets',       labelKey: 'permOp.assets.delete',      requiresView: true },
-      { key: 'import',      label: 'Import Assets',       labelKey: 'permOp.assets.import',      requiresView: true },
-      { key: 'checkout',    label: 'Check In / Out',      labelKey: 'permOp.assets.checkout',    requiresView: true },
-      { key: 'maintenance', label: 'Maintenance Records', labelKey: 'permOp.assets.maintenance', requiresView: true },
-      { key: 'notes',       label: 'Asset Notes',         labelKey: 'permOp.assets.notes',       requiresView: true },
+      { key: 'view',           label: 'View Assets',         labelKey: 'permOp.assets.view' },
+      { key: 'create',         label: 'Add Assets',          labelKey: 'permOp.assets.create',         requiresView: true },
+      { key: 'update',         label: 'Edit Assets',         labelKey: 'permOp.assets.update',         requiresView: true },
+      { key: 'delete',         label: 'Delete Assets',       labelKey: 'permOp.assets.delete',         requiresView: true },
+      { key: 'import',         label: 'Import Assets',       labelKey: 'permOp.assets.import',         requiresView: true },
+      { key: 'checkout',       label: 'Check In / Out',      labelKey: 'permOp.assets.checkout',       requiresView: true },
+      { key: 'maintenance',    label: 'Maintenance Records', labelKey: 'permOp.assets.maintenance',    requiresView: true },
+      { key: 'notes',           label: 'Asset Notes',         labelKey: 'permOp.assets.notes',         requiresView: true },
+      { key: 'bulk_delete',    label: 'Bulk delete',         labelKey: 'permOp.assets.bulk_delete',    requiresView: true },
+      { key: 'bulk_move',      label: 'Bulk move to space',  labelKey: 'permOp.assets.bulk_move',      requiresView: true },
+      { key: 'bulk_duplicate', label: 'Bulk duplicate to space', labelKey: 'permOp.assets.bulk_duplicate', requiresView: true },
     ],
   },
   {
@@ -180,12 +194,15 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     featureKey: 'inventory',
     group: 'core',
     operations: [
-      { key: 'view',         label: 'View Inventory',      labelKey: 'permOp.inventory.view' },
-      { key: 'create',       label: 'Add Items',           labelKey: 'permOp.inventory.create',       requiresView: true },
-      { key: 'update',       label: 'Edit Items',          labelKey: 'permOp.inventory.update',       requiresView: true },
-      { key: 'delete',       label: 'Delete Items',        labelKey: 'permOp.inventory.delete',       requiresView: true },
-      { key: 'transactions', label: 'Record Transactions', labelKey: 'permOp.inventory.transactions', requiresView: true },
-      { key: 'audits',       label: 'Manage Audits',       labelKey: 'permOp.inventory.audits',       requiresView: true },
+      { key: 'view',           label: 'View Inventory',      labelKey: 'permOp.inventory.view' },
+      { key: 'create',         label: 'Add Items',           labelKey: 'permOp.inventory.create',         requiresView: true },
+      { key: 'update',         label: 'Edit Items',          labelKey: 'permOp.inventory.update',         requiresView: true },
+      { key: 'delete',         label: 'Delete Items',        labelKey: 'permOp.inventory.delete',         requiresView: true },
+      { key: 'transactions',   label: 'Record Transactions', labelKey: 'permOp.inventory.transactions',   requiresView: true },
+      { key: 'audits',         label: 'Manage Audits',       labelKey: 'permOp.inventory.audits',         requiresView: true },
+      { key: 'bulk_delete',    label: 'Bulk delete',         labelKey: 'permOp.inventory.bulk_delete',    requiresView: true },
+      { key: 'bulk_move',      label: 'Bulk move to space',  labelKey: 'permOp.inventory.bulk_move',      requiresView: true },
+      { key: 'bulk_duplicate', label: 'Bulk duplicate to space', labelKey: 'permOp.inventory.bulk_duplicate', requiresView: true },
     ],
   },
   {
@@ -208,9 +225,11 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     featureKey: 'requests',
     group: 'workflow',
     operations: [
-      { key: 'view',    label: 'View Requests',    labelKey: 'permOp.requests.view' },
-      { key: 'create',  label: 'Submit Requests',  labelKey: 'permOp.requests.create',  requiresView: true },
-      { key: 'approve', label: 'Approve / Reject', labelKey: 'permOp.requests.approve', requiresView: true },
+      { key: 'view',           label: 'View Requests',    labelKey: 'permOp.requests.view' },
+      { key: 'create',         label: 'Submit Requests',  labelKey: 'permOp.requests.create',          requiresView: true },
+      { key: 'approve',        label: 'Approve / Reject', labelKey: 'permOp.requests.approve',         requiresView: true },
+      { key: 'bulk_move',      label: 'Bulk move to space',  labelKey: 'permOp.requests.bulk_move',      requiresView: true },
+      { key: 'bulk_duplicate', label: 'Bulk duplicate to space', labelKey: 'permOp.requests.bulk_duplicate', requiresView: true },
     ],
   },
   {
@@ -274,14 +293,17 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     featureKey: 'pos',
     group: 'commerce',
     operations: [
-      { key: 'open_session',      label: 'Open Session',        labelKey: 'permOp.pos.open_session' },
-      { key: 'close_session',     label: 'Close Session',       labelKey: 'permOp.pos.close_session' },
-      { key: 'process_sale',      label: 'Process Sales',       labelKey: 'permOp.pos.process_sale' },
-      { key: 'apply_discount',    label: 'Apply Discounts',     labelKey: 'permOp.pos.apply_discount' },
-      { key: 'issue_refund',      label: 'Issue Refunds',       labelKey: 'permOp.pos.issue_refund' },
-      { key: 'void_transaction',  label: 'Void Transactions',   labelKey: 'permOp.pos.void_transaction' },
-      { key: 'view_reports',      label: 'View Reports',        labelKey: 'permOp.pos.view_reports' },
-      { key: 'fawtara_submit',    label: 'Resubmit to Fawtara', labelKey: 'permOp.pos.fawtara_submit' },
+      { key: 'open_session',             label: 'Open Session',        labelKey: 'permOp.pos.open_session' },
+      { key: 'close_session',            label: 'Close Session',       labelKey: 'permOp.pos.close_session' },
+      { key: 'process_sale',             label: 'Process Sales',       labelKey: 'permOp.pos.process_sale' },
+      { key: 'apply_discount',           label: 'Apply Discounts',     labelKey: 'permOp.pos.apply_discount' },
+      { key: 'issue_refund',             label: 'Issue Refunds',       labelKey: 'permOp.pos.issue_refund' },
+      { key: 'void_transaction',         label: 'Void Transactions',   labelKey: 'permOp.pos.void_transaction' },
+      { key: 'view_reports',             label: 'View Reports',        labelKey: 'permOp.pos.view_reports' },
+      { key: 'fawtara_submit',           label: 'Resubmit to Fawtara', labelKey: 'permOp.pos.fawtara_submit' },
+      { key: 'customers_bulk_delete',    label: 'Bulk delete customers',          labelKey: 'permOp.pos.customers_bulk_delete' },
+      { key: 'customers_bulk_move',      label: 'Bulk move customers to space',   labelKey: 'permOp.pos.customers_bulk_move' },
+      { key: 'customers_bulk_duplicate', label: 'Bulk duplicate customers',       labelKey: 'permOp.pos.customers_bulk_duplicate' },
     ],
   },
   {

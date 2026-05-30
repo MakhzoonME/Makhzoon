@@ -8,7 +8,10 @@ import {
   useAllSpaces,
   useCreateSpace,
   useUpdateSpace,
+  useAddSpaceMember,
 } from '@/hooks/spaces';
+import { useUsers } from '@/hooks/users';
+import type { OrgUser } from '@/types/user.types';
 import { PageHeader, DataTable, StatusBadge, FormDrawer, ConfirmDialog } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
 import { Button } from '@/components/ui/button';
@@ -23,6 +26,7 @@ export default function SpacesSettingsPage() {
   const { data, isLoading } = useAllSpaces();
   const createMut = useCreateSpace();
   const updateMut = useUpdateSpace();
+  const addMemberMut = useAddSpaceMember();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [renameTarget, setRenameTarget] = useState<Space | null>(null);
@@ -147,12 +151,30 @@ export default function SpacesSettingsPage() {
         <CreateSpaceForm
           onCancel={() => setCreateOpen(false)}
           onSubmit={(values) => {
-            createMut.mutate(values, {
-              onSuccess: () => { toast.success(t('spaces.created')); setCreateOpen(false); },
-              onError: (e) => toast.error((e as Error).message),
-            });
+            createMut.mutate(
+              { name: values.name, slug: values.slug },
+              {
+                onSuccess: async (res) => {
+                  const created = res.space;
+                  // Best-effort member adds — failures don't block the success toast,
+                  // but they're reported individually.
+                  if (values.memberIds.length > 0) {
+                    const results = await Promise.allSettled(
+                      values.memberIds.map((uid) =>
+                        addMemberMut.mutateAsync({ spaceId: created.id, userId: uid }),
+                      ),
+                    );
+                    const failed = results.filter((r) => r.status === 'rejected').length;
+                    if (failed > 0) toast.error(t('spaces.memberAddPartial').replace('{count}', String(failed)));
+                  }
+                  toast.success(t('spaces.created'));
+                  setCreateOpen(false);
+                },
+                onError: (e) => toast.error((e as Error).message),
+              },
+            );
           }}
-          submitting={createMut.isPending}
+          submitting={createMut.isPending || addMemberMut.isPending}
         />
       </FormDrawer>
 
@@ -213,16 +235,31 @@ export default function SpacesSettingsPage() {
 function CreateSpaceForm({
   onSubmit, onCancel, submitting,
 }: {
-  onSubmit: (v: { name: string; slug?: string }) => void;
+  onSubmit: (v: { name: string; slug?: string; memberIds: string[] }) => void;
   onCancel: () => void;
   submitting: boolean;
 }) {
   const { t } = useT();
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
+  const [memberIds, setMemberIds] = useState<Set<string>>(new Set());
+  const { data: usersRaw = [] as OrgUser[] } = useUsers() as { data: OrgUser[] | undefined };
+  // Owners already see every space via the all_spaces flag — no membership row needed.
+  const eligibleUsers = (usersRaw ?? []).filter(
+    (u) => u.role !== 'org_owner' && u.status !== 'deactivated',
+  );
 
   function suggestSlug(v: string) {
     return v.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+
+  function toggleMember(id: string) {
+    setMemberIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
   return (
@@ -230,7 +267,7 @@ function CreateSpaceForm({
       className="space-y-4"
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit({ name, slug: slug || undefined });
+        onSubmit({ name, slug: slug || undefined, memberIds: [...memberIds] });
       }}
     >
       <div>
@@ -256,6 +293,37 @@ function CreateSpaceForm({
           placeholder="branch-1"
         />
         <p className="text-xs text-gray-500 mt-1">{t('spaces.slugHelp')}</p>
+      </div>
+
+      {/* Initial members */}
+      <div>
+        <Label>{t('spaces.initialMembers')}</Label>
+        <p className="text-xs text-gray-500 mt-0.5 mb-2">{t('spaces.initialMembersHint')}</p>
+        {eligibleUsers.length === 0 ? (
+          <p className="text-xs text-gray-500">{t('spaces.noEligibleUsers')}</p>
+        ) : (
+          <div className="rounded-lg border border-border max-h-48 overflow-y-auto divide-y divide-border bg-surface-card">
+            {eligibleUsers.map((u) => {
+              const checked = memberIds.has(u.id);
+              return (
+                <label key={u.id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-surface-page">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleMember(u.id)}
+                    className="h-4 w-4 rounded border-border accent-primary-600"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm text-gray-900 truncate">{u.displayName || u.email || u.username}</p>
+                    {u.displayName && (u.email || u.username) && (
+                      <p className="text-xs text-gray-500 truncate">{u.email ?? u.username}</p>
+                    )}
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        )}
       </div>
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel}>{t('common.cancel')}</Button>

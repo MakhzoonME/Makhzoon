@@ -31,7 +31,7 @@ export default function SessionDetailPage(props: Props) {
 
   const form = useForm<CloseSessionFormData>({
     resolver: zodResolver(closeSessionSchema),
-    defaultValues: { closingFloat: 0, notes: '' },
+    defaultValues: { closingFloat: '' as unknown as number, notes: '' },
   });
 
   const counted = form.watch('closingFloat');
@@ -141,10 +141,12 @@ export default function SessionDetailPage(props: Props) {
                           type="number"
                           step="0.01"
                           min="0"
+                          placeholder="0"
                           autoFocus
                           {...field}
+                          value={field.value === 0 && field.value !== undefined ? '' : field.value}
                           onChange={(e) =>
-                            field.onChange(e.target.value === '' ? 0 : Number(e.target.value))
+                            field.onChange(e.target.value === '' ? '' : Number(e.target.value))
                           }
                         />
                       </FormControl>

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Inbox, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import { PageHeader, StatCard, OverviewSection, DataTable, StatusBadge } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
 import { formatDate } from '@/lib/utils/date';
@@ -90,6 +91,7 @@ export default function RequestsOverviewPage() {
   const orgSlug = useOrgSlug();
   const space = useSpace();
   const { t, locale } = useT();
+  const { data: orgInfo } = useOrgInfo();
   const { data, isLoading } = useRequestsOverview(space);
 
   const total = data?.total ?? 0;
@@ -117,7 +119,15 @@ export default function RequestsOverviewPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('nav.requests')} description={t('overview.requests.subtitle')} />
+      <PageHeader
+        title={t('nav.requests')}
+        description={t('overview.requests.subtitle')}
+        breadcrumb={[
+          { label: orgInfo?.name ?? orgSlug },
+          { label: space },
+          { label: t('nav.requests') },
+        ]}
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 // useEffect retained for debounced-search → URL commit only.
 import { Plus, Pencil, Trash2, Upload, ArrowRight, Copy } from 'lucide-react';
+import { useOrgInfo } from '@/hooks/org';
 import { useQuery } from '@tanstack/react-query';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
@@ -16,8 +17,6 @@ import { FilterBar } from '@/components/shared/FilterBar';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ExportButton } from '@/components/shared/ExportButton';
-import { FormDrawer } from '@/components/shared/FormDrawer';
-import { AssetForm } from '@/components/assets/AssetForm';
 import { ImportAssetsDrawer } from '@/components/assets/ImportAssetsDrawer';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -89,6 +88,7 @@ export default function AssetsListPage() {
   const { user } = useAuthStore();
   const qc = useQueryClient();
   const { t, locale } = useT();
+  const { data: orgInfo } = useOrgInfo();
 
   const search = searchParams.get('search') ?? '';
   const status = searchParams.get('status') ?? '';
@@ -101,11 +101,7 @@ export default function AssetsListPage() {
   const [searchInput, setSearchInput] = useState(search);
   const [actionTarget, setActionTarget] = useState<Asset | null>(null);
   const [actioning, setActioning] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<Asset | null>(null);
   const [importOpen, setImportOpen] = useState(false);
-  const [formDirty, setFormDirty] = useState(false);
-  const [showDiscardDrawer, setShowDiscardDrawer] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [moveOpen, setMoveOpen] = useState(false);
   const [dupeOpen, setDupeOpen] = useState(false);
@@ -114,20 +110,6 @@ export default function AssetsListPage() {
   const { data: spaceList } = useAccessibleSpaces();
   const hasMultipleSpaces = (spaceList?.items?.length ?? 0) > 1;
 
-  function closeDrawer() { setDrawerOpen(false); setEditTarget(null); setFormDirty(false); }
-  function handleDrawerCloseRequest() {
-    if (formDirty) { setShowDiscardDrawer(true); } else { closeDrawer(); }
-  }
-
-  // Open create drawer when navigated here with ?new=true
-  useEffect(() => {
-    if (searchParams.get('new') === 'true') {
-      setEditTarget(null);
-      setDrawerOpen(true);
-      router.replace(pathname, { scroll: false });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const { data: summary } = useAssetSummary(space);
 
@@ -224,7 +206,7 @@ export default function AssetsListPage() {
                 <SubscriptionGate>
                   <Button size="sm" variant="ghost" aria-label={t('common.edit')}
                     className="transition-colors duration-150"
-                    onClick={(e) => { e.stopPropagation(); setEditTarget(a); setDrawerOpen(true); }}>
+                    onClick={(e) => { e.stopPropagation(); router.push(`/${locale}/${orgSlug}/${space}/usool/${a.id}/edit`); }}>
                     <Pencil aria-hidden className="w-3.5 h-3.5" />
                   </Button>
                 </SubscriptionGate>
@@ -331,10 +313,11 @@ export default function AssetsListPage() {
   return (
     <div>
       <PageHeader
-        title={t('nav.assetsList')}
+        title={t('nav.assets')}
         breadcrumb={[
-          { label: t('nav.assets'), href: `/${locale}/${orgSlug}/${space}/usool` },
-          { label: t('nav.assetsList'), href: `/${locale}/${orgSlug}/${space}/usool/list` },
+          { label: orgInfo?.name ?? orgSlug },
+          { label: space },
+          { label: t('nav.assets'), href: `/${locale}/${orgSlug}/${space}/usool/list` },
         ]}
         actions={
           <div className="flex items-center gap-2">
@@ -347,7 +330,7 @@ export default function AssetsListPage() {
             )}
             {canCreateAsset && (
               <SubscriptionGate>
-                <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
+                <Button size="sm" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/new`)}>
                   <Plus aria-hidden className="w-4 h-4" /><span className="ms-1">{t('assets.addAsset')}</span>
                 </Button>
               </SubscriptionGate>
@@ -462,30 +445,6 @@ export default function AssetsListPage() {
         loading={actioning}
       />
 
-      <FormDrawer
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-        onCloseAttempt={handleDrawerCloseRequest}
-        title={editTarget ? t('common.edit') : t('assets.addAsset')}
-      >
-        <AssetForm
-          asset={editTarget ?? undefined}
-          onSuccess={closeDrawer}
-          onCancel={handleDrawerCloseRequest}
-          onDirtyChange={setFormDirty}
-        />
-      </FormDrawer>
-
-      <ConfirmDialog
-        open={showDiscardDrawer}
-        onOpenChange={setShowDiscardDrawer}
-        title={t('common.discardTitle')}
-        description={t('common.discardDesc')}
-        confirmLabel={t('common.discard')}
-        cancelLabel={t('common.keepEditing')}
-        onConfirm={() => { setShowDiscardDrawer(false); closeDrawer(); }}
-        variant="destructive"
-      />
 
       <ConfirmDialog
         open={bulkDeleteOpen}

@@ -18,6 +18,7 @@ import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
 import { Asset, Warranty } from '@/types';
 import { RequestActionPanel } from '@/components/assets/RequestActionPanel';
 import { Pencil, Archive, Trash2, ArrowRight, Copy } from 'lucide-react';
+import { useOrgInfo } from '@/hooks/org';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
 import { useAccessibleSpaces } from '@/hooks/spaces';
@@ -26,7 +27,6 @@ import { MaintenanceSection } from '@/components/assets/MaintenanceSection';
 import { CheckoutSection } from '@/components/assets/CheckoutSection';
 import { AssetQRCard } from '@/components/assets/AssetQRCard';
 import { FormDrawer } from '@/components/shared/FormDrawer';
-import { AssetForm } from '@/components/assets/AssetForm';
 import { WarrantyForm } from '@/components/warranties/WarrantyForm';
 import { toast } from '@/hooks/ui';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
@@ -150,6 +150,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
   const { user } = useAuthStore();
   const qc = useQueryClient();
 
+  const { data: orgInfo } = useOrgInfo();
   const { data: asset, isLoading, error } = useAsset(assetId);
   const { data: warrantiesResponse, isLoading: wLoading } = useWarranties({ assetId });
   const warranties = warrantiesResponse?.items ?? [];
@@ -157,7 +158,6 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
   const [activeTab, setActiveTab] = useState('details');
   const [showRetire, setShowRetire] = useState(false);
   const [retiring, setRetiring] = useState(false);
-  const [editAssetOpen, setEditAssetOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
   const [dupeOpen, setDupeOpen] = useState(false);
   const [editWarrantyTarget, setEditWarrantyTarget] = useState<Warranty | null>(null);
@@ -228,13 +228,15 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
       <PageHeader
         title={asset.name}
         breadcrumb={[
-          { label: t('nav.assets'), href: `/${locale}/${orgSlug}/${space}/usool` },
-          { label: asset.name,      href: `/${locale}/${orgSlug}/${space}/usool/${assetId}` },
+          { label: orgInfo?.name ?? orgSlug },
+          { label: space },
+          { label: t('nav.assets'), href: `/${locale}/${orgSlug}/${space}/usool/list` },
+          { label: asset.name, href: `/${locale}/${orgSlug}/${space}/usool/${assetId}` },
         ]}
         actions={isAdmin ? (
           <div className="flex gap-2 flex-wrap">
             {asset.status !== 'Retired' && (
-              <Button variant="outline" size="sm" onClick={() => setEditAssetOpen(true)}>
+              <Button variant="outline" size="sm" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/${assetId}/edit`)}>
                 <Pencil aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ms-1">{t('common.edit')}</span>
               </Button>
             )}
@@ -478,10 +480,6 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
         onConfirm={handleRetire}
         loading={retiring}
       />
-
-      <FormDrawer open={editAssetOpen} onOpenChange={setEditAssetOpen} title={t('assets.editAsset')}>
-        <AssetForm asset={asset} onSuccess={() => setEditAssetOpen(false)} />
-      </FormDrawer>
 
       <FormDrawer
         open={!!editWarrantyTarget}

@@ -377,7 +377,7 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
                       </Button>
                     ) : (
                       <Button variant="ghost" size="icon" onClick={() => hideDefault(item)} aria-label="Hide for this org">
-                        <Trash2 className="h-4 w-4 text-orange-400" title="Hide for this org" />
+                        <Trash2 className="h-4 w-4 text-orange-400" />
                       </Button>
                     )}
                     {/* Override label/color for this org */}

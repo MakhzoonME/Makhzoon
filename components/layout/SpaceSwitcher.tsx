@@ -53,14 +53,14 @@ export function SpaceSwitcher() {
         <button
           className={cn(
             'inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-sm',
-            'text-gray-700 dark:text-gray-200 hover:bg-surface-page transition-colors',
+            'text-gray-700 dark:text-gray-100 hover:bg-surface-page transition-colors',
             'focus:outline-none focus:ring-[3px] focus:ring-primary-500/20',
           )}
           aria-label={t('spaces.switcher')}
         >
-          <Layers className="h-3.5 w-3.5 text-gray-500" strokeWidth={1.75} />
-          <span className="font-medium max-w-[140px] truncate">{label}</span>
-          <ChevronsUpDown className="h-3.5 w-3.5 text-gray-400" strokeWidth={1.75} />
+          <Layers className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" strokeWidth={1.75} />
+          <span className="font-medium max-w-[140px] truncate text-gray-700 dark:text-gray-100">{label}</span>
+          <ChevronsUpDown className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" strokeWidth={1.75} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[200px]">

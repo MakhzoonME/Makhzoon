@@ -79,9 +79,10 @@ function getGreetingKey(): 'greeting.morning' | 'greeting.afternoon' | 'greeting
 }
 
 /* ── Data fetcher ────────────────────────────────────────────────── */
-function useDashboard() {
+function useDashboard(spaceSlug: string | null) {
   return useQuery({
-    queryKey: ['dashboard'],
+    queryKey: ['dashboard', spaceSlug],
+    enabled: !!spaceSlug,
     queryFn: async () => {
       const [assetsRes, warrantiesRes, requestsRes, auditRes] = await Promise.all([
         fetch('/api/assets'),
@@ -404,7 +405,7 @@ export default function DashboardPage() {
   const orgSlug = useOrgSlug();
   const space = useSpace();
   const { user } = useAuthStore();
-  const { data, isLoading } = useDashboard();
+  const { data, isLoading } = useDashboard(space);
   const { t, locale } = useT();
 
   const firstName = (user?.displayName ?? user?.email ?? 'there').split(/[\s@]/)[0];

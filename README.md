@@ -1,12 +1,133 @@
 # Makhzoon
 
-Multi-tenant SaaS for asset and warranty management. Built on **Next.js 14 (App Router)**, **TypeScript**, **Firebase (Auth + Firestore)**, **Tailwind**, **shadcn/ui**, **Zustand**, **TanStack Query**, and **React Hook Form + Zod**.
+Multi-tenant SaaS platform for asset management, inventory, and point-of-sale. Built on **Next.js 16 (App Router)**, **TypeScript**, **Supabase (Postgres + Auth + RLS)**, **Tailwind CSS**, **shadcn/ui**, **Zustand**, and **TanStack Query v5**.
+
+---
 
 ## Roles
 
-- **super_admin** — owns the platform; creates organizations, manages subscriptions, views audit logs across tenants.
-- **admin** — per-organization admin; manages users, assets, warranties, approves/rejects staff requests.
-- **staff** — consumes assets in their org; can file add/update/retire requests that admins must approve.
+| Role | Scope |
+|------|-------|
+| `super_admin` | Platform-wide: manages organizations, subscriptions, audit logs, backend logs, sync, leads |
+| `admin` | Per-organization: manages users, spaces, modules, permissions, billing |
+| `staff` | Per-space: consumes modules based on per-module permissions granted by admin |
+
+---
+
+## Architecture
+
+### Multi-tenancy model
+
+URL structure: `/{locale}/{orgSlug}/{spaceSlug}/{module}`
+
+- **Organizations** — top-level tenants. Each org has its own data, users, and spaces.
+- **Spaces** — sub-units within an org (e.g. a branch, a department). All module data is scoped to a space.
+- **RLS** — every Supabase table is protected by Row-Level Security policies enforcing org/space isolation.
+- **Permissions** — per-user, per-module, per-space permissions stored in `user_permissions`. Evaluated server-side via `lib/permissions/`.
+
+### Auth
+
+Supabase Auth (email/password + magic link). Server-side session management via `@supabase/ssr`. Session cache lives in `lib/supabase/session-cache.ts`; revocation in `lib/supabase/session-revocation.ts`.
+
+Custom claims carry `role` and `organization_id`; enforced by both RLS and API route guards in `lib/middleware/`.
+
+### Localization
+
+Two locales: `en` (default) and `ar`. All strings in `locales/messages.ts`. Locale is detected from cookie (`makhzoon-locale`), defaulting to `en`. RTL layout is handled at the root layout level.
+
+### Middleware
+
+`middleware.ts` routes traffic based on hostname:
+- `makhzoon.me` / `www.makhzoon.me` → marketing site
+- `app.makhzoon.me` / `dev.makhzoon.me` / `stg.makhzoon.me` → app
+
+---
+
+## Modules (per-space)
+
+| Module | Path | Description |
+|--------|------|-------------|
+| **Dashboard** | `/dashboard` | Space-level overview |
+| **Usool** (Assets) | `/usool` | Fixed asset tracking, checkout, notes, audits, import |
+| **Raseed** (Inventory) | `/raseed` | Inventory items, purchases, stock audits, reconcile |
+| **Haraka** (POS) | `/haraka` | Point-of-sale register, sessions, customers, transactions, reports |
+| **Warranties** | `/warranties` | Warranty tracking |
+| **Requests** | `/requests` | Staff requests (add/update/retire assets) |
+| **Reports** | `/reports` | Cross-module reporting |
+| **Audit Logs** | `/audit-logs` | Space/org-scoped mutation trail |
+
+---
+
+## Project layout
+
+```
+app/
+  [locale]/
+    (auth)/               — login, signup, invites
+    (marketing)/          — marketing pages
+    [orgSlug]/
+      [space]/            — per-space module pages
+        dashboard/
+        usool/            — assets: list, new, [assetId], audits, import
+        raseed/           — inventory: list, new, [itemId], purchases, audits
+        haraka/           — POS: register, sessions, customers, transactions, reports
+        warranties/
+        requests/
+        reports/
+        audit-logs/
+      settings/           — org settings
+      users/              — org user management
+      subscription/
+      support/
+      profile/
+    superadmin/           — platform admin: orgs, leads, team, config, audit-logs, backend-logs, sync
+
+components/
+  ui/                     — shadcn primitives
+  shared/                 — DataTable, FilterBar, PageHeader, StatusBadge, ConfirmDialog, BulkActionsBar, etc.
+  haraka/                 — POS-specific components (Cart, ProductGrid, PaymentDialog, etc.)
+  inventory/              — InventoryItemForm, RequestInventoryModal, stock-audits, purchases
+  layout/                 — Sidebar, TopBar, SpaceSwitcher, TransferModeBanner, BreadcrumbNav
+  spaces/                 — Spaces panel, Members panel
+  features/               — audit, subscription
+
+lib/
+  supabase/               — client, server, admin, auth helpers, session cache/revocation
+  db/                     — typed Supabase data-access layer
+  permissions/            — require.ts, index.ts (server-side permission evaluation)
+  modules/                — per-module metadata (assets, inventory, haraka, warranties, requests, etc.)
+  middleware/             — withAuth, withRole, CSRF
+  nav/                    — navigation config
+  audit/                  — audit logger
+  services/               — business logic services
+  export/                 — CSV export helpers
+  platform/               — platform-level utilities
+  compliance/             — compliance checks
+
+hooks/
+  assets, haraka, inventory, spaces, requests, users, warranties, org, lists, superadmin, support, ui
+
+store/
+  auth.store.ts           — current user + org
+  active-space.store.ts   — active space context
+  transfer.store.ts       — super_admin transfer mode
+  pos-cart.store.ts       — POS cart state
+  printer.store.ts        — receipt printer settings
+  locale.store.ts         — active locale
+  theme.store.ts          — light/dark preference
+  ui.store.ts             — misc UI state
+
+types/                    — domain types for every entity
+
+workers/
+  cron/                   — scheduled background workers
+
+supabase/
+  migrations/             — SQL migration files
+  combined.sql            — full schema snapshot
+```
+
+---
 
 ## Setup
 
@@ -18,89 +139,45 @@ npm install
 
 ### 2. Fill in `.env.local`
 
-The repo has `.env.local` with client keys already populated. Three values still need to be filled manually:
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (server-only) |
 
-| Variable | Where to get it |
-| --- | --- |
-| `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase Console → Project settings → General → **Your apps** → Web app → **App ID** |
-| `FIREBASE_CLIENT_EMAIL` | Firebase Console → Project settings → **Service accounts** → Generate new private key → `client_email` in JSON |
-| `FIREBASE_PRIVATE_KEY` | Same JSON → `private_key` (paste the whole `-----BEGIN...END-----` block, wrapped in double quotes, keeping `\n` as literal escapes) |
-
-Example of `FIREBASE_PRIVATE_KEY` formatting:
-```
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEv...\n-----END PRIVATE KEY-----\n"
-```
-The admin SDK normalizes `\n` back to real newlines — see [lib/firebase/admin.ts:18](lib/firebase/admin.ts#L18).
-
-### 3. Deploy Firestore rules and indexes
+### 3. Apply migrations
 
 ```bash
-firebase deploy --only firestore:rules,firestore:indexes
+supabase db push
+# or apply supabase/combined.sql directly on a fresh project
 ```
 
-Rules live in [firestore.rules](firestore.rules); compound indexes in [firestore.indexes.json](firestore.indexes.json).
-
-### 4. Seed the first super admin
-
-Create a user in Firebase Auth, then from the Admin SDK (or a one-off script) set the custom claim:
-
-```ts
-await admin.auth().setCustomUserClaims(uid, { role: 'super_admin' });
-```
-
-All other roles (admin, staff) are provisioned via the app UI once you're signed in as super_admin.
-
-### 5. Run the dev server
+### 4. Run dev server
 
 ```bash
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open `http://localhost:3000`.
+
+---
 
 ## Scripts
 
 | Command | Description |
-| --- | --- |
+|---------|-------------|
 | `npm run dev` | Start dev server |
 | `npm run build` | Production build |
 | `npm run start` | Run production build |
 | `npm run lint` | ESLint |
 
-## Project layout
+---
 
-```
-app/
-  (auth)/login            — sign-in
-  (app)/                  — admin + staff app (dashboard, assets, warranties, requests, users, subscription)
-  (super-admin)/          — super admin (organizations, audit logs)
-  api/                    — server routes (validate claims, call Admin SDK)
-components/
-  ui/                     — shadcn primitives
-  shared/                 — DataTable, FilterBar, PageHeader, StatusBadge, ConfirmDialog, etc.
-  assets/, warranties/, users/, layout/
-lib/
-  firebase/               — client + admin SDK init
-  firestore/              — typed data access (assets, warranties, users, orgs, requests, audit logs)
-  middleware/             — withAuth, withRole
-  audit/, export/, utils/, validations/
-hooks/                    — useAuth, useAssets, useWarranties, useRequests, useUsers, useOrganization, useTransferMode, useAuditLogs
-store/                    — Zustand: auth.store, transfer.store
-types/                    — domain types
-```
+## Key patterns
 
-## Multi-tenancy model
-
-Every tenant doc carries `organizationId`. Custom claims (`role`, `organizationId`) are set on the Firebase ID token by the super_admin flow and enforced by both:
-- Firestore rules ([firestore.rules](firestore.rules))
-- Next.js API route guards ([lib/middleware/withAuth.ts](lib/middleware/withAuth.ts), [lib/middleware/withRole.ts](lib/middleware/withRole.ts))
-
-Super admins may "transfer mode" into an org to act on its behalf; the transfer banner ([components/layout/TransferModeBanner.tsx](components/layout/TransferModeBanner.tsx)) makes that state visible, and the store lives at [store/transfer.store.ts](store/transfer.store.ts).
-
-## Audit trail
-
-Every mutating API route writes to `auditLogs` via [lib/audit/logger.ts](lib/audit/logger.ts). Super admin sees all logs; org admins see their own via [app/(super-admin)/super-admin/audit-logs/page.tsx](app/(super-admin)/super-admin/audit-logs/page.tsx).
-
-## CSV export
-
-Assets and warranties support CSV export through [lib/export/csv.ts](lib/export/csv.ts), wired to endpoints at [app/api/assets/export/route.ts](app/api/assets/export/route.ts) and [app/api/warranties/export/route.ts](app/api/warranties/export/route.ts).
+- **Bulk actions** — floating `BulkActionsBar` per module; bulk delete and bulk move/duplicate controlled by per-module bulk permissions.
+- **Spaces** — each org can have multiple spaces; data is always scoped to `space_id`. Space switcher in sidebar. Super admin can move/duplicate records across spaces.
+- **Audit trail** — every mutating action writes to `audit_logs` via `lib/audit/`. Scope can be toggled between space and org view.
+- **Transfer mode** — super admin can act on behalf of an org; banner in `components/layout/TransferModeBanner.tsx`.
+- **Managed lists** — configurable dropdown data (categories, locations, etc.) per org.
+- **Invites** — token-based org invitations at `/[locale]/invites`.

@@ -170,30 +170,35 @@ function StatCard({ icon, iconBg, iconColor, accent, label, value, delta, sub, o
     <Card
       className={`transition-shadow duration-150 overflow-hidden ${onClick ? 'cursor-pointer hover:shadow-md' : ''}`}
       onClick={onClick}
+      style={{ borderTop: `3px solid ${accent}` }}
     >
-      <div className="h-0.5 w-full" style={{ background: accent }} />
-      <CardContent className="px-4 py-3">
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <div className="p-1.5 rounded-md flex-shrink-0" style={{ background: iconBg, color: iconColor }}>
+      <CardContent className="px-4 py-4">
+        <div className="flex items-center gap-3">
+          <div
+            className="flex items-center justify-center rounded-lg flex-shrink-0"
+            style={{ width: 40, height: 40, background: iconBg, color: iconColor }}
+          >
             {icon}
           </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5 truncate">{label}</p>
+            {value}
+            {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+          </div>
           {delta && (
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0"
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ms-auto"
               style={{ background: iconBg, color: iconColor }}>
               {delta}
             </span>
           )}
         </div>
-        <p className="text-[11px] font-medium text-gray-500 mb-0.5 uppercase tracking-wide">{label}</p>
-        {value}
-        {sub && <p className="text-xs text-gray-500 mt-0">{sub}</p>}
       </CardContent>
     </Card>
   );
 }
 
 function SkeletonValue() {
-  return <div className="h-6 w-12 bg-surface-sidebar rounded animate-pulse" />;
+  return <div className="h-7 w-14 bg-surface-sidebar rounded animate-pulse mt-0.5" />;
 }
 
 /* ── RecentAssetsTable ───────────────────────────────────────────── */
@@ -675,7 +680,7 @@ export default function DashboardPage() {
           iconColor="var(--mod-usool)"
           accent="var(--mod-usool)"
           label={t('dashboard.totalAssets')}
-          value={isLoading ? <SkeletonValue /> : <p className="text-xl font-bold text-gray-900 tabular-nums">{totalAssets.length}</p>}
+          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{totalAssets.length}</p>}
           delta={!isLoading && activeAssets.length > 0 ? `${activeAssets.length} active` : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
         />
@@ -685,7 +690,7 @@ export default function DashboardPage() {
           iconColor="var(--mod-raseed)"
           accent="var(--mod-raseed)"
           label={t('dashboard.inventoryItems')}
-          value={isLoading ? <SkeletonValue /> : <p className="text-xl font-bold text-gray-900 tabular-nums">{lowStockCount}</p>}
+          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{lowStockCount}</p>}
           delta={!isLoading && lowStockCount > 0 ? `${lowStockCount} low` : undefined}
           sub={!isLoading ? t('dashboard.lowStock') : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list`)}
@@ -698,12 +703,12 @@ export default function DashboardPage() {
           label={t('dashboard.warrantiesExpiring')}
           value={
             isLoading ? <SkeletonValue /> : (
-              <p className="text-xl font-bold text-gray-900 tabular-nums">
+              <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">
                 {expiringWarranties.length}
-                <span className="text-sm font-normal text-gray-500 ms-1">{t('dashboard.soon')}</span>
               </p>
             )
           }
+          sub={!isLoading ? t('dashboard.soon') : undefined}
           delta={!isLoading && criticalWarrantyCount > 0 ? `${criticalWarrantyCount} critical` : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/warranties?expiring=30`)}
         />
@@ -713,7 +718,7 @@ export default function DashboardPage() {
           iconColor="#7C3AED"
           accent="#7C3AED"
           label={t('dashboard.pendingRequests')}
-          value={isLoading ? <SkeletonValue /> : <p className="text-xl font-bold text-gray-900 tabular-nums">{pendingRequests.length}</p>}
+          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{pendingRequests.length}</p>}
           delta={!isLoading && pendingRequests.length > 0 ? t('dashboard.needReview') : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list?status=PENDING`)}
         />

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PageHeader, DataTable, FormDrawer, ConfirmDialog } from '@/components/shared';
+import { DataTable, FormDrawer, ConfirmDialog } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -110,20 +110,15 @@ export default function TaxRatesPage() {
 
   return (
     <div className="p-6">
-      <PageHeader
-        title={t('nav.taxRates')}
-        description={t('taxRates.subtitle')}
-        breadcrumb={[
-          { label: orgInfo?.name ?? orgSlug },
-          { label: t('nav.settings') },
-          { label: t('nav.taxRates') },
-        ]}
-        actions={
-          <Button onClick={openCreate}>
-            <Plus size={16} className="me-1" /> {t('taxRates.addTaxRate')}
-          </Button>
-        }
-      />
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-[17px] font-semibold text-gray-900">{t('nav.taxRates')}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{t('taxRates.subtitle')}</p>
+        </div>
+        <Button onClick={openCreate}>
+          <Plus size={16} className="me-1" /> {t('taxRates.addTaxRate')}
+        </Button>
+      </div>
 
       <DataTable<TaxRate>
         columns={columns}

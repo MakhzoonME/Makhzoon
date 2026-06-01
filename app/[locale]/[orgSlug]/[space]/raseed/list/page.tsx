@@ -20,11 +20,59 @@ import { InventoryItem } from '@/types';
 import { RequestInventoryModal } from '@/components/inventory/RequestInventoryModal';
 import { useT } from '@/hooks/ui';
 import { Plus, Pencil, Trash2, AlertTriangle, FileText, X, ClipboardCheck, ArrowRight, Copy } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
 import { useAccessibleSpaces } from '@/hooks/spaces';
 import { hasPermission } from '@/lib/permissions';
 import { cn } from '@/lib/utils/cn';
+
+/* ── Inventory summary hook ──────────────────────────────────────── */
+function useInventorySummary(space: string | null) {
+  return useQuery({
+    queryKey: ['inventory-summary', space],
+    enabled: !!space,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const [totalRes, lowRes, outRes] = await Promise.all([
+        fetch('/api/inventory?pageSize=1', { headers }),
+        fetch('/api/inventory?stockStatus=low&pageSize=1', { headers }),
+        fetch('/api/inventory?stockStatus=out&pageSize=1', { headers }),
+      ]);
+      const total   = totalRes.ok   ? ((await totalRes.json())?.total   ?? 0) as number : 0;
+      const lowCnt  = lowRes.ok     ? ((await lowRes.json())?.total     ?? 0) as number : 0;
+      const outCnt  = outRes.ok     ? ((await outRes.json())?.total     ?? 0) as number : 0;
+      return { total, low: lowCnt, out: outCnt };
+    },
+  });
+}
+
+/* ── Inventory KPI card ──────────────────────────────────────────── */
+function InvKpi({ label, value, delta, accent, deltaRed, onClick }: {
+  label: string; value: React.ReactNode; delta?: React.ReactNode;
+  accent: string; deltaRed?: boolean; onClick?: () => void;
+}) {
+  return (
+    <div
+      className={`bg-surface-card border border-border rounded-xl overflow-hidden transition-shadow duration-150 ${onClick ? 'cursor-pointer hover:shadow-md' : ''}`}
+      onClick={onClick}
+    >
+      <div className="h-0.5 w-full" style={{ background: accent }} />
+      <div className="p-4">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{label}</p>
+        <div className="flex items-end justify-between gap-2">
+          <p className="text-2xl font-bold text-gray-900 tabular-nums leading-none">{value}</p>
+          {delta != null && (
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${deltaRed ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
+              {delta}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
   const qs = new URLSearchParams();
@@ -86,6 +134,8 @@ export default function InventoryListPage() {
     if (formDirty) { setShowDiscardDrawer(true); } else { closeDrawer(); }
   }
 
+  const { data: summary } = useInventorySummary(space);
+
   const { data: inventoryData, isLoading } = useInventoryItems({
     category: category || undefined,
     stockStatus: stockFilter || undefined,
@@ -138,18 +188,44 @@ export default function InventoryListPage() {
       key: 'name', header: t('inventory.item'), sortable: true,
       render: (i) => (
         <div>
-          <button className="font-medium text-primary-600 hover:underline text-start" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/${i.id}`)}>
+          <button
+            className="font-medium text-primary-600 hover:text-primary-700 hover:underline text-start cursor-pointer transition-colors duration-150"
+            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/${i.id}`)}
+          >
             {i.name}
           </button>
-          {i.sku && <div className="text-xs text-gray-400 font-mono">{i.sku}</div>}
         </div>
       ),
     },
-    { key: 'category', header: t('col.category'), sortable: true, render: (i) => i.category },
-    { key: 'stockStatus', header: t('inventory.stock'), sortable: true, render: (i) => <StockBadge status={i.stockStatus} qty={i.quantityOnHand} unit={i.unit} labels={stockLabels} /> },
-    { key: 'quantityOnHand', header: t('inventory.minThreshold'), sortable: true, render: (i) => <span className="text-sm text-gray-600">{i.minimumThreshold} {i.unit}</span> },
-    { key: 'location', header: t('col.location'), sortable: true, render: (i) => i.location || <span className="text-gray-400">—</span> },
-    { key: 'supplier', header: t('inventory.supplier'), sortable: true, render: (i) => i.supplier || <span className="text-gray-400">—</span> },
+    {
+      key: 'sku', header: t('inventory.sku'), sortable: true,
+      render: (i) => i.sku
+        ? <span className="font-mono text-xs text-gray-500">{i.sku}</span>
+        : <span className="text-gray-300">—</span>,
+    },
+    { key: 'category', header: t('col.category'), sortable: true, render: (i) => <span className="text-sm text-gray-600">{i.category}</span> },
+    {
+      key: 'stockStatus', header: t('inventory.stock'), sortable: true,
+      render: (i) => <StockBadge status={i.stockStatus} qty={i.quantityOnHand} unit={i.unit} labels={stockLabels} />,
+    },
+    {
+      key: 'quantityOnHand', header: t('inventory.onHand'), sortable: true,
+      render: (i) => (
+        <span className={`text-sm font-semibold tabular-nums ${
+          i.stockStatus === 'out' ? 'text-red-600 dark:text-red-400'
+          : i.stockStatus === 'low' ? 'text-amber-600 dark:text-amber-400'
+          : 'text-green-700 dark:text-green-400'
+        }`}>
+          {i.quantityOnHand} {i.unit}
+        </span>
+      ),
+    },
+    {
+      key: 'minimumThreshold', header: t('inventory.threshold'), sortable: true,
+      render: (i) => <span className="text-sm text-gray-400 tabular-nums">{i.minimumThreshold} {i.unit}</span>,
+    },
+    { key: 'location', header: t('col.location'), sortable: true, render: (i) => i.location ? <span className="text-sm text-gray-600">{i.location}</span> : <span className="text-gray-400">—</span> },
+    { key: 'supplier', header: t('inventory.supplier'), sortable: true, render: (i) => i.supplier ? <span className="text-sm text-gray-600">{i.supplier}</span> : <span className="text-gray-400">—</span> },
     {
       key: 'actions', header: '',
       render: (i) => (
@@ -157,19 +233,25 @@ export default function InventoryListPage() {
           {isAdmin && (
             <>
               <SubscriptionGate>
-                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditTarget(i); setDrawerOpen(true); }}>
-                  <Pencil className="h-4 w-4" strokeWidth={1.75} />
+                <Button size="sm" variant="ghost" aria-label={t('common.edit')}
+                  className="transition-colors duration-150"
+                  onClick={(e) => { e.stopPropagation(); setEditTarget(i); setDrawerOpen(true); }}>
+                  <Pencil aria-hidden className="h-4 w-4" strokeWidth={1.75} />
                 </Button>
               </SubscriptionGate>
               <SubscriptionGate>
-                <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setDeleteTarget(i); }}>
-                  <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+                <Button size="sm" variant="ghost" aria-label={t('common.delete')}
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors duration-150"
+                  onClick={(e) => { e.stopPropagation(); setDeleteTarget(i); }}>
+                  <Trash2 aria-hidden className="h-4 w-4" strokeWidth={1.75} />
                 </Button>
               </SubscriptionGate>
             </>
           )}
-          <Button size="sm" variant="ghost" className="text-primary-500 hover:text-primary-600 hover:bg-primary-50" onClick={(e) => { e.stopPropagation(); setReqTarget(i); }}>
-            <FileText className="h-4 w-4" strokeWidth={1.75} />
+          <Button size="sm" variant="ghost" aria-label={t('inventory.request')}
+            className="text-primary-500 hover:text-primary-600 hover:bg-primary-50 transition-colors duration-150"
+            onClick={(e) => { e.stopPropagation(); setReqTarget(i); }}>
+            <FileText aria-hidden className="h-4 w-4" strokeWidth={1.75} />
           </Button>
         </div>
       ),
@@ -227,6 +309,11 @@ export default function InventoryListPage() {
   const lowCount = items.filter((i) => i.stockStatus === 'low').length;
   const outCount = items.filter((i) => i.stockStatus === 'out').length;
 
+  const stockValue = items.reduce((sum, i) => sum + (i.quantityOnHand * (i.unitCost ?? 0)), 0);
+  const stockValueDisplay = stockValue >= 1000
+    ? `JOD ${(stockValue / 1000).toFixed(1)}k`
+    : `JOD ${stockValue.toFixed(0)}`;
+
   // stockFilter is comma-separated, e.g. "low" or "low,out". A Set makes
   // toggling each banner independent (clicking one doesn't clear the other).
   const stockFilterSet = new Set(stockFilter.split(',').map((s) => s.trim()).filter(Boolean));
@@ -279,19 +366,59 @@ export default function InventoryListPage() {
         actions={
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/audits`)}>
-              <ClipboardCheck className="h-4 w-4" strokeWidth={1.75} />
+              <ClipboardCheck aria-hidden className="h-4 w-4" strokeWidth={1.75} />
               <span className="ms-1">{t('stockAudits.title')}</span>
             </Button>
             {isAdmin && (
               <SubscriptionGate>
                 <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
-                  <Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('inventory.addItem')}</span>
+                  <Plus aria-hidden className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('inventory.addItem')}</span>
                 </Button>
               </SubscriptionGate>
             )}
           </div>
         }
       />
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+        <InvKpi
+          label={t('inventory.totalSkus')}
+          value={summary?.total ?? <span className="w-12 h-6 bg-surface-sidebar rounded animate-pulse inline-block" />}
+          accent="var(--mod-raseed)"
+          onClick={() => syncAllToUrl({ stockStatus: '', page: '1' })}
+        />
+        <InvKpi
+          label={t('inventory.belowThreshold')}
+          value={(summary?.low ?? 0) + (summary?.out ?? 0)}
+          delta={summary && (summary.low + summary.out) > 0 ? `${summary.out} ${t('inventory.outOfStock')}` : undefined}
+          deltaRed
+          accent="var(--amber-500)"
+          onClick={() => syncAllToUrl({ stockStatus: 'low,out', page: '1' })}
+        />
+        <InvKpi
+          label={t('inventory.stockValue')}
+          value={isLoading ? <span className="w-16 h-6 bg-surface-sidebar rounded animate-pulse inline-block" /> : stockValueDisplay}
+          accent="var(--mod-maal, #1B5E20)"
+        />
+      </div>
+
+      {/* Stats line */}
+      {summary && (
+        <div className="flex items-center gap-3 mb-4 text-sm text-gray-500 flex-wrap">
+          <span className="tabular-nums">
+            <span className="font-semibold text-gray-700">{summary.total.toLocaleString()}</span> {t('inventory.items')}
+          </span>
+          <span className="text-gray-300">·</span>
+          <span className="tabular-nums">
+            <span className={`font-semibold ${summary.low > 0 ? 'text-amber-600' : 'text-gray-700'}`}>{summary.low}</span> {t('inventory.lowStock')}
+          </span>
+          <span className="text-gray-300">·</span>
+          <span className="tabular-nums">
+            <span className={`font-semibold ${summary.out > 0 ? 'text-red-600' : 'text-gray-700'}`}>{summary.out}</span> {t('inventory.outOfStock')}
+          </span>
+        </div>
+      )}
 
       {(lowCount > 0 || outCount > 0) && (
         <div className="mb-4 flex gap-3 flex-wrap items-center">
@@ -308,7 +435,7 @@ export default function InventoryListPage() {
                 stockFilterSet.has('out') && 'ring-2 ring-red-400 bg-red-100',
               )}
             >
-              <AlertTriangle className="h-4 w-4" strokeWidth={1.75} />
+              <AlertTriangle aria-hidden className="h-4 w-4" strokeWidth={1.75} />
               <span>{outCount > 1 ? t('inventory.itemsOutOfStockPlural').replace('{count}', String(outCount)) : t('inventory.itemsOutOfStock').replace('{count}', String(outCount))}</span>
               {stockFilterSet.has('out') && <X className="h-3.5 w-3.5 ms-1 opacity-70" strokeWidth={2} aria-hidden />}
             </button>
@@ -326,7 +453,7 @@ export default function InventoryListPage() {
                 stockFilterSet.has('low') && 'ring-2 ring-amber-400 bg-amber-100',
               )}
             >
-              <AlertTriangle className="h-4 w-4" strokeWidth={1.75} />
+              <AlertTriangle aria-hidden className="h-4 w-4" strokeWidth={1.75} />
               <span>{lowCount > 1 ? t('inventory.itemsRunningLowPlural').replace('{count}', String(lowCount)) : t('inventory.itemsRunningLow').replace('{count}', String(lowCount))}</span>
               {stockFilterSet.has('low') && <X className="h-3.5 w-3.5 ms-1 opacity-70" strokeWidth={2} aria-hidden />}
             </button>
@@ -368,19 +495,19 @@ export default function InventoryListPage() {
       <BulkActionsBar count={selectedIds.size} onClear={() => setSelectedIds(new Set())}>
         {hasMultipleSpaces && canBulkDuplicate && (
           <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={() => setDupeOpen(true)}>
-            <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
+            <Copy aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="ms-1">{t('duplicate.bulk')}</span>
           </Button>
         )}
         {hasMultipleSpaces && canBulkMove && (
           <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={() => setMoveOpen(true)}>
-            <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+            <ArrowRight aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="ms-1">{t('move.bulkMove')}</span>
           </Button>
         )}
         {canBulkDelete && (
           <Button size="sm" variant="ghost" className="text-red-300 hover:bg-red-500/15 hover:text-red-200" onClick={() => setBulkDeleteOpen(true)}>
-            <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+            <Trash2 aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="ms-1">{t('bulk.delete')}</span>
           </Button>
         )}
@@ -393,6 +520,7 @@ export default function InventoryListPage() {
           isLoading={isLoading}
           emptyMessage={t('inventory.noItems')}
           onRowClick={(i) => router.push(`/${locale}/${orgSlug}/${space}/raseed/${i.id}`)}
+          rowClassName={(i) => i.stockStatus === 'out' ? 'bg-red-50/40 dark:bg-red-950/10' : ''}
           keyExtractor={(i) => i.id}
           selection={showSelection ? { selectedIds, onChange: setSelectedIds } : undefined}
           pagination={inventoryData ? {

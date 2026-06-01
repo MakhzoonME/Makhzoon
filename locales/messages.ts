@@ -519,7 +519,15 @@ const en = {
   'assets.deleteBtn':         'Delete Permanently',
 
   // ── Inventory page ────────────────────────────────────────────────
-  'inventory.addItem':     'Add Item',
+  'inventory.addItem':        'Add Item',
+  'inventory.totalSkus':      'Total SKUs',
+  'inventory.belowThreshold': 'Below threshold',
+  'inventory.stockValue':     'Stock value',
+  'inventory.onHand':         'On hand',
+  'inventory.threshold':      'Threshold',
+  'inventory.sku':            'SKU',
+  'inventory.items':          'items',
+  'inventory.request':        'Submit request',
   'inventory.searchPlaceholder': 'Search by name…',
   'inventory.allCategories': 'All Categories',
   'inventory.noItems':     'No inventory items found.',
@@ -1789,7 +1797,15 @@ const ar: Record<keyof typeof en, string> = {
   'assets.deleteBtn':         'حذف نهائياً',
 
   // ── Inventory page ────────────────────────────────────────────────
-  'inventory.addItem':     'إضافة عنصر',
+  'inventory.addItem':        'إضافة عنصر',
+  'inventory.totalSkus':      'إجمالي الأصناف',
+  'inventory.belowThreshold': 'تحت الحد',
+  'inventory.stockValue':     'قيمة المخزون',
+  'inventory.onHand':         'المتوفر',
+  'inventory.threshold':      'الحد الأدنى',
+  'inventory.sku':            'الرمز',
+  'inventory.items':          'صنف',
+  'inventory.request':        'تقديم طلب',
   'inventory.searchPlaceholder': 'بحث بالاسم...',
   'inventory.allCategories': 'جميع الفئات',
   'inventory.noItems':     'لا توجد عناصر في المخزون.',

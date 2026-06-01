@@ -59,7 +59,7 @@ export function SpaceSwitcher() {
           aria-label={t('spaces.switcher')}
         >
           <Layers className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" strokeWidth={1.75} />
-          <span className="font-medium max-w-[140px] truncate text-gray-700 dark:text-gray-100">{label}</span>
+          <span className="font-medium max-w-[140px] truncate text-gray-700 dark:text-white">{label}</span>
           <ChevronsUpDown className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" strokeWidth={1.75} />
         </button>
       </DropdownMenuTrigger>

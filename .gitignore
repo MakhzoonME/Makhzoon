@@ -63,6 +63,12 @@ functions/ruvector.db-*
 agentdb.rvf
 agentdb.rvf.lock
 
+# handoff/export archives
+*.zip
+
+# seed files with credentials
+scripts/seed-test-data.sql
+
 # stray shell brace-expansion / accidental output files
 {,
 x.collectionGroup

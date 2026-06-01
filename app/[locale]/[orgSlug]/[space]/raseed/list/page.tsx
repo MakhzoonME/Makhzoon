@@ -80,7 +80,7 @@ function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
   return `${pathname}${qs.toString() ? '?' + qs.toString() : ''}`;
 }
 
-function StockBadge({ status, qty, unit, labels }: { status: InventoryItem['stockStatus']; qty: number; unit: string; labels: { inStock: string; lowStock: string; outOfStock: string } }) {
+function StockBadge({ status, labels }: { status: InventoryItem['stockStatus']; labels: { inStock: string; lowStock: string; outOfStock: string } }) {
   const map = {
     ok:  'bg-[var(--green-100)] text-[var(--green-700)] border-[var(--green-100)]',
     low: 'bg-[var(--yellow-100)] text-[var(--yellow-700)] border-[var(--yellow-100)]',
@@ -90,7 +90,7 @@ function StockBadge({ status, qty, unit, labels }: { status: InventoryItem['stoc
   return (
     <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs font-medium', map[status])}>
       {status === 'low' && <AlertTriangle className="h-4 w-4" strokeWidth={1.75} />}
-      {qty} {unit} · {label[status]}
+      {label[status]}
     </span>
   );
 }
@@ -206,7 +206,7 @@ export default function InventoryListPage() {
     { key: 'category', header: t('col.category'), sortable: true, render: (i) => <span className="text-sm text-gray-600">{i.category}</span> },
     {
       key: 'stockStatus', header: t('inventory.stock'), sortable: true,
-      render: (i) => <StockBadge status={i.stockStatus} qty={i.quantityOnHand} unit={i.unit} labels={stockLabels} />,
+      render: (i) => <StockBadge status={i.stockStatus} labels={stockLabels} />,
     },
     {
       key: 'quantityOnHand', header: t('inventory.onHand'), sortable: true,

@@ -17,7 +17,7 @@ import { ORG_CATEGORIES } from '@/types';
 export default function NewOrganizationPage() {
   const router = useRouter();
   const qc = useQueryClient();
-  const { locale } = useT();
+  const { t, locale } = useT();
   const [loading, setLoading] = useState(false);
 
   const form = useForm<OrganizationFormData>({
@@ -55,8 +55,8 @@ export default function NewOrganizationPage() {
   return (
     <div>
       <PageHeader
-        title="Create Organization"
-        breadcrumb={[{ label: 'Organizations', href: `/${locale}/superadmin` }, { label: 'New', href: '' }]}
+        title={t('orgs.createOrg')}
+        breadcrumb={[{ label: t('nav.organizations'), href: `/${locale}/superadmin` }, { label: t('orgs.createOrg') }]}
       />
       <div className="bg-surface-card rounded-lg border border-border p-6 max-w-lg">
         <Form {...form}>

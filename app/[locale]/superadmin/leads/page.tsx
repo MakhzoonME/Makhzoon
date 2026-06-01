@@ -145,6 +145,7 @@ export default function LeadsPage() {
       <PageHeader
         title={t('nav.leads')}
         description={t('leads.description')}
+        breadcrumb={[{ label: t('nav.leads') }]}
         actions={
           tab === 'contact-sales' && contactSales.length > 0 ? (
             <Button size="sm" variant="outline" onClick={() => openInvite(contactSales[0].email, contactSales[0].name)}>

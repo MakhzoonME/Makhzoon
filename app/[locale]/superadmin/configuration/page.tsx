@@ -200,7 +200,7 @@ export default function ConfigurationPage() {
 
   return (
     <div>
-      <PageHeader title={t('nav.configuration')} description={t('config.description')} />
+      <PageHeader title={t('nav.configuration')} description={t('config.description')} breadcrumb={[{ label: t('nav.configuration') }]} />
 
       <div className="border-b border-border mb-6">
         <nav className="flex gap-6" aria-label="Tabs">

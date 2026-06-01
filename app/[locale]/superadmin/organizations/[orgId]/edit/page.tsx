@@ -145,7 +145,7 @@ export default function EditOrganizationPage(props: { params: Promise<{ orgId: s
   const params = use(props.params);
   const { orgId } = params;
   const router = useRouter();
-  const { locale } = useT();
+  const { t, locale } = useT();
 
   const { data: org, isLoading } = useQuery<OrgWithSub>({
     queryKey: ['org', orgId],
@@ -168,11 +168,12 @@ export default function EditOrganizationPage(props: { params: Promise<{ orgId: s
   return (
     <div>
       <PageHeader
-        title="Edit Organization"
+        title={org?.name ?? t('common.edit')}
         description={`ID: ${org?.subdomain ?? '—'}`}
         breadcrumb={[
-          { label: 'Organizations', href: `/${locale}/superadmin` },
-          { label: 'Edit', href: '' },
+          { label: t('nav.organizations'), href: `/${locale}/superadmin` },
+          { label: org?.name ?? '' },
+          { label: t('common.edit') },
         ]}
       />
 

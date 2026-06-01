@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
 import { ArrowRight, RefreshCw, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
@@ -49,6 +49,7 @@ function statusColor(status: string, conclusion: string | null) {
 }
 
 export default function SyncPage() {
+  const { t } = useT();
   const qc = useQueryClient();
   const [pending, setPending] = useState<typeof ALL_PAIRS[number] | null>(null);
 
@@ -90,7 +91,7 @@ export default function SyncPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Environment Sync" />
+      <PageHeader title={t('nav.sync')} breadcrumb={[{ label: t('nav.sync') }]} />
 
       {tokenMissing && (
         <div className="bg-[var(--yellow-100)] border border-[var(--yellow-100)] rounded-lg p-4 text-sm text-[var(--yellow-700)]">

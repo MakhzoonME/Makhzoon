@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -300,18 +301,19 @@ export default function SuperAdminTeamPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">{t('team.title')}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{t('team.subtitle')}</p>
-        </div>
-        <Button size="sm" onClick={openAdd}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-            <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-          <span className="ms-1">{t('team.addMember')}</span>
-        </Button>
-      </div>
+      <PageHeader
+        title={t('team.title')}
+        description={t('team.subtitle')}
+        breadcrumb={[{ label: t('nav.team') }]}
+        actions={
+          <Button size="sm" onClick={openAdd}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            <span className="ms-1">{t('team.addMember')}</span>
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {(['super_admin', 'makhzoon_admin', 'makhzoon_support'] as MakhzoonRole[]).map((role) => (

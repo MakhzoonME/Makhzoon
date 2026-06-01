@@ -10,12 +10,14 @@ import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { usePurchases } from '@/hooks/inventory';
 import { PurchaseStatusBadge } from '@/components/inventory/purchases/PurchaseStatusBadge';
 import { useT } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import type { Purchase, PurchaseStatus } from '@/types';
 
 export default function PurchasesListPage() {
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
+  const { data: orgInfo } = useOrgInfo();
   const [status, setStatus] = useState<PurchaseStatus | 'all'>('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -83,8 +85,10 @@ export default function PurchasesListPage() {
         title={t('nav.purchases')}
         description={t('purchases.subtitle')}
         breadcrumb={[
-          { label: t('nav.inventory'), href: `/${params.locale}/${params.orgSlug}/${params.space}/raseed` },
-          { label: t('nav.purchases'), href: '#' },
+          { label: orgInfo?.name ?? params.orgSlug },
+          { label: params.space },
+          { label: t('nav.inventory'), href: `/${params.locale}/${params.orgSlug}/${params.space}/raseed/list` },
+          { label: t('nav.purchases') },
         ]}
         actions={
           <Button

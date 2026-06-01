@@ -1,7 +1,7 @@
 'use client';
-import { useReports } from '@/hooks/org';
+import { useReports, useOrgInfo } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
-import { useT } from '@/hooks/ui';
+import { useT, useOrgSlug, useSpace } from '@/hooks/ui';
 import { Package, PackageCheck, PackageX, Wallet, UserCheck, AlertTriangle, ShieldCheck, ClipboardList, Wrench } from 'lucide-react';
 
 /* Wrap each Lucide icon to add aria-hidden — used as React.FC in Stat */
@@ -58,12 +58,21 @@ function SkeletonCard() {
 
 export default function ReportsPage() {
   const { t } = useT();
+  const orgSlug = useOrgSlug();
+  const space   = useSpace();
+  const { data: orgInfo } = useOrgInfo();
   const { data, isLoading } = useReports();
+
+  const breadcrumb = [
+    { label: orgInfo?.name ?? orgSlug },
+    { label: space },
+    { label: t('nav.reports') },
+  ];
 
   if (isLoading) {
     return (
       <div>
-        <PageHeader title={t('nav.reports')} description={t('reports.description')} />
+        <PageHeader title={t('nav.reports')} description={t('reports.description')} breadcrumb={breadcrumb} />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>

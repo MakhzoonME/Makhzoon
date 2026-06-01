@@ -22,7 +22,7 @@ export function StatCard({ icon, iconBg, iconColor, label, value, sub, loading, 
       className={`transition-all duration-150 ${onClick ? 'cursor-pointer hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600' : ''}`}
       onClick={onClick}
     >
-      <CardContent className="px-4 py-3">
+      <CardContent className="ps-3 pe-4 py-3">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg flex-shrink-0" style={{ background: iconBg, color: iconColor }}>
             {icon}

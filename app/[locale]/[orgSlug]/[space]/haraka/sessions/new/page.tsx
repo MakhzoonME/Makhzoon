@@ -18,14 +18,14 @@ export default function NewSessionPage() {
 
   const form = useForm<OpenSessionFormData>({
     resolver: zodResolver(openSessionSchema),
-    defaultValues: { openingFloat: 0 },
+    defaultValues: { openingFloat: '' as unknown as number },
   });
 
   async function onSubmit(values: OpenSessionFormData) {
     try {
       const res = await openMut.mutateAsync(values);
       toast.success('Session opened');
-      router.push(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions/${res.id}`);
+      router.push(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/register`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to open session');
     }
@@ -56,9 +56,11 @@ export default function NewSessionPage() {
                     type="number"
                     step="0.01"
                     min="0"
+                    placeholder="0"
                     autoFocus
                     {...field}
-                    onChange={(e) => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}
+                    value={field.value === 0 && field.value !== undefined ? '' : field.value}
+                    onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
                   />
                 </FormControl>
                 <FormMessage />

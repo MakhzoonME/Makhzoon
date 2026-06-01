@@ -38,7 +38,7 @@ export default function RegisterPage() {
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
   const { user } = useAuthStore();
-  const { data: sessionData, isLoading: sessionLoading } = useCurrentSession();
+  const { data: sessionData, isLoading: sessionLoading, isFetched: sessionFetched } = useCurrentSession();
   const { data: taxData } = useTaxRates();
   const { lookup } = useBarcodeLookup();
 
@@ -54,11 +54,13 @@ export default function RegisterPage() {
   const [lastTx, setLastTx] = useState<PosTransaction | null>(null);
 
   // No session → bounce back to the landing page so the cashier opens one.
+  // Only redirect once the query has completed at least one fetch to avoid
+  // bouncing while the freshly-created session is still being refetched.
   useEffect(() => {
-    if (!sessionLoading && !sessionData?.session) {
+    if (sessionFetched && !sessionLoading && !sessionData?.session) {
       router.replace(`/${params.locale}/${params.orgSlug}/${params.space}/haraka`);
     }
-  }, [sessionLoading, sessionData?.session, router, params.locale, params.orgSlug]);
+  }, [sessionFetched, sessionLoading, sessionData?.session, router, params.locale, params.orgSlug]);
 
   const taxRateById = useCallback(
     (id: string | null | undefined): number => {

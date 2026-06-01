@@ -1,17 +1,20 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useParams } from 'next/navigation';
+import { usePathname, useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
+import { useTransferStore } from '@/store/transfer.store';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, buildNavUrl } from '@/lib/nav';
 import { useSpace } from '@/hooks/ui';
 import { hasModuleAccess, hasPermByKey } from '@/lib/permissions';
 import { UserPermissions } from '@/types';
 import { useT } from '@/hooks/ui';
+import { LanguageToggle } from '@/components/shared/LanguageToggle';
+import { createClient } from '@/lib/supabase/client';
 import type { MessageKey } from '@/locales/messages';
 
 /** Display email/username without the synthetic @makhzoon.local suffix */
@@ -153,9 +156,19 @@ const ICON_INDENT = 'ps-[25px]';
 export const SIDEBAR_WIDTH_EXPANDED  = 240;
 export const SIDEBAR_WIDTH_COLLAPSED = 68;
 
+function LogOutSVG() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden>
+      <path d="M5.5 2H3a1.5 1.5 0 0 0-1.5 1.5v8A1.5 1.5 0 0 0 3 13h2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M10 5l3 2.5L10 10M13 7.5H6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function AppSidebar() {
   const pathname  = usePathname();
   const params    = useParams<{ locale: string; orgSlug: string }>();
+  const router    = useRouter();
   const locale    = params?.locale ?? 'en';
   const orgSlug   = (params?.orgSlug as string) ?? '';
   const { user }  = useAuthStore();
@@ -165,6 +178,18 @@ export function AppSidebar() {
   const isRtl = dir === 'rtl';
 
   const [userToggles, setUserToggles] = useState<Record<string, boolean>>({});
+
+  async function handleSignOut() {
+    try {
+      await fetch('/api/auth/session', { method: 'DELETE' });
+      const supabase = await createClient();
+      await supabase.auth.signOut();
+    } catch {
+      // ignore — always redirect
+    }
+    useTransferStore.getState().clearTransfer();
+    window.location.href = `/${locale}/login`;
+  }
 
   const features    = user?.features ?? {};
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
@@ -481,18 +506,24 @@ export function AppSidebar() {
           })}
         </nav>
 
-        {/* User info */}
+        {/* User footer — avatar · name/role · lang toggle · sign out */}
         {user && (
           <div className="p-3 border-t border-border">
             <div className={cn('flex items-center gap-2 px-1 py-1', sidebarCollapsed && 'justify-center')}>
-              <div className="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-semibold text-primary-700 flex-shrink-0 overflow-hidden">
+              {/* Avatar */}
+              <Link
+                href={`/${locale}/${orgSlug}/profile`}
+                className="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-semibold text-primary-700 flex-shrink-0 overflow-hidden hover:ring-2 hover:ring-primary-400 transition-shadow"
+              >
                 {user.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
                   user.displayName?.[0]?.toUpperCase() ?? displayIdentity(user.email)?.[0]?.toUpperCase()
                 )}
-              </div>
+              </Link>
+
+              {/* Name + role — hidden when collapsed */}
               <AnimatePresence initial={false}>
                 {!sidebarCollapsed && (
                   <motion.div
@@ -502,8 +533,42 @@ export function AppSidebar() {
                     exit={{ opacity: 0, transition: { duration: 0.08 } }}
                     className="flex-1 min-w-0"
                   >
-                    <p className="text-xs font-medium text-gray-900 truncate">{user.displayName || displayIdentity(user.email)}</p>
-                    <p className="text-[11px] text-gray-500 capitalize">{user.role === 'org_owner' ? 'Owner' : user.role?.replace('_', ' ')}</p>
+                    <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {user.displayName || displayIdentity(user.email)}
+                    </p>
+                    <p className="text-[11px] text-gray-500 capitalize">
+                      {user.role === 'org_owner' ? 'Owner' : user.role?.replace('_', ' ')}
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Language toggle + sign out — hidden when collapsed */}
+              <AnimatePresence initial={false}>
+                {!sidebarCollapsed && (
+                  <motion.div
+                    key="user-actions"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1, transition: { duration: 0.14, delay: 0.18, ease: EASE_OUT } }}
+                    exit={{ opacity: 0, transition: { duration: 0.08 } }}
+                    className="flex items-center gap-0.5 flex-shrink-0"
+                  >
+                    <LanguageToggle variant="ghost-light" />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={handleSignOut}
+                          aria-label={t('common.signOut')}
+                          className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors duration-150"
+                        >
+                          <LogOutSVG />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side={isRtl ? 'right' : 'left'}>
+                        {t('common.signOut')}
+                      </TooltipContent>
+                    </Tooltip>
                   </motion.div>
                 )}
               </AnimatePresence>

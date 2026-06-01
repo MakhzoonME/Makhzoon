@@ -1,17 +1,11 @@
-import React from 'react';
-import Link from 'next/link';
-
-function ChevronRightSVG() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 12 12" fill="none" aria-hidden>
-      <path d="M4 2.5l3.5 3.5L4 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+'use client';
+import React, { useEffect } from 'react';
+import ReactDOM from 'react-dom';
+import { useUiStore } from '@/store/ui.store';
 
 interface BreadcrumbItem {
   label: string;
-  href: string;
+  href?: string;
 }
 
 interface PageHeaderProps {
@@ -22,30 +16,29 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ title, description, actions, breadcrumb }: PageHeaderProps) {
+  const { setPageHeader, clearPageHeader } = useUiStore();
+
+  useEffect(() => {
+    setPageHeader(title, breadcrumb ?? []);
+    return () => clearPageHeader();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, JSON.stringify(breadcrumb)]);
+
+  /* Portal actions into the header slot — null-safe for SSR */
+  const actionsPortal =
+    actions && typeof document !== 'undefined'
+      ? ReactDOM.createPortal(
+          <div className="flex items-center gap-2">{actions}</div>,
+          document.getElementById('header-actions-slot') ?? document.body,
+        )
+      : null;
+
   return (
-    <div className="flex items-start justify-between mb-6 gap-4">
-      <div className="space-y-1 min-w-0">
-        {breadcrumb && breadcrumb.length > 0 && (
-          <nav className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 mb-1.5 flex-wrap">
-            {breadcrumb.map((item, i) => (
-              <React.Fragment key={item.href}>
-                {i > 0 && <ChevronRightSVG />}
-                <Link
-                  href={item.href}
-                  className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-150"
-                >
-                  {item.label}
-                </Link>
-              </React.Fragment>
-            ))}
-          </nav>
-        )}
-        <h1 className="t-h1 text-gray-900">{title}</h1>
-        {description && <p className="t-body muted">{description}</p>}
-      </div>
-      {actions && (
-        <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>
+    <>
+      {actionsPortal}
+      {description && (
+        <p className="t-body muted mb-6">{description}</p>
       )}
-    </div>
+    </>
   );
 }

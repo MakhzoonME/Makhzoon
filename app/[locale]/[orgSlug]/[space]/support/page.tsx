@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useOrgSlug, useSpace } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -226,6 +227,9 @@ function TicketDetailPanel({ ticketId, onClose }: { ticketId: string; onClose: (
 /* ── Main page ───────────────────────────────────────────────────── */
 export default function SupportPage() {
   const { t } = useT();
+  const orgSlug = useOrgSlug();
+  const space   = useSpace();
+  const { data: orgInfo } = useOrgInfo();
   const router   = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -275,6 +279,11 @@ export default function SupportPage() {
     <div className="flex flex-col h-full">
       <PageHeader
         title={t('nav.support')}
+        breadcrumb={[
+          { label: orgInfo?.name ?? orgSlug },
+          { label: space },
+          { label: t('nav.support') },
+        ]}
         actions={
           <Button size="sm" onClick={() => setShowNew(true)} className="cursor-pointer transition-colors duration-150">
             <Plus aria-hidden className="h-4 w-4" strokeWidth={1.75} />

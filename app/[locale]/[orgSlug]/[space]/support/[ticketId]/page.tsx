@@ -14,10 +14,14 @@ import {
   useAddTicketMessage,
 } from '@/hooks/support';
 import { formatDate, formatDateTime } from '@/lib/utils/date';
-import { toast, useT } from '@/hooks/ui';
+import { toast, useT, useOrgSlug, useSpace } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 
 export default function TicketDetailPage() {
   const { t } = useT();
+  const orgSlug = useOrgSlug();
+  const space   = useSpace();
+  const { data: orgInfo } = useOrgInfo();
   const { ticketId } = useParams<{ ticketId: string }>();
   const [replyBody, setReplyBody] = useState('');
 
@@ -55,6 +59,12 @@ export default function TicketDetailPage() {
     <div className="max-w-3xl space-y-6">
       <PageHeader
         title={ticket.subject}
+        breadcrumb={[
+          { label: orgInfo?.name ?? orgSlug },
+          { label: space },
+          { label: t('nav.support') },
+          { label: ticket.subject },
+        ]}
         actions={
           !isClosed ? (
             <Button

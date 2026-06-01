@@ -509,20 +509,29 @@ export function AppSidebar() {
         {user && (
           <div className="p-3 border-t border-border">
             <div className={cn('flex items-center gap-2 px-1 py-1', sidebarCollapsed && 'justify-center')}>
-              {/* Avatar */}
-              <Link
-                href={`/${locale}/${orgSlug}/profile`}
-                className="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-semibold text-primary-700 flex-shrink-0 overflow-hidden hover:ring-2 hover:ring-primary-400 transition-shadow"
-              >
-                {user.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  user.displayName?.[0]?.toUpperCase() ?? displayIdentity(user.email)?.[0]?.toUpperCase()
+              {/* Avatar — tooltip when collapsed */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href={`/${locale}/${orgSlug}/profile`}
+                    className="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-semibold text-primary-700 flex-shrink-0 overflow-hidden hover:ring-2 hover:ring-primary-400 transition-shadow"
+                  >
+                    {user.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      user.displayName?.[0]?.toUpperCase() ?? displayIdentity(user.email)?.[0]?.toUpperCase()
+                    )}
+                  </Link>
+                </TooltipTrigger>
+                {sidebarCollapsed && (
+                  <TooltipContent side={isRtl ? 'left' : 'right'}>
+                    {t('profile.accountInfo')}
+                  </TooltipContent>
                 )}
-              </Link>
+              </Tooltip>
 
-              {/* Name + role — hidden when collapsed */}
+              {/* Name + role — clickable link to profile, hidden when collapsed */}
               <AnimatePresence initial={false}>
                 {!sidebarCollapsed && (
                   <motion.div
@@ -532,12 +541,14 @@ export function AppSidebar() {
                     exit={{ opacity: 0, transition: { duration: 0.08 } }}
                     className="flex-1 min-w-0"
                   >
-                    <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {user.displayName || displayIdentity(user.email)}
-                    </p>
-                    <p className="text-[11px] text-gray-500 capitalize">
-                      {user.role === 'org_owner' ? 'Owner' : user.role?.replace('_', ' ')}
-                    </p>
+                    <Link href={`/${locale}/${orgSlug}/profile`} className="block group">
+                      <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-primary-600 transition-colors duration-150">
+                        {user.displayName || displayIdentity(user.email)}
+                      </p>
+                      <p className="text-[11px] text-gray-500 capitalize">
+                        {user.role === 'org_owner' ? 'Owner' : user.role?.replace('_', ' ')}
+                      </p>
+                    </Link>
                   </motion.div>
                 )}
               </AnimatePresence>

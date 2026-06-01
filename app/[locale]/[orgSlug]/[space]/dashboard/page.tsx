@@ -634,7 +634,11 @@ export default function DashboardPage() {
   const { data, isLoading } = useDashboard(space);
   const { t, locale } = useT();
 
-  const firstName   = ((user?.displayName || user?.email) ?? 'there').split(/[\s@]/)[0];
+  // Use display name only if it looks like a real name (has uppercase, space, or Arabic).
+  // Slug-style names like "owner16" fall back to a generic greeting.
+  const rawName   = user?.displayName ?? '';
+  const isRealName = rawName.length > 0 && (/[A-Z؀-ۿ]/.test(rawName) || rawName.includes(' '));
+  const firstName  = isRealName ? rawName.split(/\s+/)[0] : t('greeting.there');
   const isAdmin     = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const activeAssets       = data?.assets.filter((a) => a.status === 'Active')  ?? [];

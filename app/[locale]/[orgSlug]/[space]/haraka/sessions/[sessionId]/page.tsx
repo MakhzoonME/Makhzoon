@@ -12,7 +12,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useSession, useCloseSession } from '@/hooks/haraka';
 import { closeSessionSchema, type CloseSessionFormData } from '@/lib/modules/haraka/sessions/schemas';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 
 interface Props {
   params: Promise<{ locale: string; orgSlug: string; space: string; sessionId: string }>;
@@ -25,6 +26,8 @@ function fmt(n: number) {
 export default function SessionDetailPage(props: Props) {
   const params = use(props.params);
   const router = useRouter();
+  const { t } = useT();
+  const { data: orgInfo } = useOrgInfo();
   const { data, isLoading } = useSession(params.sessionId);
   const closeMut = useCloseSession(params.sessionId);
   const [closing, setClosing] = useState(false);
@@ -63,9 +66,11 @@ export default function SessionDetailPage(props: Props) {
         title={`Session ${session.id.slice(0, 8)}`}
         description={`Opened ${new Date(session.openedAt).toLocaleString()} by ${session.cashierName}`}
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
-          { label: 'Sessions', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions` },
-          { label: session.id.slice(0, 8), href: '#' },
+          { label: orgInfo?.name ?? params.orgSlug },
+          { label: params.space },
+          { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
+          { label: t('haraka.sessions'), href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions` },
+          { label: session.id.slice(0, 8) },
         ]}
         actions={
           <div className="flex items-center gap-2">

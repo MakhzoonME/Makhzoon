@@ -6,7 +6,8 @@ import { PageHeader, StatusBadge, ConfirmDialog, SubscriptionGate, LoadingSkelet
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTransaction, useVoidSale, useRefundSale, useResubmitFawtara } from '@/hooks/haraka';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import { useAuthStore } from '@/store/auth.store';
 import { hasPermission } from '@/lib/permissions';
 import type { PosTransaction } from '@/types';
@@ -26,6 +27,8 @@ function fmtDate(d: Date | string | null) {
 
 export default function TransactionDetailPage(props: Props) {
   const params = use(props.params);
+  const { t } = useT();
+  const { data: orgInfo } = useOrgInfo();
   const { user } = useAuthStore();
   const { data, isLoading } = useTransaction(params.transactionId);
   const voidMut = useVoidSale();
@@ -79,9 +82,11 @@ export default function TransactionDetailPage(props: Props) {
         title={`Receipt #${tx.receiptNumber}`}
         description={`Sold ${fmtDate(tx.createdAt)} by ${tx.cashierName}`}
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
-          { label: 'Sessions', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions` },
-          { label: `#${tx.receiptNumber}`, href: '#' },
+          { label: orgInfo?.name ?? params.orgSlug },
+          { label: params.space },
+          { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
+          { label: t('nav.transactions'), href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka/transactions` },
+          { label: `#${tx.receiptNumber}` },
         ]}
         actions={
           <div className="flex items-center gap-2">

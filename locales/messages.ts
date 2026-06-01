@@ -24,7 +24,8 @@ const en = {
   'nav.fawtara':       'Jo Fotara (e-invoicing)',
   'nav.receipt':       'Receipt',
   'nav.customers':     'Customers',
-  'nav.harakaReports': 'POS Reports',
+  'nav.harakaReports':      'POS Reports',
+  'nav.transactions':       'Transactions',
   'nav.overview':      'Overview',
   'nav.assetsList':    'Asset Register',
   'nav.assetAudits':   'Audits',
@@ -381,6 +382,7 @@ const en = {
   'greeting.morning':             'Good morning',
   'greeting.afternoon':           'Good afternoon',
   'greeting.evening':             'Good evening',
+  'greeting.there':               'there',
   'dashboard.subtitle':           "Here's what's happening across your workspace today.",
   'dashboard.totalAssets':        'Total Assets',
   'dashboard.active':             'Active',
@@ -459,6 +461,13 @@ const en = {
   'haraka.amount':                'Amount',
   'haraka.cashier':               'Cashier',
   'haraka.noTransactions':        'No transactions yet.',
+  'haraka.noSessions':            'No sessions yet.',
+  'haraka.opened':                'Opened',
+  'haraka.float':                 'Opening float',
+  'haraka.discrepancy':           'Discrepancy',
+  'haraka.sessionsClosed':        'Closed',
+  'haraka.sessionsSub':           'History of cash-drawer sessions.',
+  'register.charge':              'Charge',
 
   // ── Table column headers ──────────────────────────────────────────
   'col.name':         'Name',
@@ -1365,6 +1374,7 @@ const en = {
   'register.closeSession':       'Close session',
   'register.scanPlaceholder':    'Scan barcode to add to cart, or pick a product below',
   'register.cart':               'Cart',
+  'register.charge':             'Charge',
 } as const;
 
 const ar: Record<keyof typeof en, string> = {
@@ -1385,7 +1395,8 @@ const ar: Record<keyof typeof en, string> = {
   'nav.fawtara':       'الفاتورة الإلكترونية',
   'nav.receipt':       'الإيصال',
   'nav.customers':     'العملاء',
-  'nav.harakaReports': 'تقارير المبيعات',
+  'nav.harakaReports':      'تقارير المبيعات',
+  'nav.transactions':       'المعاملات',
   'nav.overview':      'نظرة عامة',
   'nav.assetsList':    'سجل الأصول',
   'nav.assetAudits':   'المراجعات',
@@ -1741,6 +1752,7 @@ const ar: Record<keyof typeof en, string> = {
   'greeting.morning':             'صباح الخير',
   'greeting.afternoon':           'مساء الخير',
   'greeting.evening':             'مساء الخير',
+  'greeting.there':               'هناك',
   'dashboard.subtitle':           'إليك ما يحدث في مساحة العمل الخاصة بك اليوم.',
   'dashboard.totalAssets':        'إجمالي الأصول',
   'dashboard.active':             'نشطة',
@@ -1819,6 +1831,13 @@ const ar: Record<keyof typeof en, string> = {
   'haraka.amount':                'المبلغ',
   'haraka.cashier':               'الكاشير',
   'haraka.noTransactions':        'لا توجد معاملات بعد.',
+  'haraka.noSessions':            'لا توجد جلسات بعد.',
+  'haraka.opened':                'فُتحت في',
+  'haraka.float':                 'العهدة النقدية',
+  'haraka.discrepancy':           'الفارق',
+  'haraka.sessionsClosed':        'أُغلقت في',
+  'haraka.sessionsSub':           'سجل جلسات درج الكاشير.',
+  'register.charge':              'تحصيل',
 
   // ── Table column headers ──────────────────────────────────────────
   'col.name':         'الاسم',
@@ -2727,6 +2746,7 @@ const ar: Record<keyof typeof en, string> = {
   'register.closeSession':       'إغلاق الجلسة',
   'register.scanPlaceholder':    'امسح الباركود لإضافة المنتج إلى السلة، أو اختر منتجاً أدناه',
   'register.cart':               'السلة',
+  'register.charge':             'تحصيل',
 };
 
 export const messages: Record<Locale, Record<keyof typeof en, string>> = { en, ar };

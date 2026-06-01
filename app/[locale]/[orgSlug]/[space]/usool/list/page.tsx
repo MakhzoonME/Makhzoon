@@ -119,6 +119,16 @@ export default function AssetsListPage() {
     if (formDirty) { setShowDiscardDrawer(true); } else { closeDrawer(); }
   }
 
+  // Open create drawer when navigated here with ?new=true
+  useEffect(() => {
+    if (searchParams.get('new') === 'true') {
+      setEditTarget(null);
+      setDrawerOpen(true);
+      router.replace(pathname, { scroll: false });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const { data: summary } = useAssetSummary(space);
 
   const { data: assetsData, isLoading } = useAssets({

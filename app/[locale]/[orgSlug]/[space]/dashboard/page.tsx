@@ -152,6 +152,38 @@ function AlertBanner({ tone, icon, children }: {
   );
 }
 
+/* ── Sparkline ───────────────────────────────────────────────────── */
+function Sparkline({ data, color }: { data: number[]; color: string }) {
+  if (!data.length) return null;
+  const w = 64, h = 28, pad = 2;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const pts = data.map((v, i) => {
+    const x = pad + (i / (data.length - 1)) * (w - pad * 2);
+    const y = h - pad - ((v - min) / range) * (h - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden className="flex-shrink-0">
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
+    </svg>
+  );
+}
+
+function weekBuckets(items: { createdAt?: Date | string | number | null }[], n = 10): number[] {
+  const now = Date.now();
+  const buckets = Array(n).fill(0);
+  for (const item of items) {
+    if (!item.createdAt) continue;
+    const ageMs = now - new Date(item.createdAt as string).getTime();
+    const ageWeeks = Math.floor(ageMs / (7 * 24 * 3600_000));
+    const idx = n - 1 - ageWeeks;
+    if (idx >= 0 && idx < n) buckets[idx]++;
+  }
+  return buckets;
+}
+
 /* ── StatCard ────────────────────────────────────────────────────── */
 type StatCardProps = {
   icon: React.ReactNode;
@@ -162,10 +194,11 @@ type StatCardProps = {
   value: React.ReactNode;
   delta?: React.ReactNode;
   sub?: string;
+  spark?: number[];
   onClick?: () => void;
 };
 
-function StatCard({ icon, iconBg, iconColor, accent, label, value, delta, sub, onClick }: StatCardProps) {
+function StatCard({ icon, iconBg, iconColor, accent, label, value, delta, sub, spark, onClick }: StatCardProps) {
   return (
     <Card
       className={`transition-shadow duration-150 overflow-hidden ${onClick ? 'cursor-pointer hover:shadow-md' : ''}`}
@@ -191,6 +224,9 @@ function StatCard({ icon, iconBg, iconColor, accent, label, value, delta, sub, o
             )}
             {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
           </div>
+          {spark && spark.length > 1 && (
+            <Sparkline data={spark} color={accent} />
+          )}
         </div>
       </CardContent>
     </Card>
@@ -611,6 +647,22 @@ export default function DashboardPage() {
   const lowStockCount   = totalAssets.filter((a) => a.status === 'Pending').length;
   const criticalWarrantyCount = expiringWarranties.filter((w) => daysUntil(w.endDate) <= 7).length;
 
+  // Sparkline data — derived from already-fetched arrays
+  const assetSpark    = weekBuckets(totalAssets);
+  const pendingSpark  = weekBuckets(pendingRequests);
+  // Warranty sparkline: bucket by days-remaining bands (0-7, 7-14, ..., 63-70, 70+)
+  const warrantySpark = (() => {
+    const buckets = Array(10).fill(0);
+    for (const w of expiringWarranties) {
+      const d = daysUntil(w.endDate);
+      const idx = Math.min(9, Math.max(0, Math.floor(d / 7)));
+      buckets[9 - idx]++;
+    }
+    return buckets;
+  })();
+  // Inventory sparkline: use same weekly bucketing on all assets (proxy for activity)
+  const inventorySpark = weekBuckets(totalAssets.filter((a) => a.status === 'Pending'));
+
   async function handleDecision(requestId: string, action: 'approve' | 'reject') {
     try {
       await fetch(`/api/requests/${requestId}/${action}`, { method: 'POST' });
@@ -689,6 +741,7 @@ export default function DashboardPage() {
           label={t('dashboard.totalAssets')}
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{totalAssets.length}</p>}
           delta={!isLoading && activeAssets.length > 0 ? `${activeAssets.length} active` : undefined}
+          spark={!isLoading ? assetSpark : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
         />
         <StatCard
@@ -700,6 +753,7 @@ export default function DashboardPage() {
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{lowStockCount}</p>}
           delta={!isLoading && lowStockCount > 0 ? `${lowStockCount} low` : undefined}
           sub={!isLoading ? t('dashboard.lowStock') : undefined}
+          spark={!isLoading ? inventorySpark : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list`)}
         />
         <StatCard
@@ -717,6 +771,7 @@ export default function DashboardPage() {
           }
           sub={!isLoading ? t('dashboard.soon') : undefined}
           delta={!isLoading && criticalWarrantyCount > 0 ? `${criticalWarrantyCount} critical` : undefined}
+          spark={!isLoading ? warrantySpark : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/warranties?expiring=30`)}
         />
         <StatCard
@@ -727,6 +782,7 @@ export default function DashboardPage() {
           label={t('dashboard.pendingRequests')}
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{pendingRequests.length}</p>}
           delta={!isLoading && pendingRequests.length > 0 ? t('dashboard.needReview') : undefined}
+          spark={!isLoading ? pendingSpark : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list?status=PENDING`)}
         />
       </div>
@@ -737,13 +793,13 @@ export default function DashboardPage() {
           {t('dashboard.quickActions')}
         </span>
         <button
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/new`)}
+          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list?new=true`)}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
         >
           <PlusIcon aria-hidden /> {t('dashboard.addAsset')}
         </button>
         <button
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list`)}
+          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/purchases/new`)}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
         >
           <RefreshIcon aria-hidden /> {t('dashboard.recordTransaction')}

@@ -22,19 +22,19 @@ export function StatCard({ icon, iconBg, iconColor, label, value, sub, loading, 
       className={`transition-all duration-150 ${onClick ? 'cursor-pointer hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600' : ''}`}
       onClick={onClick}
     >
-      <CardContent className="p-5">
-        <div className="flex items-start gap-3">
-          <div className="p-2 rounded-lg flex-shrink-0" style={{ background: iconBg, color: iconColor }}>
+      <CardContent className="px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="p-1.5 rounded-md flex-shrink-0" style={{ background: iconBg, color: iconColor }}>
             {icon}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">{label}</p>
+            <p className="text-[11px] font-medium text-gray-500 mb-0.5 uppercase tracking-wide">{label}</p>
             {loading ? (
-              <div className="h-7 w-14 bg-surface-sidebar rounded animate-pulse" />
+              <div className="h-6 w-12 bg-surface-sidebar rounded animate-pulse" />
             ) : (
-              <p className="text-2xl font-bold text-gray-900 tabular-nums">{value}</p>
+              <p className="text-xl font-bold text-gray-900 tabular-nums">{value}</p>
             )}
-            {sub && !loading && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
+            {sub && !loading && <p className="text-xs text-gray-500 mt-0">{sub}</p>}
           </div>
         </div>
       </CardContent>

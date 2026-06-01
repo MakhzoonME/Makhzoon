@@ -171,11 +171,10 @@ function StatCard({ icon, iconBg, iconColor, accent, label, value, delta, sub, o
       className={`transition-shadow duration-150 overflow-hidden ${onClick ? 'cursor-pointer hover:shadow-md' : ''}`}
       onClick={onClick}
     >
-      {/* accent top stripe */}
       <div className="h-0.5 w-full" style={{ background: accent }} />
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <div className="p-2 rounded-lg flex-shrink-0" style={{ background: iconBg, color: iconColor }}>
+      <CardContent className="px-4 py-3">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="p-1.5 rounded-md flex-shrink-0" style={{ background: iconBg, color: iconColor }}>
             {icon}
           </div>
           {delta && (
@@ -185,16 +184,16 @@ function StatCard({ icon, iconBg, iconColor, accent, label, value, delta, sub, o
             </span>
           )}
         </div>
-        <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">{label}</p>
+        <p className="text-[11px] font-medium text-gray-500 mb-0.5 uppercase tracking-wide">{label}</p>
         {value}
-        {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
+        {sub && <p className="text-xs text-gray-500 mt-0">{sub}</p>}
       </CardContent>
     </Card>
   );
 }
 
 function SkeletonValue() {
-  return <div className="h-7 w-14 bg-surface-sidebar rounded animate-pulse" />;
+  return <div className="h-6 w-12 bg-surface-sidebar rounded animate-pulse" />;
 }
 
 /* ── RecentAssetsTable ───────────────────────────────────────────── */
@@ -666,13 +665,6 @@ export default function DashboardPage() {
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">{t('dashboard.subtitle')}</p>
         </div>
-        {!isLoading && (
-          <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0"
-            style={{ background: 'var(--green-50)', color: 'var(--green-700)', border: '1px solid var(--green-100)' }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-            {t('dashboard.synced')}
-          </span>
-        )}
       </div>
 
       {/* ── KPI cards ────────────────────────────────────────────────── */}
@@ -683,7 +675,7 @@ export default function DashboardPage() {
           iconColor="var(--mod-usool)"
           accent="var(--mod-usool)"
           label={t('dashboard.totalAssets')}
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{totalAssets.length}</p>}
+          value={isLoading ? <SkeletonValue /> : <p className="text-xl font-bold text-gray-900 tabular-nums">{totalAssets.length}</p>}
           delta={!isLoading && activeAssets.length > 0 ? `${activeAssets.length} active` : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
         />
@@ -693,7 +685,7 @@ export default function DashboardPage() {
           iconColor="var(--mod-raseed)"
           accent="var(--mod-raseed)"
           label={t('dashboard.inventoryItems')}
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{lowStockCount}</p>}
+          value={isLoading ? <SkeletonValue /> : <p className="text-xl font-bold text-gray-900 tabular-nums">{lowStockCount}</p>}
           delta={!isLoading && lowStockCount > 0 ? `${lowStockCount} low` : undefined}
           sub={!isLoading ? t('dashboard.lowStock') : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list`)}
@@ -706,7 +698,7 @@ export default function DashboardPage() {
           label={t('dashboard.warrantiesExpiring')}
           value={
             isLoading ? <SkeletonValue /> : (
-              <p className="text-2xl font-bold text-gray-900 tabular-nums">
+              <p className="text-xl font-bold text-gray-900 tabular-nums">
                 {expiringWarranties.length}
                 <span className="text-sm font-normal text-gray-500 ms-1">{t('dashboard.soon')}</span>
               </p>
@@ -721,7 +713,7 @@ export default function DashboardPage() {
           iconColor="#7C3AED"
           accent="#7C3AED"
           label={t('dashboard.pendingRequests')}
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{pendingRequests.length}</p>}
+          value={isLoading ? <SkeletonValue /> : <p className="text-xl font-bold text-gray-900 tabular-nums">{pendingRequests.length}</p>}
           delta={!isLoading && pendingRequests.length > 0 ? t('dashboard.needReview') : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list?status=PENDING`)}
         />
@@ -783,30 +775,26 @@ export default function DashboardPage() {
 
       {/* ── Row 2: Asset breakdown (3/5) + Activity feed (2/5) ───────── */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <Card className="lg:col-span-3">
-          <CardContent className="p-5">
-            <SectionHeader
-              title={t('dashboard.assetBreakdown')}
-              action={t('dashboard.viewAll')}
-              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
-            />
-            <div className="pt-4">
-              <AssetBreakdownBar assets={totalAssets} isLoading={isLoading} />
-            </div>
-          </CardContent>
+        <Card className="lg:col-span-3 p-0">
+          <SectionHeader
+            title={t('dashboard.assetBreakdown')}
+            action={t('dashboard.viewAll')}
+            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
+          />
+          <div className="p-5">
+            <AssetBreakdownBar assets={totalAssets} isLoading={isLoading} />
+          </div>
         </Card>
 
-        <Card className="lg:col-span-2">
-          <CardContent className="p-5">
-            <SectionHeader
-              title={t('dashboard.recentActivity')}
-              action={t('dashboard.viewAll')}
-              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/audit-logs`)}
-            />
-            <div className="pt-4">
-              <ActivityFeed logs={auditLogs} isLoading={isLoading} />
-            </div>
-          </CardContent>
+        <Card className="lg:col-span-2 p-0">
+          <SectionHeader
+            title={t('dashboard.recentActivity')}
+            action={t('dashboard.viewAll')}
+            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/audit-logs`)}
+          />
+          <div className="p-5">
+            <ActivityFeed logs={auditLogs} isLoading={isLoading} />
+          </div>
         </Card>
       </div>
 

@@ -2,8 +2,9 @@
 import { useState } from 'react';
 import { Plus, Pencil, Archive, Undo2, Lock, Users, Info } from 'lucide-react';
 import { SpaceMembersDrawer } from '@/components/spaces/SpaceMembersDrawer';
-import { useT } from '@/hooks/ui';
+import { useT, useOrgSlug } from '@/hooks/ui';
 import { useAdminGuard } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import {
   useAllSpaces,
   useCreateSpace,
@@ -22,6 +23,8 @@ import type { Space } from '@/types/space.types';
 
 export default function SpacesSettingsPage() {
   const { t } = useT();
+  const orgSlug = useOrgSlug();
+  const { data: orgInfo } = useOrgInfo();
   const { isAllowed } = useAdminGuard('settings.orgInfo');
   const { data, isLoading } = useAllSpaces();
   const createMut = useCreateSpace();
@@ -114,7 +117,11 @@ export default function SpacesSettingsPage() {
       <PageHeader
         title={t('spaces.title')}
         description={t('spaces.description')}
-        breadcrumb={[{ label: t('nav.settings') }]}
+        breadcrumb={[
+          { label: orgInfo?.name ?? orgSlug },
+          { label: t('nav.settings') },
+          { label: t('nav.spaces') },
+        ]}
         actions={(
           <Button size="sm" onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('spaces.newSpace')}</span>

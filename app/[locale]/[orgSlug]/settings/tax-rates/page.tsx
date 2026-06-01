@@ -12,11 +12,14 @@ import { Switch } from '@/components/ui/switch';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useTaxRates, useCreateTaxRate, useUpdateTaxRate, useDeleteTaxRate } from '@/hooks/haraka';
 import { taxRateSchema, type TaxRateFormData } from '@/lib/modules/haraka/tax/schemas';
-import { toast, useAdminGuard, useT } from '@/hooks/ui';
+import { toast, useAdminGuard, useT, useOrgSlug } from '@/hooks/ui';
 import { useAuthStore } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import type { TaxRate } from '@/types';
 
 export default function TaxRatesPage() {
+  const orgSlug = useOrgSlug();
+  const { data: orgInfo } = useOrgInfo();
   const { isAllowed } = useAdminGuard('settings.taxRates');
   const { t } = useT();
   const user = useAuthStore((s) => s.user);
@@ -110,7 +113,11 @@ export default function TaxRatesPage() {
       <PageHeader
         title={t('nav.taxRates')}
         description={t('taxRates.subtitle')}
-        breadcrumb={[{ label: t('nav.settings') }]}
+        breadcrumb={[
+          { label: orgInfo?.name ?? orgSlug },
+          { label: t('nav.settings') },
+          { label: t('nav.taxRates') },
+        ]}
         actions={
           <Button onClick={openCreate}>
             <Plus size={16} className="me-1" /> {t('taxRates.addTaxRate')}

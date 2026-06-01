@@ -16,7 +16,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useList, useUpsertOrgListItem, useDeleteOrgListItem } from '@/hooks/lists';
-import { toast, useAdminGuard, useT } from '@/hooks/ui';
+import { toast, useAdminGuard, useT, useOrgSlug } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import { LIST_REGISTRY, LIST_KEYS, type ListKey } from '@/types';
 import { cn } from '@/lib/utils/cn';
 import type { ResolvedListItem } from '@/types';
@@ -30,6 +31,8 @@ const ORG_KEYS = LIST_KEYS.filter(
 export default function OrgListsPage() {
   const { isAllowed } = useAdminGuard('settings.orgInfo');
   const { t, locale } = useT();
+  const orgSlug = useOrgSlug();
+  const { data: orgInfo } = useOrgInfo();
   const isAr = locale === 'ar';
   const [selected, setSelected] = useState<ListKey>(ORG_KEYS[0] ?? 'asset_category');
   const meta = LIST_REGISTRY[selected];
@@ -119,7 +122,11 @@ export default function OrgListsPage() {
       <PageHeader
         title={t('nav.lists')}
         description={t('lists.subtitle')}
-        breadcrumb={[{ label: t('nav.settings') }]}
+        breadcrumb={[
+          { label: orgInfo?.name ?? orgSlug },
+          { label: t('nav.settings') },
+          { label: t('nav.lists') },
+        ]}
       />
 
       <div className="flex flex-col md:flex-row gap-6 mt-4">

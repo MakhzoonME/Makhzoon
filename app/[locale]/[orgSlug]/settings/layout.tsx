@@ -1,9 +1,11 @@
 'use client';
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { useParams, usePathname } from 'next/navigation';
 import { Building2, Layers, SlidersHorizontal, Percent, Receipt, Printer } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { useAdminGuard, useT } from '@/hooks/ui';
+import { useUiStore } from '@/store/ui.store';
 import { hasPermByKey } from '@/lib/permissions';
 import { cn } from '@/lib/utils/cn';
 
@@ -42,6 +44,13 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   const pathname  = usePathname();
   const { user }  = useAuthStore();
   const { t }     = useT();
+  const { setPageHeader, clearPageHeader } = useUiStore();
+
+  useEffect(() => {
+    setPageHeader(t('nav.settings'), []);
+    return () => clearPageHeader();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t]);
 
   const features    = user?.features ?? {};
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'org_owner' || user?.role === 'super_admin';

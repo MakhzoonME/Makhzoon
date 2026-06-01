@@ -27,7 +27,7 @@ When the user says "next":
 | 0a | `globals.css` — CSS tokens + fonts | ✅ Done |
 | 0b | `AppHeader` — bell + remove role badge | ✅ Done |
 | 0c | `AppSidebar` — sign-out icon, user section, SA nav order | ✅ Done (sign-out + lang toggle; SA nav order pending) |
-| 0d | Settings layout — add shared left-nav shell | ⬜ |
+| 0d | Settings layout — add shared left-nav shell | ✅ Done |
 | 1 | Dashboard (`/[space]/dashboard`) | ⬜ |
 | 2 | Assets list (`/usool/list`) | ⬜ |
 | 3 | Asset detail (`/usool/[assetId]`) | ⬜ |

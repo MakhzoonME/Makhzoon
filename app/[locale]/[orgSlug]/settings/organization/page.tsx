@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useOrgInfo } from '@/hooks/org';
-import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -76,15 +75,6 @@ export default function OrganizationInfoPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={t('nav.orgInfo')}
-        breadcrumb={[
-          { label: org?.name ?? '' },
-          { label: t('nav.settings') },
-          { label: t('nav.orgInfo') },
-        ]}
-      />
-
       <Card className="max-w-[620px] rounded-xl">
         <CardContent className="p-6">
           <h2 className="text-[17px] font-semibold text-gray-900 mb-5">{t('settings.orgName')}</h2>

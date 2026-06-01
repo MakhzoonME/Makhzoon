@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/ui';
-import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity, Mail, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity, Mail, RefreshCw, ChevronLeft, ChevronRight, Package } from 'lucide-react';
 import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -23,17 +23,23 @@ const EASE_SLIDE = [0.4, 0, 0.2, 1] as const;
 
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
-const ALL_NAV_ITEMS = (locale: string) => [
-  { href: `/${locale}/superadmin/dashboard`, labelKey: 'nav.dashboard',    icon: LayoutDashboard, roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
-  { href: `/${locale}/superadmin`,           labelKey: 'nav.organizations', icon: Building2,       roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
-  { href: `/${locale}/superadmin/support`,   labelKey: 'nav.support',       icon: MessageSquare,   roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
-  { href: `/${locale}/superadmin/leads`,     labelKey: 'nav.leads',         icon: Mail,            roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
-  { href: `/${locale}/superadmin/configuration`, labelKey: 'nav.configuration', icon: Settings,    roles: ['super_admin', 'makhzoon_admin'] },
-  { href: `/${locale}/superadmin/audit-logs`,    labelKey: 'nav.auditLogs',     icon: FileText,    roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
-  { href: `/${locale}/superadmin/team`,          labelKey: 'nav.team',          icon: Users,       roles: ['super_admin', 'makhzoon_admin'] },
-  { href: `/${locale}/superadmin/sync`,          labelKey: 'nav.sync',          icon: RefreshCw,   roles: ['super_admin', 'makhzoon_admin'] },
-  { href: `/${locale}/superadmin/backend-logs`,  labelKey: 'nav.backendLogs',   icon: Activity,    roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
-  { href: `/${locale}/superadmin/lists`,         labelKey: 'nav.lists',         icon: FileText,    roles: ['super_admin', 'makhzoon_admin'] },
+type NavEntry =
+  | { separator: true }
+  | { href: string; labelKey: string; icon: React.ElementType; roles: string[]; separator?: false };
+
+const ALL_NAV_ITEMS = (locale: string): NavEntry[] => [
+  { href: `/${locale}/superadmin/dashboard`,     labelKey: 'nav.dashboard',     icon: LayoutDashboard, roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+  { href: `/${locale}/superadmin`,               labelKey: 'nav.organizations', icon: Building2,       roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+  { href: `/${locale}/superadmin/leads`,         labelKey: 'nav.leads',         icon: Mail,            roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+  { href: `/${locale}/superadmin/lists`,         labelKey: 'nav.lists',         icon: FileText,        roles: ['super_admin', 'makhzoon_admin'] },
+  { href: `/${locale}/superadmin/packages`,      labelKey: 'nav.packages',      icon: Package,         roles: ['super_admin', 'makhzoon_admin'] },
+  { href: `/${locale}/superadmin/configuration`, labelKey: 'nav.configuration', icon: Settings,        roles: ['super_admin', 'makhzoon_admin'] },
+  { separator: true },
+  { href: `/${locale}/superadmin/support`,       labelKey: 'nav.support',       icon: MessageSquare,   roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+  { href: `/${locale}/superadmin/team`,          labelKey: 'nav.team',          icon: Users,           roles: ['super_admin', 'makhzoon_admin'] },
+  { href: `/${locale}/superadmin/backend-logs`,  labelKey: 'nav.backendLogs',   icon: Activity,        roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+  { href: `/${locale}/superadmin/sync`,          labelKey: 'nav.sync',          icon: RefreshCw,       roles: ['super_admin', 'makhzoon_admin'] },
+  { href: `/${locale}/superadmin/audit-logs`,    labelKey: 'nav.auditLogs',     icon: FileText,        roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
 ];
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
@@ -48,7 +54,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const { superAdminSidebarCollapsed: collapsed, toggleSuperAdminSidebar } = useUiStore();
+  const { superAdminSidebarCollapsed: collapsed, toggleSuperAdminSidebar, headerTitle, headerBreadcrumb } = useUiStore();
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -82,7 +88,9 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
     </div>
   );
 
-  const navItems = ALL_NAV_ITEMS(locale).filter((item) => item.roles.includes(user.role));
+  const navItems = ALL_NAV_ITEMS(locale).filter((item) =>
+    'separator' in item ? true : item.roles.includes(user.role)
+  );
 
   const sidebarW = collapsed ? SA_COLLAPSED : SA_EXPANDED;
 
@@ -149,7 +157,11 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
           {/* Nav items */}
           <nav className="flex-1 p-2.5 space-y-0.5 overflow-y-auto overflow-x-hidden">
-            {navItems.map(({ href, labelKey, icon: Icon }) => {
+            {navItems.map((item, idx) => {
+              if ('separator' in item) {
+                return <div key={`sep-${idx}`} className="my-1.5 mx-2 border-t border-blue-800/60" />;
+              }
+              const { href, labelKey, icon: Icon } = item;
               const label = t(labelKey as MessageKey);
               const active = pathname === href || (href !== `/${locale}/superadmin` && pathname.startsWith(href));
               return (
@@ -247,7 +259,25 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                   </svg>
                 </button>
               )}
-              <span className="text-sm font-semibold text-blue-100 hidden sm:block">{t('role.superAdmin')}</span>
+              {headerTitle ? (
+                <div className="hidden sm:flex flex-col justify-center min-w-0">
+                  {(() => {
+                    const crumbs = headerBreadcrumb.slice(0);
+                    const moduleName = crumbs[0]?.label ?? headerTitle;
+                    const pageName   = crumbs.length > 1 ? crumbs[crumbs.length - 1]?.label : null;
+                    return (
+                      <>
+                        <p className="text-[14px] font-semibold text-blue-100 leading-tight truncate">{moduleName}</p>
+                        {pageName && pageName !== moduleName && (
+                          <p className="text-[11px] text-blue-400 leading-tight truncate">{pageName}</p>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <span className="text-sm font-semibold text-blue-100 hidden sm:block">{t('role.superAdmin')}</span>
+              )}
             </div>
 
             {/* Right: controls */}

@@ -81,6 +81,15 @@ function ChevronRightIcon() {
     </svg>
   );
 }
+function CartIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M1 1h2l1.5 7h6L12 4H4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="5.5" cy="11.5" r="1" fill="currentColor" />
+      <circle cx="10" cy="11.5" r="1" fill="currentColor" />
+    </svg>
+  );
+}
 
 /* ── Greeting helper ─────────────────────────────────────────────── */
 function getGreetingKey(): 'greeting.morning' | 'greeting.afternoon' | 'greeting.evening' {
@@ -631,10 +640,17 @@ export default function DashboardPage() {
   const orgSlug = useOrgSlug();
   const space   = useSpace();
   const { user } = useAuthStore();
-  const { data, isLoading } = useDashboard(space);
+  const { data, isLoading, dataUpdatedAt } = useDashboard(space);
   const { t, locale } = useT();
 
-  const firstName = (user?.displayName || user?.email?.split('@')[0] || '').split(/\s+/)[0] || t('greeting.there');
+  const firstName  = (user?.displayName || user?.email?.split('@')[0] || '').split(/\s+/)[0] || t('greeting.there');
+  const features   = user?.features ?? {};
+  const syncedAgo  = dataUpdatedAt ? (() => {
+    const diffMin = Math.round((Date.now() - dataUpdatedAt) / 60_000);
+    if (diffMin < 1) return t('time.justNow');
+    if (diffMin < 60) return `${t('dashboard.synced')} ${diffMin}m ago`;
+    return `${t('dashboard.synced')} ${Math.round(diffMin / 60)}h ago`;
+  })() : null;
   const isAdmin     = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const activeAssets       = data?.assets.filter((a) => a.status === 'Active')  ?? [];
@@ -721,7 +737,7 @@ export default function DashboardPage() {
       )}
 
       {/* ── Page header ──────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-bold tracking-tight text-gray-900"
             style={{ fontSize: 22, fontFamily: 'var(--font-display)' }}>
@@ -729,6 +745,12 @@ export default function DashboardPage() {
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">{t('dashboard.subtitle')}</p>
         </div>
+        {!isLoading && syncedAgo && (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800 flex-shrink-0">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+            {syncedAgo}
+          </span>
+        )}
       </div>
 
       {/* ── KPI cards ────────────────────────────────────────────────── */}
@@ -806,6 +828,15 @@ export default function DashboardPage() {
         >
           <InboxIcon aria-hidden /> {t('dashboard.submitRequest')}
         </button>
+        {features.pos && (
+          <button
+            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/haraka/register`)}
+            className="ms-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors duration-150 cursor-pointer"
+            style={{ color: 'var(--mod-haraka)', borderColor: 'color-mix(in srgb, var(--mod-haraka) 35%, transparent)', background: 'color-mix(in srgb, var(--mod-haraka) 6%, transparent)' }}
+          >
+            <CartIcon aria-hidden /> {t('dashboard.openRegister')}
+          </button>
+        )}
       </div>
 
       {/* ── Row 1: Recent assets (1.5fr) + Expiring warranties (1fr) ─── */}

@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import { Plus, Trash2, Pencil } from 'lucide-react';
-import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -119,17 +118,12 @@ export default function OrgListsPage() {
 
   return (
     <div>
-      <PageHeader
-        title={t('nav.lists')}
-        description={t('lists.subtitle')}
-        breadcrumb={[
-          { label: orgInfo?.name ?? orgSlug },
-          { label: t('nav.settings') },
-          { label: t('nav.lists') },
-        ]}
-      />
+      <div className="mb-6">
+        <h1 className="text-[17px] font-semibold text-gray-900">{t('nav.lists')}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{t('lists.subtitle')}</p>
+      </div>
 
-      <div className="flex flex-col md:flex-row gap-6 mt-4">
+      <div className="flex flex-col md:flex-row gap-6">
         <aside className="md:w-52 flex-shrink-0 space-y-0.5">
           {ORG_KEYS.map((k) => (
             <button

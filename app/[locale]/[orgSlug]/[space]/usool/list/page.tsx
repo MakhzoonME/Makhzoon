@@ -17,7 +17,6 @@ import { FilterBar } from '@/components/shared/FilterBar';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ExportButton } from '@/components/shared/ExportButton';
-import { ImportAssetsDrawer } from '@/components/assets/ImportAssetsDrawer';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
@@ -101,7 +100,6 @@ export default function AssetsListPage() {
   const [searchInput, setSearchInput] = useState(search);
   const [actionTarget, setActionTarget] = useState<Asset | null>(null);
   const [actioning, setActioning] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [moveOpen, setMoveOpen] = useState(false);
   const [dupeOpen, setDupeOpen] = useState(false);
@@ -323,7 +321,7 @@ export default function AssetsListPage() {
           <div className="flex items-center gap-2">
             {isAdmin && (
               <SubscriptionGate>
-                <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+                <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/import`)}>
                   <Upload aria-hidden className="w-4 h-4" /><span className="ms-1">{t('assets.importCsv')}</span>
                 </Button>
               </SubscriptionGate>
@@ -456,8 +454,6 @@ export default function AssetsListPage() {
         onConfirm={handleBulkDelete}
         loading={bulkDeleting}
       />
-
-      <ImportAssetsDrawer open={importOpen} onOpenChange={setImportOpen} />
 
       <MoveResourceDialog
         open={moveOpen}

@@ -46,18 +46,25 @@
   --amber-500: #F59E0B;
   --violet-600: #7C3AED;
 
-  /* Super Admin */
-  --sa-bg:   #1E3A5F;
-  --sa-text: #BFDBFE;
-  /* legacy aliases */
-  --super-admin-bg:   #1E3A5F;
-  --super-admin-text: #BFDBFE;
+  /* Module identity colors */
+  --mod-usool:  #00695C;   /* teal   — fixed assets (Usool) */
+  --mod-raseed: #E65100;   /* orange — inventory (Raseed) */
+  --mod-haraka: #C2185B;   /* crimson — point of sale (Haraka) */
+
+  /* DEPRECATED — superadmin navy shell removed per design 2026-05-31.
+     Use standard surface tokens instead. Remove component usages before deleting. */
+  /* --sa-bg:             #1E3A5F; */
+  /* --sa-text:           #BFDBFE; */
+  /* --super-admin-bg:    #1E3A5F; */
+  /* --super-admin-text:  #BFDBFE; */
 
   /* Surfaces — Light mode */
   --surface-page:    #F8FAFC;
   --surface-card:    #FFFFFF;
   --surface-input:   #FFFFFF;
   --surface-sidebar: #FFFFFF;
+  --surface-inset:   #F1F4F9;   /* toolbar backgrounds, inset panels, SegTabs container */
+  --surface-hover:   #F3F4F6;   /* table row hover, list item hover */
   --border-default:  #E5E7EB;
   --border-strong:   #D1D5DB;
   --text-primary:    #111827;
@@ -94,7 +101,8 @@
   --dur-base:  300ms;
   --dur-slow:  450ms;
 
-  --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-mono:   "Geist Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-arabic: var(--font-thmanyah), "Noto Sans Arabic", system-ui, sans-serif;
 }
 
 /* ── Dark mode token overrides ──────────────────────────────────────── */
@@ -107,6 +115,8 @@
   --surface-sidebar: #13151E;
   --border-default:  #3D4160; /* bumped from #2E3147 for visibility */
   --border-strong:   #5A5F7D; /* bumped from #3D4160 for clearer hover */
+  --surface-inset:   #14171F;
+  --surface-hover:   #232734;
   --text-primary:    #F1F2F6;
   --text-secondary:  #8B91A8;
   --text-tertiary:   #8B91A8; /* WCAG AA pass on #0F1117 (6.1:1) */

@@ -75,7 +75,7 @@ function StatusBreakdown({ pending, approved, rejected, total, isLoading }: { pe
           <div key={r.label} className="grid grid-cols-[100px_1fr_64px] gap-3 items-center py-1 border-b border-border last:border-0">
             <span className="text-sm font-medium text-gray-700 truncate">{r.label}</span>
             <div className="h-1.5 rounded-full bg-surface-sidebar overflow-hidden">
-              <div className={`h-full rounded-full ${r.bar} transition-all duration-500`} style={{ width: `${pct}%` }} />
+              <div className={`h-full rounded-full ${r.bar} transition-[width] duration-500`} style={{ width: `${pct}%` }} />
             </div>
             <span className={`text-xs font-medium tabular-nums text-end ${r.text}`}>{r.count} · {pct}%</span>
           </div>
@@ -105,8 +105,8 @@ export default function RequestsOverviewPage() {
     {
       key: 'reference', header: t('requests.reference'),
       render: (r) => {
-        if (r.assetId) return <button className="text-primary-600 hover:underline text-sm" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/${r.assetId}`)}>{r.assetName ?? r.assetId}</button>;
-        if (r.inventoryItemId) return <button className="text-primary-600 hover:underline text-sm" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/${r.inventoryItemId}`)}>{r.inventoryItemName ?? r.inventoryItemId}</button>;
+        if (r.assetId) return <button className="text-primary-600 hover:text-primary-700 hover:underline text-sm cursor-pointer transition-colors duration-150" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/${r.assetId}`)}>{r.assetName ?? r.assetId}</button>;
+        if (r.inventoryItemId) return <button className="text-primary-600 hover:text-primary-700 hover:underline text-sm cursor-pointer transition-colors duration-150" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/${r.inventoryItemId}`)}>{r.inventoryItemName ?? r.inventoryItemId}</button>;
         return <span className="text-gray-400">—</span>;
       },
     },
@@ -121,7 +121,7 @@ export default function RequestsOverviewPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          icon={<Clock className="w-[18px] h-[18px]" />}
+          icon={<Clock aria-hidden className="w-[18px] h-[18px]" />}
           iconBg="var(--yellow-50)" iconColor="var(--yellow-700)"
           label={t('overview.pending')}
           value={pending}
@@ -130,7 +130,7 @@ export default function RequestsOverviewPage() {
           onClick={() => router.push(`${base}/list?status=PENDING`)}
         />
         <StatCard
-          icon={<CheckCircle2 className="w-[18px] h-[18px]" />}
+          icon={<CheckCircle2 aria-hidden className="w-[18px] h-[18px]" />}
           iconBg="var(--green-50)" iconColor="var(--green-700)"
           label={t('overview.approved')}
           value={approved}
@@ -138,7 +138,7 @@ export default function RequestsOverviewPage() {
           onClick={() => router.push(`${base}/list?status=APPROVED`)}
         />
         <StatCard
-          icon={<XCircle className="w-[18px] h-[18px]" />}
+          icon={<XCircle aria-hidden className="w-[18px] h-[18px]" />}
           iconBg="var(--red-50)" iconColor="var(--red-700)"
           label={t('overview.rejected')}
           value={rejected}
@@ -146,7 +146,7 @@ export default function RequestsOverviewPage() {
           onClick={() => router.push(`${base}/list?status=REJECTED`)}
         />
         <StatCard
-          icon={<Inbox className="w-[18px] h-[18px]" />}
+          icon={<Inbox aria-hidden className="w-[18px] h-[18px]" />}
           iconBg="var(--primary-50)" iconColor="var(--primary-700)"
           label={t('overview.totalRequests')}
           value={total}

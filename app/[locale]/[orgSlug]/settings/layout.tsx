@@ -14,15 +14,17 @@ interface NavItem {
   icon: React.ElementType;
   permissionKey?: string;
   featureKey?: string;
+  separator?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { key: 'organization', labelKey: 'nav.orgInfo',   href: '/settings/organization', icon: Building2 },
-  { key: 'spaces',       labelKey: 'nav.spaces',    href: '/settings/spaces',       icon: Layers,            permissionKey: 'settings.orgInfo' },
-  { key: 'lists',        labelKey: 'nav.lists',     href: '/settings/lists',        icon: SlidersHorizontal, permissionKey: 'settings.orgInfo' },
-  { key: 'tax-rates',   labelKey: 'nav.taxRates',  href: '/settings/tax-rates',    icon: Percent,           permissionKey: 'settings.taxRates', featureKey: 'pos' },
-  { key: 'jo-fotara',   labelKey: 'nav.fawtara',   href: '/settings/jo-fotara',    icon: Receipt,           permissionKey: 'settings.fawtara',  featureKey: 'pos' },
-  { key: 'receipt',      labelKey: 'nav.receipt',   href: '/settings/receipt',      icon: Printer,           permissionKey: 'settings.fawtara',  featureKey: 'pos' },
+  { key: 'organization', labelKey: 'nav.orgInfo',  href: '/settings/organization', icon: Building2 },
+  { key: 'spaces',       labelKey: 'nav.spaces',   href: '/settings/spaces',       icon: Layers,            permissionKey: 'settings.orgInfo' },
+  { key: 'lists',        labelKey: 'nav.lists',    href: '/settings/lists',        icon: SlidersHorizontal, permissionKey: 'settings.orgInfo' },
+  // POS settings — only visible when pos feature is enabled
+  { key: 'tax-rates',    labelKey: 'nav.taxRates', href: '/settings/tax-rates',    icon: Percent,   permissionKey: 'settings.taxRates', featureKey: 'pos', separator: true },
+  { key: 'jo-fotara',    labelKey: 'nav.fawtara',  href: '/settings/jo-fotara',    icon: Receipt,   permissionKey: 'settings.fawtara',  featureKey: 'pos' },
+  { key: 'receipt',      labelKey: 'nav.receipt',  href: '/settings/receipt',      icon: Printer,   permissionKey: 'settings.fawtara',  featureKey: 'pos' },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
@@ -68,8 +70,12 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
           const isActive = pathname === href || pathname.startsWith(href + '/');
           const Icon     = item.icon;
           return (
+            <div key={item.key}>
+              {item.separator && (
+                <div className="my-2 border-t border-border" />
+              )}
             <Link
-              key={item.key}
+              key={item.key + '-link'}
               href={href}
               className={cn(
                 'flex items-center gap-2.5 px-3 py-2 rounded-md text-[13.5px] font-medium transition-colors duration-150',
@@ -86,6 +92,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
               />
               {t(item.labelKey as Parameters<typeof t>[0])}
             </Link>
+            </div>
           );
         })}
       </aside>

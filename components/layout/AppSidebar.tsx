@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { useTransferStore } from '@/store/transfer.store';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, buildNavUrl } from '@/lib/nav';
+import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, NavSeparator, buildNavUrl } from '@/lib/nav';
 import { SpaceSwitcher } from '@/components/layout/SpaceSwitcher';
 import { useOrgInfo } from '@/hooks/org';
 import { useSpace } from '@/hooks/ui';
@@ -197,6 +197,7 @@ export function AppSidebar() {
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const visibleEntries = ORG_NAV_ENTRIES.filter((entry): entry is NavEntry => {
+    if ('type' in entry && entry.type === 'separator') return true;
     if ('type' in entry && entry.type === 'group') {
       if (entry.featureKey && !features[entry.featureKey]) return false;
       if (!entry.adminOnly || canSeeAdmin) return true;
@@ -278,7 +279,14 @@ export function AppSidebar() {
         </div>
 
         <nav className="flex-1 p-2.5 space-y-0.5 overflow-y-auto overflow-x-hidden">
-          {visibleEntries.map((entry) => {
+          {visibleEntries.map((entry, idx) => {
+            /* ── Separator ──────────────────────────────────────── */
+            if ('type' in entry && entry.type === 'separator') {
+              return (
+                <div key={`sep-${idx}`} className="my-1.5 mx-2 border-t border-border" />
+              );
+            }
+
             /* ── Group ──────────────────────────────────────────── */
             if ('type' in entry && entry.type === 'group') {
               const group = entry as NavGroupConfig;

@@ -665,10 +665,18 @@ export default function LoginPage() {
             </motion.div>
           </motion.div>
 
-          <motion.p variants={item} className="text-xs text-gray-500 mt-8 text-center">
+          <motion.p variants={item} className="text-sm text-gray-600 mt-8 text-center">
+            {t('auth.noAccount')}{' '}
+            <a href={`/${locale}/signup`}
+              className="text-primary-600 font-medium hover:text-primary-700 transition-colors underline-offset-2 hover:underline">
+              {t('auth.createWorkspace')}
+            </a>
+          </motion.p>
+
+          <motion.p variants={item} className="text-xs text-gray-400 mt-2 text-center">
             {t('auth.needWorkspace')}{' '}
             <button type="button" onClick={() => setContactOpen(true)}
-              className="text-primary-600 font-medium hover:text-primary-700 transition-colors underline-offset-2 hover:underline">
+              className="text-gray-500 font-medium hover:text-gray-700 transition-colors underline-offset-2 hover:underline">
               {t('auth.contactSales')}
             </button>
           </motion.p>

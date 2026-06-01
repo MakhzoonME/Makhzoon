@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useAdminGuard, useT } from '@/hooks/ui';
 import { useHarakaReport, buildReportExportUrl, type AggregateGroupBy, type AggregateBucket } from '@/hooks/haraka';
+import { useOrgInfo } from '@/hooks/org';
 
 interface DateRange {
   from: Date;
@@ -34,6 +35,7 @@ export default function HarakaReportsPage() {
   const { isAllowed } = useAdminGuard('pos.view_reports');
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
+  const { data: orgInfo } = useOrgInfo();
 
   const [range, setRange] = useState<DateRange>(() => {
     const to = new Date();
@@ -55,8 +57,10 @@ export default function HarakaReportsPage() {
         title={t('nav.harakaReports')}
         description={t('reports.subtitle')}
         breadcrumb={[
+          { label: orgInfo?.name ?? params.orgSlug },
+          { label: params.space },
           { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
-          { label: t('nav.harakaReports'), href: '#' },
+          { label: t('nav.harakaReports') },
         ]}
       />
 

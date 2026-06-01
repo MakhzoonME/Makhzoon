@@ -14,11 +14,13 @@ import { hasPermission } from '@/lib/permissions';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
 import type { PosCustomer } from '@/types';
+import { useOrgInfo } from '@/hooks/org';
 
 export default function CustomersListPage() {
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
+  const { data: orgInfo } = useOrgInfo();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const { data, isLoading } = useCustomers({ search: search || undefined, page, pageSize: 20 });
@@ -109,8 +111,10 @@ export default function CustomersListPage() {
         title={t('customers.title')}
         description={t('customers.subtitle')}
         breadcrumb={[
+          { label: orgInfo?.name ?? params.orgSlug },
+          { label: params.space },
           { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
-          { label: t('customers.title'), href: '#' },
+          { label: t('customers.title') },
         ]}
         actions={
           <Button onClick={() => router.push(`${base}/new`)}>

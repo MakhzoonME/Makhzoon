@@ -9,12 +9,16 @@ import { Input } from '@/components/ui/input';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { openSessionSchema, type OpenSessionFormData } from '@/lib/modules/haraka/sessions/schemas';
 import { useOpenSession } from '@/hooks/haraka';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 
 export default function NewSessionPage() {
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
+  const { t } = useT();
+  const { data: orgInfo } = useOrgInfo();
   const openMut = useOpenSession();
+  const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
 
   const form = useForm<OpenSessionFormData>({
     resolver: zodResolver(openSessionSchema),
@@ -23,23 +27,25 @@ export default function NewSessionPage() {
 
   async function onSubmit(values: OpenSessionFormData) {
     try {
-      const res = await openMut.mutateAsync(values);
-      toast.success('Session opened');
-      router.push(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/register`);
+      await openMut.mutateAsync(values);
+      toast.success(t('haraka.openNewSession'));
+      router.push(`${base}/register`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to open session');
     }
   }
 
   return (
-    <div className="p-6 max-w-lg">
+    <div className="max-w-lg">
       <PageHeader
-        title="Open new session"
-        description="Count your starting cash and enter the amount below. This becomes the opening float."
+        title={t('haraka.openNewSession')}
+        description={t('haraka.openSessionDesc')}
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
-          { label: 'Sessions', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions` },
-          { label: 'New', href: '#' },
+          { label: orgInfo?.name ?? params.orgSlug },
+          { label: params.space },
+          { label: t('nav.pos'), href: base },
+          { label: t('haraka.sessions'), href: `${base}/sessions` },
+          { label: t('haraka.openNewSession') },
         ]}
       />
 
@@ -50,7 +56,7 @@ export default function NewSessionPage() {
             name="openingFloat"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Opening cash float (JOD) *</FormLabel>
+                <FormLabel>{t('haraka.float')} (JOD) *</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -70,9 +76,9 @@ export default function NewSessionPage() {
 
           <div className="flex gap-2">
             <Button type="submit" disabled={openMut.isPending}>
-              {openMut.isPending ? 'Opening…' : 'Open session'}
+              {openMut.isPending ? t('common.saving') : t('haraka.openNewSession')}
             </Button>
-            <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => router.back()}>{t('common.cancel')}</Button>
           </div>
         </form>
       </Form>

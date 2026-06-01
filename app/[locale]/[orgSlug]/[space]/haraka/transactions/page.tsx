@@ -6,7 +6,8 @@ import { PageHeader, DataTable, FilterBar, StatusBadge } from '@/components/shar
 import type { ColumnDef } from '@/components/shared';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { useTransactions } from '@/hooks/haraka';
-import { useAdminGuard } from '@/hooks/ui';
+import { useAdminGuard, useT } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import type { PosTransaction } from '@/types';
 
 type StatusFilter = 'all' | 'completed' | 'refunded' | 'voided';
@@ -14,6 +15,8 @@ type StatusFilter = 'all' | 'completed' | 'refunded' | 'voided';
 export default function TransactionsListPage() {
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
+  const { t } = useT();
+  const { data: orgInfo } = useOrgInfo();
   const { isAllowed } = useAdminGuard('pos.view_reports');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [page, setPage] = useState(1);
@@ -72,8 +75,10 @@ export default function TransactionsListPage() {
         title="Transactions"
         description="All sales, refunds and voids across the organization."
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
-          { label: 'Transactions', href: '#' },
+          { label: orgInfo?.name ?? params.orgSlug },
+          { label: params.space },
+          { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
+          { label: t('nav.transactions') },
         ]}
       />
 

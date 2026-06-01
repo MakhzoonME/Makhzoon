@@ -7,6 +7,7 @@ import { PageHeader, ConfirmDialog } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { useCustomer, useDeleteCustomer } from '@/hooks/haraka';
 import { toast, useT } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import { useAuthStore } from '@/store/auth.store';
 import { useAccessibleSpaces } from '@/hooks/spaces';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
@@ -21,6 +22,7 @@ export default function CustomerDetailPage() {
   const [moveOpen, setMoveOpen] = useState(false);
   const [dupeOpen, setDupeOpen] = useState(false);
   const { t } = useT();
+  const { data: orgInfo } = useOrgInfo();
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin' || user?.role === 'org_owner' || user?.role === 'super_admin';
   const { data: spaceList } = useAccessibleSpaces();
@@ -64,9 +66,11 @@ export default function CustomerDetailPage() {
         title={customer.name}
         description="Customer details"
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
-          { label: 'Customers', href: base },
-          { label: customer.name, href: '#' },
+          { label: orgInfo?.name ?? params.orgSlug },
+          { label: params.space },
+          { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
+          { label: t('customers.title'), href: base },
+          { label: customer.name },
         ]}
         actions={
           <div className="flex gap-2">

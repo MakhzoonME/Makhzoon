@@ -10,6 +10,7 @@ import { ErrorState } from '@/components/shared/ErrorState';
 import { usePurchase, useReceivePurchase, useDeletePurchase } from '@/hooks/inventory';
 import { PurchaseStatusBadge } from '@/components/inventory/purchases/PurchaseStatusBadge';
 import { useT } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import { toast } from '@/hooks/ui';
 import { formatDate } from '@/lib/utils/date';
 
@@ -32,6 +33,7 @@ export default function PurchaseDetailPage(props: Props) {
   const params      = use(props.params);
   const router      = useRouter();
   const { t }       = useT();
+  const { data: orgInfo } = useOrgInfo();
   const { data, isLoading } = usePurchase(params.purchaseId);
   const receiveMut  = useReceivePurchase();
   const deleteMut   = useDeletePurchase();
@@ -80,7 +82,9 @@ export default function PurchaseDetailPage(props: Props) {
       <PageHeader
         title={`${t('col.supplier')}: ${purchase.supplierName}`}
         breadcrumb={[
-          { label: t('nav.inventory'), href: base },
+          { label: orgInfo?.name ?? params.orgSlug },
+          { label: params.space },
+          { label: t('nav.inventory'), href: `${base}/list` },
           { label: t('nav.purchases'), href: `${base}/purchases` },
           { label: purchase.supplierName, href: '#' },
         ]}

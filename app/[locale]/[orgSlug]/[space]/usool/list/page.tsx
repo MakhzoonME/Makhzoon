@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 // useEffect retained for debounced-search → URL commit only.
 import { Plus, Pencil, Trash2, Upload, ClipboardCheck, ArrowRight, Copy } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
 import { useAccessibleSpaces } from '@/hooks/spaces';
@@ -31,6 +32,47 @@ import { format } from 'date-fns';
 import { useDebounce } from '@/hooks/ui';
 import { useAssetCategories } from '@/hooks/assets';
 import { useList } from '@/hooks/lists';
+
+/* ── Helpers ─────────────────────────────────────────────────────── */
+function AssigneeCell({ name }: { name?: string | null }) {
+  if (!name) return <span className="text-gray-400">—</span>;
+  const parts = name.trim().split(/\s+/);
+  const initials = ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        aria-hidden
+        className="inline-flex items-center justify-center rounded-full text-[10px] font-semibold flex-shrink-0"
+        style={{ width: 22, height: 22, background: 'var(--primary-100)', color: 'var(--primary-700)' }}
+      >
+        {initials}
+      </span>
+      <span className="text-sm text-gray-700 truncate max-w-[110px]">{name}</span>
+    </div>
+  );
+}
+
+function useAssetSummary(space: string | null) {
+  return useQuery({
+    queryKey: ['asset-summary', space],
+    enabled: !!space,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const [activeRes, retiredRes, expiringRes] = await Promise.all([
+        fetch('/api/assets?status=Active&pageSize=1', { headers }),
+        fetch('/api/assets?status=Retired&pageSize=1', { headers }),
+        fetch('/api/assets?status=Expiring&pageSize=1', { headers }),
+      ]);
+      const [a, r, e] = await Promise.all([
+        activeRes.ok ? activeRes.json() : { total: 0 },
+        retiredRes.ok ? retiredRes.json() : { total: 0 },
+        expiringRes.ok ? expiringRes.json() : { total: 0 },
+      ]);
+      return { active: a.total as number, retired: r.total as number, expiring: e.total as number };
+    },
+  });
+}
 
 function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
   const qs = new URLSearchParams();
@@ -76,6 +118,8 @@ export default function AssetsListPage() {
   function handleDrawerCloseRequest() {
     if (formDirty) { setShowDiscardDrawer(true); } else { closeDrawer(); }
   }
+
+  const { data: summary } = useAssetSummary(space);
 
   const { data: assetsData, isLoading } = useAssets({
     status: status || undefined,
@@ -124,40 +168,76 @@ export default function AssetsListPage() {
   const showSelection = canBulkDelete || canBulkMove || canBulkDuplicate;
 
   const columns: ColumnDef<Asset>[] = [
-    { key: 'name', header: t('col.name'), sortable: true, render: (a) => <button className="font-medium text-primary-600 hover:text-primary-700 hover:underline text-start" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/${a.id}`)}>{a.name}</button> },
-    { key: 'category', header: t('col.category'), sortable: true, render: (a) => a.category },
-    { key: 'status', header: t('col.status'), sortable: true, render: (a) => <StatusBadge status={a.status} marker="dot" /> },
-    { key: 'serialNumber', header: t('col.serialNumber'), sortable: true, render: (a) => a.serialNumber ? <span className="font-mono text-xs text-gray-600">{a.serialNumber}</span> : <span className="text-gray-400">—</span> },
-    { key: 'assignedTo', header: t('col.assignedTo'), sortable: true, render: (a) => a.assignedTo || <span className="text-gray-400">—</span> },
-    { key: 'location', header: t('col.location'), sortable: true, render: (a) => a.location || <span className="text-gray-400">—</span> },
-    { key: 'purchaseDate', header: t('col.purchaseDate'), sortable: true, render: (a) => a.purchaseDate ? formatDate(a.purchaseDate) : <span className="text-gray-400">—</span> },
     {
-      key: 'actions', header: t('col.actions'),
+      key: 'name', header: t('col.name'), sortable: true,
+      render: (a) => (
+        <button
+          className="font-medium text-primary-600 hover:text-primary-700 hover:underline text-start cursor-pointer transition-colors duration-150"
+          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/${a.id}`)}
+        >
+          {a.name}
+        </button>
+      ),
+    },
+    { key: 'category', header: t('col.category'), sortable: true, render: (a) => <span className="text-sm text-gray-600">{a.category}</span> },
+    { key: 'status', header: t('col.status'), sortable: true, render: (a) => <StatusBadge status={a.status} marker="dot" /> },
+    {
+      key: 'serialNumber', header: t('col.serialNumber'), sortable: true,
+      render: (a) => a.serialNumber
+        ? <span className="font-mono text-xs text-gray-600">{a.serialNumber}</span>
+        : <span className="text-gray-400">—</span>,
+    },
+    {
+      key: 'assignedTo', header: t('col.assignedTo'), sortable: true,
+      render: (a) => <AssigneeCell name={a.assignedTo} />,
+    },
+    { key: 'location', header: t('col.location'), sortable: true, render: (a) => a.location ? <span className="text-sm text-gray-600">{a.location}</span> : <span className="text-gray-400">—</span> },
+    {
+      key: 'purchaseDate', header: t('col.purchaseDate'), sortable: true,
+      render: (a) => a.purchaseDate
+        ? <span className="text-sm text-gray-600 tabular-nums font-mono">{formatDate(a.purchaseDate)}</span>
+        : <span className="text-gray-400">—</span>,
+    },
+    {
+      key: 'purchaseCost', header: t('col.cost'), sortable: true,
+      render: (a) => a.purchaseCost != null
+        ? <span className="text-sm font-medium tabular-nums font-mono">{a.purchaseCost.toLocaleString()}</span>
+        : <span className="text-gray-400">—</span>,
+    },
+    {
+      key: 'actions', header: '',
       render: (a) => (
         <div className="flex items-center gap-1">
           {isAdmin ? (
             <>
               {a.status !== 'Retired' && (
                 <SubscriptionGate>
-                  <Button size="sm" variant="ghost" aria-label={t('common.edit')} onClick={(e) => { e.stopPropagation(); setEditTarget(a); setDrawerOpen(true); }}>
-                    <Pencil className="w-3.5 h-3.5" />
+                  <Button size="sm" variant="ghost" aria-label={t('common.edit')}
+                    className="transition-colors duration-150"
+                    onClick={(e) => { e.stopPropagation(); setEditTarget(a); setDrawerOpen(true); }}>
+                    <Pencil aria-hidden className="w-3.5 h-3.5" />
                   </Button>
                 </SubscriptionGate>
               )}
               {a.status === 'Retired' && (
                 <SubscriptionGate>
-                  <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); setActionTarget(a); }}
-                    title={t('assets.deleteBtn')}>
-                    <Trash2 className="w-3.5 h-3.5" />
+                  <Button size="sm" variant="ghost"
+                    aria-label={t('assets.deleteBtn')}
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors duration-150"
+                    onClick={(e) => { e.stopPropagation(); setActionTarget(a); }}>
+                    <Trash2 aria-hidden className="w-3.5 h-3.5" />
                   </Button>
                 </SubscriptionGate>
               )}
             </>
           ) : (
-            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); router.push(`/${locale}/${orgSlug}/${space}/usool/${a.id}`); }}>{t('assets.view')}</Button>
+            <Button size="sm" variant="ghost" className="transition-colors duration-150"
+              onClick={(e) => { e.stopPropagation(); router.push(`/${locale}/${orgSlug}/${space}/usool/${a.id}`); }}>
+              {t('assets.view')}
+            </Button>
           )}
         </div>
-      )
+      ),
     },
   ];
 
@@ -229,6 +309,15 @@ export default function AssetsListPage() {
     syncAllToUrl({ sortBy: sortByField, sortDir: dir === 'none' ? '' : dir });
   }
 
+  const totalAll = (summary?.active ?? 0) + (summary?.retired ?? 0) + (summary?.expiring ?? 0);
+
+  const statusChips = [
+    { label: t('assets.filterAll'),      value: '',           count: totalAll },
+    { label: t('assets.filterActive'),   value: 'Active',     count: summary?.active },
+    { label: t('assets.filterExpiring'), value: 'Expiring',   count: summary?.expiring },
+    { label: t('assets.filterRetired'),  value: 'Retired',    count: summary?.retired },
+  ];
+
   return (
     <div>
       <PageHeader
@@ -240,25 +329,74 @@ export default function AssetsListPage() {
         actions={
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/audits`)}>
-              <ClipboardCheck className="w-4 h-4" /><span className="ms-1">{t('audits.title')}</span>
+              <ClipboardCheck aria-hidden className="w-4 h-4" /><span className="ms-1">{t('audits.title')}</span>
             </Button>
             {isAdmin && (
               <SubscriptionGate>
                 <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
-                  <Upload className="w-4 h-4" /><span className="ms-1">{t('assets.importCsv')}</span>
+                  <Upload aria-hidden className="w-4 h-4" /><span className="ms-1">{t('assets.importCsv')}</span>
                 </Button>
               </SubscriptionGate>
             )}
             {canCreateAsset && (
               <SubscriptionGate>
                 <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
-                  <Plus className="w-4 h-4" /><span className="ms-1">{t('assets.addAsset')}</span>
+                  <Plus aria-hidden className="w-4 h-4" /><span className="ms-1">{t('assets.addAsset')}</span>
                 </Button>
               </SubscriptionGate>
             )}
           </div>
         }
       />
+
+      {/* Stats line */}
+      {summary && (
+        <div className="flex items-center gap-3 mb-4 text-sm text-gray-500 flex-wrap">
+          <span className="tabular-nums">
+            <span className="font-semibold text-green-700 dark:text-green-400">{summary.active.toLocaleString()}</span>
+            {' '}{t('assets.statActive')}
+          </span>
+          <span className="text-gray-300">·</span>
+          <span className="tabular-nums">
+            <span className="font-semibold text-gray-700 dark:text-gray-300">{summary.retired.toLocaleString()}</span>
+            {' '}{t('assets.statRetired')}
+          </span>
+          <span className="text-gray-300">·</span>
+          <span className="tabular-nums">
+            <span className={`font-semibold ${summary.expiring > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700'}`}>
+              {summary.expiring.toLocaleString()}
+            </span>
+            {' '}{t('assets.statExpiring')}
+          </span>
+        </div>
+      )}
+
+      {/* Quick filter chips */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        {statusChips.map((chip) => {
+          const active = status === chip.value;
+          return (
+            <button
+              key={chip.value}
+              onClick={() => syncAllToUrl({ status: chip.value, page: '1' })}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors duration-150 cursor-pointer ${
+                active
+                  ? 'bg-primary-600 text-white border-primary-600'
+                  : 'bg-surface-card text-gray-600 border-border hover:border-gray-300 hover:bg-surface-sidebar'
+              }`}
+            >
+              {chip.label}
+              {chip.count != null && (
+                <span className={`tabular-nums px-1.5 py-0.5 rounded-full text-[10px] ${
+                  active ? 'bg-white/20 text-white' : 'bg-surface-inset text-gray-500'
+                }`}>
+                  {chip.count.toLocaleString()}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
       <FilterBar
         searchPlaceholder={t('assets.searchPlaceholder')}

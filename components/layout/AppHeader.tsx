@@ -86,9 +86,8 @@ export function AppHeader() {
               }}
             >
               <span className="text-[14px] font-bold text-gray-900 dark:text-gray-100">
-                Makhzoon
+                {t('brand.name')}
               </span>
-              <span className="text-[14px] font-bold text-primary-500">.ME</span>
             </div>
           </div>
         </div>
@@ -106,38 +105,25 @@ export function AppHeader() {
         {/* ── Content section ──────────────────────────────────── */}
         <div className="flex flex-1 items-center gap-3 px-4 min-w-0 h-full">
 
-          {/* Page title + breadcrumb — desktop only */}
-          {(headerTitle || headerBreadcrumb.length > 0) && (
-            <div className="hidden md:flex flex-col justify-center min-w-0 flex-shrink-0 max-w-sm">
-              {headerBreadcrumb.length > 0 && (
-                <div className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 leading-none mb-0.5 flex-wrap">
-                  {headerBreadcrumb.map((crumb, i) => (
-                    <span key={i} className="flex items-center gap-1">
-                      {i > 0 && (
-                        <span className="text-gray-300 dark:text-gray-600">
-                          {isRtl
-                            ? <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden><path d="M8 2.5L4.5 6 8 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                            : <ChevronRightSVG />
-                          }
-                        </span>
-                      )}
-                      <span className={cn(
-                        'whitespace-nowrap',
-                        i === headerBreadcrumb.length - 1 ? 'text-gray-600 dark:text-gray-300 font-medium' : 'text-gray-400',
-                      )}>
-                        {crumb.label}
-                      </span>
-                    </span>
-                  ))}
-                </div>
-              )}
-              {headerTitle && (
+          {/* Page context — module (large) + page name (small) — desktop only */}
+          {(headerTitle || headerBreadcrumb.length > 0) && (() => {
+            // Strip org + space (first 2 breadcrumb items), keep module + sub-pages
+            const crumbs = headerBreadcrumb.slice(2);
+            const moduleName = crumbs[0]?.label ?? headerTitle;
+            const pageName   = crumbs.length > 1 ? crumbs[crumbs.length - 1]?.label : null;
+            return (
+              <div className="hidden md:flex flex-col justify-center min-w-0 flex-shrink-0 max-w-xs">
                 <p className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 leading-tight truncate">
-                  {headerTitle}
+                  {moduleName}
                 </p>
-              )}
-            </div>
-          )}
+                {pageName && pageName !== moduleName && (
+                  <p className="text-[12px] text-gray-400 dark:text-gray-500 leading-tight truncate mt-0.5">
+                    {pageName}
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Search bar — flex-1, desktop centered */}
           <div className="flex-1 flex justify-center">

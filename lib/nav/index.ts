@@ -42,7 +42,8 @@ export interface NavGroupConfig {
   items: NavItemConfig[];
 }
 
-export type NavEntry = NavItemConfig | NavGroupConfig;
+export interface NavSeparator { type: 'separator' }
+export type NavEntry = NavItemConfig | NavGroupConfig | NavSeparator;
 
 export const ORG_NAV_ENTRIES: NavEntry[] = [
   { href: '/dashboard',    label: 'Dashboard',    labelKey: 'nav.dashboard',    featureKey: 'dashboard' },
@@ -98,6 +99,7 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
     ],
   },
   { href: '/reports',      label: 'Reports',      labelKey: 'nav.reports',      adminOnly: true, featureKey: 'reports' },
+  { type: 'separator' } as NavSeparator,
   { href: '/support',      label: 'Support',      labelKey: 'nav.support',      featureKey: 'support' },
   { href: '/audit-logs',   label: 'Audit Logs',   labelKey: 'nav.auditLogs',    adminOnly: true, featureKey: 'auditLogs' },
   {
@@ -120,6 +122,7 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
 
 /** Flat list of all nav items (groups expanded); sub-items inherit group's adminOnly + scope */
 const ORG_NAV_FLAT: NavItemConfig[] = ORG_NAV_ENTRIES.flatMap((entry) => {
+  if ('type' in entry && entry.type === 'separator') return [];
   if ('type' in entry && entry.type === 'group') {
     return entry.items.map((item) => ({
       ...item,

@@ -269,10 +269,9 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
             <h2 className="text-lg font-bold text-gray-900 truncate">{asset.name}</h2>
             <StatusBadge status={asset.status} marker="dot" />
           </div>
-          <p className="text-xs text-gray-400 font-mono">
-            {assetId}
-            {asset.serialNumber && <> · <span>{t('col.serialNumber')}: {asset.serialNumber}</span></>}
-          </p>
+          {asset.serialNumber && (
+            <p className="text-xs text-gray-400 font-mono">{t('col.serialNumber')}: {asset.serialNumber}</p>
+          )}
         </div>
       </div>
 

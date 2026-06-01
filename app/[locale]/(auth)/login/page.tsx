@@ -514,19 +514,21 @@ export default function LoginPage() {
         </div>
 
         <motion.div variants={container} initial="hidden" animate="show" className="w-full max-w-sm">
-          {/* Logo */}
+          {/* Logo — mark + wordmark with ·ME suffix */}
           <motion.div variants={item} className="flex items-center gap-2.5 mb-8">
-            <MakhzoonMark size={32} />
-            <span className="text-base font-semibold text-gray-900">
+            <MakhzoonMark size={36} radius={9} />
+            <span className="text-lg font-bold text-gray-900" style={{ letterSpacing: '-0.01em' }}>
               {t('auth.brandName')}
+              <span className="text-gray-400 font-medium">·ME</span>
             </span>
           </motion.div>
 
           <motion.div variants={item} className="mb-7">
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+            <h1 className="font-extrabold text-gray-900 tracking-tight"
+              style={{ fontSize: 28, letterSpacing: '-0.01em', fontFamily: 'var(--font-display)' }}>
               {t('auth.welcomeBack')}
             </h1>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-gray-500 mt-1.5 leading-snug">
               {t('auth.welcomeSubtitle')}
             </p>
           </motion.div>
@@ -545,18 +547,22 @@ export default function LoginPage() {
           </AnimatePresence>
 
           <motion.div animate={shakeControls}>
-            <motion.div variants={item} className="bg-surface-card rounded-2xl shadow-lg shadow-black/10 border border-border p-8">
-              {/* Tab toggle */}
-              <div className="flex rounded-lg border border-border p-1 gap-1 bg-surface-page mb-6">
+            <motion.div variants={item}
+              className="bg-surface-card border border-border"
+              style={{ borderRadius: 16, boxShadow: 'var(--shadow-md)', padding: 26 }}>
+              {/* Tab toggle — surface-inset container, rounder active pill */}
+              <div className="flex p-1 gap-1 mb-6"
+                style={{ background: 'var(--surface-inset)', borderRadius: 12 }}>
                 <button
                   type="button"
                   onClick={() => { setTab('email'); setEmailError(''); setUsernameError(''); }}
                   className={cn(
-                    'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-sm font-medium transition-colors',
+                    'flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-semibold transition-all duration-150',
                     tab === 'email'
-                      ? 'bg-surface-card text-primary-600 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-800'
+                      ? 'bg-surface-card text-primary-700 shadow-xs'
+                      : 'text-gray-500 hover:text-gray-700'
                   )}
+                  style={{ borderRadius: 9 }}
                 >
                   <MailSVG /> {t('auth.tabEmail')}
                 </button>
@@ -564,11 +570,12 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => { setTab('username'); setEmailError(''); setUsernameError(''); }}
                   className={cn(
-                    'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-sm font-medium transition-colors',
+                    'flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-semibold transition-all duration-150',
                     tab === 'username'
-                      ? 'bg-surface-card text-primary-600 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-800'
+                      ? 'bg-surface-card text-primary-700 shadow-xs'
+                      : 'text-gray-500 hover:text-gray-700'
                   )}
+                  style={{ borderRadius: 9 }}
                 >
                   <UserSVG /> {t('auth.tabUsername')}
                 </button>
@@ -670,31 +677,61 @@ export default function LoginPage() {
 
       {/* ── Right: Marketing panel ────────────────────────────── */}
       <div
-        className="hidden lg:flex w-[480px] xl:w-[560px] flex-shrink-0 flex-col justify-between p-12 relative overflow-hidden"
-        style={{ background: 'var(--primary-600)' }}
+        className="hidden lg:flex w-[46%] flex-shrink-0 flex-col justify-between relative overflow-hidden"
+        style={{ background: 'linear-gradient(150deg, #4F46E5 0%, #4338CA 100%)', padding: '40px 56px', color: '#fff' }}
       >
-        {/* Decorative rings */}
-        <div aria-hidden className="absolute end-0 bottom-0 translate-x-1/3 translate-y-1/3 w-[480px] h-[480px] rounded-full border border-white/10 pointer-events-none" />
-        <div aria-hidden className="absolute end-0 bottom-0 translate-x-1/4 translate-y-1/4 w-[320px] h-[320px] rounded-full border border-white/8 pointer-events-none" />
+        {/* Decorative — 4-ring SVG bottom-right */}
+        <svg
+          aria-hidden
+          className="pointer-events-none absolute"
+          style={{ insetInlineEnd: -160, bottom: -180, opacity: 0.18 }}
+          width="560" height="560" viewBox="0 0 560 560" fill="none"
+        >
+          {[120, 180, 240, 280].map((r) => (
+            <circle key={r} cx="380" cy="380" r={r} stroke="#fff" strokeWidth="1.2" />
+          ))}
+        </svg>
 
-        {/* Logo — indigo mark on purple background */}
-        <div className="flex items-center gap-2.5 relative z-10">
-          <MakhzoonMark size={32} fill="rgba(255,255,255,0.25)" glyphFill="rgba(255,255,255,0.9)" radius={8} />
-          <span className="text-sm font-semibold text-white/90">{t('auth.brandName')}</span>
+        {/* Decorative — soft radial blob top-start */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute"
+          style={{
+            insetInlineStart: -80, top: -80,
+            width: 320, height: 320,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.14), transparent 70%)',
+            filter: 'blur(20px)',
+          }}
+        />
+
+        {/* Logo */}
+        <div className="relative flex items-center gap-2.5 z-10">
+          <MakhzoonMark size={32} fill="rgba(255,255,255,0.18)" glyphFill="#fff" radius={8} />
+          <span className="text-base font-bold" style={{ opacity: 0.92 }}>
+            {t('auth.brandName')}
+            <span style={{ opacity: 0.65, fontWeight: 500 }}>·ME</span>
+          </span>
         </div>
 
         {/* Hero copy */}
-        <div className="relative z-10 space-y-6">
-          <h2 className="text-[2rem] font-bold text-white leading-tight tracking-tight max-w-sm" style={{ letterSpacing: '-0.5px' }}>
+        <div className="relative z-10" style={{ maxWidth: 420 }}>
+          <h2
+            className="font-extrabold text-white leading-tight"
+            style={{ fontSize: 40, letterSpacing: '-0.01em', fontFamily: 'var(--font-display)', marginBottom: 22 }}
+          >
             {t('auth.marketingHeadline')}
           </h2>
-          <p className="text-sm text-white/80 leading-relaxed max-w-xs">
+          <p style={{ fontSize: 16, lineHeight: 1.65, color: 'rgba(255,255,255,0.82)', marginBottom: 30 }}>
             {t('auth.marketingBody')}
           </p>
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {featureKeys.map((key) => (
-              <li key={key} className="flex items-center gap-3 text-sm text-white/90">
-                <span className="h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.2)' }}>
+              <li key={key} className="flex items-center gap-3" style={{ fontSize: 15.5, fontWeight: 500, color: 'rgba(255,255,255,0.92)' }}>
+                <span
+                  className="flex items-center justify-center flex-shrink-0 rounded-full"
+                  style={{ width: 26, height: 26, background: 'rgba(255,255,255,0.18)' }}
+                >
                   <CheckSVG />
                 </span>
                 {t(key)}
@@ -704,7 +741,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-xs text-white/50 relative z-10 mt-8">
+        <p className="relative z-10" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
           © {new Date().getFullYear()} {t('auth.brandName')} · {t('auth.marketingFooter')}
         </p>
       </div>

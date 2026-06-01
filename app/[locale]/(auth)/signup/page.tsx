@@ -23,6 +23,7 @@ function AlertCircleSVG() {
     </svg>
   );
 }
+import { ArrowRight } from 'lucide-react';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { buildOrgPath, buildSuperAdminPath } from '@/lib/utils/tenant-url';
 import { useAuthStore } from '@/store/auth.store';
@@ -123,83 +124,124 @@ export default function SignupPage() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 py-12 overflow-hidden bg-surface-page">
+
+      {/* Dot-field background */}
       <div
         aria-hidden
-        className="absolute inset-0 -z-10 opacity-70"
+        className="pointer-events-none absolute inset-0 -z-10"
         style={{
-          background:
-            'radial-gradient(1200px 600px at 10% -10%, rgba(99,102,241,0.18), transparent 60%), radial-gradient(900px 500px at 110% 10%, rgba(129,140,248,0.22), transparent 55%), radial-gradient(800px 600px at 50% 120%, rgba(79,70,229,0.15), transparent 60%)',
-          backgroundSize: '300% 300%',
-          animation: 'gradient-shift 14s ease infinite',
+          backgroundImage: `radial-gradient(circle, rgba(79,70,229,0.10) 1px, transparent 1px)`,
+          backgroundSize: '22px 22px',
+          opacity: 0.7,
         }}
       />
+
+      {/* Logo — top-left, pinned */}
+      <motion.div
+        initial={{ opacity: 0, y: -4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: EASE_OUT }}
+        className="absolute top-6 start-7 flex items-center gap-2.5"
+      >
+        <MakhzoonMark size={30} radius={7} />
+        <span className="text-sm font-bold text-gray-900" style={{ letterSpacing: '-0.01em' }}>
+          Makhzoon<span className="text-gray-400 font-medium">·ME</span>
+        </span>
+      </motion.div>
 
       <motion.div
         variants={container}
         initial="hidden"
         animate="show"
-        className="relative w-full max-w-md"
+        className="relative w-full"
+        style={{ maxWidth: 460 }}
       >
-        <div className="text-center mb-8">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.85, y: -4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.55, ease: EASE_SPRING }}
-            className="mb-4"
+        {/* Headline — above card */}
+        <div className="mb-6">
+          <motion.h1
+            variants={item}
+            className="font-extrabold text-gray-900 tracking-tight"
+            style={{ fontSize: 22, fontFamily: 'var(--font-display)' }}
           >
-            <MakhzoonMark size={48} />
-          </motion.div>
-          <motion.h1 variants={item} className="text-2xl font-bold text-gray-900">
             Create your workspace
           </motion.h1>
-          <motion.p variants={item} className="text-sm text-gray-500 mt-1">
-            Start your 14-day free trial.
+          <motion.p variants={item} className="text-sm text-gray-500 mt-1 leading-snug">
+            Run your whole business in one place. No spreadsheets.
           </motion.p>
         </div>
 
         <motion.div animate={shakeControls}>
           <motion.div
             variants={item}
-            className="bg-surface-card backdrop-blur-sm rounded-2xl shadow-lg shadow-black/10 border border-border p-6"
+            className="bg-surface-card border border-border"
+            style={{ borderRadius: 14, boxShadow: 'var(--shadow-lg)', padding: 34 }}
           >
             <form onSubmit={handleSubmit} className="space-y-4">
+
+              {/* Organization name */}
               <motion.div variants={item} className="space-y-1.5">
-                <Label htmlFor="orgName">Organization name</Label>
-                <Input id="orgName" value={orgName} onChange={(e) => handleOrgName(e.target.value)} placeholder="Acme Inc." required />
+                <Label htmlFor="orgName">Organization name <span className="text-red-500">*</span></Label>
+                <Input id="orgName" value={orgName} onChange={(e) => handleOrgName(e.target.value)} placeholder="Acme Corp" required />
               </motion.div>
 
+              {/* Workspace URL */}
               <motion.div variants={item} className="space-y-1.5">
-                <Label htmlFor="subdomain">Workspace ID</Label>
-                <div className="flex items-center rounded-md border border-gray-300 focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-primary-500 overflow-hidden transition-colors">
-                  <input
-                    id="subdomain"
-                    value={subdomain}
-                    onChange={(e) => { setSubdomainTouched(true); setSubdomain(e.target.value.toLowerCase()); }}
-                    placeholder="acme"
-                    required
-                    pattern="^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
-                    minLength={3}
-                    maxLength={40}
-                    className="flex-1 px-3 py-2 text-sm outline-none bg-surface-card"
-                  />
+                <Label htmlFor="subdomain">
+                  Workspace URL
+                  <span className="ms-1.5 text-xs font-normal text-gray-400">You can change this later.</span>
+                </Label>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 flex items-center rounded-md border border-border bg-surface-card focus-within:ring-2 focus-within:ring-primary-500/30 focus-within:border-primary-500 overflow-hidden transition-colors">
+                    <input
+                      id="subdomain"
+                      value={subdomain}
+                      onChange={(e) => { setSubdomainTouched(true); setSubdomain(e.target.value.toLowerCase()); }}
+                      placeholder="acme-corp"
+                      required
+                      pattern="^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
+                      minLength={3}
+                      maxLength={40}
+                      className="flex-1 px-3 py-2 text-sm outline-none bg-transparent"
+                    />
+                  </div>
+                  <span className="text-xs text-gray-400 font-mono whitespace-nowrap flex-shrink-0">.makhzoon.me</span>
                 </div>
               </motion.div>
 
-              <motion.hr variants={item} className="border-border" />
-
-              <motion.div variants={item} className="space-y-1.5">
-                <Label htmlFor="displayName">Your name</Label>
-                <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Jane Doe" required />
+              {/* Name + Industry — 2-column */}
+              <motion.div variants={item} className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="displayName">Your name <span className="text-red-500">*</span></Label>
+                  <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Layla Hadid" required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="industry">Industry</Label>
+                  <select
+                    id="industry"
+                    className="w-full h-9 rounded-md border border-border bg-surface-card px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-colors"
+                  >
+                    <option value="">Select…</option>
+                    <option value="technology">Technology</option>
+                    <option value="retail">Retail</option>
+                    <option value="healthcare">Healthcare</option>
+                    <option value="education">Education</option>
+                    <option value="manufacturing">Manufacturing</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
               </motion.div>
 
+              {/* Work email */}
               <motion.div variants={item} className="space-y-1.5">
-                <Label htmlFor="email">Work email</Label>
-                <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@acme.com" required />
+                <Label htmlFor="email">Work email <span className="text-red-500">*</span></Label>
+                <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="layla@acme.com" required />
               </motion.div>
 
+              {/* Password */}
               <motion.div variants={item} className="space-y-1.5">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" required minLength={8} />
+                <Label htmlFor="password">Password <span className="text-red-500">*</span></Label>
+                <Input id="password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="········" required minLength={8} />
+                <p className="text-xs text-gray-400 mt-1">At least 8 characters.</p>
               </motion.div>
 
               <AnimatePresence initial={false}>
@@ -210,7 +252,7 @@ export default function SignupPage() {
                     animate={{ opacity: 1, height: 'auto', y: 0 }}
                     exit={{ opacity: 0, height: 0, y: -4 }}
                     transition={{ duration: 0.22, ease: EASE_OUT }}
-                    className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2"
+                    className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5"
                   >
                     <AlertCircleSVG />
                     <span>{error}</span>
@@ -219,29 +261,17 @@ export default function SignupPage() {
               </AnimatePresence>
 
               <motion.div variants={item}>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full gap-2" disabled={loading}>
                   <AnimatePresence mode="wait" initial={false}>
                     {loading ? (
-                      <motion.span
-                        key="loading"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15 }}
-                        className="inline-flex items-center gap-2"
-                      >
-                        <Loader2SVG />
-                        Creating your workspace…
+                      <motion.span key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }} className="inline-flex items-center gap-2">
+                        <Loader2SVG />Creating your workspace…
                       </motion.span>
                     ) : (
-                      <motion.span
-                        key="idle"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15 }}
-                      >
-                        Create workspace
+                      <motion.span key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }} className="inline-flex items-center gap-2">
+                        Create workspace <ArrowRight size={15} strokeWidth={2.2} />
                       </motion.span>
                     )}
                   </AnimatePresence>
@@ -251,7 +281,7 @@ export default function SignupPage() {
           </motion.div>
         </motion.div>
 
-        <motion.p variants={item} className="text-center text-sm text-gray-500 mt-6">
+        <motion.p variants={item} className="text-center text-sm text-gray-500 mt-5">
           Already have an account?{' '}
           <Link href={`/${locale}/login`} className="font-medium text-primary-600 hover:text-primary-700 transition-colors">
             Sign in

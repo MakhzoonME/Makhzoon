@@ -120,7 +120,8 @@ export class InventoryRepository {
           i.name.toLowerCase().includes(term) ||
           (i.category ?? '').toLowerCase().includes(term) ||
           (i.sku ?? '').toLowerCase().includes(term) ||
-          (i.location ?? '').toLowerCase().includes(term),
+          (i.location ?? '').toLowerCase().includes(term) ||
+          (i.supplier ?? '').toLowerCase().includes(term),
       )
     }
 

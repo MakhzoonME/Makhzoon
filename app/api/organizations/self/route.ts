@@ -81,7 +81,7 @@ export async function PATCH(req: NextRequest) {
     if (!orgId) return NextResponse.json({ error: 'No organization associated with this account' }, { status: 403 });
 
     const body = await req.json();
-    const patch: { name?: string; contactEmail?: string; description?: string; category?: string } = {};
+    const patch: Partial<{ name: string; contactEmail: string; description: string; category: string | null; updatedBy: string }> = {};
 
     if (typeof body.name === 'string') {
       const name = body.name.trim();
@@ -94,12 +94,12 @@ export async function PATCH(req: NextRequest) {
       if (body.category && !(ORG_CATEGORIES as readonly string[]).includes(body.category)) {
         return NextResponse.json({ error: 'Invalid category' }, { status: 422 });
       }
-      patch.category = body.category || undefined;
+      patch.category = body.category || null;
     }
 
     if (!Object.keys(patch).length) return NextResponse.json({ error: 'Nothing to update' }, { status: 422 });
 
-    await updateOrganization(orgId, { ...patch, updatedBy: user.uid });
+    await updateOrganization(orgId, { ...patch, updatedBy: user.uid } as Parameters<typeof updateOrganization>[1]);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('[PATCH /api/organizations/self]', err);

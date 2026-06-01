@@ -135,10 +135,15 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                 ? { width: { duration: 0.18, ease: EASE_SLIDE }, opacity: { duration: 0.08 } }
                 : { width: { duration: 0.22, ease: EASE_SLIDE }, opacity: { duration: 0.14, delay: 0.14 } }
               }
-              className="text-sm font-semibold text-blue-100 whitespace-nowrap overflow-hidden"
+              className="overflow-hidden flex flex-col"
               style={{ minWidth: 0 }}
             >
-              {t('brand.name')}
+              <span className="text-sm font-bold text-blue-100 whitespace-nowrap leading-tight">
+                {t('brand.name')}
+              </span>
+              <span className="text-[9px] font-semibold text-blue-400 uppercase tracking-widest whitespace-nowrap leading-tight">
+                Platform Console
+              </span>
             </motion.span>
           </div>
 

@@ -32,8 +32,10 @@ export function useWarranties(params?: {
 
   return useQuery<WarrantiesResponse>({
     queryKey: ['warranties', space, params],
+    enabled: !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/warranties?${query.toString()}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/warranties?${query.toString()}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch warranties');
       return res.json();
     },
@@ -46,11 +48,12 @@ export function useWarranty(id: string) {
   const { space } = useParams<{ space?: string }>();
   return useQuery({
     queryKey: ['warranties', space, id],
+    enabled: !!id && !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/warranties/${id}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/warranties/${id}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch warranty');
       return res.json();
     },
-    enabled: !!id,
   });
 }

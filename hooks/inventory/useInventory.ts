@@ -16,7 +16,6 @@ export function useInventoryItems(params?: {
   category?: string;
   stockStatus?: string;
   search?: string;
-  /** When true, only items with posEnabled=true are returned (used by Haraka register). */
   posEnabled?: boolean;
   page?: number;
   pageSize?: number;
@@ -36,8 +35,10 @@ export function useInventoryItems(params?: {
 
   return useQuery<InventoryResponse>({
     queryKey: ['inventory', space, params],
+    enabled: !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/inventory?${query.toString()}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/inventory?${query.toString()}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch inventory');
       return res.json();
     },
@@ -50,12 +51,13 @@ export function useInventoryItem(id: string) {
   const { space } = useParams<{ space?: string }>();
   return useQuery<InventoryItem>({
     queryKey: ['inventory', space, id],
+    enabled: !!id && !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/inventory/${id}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/inventory/${id}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch item');
       return res.json();
     },
-    enabled: !!id,
     staleTime: 0,
   });
 }
@@ -64,8 +66,10 @@ export function useInventoryCategories() {
   const { space } = useParams<{ space?: string }>();
   return useQuery<string[]>({
     queryKey: ['inventory-categories', space],
+    enabled: !!space,
     queryFn: async () => {
-      const res = await fetch('/api/inventory?categoriesOnly=true');
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch('/api/inventory?categoriesOnly=true', { headers });
       if (!res.ok) return [];
       const data = await res.json();
       return data.categories ?? [];
@@ -78,12 +82,13 @@ export function useInventoryTransactions(itemId: string) {
   const { space } = useParams<{ space?: string }>();
   return useQuery<TransactionsResponse>({
     queryKey: ['inventory-transactions', space, itemId],
+    enabled: !!itemId && !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/inventory/${itemId}/transactions`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/inventory/${itemId}/transactions`, { headers });
       if (!res.ok) throw new Error('Failed to fetch transactions');
       return res.json();
     },
-    enabled: !!itemId,
     staleTime: 0,
   });
 }

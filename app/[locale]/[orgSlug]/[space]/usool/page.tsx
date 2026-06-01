@@ -11,16 +11,18 @@ import { hasPermission } from '@/lib/permissions';
 import { formatDate } from '@/lib/utils/date';
 import { Asset } from '@/types';
 
-function useUsoolOverview() {
+function useUsoolOverview(space: string | null) {
   return useQuery({
-    queryKey: ['usool-overview'],
+    queryKey: ['usool-overview', space],
+    enabled: !!space,
     queryFn: async () => {
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
       const [totalRes, activeRes, retiredRes, recentRes, warrRes] = await Promise.all([
-        fetch('/api/assets?pageSize=1'),
-        fetch('/api/assets?status=Active&pageSize=1'),
-        fetch('/api/assets?status=Retired&pageSize=1'),
-        fetch('/api/assets?pageSize=6&sortBy=createdAt&sortDir=desc'),
-        fetch('/api/warranties?expiringSoon=true'),
+        fetch('/api/assets?pageSize=1', { headers }),
+        fetch('/api/assets?status=Active&pageSize=1', { headers }),
+        fetch('/api/assets?status=Retired&pageSize=1', { headers }),
+        fetch('/api/assets?pageSize=6&sortBy=createdAt&sortDir=desc', { headers }),
+        fetch('/api/warranties?expiringSoon=true', { headers }),
       ]);
       const total = totalRes.ok ? (await totalRes.json())?.total ?? 0 : 0;
       const active = activeRes.ok ? (await activeRes.json())?.total ?? 0 : 0;
@@ -87,7 +89,7 @@ export default function UsoolOverviewPage() {
   const space = useSpace();
   const { user } = useAuthStore();
   const { t, locale } = useT();
-  const { data, isLoading } = useUsoolOverview();
+  const { data, isLoading } = useUsoolOverview(space);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
   const canCreateAsset = !!user && hasPermission(user, 'assets', 'create');

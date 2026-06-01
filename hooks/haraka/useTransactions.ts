@@ -24,8 +24,10 @@ export function useTransactions(params?: { sessionId?: string; status?: 'complet
   if (params?.pageSize) query.set('pageSize', String(params.pageSize));
   return useQuery<ListResp>({
     queryKey: [...LIST_KEY, space, params],
+    enabled: !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/haraka/transactions?${query.toString()}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/haraka/transactions?${query.toString()}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch transactions');
       return res.json();
     },
@@ -37,12 +39,13 @@ export function useTransaction(id: string | undefined) {
   const { space } = useParams<{ space?: string }>();
   return useQuery<{ transaction: PosTransaction }>({
     queryKey: ['haraka', 'transactions', space, id],
+    enabled: !!id && !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/haraka/transactions/${id}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/haraka/transactions/${id}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch transaction');
       return res.json();
     },
-    enabled: !!id,
   });
 }
 

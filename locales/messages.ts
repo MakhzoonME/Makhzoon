@@ -150,7 +150,8 @@ const en = {
   // ── Common actions ───────────────────────────────────────────────
   'common.save':         'Save',
   'common.saveChanges':  'Save Changes',
-  'common.cancel':       'Cancel',
+  'common.cancel':          'Cancel',
+  'common.selectPlaceholder': 'Select…',
   'common.exportCsv':    'Export CSV',
   'common.preparing':    'Preparing…',
 
@@ -464,7 +465,17 @@ const en = {
   'col.asset':        'Asset',
 
   // ── Assets page ───────────────────────────────────────────────────
-  'assets.addAsset':   'Add Asset',
+  'assets.addAsset':          'Add Asset',
+  'assets.editAsset':         'Edit Asset',
+  'assets.saveChanges':       'Save Changes',
+  'assets.basicInfo':         'Basic information',
+  'assets.purchaseAssignment':'Purchase & assignment',
+  'assets.warrantyMonths':    'Warranty months',
+  'assets.notesPlaceholder':  'Optional notes…',
+  'assets.namePlaceholder':   'e.g. MacBook Pro 14"',
+  'assets.costPlaceholder':   '0.00',
+  'assets.unassigned':        'Unassigned',
+  'assets.noUsersFound':      'No users found',
   'assets.importCsv':  'Import CSV',
   'assets.exportCsv':  'Export CSV',
   'assets.searchPlaceholder': 'Search by name…',
@@ -583,7 +594,6 @@ const en = {
   'warranties.deleteWarrantyDesc': 'Delete warranty from "{vendor}"? This cannot be undone.',
   'warranties.warrantyDeleted':'Warranty deleted',
   'warranties.warrantyDeleteFailed': 'Failed to delete warranty',
-  'warranties.editWarranty':   'Edit Warranty',
 
   // ── Requests page (extra) ─────────────────────────────────────────
   'requests.type':             'Type',
@@ -1138,7 +1148,6 @@ const en = {
   'profile.currentIncorrect':  'Current password is incorrect',
 
   // ── Asset / item detail pages ─────────────────────────────────────
-  'assets.editAsset':          'Edit Asset',
   'inventory.itemNotFound':       'Item not found',
   'inventory.itemNotFoundDesc':   "This inventory item may have been deleted or you don't have access to it.",
   'inventory.itemNotFoundHint':   'If you followed a link from another page, that link may be out of date.',
@@ -1397,7 +1406,8 @@ const ar: Record<keyof typeof en, string> = {
   // ── Common actions ───────────────────────────────────────────────
   'common.save':         'حفظ',
   'common.saveChanges':  'حفظ التغييرات',
-  'common.cancel':       'إلغاء',
+  'common.cancel':          'إلغاء',
+  'common.selectPlaceholder': 'اختر…',
   'common.exportCsv':    'تصدير CSV',
   'common.preparing':    'جاري التحضير…',
   'common.delete':       'حذف',
@@ -1711,7 +1721,17 @@ const ar: Record<keyof typeof en, string> = {
   'col.asset':        'الأصل',
 
   // ── Assets page ───────────────────────────────────────────────────
-  'assets.addAsset':   'إضافة أصل',
+  'assets.addAsset':          'إضافة أصل',
+  'assets.editAsset':         'تعديل الأصل',
+  'assets.saveChanges':       'حفظ التغييرات',
+  'assets.basicInfo':         'المعلومات الأساسية',
+  'assets.purchaseAssignment':'الشراء والإسناد',
+  'assets.warrantyMonths':    'أشهر الضمان',
+  'assets.notesPlaceholder':  'ملاحظات اختيارية…',
+  'assets.namePlaceholder':   'مثال: ماك بوك برو ١٤',
+  'assets.costPlaceholder':   '٠٫٠٠',
+  'assets.unassigned':        'غير مُسند',
+  'assets.noUsersFound':      'لا يوجد مستخدمون',
   'assets.importCsv':  'استيراد CSV',
   'assets.exportCsv':  'تصدير CSV',
   'assets.searchPlaceholder': 'بحث بالاسم...',
@@ -1830,7 +1850,6 @@ const ar: Record<keyof typeof en, string> = {
   'warranties.deleteWarrantyDesc': 'حذف ضمان "{vendor}"؟ لا يمكن التراجع.',
   'warranties.warrantyDeleted':'تم حذف الضمان',
   'warranties.warrantyDeleteFailed': 'فشل حذف الضمان',
-  'warranties.editWarranty':   'تعديل الضمان',
 
   // ── Requests page (extra) ─────────────────────────────────────────
   'requests.type':             'النوع',
@@ -2387,7 +2406,6 @@ const ar: Record<keyof typeof en, string> = {
   'profile.currentIncorrect':  'كلمة المرور الحالية غير صحيحة',
 
   // ── Asset / item detail pages ─────────────────────────────────────
-  'assets.editAsset':          'تعديل الأصل',
   'inventory.itemNotFound':       'العنصر غير موجود',
   'inventory.itemNotFoundDesc':   'قد يكون هذا العنصر قد حُذف أو ليس لديك صلاحية الوصول إليه.',
   'inventory.itemNotFoundHint':   'إذا اتبعت رابطاً من صفحة أخرى، فقد يكون الرابط قديماً.',

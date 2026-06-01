@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 
-export default async function NewAssetPage(props: { params: Promise<{ orgSlug: string; space: string}> }) {
-  const params = await props.params;
-  redirect(`/${params.orgSlug}/${params.space}/usool`);
+export default async function NewAssetPage(props: {
+  params: Promise<{ locale: string; orgSlug: string; space: string }>;
+}) {
+  const { locale, orgSlug, space } = await props.params;
+  redirect(`/${locale}/${orgSlug}/${space}/usool/list`);
 }

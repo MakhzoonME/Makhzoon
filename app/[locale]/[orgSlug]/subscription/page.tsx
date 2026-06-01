@@ -11,6 +11,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { formatDate, daysUntil } from '@/lib/utils/date';
 import { useT, useAdminGuard } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import { INCLUSION_KEYS, INCLUSION_LABEL_KEYS } from '@/types';
 import { Check, X, Wrench } from 'lucide-react';
 import type { MessageKey } from '@/locales/messages';
@@ -55,6 +56,7 @@ function MiniStat({ label, current, max }: { label: string; current: number; max
 
 export default function SubscriptionPage() {
   const { t } = useT();
+  const { data: orgInfo } = useOrgInfo();
   const { isAllowed } = useAdminGuard('settings.subscription');
   const { user } = useAuthStore();
   const { active, orgId: transferOrgId } = useTransferStore();
@@ -109,7 +111,13 @@ export default function SubscriptionPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('nav.subscription')} />
+      <PageHeader
+        title={t('nav.subscription')}
+        breadcrumb={[
+          { label: orgInfo?.name ?? orgSlug },
+          { label: t('nav.subscription') },
+        ]}
+      />
 
       {/* Top 2-column row */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4 max-w-4xl">

@@ -1,6 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { Plus, Pencil, Trash2, Lock } from 'lucide-react';
+import { useT } from '@/hooks/ui';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ interface EditState {
 }
 
 export default function ListsPage() {
+  const { t } = useT();
   const [selected, setSelected] = useState<ListKey>('asset_status');
   const meta = LIST_REGISTRY[selected];
   const { data: all = [], isLoading } = usePlatformLists();
@@ -110,7 +112,8 @@ export default function ListsPage() {
   return (
     <div>
       <PageHeader
-        title="Lists"
+        title={t('nav.lists')}
+        breadcrumb={[{ label: t('nav.lists') }]}
         description="Default dropdown options every organization inherits. Free lists are fully editable; system lists allow label/color/visibility only."
       />
 

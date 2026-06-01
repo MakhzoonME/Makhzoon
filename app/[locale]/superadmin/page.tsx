@@ -264,6 +264,7 @@ export default function SuperAdminPage() {
     <div>
       <PageHeader
         title={t('nav.organizations')}
+        breadcrumb={[{ label: t('nav.organizations') }]}
         actions={
           <Button size="sm" onClick={() => router.push(`/${locale}/superadmin/organizations/new`)}>
             <Plus className="h-4 w-4 me-1" />

@@ -297,8 +297,8 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
         title="Lists"
         description="Manage platform defaults and per-org customizations."
         breadcrumb={[
-          { label: 'Organizations', href: `/${locale}/superadmin` },
-          { label: 'Lists', href: '' },
+          { label: t('nav.organizations'), href: `/${locale}/superadmin` },
+          { label: t('nav.lists') },
         ]}
       />
 

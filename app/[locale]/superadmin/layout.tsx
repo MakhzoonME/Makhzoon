@@ -33,6 +33,7 @@ const ALL_NAV_ITEMS = (locale: string) => [
   { href: `/${locale}/superadmin/team`,          labelKey: 'nav.team',          icon: Users,       roles: ['super_admin', 'makhzoon_admin'] },
   { href: `/${locale}/superadmin/sync`,          labelKey: 'nav.sync',          icon: RefreshCw,   roles: ['super_admin', 'makhzoon_admin'] },
   { href: `/${locale}/superadmin/backend-logs`,  labelKey: 'nav.backendLogs',   icon: Activity,    roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+  { href: `/${locale}/superadmin/lists`,         labelKey: 'nav.lists',         icon: FileText,    roles: ['super_admin', 'makhzoon_admin'] },
 ];
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
@@ -137,7 +138,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
               className="text-sm font-semibold text-blue-100 whitespace-nowrap overflow-hidden"
               style={{ minWidth: 0 }}
             >
-              Makhzoon
+              {t('brand.name')}
             </motion.span>
           </div>
 
@@ -156,6 +157,12 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                     active ? 'bg-blue-800/80 text-blue-100 font-medium' : 'text-blue-300 hover:bg-blue-900 hover:text-blue-100',
                   )}
                 >
+                  {active && (
+                    <span className={cn(
+                      'absolute top-1.5 bottom-1.5 w-0.5 rounded-full bg-blue-300',
+                      isRtl ? 'right-0' : 'left-0',
+                    )} />
+                  )}
                   <Icon className="h-[18px] w-[18px] flex-shrink-0" />
                   <motion.span
                     animate={{ width: collapsed ? 0 : 'auto', opacity: collapsed ? 0 : 1 }}
@@ -177,7 +184,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
           <div className="p-3 border-t border-blue-900 overflow-hidden">
             <div className={cn('flex items-center gap-2 px-1', collapsed && 'justify-center')}>
               <div className="h-7 w-7 rounded-full bg-blue-800 flex items-center justify-center text-xs font-semibold text-blue-200 flex-shrink-0">
-                {user.email?.[0]?.toUpperCase() ?? 'A'}
+                {(user.displayName || user.email)?.[0]?.toUpperCase() ?? 'A'}
               </div>
               <motion.div
                 animate={{ width: collapsed ? 0 : 'auto', opacity: collapsed ? 0 : 1 }}
@@ -188,8 +195,15 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                 className="overflow-hidden"
                 style={{ minWidth: 0 }}
               >
-                <p className="text-xs text-blue-400 truncate whitespace-nowrap">{user.email}</p>
-                <p className="text-xs text-blue-500 capitalize whitespace-nowrap">{user.role.replace(/_/g, ' ')}</p>
+                <p className="text-xs text-blue-200 truncate whitespace-nowrap">{user.displayName || user.email}</p>
+                <p className="text-xs text-blue-400 capitalize whitespace-nowrap">
+                  {
+                    user.role === 'super_admin'      ? t('role.superAdmin') :
+                    user.role === 'makhzoon_admin'   ? t('role.makhzoonAdmin') :
+                    user.role === 'makhzoon_support' ? t('role.makhzoonSupport') :
+                    user.role.replace(/_/g, ' ')
+                  }
+                </p>
               </motion.div>
             </div>
           </div>
@@ -219,7 +233,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                   type="button"
                   onClick={() => setMobileNavOpen(v => !v)}
                   className="text-blue-300 hover:text-blue-100 p-1.5 rounded-md hover:bg-blue-900/50 transition-colors"
-                  aria-label="Open navigation"
+                  aria-label={t('common.menu')}
                 >
                   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
                     <rect x="1" y="3.5" width="16" height="1.5" rx="0.75" fill="currentColor" />
@@ -228,7 +242,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                   </svg>
                 </button>
               )}
-              <span className="text-sm font-semibold text-blue-100 hidden sm:block">Super Admin</span>
+              <span className="text-sm font-semibold text-blue-100 hidden sm:block">{t('role.superAdmin')}</span>
             </div>
 
             {/* Right: controls */}

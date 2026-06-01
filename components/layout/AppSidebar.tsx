@@ -546,7 +546,15 @@ export function AppSidebar() {
                         {user.displayName || displayIdentity(user.email)}
                       </p>
                       <p className="text-[11px] text-gray-500 capitalize">
-                        {user.role === 'org_owner' ? 'Owner' : user.role?.replace('_', ' ')}
+                        {
+                          user.role === 'org_owner'        ? t('role.orgOwner') :
+                          user.role === 'admin'            ? t('role.admin') :
+                          user.role === 'staff'            ? t('role.staff') :
+                          user.role === 'super_admin'      ? t('role.superAdmin') :
+                          user.role === 'makhzoon_admin'   ? t('role.makhzoonAdmin') :
+                          user.role === 'makhzoon_support' ? t('role.makhzoonSupport') :
+                          (user.role as string | undefined)?.replace(/_/g, ' ')
+                        }
                       </p>
                     </Link>
                   </motion.div>
@@ -574,7 +582,7 @@ export function AppSidebar() {
                           <LogOutSVG />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent side={isRtl ? 'right' : 'left'}>
+                      <TooltipContent side={isRtl ? 'left' : 'right'}>
                         {t('common.signOut')}
                       </TooltipContent>
                     </Tooltip>

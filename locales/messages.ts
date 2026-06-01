@@ -1076,6 +1076,7 @@ const en = {
   // ── Common close + toast labels ───────────────────────────────────
   'common.close':                'Close',
   'common.more':                 'More',
+  'common.notifications':        'Notifications',
   'common.added':                'Added',
   'common.removed':              'Removed',
   'common.updated':              'Updated',
@@ -2448,6 +2449,7 @@ const ar: Record<keyof typeof en, string> = {
   // ── Common close + toast labels ───────────────────────────────────
   'common.close':                'إغلاق',
   'common.more':                 'المزيد',
+  'common.notifications':        'الإشعارات',
   'common.added':                'تمت الإضافة',
   'common.removed':              'تم الحذف',
   'common.updated':              'تم التحديث',

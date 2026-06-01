@@ -98,7 +98,7 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
     ],
   },
   { href: '/reports',      label: 'Reports',      labelKey: 'nav.reports',      adminOnly: true, featureKey: 'reports' },
-  { href: '/support',      label: 'Support',      labelKey: 'nav.support',      featureKey: 'support', scope: 'org' },
+  { href: '/support',      label: 'Support',      labelKey: 'nav.support',      featureKey: 'support' },
   { href: '/audit-logs',   label: 'Audit Logs',   labelKey: 'nav.auditLogs',    adminOnly: true, featureKey: 'auditLogs' },
   {
     type: 'group',

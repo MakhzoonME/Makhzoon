@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug } from '@/hooks/ui';
+import { useOrgSlug, useSpace } from '@/hooks/ui';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -21,6 +21,7 @@ export default function SupportPage() {
   const { t, locale } = useT();
   const router = useRouter();
   const orgSlug = useOrgSlug();
+  const space = useSpace();
   const [showNew, setShowNew] = useState(false);
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
@@ -57,7 +58,7 @@ export default function SupportPage() {
     {
       key: 'actions', header: '',
       render: (ticket) => (
-        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); router.push(`/${locale}/${orgSlug}/support/${ticket.id}`); }}>
+        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); router.push(`/${locale}/${orgSlug}/${space}/support/${ticket.id}`); }}>
           {t('support.view')}
         </Button>
       ),
@@ -82,7 +83,7 @@ export default function SupportPage() {
           isLoading={isLoading}
           emptyMessage={t('support.noTickets')}
           keyExtractor={(ticket) => ticket.id}
-          onRowClick={(ticket) => router.push(`/${locale}/${orgSlug}/support/${ticket.id}`)}
+          onRowClick={(ticket) => router.push(`/${locale}/${orgSlug}/${space}/support/${ticket.id}`)}
           pagination={{
             page,
             pageSize,

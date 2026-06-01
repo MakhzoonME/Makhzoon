@@ -13,7 +13,6 @@ import { useSpace } from '@/hooks/ui';
 import { hasModuleAccess, hasPermByKey } from '@/lib/permissions';
 import { UserPermissions } from '@/types';
 import { useT } from '@/hooks/ui';
-import { LanguageToggle } from '@/components/shared/LanguageToggle';
 import { createClient } from '@/lib/supabase/client';
 import type { MessageKey } from '@/locales/messages';
 
@@ -543,7 +542,7 @@ export function AppSidebar() {
                 )}
               </AnimatePresence>
 
-              {/* Language toggle + sign out — hidden when collapsed */}
+              {/* Sign out — hidden when collapsed */}
               <AnimatePresence initial={false}>
                 {!sidebarCollapsed && (
                   <motion.div
@@ -551,9 +550,8 @@ export function AppSidebar() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1, transition: { duration: 0.14, delay: 0.18, ease: EASE_OUT } }}
                     exit={{ opacity: 0, transition: { duration: 0.08 } }}
-                    className="flex items-center gap-0.5 flex-shrink-0"
+                    className="flex items-center flex-shrink-0"
                   >
-                    <LanguageToggle variant="ghost-light" />
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button

@@ -12,6 +12,7 @@ import type { StockAudit } from '@/types/stock-audit.types';
 import { cn } from '@/lib/utils/cn';
 import { formatDate } from '@/lib/utils/date';
 import { Plus, Clock, ClipboardList, CheckCircle2 } from 'lucide-react';
+import { useOrgInfo } from '@/hooks/org';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import type { MessageKey } from '@/locales/messages';
 
@@ -55,6 +56,7 @@ export default function StockAuditsPage() {
   const space   = useSpace();
   const { t, locale } = useT();
   const { user } = useAuthStore();
+  const { data: orgInfo } = useOrgInfo();
   const { data, isLoading } = useStockAudits();
   const [search, setSearch] = useState('');
 
@@ -80,7 +82,9 @@ export default function StockAuditsPage() {
         title={t('stockAudits.title')}
         description={t('stockAudits.subtitle')}
         breadcrumb={[
-          { label: t('nav.inventory'), href: `/${locale}/${orgSlug}/${space}/raseed` },
+          { label: orgInfo?.name ?? orgSlug },
+          { label: space },
+          { label: t('nav.inventory'), href: `/${locale}/${orgSlug}/${space}/raseed/list` },
           { label: t('stockAudits.breadcrumb'), href: base },
         ]}
         actions={isAdmin ? (

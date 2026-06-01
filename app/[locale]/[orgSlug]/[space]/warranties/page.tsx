@@ -14,6 +14,7 @@ import { formatDate, daysUntil, getWarrantyStatus } from '@/lib/utils/date';
 import { useT } from '@/hooks/ui';
 import { Check, Plus, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { useOrgInfo } from '@/hooks/org';
 
 function syncFiltersToUrl(pathname: string, params: Record<string, string>) {
   const qs = new URLSearchParams();
@@ -43,6 +44,7 @@ export default function WarrantiesPage() {
   const searchParams = useSearchParams();
   const orgSlug      = useOrgSlug();
   const space        = useSpace();
+  const { data: orgInfo } = useOrgInfo();
   const [searchInput, setSearchInput] = useState('');
 
   const status  = searchParams.get('status') ?? '';
@@ -132,6 +134,11 @@ export default function WarrantiesPage() {
     <div>
       <PageHeader
         title={t('nav.warranties')}
+        breadcrumb={[
+          { label: orgInfo?.name ?? orgSlug },
+          { label: space },
+          { label: t('nav.warranties') },
+        ]}
         actions={
           <Button size="sm"
             className="cursor-pointer transition-colors duration-150"

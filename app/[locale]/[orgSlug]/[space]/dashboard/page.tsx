@@ -634,7 +634,7 @@ export default function DashboardPage() {
   const { data, isLoading } = useDashboard(space);
   const { t, locale } = useT();
 
-  const firstName   = (user?.displayName ?? user?.email ?? 'there').split(/[\s@]/)[0];
+  const firstName   = ((user?.displayName || user?.email) ?? 'there').split(/[\s@]/)[0];
   const isAdmin     = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const activeAssets       = data?.assets.filter((a) => a.status === 'Active')  ?? [];
@@ -741,7 +741,6 @@ export default function DashboardPage() {
           label={t('dashboard.totalAssets')}
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{totalAssets.length}</p>}
           delta={!isLoading && activeAssets.length > 0 ? `${activeAssets.length} active` : undefined}
-          spark={!isLoading ? assetSpark : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
         />
         <StatCard
@@ -753,7 +752,6 @@ export default function DashboardPage() {
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{lowStockCount}</p>}
           delta={!isLoading && lowStockCount > 0 ? `${lowStockCount} low` : undefined}
           sub={!isLoading ? t('dashboard.lowStock') : undefined}
-          spark={!isLoading ? inventorySpark : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list`)}
         />
         <StatCard
@@ -771,7 +769,6 @@ export default function DashboardPage() {
           }
           sub={!isLoading ? t('dashboard.soon') : undefined}
           delta={!isLoading && criticalWarrantyCount > 0 ? `${criticalWarrantyCount} critical` : undefined}
-          spark={!isLoading ? warrantySpark : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/warranties?expiring=30`)}
         />
         <StatCard
@@ -782,7 +779,6 @@ export default function DashboardPage() {
           label={t('dashboard.pendingRequests')}
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{pendingRequests.length}</p>}
           delta={!isLoading && pendingRequests.length > 0 ? t('dashboard.needReview') : undefined}
-          spark={!isLoading ? pendingSpark : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list?status=PENDING`)}
         />
       </div>

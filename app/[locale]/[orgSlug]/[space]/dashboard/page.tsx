@@ -84,11 +84,12 @@ function useDashboard(spaceSlug: string | null) {
     queryKey: ['dashboard', spaceSlug],
     enabled: !!spaceSlug,
     queryFn: async () => {
+      const headers: HeadersInit = spaceSlug ? { 'x-space-slug': spaceSlug } : {};
       const [assetsRes, warrantiesRes, requestsRes, auditRes] = await Promise.all([
-        fetch('/api/assets'),
-        fetch('/api/warranties?expiringSoon=true'),
-        fetch('/api/requests?status=PENDING&limit=5'),
-        fetch('/api/audit-logs?limit=4'),
+        fetch('/api/assets', { headers }),
+        fetch('/api/warranties?expiringSoon=true', { headers }),
+        fetch('/api/requests?status=PENDING&limit=5', { headers }),
+        fetch('/api/audit-logs?limit=4', { headers }),
       ]);
       const assetsBody = assetsRes.ok ? await assetsRes.json() : { items: [] };
       const warrantiesBody = warrantiesRes.ok ? await warrantiesRes.json() : [];

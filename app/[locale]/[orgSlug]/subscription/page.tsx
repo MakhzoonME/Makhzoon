@@ -6,13 +6,16 @@ import { useOrgUsage } from '@/hooks/org';
 import { usePackages } from '@/hooks/superadmin';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { UsageBar } from '@/components/features/subscription';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { formatDate, daysUntil } from '@/lib/utils/date';
 import { useT, useAdminGuard } from '@/hooks/ui';
 import { INCLUSION_KEYS, INCLUSION_LABEL_KEYS } from '@/types';
+import { Check, X, Wrench } from 'lucide-react';
 import type { MessageKey } from '@/locales/messages';
+import { useOrgSlug, useSpace } from '@/hooks/ui';
+import { cn } from '@/lib/utils/cn';
 
 const FEATURE_LABEL_KEY: Record<string, MessageKey> = {
   warranties: 'subscription.warranties',
@@ -24,11 +27,39 @@ const FEATURE_LABEL_KEY: Record<string, MessageKey> = {
   support: 'subscription.feature.support',
 };
 
+/* ── Mini progress bar ───────────────────────────────────────────── */
+function MiniProgress({ pct }: { pct: number }) {
+  const color = pct < 70 ? 'bg-green-500' : pct < 90 ? 'bg-amber-500' : 'bg-red-500';
+  const track = pct < 70 ? 'bg-green-100' : pct < 90 ? 'bg-amber-100' : 'bg-red-100';
+  return (
+    <div className={cn('h-1.5 w-full rounded-full mt-1.5', track)}>
+      <div className={cn('h-full rounded-full transition-all duration-500', color)} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+/* ── Mini stat block ─────────────────────────────────────────────── */
+function MiniStat({ label, current, max }: { label: string; current: number; max: number }) {
+  const unlimited = max === -1;
+  const pct = unlimited ? 0 : max === 0 ? 0 : Math.min((current / max) * 100, 100);
+  return (
+    <div>
+      <div className="text-[12.5px] text-gray-500 mb-1">{label}</div>
+      <div className="text-base font-semibold text-gray-900">
+        {current.toLocaleString()} / {unlimited ? '∞' : max.toLocaleString()}
+      </div>
+      {!unlimited && <MiniProgress pct={pct} />}
+    </div>
+  );
+}
+
 export default function SubscriptionPage() {
   const { t } = useT();
   const { isAllowed } = useAdminGuard('settings.subscription');
   const { user } = useAuthStore();
   const { active, orgId: transferOrgId } = useTransferStore();
+  const orgSlug = useOrgSlug();
+  const space = useSpace();
 
   const orgId =
     user?.role === 'super_admin'
@@ -53,149 +84,143 @@ export default function SubscriptionPage() {
         : t('subscription.customPrice')
       : pkg.pricing.monthlyPrice != null
         ? `${pkg.pricing.monthlyPrice} ${pkg.pricing.currency}/${t('subscription.mo')}`
-        : '—'
+        : null
     : null;
   const days = sub ? daysUntil(new Date(sub.endDate)) : 0;
-  const enabledFeatures = Object.entries(sub?.features ?? {}).filter(([, v]) => v);
-  const disabledFeatures = Object.entries(sub?.features ?? {}).filter(([, v]) => !v);
+  const renewalText = sub && priceText
+    ? `${t('subscription.renews')} ${formatDate(new Date(sub.endDate))} · ${priceText}`
+    : sub
+      ? `${t('subscription.renews')} ${formatDate(new Date(sub.endDate))}`
+      : null;
+
+  const allFeatures = [
+    ...Object.entries(sub?.features ?? {}),
+    ...INCLUSION_KEYS.map((k) => [k, pkg?.inclusions?.[k] ?? false] as [string, boolean]),
+  ];
+  const enabledFeatures = allFeatures.filter(([, v]) => v);
+  const disabledFeatures = allFeatures.filter(([, v]) => !v);
+
+  function getFeatureLabel(key: string): string {
+    if (FEATURE_LABEL_KEY[key]) return t(FEATURE_LABEL_KEY[key]);
+    const inclKey = INCLUSION_LABEL_KEYS[key as keyof typeof INCLUSION_LABEL_KEYS];
+    if (inclKey) return t(inclKey);
+    return key;
+  }
 
   return (
     <div className="space-y-6">
       <PageHeader title={t('nav.subscription')} />
 
-      {/* Status */}
-      <Card className="max-w-2xl">
-        <CardContent className="p-6">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            {t('subscription.details')}
-          </h2>
-          {sub ? (
-            <dl className="space-y-3 text-sm">
-              {pkg && (
-                <div className="flex justify-between py-2 border-b border-border">
-                  <dt className="text-gray-500">{t('subscription.plan')}</dt>
-                  <dd className="font-medium">{pkg.name}</dd>
-                </div>
-              )}
-              {priceText && (
-                <div className="flex justify-between py-2 border-b border-border">
-                  <dt className="text-gray-500">{t('subscription.price')}</dt>
-                  <dd className="font-medium">{priceText}</dd>
-                </div>
-              )}
-              {pkg && pkg.trialDays > 0 && (
-                <div className="flex justify-between py-2 border-b border-border">
-                  <dt className="text-gray-500">{t('subscription.trial')}</dt>
-                  <dd className="font-medium">
-                    {t('subscription.trialDays').replace('{days}', String(pkg.trialDays))}
-                  </dd>
-                </div>
-              )}
-              <div className="flex justify-between py-2 border-b border-border">
-                <dt className="text-gray-500">{t('subscription.status')}</dt>
-                <dd><StatusBadge status={sub.status} /></dd>
-              </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <dt className="text-gray-500">{t('subscription.startDate')}</dt>
-                <dd className="font-medium">{formatDate(new Date(sub.startDate))}</dd>
-              </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <dt className="text-gray-500">{t('subscription.endDate')}</dt>
-                <dd className="font-medium">{formatDate(new Date(sub.endDate))}</dd>
-              </div>
-              <div className="flex justify-between py-2">
-                <dt className="text-gray-500">{t('subscription.daysRemaining')}</dt>
-                <dd className="font-medium">
-                  {days > 0 ? (
-                    <span className="text-green-700">{t('subscription.days').replace('{days}', String(days))}</span>
-                  ) : (
-                    <span className="text-red-600 dark:text-red-400">{t('subscription.expired')}</span>
-                  )}
-                </dd>
-              </div>
-            </dl>
-          ) : (
-            <p className="text-sm text-gray-500">{t('subscription.noSub')}</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Usage */}
-      <Card className="max-w-2xl">
-        <CardContent className="p-6">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            {t('subscription.usage')}
-          </h2>
-          {usageLoading ? (
-            <LoadingSkeleton rows={4} columns={1} />
-          ) : usage ? (
-            <div className="space-y-4">
-              <UsageBar label={t('subscription.assets')} current={usage.assets} max={limits?.maxAssets ?? -1} />
-              <UsageBar label={t('subscription.users')} current={usage.users} max={limits?.maxUsers ?? -1} />
-              <UsageBar label={t('subscription.spaces')} current={usage.spaces} max={limits?.maxSpaces ?? -1} />
-              <UsageBar label={t('subscription.inventoryItems')} current={usage.inventoryItems} max={limits?.maxInventoryItems ?? -1} />
-              <UsageBar label={t('subscription.warranties')} current={usage.warranties} max={limits?.maxWarranties ?? -1} />
-              <UsageBar label={t('subscription.requests')} current={usage.requests} max={limits?.maxRequests ?? -1} />
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500">{t('subscription.usageUnavailable')}</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Plan inclusions */}
-      {pkg && (
-        <Card className="max-w-2xl">
+      {/* Top 2-column row */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4 max-w-4xl">
+        {/* Plan overview card */}
+        <Card className="rounded-xl">
           <CardContent className="p-6">
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">
-              {t('subscription.inclusions')}
-            </h2>
-            <div className="space-y-2 text-sm">
-              {INCLUSION_KEYS.map((key) => {
-                const on = pkg.inclusions?.[key] ?? false;
-                return (
-                  <div key={key} className="flex items-center gap-2">
-                    <span className={`h-2 w-2 rounded-full ${on ? 'bg-green-500' : 'bg-gray-300'}`} />
-                    <span className={on ? 'text-gray-800' : 'text-gray-400'}>{t(INCLUSION_LABEL_KEYS[key])}</span>
-                    <span className={`text-xs ms-auto ${on ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`}>
-                      {on ? t('subscription.enabled') : t('subscription.disabled')}
-                    </span>
-                  </div>
-                );
-              })}
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                {sub && <StatusBadge status={sub.status} />}
+                <div className="text-2xl font-bold text-gray-900 mt-2">
+                  {pkg?.name ?? t('subscription.noSub')}
+                </div>
+                {renewalText && (
+                  <div className="text-[13px] text-gray-500 mt-1">{renewalText}</div>
+                )}
+                {!sub && (
+                  <p className="text-sm text-gray-500 mt-2">{t('subscription.noSub')}</p>
+                )}
+              </div>
+              {days > 0 ? (
+                <span className="text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-0.5">
+                  {t('subscription.days').replace('{days}', String(days))}
+                </span>
+              ) : sub ? (
+                <span className="text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full px-2 py-0.5">
+                  {t('subscription.expired')}
+                </span>
+              ) : null}
+            </div>
+
+            {/* Mini stats */}
+            {!usageLoading && usage && (
+              <div className="grid grid-cols-3 gap-4 mt-2">
+                <MiniStat
+                  label={t('subscription.assets')}
+                  current={usage.assets}
+                  max={limits?.maxAssets ?? -1}
+                />
+                <MiniStat
+                  label={t('subscription.users')}
+                  current={usage.users}
+                  max={limits?.maxUsers ?? -1}
+                />
+                <MiniStat
+                  label={t('subscription.warranties')}
+                  current={usage.warranties}
+                  max={limits?.maxWarranties ?? -1}
+                />
+              </div>
+            )}
+            {usageLoading && <LoadingSkeleton rows={1} columns={3} />}
+          </CardContent>
+        </Card>
+
+        {/* Payment history card */}
+        <Card className="rounded-xl">
+          <CardContent className="p-6">
+            <h2 className="text-[15px] font-semibold text-gray-900 mb-4">{t('subscription.paymentHistory')}</h2>
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <p className="text-sm text-gray-400">{t('subscription.paymentHistoryUnavailable')}</p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-4 cursor-pointer transition-colors duration-150"
+                onClick={() => {
+                  if (orgSlug && space) {
+                    window.location.href = `/${orgSlug}/${space}/support`;
+                  }
+                }}
+              >
+                <Wrench aria-hidden className="h-3.5 w-3.5 me-1" strokeWidth={1.75} />
+                {t('subscription.contactSupport')}
+              </Button>
             </div>
           </CardContent>
         </Card>
-      )}
+      </div>
 
-      {/* Feature flags */}
-      {sub && Object.keys(sub.features ?? {}).length > 0 && (
-        <Card className="max-w-2xl">
+      {/* Included features grid */}
+      {(enabledFeatures.length > 0 || disabledFeatures.length > 0) && (
+        <Card className="max-w-4xl rounded-xl">
           <CardContent className="p-6">
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">
-              {t('subscription.features')}
-            </h2>
-            <div className="space-y-2 text-sm">
-              {enabledFeatures.map(([key]) => {
-                const label = FEATURE_LABEL_KEY[key] ? t(FEATURE_LABEL_KEY[key]) : key;
-                return (
-                  <div key={key} className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-green-500" />
-                    <span className="text-gray-800">{label}</span>
-                    <span className="text-xs text-green-600 dark:text-green-400 ms-auto">{t('subscription.enabled')}</span>
-                  </div>
-                );
-              })}
-              {disabledFeatures.map(([key]) => {
-                const label = FEATURE_LABEL_KEY[key] ? t(FEATURE_LABEL_KEY[key]) : key;
-                return (
-                  <div key={key} className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-gray-300" />
-                    <span className="text-gray-400">{label}</span>
-                    <span className="text-xs text-gray-400 ms-auto">{t('subscription.disabled')}</span>
-                  </div>
-                );
-              })}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-[15px] font-semibold text-gray-900">{t('subscription.inclusions')}</h2>
+              <Button
+                size="sm"
+                variant="outline"
+                className="cursor-pointer transition-colors duration-150"
+                onClick={() => {
+                  if (orgSlug && space) {
+                    window.location.href = `/${orgSlug}/${space}/support`;
+                  }
+                }}
+              >
+                <Wrench aria-hidden className="h-3.5 w-3.5 me-1" strokeWidth={1.75} />
+                {t('subscription.contactSupport')}
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 text-sm">
+              {enabledFeatures.map(([key]) => (
+                <div key={`on-${key}`} className="flex items-center gap-2 text-gray-800">
+                  <Check aria-hidden className="h-3.5 w-3.5 text-green-600 flex-shrink-0" strokeWidth={2} />
+                  {getFeatureLabel(key)}
+                </div>
+              ))}
+              {disabledFeatures.map(([key]) => (
+                <div key={`off-${key}`} className="flex items-center gap-2 text-gray-400">
+                  <X aria-hidden className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" strokeWidth={2} />
+                  {getFeatureLabel(key)}
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

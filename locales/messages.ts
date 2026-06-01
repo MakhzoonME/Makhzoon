@@ -492,7 +492,7 @@ const en = {
   'assets.noUsersFound':      'No users found',
   'assets.importCsv':  'Import CSV',
   'assets.exportCsv':  'Export CSV',
-  'assets.searchPlaceholder': 'Search by name…',
+  'assets.searchPlaceholder': 'Search by name or serial number…',
   'assets.allStatuses':       'All Statuses',
   'assets.filterAll':         'All',
   'assets.filterActive':      'Active',
@@ -550,7 +550,7 @@ const en = {
   'inventory.sku':            'SKU',
   'inventory.items':          'items',
   'inventory.request':        'Submit request',
-  'inventory.searchPlaceholder': 'Search by name…',
+  'inventory.searchPlaceholder': 'Search by name, SKU, or supplier…',
   'inventory.allCategories': 'All Categories',
   'inventory.noItems':     'No inventory items found.',
 
@@ -664,6 +664,9 @@ const en = {
   'support.submitted':         'Ticket submitted successfully. Our team will respond shortly.',
   'support.submitFailed':      'Failed to submit ticket. Please try again.',
   'support.noTickets':         'No support tickets yet.',
+  'support.makhzoonSupport':   'Makhzoon Support',
+  'support.searchTickets':     'Search tickets…',
+  'support.selectTicket':      'Select a ticket to view the conversation',
   'support.allOrgs':           'All organizations',
   'support.anyStatus':         'Any status',
   'support.anyPriority':       'Any priority',
@@ -691,6 +694,13 @@ const en = {
   'auditLogs.transferMode':    'Transfer Mode',
   'auditLogs.scopeSpace':      'This space',
   'auditLogs.scopeAll':        'All spaces',
+  'auditLogs.actor':           'Actor',
+  'auditLogs.change':          'Change',
+  'auditLogs.time':            'Time',
+  'auditLogs.before':          'BEFORE',
+  'auditLogs.after':           'AFTER',
+  'auditLogs.immutableNote':   'Immutable · every mutation captured with before/after values',
+  'auditLogs.searchPlaceholder': 'Search action, actor, record…',
 
   // ── Reports page ──────────────────────────────────────────────────
   'reports.description':       'Overview of your asset inventory and activity.',
@@ -747,6 +757,10 @@ const en = {
   'subscription.feature.checkouts': 'Asset Checkouts',
   'subscription.feature.notes': 'Asset Notes',
   'subscription.feature.support': 'Support Tickets',
+  'subscription.renews':          'Renews',
+  'subscription.paymentHistory':  'Payment history',
+  'subscription.paymentHistoryUnavailable': 'Payment history is available via your account manager.',
+  'subscription.contactSupport':  'Contact support',
 
   // ── Superadmin organizations ──────────────────────────────────────
   'orgs.createOrg':            'Create Organization',
@@ -862,6 +876,10 @@ const en = {
   'settings.category':         'Category',
   'settings.accountManager':   'Account Manager',
   'settings.notSet':           '—',
+  'settings.saveChanges':      'Save changes',
+  'settings.selectCategory':   'Select category…',
+  'settings.noneSelected':     'None',
+  'settings.descriptionPlaceholder': 'What does your organization do?',
 
   // ── Users page (extra) ────────────────────────────────────────────
   'users.expires':             'Expires',
@@ -872,6 +890,12 @@ const en = {
   'users.deactivateDesc':      'Deactivate "{name}"? They will lose access immediately.',
   'users.deleteDesc':          'Permanently delete "{name}"? This cannot be undone.',
   'users.deletePermanently':   'Delete Permanently',
+  'users.searchMembers':       'Search members…',
+  'users.pendingInvites':      'Pending invites',
+  'users.noPendingInvites':    'No pending invites.',
+  'users.permissions':         'Permissions',
+  'users.custom':              'Custom',
+  'users.roleDefault':         'Role default',
 
   // ── Leads ─────────────────────────────────────────────────────────
   'leads.description':         'Manage early-access signups and contact sales inquiries.',
@@ -1827,7 +1851,7 @@ const ar: Record<keyof typeof en, string> = {
   'assets.noUsersFound':      'لا يوجد مستخدمون',
   'assets.importCsv':  'استيراد CSV',
   'assets.exportCsv':  'تصدير CSV',
-  'assets.searchPlaceholder': 'بحث بالاسم...',
+  'assets.searchPlaceholder': 'بحث بالاسم أو الرقم التسلسلي...',
   'assets.allStatuses':       'جميع الحالات',
   'assets.filterAll':         'الكل',
   'assets.filterActive':      'نشط',
@@ -1885,7 +1909,7 @@ const ar: Record<keyof typeof en, string> = {
   'inventory.sku':            'الرمز',
   'inventory.items':          'صنف',
   'inventory.request':        'تقديم طلب',
-  'inventory.searchPlaceholder': 'بحث بالاسم...',
+  'inventory.searchPlaceholder': 'بحث بالاسم أو الرمز أو المورد...',
   'inventory.allCategories': 'جميع الفئات',
   'inventory.noItems':     'لا توجد عناصر في المخزون.',
 
@@ -2001,6 +2025,9 @@ const ar: Record<keyof typeof en, string> = {
   'support.submitted':         'تم تقديم التذكرة. سيرد فريقنا قريباً.',
   'support.submitFailed':      'فشل تقديم التذكرة. يرجى المحاولة مجدداً.',
   'support.noTickets':         'لا توجد تذاكر دعم بعد.',
+  'support.makhzoonSupport':   'دعم مخزون',
+  'support.searchTickets':     'ابحث عن تذكرة…',
+  'support.selectTicket':      'اختر تذكرة لعرض المحادثة',
   'support.allOrgs':           'جميع المنظمات',
   'support.anyStatus':         'أي حالة',
   'support.anyPriority':       'أي أولوية',
@@ -2028,6 +2055,13 @@ const ar: Record<keyof typeof en, string> = {
   'auditLogs.transferMode':    'وضع النقل',
   'auditLogs.scopeSpace':      'هذه المساحة',
   'auditLogs.scopeAll':        'كل المساحات',
+  'auditLogs.actor':           'المنفّذ',
+  'auditLogs.change':          'التغيير',
+  'auditLogs.time':            'الوقت',
+  'auditLogs.before':          'قبل',
+  'auditLogs.after':           'بعد',
+  'auditLogs.immutableNote':   'غير قابل للتعديل · كل تغيير مع القيم قبل وبعد',
+  'auditLogs.searchPlaceholder': 'ابحث عن إجراء أو مستخدم…',
 
   // ── Reports page ──────────────────────────────────────────────────
   'reports.description':       'نظرة عامة على مخزون الأصول والنشاط.',
@@ -2084,6 +2118,10 @@ const ar: Record<keyof typeof en, string> = {
   'subscription.feature.checkouts': 'الأصول المستعارة',
   'subscription.feature.notes': 'ملاحظات الأصول',
   'subscription.feature.support': 'تذاكر الدعم',
+  'subscription.renews':          'يتجدّد',
+  'subscription.paymentHistory':  'سجل الدفعات',
+  'subscription.paymentHistoryUnavailable': 'سجل الدفعات متاح عبر مدير حسابك.',
+  'subscription.contactSupport':  'تواصل مع الدعم',
 
   // ── Superadmin organizations ──────────────────────────────────────
   'orgs.createOrg':            'إنشاء منظمة',
@@ -2199,6 +2237,10 @@ const ar: Record<keyof typeof en, string> = {
   'settings.category':       'الفئة',
   'settings.accountManager':   'مدير الحساب',
   'settings.notSet':           '—',
+  'settings.saveChanges':      'حفظ',
+  'settings.selectCategory':   'اختر الفئة…',
+  'settings.noneSelected':     'لا شيء',
+  'settings.descriptionPlaceholder': 'ماذا تعمل منشأتك؟',
 
   // ── Users page (extra) ────────────────────────────────────────────
   'users.expires':             'تنتهي',
@@ -2209,6 +2251,12 @@ const ar: Record<keyof typeof en, string> = {
   'users.deactivateDesc':      'تعطيل "{name}"؟ سيفقدون الوصول فوراً.',
   'users.deleteDesc':          'حذف "{name}" نهائياً؟ لا يمكن التراجع.',
   'users.deletePermanently':   'حذف نهائياً',
+  'users.searchMembers':       'ابحث عن عضو…',
+  'users.pendingInvites':      'دعوات معلّقة',
+  'users.noPendingInvites':    'لا توجد دعوات معلّقة.',
+  'users.permissions':         'الصلاحيات',
+  'users.custom':              'مخصّص',
+  'users.roleDefault':         'افتراضي',
 
   // ── Leads ─────────────────────────────────────────────────────────
   'leads.description':         'إدارة التسجيلات المبكرة واستفسارات التواصل مع المبيعات.',

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useParams } from 'next/navigation';
 import type { PosCustomer } from '@/types';
 import type { CustomerFormData } from '@/lib/modules/haraka/customers/schemas';
 
@@ -22,13 +23,14 @@ export interface UseCustomersParams {
 }
 
 export function useCustomers(params: UseCustomersParams = {}) {
+  const { space } = useParams<{ space?: string }>();
   const { enabled = true, ...query } = params;
   const qs = new URLSearchParams();
   if (query.search) qs.set('search', query.search);
   if (query.page) qs.set('page', String(query.page));
   if (query.pageSize) qs.set('pageSize', String(query.pageSize));
   return useQuery<ListResp>({
-    queryKey: [...LIST_KEY, query],
+    queryKey: [...LIST_KEY, space, query],
     queryFn: async () => {
       const res = await fetch(`/api/haraka/customers?${qs.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch customers');
@@ -40,8 +42,9 @@ export function useCustomers(params: UseCustomersParams = {}) {
 }
 
 export function useCustomer(id: string | undefined) {
+  const { space } = useParams<{ space?: string }>();
   return useQuery<{ customer: PosCustomer }>({
-    queryKey: ['haraka', 'customers', id],
+    queryKey: ['haraka', 'customers', space, id],
     queryFn: async () => {
       const res = await fetch(`/api/haraka/customers/${id}`);
       if (!res.ok) throw new Error('Failed to fetch customer');

@@ -1,5 +1,6 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'next/navigation';
 import type { InventoryItem, InventoryTransaction } from '@/types';
 
 interface InventoryResponse {
@@ -22,6 +23,7 @@ export function useInventoryItems(params?: {
   sortBy?: string;
   sortDir?: 'asc' | 'desc';
 }) {
+  const { space } = useParams<{ space?: string }>();
   const query = new URLSearchParams();
   if (params?.category) query.set('category', params.category);
   if (params?.stockStatus) query.set('stockStatus', params.stockStatus);
@@ -33,7 +35,7 @@ export function useInventoryItems(params?: {
   if (params?.sortDir) query.set('sortDir', params.sortDir);
 
   return useQuery<InventoryResponse>({
-    queryKey: ['inventory', params],
+    queryKey: ['inventory', space, params],
     queryFn: async () => {
       const res = await fetch(`/api/inventory?${query.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch inventory');
@@ -45,8 +47,9 @@ export function useInventoryItems(params?: {
 }
 
 export function useInventoryItem(id: string) {
+  const { space } = useParams<{ space?: string }>();
   return useQuery<InventoryItem>({
-    queryKey: ['inventory', id],
+    queryKey: ['inventory', space, id],
     queryFn: async () => {
       const res = await fetch(`/api/inventory/${id}`);
       if (!res.ok) throw new Error('Failed to fetch item');
@@ -58,8 +61,9 @@ export function useInventoryItem(id: string) {
 }
 
 export function useInventoryCategories() {
+  const { space } = useParams<{ space?: string }>();
   return useQuery<string[]>({
-    queryKey: ['inventory-categories'],
+    queryKey: ['inventory-categories', space],
     queryFn: async () => {
       const res = await fetch('/api/inventory?categoriesOnly=true');
       if (!res.ok) return [];
@@ -71,8 +75,9 @@ export function useInventoryCategories() {
 }
 
 export function useInventoryTransactions(itemId: string) {
+  const { space } = useParams<{ space?: string }>();
   return useQuery<TransactionsResponse>({
-    queryKey: ['inventory-transactions', itemId],
+    queryKey: ['inventory-transactions', space, itemId],
     queryFn: async () => {
       const res = await fetch(`/api/inventory/${itemId}/transactions`);
       if (!res.ok) throw new Error('Failed to fetch transactions');

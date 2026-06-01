@@ -3,20 +3,15 @@ import { useState, useSyncExternalStore } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { CommandPalette, useCommandPalette } from '@/components/shared/CommandPalette';
 import { useUiStore } from '@/store/ui.store';
 import { useTransferStore } from '@/store/transfer.store';
-import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
-import { useOrgSlug, useT } from '@/hooks/ui';
-import { MessageKey } from '@/locales/messages';
+import { useT } from '@/hooks/ui';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
 import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
-import { SpaceSwitcher } from '@/components/layout/SpaceSwitcher';
-import { useAccessibleSpaces } from '@/hooks/spaces';
+import { cn } from '@/lib/utils/cn';
 
 /* ── Inline SVG icons ───────────────────────────────────────────── */
 function BurgerSVG() {
@@ -36,121 +31,78 @@ function SearchSVG() {
     </svg>
   );
 }
-function ChevronDownSVG() {
+function ChevronRightSVG() {
   return (
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
-      <path d="M3 5l3.5 3.5L10 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
+      <path d="M4 2.5l3.5 3.5L4 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
-function UserSVG() {
+function BellSVG() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-      <circle cx="7" cy="4.5" r="2.5" stroke="currentColor" strokeWidth="1.3" fill="none" />
-      <path d="M1.5 12.5c0-3 2-4.5 5.5-4.5s5.5 1.5 5.5 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  );
-}
-function LogOutSVG() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-      <path d="M5 2H2.5A1.5 1.5 0 0 0 1 3.5v7A1.5 1.5 0 0 0 2.5 12H5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <path d="M9 4.5L12 7l-3 2.5M12 7H5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+      <path d="M9 2a5 5 0 0 1 5 5v2.5l1.5 2H2.5L4 9.5V7a5 5 0 0 1 5-5z"
+        stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinejoin="round" />
+      <path d="M7 14.5a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
     </svg>
   );
 }
 
-const roleConfig: Record<string, { variant: 'blue' | 'default'; labelKey: MessageKey }> = {
-  super_admin:       { variant: 'blue', labelKey: 'role.superAdmin' },
-  makhzoon_admin:    { variant: 'blue', labelKey: 'role.makhzoonAdmin' },
-  makhzoon_support:  { variant: 'blue', labelKey: 'role.makhzoonSupport' },
-  org_owner:         { variant: 'blue', labelKey: 'role.orgOwner' },
-  admin:             { variant: 'blue', labelKey: 'role.admin' },
-  staff:             { variant: 'default', labelKey: 'role.staff' },
-};
-
-export function AppHeader({ orgName }: { orgName?: string }) {
-  const { user } = useAuthStore();
-  const orgSlug = useOrgSlug();
-  const router = useRouter();
+export function AppHeader() {
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
   const { setMobileMenuOpen } = useUiStore();
+  const { headerTitle, headerBreadcrumb } = useUiStore();
+  const { t, locale } = useT();
+
   const shortcutLabel = useSyncExternalStore(
     () => () => {},
     () => (/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl+K'),
     () => 'Ctrl+K',
   );
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { t, locale } = useT();
-  const { data: spaceList } = useAccessibleSpaces();
-  const hasAnySpace = (spaceList?.items?.length ?? 0) > 0;
-
-  async function handleLogout() {
-    setIsLoggingOut(true);
-    try {
-      await fetch('/api/auth/session', { method: 'DELETE' });
-      const supabase = await createClient(); await supabase.auth.signOut();
-    } catch {
-      // ignore — always redirect regardless of errors
-    }
-    useTransferStore.getState().clearTransfer();
-    window.location.href = '/login';
-  }
-
-  const role = user?.role ?? 'staff';
-  const rc   = roleConfig[role] ?? roleConfig.staff;
-
-  // Strip the synthetic `@makhzoon.local` suffix so the displayed identity
-  // remains a plain username for users created without a real email.
-  const cleanIdentity = (v?: string | null) => (v ?? '').replace(/@makhzoon\.local$/i, '').trim();
-  const displayName = user?.displayName?.trim() || '';
-  const identity = cleanIdentity(user?.email);
-  const triggerLabel = displayName || identity || '—';
-  const initial = (displayName || identity)?.[0]?.toUpperCase() ?? '?';
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 h-14 bg-surface-card border-b border-border flex items-center px-4 gap-4 z-40">
-        {/* Burger menu — mobile only */}
+      <header className="fixed top-0 left-0 right-0 h-14 bg-surface-card border-b border-border flex items-center px-4 gap-3 z-40">
+
+        {/* Burger — mobile only */}
         <button
           type="button"
           onClick={() => setMobileMenuOpen(true)}
           aria-label={t('common.menu')}
-          className="md:hidden p-1.5 -ms-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95 transition-all duration-150 dark:hover:bg-gray-700/40"
+          className="md:hidden p-1.5 -ms-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95 transition-all duration-150 dark:hover:bg-gray-700/40 flex-shrink-0"
         >
           <BurgerSVG />
         </button>
 
-        {/* Brand */}
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="flex items-center gap-2">
-            <MakhzoonMark size={26} />
-            <span className="text-sm font-semibold text-gray-900 hidden sm:block">{t('brand.name')}</span>
-          </div>
-          {orgName && (
-            <>
-              <span className="text-gray-400 select-none">/</span>
-              <TooltipProvider delayDuration={300}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="text-sm text-gray-600 truncate max-w-[160px]">{orgName}</span>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="font-normal text-xs">
-                    {orgName}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              {hasAnySpace && (
-                <>
-                  <span className="text-gray-400 select-none hidden sm:inline">/</span>
-                  <SpaceSwitcher />
-                </>
-              )}
-            </>
+        {/* Page title + breadcrumb */}
+        <div className="hidden md:flex flex-col justify-center min-w-0 flex-shrink-0 max-w-[280px]">
+          {headerBreadcrumb.length > 0 && (
+            <div className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 leading-none mb-0.5 flex-wrap">
+              {headerBreadcrumb.map((crumb, i) => (
+                <span key={i} className="flex items-center gap-1">
+                  {i > 0 && (
+                    <span className="text-gray-300 dark:text-gray-600">
+                      <ChevronRightSVG />
+                    </span>
+                  )}
+                  <span className={cn(
+                    'whitespace-nowrap',
+                    i === headerBreadcrumb.length - 1 ? 'text-gray-500 dark:text-gray-400 font-medium' : '',
+                  )}>
+                    {crumb.label}
+                  </span>
+                </span>
+              ))}
+            </div>
+          )}
+          {headerTitle && (
+            <p className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 leading-tight truncate">
+              {headerTitle}
+            </p>
           )}
         </div>
 
-        {/* Search bar (desktop) */}
+        {/* Search bar — desktop */}
         <div className="flex-1 flex justify-center">
           <button
             onClick={() => setPaletteOpen(true)}
@@ -163,7 +115,7 @@ export function AppHeader({ orgName }: { orgName?: string }) {
         </div>
 
         {/* Right actions */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 ms-auto">
           {/* Mobile search */}
           <button
             onClick={() => setPaletteOpen(true)}
@@ -177,50 +129,21 @@ export function AppHeader({ orgName }: { orgName?: string }) {
           <ThemeToggle />
           <LanguageToggle />
 
-          <Badge variant={rc.variant}>{t(rc.labelKey)}</Badge>
+          {/* Notification bell */}
+          <button
+            type="button"
+            aria-label="Notifications"
+            className="relative p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-150 dark:hover:bg-gray-700/40"
+          >
+            <BellSVG />
+            <span
+              aria-hidden
+              className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-red-500 ring-2 ring-surface-card"
+            />
+          </button>
 
-          {/* User menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 focus:outline-none px-1 py-1 rounded-md hover:bg-gray-100 transition-colors ms-1 dark:hover:bg-gray-700/40">
-              <div className="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-semibold text-primary-700 flex-shrink-0 overflow-hidden">
-                {user?.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  initial
-                )}
-              </div>
-              <TooltipProvider delayDuration={300}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="hidden sm:block max-w-[140px] truncate">{triggerLabel}</span>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="font-normal text-xs">
-                    {identity || displayName}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <ChevronDownSVG />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="font-normal">
-                {displayName && (
-                  <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
-                )}
-                <p className="text-xs text-gray-500 truncate">{identity}</p>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push(`/${locale}/${orgSlug}/profile`)} className="gap-2">
-                <UserSVG />
-                {t('common.profile')}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut} className="text-red-600 focus:text-red-600 dark:text-red-500 dark:focus:text-red-500 gap-2">
-                <LogOutSVG />
-                {isLoggingOut ? '…' : t('common.signOut')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Per-page action buttons — portaled in from PageHeader */}
+          <div id="header-actions-slot" className="flex items-center gap-2 ms-1" />
         </div>
       </header>
 

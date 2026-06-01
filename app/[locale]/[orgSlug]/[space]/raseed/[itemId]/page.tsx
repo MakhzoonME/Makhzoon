@@ -15,8 +15,8 @@ import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { InventoryTransaction, Warranty } from '@/types';
 import { FormDrawer } from '@/components/shared/FormDrawer';
-import { InventoryItemForm } from '@/components/inventory/InventoryItemForm';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { useOrgInfo } from '@/hooks/org';
 import { RequestInventoryModal } from '@/components/inventory/RequestInventoryModal';
 import { WarrantyForm } from '@/components/warranties/WarrantyForm';
 import { Card, CardContent } from '@/components/ui/card';
@@ -99,6 +99,7 @@ export default function InventoryItemDetailPage() {
   const orgSlug     = useOrgSlug();
   const space       = useSpace();
   const { t, locale } = useT();
+  const { data: orgInfo } = useOrgInfo();
   const { user }    = useAuthStore();
   const qc          = useQueryClient();
 
@@ -114,7 +115,6 @@ export default function InventoryItemDetailPage() {
   const [txReason, setTxReason]   = useState('');
   const [txNote, setTxNote]       = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [editOpen, setEditOpen]   = useState(false);
   const [moveOpen, setMoveOpen]   = useState(false);
   const [dupeOpen, setDupeOpen]   = useState(false);
   const [reqOpen, setReqOpen]     = useState(false);
@@ -230,8 +230,10 @@ export default function InventoryItemDetailPage() {
       <PageHeader
         title={item.name}
         breadcrumb={[
-          { label: t('nav.inventory'), href: `/${locale}/${orgSlug}/${space}/raseed` },
-          { label: item.name,          href: `/${locale}/${orgSlug}/${space}/raseed/${itemId}` },
+          { label: orgInfo?.name ?? orgSlug },
+          { label: space },
+          { label: t('nav.inventory'), href: `/${locale}/${orgSlug}/${space}/raseed/list` },
+          { label: item.name, href: `/${locale}/${orgSlug}/${space}/raseed/${itemId}` },
         ]}
         actions={(
           <div className="flex items-center gap-2 flex-wrap">
@@ -240,7 +242,7 @@ export default function InventoryItemDetailPage() {
             </Button>
             {isAdmin && (
               <>
-                <Button size="sm" variant="outline" onClick={() => setEditOpen(true)} className="cursor-pointer transition-colors duration-150">
+                <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/${itemId}/edit`)} className="cursor-pointer transition-colors duration-150">
                   <Pencil aria-hidden className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('common.edit')}</span>
                 </Button>
                 <MoveInventoryButton onClick={() => setMoveOpen(true)} />
@@ -500,10 +502,6 @@ export default function InventoryItemDetailPage() {
       </div>
 
       {/* ── Dialogs ───────────────────────────────────────────────── */}
-      <FormDrawer open={editOpen} onOpenChange={setEditOpen} title={`${t('common.edit')}: ${item.name}`} width="xl">
-        <InventoryItemForm item={item} onSuccess={() => setEditOpen(false)} />
-      </FormDrawer>
-
       <ConfirmDialog
         open={deleteConfirm}
         onOpenChange={(o) => !o && setDeleteConfirm(false)}

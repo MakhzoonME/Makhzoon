@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 // useEffect retained for debounced-search → URL commit only.
-import { Plus, Pencil, Trash2, Upload, ClipboardCheck, ArrowRight, Copy } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload, ArrowRight, Copy } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
@@ -328,9 +328,6 @@ export default function AssetsListPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/audits`)}>
-              <ClipboardCheck aria-hidden className="w-4 h-4" /><span className="ms-1">{t('audits.title')}</span>
-            </Button>
             {isAdmin && (
               <SubscriptionGate>
                 <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
@@ -348,28 +345,6 @@ export default function AssetsListPage() {
           </div>
         }
       />
-
-      {/* Stats line */}
-      {summary && (
-        <div className="flex items-center gap-3 mb-4 text-sm text-gray-500 flex-wrap">
-          <span className="tabular-nums">
-            <span className="font-semibold text-green-700 dark:text-green-400">{summary.active.toLocaleString()}</span>
-            {' '}{t('assets.statActive')}
-          </span>
-          <span className="text-gray-300">·</span>
-          <span className="tabular-nums">
-            <span className="font-semibold text-gray-700 dark:text-gray-300">{summary.retired.toLocaleString()}</span>
-            {' '}{t('assets.statRetired')}
-          </span>
-          <span className="text-gray-300">·</span>
-          <span className="tabular-nums">
-            <span className={`font-semibold ${summary.expiring > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700'}`}>
-              {summary.expiring.toLocaleString()}
-            </span>
-            {' '}{t('assets.statExpiring')}
-          </span>
-        </div>
-      )}
 
       {/* Quick filter chips */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">

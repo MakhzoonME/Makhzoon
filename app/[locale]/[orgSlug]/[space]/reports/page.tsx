@@ -4,10 +4,29 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { useT } from '@/hooks/ui';
 import { Package, PackageCheck, PackageX, Wallet, UserCheck, AlertTriangle, ShieldCheck, ClipboardList, Wrench } from 'lucide-react';
 
+/* Wrap each Lucide icon to add aria-hidden — used as React.FC in Stat */
+const Pkg   = () => <Package    aria-hidden className="h-4 w-4" strokeWidth={1.75} />;
+const PkgOk = () => <PackageCheck aria-hidden className="h-4 w-4" strokeWidth={1.75} />;
+const PkgX  = () => <PackageX  aria-hidden className="h-4 w-4" strokeWidth={1.75} />;
+const Wal   = () => <Wallet     aria-hidden className="h-4 w-4" strokeWidth={1.75} />;
+const UsrCk = () => <UserCheck  aria-hidden className="h-4 w-4" strokeWidth={1.75} />;
+const Alert = () => <AlertTriangle aria-hidden className="h-4 w-4" strokeWidth={1.75} />;
+const Shld  = () => <ShieldCheck aria-hidden className="h-4 w-4" strokeWidth={1.75} />;
+const Clip  = () => <ClipboardList aria-hidden className="h-4 w-4" strokeWidth={1.75} />;
+const Wrch  = () => <Wrench     aria-hidden className="h-4 w-4" strokeWidth={1.75} />;
+
 
 function formatCurrency(n: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
 }
+
+const ACCENTS: Record<string, string> = {
+  gray:   'var(--gray-400)',
+  indigo: 'var(--primary-500)',
+  green:  'var(--green-600)',
+  amber:  'var(--amber-500)',
+  red:    'var(--red-600)',
+};
 
 function Stat({ label, value, icon: Icon, tone = 'gray' }: { label: string; value: string | number; icon: React.FC; tone?: 'gray' | 'indigo' | 'green' | 'amber' | 'red' }) {
   const tones: Record<string, string> = {
@@ -18,14 +37,17 @@ function Stat({ label, value, icon: Icon, tone = 'gray' }: { label: string; valu
     red:    'bg-[var(--red-50)] text-[var(--red-700)]',
   };
   return (
-    <div className="bg-surface-card rounded-xl border border-border p-5">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
-        <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${tones[tone]}`}>
-          <Icon />
+    <div className="bg-surface-card rounded-xl border border-border overflow-hidden">
+      <div className="h-0.5 w-full" style={{ background: ACCENTS[tone] }} />
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
+          <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${tones[tone]}`}>
+            <Icon />
+          </div>
         </div>
+        <p className="text-2xl font-bold text-gray-900 tabular-nums">{value}</p>
       </div>
-      <p className="text-2xl font-bold text-gray-900 tabular-nums">{value}</p>
     </div>
   );
 }
@@ -61,28 +83,28 @@ export default function ReportsPage() {
       <section className="mb-6">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('reports.inventory')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label={t('reports.totalAssets')} value={summary.totalAssets} icon={Package} tone="indigo" />
-          <Stat label={t('reports.active')} value={summary.activeAssets} icon={PackageCheck} tone="green" />
-          <Stat label={t('reports.retired')} value={summary.retiredAssets} icon={PackageX} />
-          <Stat label={t('reports.totalValue')} value={formatCurrency(summary.totalValue)} icon={Wallet} tone="indigo" />
+          <Stat label={t('reports.totalAssets')} value={summary.totalAssets} icon={Pkg} tone="indigo" />
+          <Stat label={t('reports.active')} value={summary.activeAssets} icon={PkgOk} tone="green" />
+          <Stat label={t('reports.retired')} value={summary.retiredAssets} icon={PkgX} />
+          <Stat label={t('reports.totalValue')} value={formatCurrency(summary.totalValue)} icon={Wal} tone="indigo" />
         </div>
       </section>
 
       <section className="mb-6">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('reports.activity')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label={t('reports.checkedOut')} value={summary.activeCheckouts} icon={UserCheck} tone="amber" />
-          <Stat label={t('reports.overdue')} value={summary.overdueCheckouts} icon={AlertTriangle} tone="red" />
-          <Stat label={t('reports.expiringWarranties')} value={summary.warrantiesExpiringSoon} icon={ShieldCheck} tone="amber" />
-          <Stat label={t('reports.openRequests')} value={summary.openRequests} icon={ClipboardList} />
+          <Stat label={t('reports.checkedOut')} value={summary.activeCheckouts} icon={UsrCk} tone="amber" />
+          <Stat label={t('reports.overdue')} value={summary.overdueCheckouts} icon={Alert} tone="red" />
+          <Stat label={t('reports.expiringWarranties')} value={summary.warrantiesExpiringSoon} icon={Shld} tone="amber" />
+          <Stat label={t('reports.openRequests')} value={summary.openRequests} icon={Clip} />
         </div>
       </section>
 
       <section className="mb-6">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('reports.maintenance')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label={t('reports.totalCost')} value={formatCurrency(summary.maintenanceCost)} icon={Wrench} tone="indigo" />
-          <Stat label={t('reports.records')} value={summary.maintenanceCount} icon={Wrench} />
+          <Stat label={t('reports.totalCost')} value={formatCurrency(summary.maintenanceCost)} icon={Wrch} tone="indigo" />
+          <Stat label={t('reports.records')} value={summary.maintenanceCount} icon={Wrch} />
         </div>
       </section>
 
@@ -142,17 +164,24 @@ export default function ReportsPage() {
             <p className="text-sm text-gray-500">{t('reports.noMaintenance')}</p>
           ) : (
             <div className="flex items-end gap-3 h-40">
-              {maintenanceByMonth.map((m) => (
-                <div key={m.month} className="flex-1 flex flex-col items-center justify-end gap-1.5">
-                  <span className="text-[11px] text-gray-500 tabular-nums">{formatCurrency(m.cost)}</span>
-                  <div
-                    className="w-full bg-primary-500 rounded-t-md transition-all"
-                    style={{ height: `${Math.max(4, (m.cost / maxMonthCost) * 100)}%` }}
-                    title={`${m.count} record${m.count === 1 ? '' : 's'}`}
-                  />
-                  <span className="text-[11px] text-gray-500">{m.month}</span>
-                </div>
-              ))}
+              {maintenanceByMonth.map((m, i) => {
+                const isLatest = i === maintenanceByMonth.length - 1;
+                return (
+                  <div key={m.month} className="flex-1 flex flex-col items-center justify-end gap-1.5">
+                    <span className="text-[11px] text-gray-500 tabular-nums">{formatCurrency(m.cost)}</span>
+                    <div
+                      className="w-full rounded-t-md transition-[height] duration-500"
+                      style={{
+                        height: `${Math.max(4, (m.cost / maxMonthCost) * 100)}%`,
+                        background: 'var(--primary-500)',
+                        opacity: isLatest ? 1 : 0.55,
+                      }}
+                      title={`${m.count} record${m.count === 1 ? '' : 's'}`}
+                    />
+                    <span className="text-[11px] text-gray-500">{m.month}</span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

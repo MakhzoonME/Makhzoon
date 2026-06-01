@@ -56,6 +56,8 @@ export default function SignupPage() {
   const [subdomainTouched, setSubdomainTouched] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
+  const [emailExists, setEmailExists] = useState(false);
+  const [emailChecking, setEmailChecking] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -70,8 +72,27 @@ export default function SignupPage() {
     if (!subdomainTouched) setSubdomain(deriveSubdomain(v));
   }
 
+  async function checkEmail(value: string) {
+    if (!value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return;
+    setEmailChecking(true);
+    try {
+      const res = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: value.trim() }),
+      });
+      const { exists } = await res.json().catch(() => ({ exists: false }));
+      setEmailExists(!!exists);
+    } catch {
+      // silent — don't block the form on a network blip
+    } finally {
+      setEmailChecking(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (emailExists) return;
     setError('');
     setLoading(true);
     try {
@@ -234,7 +255,35 @@ export default function SignupPage() {
               {/* Work email */}
               <motion.div variants={item} className="space-y-1.5">
                 <Label htmlFor="email">Work email <span className="text-red-500">*</span></Label>
-                <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="layla@acme.com" required />
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setEmailExists(false); }}
+                  onBlur={(e) => checkEmail(e.target.value)}
+                  placeholder="layla@acme.com"
+                  required
+                  className={emailExists ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20' : ''}
+                />
+                {emailChecking && (
+                  <p className="text-xs text-gray-400 flex items-center gap-1.5 mt-1">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden className="animate-spin">
+                      <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1.5" />
+                      <path d="M6 1.5a4.5 4.5 0 0 1 4.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                    Checking…
+                  </p>
+                )}
+                {emailExists && !emailChecking && (
+                  <p className="text-xs text-red-600 flex items-center gap-1.5 mt-1">
+                    <AlertCircleSVG />
+                    An account with this email already exists.{' '}
+                    <a href={`/${locale}/login`} className="font-medium underline underline-offset-2 hover:text-red-700 transition-colors">
+                      Sign in instead?
+                    </a>
+                  </p>
+                )}
               </motion.div>
 
               {/* Password */}
@@ -261,7 +310,7 @@ export default function SignupPage() {
               </AnimatePresence>
 
               <motion.div variants={item}>
-                <Button type="submit" className="w-full gap-2" disabled={loading}>
+                <Button type="submit" className="w-full gap-2" disabled={loading || emailExists || emailChecking}>
                   <AnimatePresence mode="wait" initial={false}>
                     {loading ? (
                       <motion.span key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}

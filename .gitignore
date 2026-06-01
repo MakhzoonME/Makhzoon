@@ -64,10 +64,7 @@ agentdb.rvf
 agentdb.rvf.lock
 
 # handoff/export archives
-*.zip
-
-# seed files with credentials
-scripts/seed-test-data.sql
+Makhzoon-handoff.zip
 
 # stray shell brace-expansion / accidental output files
 {,

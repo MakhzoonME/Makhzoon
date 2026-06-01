@@ -300,7 +300,8 @@ export default function ComingSoonPage() {
       {/* ── Language toggle ──────────────────────────────────────── */}
       <motion.button
         onClick={() => router.push(`/${other}`)}
-        className="absolute top-5 end-6 z-20 text-xs font-medium px-3.5 py-2 rounded-full"
+        aria-label={`Switch to ${other === 'ar' ? 'Arabic' : 'English'}`}
+        className="absolute top-5 end-6 z-20 text-xs font-medium px-3.5 py-2 rounded-full cursor-pointer"
         style={{
           background: 'rgba(255,255,255,0.055)',
           border:     `1px solid ${C.lineHard}`,

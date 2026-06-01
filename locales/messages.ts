@@ -1374,7 +1374,6 @@ const en = {
   'register.closeSession':       'Close session',
   'register.scanPlaceholder':    'Scan barcode to add to cart, or pick a product below',
   'register.cart':               'Cart',
-  'register.charge':             'Charge',
 } as const;
 
 const ar: Record<keyof typeof en, string> = {
@@ -2746,7 +2745,6 @@ const ar: Record<keyof typeof en, string> = {
   'register.closeSession':       'إغلاق الجلسة',
   'register.scanPlaceholder':    'امسح الباركود لإضافة المنتج إلى السلة، أو اختر منتجاً أدناه',
   'register.cart':               'السلة',
-  'register.charge':             'تحصيل',
 };
 
 export const messages: Record<Locale, Record<keyof typeof en, string>> = { en, ar };

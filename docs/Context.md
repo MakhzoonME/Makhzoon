@@ -115,7 +115,7 @@ Makhzoon is organized around five named modules, each with a distinct Arabic nam
 
 ### 3.11 Authentication & Session Management
 - **Auth Methods:** Email/password, username/password, invite-based onboarding
-- **Session Management:** Firebase Auth client + httpOnly session cookies (5-day expiry) + server-side cache (5-10s TTL)
+- **Session Management:** Supabase Auth + httpOnly session cookies via `@supabase/ssr` + server-side cache (5-10s TTL)
 - **SSO:** OIDC/PKCE implemented but disabled (not production-ready)
 - **Routes:** `/login`, `/invites/[token]`, `/api/auth/session`, `/api/auth/me`
 
@@ -204,11 +204,11 @@ All under `/(marketing)` route group. Fully responsive on all screen sizes.
 ## 5. Technical Architecture
 
 ### Stack
-- **Frontend:** Next.js 14 (App Router), React 18, TypeScript
-- **Backend:** Next.js 14 API Routes
-- **Database:** Firebase Firestore (NoSQL)
-- **Auth:** Firebase Authentication (client) + Firebase Admin SDK (server)
-- **State Management:** Zustand (global state), React Query (client-side data fetching)
+- **Frontend:** Next.js 16 (App Router, Turbopack), React 18, TypeScript
+- **Backend:** Next.js 16 API Routes
+- **Database:** Supabase (Postgres + RLS)
+- **Auth:** Supabase Auth + `@supabase/ssr` for server-side session management
+- **State Management:** Zustand (global state), TanStack Query v5 (server state)
 - **Email:** Resend (invites, alerts, notifications)
 - **Error Tracking:** Sentry
 - **Styling:** Tailwind CSS + Radix UI components + Framer Motion (animations)
@@ -216,30 +216,28 @@ All under `/(marketing)` route group. Fully responsive on all screen sizes.
 - **Localization:** Custom i18n system with `useT()` hook
 
 ### Deployment
-- **Hosting:** Vercel (Next.js optimized platform)
-- **Database:** Firebase (Google Cloud)
-- **Domain:** `app.makhzoon.me` — main app; `makhzoon.me` / `www.makhzoon.me` — coming soon / marketing
+- **Hosting:** Cloudflare Workers via `@opennextjs/cloudflare` (`npm run cf:deploy`)
+- **Database:** Supabase (Postgres, hosted)
+- **Domain:** `app.makhzoon.me` — production; `dev.makhzoon.me` — DevBranch; `stage.makhzoon.me` — STGBranch; `makhzoon.me` / `www.makhzoon.me` — marketing
+- **Crons:** Moved from Vercel/Amplify to `workers/cron/` (Cloudflare Workers)
 
 ### Routing Architecture
 - **Multi-Tenant Path-Based Routing:**
-  - Coming soon / marketing root: `/{locale}` — coming soon page (at `makhzoon.me`)
+  - Marketing root: `/{locale}` — coming soon / landing page (at `makhzoon.me`)
   - Public marketing: `/{locale}/home`, `/product`, `/pricing`, `/customers`, `/security`, `/about`, `/contact`
   - Auth: `/{locale}/login`, `/{locale}/invites/[token]`
-  - Org Portal: `/{locale}/[orgSlug]/*` — e.g., `/en/acme-corp/assets`
+  - Org Portal: `/{locale}/[orgSlug]/[spaceSlug]/{module}` — e.g., `/en/acme-corp/main/usool/list`
   - Superadmin: `/{locale}/superadmin/*`
-- **Proxy (`proxy.ts`):** All routing logic lives here — imported by Next.js as the middleware entry. Two responsibilities:
-  1. **Domain routing** — When host is `makhzoon.me` or `www.makhzoon.me`, only the root coming soon path is served; all other paths redirect to `/{locale}`. `app.makhzoon.me` redirects locale-root to `/login`.
-  2. **Session enforcement** — Enforces session cookie on protected routes; redirects to `/login` if missing. Public paths (home, product, pricing, etc.) and `/invites/*` are always accessible.
-  3. **Locale detection** — If no locale prefix in path, detects from cookie → Accept-Language → default `en`, then redirects to prefixed URL.
-- **API Routes:** `/api/*` — all require session verification via `verifySessionCookie()`
+- **Middleware (`middleware.ts`):** Domain routing, locale detection, and soft session gate.
+- **Spaces:** Every org has one or more Spaces. All module data is scoped to a space. The active space is tracked in `store/active-space.store.ts` and shown in the sidebar via `components/layout/SpaceSwitcher.tsx`.
+- **API Routes:** `/api/*` — all require session verification via Supabase server client
 
 ### Session & Auth Flow
-1. User signs in (email/password or username/password)
-2. Firebase returns ID token
-3. Frontend exchanges ID token for httpOnly session cookie via POST `/api/auth/session`
-4. Server caches decoded session for 5-10 seconds
-5. Logout: DELETE `/api/auth/session` + `window.location.href` hard redirect
-6. Login page auto-redirects authenticated users — uses `fetch('/api/auth/me', { cache: 'no-store' })` to bypass browser cache and prevent redirect loops
+1. User signs in (email/password) via Supabase Auth
+2. `@supabase/ssr` manages session cookies automatically (httpOnly, secure, sameSite: strict)
+3. Server-side session cache (5-10s TTL) via `lib/supabase/session-cache.ts`
+4. Logout: `supabase.auth.signOut()` + hard redirect to `/login`
+5. Session revocation tracked in `lib/supabase/session-revocation.ts`
 
 ### Sidebar Architecture
 Both portals use animated collapsible sidebars with Framer Motion:
@@ -258,7 +256,7 @@ Both portals use animated collapsible sidebars with Framer Motion:
 - `isMobile` check prevents `marginLeft` from being applied to main content on mobile
 
 ### Permission Caching
-- **Session Cache:** 5-10 second TTL for decoded Firebase session tokens
+- **Session Cache:** 5-10 second TTL for decoded Supabase sessions (`lib/supabase/session-cache.ts`)
 - **Permission Cache:** 10 second TTL keyed by user UID
 - **Invalidation:** `invalidateCachedSession(token)` on logout
 
@@ -266,138 +264,41 @@ Both portals use animated collapsible sidebars with Framer Motion:
 
 ## 6. Data Models
 
-### Collections & Schemas
+The database is **Supabase Postgres** with Row-Level Security. Schema lives in `supabase/migrations/` and `supabase/combined.sql`. Key tables:
 
-#### Organizations
-```
-organizations/{orgId}
-  - id, name, subdomain (URL slug), contactEmail, description, category
-  - packageDetails, createdAt, createdBy, updatedAt, updatedBy
-```
-
-#### Users (org-level)
-```
-users/{userId}
-  - id (Firebase UID), organizationId
-  - email: string | null
-  - username: string | null (alternative login identity)
-  - displayName, role: 'org_owner' | 'admin' | 'staff'
-  - status: 'active' | 'deactivated'
-  - permissions: UserPermissions | null (custom overrides)
-  - createdAt, createdBy, updatedAt, updatedBy
-```
-
-#### SuperAdminUsers
-```
-superadminUsers/{userId}
-  - id (Firebase UID), email, displayName
-  - role: 'super_admin' | 'makhzoon_admin' | 'makhzoon_support'
-  - createdAt, createdBy, updatedAt, updatedBy
-```
-
-#### Assets
-```
-assets/{assetId}
-  - id, organizationId, name, category, status
-  - serialNumber, purchaseDate, purchaseCost, assignedTo, location, notes
-  - createdAt/By/Email/Name/Role, updatedAt/By/Email/Name/Role
-```
-
-#### Warranties
-```
-warranties/{warrantyId}
-  - id, organizationId, assetId, assetName
-  - vendor, startDate, endDate, reminder, notes
-  - createdAt, createdBy, updatedAt, updatedBy
-```
-
-#### InventoryItems
-```
-inventory/{itemId}
-  - id, organizationId, name, category, sku, unit
-  - quantityOnHand, minimumThreshold, reorderQuantity
-  - location, supplier, unitCost, notes
-  - stockStatus: 'ok' | 'low' | 'out' (computed)
-  - createdAt/By/Email/Name, updatedAt/By/Email/Name
-```
-
-#### InventoryTransactions
-```
-inventoryTransactions/{transactionId}
-  - id, organizationId, itemId, itemName
-  - type: 'in' | 'out' | 'adjustment'
-  - quantity, quantityBefore, quantityAfter, reason, note
-  - performedAt, performedBy/Email/Name/Role
-```
-
-#### Requests
-```
-requests/{requestId}
-  - id, organizationId
-  - type: 'REFILL' | 'RETIRE' | 'BUY_NEW' | 'EXTEND_WARRANTY'
-  - assetId, assetName, warrantyId, inventoryItemId, inventoryItemName
-  - description, status: 'PENDING' | 'APPROVED' | 'REJECTED'
-  - decisionBy, decisionAt, createdAt/By/Name/Email, updatedAt/By
-```
-
-#### SupportTickets
-```
-supportTickets/{ticketId}
-  - id, organizationId, subject, description
-  - status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
-  - priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
-  - createdBy, createdAt, updatedAt
-
-ticketMessages/{messageId}
-  - id, ticketId, body, authorId, authorName, authorRole, createdAt
-```
-
-#### Subscriptions
-```
-subscriptions/{subscriptionId}
-  - id, organizationId, packageId
-  - features: Record<FeatureKey, boolean>
-  - startDate, endDate, status: 'ACTIVE' | 'EXPIRED' | 'SUSPENDED'
-  - createdAt/By, updatedAt/By
-```
-
-#### AuditLogs
-```
-auditLogs/{logId}
-  - id, organizationId, userId, role
-  - action (ORGANIZATION_CREATED, ASSET_UPDATED, etc.)
-  - module, recordId, oldValue, newValue, timestamp
-```
-
-#### OrganizationConfig
-```
-organizationConfigs/{orgId}
-  - organizationId
-  - assetStatuses: Array<{ id, label, color }>
-  - locations: Array<{ id, name }>
-  - categories: Array<{ id, name }>
-  - createdAt/By, updatedAt/By
-```
-
-#### Other Collections
-- **assetCheckouts** — Loan-out and return records
-- **assetNotes** — Free-form notes on assets
-- **maintenanceRecords** — Service, repair, inspection events
-- **paymentLogs** — Subscription payment tracking
-- **invites** — One-time invitation tokens
-- **backendLogs** — System-level logs for superadmin debugging
-- **inventoryAudits** + **inventoryAuditItems** — Physical count audit records
+- **organizations** — tenants; `id`, `slug` (URL segment), `name`, `contact_email`, `category`
+- **spaces** — sub-units of an org; `id`, `organization_id`, `slug`, `name`; all module records carry `space_id`
+- **users** — org members; `id` (Supabase Auth UID), `organization_id`, `space_id`, `role` (`org_owner | admin | staff`), `status`
+- **user_permissions** — per-user, per-module, per-space custom permission overrides
+- **superadmin_users** — platform staff; `role` (`super_admin | makhzoon_admin | makhzoon_support`)
+- **assets** — asset register; `id`, `space_id`, `name`, `category`, `status`, `serial_number`, `purchase_date`, `purchase_cost`, `assigned_to`, `location`
+- **asset_checkouts** — checkout/check-in log
+- **asset_notes** — free-form notes per asset
+- **maintenance_records** — service/repair/inspection events
+- **warranties** — per-asset warranties; `vendor`, `start_date`, `end_date`, `reminder`
+- **inventory_items** — stocked items; `space_id`, `quantity_on_hand`, `minimum_threshold`, `unit_cost`, `stock_status` (computed: ok/low/out)
+- **inventory_transactions** — in/out/adjustment movements
+- **inventory_audits** + **inventory_audit_items** — physical count audits
+- **pos_sessions** — Haraka register sessions
+- **pos_transactions** — POS sales
+- **customers** — Haraka customer records
+- **requests** — staff requests; `type` (REFILL | RETIRE | BUY_NEW | EXTEND_WARRANTY), `status` (PENDING | APPROVED | REJECTED)
+- **support_tickets** + **ticket_messages** — in-app support thread
+- **subscriptions** — `organization_id`, `package_id`, `features` (JSONB), `status` (ACTIVE | EXPIRED | SUSPENDED)
+- **audit_logs** — immutable mutation trail; `organization_id`, `space_id`, `user_id`, `action`, `module`, `record_id`, `old_value`, `new_value`
+- **managed_lists** — configurable dropdown data (categories, locations, etc.) per org
+- **invites** — one-time invitation tokens
+- **backend_logs** — system-level logs for superadmin debugging
+- **payment_logs** — subscription payment tracking
 
 ---
 
 ## 7. User Flows
 
 ### 7.1 Login Flow
-1. Visit `/login` → select email or username tab
-2. Enter credentials → Firebase `signInWithEmailAndPassword`
-3. Exchange ID token for httpOnly session cookie via POST `/api/auth/session`
-4. Redirect: superadmin roles → `/superadmin/dashboard`; org users → `/{orgSlug}/dashboard`
-5. Login page checks `/api/auth/me` with `{ cache: 'no-store' }` to auto-redirect already-authenticated users without browser cache causing loops
+1. Visit `/login` → enter email/password
+2. Supabase Auth signs in; `@supabase/ssr` sets session cookies automatically
+3. Redirect: superadmin roles → `/superadmin/dashboard`; org users → `/{orgSlug}/{spaceSlug}/dashboard`
 
 ### 7.2 Invite Acceptance Flow
 1. User receives invite email with unique token: `/invites/[token]`
@@ -406,19 +307,18 @@ organizationConfigs/{orgId}
 4. Backend creates account, auto-signs in, redirects to `/{orgSlug}/dashboard`
 
 ### 7.3 Asset Management CRUD
-1. GET `/api/assets` → list; POST `/api/assets` → create; PATCH `/api/assets/[id]` → update; DELETE → delete
-2. Every mutation logs to `auditLogs` with old/new values
+1. All asset routes are space-scoped: `GET /api/assets?spaceId=...`, `POST /api/assets`, `PATCH /api/assets/[id]`, `DELETE /api/assets/[id]`
+2. Every mutation logs to `audit_logs` with old/new values via `lib/audit/`
 
 ### 7.4 Superadmin Transfer Mode
 1. Superadmin logs in → navigates to org → clicks "Transfer"
-2. POST `/api/organizations/[orgId]/transfer` → sets `transferOrgId` cookie
-3. Superadmin sees org portal with Transfer Mode banner
-4. DELETE to exit → clears cookie → returns to `/superadmin`
+2. Sets `transferOrgId` cookie; superadmin sees org portal with Transfer Mode banner (`components/layout/TransferModeBanner.tsx`)
+3. Exit → clears cookie → returns to `/superadmin`
 
 ### 7.5 Warranty Alert Cron
-1. External cron calls GET `/api/cron/warranty-alerts` with `Authorization: Bearer {CRON_SECRET}`
-2. Queries warranties expiring within 30 days, groups by org, emails all org admins via Resend
-3. Logs `WARRANTY_ALERT_SENT` audit event
+1. Cloudflare Worker cron in `workers/cron/` triggers the endpoint
+2. GET `/api/cron/warranty-alerts` with `Authorization: Bearer {CRON_SECRET}`
+3. Queries warranties expiring within 30 days, emails org admins via Resend, logs `WARRANTY_ALERT_SENT`
 
 ---
 
@@ -428,40 +328,34 @@ Architecture: `API Route → Service Layer (auth + permissions + business logic)
 
 **Base service (`lib/services/base.service.ts`):** `requireAuth()`, `requirePermission()`, `requireActiveSubscription()`, `requireFeature()`, `getUserContext()`, `errorResponse()`, `successResponse()`
 
-**Domain services:** `lib/services/assets.service.ts`, `lib/services/inventory.service.ts` — handle permission checks, subscription validation, DB ops, and audit logging. Pattern extends to all other domains.
+**Domain services:** `lib/services/` — handle permission checks, subscription validation, DB ops (via Supabase), and audit logging. All data access goes through `lib/db/` (typed Supabase query helpers).
 
 ---
 
 ## 9. Current State (as of May 2026)
 
 ### Implemented & Stable
-- ✅ Multi-tenant organization management (path-based routing)
-- ✅ Email/password + username/password + invite-based auth
-- ✅ Org RBAC + custom per-user permissions
-- ✅ Asset register (create, edit, retire, QR, import/export CSV)
-- ✅ Inventory management (items, transactions, stock status, audits)
-- ✅ Warranty tracking + cron-triggered email alerts (progressive 30/14/7 day)
+- ✅ **Supabase** as sole data layer (Postgres + RLS) — Firebase fully removed
+- ✅ **Cloudflare Workers** deployment via `@opennextjs/cloudflare` — Amplify/Vercel removed
+- ✅ **Spaces** — per-org multi-space architecture; all module data scoped to `space_id`; SpaceSwitcher in sidebar; Duplicate-to-space, bulk move/duplicate, Members panel
+- ✅ Multi-tenant organization management (path-based routing: `/{locale}/{orgSlug}/{spaceSlug}/{module}`)
+- ✅ Email/password + invite-based auth (Supabase Auth)
+- ✅ Org RBAC + custom per-user, per-module, per-space permissions
+- ✅ **Bulk actions** — floating `BulkActionsBar` per module; bulk delete, bulk move/duplicate; per-module bulk permissions
+- ✅ Asset register — Usool: create, edit, retire, QR, import/export CSV, asset audits
+- ✅ Inventory management — Raseed: items, purchases, stock audits, reconcile
+- ✅ **Haraka (POS)** — register, sessions, customers, transactions, reports
+- ✅ Warranty tracking + cron-triggered email alerts (Cloudflare Workers cron)
 - ✅ Request workflow (submit, approve/reject)
 - ✅ Asset checkout/check-in, maintenance records, asset notes
 - ✅ Support ticketing (thread-based)
-- ✅ Immutable audit logs (searchable, CSV export)
+- ✅ Immutable audit logs (searchable, space/org scope toggle, CSV export)
 - ✅ Dashboard + reports
-- ✅ Org configuration (statuses, locations, categories)
+- ✅ Org configuration (managed lists: statuses, locations, categories)
 - ✅ Subscription + package management + payment logs
-- ✅ Dark mode (full dark variants in all UI components including Radix dropdowns)
-- ✅ Arabic + English with RTL layout support
-- ✅ Sentry error tracking
-- ✅ Server-side session + permission caching
-- ✅ CSV import/export for assets, inventory, audit logs
-- ✅ Sidebar collapse animation (Framer Motion) — both org portal and superadmin
-- ✅ Page transition animations, button press animations, skeleton loading
-- ✅ Module identity system (Usool/Raseed/Haraka/Maal/Banna with colors and Arabic names)
-- ✅ Network status indicator (online/slow/offline) in org portal header and superadmin banner
-- ✅ Full-app responsiveness (all marketing pages, superadmin portal, login, invites, org portal)
-- ✅ Domain routing middleware (`makhzoon.me` → coming soon page)
-- ✅ Marketing website (home, product, pricing, customers, security, about, contact)
-- ✅ Coming soon page with early-access form
-- ✅ Services layer (base + assets + inventory)
+- ✅ Dark mode, Arabic/English with RTL, Sentry, server-side session caching
+- ✅ Module identity system (Usool/Raseed/Haraka/Maal/Banna with brand colors)
+- ✅ Full-app responsiveness; marketing website; coming soon page
 
 ### Recent Changes (May 2026 session)
 
@@ -592,33 +486,37 @@ tailwind.config.ts                — Tailwind CSS config
 ## 11. Environment Variables
 
 ### Public Variables (NEXT_PUBLIC_*)
-- `NEXT_PUBLIC_FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_STORAGE_BUCKET`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_APP_ID`
+- `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key
 - `NEXT_PUBLIC_APP_URL` — Domain for email links (`https://app.makhzoon.me`)
 - `NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY` — Disabled
 - `NEXT_PUBLIC_SENTRY_DSN`
 
-### Server-Only Variables
-- `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (or `FIREBASE_SERVICE_ACCOUNT_BASE64`)
+### Server-Only Variables (set via `wrangler secret put --env <name>`)
+- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service-role key (bypasses RLS)
 - `CRON_SECRET` — Authorization for `/api/cron/*`
 - `RESEND_API_KEY`, `RESEND_FROM_EMAIL`
+- `GOOGLE_DRIVE_PRIVATE_KEY` — Google Drive service-account
+- `FAWTARA_SECRET_ENC_KEY` — ZATCA e-invoicing encryption
 - `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`
 - `CLOUDFLARE_TURNSTILE_SECRET_KEY` — Disabled
-- `NODE_ENV`
 
 ---
 
 ## 12. Security
 
 ### Implemented
-- ✅ httpOnly session cookies
-- ✅ Session verification on every API route
-- ✅ Firebase Admin SDK for trusted server operations
+- ✅ httpOnly session cookies via `@supabase/ssr`
+- ✅ Session verification on every API route (Supabase server client)
+- ✅ Supabase service-role key used only server-side; anon key in browser
+- ✅ Row-Level Security (RLS) on all Supabase tables for multi-tenant isolation
 - ✅ Role + permission checks on all mutation endpoints
 - ✅ Immutable audit logs
-- ✅ Multi-tenant isolation by organizationId
 - ✅ Sentry error tracking (no PII in logs)
 - ✅ CRON_SECRET via Authorization header only (not query param)
-- ✅ CSP headers configured in next.config.ts
+- ✅ CSP headers configured in next.config.mjs
+- ✅ Rate limiting on auth and public endpoints (`lib/rate-limit.ts`)
+- ✅ CSRF origin checking (`lib/csrf.ts`)
 
 ### Gaps
 - ⚠️ No rate limiting on public endpoints
@@ -686,12 +584,9 @@ All pages are fully responsive across mobile, tablet, and desktop.
 
 ## 16. Not Found in Codebase
 
-- Database migrations/seeds (Firebase/Firestore; no SQL)
-- Test suite (no Jest/Vitest)
+- Test suite (Vitest configured but zero test files written)
 - GraphQL API (REST only)
-- CI/CD config (Vercel auto-deploys)
-- Stripe/payment processing (payment logs tracked but no processor)
+- Stripe/payment processing (payment logs tracked but no processor integrated)
 - Redis caching (in-memory session cache only)
-- File upload (no persistent file storage beyond Firestore)
 - Pagination (no cursor-based pagination yet)
 - OpenAPI/Swagger docs

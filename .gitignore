@@ -63,6 +63,9 @@ functions/ruvector.db-*
 agentdb.rvf
 agentdb.rvf.lock
 
+# handoff/export archives
+Makhzoon-handoff.zip
+
 # stray shell brace-expansion / accidental output files
 {,
 x.collectionGroup

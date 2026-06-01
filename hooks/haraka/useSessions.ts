@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useParams } from 'next/navigation';
 import type { PosSession } from '@/types';
 
 const LIST_KEY = ['haraka', 'sessions'] as const;
@@ -15,12 +16,13 @@ interface ListResp {
 }
 
 export function useSessions(params?: { status?: 'open' | 'closed'; page?: number; pageSize?: number }) {
+  const { space } = useParams<{ space?: string }>();
   const query = new URLSearchParams();
   if (params?.status) query.set('status', params.status);
   if (params?.page) query.set('page', String(params.page));
   if (params?.pageSize) query.set('pageSize', String(params.pageSize));
   return useQuery<ListResp>({
-    queryKey: [...LIST_KEY, params],
+    queryKey: [...LIST_KEY, space, params],
     queryFn: async () => {
       const res = await fetch(`/api/haraka/sessions?${query.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch sessions');
@@ -32,8 +34,9 @@ export function useSessions(params?: { status?: 'open' | 'closed'; page?: number
 
 /** Caller's own currently-open session, or null. Cheap to poll — short staleTime. */
 export function useCurrentSession() {
+  const { space } = useParams<{ space?: string }>();
   return useQuery<{ session: PosSession | null }>({
-    queryKey: CURRENT_KEY,
+    queryKey: [...CURRENT_KEY, space],
     queryFn: async () => {
       const res = await fetch('/api/haraka/sessions?mine=current');
       if (!res.ok) throw new Error('Failed to fetch current session');
@@ -44,8 +47,9 @@ export function useCurrentSession() {
 }
 
 export function useSession(id: string | undefined) {
+  const { space } = useParams<{ space?: string }>();
   return useQuery<{ session: PosSession; expectedCashSoFar: number }>({
-    queryKey: ['haraka', 'sessions', id],
+    queryKey: ['haraka', 'sessions', space, id],
     queryFn: async () => {
       const res = await fetch(`/api/haraka/sessions/${id}`);
       if (!res.ok) throw new Error('Failed to fetch session');

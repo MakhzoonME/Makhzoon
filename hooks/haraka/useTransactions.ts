@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useParams } from 'next/navigation';
 import type { PosTransaction } from '@/types';
 import type { CompleteSalePayload, RefundPayload } from '@/lib/modules/haraka/transactions/schemas';
 
@@ -15,13 +16,14 @@ interface ListResp {
 }
 
 export function useTransactions(params?: { sessionId?: string; status?: 'completed' | 'refunded' | 'voided'; page?: number; pageSize?: number }) {
+  const { space } = useParams<{ space?: string }>();
   const query = new URLSearchParams();
   if (params?.sessionId) query.set('sessionId', params.sessionId);
   if (params?.status) query.set('status', params.status);
   if (params?.page) query.set('page', String(params.page));
   if (params?.pageSize) query.set('pageSize', String(params.pageSize));
   return useQuery<ListResp>({
-    queryKey: [...LIST_KEY, params],
+    queryKey: [...LIST_KEY, space, params],
     queryFn: async () => {
       const res = await fetch(`/api/haraka/transactions?${query.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch transactions');
@@ -32,8 +34,9 @@ export function useTransactions(params?: { sessionId?: string; status?: 'complet
 }
 
 export function useTransaction(id: string | undefined) {
+  const { space } = useParams<{ space?: string }>();
   return useQuery<{ transaction: PosTransaction }>({
-    queryKey: ['haraka', 'transactions', id],
+    queryKey: ['haraka', 'transactions', space, id],
     queryFn: async () => {
       const res = await fetch(`/api/haraka/transactions/${id}`);
       if (!res.ok) throw new Error('Failed to fetch transaction');

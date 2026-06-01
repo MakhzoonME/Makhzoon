@@ -1,5 +1,6 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'next/navigation';
 import { Warranty } from '@/types';
 
 interface WarrantiesResponse {
@@ -19,6 +20,7 @@ export function useWarranties(params?: {
   sortBy?: string;
   sortDir?: 'asc' | 'desc';
 }) {
+  const { space } = useParams<{ space?: string }>();
   const query = new URLSearchParams();
   if (params?.status) query.set('status', params.status);
   if (params?.assetId) query.set('assetId', params.assetId);
@@ -29,7 +31,7 @@ export function useWarranties(params?: {
   if (params?.sortDir) query.set('sortDir', params.sortDir);
 
   return useQuery<WarrantiesResponse>({
-    queryKey: ['warranties', params],
+    queryKey: ['warranties', space, params],
     queryFn: async () => {
       const res = await fetch(`/api/warranties?${query.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch warranties');
@@ -41,8 +43,9 @@ export function useWarranties(params?: {
 }
 
 export function useWarranty(id: string) {
+  const { space } = useParams<{ space?: string }>();
   return useQuery({
-    queryKey: ['warranties', id],
+    queryKey: ['warranties', space, id],
     queryFn: async () => {
       const res = await fetch(`/api/warranties/${id}`);
       if (!res.ok) throw new Error('Failed to fetch warranty');

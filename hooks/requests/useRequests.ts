@@ -1,5 +1,6 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'next/navigation';
 import { Request } from '@/types';
 
 interface RequestsResponse {
@@ -18,6 +19,7 @@ export function useRequests(params?: {
   sortBy?: string;
   sortDir?: 'asc' | 'desc';
 }) {
+  const { space } = useParams<{ space?: string }>();
   const query = new URLSearchParams();
   if (params?.status) query.set('status', params.status);
   if (params?.type) query.set('type', params.type);
@@ -27,7 +29,7 @@ export function useRequests(params?: {
   if (params?.sortDir) query.set('sortDir', params.sortDir);
 
   return useQuery<RequestsResponse>({
-    queryKey: ['requests', params],
+    queryKey: ['requests', space, params],
     queryFn: async () => {
       const res = await fetch(`/api/requests?${query.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch requests');

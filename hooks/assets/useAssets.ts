@@ -1,5 +1,6 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'next/navigation';
 import type { Asset } from '@/types';
 
 interface AssetsResponse {
@@ -19,6 +20,7 @@ export function useAssets(params?: {
   sortBy?: string;
   sortDir?: 'asc' | 'desc';
 }) {
+  const { space } = useParams<{ space?: string }>();
   const query = new URLSearchParams();
   if (params?.status) query.set('status', params.status);
   if (params?.category) query.set('category', params.category);
@@ -29,7 +31,7 @@ export function useAssets(params?: {
   if (params?.sortDir) query.set('sortDir', params.sortDir);
 
   return useQuery<AssetsResponse>({
-    queryKey: ['assets', params],
+    queryKey: ['assets', space, params],
     queryFn: async () => {
       const res = await fetch(`/api/assets?${query.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch assets');
@@ -41,8 +43,9 @@ export function useAssets(params?: {
 }
 
 export function useAsset(id: string) {
+  const { space } = useParams<{ space?: string }>();
   return useQuery<Asset>({
-    queryKey: ['assets', id],
+    queryKey: ['assets', space, id],
     queryFn: async () => {
       const res = await fetch(`/api/assets/${id}`);
       if (!res.ok) throw new Error('Failed to fetch asset');
@@ -55,8 +58,9 @@ export function useAsset(id: string) {
 }
 
 export function useAssetCategories() {
+  const { space } = useParams<{ space?: string }>();
   return useQuery<string[]>({
-    queryKey: ['asset-categories'],
+    queryKey: ['asset-categories', space],
     queryFn: async () => {
       const res = await fetch('/api/assets?categoriesOnly=true');
       if (!res.ok) return [];

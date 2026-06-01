@@ -183,14 +183,14 @@ function StatCard({ icon, iconBg, iconColor, accent, label, value, delta, sub, o
           <div className="flex-1 min-w-0">
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5 truncate">{label}</p>
             {value}
+            {delta && (
+              <span className="inline-flex mt-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                style={{ background: iconBg, color: iconColor }}>
+                {delta}
+              </span>
+            )}
             {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
           </div>
-          {delta && (
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ms-auto"
-              style={{ background: iconBg, color: iconColor }}>
-              {delta}
-            </span>
-          )}
         </div>
       </CardContent>
     </Card>
@@ -568,10 +568,17 @@ function PendingRequestsTable({ requests, isLoading, orgSlug, locale, space, onA
 }
 
 /* ── SectionHeader ───────────────────────────────────────────────── */
-function SectionHeader({ title, action, onClick }: { title: string; action?: string; onClick?: () => void }) {
+function SectionHeader({ title, count, action, onClick }: { title: string; count?: number; action?: string; onClick?: () => void }) {
   return (
     <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
-      <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+      <div className="flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+        {count != null && count > 0 && (
+          <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[11px] font-semibold tabular-nums">
+            {count}
+          </span>
+        )}
+      </div>
       {action && onClick && (
         <button onClick={onClick}
           className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 transition-colors duration-150 cursor-pointer flex items-center gap-1">
@@ -808,16 +815,10 @@ export default function DashboardPage() {
         <Card className="p-0">
           <SectionHeader
             title={t('dashboard.pendingRequests')}
+            count={!isLoading ? pendingRequests.length : undefined}
             action={t('dashboard.openQueue')}
             onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list?status=PENDING`)}
           />
-          {!isLoading && pendingRequests.length > 0 && (
-            <div className="px-5 py-1.5 border-b border-border">
-              <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[11px] font-semibold tabular-nums">
-                {pendingRequests.length}
-              </span>
-            </div>
-          )}
           <PendingRequestsTable
             requests={pendingRequests}
             isLoading={isLoading}

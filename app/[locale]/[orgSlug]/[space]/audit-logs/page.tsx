@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { useAuditLogs } from '@/hooks/org';
-import { useTransferMode } from '@/hooks/ui';
+import { useAuditLogs, useOrgInfo } from '@/hooks/org';
+import { useTransferMode, useOrgSlug, useSpace } from '@/hooks/ui';
 import { useAuth } from '@/hooks/ui';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
@@ -64,6 +64,9 @@ function changeSummary(log: AuditLog): string | null {
 
 export default function OrgAuditLogsPage() {
   const { t } = useT();
+  const orgSlug = useOrgSlug();
+  const space   = useSpace();
+  const { data: orgInfo } = useOrgInfo();
   const { user } = useAuth();
   const { orgId: transferOrgId } = useTransferMode();
   const orgId = user?.role === 'super_admin' ? (transferOrgId ?? undefined) : undefined;
@@ -163,7 +166,14 @@ export default function OrgAuditLogsPage() {
 
   return (
     <div>
-      <PageHeader title={t('nav.auditLogs')} />
+      <PageHeader
+        title={t('nav.auditLogs')}
+        breadcrumb={[
+          { label: orgInfo?.name ?? orgSlug },
+          { label: space },
+          { label: t('nav.auditLogs') },
+        ]}
+      />
 
       <div className="bg-surface-card rounded-lg border border-border p-4 mb-4 space-y-3">
         {/* Scope toggle + immutable note */}

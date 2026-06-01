@@ -10,7 +10,8 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useFawtaraConfig, useUpdateFawtaraConfig } from '@/hooks/haraka';
-import { toast, useAdminGuard, useT } from '@/hooks/ui';
+import { toast, useAdminGuard, useT, useOrgSlug } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import type { FawtaraConfig } from '@/types';
 
 interface FormShape {
@@ -27,6 +28,8 @@ interface FormShape {
 export default function FawtaraSettingsPage() {
   const { isAllowed } = useAdminGuard('settings.fawtara');
   const { t } = useT();
+  const orgSlug = useOrgSlug();
+  const { data: orgInfo } = useOrgInfo();
   const { data, isLoading } = useFawtaraConfig();
   const updateMut = useUpdateFawtaraConfig();
   const config: FawtaraConfig | undefined = data?.config;
@@ -89,7 +92,11 @@ export default function FawtaraSettingsPage() {
       <PageHeader
         title={t('fawtara.title')}
         description={t('fawtara.subtitle')}
-        breadcrumb={[{ label: t('nav.settings') }]}
+        breadcrumb={[
+          { label: orgInfo?.name ?? orgSlug },
+          { label: t('nav.settings') },
+          { label: t('nav.fawtara') },
+        ]}
       />
 
       <div

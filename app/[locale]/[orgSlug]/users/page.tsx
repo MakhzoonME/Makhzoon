@@ -27,7 +27,7 @@ import { useSubscriptionFeatures } from '@/hooks/org';
 import { UserPermissions, DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from '@/types';
 import { useT } from '@/hooks/ui';
 import type { MessageKey } from '@/locales/messages';
-import { Plus, Pencil, Trash2, MailX } from 'lucide-react';
+import { Plus, Pencil, Trash2, MailX, KeyRound, Copy, Check } from 'lucide-react';
 
 
 type Row =
@@ -108,6 +108,10 @@ export default function UsersPage() {
   const features = useSubscriptionFeatures();
   const [deleteTarget, setDeleteTarget] = useState<{ user: OrgUser; permanent: boolean } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [resetTarget, setResetTarget] = useState<OrgUser | null>(null);
+  const [resetting, setResetting] = useState(false);
+  const [resetResult, setResetResult] = useState<{ type: 'email_sent' | 'temp_password'; password?: string } | null>(null);
+  const [copied, setCopied] = useState(false);
   const [now] = useState(() => Date.now());
   const qc = useQueryClient();
 
@@ -219,6 +223,29 @@ export default function UsersPage() {
     }
   }
 
+  async function handleResetPassword() {
+    if (!resetTarget) return;
+    setResetting(true);
+    try {
+      const res = await apiFetch(`/api/users/${resetTarget.id}/reset-password`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'Failed to reset password');
+      setResetResult(data);
+      setResetTarget(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.failed'));
+    } finally {
+      setResetting(false);
+    }
+  }
+
+  function handleCopyPassword(password: string) {
+    navigator.clipboard.writeText(password).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -287,6 +314,17 @@ export default function UsersPage() {
                                     title={t('users.editUser')}
                                   >
                                     <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} />
+                                  </Button>
+                                </SubscriptionGate>
+                                <SubscriptionGate>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+                                    onClick={() => setResetTarget(u)}
+                                    title="Reset password"
+                                  >
+                                    <KeyRound className="h-3.5 w-3.5" strokeWidth={1.75} />
                                   </Button>
                                 </SubscriptionGate>
                                 <SubscriptionGate>
@@ -422,6 +460,53 @@ export default function UsersPage() {
             <Button onClick={handleSaveRole} disabled={savingRole}>
               {savingRole ? t('users.saving') : t('users.saveChanges')}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset password confirm dialog */}
+      <ConfirmDialog
+        open={!!resetTarget}
+        onOpenChange={(o) => !o && setResetTarget(null)}
+        title="Reset Password"
+        description={
+          resetTarget?.username && !resetTarget?.email
+            ? `A new temporary password will be generated for @${resetTarget.username}. Share it with them securely — they should change it after signing in.`
+            : `A password reset link will be sent to ${resetTarget?.email ?? 'this user'}. They will have 24 hours to use it.`
+        }
+        confirmLabel="Reset Password"
+        onConfirm={handleResetPassword}
+        loading={resetting}
+      />
+
+      {/* Reset result dialog */}
+      <Dialog open={!!resetResult} onOpenChange={(o) => !o && setResetResult(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Password Reset</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 pt-2 pb-4 space-y-3">
+            {resetResult?.type === 'email_sent' ? (
+              <p className="text-sm text-gray-700">A password reset link has been sent. The link expires in 24 hours.</p>
+            ) : (
+              <>
+                <p className="text-sm text-gray-700">A temporary password has been set. Share it with the user securely and ask them to change it after signing in.</p>
+                <div className="flex items-center gap-2 bg-surface-page border border-border rounded-lg px-3 py-2">
+                  <code className="flex-1 text-sm font-mono text-gray-900 select-all">{resetResult?.password}</code>
+                  <button
+                    type="button"
+                    className="text-gray-400 hover:text-primary-600 transition-colors"
+                    onClick={() => handleCopyPassword(resetResult?.password ?? '')}
+                    title="Copy"
+                  >
+                    {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setResetResult(null)}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

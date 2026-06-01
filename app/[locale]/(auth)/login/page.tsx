@@ -514,12 +514,11 @@ export default function LoginPage() {
         </div>
 
         <motion.div variants={container} initial="hidden" animate="show" className="w-full max-w-sm">
-          {/* Logo — mark + wordmark with ·ME suffix */}
+          {/* Logo — mark + wordmark */}
           <motion.div variants={item} className="flex items-center gap-2.5 mb-8">
             <MakhzoonMark size={36} radius={9} />
             <span className="text-lg font-bold text-gray-900" style={{ letterSpacing: '-0.01em' }}>
               {t('auth.brandName')}
-              <span className="text-gray-400 font-medium">·ME</span>
             </span>
           </motion.div>
 
@@ -718,7 +717,6 @@ export default function LoginPage() {
           <MakhzoonMark size={32} fill="rgba(255,255,255,0.18)" glyphFill="#fff" radius={8} />
           <span className="text-base font-bold" style={{ opacity: 0.92 }}>
             {t('auth.brandName')}
-            <span style={{ opacity: 0.65, fontWeight: 500 }}>·ME</span>
           </span>
         </div>
 

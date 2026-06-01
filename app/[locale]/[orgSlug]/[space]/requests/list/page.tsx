@@ -177,13 +177,13 @@ export default function RequestsListPage() {
 
       <BulkActionsBar count={selectedIds.size} onClear={() => setSelectedIds(new Set())}>
         {hasMultipleSpaces && canBulkDuplicate && (
-          <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={() => setDupeOpen(true)}>
+          <Button size="sm" variant="ghost" className="!text-white hover:bg-white/10" onClick={() => setDupeOpen(true)}>
             <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="ms-1">{t('duplicate.bulk')}</span>
           </Button>
         )}
         {hasMultipleSpaces && canBulkMove && (
-          <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={() => setMoveOpen(true)}>
+          <Button size="sm" variant="ghost" className="!text-white hover:bg-white/10" onClick={() => setMoveOpen(true)}>
             <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="ms-1">{t('move.bulkMove')}</span>
           </Button>

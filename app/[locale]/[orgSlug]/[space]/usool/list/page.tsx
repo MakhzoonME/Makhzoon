@@ -398,19 +398,19 @@ export default function AssetsListPage() {
 
       <BulkActionsBar count={selectedIds.size} onClear={() => setSelectedIds(new Set())}>
         {hasMultipleSpaces && canBulkDuplicate && (
-          <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={() => setDupeOpen(true)}>
+          <Button size="sm" variant="ghost" className="!text-white hover:bg-white/10" onClick={() => setDupeOpen(true)}>
             <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="ms-1">{t('duplicate.bulk')}</span>
           </Button>
         )}
         {hasMultipleSpaces && canBulkMove && (
-          <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={() => setMoveOpen(true)}>
+          <Button size="sm" variant="ghost" className="!text-white hover:bg-white/10" onClick={() => setMoveOpen(true)}>
             <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="ms-1">{t('move.bulkMove')}</span>
           </Button>
         )}
         {canBulkDelete && (
-          <Button size="sm" variant="ghost" className="text-red-300 hover:bg-red-500/15 hover:text-red-200" onClick={() => setBulkDeleteOpen(true)}>
+          <Button size="sm" variant="ghost" className="!text-red-300 hover:bg-red-500/15 hover:!text-red-200" onClick={() => setBulkDeleteOpen(true)}>
             <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="ms-1">{t('bulk.delete')}</span>
           </Button>

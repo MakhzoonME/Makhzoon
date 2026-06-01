@@ -89,6 +89,15 @@ export default function OrgAuditLogsPage() {
         <span className="text-xs text-gray-700">{l.recordName ?? l.recordId}</span>
       ),
     },
+    ...(scope === 'all' ? [{
+      key: 'space',
+      header: t('auditLogs.space'),
+      render: (l: AuditLog) => l.spaceName ? (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-surface-sidebar text-gray-600 border border-border">
+          {l.spaceName}
+        </span>
+      ) : <span className="text-xs text-gray-400">—</span>,
+    }] : []),
     {
       key: 'details',
       header: '',

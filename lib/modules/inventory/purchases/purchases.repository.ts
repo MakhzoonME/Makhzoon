@@ -125,10 +125,12 @@ export interface ListOpts {
 
 export class PurchasesRepository {
   async list(tenant: TenantContext, opts?: ListOpts) {
-    const { data, error } = await supabaseAdmin
+    let q = supabaseAdmin
       .from('purchases')
       .select('*')
       .eq('organization_id', tenant.organizationId)
+    if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
+    const { data, error } = await q
     if (error) throw error
     let items = (data ?? []).map(toPurchase)
     if (opts?.status) items = items.filter((p) => p.status === opts.status)

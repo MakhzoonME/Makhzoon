@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAccessibleSpaces } from '@/hooks/spaces';
 import { useT } from '@/hooks/ui';
+import { useActiveSpaceStore } from '@/store/active-space.store';
 import { cn } from '@/lib/utils/cn';
 
 /**
@@ -21,8 +22,11 @@ export function SpaceSwitcher() {
   const router = useRouter();
   const { t } = useT();
   const { data, isLoading } = useAccessibleSpaces();
+  const storeSlug = useActiveSpaceStore((s) => s.slug);
 
-  const currentSlug = (params?.space as string) || null;
+  // On org-level pages (settings, support) params.space is undefined;
+  // fall back to the store so the previously selected space stays highlighted.
+  const currentSlug = (params?.space as string) || storeSlug || null;
   const spaces = data?.items ?? [];
 
   // Hide while the list is loading and we have nothing to show yet.

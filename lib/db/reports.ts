@@ -18,16 +18,15 @@ export async function getReportsForOrg(
   orgId: string,
   spaceId?: string,
 ): Promise<ReportsResponse> {
-  function withSpace<T extends { eq: (col: string, val: string) => T }>(q: T): T {
-    return spaceId ? q.eq('space_id', spaceId) : q;
-  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sp = (q: any) => (spaceId ? q.eq('space_id', spaceId) : q);
   const [assets, checkouts, warranties, pendingReqs, maintenance] =
     await Promise.all([
-      withSpace(supabaseAdmin.from('assets').select('*').eq('organization_id', orgId)),
-      withSpace(supabaseAdmin.from('asset_checkouts').select('*').eq('organization_id', orgId)),
-      withSpace(supabaseAdmin.from('warranties').select('end_date').eq('organization_id', orgId)),
-      withSpace(supabaseAdmin.from('requests').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'PENDING')),
-      withSpace(supabaseAdmin.from('maintenance_records').select('*').eq('organization_id', orgId)),
+      sp(supabaseAdmin.from('assets').select('*').eq('organization_id', orgId)),
+      sp(supabaseAdmin.from('asset_checkouts').select('*').eq('organization_id', orgId)),
+      sp(supabaseAdmin.from('warranties').select('end_date').eq('organization_id', orgId)),
+      sp(supabaseAdmin.from('requests').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'PENDING')),
+      sp(supabaseAdmin.from('maintenance_records').select('*').eq('organization_id', orgId)),
     ]);
 
   const assetRows = (assets.data ?? []) as Row[];

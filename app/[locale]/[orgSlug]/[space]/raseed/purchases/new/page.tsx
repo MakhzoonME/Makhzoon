@@ -18,7 +18,7 @@ export default function NewPurchasePage() {
         breadcrumb={[
           { label: t('nav.inventory'), href: base },
           { label: t('nav.purchases'),  href: `${base}/purchases` },
-          { label: t('common.new'),      href: '#' },
+          { label: t('purchases.newTitle'), href: '#' },
         ]}
       />
       <PurchaseForm />

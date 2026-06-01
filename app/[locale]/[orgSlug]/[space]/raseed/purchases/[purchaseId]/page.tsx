@@ -1,34 +1,51 @@
 'use client';
 
 import { use, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Pencil, Trash2, PackageCheck, XCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Pencil, Trash2, PackageCheck, AlertTriangle } from 'lucide-react';
 import { PageHeader, ConfirmDialog } from '@/components/shared';
 import { Button } from '@/components/ui/button';
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
+import { ErrorState } from '@/components/shared/ErrorState';
 import { usePurchase, useReceivePurchase, useDeletePurchase } from '@/hooks/inventory';
 import { PurchaseStatusBadge } from '@/components/inventory/purchases/PurchaseStatusBadge';
+import { useT } from '@/hooks/ui';
 import { toast } from '@/hooks/ui';
+import { formatDate } from '@/lib/utils/date';
+
+/* ── Truck icon ──────────────────────────────────────────────────── */
+function TruckIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden>
+      <path d="M1 3h12v11H1zM13 7h4l3 3v4h-7V7z" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinejoin="round" />
+      <circle cx="5"  cy="17" r="1.8" stroke="currentColor" strokeWidth="1.4" fill="none" />
+      <circle cx="17" cy="17" r="1.8" stroke="currentColor" strokeWidth="1.4" fill="none" />
+    </svg>
+  );
+}
 
 interface Props {
   params: Promise<{ locale: string; orgSlug: string; space: string; purchaseId: string }>;
 }
 
 export default function PurchaseDetailPage(props: Props) {
-  const params = use(props.params);
-  const router = useRouter();
+  const params      = use(props.params);
+  const router      = useRouter();
+  const { t }       = useT();
   const { data, isLoading } = usePurchase(params.purchaseId);
-  const receiveMut = useReceivePurchase();
-  const deleteMut = useDeletePurchase();
+  const receiveMut  = useReceivePurchase();
+  const deleteMut   = useDeletePurchase();
   const [confirmReceive, setConfirmReceive] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDelete,  setConfirmDelete]  = useState(false);
 
   const purchase = data?.purchase;
+  const base     = `/${params.locale}/${params.orgSlug}/${params.space}/raseed`;
 
   async function handleReceive() {
     if (!purchase) return;
     try {
       await receiveMut.mutateAsync(purchase.id);
-      toast.success('Purchase received — stock levels updated');
+      toast.success(t('purchases.receiveSuccess'));
       setConfirmReceive(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Receive failed');
@@ -39,48 +56,56 @@ export default function PurchaseDetailPage(props: Props) {
     if (!purchase) return;
     try {
       await deleteMut.mutateAsync(purchase.id);
-      toast.success('Purchase deleted');
-      router.push(`/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases`);
+      toast.success(t('purchases.deleteSuccess'));
+      router.push(`${base}/purchases`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Delete failed');
     }
   }
 
-  if (isLoading) return <div className="p-6">Loading…</div>;
-  if (!purchase) return <div className="p-6">Purchase not found.</div>;
+  if (isLoading) return <LoadingSkeleton />;
+  if (!purchase) return (
+    <ErrorState
+      title={t('purchases.noPurchases')}
+      message="Purchase not found."
+      action={{ label: t('nav.purchases'), onClick: () => router.push(`${base}/purchases`) }}
+    />
+  );
 
   const unresolved = purchase.lines.filter((l) => !l.itemId);
+  const isDraft    = purchase.status === 'draft';
 
   return (
-    <div className="p-6 max-w-5xl space-y-6">
+    <div className="max-w-5xl space-y-5">
       <PageHeader
-        title={`Purchase from ${purchase.supplierName}`}
-        description={purchase.invoiceNumber ? `Invoice ${purchase.invoiceNumber}` : 'No invoice number'}
+        title={`${t('col.supplier')}: ${purchase.supplierName}`}
         breadcrumb={[
-          { label: 'Raseed', href: `/${params.locale}/${params.orgSlug}/${params.space}/raseed` },
-          { label: 'Purchases', href: `/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases` },
+          { label: t('nav.inventory'), href: base },
+          { label: t('nav.purchases'), href: `${base}/purchases` },
           { label: purchase.supplierName, href: '#' },
         ]}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <PurchaseStatusBadge status={purchase.status} />
-            {purchase.status === 'draft' && (
+            {isDraft && (
               <>
-                <Button
-                  variant="outline"
-                  onClick={() => router.push(`/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases/${purchase.id}/edit`)}
-                >
-                  <Pencil size={14} className="me-1" /> Edit
+                <Button variant="outline" className="cursor-pointer transition-colors duration-150"
+                  onClick={() => router.push(`${base}/purchases/${purchase.id}/edit`)}>
+                  <Pencil aria-hidden size={14} className="me-1" /> {t('common.edit')}
                 </Button>
                 <Button
                   onClick={() => setConfirmReceive(true)}
                   disabled={unresolved.length > 0}
-                  title={unresolved.length > 0 ? 'Resolve all line items first' : ''}
+                  title={unresolved.length > 0 ? t('purchases.unresolvedWarning').replace('{count}', String(unresolved.length)) : ''}
+                  className="cursor-pointer transition-colors duration-150"
+                  style={{ background: 'var(--mod-raseed)' }}
                 >
-                  <PackageCheck size={14} className="me-1" /> Receive
+                  <PackageCheck aria-hidden size={14} className="me-1" /> {t('purchases.receiveStock')}
                 </Button>
-                <Button variant="ghost" onClick={() => setConfirmDelete(true)}>
-                  <Trash2 size={14} />
+                <Button variant="ghost" aria-label={t('common.delete')}
+                  className="cursor-pointer transition-colors duration-150"
+                  onClick={() => setConfirmDelete(true)}>
+                  <Trash2 aria-hidden size={14} />
                 </Button>
               </>
             )}
@@ -88,97 +113,122 @@ export default function PurchaseDetailPage(props: Props) {
         }
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-        <div>
-          <div className="text-gray-500">Supplier</div>
-          <div className="font-medium">{purchase.supplierName}</div>
-          {purchase.supplierContact && <div className="text-gray-500">{purchase.supplierContact}</div>}
+      {/* ── Identity banner ───────────────────────────────────────── */}
+      <div className="flex items-center gap-4 p-4 bg-surface-card rounded-xl border border-border">
+        <div
+          className="flex-shrink-0 flex items-center justify-center rounded-xl"
+          style={{ width: 44, height: 44, background: 'color-mix(in srgb, var(--mod-raseed) 14%, var(--surface-card))', color: 'var(--mod-raseed)' }}
+        >
+          <TruckIcon />
         </div>
-        <div>
-          <div className="text-gray-500">Invoice date</div>
-          <div className="font-medium">{new Date(purchase.invoiceDate).toLocaleDateString()}</div>
-        </div>
-        <div>
-          <div className="text-gray-500">Received</div>
-          <div className="font-medium">
-            {purchase.receivedDate ? new Date(purchase.receivedDate).toLocaleString() : '—'}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2.5 flex-wrap mb-1">
+            <h2 className="text-base font-bold text-gray-900">{purchase.supplierName}</h2>
+            <PurchaseStatusBadge status={purchase.status} />
           </div>
-          {purchase.receivedByName && <div className="text-gray-500">{purchase.receivedByName}</div>}
+          <p className="text-xs text-gray-400 font-mono">
+            {purchase.invoiceNumber
+              ? t('purchases.invoiceMeta').replace('{invoice}', purchase.invoiceNumber).replace('{date}', formatDate(purchase.invoiceDate))
+              : formatDate(purchase.invoiceDate)}
+          </p>
         </div>
-        <div>
-          <div className="text-gray-500">Total</div>
-          <div className="font-mono font-semibold text-lg">{purchase.total.toFixed(2)}</div>
+        <div className="text-end flex-shrink-0">
+          <p className="text-xs text-gray-400 mb-0.5">{t('col.total')}</p>
+          <p className="text-xl font-bold tabular-nums font-mono">JOD {purchase.total.toFixed(2)}</p>
         </div>
       </div>
 
-      {unresolved.length > 0 && purchase.status === 'draft' && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200 px-4 py-3 text-sm flex gap-2 items-center">
-          <XCircle size={16} />
-          {unresolved.length} line item(s) don&apos;t have a resolved inventory item. Edit the purchase to pick or create
-          items for each line before receiving.
+      {/* ── Receive info banner ───────────────────────────────────── */}
+      {isDraft && unresolved.length === 0 && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm"
+          style={{ background: 'var(--blue-50)', border: '1px solid var(--blue-100)', color: 'var(--blue-700)' }}>
+          <PackageCheck aria-hidden size={16} className="flex-shrink-0" />
+          {t('purchases.receiveInfo').replace('{count}', String(purchase.lines.length))}
         </div>
       )}
 
-      <div className="overflow-x-auto border rounded-lg">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-800 text-start">
-            <tr>
-              <th className="px-3 py-2 font-medium w-8">#</th>
-              <th className="px-3 py-2 font-medium">Item</th>
-              <th className="px-3 py-2 font-medium">Barcode / SKU</th>
-              <th className="px-3 py-2 font-medium w-20">Qty</th>
-              <th className="px-3 py-2 font-medium w-24">Unit cost</th>
-              <th className="px-3 py-2 font-medium w-24 text-end">Tax</th>
-              <th className="px-3 py-2 font-medium w-24 text-end">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {purchase.lines.map((line, idx) => (
-              <tr key={idx} className="border-t">
-                <td className="px-3 py-2 text-gray-500">{idx + 1}</td>
-                <td className="px-3 py-2">
-                  {line.itemName}
-                  {!line.itemId && (
-                    <span className="ms-2 text-xs text-amber-600">(unresolved)</span>
-                  )}
-                </td>
-                <td className="px-3 py-2 font-mono text-xs text-gray-500">
-                  {line.barcode || line.sku || '—'}
-                </td>
-                <td className="px-3 py-2">{line.quantity}</td>
-                <td className="px-3 py-2 font-mono">{line.unitCost.toFixed(2)}</td>
-                <td className="px-3 py-2 text-end font-mono">{line.taxAmount.toFixed(2)}</td>
-                <td className="px-3 py-2 text-end font-mono">{line.lineTotal.toFixed(2)}</td>
+      {/* ── Unresolved warning ────────────────────────────────────── */}
+      {isDraft && unresolved.length > 0 && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm"
+          style={{ background: 'var(--yellow-50)', border: '1px solid var(--yellow-100)', color: 'var(--yellow-700)' }}>
+          <AlertTriangle aria-hidden size={16} className="flex-shrink-0" />
+          {t('purchases.unresolvedWarning').replace('{count}', String(unresolved.length))}
+        </div>
+      )}
+
+      {/* ── Line items ────────────────────────────────────────────── */}
+      <div className="bg-surface-card rounded-xl border border-border overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-border">
+          <h3 className="text-sm font-semibold text-gray-900">{t('purchases.lineItems')}</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead className="bg-surface-page border-b border-border">
+              <tr>
+                <th className="px-4 py-2.5 text-start text-xs font-semibold text-gray-500 uppercase tracking-wide w-8">#</th>
+                <th className="px-4 py-2.5 text-start text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('col.item')}</th>
+                <th className="px-4 py-2.5 text-start text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">{t('col.barcodeSku')}</th>
+                <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-20">{t('col.qty')}</th>
+                <th className="px-4 py-2.5 text-end text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">{t('col.unitCost')}</th>
+                <th className="px-4 py-2.5 text-end text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">{t('col.tax')}</th>
+                <th className="px-4 py-2.5 text-end text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">{t('col.lineTotal')}</th>
               </tr>
-            ))}
-          </tbody>
-          <tfoot className="border-t bg-gray-50 dark:bg-gray-800 font-medium">
-            <tr>
-              <td colSpan={5} className="px-3 py-2 text-end">Subtotal</td>
-              <td className="px-3 py-2 text-end font-mono">{purchase.taxTotal.toFixed(2)}</td>
-              <td className="px-3 py-2 text-end font-mono">{purchase.subtotal.toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td colSpan={6} className="px-3 py-2 text-end">Total</td>
-              <td className="px-3 py-2 text-end font-mono font-semibold">{purchase.total.toFixed(2)}</td>
-            </tr>
-          </tfoot>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {purchase.lines.map((line, idx) => (
+                <tr key={idx} className="hover:bg-surface-page transition-colors duration-100">
+                  <td className="px-4 py-3 text-gray-400 text-xs">{idx + 1}</td>
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-gray-900">{line.itemName}</div>
+                    {!line.itemId && (
+                      <span className="text-xs text-amber-600 font-medium">(unresolved)</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 hidden sm:table-cell">
+                    <span className="font-mono text-xs text-gray-400">{line.barcode || line.sku || '—'}</span>
+                  </td>
+                  <td className="px-4 py-3 text-center tabular-nums font-medium">{line.quantity}</td>
+                  <td className="px-4 py-3 text-end font-mono tabular-nums text-gray-700">{line.unitCost.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-end font-mono tabular-nums text-gray-500">{line.taxAmount.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-end font-mono tabular-nums font-semibold text-gray-900">{line.lineTotal.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Totals */}
+        <div className="px-5 py-4 border-t border-border flex flex-col items-end gap-2">
+          <div className="flex items-center gap-10 text-sm text-gray-500">
+            <span>{t('purchases.subtotal')}</span>
+            <span className="font-mono tabular-nums w-28 text-end">JOD {purchase.subtotal.toFixed(2)}</span>
+          </div>
+          <div className="flex items-center gap-10 text-sm text-gray-500">
+            <span>{t('col.tax')}</span>
+            <span className="font-mono tabular-nums w-28 text-end">JOD {purchase.taxTotal.toFixed(2)}</span>
+          </div>
+          <div className="flex items-center gap-10 text-base font-bold text-gray-900 pt-1 border-t border-border mt-1">
+            <span>{t('col.total')}</span>
+            <span className="font-mono tabular-nums w-28 text-end">JOD {purchase.total.toFixed(2)}</span>
+          </div>
+        </div>
       </div>
 
+      {/* Notes */}
       {purchase.notes && (
-        <div className="text-sm">
-          <div className="text-gray-500 mb-1">Notes</div>
-          <div className="whitespace-pre-wrap">{purchase.notes}</div>
+        <div className="bg-surface-card rounded-xl border border-border p-5">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{t('col.notes')}</p>
+          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{purchase.notes}</p>
         </div>
       )}
 
+      {/* ── Dialogs ───────────────────────────────────────────────── */}
       <ConfirmDialog
         open={confirmReceive}
         onOpenChange={setConfirmReceive}
-        title="Receive purchase?"
-        description={`This will increase stock for ${purchase.lines.length} item(s) and mark the purchase as received. This cannot be undone.`}
-        confirmLabel="Receive"
+        title={t('purchases.receiveConfirmTitle')}
+        description={t('purchases.receiveConfirmDesc').replace('{count}', String(purchase.lines.length))}
+        confirmLabel={t('purchases.receiveLabel')}
         variant="default"
         onConfirm={handleReceive}
         loading={receiveMut.isPending}
@@ -187,9 +237,9 @@ export default function PurchaseDetailPage(props: Props) {
       <ConfirmDialog
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
-        title="Delete draft?"
-        description="This draft purchase will be permanently removed. Received purchases can't be deleted."
-        confirmLabel="Delete"
+        title={t('purchases.deleteConfirmTitle')}
+        description={t('purchases.deleteConfirmDesc')}
+        confirmLabel={t('common.delete')}
         onConfirm={handleDelete}
         loading={deleteMut.isPending}
       />

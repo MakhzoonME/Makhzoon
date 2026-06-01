@@ -8,9 +8,8 @@ import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { FilterBar } from '@/components/shared/FilterBar';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
-import { FormDrawer } from '@/components/shared/FormDrawer';
-import { InventoryItemForm } from '@/components/inventory/InventoryItemForm';
 import { Button } from '@/components/ui/button';
+import { useOrgInfo } from '@/hooks/org';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ConfirmDialog, SubscriptionGate, BulkActionsBar } from '@/components/shared';
 import { toast } from '@/hooks/ui';
@@ -104,6 +103,7 @@ export default function InventoryListPage() {
   const space = useSpace();
   const { user } = useAuthStore();
   const qc = useQueryClient();
+  const { data: orgInfo } = useOrgInfo();
 
   const search = searchParams.get('search') ?? '';
   const category = searchParams.get('category') ?? '';
@@ -116,11 +116,7 @@ export default function InventoryListPage() {
   const [searchInput, setSearchInput] = useState(search);
   const [deleteTarget, setDeleteTarget] = useState<InventoryItem | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<InventoryItem | null>(null);
   const [reqTarget, setReqTarget] = useState<InventoryItem | null>(null);
-  const [formDirty, setFormDirty] = useState(false);
-  const [showDiscardDrawer, setShowDiscardDrawer] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [moveOpen, setMoveOpen] = useState(false);
   const [dupeOpen, setDupeOpen] = useState(false);
@@ -128,11 +124,6 @@ export default function InventoryListPage() {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const { data: spaceList } = useAccessibleSpaces();
   const hasMultipleSpaces = (spaceList?.items?.length ?? 0) > 1;
-
-  function closeDrawer() { setDrawerOpen(false); setEditTarget(null); setFormDirty(false); }
-  function handleDrawerCloseRequest() {
-    if (formDirty) { setShowDiscardDrawer(true); } else { closeDrawer(); }
-  }
 
   const { data: summary } = useInventorySummary(space);
 
@@ -235,7 +226,7 @@ export default function InventoryListPage() {
               <SubscriptionGate>
                 <Button size="sm" variant="ghost" aria-label={t('common.edit')}
                   className="transition-colors duration-150"
-                  onClick={(e) => { e.stopPropagation(); setEditTarget(i); setDrawerOpen(true); }}>
+                  onClick={(e) => { e.stopPropagation(); router.push(`/${locale}/${orgSlug}/${space}/raseed/${i.id}/edit`); }}>
                   <Pencil aria-hidden className="h-4 w-4" strokeWidth={1.75} />
                 </Button>
               </SubscriptionGate>
@@ -358,10 +349,11 @@ export default function InventoryListPage() {
   return (
     <div>
       <PageHeader
-        title={t('nav.inventoryList')}
+        title={t('nav.inventory')}
         breadcrumb={[
-          { label: t('nav.inventory'), href: `/${locale}/${orgSlug}/${space}/raseed` },
-          { label: t('nav.inventoryList'), href: `/${locale}/${orgSlug}/${space}/raseed/list` },
+          { label: orgInfo?.name ?? orgSlug },
+          { label: space },
+          { label: t('nav.inventory'), href: `/${locale}/${orgSlug}/${space}/raseed/list` },
         ]}
         actions={
           <div className="flex items-center gap-2">
@@ -371,7 +363,7 @@ export default function InventoryListPage() {
             </Button>
             {isAdmin && (
               <SubscriptionGate>
-                <Button size="sm" onClick={() => { setEditTarget(null); setDrawerOpen(true); }}>
+                <Button size="sm" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/new`)}>
                   <Plus aria-hidden className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('inventory.addItem')}</span>
                 </Button>
               </SubscriptionGate>
@@ -556,32 +548,6 @@ export default function InventoryListPage() {
         confirmLabel={t('common.delete')}
         onConfirm={handleDelete}
         loading={deleting}
-      />
-
-      <FormDrawer
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-        onCloseAttempt={handleDrawerCloseRequest}
-        title={editTarget ? t('inventory.editItem') : t('inventory.addInventoryItem')}
-        width="xl"
-      >
-        <InventoryItemForm
-          item={editTarget ?? undefined}
-          onSuccess={closeDrawer}
-          onCancel={handleDrawerCloseRequest}
-          onDirtyChange={setFormDirty}
-        />
-      </FormDrawer>
-
-      <ConfirmDialog
-        open={showDiscardDrawer}
-        onOpenChange={setShowDiscardDrawer}
-        title={t('common.discardTitle')}
-        description={t('common.discardDesc')}
-        confirmLabel={t('common.discard')}
-        cancelLabel={t('common.keepEditing')}
-        onConfirm={() => { setShowDiscardDrawer(false); closeDrawer(); }}
-        variant="destructive"
       />
 
       <RequestInventoryModal

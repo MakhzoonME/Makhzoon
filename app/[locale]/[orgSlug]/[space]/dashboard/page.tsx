@@ -172,11 +172,11 @@ function StatCard({ icon, iconBg, iconColor, accent, label, value, delta, sub, o
       onClick={onClick}
       style={{ borderTop: `3px solid ${accent}` }}
     >
-      <CardContent className="px-4 py-4">
+      <CardContent className="px-4 py-3">
         <div className="flex items-center gap-3">
           <div
-            className="flex items-center justify-center rounded-lg flex-shrink-0"
-            style={{ width: 40, height: 40, background: iconBg, color: iconColor }}
+            className="p-2 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: iconBg, color: iconColor }}
           >
             {icon}
           </div>

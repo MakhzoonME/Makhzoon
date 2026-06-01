@@ -24,7 +24,7 @@ export function StatCard({ icon, iconBg, iconColor, label, value, sub, loading, 
     >
       <CardContent className="px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="p-1.5 rounded-md flex-shrink-0" style={{ background: iconBg, color: iconColor }}>
+          <div className="p-2 rounded-lg flex-shrink-0" style={{ background: iconBg, color: iconColor }}>
             {icon}
           </div>
           <div className="flex-1 min-w-0">

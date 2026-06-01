@@ -557,20 +557,20 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => { setTab('email'); setEmailError(''); setUsernameError(''); }}
                   className={cn(
-                    'flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-semibold transition-all duration-150',
+                    'flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-semibold transition-colors duration-150 cursor-pointer',
                     tab === 'email'
                       ? 'bg-surface-card text-primary-700 shadow-xs'
                       : 'text-gray-500 hover:text-gray-700'
                   )}
                   style={{ borderRadius: 9 }}
                 >
-                  <MailSVG /> {t('auth.tabEmail')}
+                  <MailSVG aria-hidden /> {t('auth.tabEmail')}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setTab('username'); setEmailError(''); setUsernameError(''); }}
                   className={cn(
-                    'flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-semibold transition-all duration-150',
+                    'flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-sm font-semibold transition-colors duration-150 cursor-pointer',
                     tab === 'username'
                       ? 'bg-surface-card text-primary-700 shadow-xs'
                       : 'text-gray-500 hover:text-gray-700'
@@ -726,7 +726,7 @@ export default function LoginPage() {
         <div className="relative z-10" style={{ maxWidth: 420 }}>
           <h2
             className="font-extrabold text-white leading-tight"
-            style={{ fontSize: 40, letterSpacing: '-0.01em', fontFamily: 'var(--font-display)', marginBottom: 22 }}
+            style={{ fontSize: 40, letterSpacing: locale === 'ar' ? 0 : '-0.01em', fontFamily: locale === 'ar' ? 'var(--font-arabic)' : 'var(--font-display)', marginBottom: 22, lineHeight: locale === 'ar' ? 1.35 : 1.1 }}
           >
             {t('auth.marketingHeadline')}
           </h2>

@@ -168,7 +168,7 @@ type StatCardProps = {
 function StatCard({ icon, iconBg, iconColor, accent, label, value, delta, sub, onClick }: StatCardProps) {
   return (
     <Card
-      className={`transition-all duration-150 overflow-hidden ${onClick ? 'cursor-pointer hover:shadow-md' : ''}`}
+      className={`transition-shadow duration-150 overflow-hidden ${onClick ? 'cursor-pointer hover:shadow-md' : ''}`}
       onClick={onClick}
     >
       {/* accent top stripe */}
@@ -267,7 +267,7 @@ function RecentAssetsTable({ assets, isLoading, onViewAll }: {
         {recent.map((a) => (
           <tr key={a.id} className="border-b border-border last:border-0 hover:bg-surface-sidebar transition-colors duration-100">
             <td className="px-5 py-3">
-              <span className="text-sm font-medium text-primary-600 hover:text-primary-700 cursor-pointer">
+              <span className="text-sm font-medium text-primary-600 hover:text-primary-700 cursor-pointer transition-colors duration-150">
                 {a.name}
               </span>
             </td>
@@ -341,7 +341,7 @@ function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: 
           <div key={cat} className="grid grid-cols-[130px_1fr_64px] gap-3 items-center py-1 border-b border-border last:border-0">
             <span className="text-sm font-medium text-gray-700 truncate">{cat}</span>
             <div className="h-1.5 rounded-full bg-surface-sidebar overflow-hidden">
-              <div className={`h-full rounded-full ${tone.bar} transition-all duration-500`} style={{ width: `${pct}%` }} />
+              <div className={`h-full rounded-full ${tone.bar} transition-[width] duration-500`} style={{ width: `${pct}%` }} />
             </div>
             <span className={`text-xs font-medium tabular-nums text-end ${tone.text}`}>{count} · {pct}%</span>
           </div>
@@ -570,8 +570,8 @@ function SectionHeader({ title, action, onClick }: { title: string; action?: str
       <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
       {action && onClick && (
         <button onClick={onClick}
-          className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 transition-colors flex items-center gap-1">
-          {action} <ChevronRightIcon />
+          className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 transition-colors duration-150 cursor-pointer flex items-center gap-1">
+          {action} <ChevronRightIcon aria-hidden />
         </button>
       )}
     </div>
@@ -734,21 +734,21 @@ export default function DashboardPage() {
         </span>
         <button
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/new`)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-all duration-150"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
         >
-          <PlusIcon /> {t('dashboard.addAsset')}
+          <PlusIcon aria-hidden /> {t('dashboard.addAsset')}
         </button>
         <button
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list`)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-all duration-150"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
         >
-          <RefreshIcon /> {t('dashboard.recordTransaction')}
+          <RefreshIcon aria-hidden /> {t('dashboard.recordTransaction')}
         </button>
         <button
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list`)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-all duration-150"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
         >
-          <InboxIcon /> {t('dashboard.submitRequest')}
+          <InboxIcon aria-hidden /> {t('dashboard.submitRequest')}
         </button>
       </div>
 

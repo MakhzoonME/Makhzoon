@@ -119,6 +119,7 @@ export default function OrgListsPage() {
       <PageHeader
         title={t('nav.lists')}
         description={t('lists.subtitle')}
+        breadcrumb={[{ label: t('nav.settings') }]}
       />
 
       <div className="flex flex-col md:flex-row gap-6 mt-4">

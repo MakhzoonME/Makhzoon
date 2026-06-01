@@ -110,6 +110,7 @@ export default function TaxRatesPage() {
       <PageHeader
         title={t('nav.taxRates')}
         description={t('taxRates.subtitle')}
+        breadcrumb={[{ label: t('nav.settings') }]}
         actions={
           <Button onClick={openCreate}>
             <Plus size={16} className="me-1" /> {t('taxRates.addTaxRate')}

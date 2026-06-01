@@ -76,7 +76,7 @@ export default function OrganizationInfoPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('nav.orgInfo')} />
+      <PageHeader title={t('nav.orgInfo')} breadcrumb={[{ label: t('nav.settings') }]} />
 
       <Card className="max-w-[620px] rounded-xl">
         <CardContent className="p-6">

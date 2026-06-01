@@ -10,6 +10,7 @@ import { useTransferStore } from '@/store/transfer.store';
 import { useSubscriptionFeatures } from '@/hooks/org';
 import { createClient } from '@/lib/supabase/client';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
+import { SpaceSwitcher } from '@/components/layout/SpaceSwitcher';
 import { useT, useSpace } from '@/hooks/ui';
 import type { MessageKey } from '@/locales/messages';
 
@@ -142,6 +143,11 @@ export function MobileDrawer() {
                 </div>
               </div>
             )}
+
+            {/* Space switcher */}
+            <div className="px-2.5 py-2 border-b border-gray-100">
+              <SpaceSwitcher />
+            </div>
 
             {/* Nav items */}
             <nav className="flex-1 overflow-y-auto p-2.5 space-y-0.5">

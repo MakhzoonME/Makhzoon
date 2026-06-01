@@ -1,19 +1,19 @@
 'use client';
-import { useState, useSyncExternalStore } from 'react';
-import { useAuthStore } from '@/store/auth.store';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useSyncExternalStore } from 'react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { CommandPalette, useCommandPalette } from '@/components/shared/CommandPalette';
 import { useUiStore } from '@/store/ui.store';
-import { useTransferStore } from '@/store/transfer.store';
 import { useT } from '@/hooks/ui';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
 import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
+import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { cn } from '@/lib/utils/cn';
+import { SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from '@/components/layout/AppSidebar';
 
-/* ── Inline SVG icons ───────────────────────────────────────────── */
+const EASE = 'cubic-bezier(0.4,0,0.2,1)';
+
+/* ── Icons ──────────────────────────────────────────────────────── */
 function BurgerSVG() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -50,9 +50,9 @@ function BellSVG() {
 
 export function AppHeader() {
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
-  const { setMobileMenuOpen } = useUiStore();
-  const { headerTitle, headerBreadcrumb } = useUiStore();
-  const { t, locale } = useT();
+  const { setMobileMenuOpen, sidebarCollapsed, headerTitle, headerBreadcrumb } = useUiStore();
+  const { t, dir } = useT();
+  const isRtl = dir === 'rtl';
 
   const shortcutLabel = useSyncExternalStore(
     () => () => {},
@@ -60,90 +60,135 @@ export function AppHeader() {
     () => 'Ctrl+K',
   );
 
+  const sidebarW = sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
+
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 h-14 bg-surface-card border-b border-border flex items-center px-4 gap-3 z-40">
+      <header className="fixed top-0 left-0 right-0 h-14 bg-surface-card border-b border-border flex items-center z-40 overflow-hidden">
 
-        {/* Burger — mobile only */}
+        {/* ── Brand section: sidebar-width, desktop only ───────── */}
+        <div
+          className="hidden md:flex items-center h-full flex-shrink-0 overflow-hidden"
+          style={{
+            width: sidebarW,
+            transition: `width 0.28s ${EASE}`,
+            borderInlineEnd: '1px solid var(--border-default)',
+          }}
+        >
+          <div className="flex items-center gap-2.5 px-4 min-w-0">
+            <MakhzoonMark size={26} className="flex-shrink-0" />
+            <div
+              className="overflow-hidden whitespace-nowrap"
+              style={{
+                width: sidebarCollapsed ? 0 : 'auto',
+                opacity: sidebarCollapsed ? 0 : 1,
+                transition: `opacity 0.14s ${EASE}, width 0.22s ${EASE}`,
+              }}
+            >
+              <span className="text-[14px] font-bold text-gray-900 dark:text-gray-100">
+                Makhzoon
+              </span>
+              <span className="text-[14px] font-bold text-primary-500">.ME</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Mobile burger ────────────────────────────────────── */}
         <button
           type="button"
           onClick={() => setMobileMenuOpen(true)}
           aria-label={t('common.menu')}
-          className="md:hidden p-1.5 -ms-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95 transition-all duration-150 dark:hover:bg-gray-700/40 flex-shrink-0"
+          className="md:hidden p-1.5 ms-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 active:scale-95 transition-all duration-150 dark:hover:bg-gray-700/40 flex-shrink-0"
         >
           <BurgerSVG />
         </button>
 
-        {/* Page title + breadcrumb */}
-        <div className="hidden md:flex flex-col justify-center min-w-0 flex-shrink-0 max-w-sm">
-          {headerBreadcrumb.length > 0 && (
-            <div className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 leading-none mb-0.5 flex-wrap">
-              {headerBreadcrumb.map((crumb, i) => (
-                <span key={i} className="flex items-center gap-1">
-                  {i > 0 && (
-                    <span className="text-gray-300 dark:text-gray-600">
-                      <ChevronRightSVG />
+        {/* ── Content section ──────────────────────────────────── */}
+        <div className="flex flex-1 items-center gap-3 px-4 min-w-0 h-full">
+
+          {/* Page title + breadcrumb — desktop only */}
+          {(headerTitle || headerBreadcrumb.length > 0) && (
+            <div className="hidden md:flex flex-col justify-center min-w-0 flex-shrink-0 max-w-sm">
+              {headerBreadcrumb.length > 0 && (
+                <div className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 leading-none mb-0.5 flex-wrap">
+                  {headerBreadcrumb.map((crumb, i) => (
+                    <span key={i} className="flex items-center gap-1">
+                      {i > 0 && (
+                        <span className="text-gray-300 dark:text-gray-600">
+                          {isRtl
+                            ? <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden><path d="M8 2.5L4.5 6 8 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                            : <ChevronRightSVG />
+                          }
+                        </span>
+                      )}
+                      <span className={cn(
+                        'whitespace-nowrap',
+                        i === headerBreadcrumb.length - 1 ? 'text-gray-600 dark:text-gray-300 font-medium' : 'text-gray-400',
+                      )}>
+                        {crumb.label}
+                      </span>
                     </span>
-                  )}
-                  <span className={cn(
-                    'whitespace-nowrap',
-                    i === headerBreadcrumb.length - 1 ? 'text-gray-500 dark:text-gray-400 font-medium' : '',
-                  )}>
-                    {crumb.label}
-                  </span>
-                </span>
-              ))}
+                  ))}
+                </div>
+              )}
+              {headerTitle && (
+                <p className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 leading-tight truncate">
+                  {headerTitle}
+                </p>
+              )}
             </div>
           )}
-          {headerTitle && (
-            <p className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 leading-tight truncate">
-              {headerTitle}
-            </p>
-          )}
-        </div>
 
-        {/* Search bar — desktop */}
-        <div className="flex-1 flex justify-center">
-          <button
-            onClick={() => setPaletteOpen(true)}
-            className="hidden md:flex items-center gap-2 w-full max-w-md rounded-lg border border-border bg-surface-input px-3 py-1.5 text-sm text-gray-500 hover:bg-surface-sidebar hover:border-border-strong transition-colors duration-150"
-          >
-            <SearchSVG />
-            <span className="flex-1 text-start">{t('common.search')}</span>
-            <kbd className="inline-flex h-5 items-center rounded border border-border bg-surface-card px-1.5 text-[10px] font-mono text-gray-500">{shortcutLabel}</kbd>
-          </button>
-        </div>
+          {/* Search bar — flex-1, desktop centered */}
+          <div className="flex-1 flex justify-center">
+            <button
+              onClick={() => setPaletteOpen(true)}
+              className="hidden md:flex items-center gap-2 w-full max-w-md rounded-lg border border-border bg-surface-input px-3 py-1.5 text-sm text-gray-500 hover:bg-surface-sidebar hover:border-border-strong transition-colors duration-150"
+            >
+              <SearchSVG />
+              <span className="flex-1 text-start">{t('common.search')}</span>
+              <kbd className="inline-flex h-5 items-center rounded border border-border bg-surface-card px-1.5 text-[10px] font-mono text-gray-500">{shortcutLabel}</kbd>
+            </button>
+          </div>
 
-        {/* Right actions */}
-        <div className="flex items-center gap-1 ms-auto">
-          {/* Mobile search */}
-          <button
-            onClick={() => setPaletteOpen(true)}
-            className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors dark:hover:bg-gray-700/40"
-            aria-label={t('common.search')}
-          >
-            <SearchSVG />
-          </button>
+          {/* Right actions */}
+          <div className="flex items-center gap-1 ms-auto">
+            {/* Mobile search */}
+            <button
+              onClick={() => setPaletteOpen(true)}
+              className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors dark:hover:bg-gray-700/40"
+              aria-label={t('common.search')}
+            >
+              <SearchSVG />
+            </button>
 
-          <NetworkStatusIndicator variant="ghost-light" />
-          <ThemeToggle />
-          <LanguageToggle />
+            <NetworkStatusIndicator variant="ghost-light" />
+            <ThemeToggle />
+            <LanguageToggle />
 
-          {/* Notification bell */}
-          <button
-            type="button"
-            aria-label={t('common.notifications')}
-            className="relative p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-150 dark:hover:bg-gray-700/40"
-          >
-            <BellSVG />
-            <span
-              aria-hidden
-              className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-red-500 ring-2 ring-surface-card"
-            />
-          </button>
+            {/* Notification bell */}
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={t('common.notifications')}
+                    className="relative p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-150 dark:hover:bg-gray-700/40"
+                  >
+                    <BellSVG />
+                    <span
+                      aria-hidden
+                      className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-red-500 ring-2 ring-surface-card"
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">{t('common.notifications')}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-          {/* Per-page action buttons — portaled in from PageHeader */}
-          <div id="header-actions-slot" className="flex items-center gap-2 ms-1" />
+            {/* Per-page action buttons — portaled in from PageHeader */}
+            <div id="header-actions-slot" className="flex items-center gap-2 ms-1" />
+          </div>
         </div>
       </header>
 

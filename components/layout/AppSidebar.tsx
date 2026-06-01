@@ -9,6 +9,8 @@ import { useUiStore } from '@/store/ui.store';
 import { useTransferStore } from '@/store/transfer.store';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, buildNavUrl } from '@/lib/nav';
+import { SpaceSwitcher } from '@/components/layout/SpaceSwitcher';
+import { useOrgInfo } from '@/hooks/org';
 import { useSpace } from '@/hooks/ui';
 import { hasModuleAccess, hasPermByKey } from '@/lib/permissions';
 import { UserPermissions } from '@/types';
@@ -172,6 +174,7 @@ export function AppSidebar() {
   const orgSlug   = (params?.orgSlug as string) ?? '';
   const { user }  = useAuthStore();
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
+  const { data: orgInfo } = useOrgInfo();
   const space = useSpace();
   const { t, dir } = useT();
   const isRtl = dir === 'rtl';
@@ -268,6 +271,11 @@ export function AppSidebar() {
             : (sidebarCollapsed ? <ChevronRightSVG /> : <ChevronLeftSVG />)
           }
         </button>
+
+        {/* Space switcher */}
+        <div className="px-2.5 pt-2.5 pb-1 border-b border-border">
+          <SpaceSwitcher collapsed={sidebarCollapsed} />
+        </div>
 
         <nav className="flex-1 p-2.5 space-y-0.5 overflow-y-auto overflow-x-hidden">
           {visibleEntries.map((entry) => {
@@ -545,7 +553,7 @@ export function AppSidebar() {
                       <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-primary-600 transition-colors duration-150">
                         {user.displayName || displayIdentity(user.email)}
                       </p>
-                      <p className="text-[11px] text-gray-500 capitalize">
+                      <p className="text-[11px] text-gray-400 truncate leading-tight">
                         {
                           user.role === 'org_owner'        ? t('role.orgOwner') :
                           user.role === 'admin'            ? t('role.admin') :
@@ -555,6 +563,9 @@ export function AppSidebar() {
                           user.role === 'makhzoon_support' ? t('role.makhzoonSupport') :
                           (user.role as string | undefined)?.replace(/_/g, ' ')
                         }
+                        {orgInfo?.name && (
+                          <span className="text-gray-400"> · {orgInfo.name}</span>
+                        )}
                       </p>
                     </Link>
                   </motion.div>

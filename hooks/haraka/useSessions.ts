@@ -23,8 +23,10 @@ export function useSessions(params?: { status?: 'open' | 'closed'; page?: number
   if (params?.pageSize) query.set('pageSize', String(params.pageSize));
   return useQuery<ListResp>({
     queryKey: [...LIST_KEY, space, params],
+    enabled: !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/haraka/sessions?${query.toString()}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/haraka/sessions?${query.toString()}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch sessions');
       return res.json();
     },
@@ -37,8 +39,10 @@ export function useCurrentSession() {
   const { space } = useParams<{ space?: string }>();
   return useQuery<{ session: PosSession | null }>({
     queryKey: [...CURRENT_KEY, space],
+    enabled: !!space,
     queryFn: async () => {
-      const res = await fetch('/api/haraka/sessions?mine=current');
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch('/api/haraka/sessions?mine=current', { headers });
       if (!res.ok) throw new Error('Failed to fetch current session');
       return res.json();
     },
@@ -50,12 +54,13 @@ export function useSession(id: string | undefined) {
   const { space } = useParams<{ space?: string }>();
   return useQuery<{ session: PosSession; expectedCashSoFar: number }>({
     queryKey: ['haraka', 'sessions', space, id],
+    enabled: !!id && !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/haraka/sessions/${id}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/haraka/sessions/${id}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch session');
       return res.json();
     },
-    enabled: !!id,
     staleTime: 10_000,
   });
 }

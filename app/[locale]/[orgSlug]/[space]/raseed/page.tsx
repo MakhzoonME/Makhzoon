@@ -10,14 +10,16 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { InventoryItem } from '@/types';
 
-function useRaseedOverview() {
+function useRaseedOverview(space: string | null) {
   return useQuery({
-    queryKey: ['raseed-overview'],
+    queryKey: ['raseed-overview', space],
+    enabled: !!space,
     queryFn: async () => {
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
       const [allRes, lowRes, outRes] = await Promise.all([
-        fetch('/api/inventory?pageSize=6&sortBy=createdAt&sortDir=desc'),
-        fetch('/api/inventory?stockStatus=low&pageSize=1'),
-        fetch('/api/inventory?stockStatus=out&pageSize=1'),
+        fetch('/api/inventory?pageSize=6&sortBy=createdAt&sortDir=desc', { headers }),
+        fetch('/api/inventory?stockStatus=low&pageSize=1', { headers }),
+        fetch('/api/inventory?stockStatus=out&pageSize=1', { headers }),
       ]);
       const allBody = allRes.ok ? await allRes.json() : { items: [], total: 0 };
       const recent: InventoryItem[] = Array.isArray(allBody?.items) ? allBody.items : [];
@@ -87,7 +89,7 @@ export default function RaseedOverviewPage() {
   const space = useSpace();
   const { user } = useAuthStore();
   const { t, locale } = useT();
-  const { data, isLoading } = useRaseedOverview();
+  const { data, isLoading } = useRaseedOverview(space);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 

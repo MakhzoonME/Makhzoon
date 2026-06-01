@@ -10,8 +10,10 @@ export function useInventoryAudits() {
   const { space } = useParams<{ space?: string }>();
   return useQuery<AuditsResponse>({
     queryKey: ['inventory-audits', space],
+    enabled: !!space,
     queryFn: async () => {
-      const res = await fetch('/api/inventory/audits');
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch('/api/inventory/audits', { headers });
       if (!res.ok) throw new Error('Failed to fetch audits');
       return res.json();
     },
@@ -23,12 +25,13 @@ export function useInventoryAudit(auditId: string) {
   const { space } = useParams<{ space?: string }>();
   return useQuery<AuditDetailResponse>({
     queryKey: ['inventory-audits', space, auditId],
+    enabled: !!auditId && !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/inventory/audits/${auditId}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/inventory/audits/${auditId}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch audit');
       return res.json();
     },
-    enabled: !!auditId,
     staleTime: 10_000,
     refetchInterval: 15_000,
   });

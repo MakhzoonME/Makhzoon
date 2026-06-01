@@ -16,15 +16,17 @@ const typeKeys: Record<string, MessageKey> = {
   EXTEND_WARRANTY: 'requestType.EXTEND_WARRANTY',
 };
 
-function useRequestsOverview() {
+function useRequestsOverview(space: string | null) {
   return useQuery({
-    queryKey: ['requests-overview'],
+    queryKey: ['requests-overview', space],
+    enabled: !!space,
     queryFn: async () => {
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
       const [allRes, pendingRes, approvedRes, rejectedRes] = await Promise.all([
-        fetch('/api/requests?pageSize=6&sortBy=createdAt&sortDir=desc'),
-        fetch('/api/requests?status=PENDING&pageSize=1'),
-        fetch('/api/requests?status=APPROVED&pageSize=1'),
-        fetch('/api/requests?status=REJECTED&pageSize=1'),
+        fetch('/api/requests?pageSize=6&sortBy=createdAt&sortDir=desc', { headers }),
+        fetch('/api/requests?status=PENDING&pageSize=1', { headers }),
+        fetch('/api/requests?status=APPROVED&pageSize=1', { headers }),
+        fetch('/api/requests?status=REJECTED&pageSize=1', { headers }),
       ]);
       const allBody = allRes.ok ? await allRes.json() : { items: [], total: 0 };
       const recent: Request[] = Array.isArray(allBody?.items) ? allBody.items : [];
@@ -88,7 +90,7 @@ export default function RequestsOverviewPage() {
   const orgSlug = useOrgSlug();
   const space = useSpace();
   const { t, locale } = useT();
-  const { data, isLoading } = useRequestsOverview();
+  const { data, isLoading } = useRequestsOverview(space);
 
   const total = data?.total ?? 0;
   const pending = data?.pending ?? 0;

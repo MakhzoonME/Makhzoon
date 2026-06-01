@@ -32,8 +32,10 @@ export function useAssets(params?: {
 
   return useQuery<AssetsResponse>({
     queryKey: ['assets', space, params],
+    enabled: !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/assets?${query.toString()}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/assets?${query.toString()}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch assets');
       return res.json() as Promise<AssetsResponse>;
     },
@@ -46,12 +48,13 @@ export function useAsset(id: string) {
   const { space } = useParams<{ space?: string }>();
   return useQuery<Asset>({
     queryKey: ['assets', space, id],
+    enabled: !!id && !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/assets/${id}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/assets/${id}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch asset');
       return res.json();
     },
-    enabled: !!id,
     staleTime: 0,
     gcTime: 5 * 60_000,
   });
@@ -61,8 +64,10 @@ export function useAssetCategories() {
   const { space } = useParams<{ space?: string }>();
   return useQuery<string[]>({
     queryKey: ['asset-categories', space],
+    enabled: !!space,
     queryFn: async () => {
-      const res = await fetch('/api/assets?categoriesOnly=true');
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch('/api/assets?categoriesOnly=true', { headers });
       if (!res.ok) return [];
       const data = await res.json();
       return data.categories ?? [];

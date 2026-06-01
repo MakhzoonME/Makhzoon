@@ -31,13 +31,14 @@ export function useCustomers(params: UseCustomersParams = {}) {
   if (query.pageSize) qs.set('pageSize', String(query.pageSize));
   return useQuery<ListResp>({
     queryKey: [...LIST_KEY, space, query],
+    enabled: enabled && !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/haraka/customers?${qs.toString()}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/haraka/customers?${qs.toString()}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch customers');
       return res.json();
     },
     staleTime: 30_000,
-    enabled,
   });
 }
 
@@ -45,12 +46,13 @@ export function useCustomer(id: string | undefined) {
   const { space } = useParams<{ space?: string }>();
   return useQuery<{ customer: PosCustomer }>({
     queryKey: ['haraka', 'customers', space, id],
+    enabled: !!id && !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/haraka/customers/${id}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/haraka/customers/${id}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch customer');
       return res.json();
     },
-    enabled: !!id,
   });
 }
 

@@ -30,8 +30,10 @@ export function useRequests(params?: {
 
   return useQuery<RequestsResponse>({
     queryKey: ['requests', space, params],
+    enabled: !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/requests?${query.toString()}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/requests?${query.toString()}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch requests');
       return res.json();
     },

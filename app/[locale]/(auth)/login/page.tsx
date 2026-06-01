@@ -104,6 +104,17 @@ function ForgotPasswordModal({ open, onClose }: { open: boolean; onClose: () => 
     setError('');
     setLoading(true);
     try {
+      const checkRes = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail.trim() }),
+      });
+      const { exists } = await checkRes.json().catch(() => ({ exists: false }));
+      if (!exists) {
+        setError('No account found with this email address.');
+        return;
+      }
+
       const supabase = await createClient();
       const { error } = await supabase.auth.resetPasswordForEmail(
         resetEmail.trim(),
@@ -114,7 +125,6 @@ function ForgotPasswordModal({ open, onClose }: { open: boolean; onClose: () => 
               : undefined,
         },
       );
-      // Don't reveal whether the email exists; only surface rate limiting.
       if (error && error.status === 429) {
         setError('Too many attempts. Please wait a moment before trying again.');
       } else {
@@ -158,7 +168,14 @@ function ForgotPasswordModal({ open, onClose }: { open: boolean; onClose: () => 
               ) : (
                 <motion.div key="form" initial={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <h2 className="text-lg font-semibold text-gray-900 mb-1">{t('auth.forgotPasswordTitle')}</h2>
-                  <p className="text-sm text-gray-500 mb-6">{t('auth.forgotPasswordSubtitle')}</p>
+                  <p className="text-sm text-gray-500 mb-3">{t('auth.forgotPasswordSubtitle')}</p>
+                  <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5" aria-hidden>
+                      <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.4" />
+                      <path d="M8 5v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                    <span>Username accounts cannot reset passwords via email. Ask your organization admin to reset your password from the Users settings page.</span>
+                  </div>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1.5">
                       <Label htmlFor="reset-email">{t('auth.emailFieldLabel')}</Label>
@@ -501,7 +518,7 @@ export default function LoginPage() {
           <motion.div variants={item} className="flex items-center gap-2.5 mb-8">
             <MakhzoonMark size={32} />
             <span className="text-base font-semibold text-gray-900">
-              {t('auth.brandName')}<span className="text-gray-500 font-normal">·ME</span>
+              {t('auth.brandName')}
             </span>
           </motion.div>
 
@@ -663,7 +680,7 @@ export default function LoginPage() {
         {/* Logo — indigo mark on purple background */}
         <div className="flex items-center gap-2.5 relative z-10">
           <MakhzoonMark size={32} fill="rgba(255,255,255,0.25)" glyphFill="rgba(255,255,255,0.9)" radius={8} />
-          <span className="text-sm font-semibold text-white/90">{t('auth.brandName')}·ME</span>
+          <span className="text-sm font-semibold text-white/90">{t('auth.brandName')}</span>
         </div>
 
         {/* Hero copy */}

@@ -24,11 +24,11 @@ Frontend developer for UI components, pages, responsive design, animations, and 
 
 ### @backend
 Backend developer for API routes, services, authentication, business logic, and permissions.
-- **Can make changes** to `app/api/`, `lib/services/`, `lib/firebase/`, `lib/audit/`
+- **Can make changes** to `app/api/`, `lib/services/`, `lib/supabase/`, `lib/audit/`
 
 ### @database
-Database specialist for Firestore collections, indexes, queries, and data modeling.
-- **Can make changes** to `lib/db/`, `scripts/`
+Database specialist for Supabase Postgres tables, migrations, RLS policies, and query optimization.
+- **Can make changes** to `lib/db/`, `supabase/migrations/`, `scripts/`
 
 ### @qa
 QA engineer for testing, code review, linting, type checking, and security review.

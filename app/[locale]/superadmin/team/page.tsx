@@ -23,7 +23,7 @@ import {
   DEFAULT_SUPPORT_PERMISSIONS,
 } from '@/types';
 import { useT } from '@/hooks/ui';
-import { Search } from 'lucide-react';
+import { Search, KeyRound, Copy, Check } from 'lucide-react';
 
 function defaultPermsForRole(role: MakhzoonRole): SuperAdminPermissions {
   if (role === 'super_admin') return DEFAULT_SUPER_ADMIN_PERMISSIONS;
@@ -145,6 +145,10 @@ export default function SuperAdminTeamPage() {
   const [editPermissions, setEditPermissions] = useState<SuperAdminPermissions>(DEFAULT_SUPPORT_PERMISSIONS);
   const [showEditPerms, setShowEditPerms] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [resetTarget, setResetTarget] = useState<TeamMember | null>(null);
+  const [resetting, setResetting] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const { data: allMembers = [], isLoading } = useQuery<TeamMember[]>({
     queryKey: ['superadmin-team'],
@@ -268,6 +272,22 @@ export default function SuperAdminTeamPage() {
       qc.invalidateQueries({ queryKey: ['superadmin-team'] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed');
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!resetTarget) return;
+    setResetting(true);
+    try {
+      const res = await fetch(`/api/superadmin/team/${resetTarget.id}/reset-password`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? 'Failed to reset password');
+      setResetTarget(null);
+      setResetSent(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to reset password');
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -406,6 +426,15 @@ export default function SuperAdminTeamPage() {
                     <td className="px-4 py-3 text-end">
                       {editable && (
                         <div className="flex items-center justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+                            onClick={() => setResetTarget(m)}
+                            title="Reset password"
+                          >
+                            <KeyRound className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          </Button>
                           <Button
                             size="sm"
                             variant="ghost"
@@ -613,6 +642,41 @@ export default function SuperAdminTeamPage() {
             <Button onClick={handleSaveEdit} disabled={saving}>
               {saving ? t('common.saving') : t('common.saveChanges')}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset password confirm dialog */}
+      <Dialog open={!!resetTarget} onOpenChange={(o) => !o && setResetTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 pt-2 pb-4">
+            <p className="text-sm text-gray-700">
+              A password reset link will be sent to <span className="font-medium">{resetTarget?.email}</span>. They will have 24 hours to use it.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetTarget(null)} disabled={resetting}>{t('common.cancel')}</Button>
+            <Button onClick={handleResetPassword} disabled={resetting}>
+              {resetting ? 'Sending…' : 'Send Reset Link'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset sent confirmation */}
+      <Dialog open={resetSent} onOpenChange={(o) => !o && setResetSent(false)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Reset Link Sent</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 pt-2 pb-4">
+            <p className="text-sm text-gray-700">A password reset link has been sent. The link expires in 24 hours.</p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setResetSent(false)}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

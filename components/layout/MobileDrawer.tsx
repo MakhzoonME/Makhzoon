@@ -29,16 +29,17 @@ function LogOutSVG() { return <svg width="15" height="15" viewBox="0 0 14 14" fi
 interface NavItem { href: string; labelKey: MessageKey; Icon: React.FC; adminOnly?: boolean; featureKey?: string; scope?: 'space' | 'org'; }
 
 const navItems: NavItem[] = [
-  { href: '/dashboard',    labelKey: 'nav.dashboard',    Icon: DashboardSVG,                            featureKey: 'dashboard' },
-  { href: '/usool',        labelKey: 'nav.assets',       Icon: AssetsSVG,                               featureKey: 'assets' },
-  { href: '/raseed',       labelKey: 'nav.inventory',    Icon: InventorySVG,                            featureKey: 'inventory' },
-  { href: '/warranties',   labelKey: 'nav.warranties',   Icon: WarrantySVG,    featureKey: 'warranties' },
-  { href: '/requests',     labelKey: 'nav.requests',     Icon: RequestsSVG,    featureKey: 'requests' },
-  { href: '/reports',      labelKey: 'nav.reports',      Icon: ReportsSVG,     adminOnly: true,         featureKey: 'reports' },
-  { href: '/users',        labelKey: 'nav.users',        Icon: UsersSVG,       adminOnly: true,                                    scope: 'org' },
-  { href: '/subscription', labelKey: 'nav.subscription', Icon: SubscriptionSVG, adminOnly: true,                                    scope: 'org' },
-  { href: '/support',      labelKey: 'nav.support',      Icon: SupportSVG,     featureKey: 'support' },
-  { href: '/audit-logs',   labelKey: 'nav.auditLogs',    Icon: AuditSVG,       adminOnly: true,         featureKey: 'auditLogs' },
+  { href: '/dashboard',    labelKey: 'nav.dashboard',    Icon: DashboardSVG,    featureKey: 'dashboard' },
+  { href: '/usool/list',   labelKey: 'nav.assets',       Icon: AssetsSVG,       featureKey: 'assets' },
+  { href: '/raseed/list',  labelKey: 'nav.inventory',    Icon: InventorySVG,    featureKey: 'inventory' },
+  { href: '/haraka/register', labelKey: 'nav.pos',       Icon: AuditSVG,        featureKey: 'pos' },
+  { href: '/warranties',   labelKey: 'nav.warranties',   Icon: WarrantySVG,     featureKey: 'warranties' },
+  { href: '/requests',     labelKey: 'nav.requests',     Icon: RequestsSVG,     featureKey: 'requests' },
+  { href: '/reports',      labelKey: 'nav.reports',      Icon: ReportsSVG,      adminOnly: true, featureKey: 'reports' },
+  { href: '/users',        labelKey: 'nav.users',        Icon: UsersSVG,        adminOnly: true, scope: 'org' },
+  { href: '/subscription', labelKey: 'nav.subscription', Icon: SubscriptionSVG, adminOnly: true, scope: 'org' },
+  { href: '/support',      labelKey: 'nav.support',      Icon: SupportSVG,      featureKey: 'support' },
+  { href: '/audit-logs',   labelKey: 'nav.auditLogs',    Icon: AuditSVG,        adminOnly: true, featureKey: 'auditLogs' },
 ];
 
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
@@ -46,6 +47,7 @@ const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 export function MobileDrawer() {
   const pathname = usePathname();
   const params = useParams();
+  const locale = (params?.locale as string) ?? 'en';
   const orgSlug = (params?.orgSlug as string) ?? '';
   const space = useSpace();
   const { user } = useAuthStore();
@@ -73,7 +75,7 @@ export function MobileDrawer() {
       // ignore — always redirect regardless of errors
     }
     useTransferStore.getState().clearTransfer();
-    window.location.href = '/login';
+    window.location.href = `/${locale}/login`;
   }
 
   return (
@@ -145,8 +147,8 @@ export function MobileDrawer() {
             <nav className="flex-1 overflow-y-auto p-2.5 space-y-0.5">
               {visibleItems.map(({ href, labelKey, Icon, scope }) => {
                 const fullHref = scope === 'org'
-                  ? `/${orgSlug}${href}`
-                  : `/${orgSlug}/${space}${href}`;
+                  ? `/${locale}/${orgSlug}${href}`
+                  : `/${locale}/${orgSlug}/${space}${href}`;
                 const active = pathname === fullHref || pathname.startsWith(fullHref + '/');
                 return (
                   <Link

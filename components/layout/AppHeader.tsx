@@ -75,7 +75,7 @@ export function AppHeader() {
         </button>
 
         {/* Page title + breadcrumb */}
-        <div className="hidden md:flex flex-col justify-center min-w-0 flex-shrink-0 max-w-[280px]">
+        <div className="hidden md:flex flex-col justify-center min-w-0 flex-shrink-0 max-w-sm">
           {headerBreadcrumb.length > 0 && (
             <div className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 leading-none mb-0.5 flex-wrap">
               {headerBreadcrumb.map((crumb, i) => (
@@ -132,7 +132,7 @@ export function AppHeader() {
           {/* Notification bell */}
           <button
             type="button"
-            aria-label="Notifications"
+            aria-label={t('common.notifications')}
             className="relative p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-150 dark:hover:bg-gray-700/40"
           >
             <BellSVG />

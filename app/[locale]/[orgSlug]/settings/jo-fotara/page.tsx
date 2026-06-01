@@ -89,6 +89,7 @@ export default function FawtaraSettingsPage() {
       <PageHeader
         title={t('fawtara.title')}
         description={t('fawtara.subtitle')}
+        breadcrumb={[{ label: t('nav.settings') }]}
       />
 
       <div

@@ -114,6 +114,7 @@ export default function SpacesSettingsPage() {
       <PageHeader
         title={t('spaces.title')}
         description={t('spaces.description')}
+        breadcrumb={[{ label: t('nav.settings') }]}
         actions={(
           <Button size="sm" onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('spaces.newSpace')}</span>

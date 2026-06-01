@@ -384,6 +384,15 @@ const en = {
   'dashboard.noAssets':           'No assets to display.',
   'dashboard.noActivity':         'No recent activity.',
   'dashboard.noPendingRequests':  'No pending requests.',
+  'dashboard.quickActions':       'Quick actions',
+  'dashboard.addAsset':           'Add asset',
+  'dashboard.recordTransaction':  'Record transaction',
+  'dashboard.submitRequest':      'Submit request',
+  'dashboard.synced':             'Synced',
+  'dashboard.lowStock':           'low / out of stock',
+  'dashboard.inventoryItems':     'Inventory items',
+  'dashboard.viewItems':          'View items',
+  'dashboard.viewWarranties':     'View warranties',
 
   // ── Request types ─────────────────────────────────────────────────
   'requestType.REFILL':           'Refill',
@@ -1595,6 +1604,15 @@ const ar: Record<keyof typeof en, string> = {
   'dashboard.noAssets':           'لا توجد أصول لعرضها.',
   'dashboard.noActivity':         'لا يوجد نشاط حديث.',
   'dashboard.noPendingRequests':  'لا توجد طلبات معلّقة.',
+  'dashboard.quickActions':       'إجراءات سريعة',
+  'dashboard.addAsset':           'إضافة أصل',
+  'dashboard.recordTransaction':  'تسجيل حركة',
+  'dashboard.submitRequest':      'تقديم طلب',
+  'dashboard.synced':             'متزامن',
+  'dashboard.lowStock':           'منخفض / نافد',
+  'dashboard.inventoryItems':     'أصناف المخزون',
+  'dashboard.viewItems':          'عرض الأصناف',
+  'dashboard.viewWarranties':     'عرض الضمانات',
 
   // ── Request types ─────────────────────────────────────────────────
   'requestType.REFILL':           'إعادة تعبئة',

@@ -20,15 +20,6 @@ function ActiveIcon() {
     </svg>
   );
 }
-function _RetiredIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-      <path d="M3 7h12M5 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <rect x="3" y="7" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.4" fill="none" />
-      <path d="M7.5 11h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
 function WarningIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -69,6 +60,27 @@ function XIcon() {
     </svg>
   );
 }
+function PlusIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+function RefreshIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M2 7a5 5 0 1 0 1-3M2 2v3h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function ChevronRightIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
+      <path d="M5 3l3.5 3.5L5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 /* ── Greeting helper ─────────────────────────────────────────────── */
 function getGreetingKey(): 'greeting.morning' | 'greeting.afternoon' | 'greeting.evening' {
@@ -91,13 +103,13 @@ function useDashboard(spaceSlug: string | null) {
         fetch('/api/requests?status=PENDING&limit=5', { headers }),
         fetch('/api/audit-logs?limit=4', { headers }),
       ]);
-      const assetsBody = assetsRes.ok ? await assetsRes.json() : { items: [] };
+      const assetsBody     = assetsRes.ok     ? await assetsRes.json()     : { items: [] };
       const warrantiesBody = warrantiesRes.ok ? await warrantiesRes.json() : [];
-      const requestsBody = requestsRes.ok ? await requestsRes.json() : [];
-      const auditBody = auditRes.ok ? await auditRes.json() : [];
-      const assets: Asset[] = Array.isArray(assetsBody?.items) ? assetsBody.items : [];
-      const warranties: Warranty[] = Array.isArray(warrantiesBody) ? warrantiesBody : [];
-      const requests: Request[] = Array.isArray(requestsBody) ? requestsBody : (Array.isArray(requestsBody?.items) ? requestsBody.items : []);
+      const requestsBody   = requestsRes.ok   ? await requestsRes.json()   : [];
+      const auditBody      = auditRes.ok      ? await auditRes.json()      : [];
+      const assets: Asset[]         = Array.isArray(assetsBody?.items) ? assetsBody.items : [];
+      const warranties: Warranty[]  = Array.isArray(warrantiesBody) ? warrantiesBody : [];
+      const requests: Request[]     = Array.isArray(requestsBody) ? requestsBody : (Array.isArray(requestsBody?.items) ? requestsBody.items : []);
       const auditLogs: AuditEntry[] = Array.isArray(auditBody) ? auditBody : (Array.isArray(auditBody?.items) ? auditBody.items : []);
       return { assets, warranties, requests, auditLogs };
     },
@@ -117,37 +129,65 @@ type AuditEntry = {
   createdAt: string | number;
 };
 
+/* ── AlertBanner ─────────────────────────────────────────────────── */
+function AlertBanner({ tone, icon, children }: {
+  tone: 'warning' | 'info';
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const styles = {
+    warning: { bg: 'var(--yellow-50)', border: 'var(--yellow-100)', color: 'var(--yellow-700)', iconBg: 'rgba(234,179,8,0.12)' },
+    info:    { bg: 'var(--blue-50)',   border: 'var(--blue-100)',   color: 'var(--blue-700)',   iconBg: 'rgba(59,130,246,0.12)' },
+  }[tone];
+  return (
+    <div
+      className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm"
+      style={{ background: styles.bg, border: `1px solid ${styles.border}`, color: styles.color }}
+    >
+      <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-md" style={{ background: styles.iconBg }}>
+        {icon}
+      </span>
+      {children}
+    </div>
+  );
+}
+
 /* ── StatCard ────────────────────────────────────────────────────── */
 type StatCardProps = {
   icon: React.ReactNode;
   iconBg: string;
   iconColor: string;
+  accent: string;
   label: string;
   value: React.ReactNode;
+  delta?: React.ReactNode;
   sub?: string;
   onClick?: () => void;
 };
 
-function StatCard({ icon, iconBg, iconColor, label, value, sub, onClick }: StatCardProps) {
+function StatCard({ icon, iconBg, iconColor, accent, label, value, delta, sub, onClick }: StatCardProps) {
   return (
     <Card
-      className={`transition-all duration-150 ${onClick ? 'cursor-pointer hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600' : ''}`}
+      className={`transition-all duration-150 overflow-hidden ${onClick ? 'cursor-pointer hover:shadow-md' : ''}`}
       onClick={onClick}
     >
+      {/* accent top stripe */}
+      <div className="h-0.5 w-full" style={{ background: accent }} />
       <CardContent className="p-5">
-        <div className="flex items-start gap-3">
-          <div
-            className="p-2 rounded-lg flex-shrink-0"
-            style={{ background: iconBg, color: iconColor }}
-          >
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="p-2 rounded-lg flex-shrink-0" style={{ background: iconBg, color: iconColor }}>
             {icon}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">{label}</p>
-            {value}
-            {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
-          </div>
+          {delta && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0"
+              style={{ background: iconBg, color: iconColor }}>
+              {delta}
+            </span>
+          )}
         </div>
+        <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">{label}</p>
+        {value}
+        {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
       </CardContent>
     </Card>
   );
@@ -155,6 +195,105 @@ function StatCard({ icon, iconBg, iconColor, label, value, sub, onClick }: StatC
 
 function SkeletonValue() {
   return <div className="h-7 w-14 bg-surface-sidebar rounded animate-pulse" />;
+}
+
+/* ── RecentAssetsTable ───────────────────────────────────────────── */
+const STATUS_DOT: Record<string, string> = {
+  Active:   'bg-green-500',
+  Retired:  'bg-gray-400',
+  Expiring: 'bg-amber-400',
+  Pending:  'bg-blue-400',
+};
+const STATUS_LABEL: Record<string, string> = {
+  Active:   'Active',
+  Retired:  'Retired',
+  Expiring: 'Expiring',
+  Pending:  'Pending',
+};
+
+function Initials({ name }: { name: string }) {
+  const parts = (name || '?').split(/[\s@]/);
+  const init = (parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '');
+  return (
+    <span
+      className="inline-flex items-center justify-center rounded-full text-[10px] font-semibold flex-shrink-0"
+      style={{ width: 24, height: 24, background: 'var(--primary-100)', color: 'var(--primary-700)' }}
+    >
+      {init.toUpperCase() || '?'}
+    </span>
+  );
+}
+
+function RecentAssetsTable({ assets, isLoading, onViewAll }: {
+  assets: Asset[];
+  isLoading: boolean;
+  onViewAll: () => void;
+}) {
+  const { t } = useT();
+  const recent = [...assets]
+    .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())
+    .slice(0, 5);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3 p-5">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="h-4 flex-1 bg-surface-sidebar rounded animate-pulse" />
+            <div className="h-4 w-20 bg-surface-sidebar rounded animate-pulse" />
+            <div className="h-4 w-16 bg-surface-sidebar rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (recent.length === 0) {
+    return <p className="text-sm text-gray-500 py-8 text-center px-5">{t('dashboard.noAssets')}</p>;
+  }
+
+  return (
+    <table className="w-full border-collapse">
+      <thead>
+        <tr className="border-b border-border">
+          <th className="text-left px-5 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">{t('col.name')}</th>
+          <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide hidden sm:table-cell">{t('col.category')}</th>
+          <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">{t('col.status')}</th>
+          <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide hidden md:table-cell">{t('col.assignedTo')}</th>
+          <th className="text-right px-5 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide hidden lg:table-cell">{t('col.date')}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {recent.map((a) => (
+          <tr key={a.id} className="border-b border-border last:border-0 hover:bg-surface-sidebar transition-colors duration-100">
+            <td className="px-5 py-3">
+              <span className="text-sm font-medium text-primary-600 hover:text-primary-700 cursor-pointer">
+                {a.name}
+              </span>
+            </td>
+            <td className="px-3 py-3 hidden sm:table-cell">
+              <span className="text-sm text-gray-500">{a.category}</span>
+            </td>
+            <td className="px-3 py-3">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium">
+                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${STATUS_DOT[a.status] ?? 'bg-gray-400'}`} />
+                {STATUS_LABEL[a.status] ?? a.status}
+              </span>
+            </td>
+            <td className="px-3 py-3 hidden md:table-cell">
+              {a.assignedTo
+                ? <div className="flex items-center gap-2"><Initials name={a.assignedTo} /><span className="text-sm text-gray-600 truncate max-w-[120px]">{a.assignedTo}</span></div>
+                : <span className="text-sm text-gray-400">—</span>
+              }
+            </td>
+            <td className="px-5 py-3 text-right hidden lg:table-cell">
+              <span className="text-xs text-gray-400 tabular-nums font-mono">{a.createdAt ? formatDate(a.createdAt) : '—'}</span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
 }
 
 /* ── AssetBreakdownBar ───────────────────────────────────────────── */
@@ -165,14 +304,14 @@ function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: 
     if (a.status === 'Retired') continue;
     categories[a.category] = (categories[a.category] ?? 0) + 1;
   }
-  const total = Object.values(categories).reduce((s, n) => s + n, 0) || 1;
+  const total  = Object.values(categories).reduce((s, n) => s + n, 0) || 1;
   const sorted = Object.entries(categories).sort((a, b) => b[1] - a[1]).slice(0, 4);
 
   const TONES: Record<number, { bar: string; text: string }> = {
-    0: { bar: 'bg-indigo-500', text: 'text-indigo-700 dark:text-indigo-400' },
+    0: { bar: 'bg-indigo-500',  text: 'text-indigo-700 dark:text-indigo-400' },
     1: { bar: 'bg-emerald-500', text: 'text-emerald-700 dark:text-emerald-400' },
-    2: { bar: 'bg-amber-400', text: 'text-amber-700 dark:text-amber-400' },
-    3: { bar: 'bg-gray-400', text: 'text-gray-600' },
+    2: { bar: 'bg-amber-400',   text: 'text-amber-700 dark:text-amber-400' },
+    3: { bar: 'bg-gray-400',    text: 'text-gray-600' },
   };
 
   if (isLoading) {
@@ -196,20 +335,72 @@ function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: 
   return (
     <div className="space-y-3">
       {sorted.map(([cat, count], i) => {
-        const pct = Math.round((count / total) * 100);
+        const pct  = Math.round((count / total) * 100);
         const tone = TONES[i] ?? TONES[3];
         return (
           <div key={cat} className="grid grid-cols-[130px_1fr_64px] gap-3 items-center py-1 border-b border-border last:border-0">
             <span className="text-sm font-medium text-gray-700 truncate">{cat}</span>
             <div className="h-1.5 rounded-full bg-surface-sidebar overflow-hidden">
-              <div
-                className={`h-full rounded-full ${tone.bar} transition-all duration-500`}
-                style={{ width: `${pct}%` }}
-              />
+              <div className={`h-full rounded-full ${tone.bar} transition-all duration-500`} style={{ width: `${pct}%` }} />
             </div>
-            <span className={`text-xs font-medium tabular-nums text-end ${tone.text}`}>
-              {count} · {pct}%
-            </span>
+            <span className={`text-xs font-medium tabular-nums text-end ${tone.text}`}>{count} · {pct}%</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── ExpiringWarrantiesCard ──────────────────────────────────────── */
+function ExpiringWarrantiesCard({ warranties, isLoading, onViewAll }: {
+  warranties: Warranty[];
+  isLoading: boolean;
+  onViewAll: () => void;
+}) {
+  const { t } = useT();
+
+  function urgencyColor(days: number): string {
+    if (days <= 7)  return 'var(--red-600)';
+    if (days <= 14) return 'var(--amber-500)';
+    return 'var(--yellow-600)';
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-1 p-2">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex items-center gap-3 p-2">
+            <div className="w-1 h-8 rounded-full bg-surface-sidebar animate-pulse flex-shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-3.5 bg-surface-sidebar rounded animate-pulse w-3/4" />
+              <div className="h-3 bg-surface-page rounded animate-pulse w-1/3" />
+            </div>
+            <div className="h-5 w-10 bg-surface-sidebar rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (warranties.length === 0) {
+    return <p className="text-sm text-gray-500 py-8 text-center px-5">{t('dashboard.noWarranties')}</p>;
+  }
+
+  return (
+    <div className="p-2">
+      {warranties.slice(0, 5).map((w) => {
+        const days  = daysUntil(w.endDate);
+        const color = urgencyColor(days);
+        return (
+          <div key={w.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-sidebar transition-colors duration-100">
+            <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: color }} />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-800 truncate">{w.assetName ?? w.assetId}</p>
+              <p className="text-xs text-gray-400 truncate">{w.vendor}</p>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <p className="text-sm font-bold tabular-nums" style={{ color }}>{days < 0 ? `${Math.abs(days)}d ago` : `${days}d`}</p>
+            </div>
           </div>
         );
       })}
@@ -228,16 +419,16 @@ function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: bool
   }
 
   function formatRelative(ts: string | number): string {
-    const d = typeof ts === 'string' ? new Date(ts) : new Date(ts);
-    const diffMs = now - d.getTime();
+    const d       = typeof ts === 'string' ? new Date(ts) : new Date(ts);
+    const diffMs  = now - d.getTime();
     const diffMin = Math.floor(diffMs / 60_000);
     const diffH   = Math.floor(diffMs / 3_600_000);
     const diffD   = Math.floor(diffMs / 86_400_000);
     if (diffMin < 2) return t('time.justNow');
     const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
     if (diffMin < 60) return rtf.format(-diffMin, 'minute');
-    if (diffH < 24) return rtf.format(-diffH, 'hour');
-    if (diffD === 1) return rtf.format(-1, 'day');
+    if (diffH  < 24)  return rtf.format(-diffH, 'hour');
+    if (diffD  === 1) return rtf.format(-1, 'day');
     return formatDate(d);
   }
 
@@ -272,8 +463,8 @@ function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: bool
   return (
     <div className="space-y-4">
       {logs.map((log) => {
-        const actor = log.actorName || log.actorEmail || t('common.system');
-        const initials = getInitials(log.actorName, log.actorEmail);
+        const actor       = log.actorName || log.actorEmail || t('common.system');
+        const initials    = getInitials(log.actorName, log.actorEmail);
         const actionColor = ACTION_COLOR[log.action?.toLowerCase()] ?? 'text-gray-600';
         return (
           <div key={log.id} className="flex gap-3 items-start">
@@ -282,15 +473,10 @@ function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: bool
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm text-gray-800 leading-snug">
-                <span className="font-semibold">{actor}</span>
-                {' '}
+                <span className="font-semibold">{actor}</span>{' '}
                 <span className={actionColor}>{log.action}</span>
-                {log.module && (
-                  <> <span className="text-gray-500">{log.module}</span></>
-                )}
-                {log.targetId && (
-                  <> <span className="font-mono text-xs text-gray-500">{log.targetId}</span></>
-                )}
+                {log.module && <> <span className="text-gray-500">{log.module}</span></>}
+                {log.targetId && <> <span className="font-mono text-xs text-gray-500">{log.targetId}</span></>}
               </p>
               <p className="text-xs text-gray-500 mt-0.5">{formatRelative(log.createdAt)}</p>
             </div>
@@ -301,40 +487,31 @@ function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: bool
   );
 }
 
-/* ── PendingRequestsTable (admin only) ───────────────────────────── */
+/* ── PendingRequestsTable ────────────────────────────────────────── */
 const typeKeys: Record<string, MessageKey> = {
-  REFILL: 'requestType.REFILL',
-  RETIRE: 'requestType.RETIRE',
-  BUY_NEW: 'requestType.BUY_NEW',
-  EXTEND_WARRANTY: 'requestType.EXTEND_WARRANTY',
+  REFILL:           'requestType.REFILL',
+  RETIRE:           'requestType.RETIRE',
+  BUY_NEW:          'requestType.BUY_NEW',
+  EXTEND_WARRANTY:  'requestType.EXTEND_WARRANTY',
 };
-
 const typeTones: Record<string, string> = {
-  REFILL: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300',
-  RETIRE: 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300',
-  BUY_NEW: 'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
+  REFILL:          'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300',
+  RETIRE:          'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300',
+  BUY_NEW:         'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
   EXTEND_WARRANTY: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
 };
 
-function PendingRequestsTable({
-  requests,
-  isLoading,
-  orgSlug,
-  locale,
-  space,
-  onApprove,
-  onReject,
-}: {
+function PendingRequestsTable({ requests, isLoading, orgSlug, locale, space, onApprove, onReject }: {
   requests: Request[];
   isLoading: boolean;
   orgSlug: string;
   locale: string;
   space: string;
   onApprove: (id: string) => void;
-  onReject: (id: string) => void;
+  onReject:  (id: string) => void;
 }) {
   const router = useRouter();
-  const { t } = useT();
+  const { t }  = useT();
   const columns: ColumnDef<Request>[] = [
     {
       key: 'type',
@@ -348,20 +525,12 @@ function PendingRequestsTable({
     {
       key: 'asset',
       header: t('col.asset'),
-      render: (r) => (
-        <span className="font-medium text-gray-900 text-sm">
-          {r.assetName ?? r.inventoryItemName ?? '—'}
-        </span>
-      ),
+      render: (r) => <span className="font-medium text-gray-900 text-sm">{r.assetName ?? r.inventoryItemName ?? '—'}</span>,
     },
     {
       key: 'by',
       header: t('requests.submittedBy'),
-      render: (r) => (
-        <span className="text-sm text-gray-600">
-          {r.createdByName ?? r.createdByEmail ?? r.createdBy}
-        </span>
-      ),
+      render: (r) => <span className="text-sm text-gray-600">{r.createdByName ?? r.createdByEmail ?? r.createdBy}</span>,
     },
     {
       key: 'actions',
@@ -369,18 +538,12 @@ function PendingRequestsTable({
       render: (r) =>
         r.status === 'PENDING' ? (
           <div className="flex items-center gap-1 justify-end">
-            <button
-              onClick={(e) => { e.stopPropagation(); onApprove(r.id); }}
-              aria-label={t('common.approve')}
-              className="h-7 w-7 rounded-md flex items-center justify-center text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors duration-150"
-            >
+            <button onClick={(e) => { e.stopPropagation(); onApprove(r.id); }} aria-label={t('common.approve')}
+              className="h-7 w-7 rounded-md flex items-center justify-center text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors duration-150">
               <CheckIcon />
             </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onReject(r.id); }}
-              aria-label={t('common.reject')}
-              className="h-7 w-7 rounded-md flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors duration-150"
-            >
+            <button onClick={(e) => { e.stopPropagation(); onReject(r.id); }} aria-label={t('common.reject')}
+              className="h-7 w-7 rounded-md flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors duration-150">
               <XIcon />
             </button>
           </div>
@@ -400,31 +563,47 @@ function PendingRequestsTable({
   );
 }
 
+/* ── SectionHeader ───────────────────────────────────────────────── */
+function SectionHeader({ title, action, onClick }: { title: string; action?: string; onClick?: () => void }) {
+  return (
+    <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
+      <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+      {action && onClick && (
+        <button onClick={onClick}
+          className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 transition-colors flex items-center gap-1">
+          {action} <ChevronRightIcon />
+        </button>
+      )}
+    </div>
+  );
+}
+
 /* ── Page ────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
-  const router = useRouter();
+  const router  = useRouter();
   const orgSlug = useOrgSlug();
-  const space = useSpace();
+  const space   = useSpace();
   const { user } = useAuthStore();
   const { data, isLoading } = useDashboard(space);
   const { t, locale } = useT();
 
-  const firstName = (user?.displayName ?? user?.email ?? 'there').split(/[\s@]/)[0];
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
+  const firstName   = (user?.displayName ?? user?.email ?? 'there').split(/[\s@]/)[0];
+  const isAdmin     = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const activeAssets       = data?.assets.filter((a) => a.status === 'Active')  ?? [];
-  const _retiredAssets      = data?.assets.filter((a) => a.status === 'Retired') ?? [];
   const totalAssets        = data?.assets ?? [];
   const expiringWarranties = data?.warranties ?? [];
   const pendingRequests    = data?.requests ?? [];
   const auditLogs          = data?.auditLogs ?? [];
 
+  // Low-stock count — assets with status that suggests low inventory
+  const lowStockCount   = totalAssets.filter((a) => a.status === 'Pending').length;
+  const criticalWarrantyCount = expiringWarranties.filter((w) => daysUntil(w.endDate) <= 7).length;
+
   async function handleDecision(requestId: string, action: 'approve' | 'reject') {
     try {
       await fetch(`/api/requests/${requestId}/${action}`, { method: 'POST' });
-    } catch {
-      // Silent fail — full handling in the Requests page
-    }
+    } catch { /* Silent — full handling in Requests page */ }
   }
 
   const warrantyColumns: ColumnDef<Warranty>[] = [
@@ -446,51 +625,84 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+
+      {/* ── Alert banners ────────────────────────────────────────────── */}
+      {!isLoading && (lowStockCount > 0 || expiringWarranties.length > 0) && (
+        <div className="space-y-2">
+          {lowStockCount > 0 && (
+            <AlertBanner tone="warning" icon={<InboxIcon />}>
+              <span>
+                <strong>{lowStockCount} {lowStockCount === 1 ? 'item is' : 'items are'} low or out of stock.</strong>{' '}
+                <button onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list`)}
+                  className="font-semibold underline underline-offset-2 hover:opacity-80 transition-opacity">
+                  {t('dashboard.viewItems')}
+                </button>
+              </span>
+            </AlertBanner>
+          )}
+          {expiringWarranties.length > 0 && (
+            <AlertBanner tone="info" icon={<WarningIcon />}>
+              <span>
+                <strong>{expiringWarranties.length} {expiringWarranties.length === 1 ? 'warranty' : 'warranties'} expiring within 30 days.</strong>
+                {criticalWarrantyCount > 0 && <span className="ms-1">({criticalWarrantyCount} critical)</span>}
+                {' '}
+                <button onClick={() => router.push(`/${locale}/${orgSlug}/${space}/warranties?expiring=30`)}
+                  className="font-semibold underline underline-offset-2 hover:opacity-80 transition-opacity">
+                  {t('dashboard.viewWarranties')}
+                </button>
+              </span>
+            </AlertBanner>
+          )}
+        </div>
+      )}
+
       {/* ── Page header ──────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          <h1 className="font-bold tracking-tight text-gray-900"
+            style={{ fontSize: 22, fontFamily: 'var(--font-display)' }}>
             {t(getGreetingKey())}{locale === 'ar' ? '،' : ','} {firstName}
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {t('dashboard.subtitle')}
-          </p>
+          <p className="text-sm text-gray-500 mt-0.5">{t('dashboard.subtitle')}</p>
         </div>
+        {!isLoading && (
+          <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0"
+            style={{ background: 'var(--green-50)', color: 'var(--green-700)', border: '1px solid var(--green-100)' }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            {t('dashboard.synced')}
+          </span>
+        )}
       </div>
 
-      {/* ── Stat cards ───────────────────────────────────────────────── */}
+      {/* ── KPI cards ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={<TotalIcon />}
-          iconBg="var(--primary-50)"
-          iconColor="var(--primary-700)"
+          iconBg="rgba(0,105,92,0.08)"
+          iconColor="var(--mod-usool)"
+          accent="var(--mod-usool)"
           label={t('dashboard.totalAssets')}
           value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{totalAssets.length}</p>}
+          delta={!isLoading && activeAssets.length > 0 ? `${activeAssets.length} active` : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
         />
         <StatCard
           icon={<ActiveIcon />}
-          iconBg="var(--green-50)"
-          iconColor="var(--green-700)"
-          label={t('dashboard.active')}
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{activeAssets.length}</p>}
-          sub={!isLoading && totalAssets.length > 0 ? `${Math.round((activeAssets.length / totalAssets.length) * 100)}${t('dashboard.percentOfTotal')}` : undefined}
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list?status=Active`)}
-        />
-        <StatCard
-          icon={<InboxIcon />}
-          iconBg="var(--yellow-50)"
-          iconColor="var(--yellow-700)"
-          label={t('dashboard.pendingRequests')}
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{pendingRequests.length}</p>}
-          sub={!isLoading && pendingRequests.length > 0 ? t('dashboard.needReview') : undefined}
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list?status=PENDING`)}
+          iconBg="rgba(230,81,0,0.08)"
+          iconColor="var(--mod-raseed)"
+          accent="var(--mod-raseed)"
+          label={t('dashboard.inventoryItems')}
+          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{lowStockCount}</p>}
+          delta={!isLoading && lowStockCount > 0 ? `${lowStockCount} low` : undefined}
+          sub={!isLoading ? t('dashboard.lowStock') : undefined}
+          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list`)}
         />
         <StatCard
           icon={<WarningIcon />}
-          iconBg="var(--yellow-50)"
-          iconColor="var(--yellow-700)"
+          iconBg="rgba(245,158,11,0.08)"
+          iconColor="#D97706"
+          accent="#F59E0B"
           label={t('dashboard.warrantiesExpiring')}
           value={
             isLoading ? <SkeletonValue /> : (
@@ -500,98 +712,131 @@ export default function DashboardPage() {
               </p>
             )
           }
+          delta={!isLoading && criticalWarrantyCount > 0 ? `${criticalWarrantyCount} critical` : undefined}
           onClick={() => router.push(`/${locale}/${orgSlug}/${space}/warranties?expiring=30`)}
+        />
+        <StatCard
+          icon={<InboxIcon />}
+          iconBg="rgba(124,58,237,0.08)"
+          iconColor="#7C3AED"
+          accent="#7C3AED"
+          label={t('dashboard.pendingRequests')}
+          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums">{pendingRequests.length}</p>}
+          delta={!isLoading && pendingRequests.length > 0 ? t('dashboard.needReview') : undefined}
+          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list?status=PENDING`)}
         />
       </div>
 
-      {/* ── Middle row: asset breakdown + activity feed ───────────────── */}
+      {/* ── Quick actions ─────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest me-1 hidden sm:block">
+          {t('dashboard.quickActions')}
+        </span>
+        <button
+          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/new`)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-all duration-150"
+        >
+          <PlusIcon /> {t('dashboard.addAsset')}
+        </button>
+        <button
+          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list`)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-all duration-150"
+        >
+          <RefreshIcon /> {t('dashboard.recordTransaction')}
+        </button>
+        <button
+          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list`)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-all duration-150"
+        >
+          <InboxIcon /> {t('dashboard.submitRequest')}
+        </button>
+      </div>
+
+      {/* ── Row 1: Recent assets (1.5fr) + Expiring warranties (1fr) ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Asset breakdown — takes 3 of 5 columns */}
+        <Card className="lg:col-span-3 p-0">
+          <SectionHeader
+            title={t('dashboard.recentAssets')}
+            action={t('dashboard.viewAll')}
+            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
+          />
+          <RecentAssetsTable
+            assets={totalAssets}
+            isLoading={isLoading}
+            onViewAll={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
+          />
+        </Card>
+
+        <Card className="lg:col-span-2 p-0">
+          <SectionHeader
+            title={t('dashboard.expiringWarranties')}
+            action={t('dashboard.viewAll')}
+            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/warranties`)}
+          />
+          <ExpiringWarrantiesCard
+            warranties={expiringWarranties}
+            isLoading={isLoading}
+            onViewAll={() => router.push(`/${locale}/${orgSlug}/${space}/warranties`)}
+          />
+        </Card>
+      </div>
+
+      {/* ── Row 2: Asset breakdown (3/5) + Activity feed (2/5) ───────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         <Card className="lg:col-span-3">
           <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-semibold text-gray-900">{t('dashboard.assetBreakdown')}</h2>
-              <button
-                onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
-                className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
-              >
-                {t('dashboard.viewAll')}              </button>
+            <SectionHeader
+              title={t('dashboard.assetBreakdown')}
+              action={t('dashboard.viewAll')}
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
+            />
+            <div className="pt-4">
+              <AssetBreakdownBar assets={totalAssets} isLoading={isLoading} />
             </div>
-            <AssetBreakdownBar assets={totalAssets} isLoading={isLoading} />
           </CardContent>
         </Card>
 
-        {/* Recent activity — takes 2 of 5 columns */}
         <Card className="lg:col-span-2">
           <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-semibold text-gray-900">{t('dashboard.recentActivity')}</h2>
-              <button
-                onClick={() => router.push(`/${locale}/${orgSlug}/${space}/audit-logs`)}
-                className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
-              >
-                {t('dashboard.viewAll')}              </button>
-            </div>
-            <ActivityFeed logs={auditLogs} isLoading={isLoading} />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* ── Bottom row: expiring warranties + pending requests ───────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Expiring warranties — takes 2 of 5 columns */}
-        <Card className="lg:col-span-2">
-          <CardContent className="p-0">
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-900">{t('dashboard.expiringWarranties')}</h2>
-              <button
-                onClick={() => router.push(`/${locale}/${orgSlug}/${space}/warranties`)}
-                className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
-              >
-                {t('dashboard.viewAll')}              </button>
-            </div>
-            <DataTable
-              data={expiringWarranties.slice(0, 5)}
-              columns={warrantyColumns}
-              isLoading={isLoading}
-              emptyMessage={t('dashboard.noWarranties')}
-              keyExtractor={(w) => w.id}
+            <SectionHeader
+              title={t('dashboard.recentActivity')}
+              action={t('dashboard.viewAll')}
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/audit-logs`)}
             />
+            <div className="pt-4">
+              <ActivityFeed logs={auditLogs} isLoading={isLoading} />
+            </div>
           </CardContent>
         </Card>
-
-        {/* Pending requests (admin only) — takes 3 of 5 columns */}
-        {isAdmin && (
-          <Card className="lg:col-span-3">
-            <CardContent className="p-0">
-              <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <h2 className="text-sm font-semibold text-gray-900">{t('dashboard.pendingRequests')}</h2>
-                  {!isLoading && pendingRequests.length > 0 && (
-                    <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[11px] font-semibold tabular-nums">
-                      {pendingRequests.length}
-                    </span>
-                  )}
-                </div>
-                <button
-                  onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list?status=PENDING`)}
-                  className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
-                >
-                  {t('dashboard.openQueue')}                </button>
-              </div>
-              <PendingRequestsTable
-                requests={pendingRequests}
-                isLoading={isLoading}
-                orgSlug={orgSlug}
-                locale={locale}
-                space={space}
-                onApprove={(id) => handleDecision(id, 'approve')}
-                onReject={(id) => handleDecision(id, 'reject')}
-              />
-            </CardContent>
-          </Card>
-        )}
       </div>
+
+      {/* ── Row 3: Pending requests (admin only) ─────────────────────── */}
+      {isAdmin && (
+        <Card className="p-0">
+          <SectionHeader
+            title={t('dashboard.pendingRequests')}
+            action={t('dashboard.openQueue')}
+            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list?status=PENDING`)}
+          />
+          {!isLoading && pendingRequests.length > 0 && (
+            <div className="px-5 py-1.5 border-b border-border">
+              <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[11px] font-semibold tabular-nums">
+                {pendingRequests.length}
+              </span>
+            </div>
+          )}
+          <PendingRequestsTable
+            requests={pendingRequests}
+            isLoading={isLoading}
+            orgSlug={orgSlug}
+            locale={locale}
+            space={space}
+            onApprove={(id) => handleDecision(id, 'approve')}
+            onReject={(id) => handleDecision(id, 'reject')}
+          />
+        </Card>
+      )}
+
     </div>
   );
 }

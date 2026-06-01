@@ -634,11 +634,7 @@ export default function DashboardPage() {
   const { data, isLoading } = useDashboard(space);
   const { t, locale } = useT();
 
-  // Use display name only if it looks like a real name (has uppercase, space, or Arabic).
-  // Slug-style names like "owner16" fall back to a generic greeting.
-  const rawName   = user?.displayName ?? '';
-  const isRealName = rawName.length > 0 && (/[A-Z؀-ۿ]/.test(rawName) || rawName.includes(' '));
-  const firstName  = isRealName ? rawName.split(/\s+/)[0] : t('greeting.there');
+  const firstName = (user?.displayName || user?.email?.split('@')[0] || '').split(/\s+/)[0] || t('greeting.there');
   const isAdmin     = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const activeAssets       = data?.assets.filter((a) => a.status === 'Active')  ?? [];
@@ -729,7 +725,7 @@ export default function DashboardPage() {
         <div>
           <h1 className="font-bold tracking-tight text-gray-900"
             style={{ fontSize: 22, fontFamily: 'var(--font-display)' }}>
-            {t(getGreetingKey())}{locale === 'ar' ? '،' : ','} {firstName}
+            {t(getGreetingKey())} {firstName}{locale === 'ar' ? '،' : ','}
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">{t('dashboard.subtitle')}</p>
         </div>

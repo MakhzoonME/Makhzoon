@@ -11,7 +11,8 @@ import { OrgUser, Invite } from '@/types';
 import { formatDate } from '@/lib/utils/date';
 import { InviteUserModal } from '@/components/users/InviteUserModal';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { toast, useAdminGuard } from '@/hooks/ui';
+import { toast, useAdminGuard, useOrgSlug } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils/cn';
 import { apiFetch } from '@/lib/utils/api-fetch';
@@ -97,6 +98,8 @@ function UserAvatar({ name }: { name: string }) {
 
 export default function UsersPage() {
   const { t } = useT();
+  const orgSlug = useOrgSlug();
+  const { data: orgInfo } = useOrgInfo();
   const { isAllowed } = useAdminGuard('settings.users');
   const { data: users = [], isLoading: usersLoading } = useUsers();
   const { data: invites = [], isLoading: invitesLoading } = useInvites();
@@ -275,6 +278,10 @@ export default function UsersPage() {
     <div className="space-y-6">
       <PageHeader
         title={t('users.title')}
+        breadcrumb={[
+          { label: orgInfo?.name ?? orgSlug },
+          { label: t('users.title') },
+        ]}
         actions={
           canInvite ? (
             <SubscriptionGate>

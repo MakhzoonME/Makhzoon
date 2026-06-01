@@ -49,8 +49,9 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   useEffect(() => {
     setPageHeader(t('nav.settings'), []);
     return () => clearPageHeader();
+  // t is intentionally excluded — it's unstable and the translation is static per locale
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [t]);
+  }, []);
 
   const features    = user?.features ?? {};
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'org_owner' || user?.role === 'super_admin';

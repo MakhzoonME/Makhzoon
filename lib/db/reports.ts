@@ -16,27 +16,18 @@ function monthKey(d: Date): string {
 
 export async function getReportsForOrg(
   orgId: string,
+  spaceId?: string,
 ): Promise<ReportsResponse> {
+  function withSpace<T extends { eq: (col: string, val: string) => T }>(q: T): T {
+    return spaceId ? q.eq('space_id', spaceId) : q;
+  }
   const [assets, checkouts, warranties, pendingReqs, maintenance] =
     await Promise.all([
-      supabaseAdmin.from('assets').select('*').eq('organization_id', orgId),
-      supabaseAdmin
-        .from('asset_checkouts')
-        .select('*')
-        .eq('organization_id', orgId),
-      supabaseAdmin
-        .from('warranties')
-        .select('end_date')
-        .eq('organization_id', orgId),
-      supabaseAdmin
-        .from('requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', orgId)
-        .eq('status', 'PENDING'),
-      supabaseAdmin
-        .from('maintenance_records')
-        .select('*')
-        .eq('organization_id', orgId),
+      withSpace(supabaseAdmin.from('assets').select('*').eq('organization_id', orgId)),
+      withSpace(supabaseAdmin.from('asset_checkouts').select('*').eq('organization_id', orgId)),
+      withSpace(supabaseAdmin.from('warranties').select('end_date').eq('organization_id', orgId)),
+      withSpace(supabaseAdmin.from('requests').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'PENDING')),
+      withSpace(supabaseAdmin.from('maintenance_records').select('*').eq('organization_id', orgId)),
     ]);
 
   const assetRows = (assets.data ?? []) as Row[];

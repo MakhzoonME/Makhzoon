@@ -20,6 +20,8 @@ export default function PurchasesListPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
 
+  const base = `/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases`;
+
   const { data, isLoading } = usePurchases({
     status: status === 'all' ? undefined : status,
     search: search || undefined,
@@ -29,25 +31,54 @@ export default function PurchasesListPage() {
 
   const columns: ColumnDef<Purchase>[] = [
     {
-      key: 'invoiceDate',
-      header: t('col.date'),
+      key: 'supplierName',
+      header: t('col.supplier'),
       sortable: true,
-      render: (p) => new Date(p.invoiceDate).toLocaleDateString(),
+      render: (p) => (
+        <button
+          className="font-medium text-primary-600 hover:text-primary-700 hover:underline text-start cursor-pointer transition-colors duration-150"
+          onClick={() => router.push(`${base}/${p.id}`)}
+        >
+          {p.supplierName}
+        </button>
+      ),
     },
-    { key: 'supplierName', header: t('col.supplier'), sortable: true, render: (p) => p.supplierName },
-    { key: 'invoiceNumber', header: t('col.invoiceNumber'), render: (p) => p.invoiceNumber || '—' },
-    { key: 'lines', header: t('col.lines'), render: (p) => String(p.lines.length) },
+    {
+      key: 'invoiceNumber',
+      header: t('col.invoiceNumber'),
+      render: (p) => p.invoiceNumber
+        ? <span className="font-mono text-xs text-gray-600">{p.invoiceNumber}</span>
+        : <span className="text-gray-400">—</span>,
+    },
+    {
+      key: 'invoiceDate',
+      header: t('col.invoiceDate'),
+      sortable: true,
+      render: (p) => (
+        <span className="text-sm text-gray-600 tabular-nums font-mono">
+          {new Date(p.invoiceDate).toLocaleDateString()}
+        </span>
+      ),
+    },
     {
       key: 'total',
       header: t('col.total'),
       sortable: true,
-      render: (p) => p.total.toFixed(2),
+      render: (p) => (
+        <span className="font-mono font-semibold tabular-nums text-sm">
+          JOD {p.total.toFixed(2)}
+        </span>
+      ),
     },
-    { key: 'status', header: t('col.status'), render: (p) => <PurchaseStatusBadge status={p.status} /> },
+    {
+      key: 'status',
+      header: t('col.status'),
+      render: (p) => <PurchaseStatusBadge status={p.status} />,
+    },
   ];
 
   return (
-    <div className="p-6">
+    <div>
       <PageHeader
         title={t('nav.purchases')}
         description={t('purchases.subtitle')}
@@ -56,8 +87,12 @@ export default function PurchasesListPage() {
           { label: t('nav.purchases'), href: '#' },
         ]}
         actions={
-          <Button onClick={() => router.push(`/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases/new`)}>
-            <Plus size={16} className="me-1" /> {t('purchases.newPurchase')}
+          <Button
+            onClick={() => router.push(`${base}/new`)}
+            className="cursor-pointer transition-colors duration-150"
+            style={{ background: 'var(--mod-raseed)' }}
+          >
+            <Plus aria-hidden size={16} className="me-1" /> {t('purchases.newPurchase')}
           </Button>
         }
       />
@@ -67,7 +102,14 @@ export default function PurchasesListPage() {
         searchValue={search}
         onSearchChange={setSearch}
         filters={
-          <ConfigSelect listKey="purchase_status" value={status} onValueChange={(v) => setStatus(v as PurchaseStatus | 'all')} includeAll allLabel={t('requests.allStatuses')} className="w-40" />
+          <ConfigSelect
+            listKey="purchase_status"
+            value={status}
+            onValueChange={(v) => setStatus(v as PurchaseStatus | 'all')}
+            includeAll
+            allLabel={t('requests.allStatuses')}
+            className="w-40"
+          />
         }
       />
 
@@ -77,17 +119,15 @@ export default function PurchasesListPage() {
         keyExtractor={(p) => p.id}
         isLoading={isLoading}
         emptyMessage={t('purchases.noPurchases')}
-        onRowClick={(p) => router.push(`/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases/${p.id}`)}
+        onRowClick={(p) => router.push(`${base}/${p.id}`)}
         pagination={
-          data
-            ? {
-                page: data.page,
-                pageSize: data.pageSize,
-                total: data.total,
-                totalPages: data.totalPages,
-                onPageChange: setPage,
-              }
-            : undefined
+          data ? {
+            page: data.page,
+            pageSize: data.pageSize,
+            total: data.total,
+            totalPages: data.totalPages,
+            onPageChange: setPage,
+          } : undefined
         }
       />
     </div>

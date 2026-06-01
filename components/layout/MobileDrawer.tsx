@@ -37,7 +37,7 @@ const navItems: NavItem[] = [
   { href: '/reports',      labelKey: 'nav.reports',      Icon: ReportsSVG,     adminOnly: true,         featureKey: 'reports' },
   { href: '/users',        labelKey: 'nav.users',        Icon: UsersSVG,       adminOnly: true,                                    scope: 'org' },
   { href: '/subscription', labelKey: 'nav.subscription', Icon: SubscriptionSVG, adminOnly: true,                                    scope: 'org' },
-  { href: '/support',      labelKey: 'nav.support',      Icon: SupportSVG,     featureKey: 'support',                              scope: 'org' },
+  { href: '/support',      labelKey: 'nav.support',      Icon: SupportSVG,     featureKey: 'support' },
   { href: '/audit-logs',   labelKey: 'nav.auditLogs',    Icon: AuditSVG,       adminOnly: true,         featureKey: 'auditLogs' },
 ];
 

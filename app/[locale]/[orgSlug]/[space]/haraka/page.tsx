@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { startOfDay, endOfDay } from 'date-fns';
-import { Banknote, Receipt, Users, Layers, Plus, ListChecks, FileBarChart, ArrowRight } from 'lucide-react';
+import { Banknote, Receipt, Users, Layers, Plus, ListChecks, ArrowRight } from 'lucide-react';
 import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
 import { PageHeader, StatCard, OverviewSection, DataTable, StatusBadge, SubscriptionGate } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';

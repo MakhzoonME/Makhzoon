@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/ui';
 import { ClipboardCheck } from 'lucide-react';
 import { StockItemMultiPicker } from '@/components/inventory/stock-audits/StockItemMultiPicker';
+import { useOrgInfo } from '@/hooks/org';
 
 function defaultTitle() {
   const today = new Date().toLocaleDateString('en-GB', {
@@ -25,6 +26,7 @@ export default function NewStockAuditPage() {
   const orgSlug = useOrgSlug();
   const space = useSpace();
   const { t, locale } = useT();
+  const { data: orgInfo } = useOrgInfo();
   const create = useCreateStockAudit();
 
   const [title, setTitle] = useState(defaultTitle());
@@ -58,9 +60,11 @@ export default function NewStockAuditPage() {
       <PageHeader
         title={t('stockAudits.newTitle')}
         breadcrumb={[
-          { label: t('nav.inventory'), href: base },
-          { label: t('stockAudits.breadcrumb'), href: `${base}/audits` },
-          { label: t('stockAudits.newTitle'), href: `${base}/audits/new` },
+          { label: orgInfo?.name ?? orgSlug },
+          { label: space },
+          { label: t('nav.inventory'), href: `/${locale}/${orgSlug}/${space}/raseed/list` },
+          { label: t('stockAudits.breadcrumb'), href: `/${locale}/${orgSlug}/${space}/raseed/audits` },
+          { label: t('stockAudits.newTitle') },
         ]}
       />
 

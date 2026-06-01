@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/ui';
 import { ArrowLeft, CheckCheck, CheckCircle2 } from 'lucide-react';
+import { useOrgInfo } from '@/hooks/org';
 import { StockAuditRow } from '@/components/inventory/stock-audits/StockAuditRow';
 import { StockAuditReconcileDialog } from '@/components/inventory/stock-audits/StockAuditReconcileDialog';
 import type { StockAuditAdjustment } from '@/types/stock-audit.types';
@@ -57,6 +58,7 @@ export default function StockAuditDetailPage() {
   const [pendingOnly, setPendingOnly]   = useState(false);
   const [reconcileOpen, setReconcileOpen] = useState(false);
 
+  const { data: orgInfo } = useOrgInfo();
   const auditsHref = `/${locale}/${orgSlug}/${space}/raseed/audits`;
 
   const filtered = useMemo(() => {
@@ -114,9 +116,11 @@ export default function StockAuditDetailPage() {
       <PageHeader
         title={audit.title}
         breadcrumb={[
-          { label: t('nav.inventory'),          href: `/${locale}/${orgSlug}/${space}/raseed` },
+          { label: orgInfo?.name ?? orgSlug },
+          { label: space },
+          { label: t('nav.inventory'),          href: `/${locale}/${orgSlug}/${space}/raseed/list` },
           { label: t('stockAudits.breadcrumb'), href: auditsHref },
-          { label: audit.title,                 href: `${auditsHref}/${auditId}` },
+          { label: audit.title },
         ]}
         actions={
           completed ? (

@@ -1307,6 +1307,9 @@ const en = {
   'stockAudits.startFailed':     'Failed to start stock audit',
   'stockAudits.saveFailed':      'Failed to save count',
   'stockAudits.backToAudits':    'Back to Audits',
+  'stockAudits.continueAudit':  'Continue',
+  'stockAudits.pendingOnly':    'Pending only',
+  'stockAudits.varianceLabel':  'variance',
 
   // ── Ticket detail page ────────────────────────────────────────────
   'ticket.closeTicket':          'Close Ticket',
@@ -2637,6 +2640,9 @@ const ar: Record<keyof typeof en, string> = {
   'stockAudits.startFailed':     'تعذّر بدء جرد الرصيد',
   'stockAudits.saveFailed':      'تعذّر حفظ العد',
   'stockAudits.backToAudits':    'العودة إلى المراجعات',
+  'stockAudits.continueAudit':  'متابعة',
+  'stockAudits.pendingOnly':    'المعلّقة فقط',
+  'stockAudits.varianceLabel':  'فرق',
 
   // ── Ticket detail page ────────────────────────────────────────────
   'ticket.closeTicket':          'إغلاق التذكرة',

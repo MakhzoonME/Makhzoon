@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { queueAuditLog } from '@/lib/audit/logger';
 
 const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin']);
 
@@ -49,6 +50,14 @@ export async function PATCH(req: NextRequest) {
       );
 
     if (error) throw error;
+    queueAuditLog({
+      organizationId: orgId,
+      userId: user.uid,
+      role: user.role,
+      action: 'RECEIPT_CONFIG_UPDATED',
+      module: 'settings',
+      newValue: body as Record<string, unknown>,
+    });
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('[PATCH /api/organizations/receipt-config]', err);

@@ -3,6 +3,7 @@ import { useState, useRef, useCallback } from 'react';
 import Papa from 'papaparse';
 import { useQueryClient } from '@tanstack/react-query';
 import { useT, toast } from '@/hooks/ui';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { FormDrawer } from '@/components/shared/FormDrawer';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -417,10 +418,10 @@ export function ImportAssetsDrawer({ open, onOpenChange }: Props) {
             {/* Actions */}
             <div className="flex items-center justify-between pt-1">
               <Button variant="outline" size="sm" onClick={reset} className="cursor-pointer transition-colors duration-150">
-                ← {t('import.back')}
+                <ArrowLeft size={14} aria-hidden /> {t('import.back')}
               </Button>
               <Button size="sm" onClick={handleImport} disabled={submitting} className="cursor-pointer transition-colors duration-150">
-                {t('import.validate')} {rows.length} {rows.length === 1 ? t('import.asset') : t('import.assets')} →
+                {t('import.validate')} {rows.length} {rows.length === 1 ? t('import.asset') : t('import.assets')} <ArrowRight size={14} aria-hidden />
               </Button>
             </div>
           </>

@@ -4,6 +4,7 @@ import { getOrganizationById, updateOrganization } from '@/lib/db/organizations'
 import { getSuperAdminUserById } from '@/lib/db/superadmin-users';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { ORG_CATEGORIES } from '@/types';
+import { queueAuditLog } from '@/lib/audit/logger';
 
 /** Legacy PII-scrub pattern from the Firestore clone scripts. No clone exists
  *  post-migration so this never matches, but the fallback is kept harmless. */
@@ -100,6 +101,14 @@ export async function PATCH(req: NextRequest) {
     if (!Object.keys(patch).length) return NextResponse.json({ error: 'Nothing to update' }, { status: 422 });
 
     await updateOrganization(orgId, { ...patch, updatedBy: user.uid } as Parameters<typeof updateOrganization>[1]);
+    queueAuditLog({
+      organizationId: orgId,
+      userId: user.uid,
+      role: user.role,
+      action: 'ORGANIZATION_UPDATED',
+      module: 'settings',
+      newValue: patch as Record<string, unknown>,
+    });
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('[PATCH /api/organizations/self]', err);

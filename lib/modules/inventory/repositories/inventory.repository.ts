@@ -27,6 +27,7 @@ function toItem(r: Row, computedQty?: number): InventoryItem {
     supplier: r.supplier as string,
     unitCost: r.unit_cost as number,
     notes: r.notes as string,
+    documents: Array.isArray(r.documents) ? (r.documents as InventoryItem['documents']) : [],
     stockStatus: stockStatus(qty, threshold),
     posEnabled: r.pos_enabled as boolean,
     barcode: (r.barcode as string) ?? null,
@@ -225,6 +226,7 @@ export class InventoryRepository {
       quantityOnHand: number; minimumThreshold: number; reorderQuantity?: number
       location?: string; supplier?: string; unitCost?: number; notes?: string
       barcode?: string | null; posEnabled?: boolean; posPrice?: number | null; taxRateId?: string | null
+      documents?: InventoryItem['documents']
     },
   ): Promise<string> {
     const barcode = input.barcode ? input.barcode.trim() : null
@@ -247,6 +249,7 @@ export class InventoryRepository {
         pos_enabled: input.posEnabled ?? false,
         pos_price: input.posPrice ?? null,
         tax_rate_id: input.taxRateId ?? null,
+        documents: input.documents ?? [],
         // quantity_on_hand intentionally left at default; on-hand is ledger-derived
         created_by: tenant.userId,
         created_by_email: tenant.user.email ?? null,
@@ -295,6 +298,7 @@ export class InventoryRepository {
       minimumThreshold?: number; reorderQuantity?: number; location?: string
       supplier?: string; unitCost?: number; notes?: string
       barcode?: string | null; posEnabled?: boolean; posPrice?: number | null; taxRateId?: string | null
+      documents?: InventoryItem['documents']
     },
   ): Promise<void> {
     const current = await this.getById(tenant, id)
@@ -320,6 +324,7 @@ export class InventoryRepository {
       const trimmed = input.barcode ? input.barcode.trim() : ''
       patch.barcode = trimmed || null
     }
+    if (input.documents !== undefined) patch.documents = input.documents
     const { error } = await supabaseAdmin
       .from('inventory_items')
       .update(patch)

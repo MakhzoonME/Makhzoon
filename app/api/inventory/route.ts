@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
       posEnabled: data.posEnabled ?? undefined,
       posPrice: data.posPrice ? Number(data.posPrice) : null,
       taxRateId: data.taxRateId || null,
+      documents: data.documents ?? [],
     })
 
     return NextResponse.json(result, { status: 201 })

@@ -23,6 +23,7 @@ import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
 import { useAccessibleSpaces } from '@/hooks/spaces';
 import { AssetNotesSection } from '@/components/assets/AssetNotesSection';
+import { DocumentList } from '@/components/shared';
 import { MaintenanceSection } from '@/components/assets/MaintenanceSection';
 import { CheckoutSection } from '@/components/assets/CheckoutSection';
 import { AssetQRCard } from '@/components/assets/AssetQRCard';
@@ -325,6 +326,11 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
                       <p className="text-sm text-gray-700 bg-surface-page rounded-lg p-3 leading-relaxed whitespace-pre-wrap border border-border">
                         {asset.notes}
                       </p>
+                    </div>
+                  )}
+                  {asset.documents && asset.documents.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <DocumentList value={asset.documents} label="Purchase receipts / invoices" />
                     </div>
                   )}
                 </CardContent>

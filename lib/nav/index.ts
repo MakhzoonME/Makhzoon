@@ -42,7 +42,8 @@ export interface NavGroupConfig {
   items: NavItemConfig[];
 }
 
-export type NavEntry = NavItemConfig | NavGroupConfig;
+export interface NavSeparator { type: 'separator' }
+export type NavEntry = NavItemConfig | NavGroupConfig | NavSeparator;
 
 export const ORG_NAV_ENTRIES: NavEntry[] = [
   { href: '/dashboard',    label: 'Dashboard',    labelKey: 'nav.dashboard',    featureKey: 'dashboard' },
@@ -98,7 +99,8 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
     ],
   },
   { href: '/reports',      label: 'Reports',      labelKey: 'nav.reports',      adminOnly: true, featureKey: 'reports' },
-  { href: '/support',      label: 'Support',      labelKey: 'nav.support',      featureKey: 'support', scope: 'org' },
+  { type: 'separator' } as NavSeparator,
+  { href: '/support',      label: 'Support',      labelKey: 'nav.support',      featureKey: 'support' },
   { href: '/audit-logs',   label: 'Audit Logs',   labelKey: 'nav.auditLogs',    adminOnly: true, featureKey: 'auditLogs' },
   {
     type: 'group',
@@ -115,12 +117,14 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/users',                 label: 'Users',             labelKey: 'nav.users',         permissionKey: 'settings.users',     scope: 'org' },
       { href: '/settings/tax-rates',    label: 'Tax Rates',         labelKey: 'nav.taxRates',      permissionKey: 'settings.taxRates',  featureKey: 'pos', scope: 'org' },
       { href: '/settings/jo-fotara',    label: 'Jo Fotara',         labelKey: 'nav.fawtara',       permissionKey: 'settings.fawtara',   featureKey: 'pos', scope: 'org' },
+      { href: '/settings/receipt',      label: 'Receipt',           labelKey: 'nav.receipt',       permissionKey: 'settings.fawtara',   featureKey: 'pos', scope: 'org' },
     ],
   },
 ];
 
 /** Flat list of all nav items (groups expanded); sub-items inherit group's adminOnly + scope */
 const ORG_NAV_FLAT: NavItemConfig[] = ORG_NAV_ENTRIES.flatMap((entry) => {
+  if ('type' in entry && entry.type === 'separator') return [];
   if ('type' in entry && entry.type === 'group') {
     return entry.items.map((item) => ({
       ...item,

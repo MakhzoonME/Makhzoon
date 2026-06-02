@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
+import { DocumentUpload } from '@/components/shared';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
@@ -47,6 +48,7 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
       posEnabled: item?.posEnabled ?? false,
       posPrice: item?.posPrice ?? '',
       taxRateId: item?.taxRateId ?? '',
+      documents: item?.documents ?? [],
     },
   });
 
@@ -263,6 +265,20 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
           <FormItem>
             <FormLabel>Notes</FormLabel>
             <FormControl><Textarea {...field} rows={3} placeholder="Additional notes..." /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={form.control} name="documents" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Purchase receipts / invoices</FormLabel>
+            <FormControl>
+              <DocumentUpload
+                kind="inventory-receipt"
+                value={field.value ?? []}
+                onChange={(refs) => field.onChange(refs)}
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )} />

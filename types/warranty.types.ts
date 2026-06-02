@@ -1,3 +1,5 @@
+import { DocumentRef } from './document.types';
+
 export interface Warranty {
   id: string;
   organizationId: string;
@@ -10,6 +12,8 @@ export interface Warranty {
   endDate: Date;
   reminder: boolean;
   notes?: string;
+  /** Warranty papers (private warranty-documents bucket). */
+  documents?: DocumentRef[];
   createdAt: Date;
   createdBy: string;
   updatedAt: Date;

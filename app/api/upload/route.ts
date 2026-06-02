@@ -1,30 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
-import { uploadToDrive, type UploadKind } from '@/lib/drive/upload';
+import { uploadToStorage, type UploadKind } from '@/lib/storage/upload';
+
+const IMG = ['image/jpeg', 'image/png', 'image/webp'];
+const DOC = [...IMG, 'application/pdf'];
 
 const ALLOWED_TYPES: Record<UploadKind, string[]> = {
-  avatar: ['image/jpeg', 'image/png', 'image/webp'],
-  receipt: [
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-    'image/gif',
-    'image/heic',
-    'image/heif',
-    'image/bmp',
-    'image/tiff',
-    'image/avif',
-  ],
+  'avatar': IMG,
+  'logo': [...IMG, 'image/svg+xml'],
+  'asset-receipt': DOC,
+  'inventory-receipt': DOC,
+  'warranty-document': DOC,
+  'purchase-invoice': DOC,
 };
 
+const MB = 1024 * 1024;
 const MAX_SIZES: Record<UploadKind, number> = {
-  avatar: 5 * 1024 * 1024,
-  receipt: 3 * 1024 * 1024,
+  'avatar': 5 * MB,
+  'logo': 2 * MB,
+  'asset-receipt': 10 * MB,
+  'inventory-receipt': 10 * MB,
+  'warranty-document': 10 * MB,
+  'purchase-invoice': 10 * MB,
 };
 
 function isUploadKind(v: unknown): v is UploadKind {
-  return v === 'avatar' || v === 'receipt';
+  return typeof v === 'string' && v in ALLOWED_TYPES;
 }
 
 export async function POST(req: NextRequest) {
@@ -59,9 +61,9 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = await file.arrayBuffer();
-    const result = await uploadToDrive({
+    const result = await uploadToStorage({
       kind: type,
-      userId: user.uid,
+      ownerId: user.uid,
       filename: file.name,
       contentType: file.type,
       buffer,

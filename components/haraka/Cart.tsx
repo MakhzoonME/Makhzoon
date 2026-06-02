@@ -36,7 +36,7 @@ export function Cart() {
               <div className="text-xs text-gray-500 font-mono">
                 {line.unitPrice.toFixed(2)}
                 {line.taxRate > 0 && <span> • +{(line.taxRate * 100).toFixed(0)}% tax</span>}
-                {line.discount > 0 && <span className="text-amber-600"> • −{line.discount.toFixed(2)} disc</span>}
+                {line.discount > 0 && <span className="text-amber-600"> • -{line.discount.toFixed(2)} disc</span>}
               </div>
               <div className="mt-1 flex items-center gap-1">
                 <Percent size={11} className="text-gray-400" aria-hidden />

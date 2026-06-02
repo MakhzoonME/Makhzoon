@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { startOfDay, endOfDay } from 'date-fns';
-import { Banknote, Receipt, Users, Layers, Plus, ListChecks, FileBarChart, ArrowRight } from 'lucide-react';
+import { Banknote, Receipt, Users, Layers, Plus, ListChecks, ArrowRight } from 'lucide-react';
 import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
 import { PageHeader, StatCard, OverviewSection, DataTable, StatusBadge, SubscriptionGate } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
@@ -64,9 +64,6 @@ function SessionCard({ base }: { base: string }) {
           <p className="text-sm text-gray-500 mt-1">{t('haraka.openSessionDesc')}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <Button variant="outline" size="sm" onClick={() => router.push(`${base}/sessions`)}>
-            <ListChecks className="h-4 w-4 me-1" /> {t('haraka.pastSessions')}
-          </Button>
           <SubscriptionGate>
             <Button size="sm" onClick={() => router.push(`${base}/sessions/new`)}>
               <Plus className="h-4 w-4 me-1" /> {t('haraka.openNewSession')}
@@ -118,9 +115,6 @@ export default function HarakaOverviewPage() {
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={() => router.push(`${base}/sessions`)}>
               <ListChecks className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('haraka.sessions')}</span>
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => router.push(`${base}/reports`)}>
-              <FileBarChart className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('nav.harakaReports')}</span>
             </Button>
           </div>
         }

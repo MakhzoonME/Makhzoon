@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { formatDate } from '@/lib/utils/date';
-import { Plus, ArrowRight, Search, Edit2, CreditCard } from 'lucide-react';
+import { Plus, ArrowRight, Search, Edit2, CreditCard, List } from 'lucide-react';
 import { useTransferMode } from '@/hooks/ui';
 import { useDebounce } from '@/hooks/ui';
 import { ORG_CATEGORIES, type OrgWithUsage } from '@/types';
@@ -238,6 +238,17 @@ export default function SuperAdminPage() {
             variant="ghost"
             onClick={(e) => {
               e.stopPropagation();
+              router.push(`/${locale}/superadmin/organizations/${r.organization.id}/lists`);
+            }}
+            title="Lists"
+          >
+            <List className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
               router.push(`/${locale}/superadmin/organizations/${r.organization.id}/edit`);
             }}
             title={t('common.edit')}
@@ -253,6 +264,7 @@ export default function SuperAdminPage() {
     <div>
       <PageHeader
         title={t('nav.organizations')}
+        breadcrumb={[{ label: t('nav.organizations') }]}
         actions={
           <Button size="sm" onClick={() => router.push(`/${locale}/superadmin/organizations/new`)}>
             <Plus className="h-4 w-4 me-1" />

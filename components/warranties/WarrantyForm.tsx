@@ -6,6 +6,7 @@ import { useOrgSlug, useT } from '@/hooks/ui';
 import { warrantySchema, WarrantyFormData } from '@/lib/validations/warranty.schema';
 import { Warranty } from '@/types';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { DocumentUpload } from '@/components/shared';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -119,6 +120,7 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId, defaultInven
       endDate: warranty?.endDate ? new Date(warranty.endDate).toISOString().slice(0, 10) : '',
       reminder: warranty?.reminder ?? true,
       notes: warranty?.notes ?? '',
+      documents: warranty?.documents ?? [],
     },
     values: warranty
       ? {
@@ -129,6 +131,7 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId, defaultInven
           endDate: new Date(warranty.endDate).toISOString().slice(0, 10),
           reminder: warranty.reminder ?? true,
           notes: warranty.notes ?? '',
+          documents: warranty.documents ?? [],
         }
       : undefined,
   });
@@ -365,6 +368,20 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId, defaultInven
           <FormItem>
             <FormLabel>Notes</FormLabel>
             <FormControl><Textarea {...field} rows={3} /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={form.control} name="documents" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Warranty papers</FormLabel>
+            <FormControl>
+              <DocumentUpload
+                kind="warranty-document"
+                value={field.value ?? []}
+                onChange={(refs) => field.onChange(refs)}
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )} />

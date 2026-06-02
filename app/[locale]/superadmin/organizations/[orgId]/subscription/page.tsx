@@ -47,7 +47,7 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
   const params = use(props.params);
   const { orgId } = params;
   const router = useRouter();
-  const { locale } = useT();
+  const { t, locale } = useT();
   const qc = useQueryClient();
 
   const { data: sub, isLoading: subLoading } = useQuery<Subscription>({
@@ -220,10 +220,10 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
   return (
     <div>
       <PageHeader
-        title="Subscription Management"
+        title={t('nav.subscription')}
         breadcrumb={[
-          { label: 'Organizations', href: `/${locale}/superadmin` },
-          { label: 'Subscription', href: '' },
+          { label: t('nav.organizations'), href: `/${locale}/superadmin` },
+          { label: t('nav.subscription') },
         ]}
         actions={<Button variant="outline" size="sm" onClick={() => router.back()}>Back</Button>}
       />

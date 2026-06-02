@@ -20,6 +20,7 @@ export interface CreateWarrantyInput {
   endDate: Date;
   reminder?: boolean;
   notes?: string;
+  documents?: import('@/types').DocumentRef[];
 }
 
 export interface UpdateWarrantyInput {
@@ -28,6 +29,7 @@ export interface UpdateWarrantyInput {
   endDate?: Date;
   reminder?: boolean;
   notes?: string;
+  documents?: import('@/types').DocumentRef[];
   updatedBy?: string;
 }
 

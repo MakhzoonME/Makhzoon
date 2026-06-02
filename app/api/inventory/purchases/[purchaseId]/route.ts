@@ -43,6 +43,7 @@ export async function PATCH(
       invoiceDate: data.invoiceDate,
       notes: data.notes ?? null,
       updateItemUnitCost: data.updateItemUnitCost,
+      documents: data.documents ?? undefined,
       lines: data.lines?.map((l) => ({
         itemId: l.itemId ?? null,
         itemName: l.itemName,

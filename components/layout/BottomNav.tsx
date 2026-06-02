@@ -2,7 +2,8 @@
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 import { useUiStore } from '@/store/ui.store';
-import { useSpace } from '@/hooks/ui';
+import { useSpace, useT } from '@/hooks/ui';
+import type { MessageKey } from '@/locales/messages';
 import { cn } from '@/lib/utils/cn';
 
 function DashboardSVG() { return <svg width="22" height="22" viewBox="0 0 18 18" fill="none" aria-hidden><rect x="2" y="2" width="6" height="7" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="10" y="2" width="6" height="4" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="10" y="8" width="6" height="8" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="2" y="11" width="6" height="5" rx="1.2" stroke="currentColor" strokeWidth="1.3" fill="none" /></svg>; }
@@ -11,11 +12,11 @@ function RequestsSVG() { return <svg width="22" height="22" viewBox="0 0 18 18" 
 function WarrantySVG() { return <svg width="22" height="22" viewBox="0 0 18 18" fill="none" aria-hidden><path d="M9 1.5L2.5 4v6.5C2.5 13.8 5.5 16.5 9 17.5c3.5-1 6.5-3.7 6.5-7V4L9 1.5z" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M6 9l2 2 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
 function MenuSVG() { return <svg width="22" height="22" viewBox="0 0 18 18" fill="none" aria-hidden><path d="M2.5 5h13M2.5 9h13M2.5 13h13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>; }
 
-const PRIMARY_NAV = [
-  { href: '/dashboard', label: 'Home',       Icon: DashboardSVG },
-  { href: '/usool',     label: 'Usool',      Icon: AssetsSVG },
-  { href: '/requests',  label: 'Requests',   Icon: RequestsSVG },
-  { href: '/warranties',label: 'Warranties', Icon: WarrantySVG },
+const PRIMARY_NAV: { href: string; labelKey: MessageKey; Icon: React.FC }[] = [
+  { href: '/dashboard',  labelKey: 'nav.dashboard',  Icon: DashboardSVG },
+  { href: '/usool',      labelKey: 'nav.assets',     Icon: AssetsSVG },
+  { href: '/requests',   labelKey: 'nav.requests',   Icon: RequestsSVG },
+  { href: '/warranties', labelKey: 'nav.warranties', Icon: WarrantySVG },
 ];
 
 export function BottomNav() {
@@ -25,10 +26,11 @@ export function BottomNav() {
   const orgSlug = (params?.orgSlug as string) ?? '';
   const space = useSpace();
   const { setMobileMenuOpen } = useUiStore();
+  const { t } = useT();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-surface-card border-t border-border flex md:hidden" style={{ height: 64, paddingBottom: 'env(safe-area-inset-bottom, 4px)' }}>
-      {PRIMARY_NAV.map(({ href, label, Icon }) => {
+      {PRIMARY_NAV.map(({ href, labelKey, Icon }) => {
         const fullHref = `/${locale}/${orgSlug}/${space}${href}`;
         const active = pathname === fullHref || pathname.startsWith(fullHref + '/');
         return (
@@ -44,7 +46,7 @@ export function BottomNav() {
               <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-primary-600 rounded-b" />
             )}
             <Icon />
-            <span>{label}</span>
+            <span>{t(labelKey)}</span>
           </Link>
         );
       })}
@@ -55,7 +57,7 @@ export function BottomNav() {
         className="flex-1 flex flex-col items-center justify-center py-1.5 gap-0.5 text-[10px] font-medium text-gray-400 hover:text-gray-700 transition-colors duration-fast"
       >
         <MenuSVG />
-        <span>More</span>
+        <span>{t('common.more')}</span>
       </button>
     </nav>
   );

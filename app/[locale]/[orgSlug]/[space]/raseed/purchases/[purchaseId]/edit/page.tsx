@@ -5,44 +5,51 @@ import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/shared';
 import { PurchaseForm } from '@/components/inventory/purchases/PurchaseForm';
 import { usePurchase } from '@/hooks/inventory';
+import { useT } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
+import { ErrorState } from '@/components/shared/ErrorState';
 
 interface Props {
   params: Promise<{ locale: string; orgSlug: string; space: string; purchaseId: string }>;
 }
 
 export default function EditPurchasePage(props: Props) {
-  const params = use(props.params);
-  const router = useRouter();
+  const params  = use(props.params);
+  const router  = useRouter();
+  const { t }   = useT();
+  const { data: orgInfo } = useOrgInfo();
   const { data, isLoading } = usePurchase(params.purchaseId);
 
-  if (isLoading) return <div className="p-6">Loading…</div>;
-  if (!data?.purchase) return <div className="p-6">Purchase not found.</div>;
+  const base        = `/${params.locale}/${params.orgSlug}/${params.space}/raseed`;
+  const purchaseHref = `${base}/purchases/${params.purchaseId}`;
+
+  if (isLoading) return <LoadingSkeleton rows={4} columns={2} />;
+  if (!data?.purchase) return <ErrorState message={t('assets.notFound')} />;
   if (data.purchase.status !== 'draft') {
     return (
       <div className="p-6">
-        <p>Only draft purchases can be edited.</p>
+        <ErrorState message={t('assets.notFound')} />
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-5xl">
+    <div className="max-w-5xl">
       <PageHeader
-        title={`Edit purchase`}
-        description={data.purchase.supplierName}
+        title={data.purchase.supplierName}
         breadcrumb={[
-          { label: 'Raseed', href: `/${params.locale}/${params.orgSlug}/${params.space}/raseed` },
-          { label: 'Purchases', href: `/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases` },
-          {
-            label: data.purchase.supplierName,
-            href: `/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases/${params.purchaseId}`,
-          },
-          { label: 'Edit', href: '#' },
+          { label: orgInfo?.name ?? params.orgSlug },
+          { label: params.space },
+          { label: t('nav.inventory'),  href: `${base}/list` },
+          { label: t('nav.purchases'),  href: `${base}/purchases` },
+          { label: data.purchase.supplierName, href: purchaseHref },
+          { label: t('common.edit') },
         ]}
       />
       <PurchaseForm
         purchase={data.purchase}
-        onSuccess={() => router.push(`/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases/${params.purchaseId}`)}
+        onSuccess={() => router.push(purchaseHref)}
       />
     </div>
   );

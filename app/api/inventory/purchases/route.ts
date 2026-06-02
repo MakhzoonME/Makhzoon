@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
       invoiceDate: data.invoiceDate,
       notes: data.notes ?? null,
       updateItemUnitCost: data.updateItemUnitCost === true,
+      documents: data.documents ?? [],
       lines: data.lines.map((l) => ({
         itemId: l.itemId ?? null,
         itemName: l.itemName,

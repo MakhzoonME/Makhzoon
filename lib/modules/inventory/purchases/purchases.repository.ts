@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
-import type { Purchase, PurchaseLine, PurchaseStatus } from '@/types'
+import type { Purchase, PurchaseLine, PurchaseStatus, DocumentRef } from '@/types'
 
 type Row = Record<string, unknown>
 
@@ -34,6 +34,7 @@ function toPurchase(r: Row): Purchase {
     taxTotal: Number(r.tax_total ?? 0),
     total: Number(r.total ?? 0),
     notes: (r.notes as string) ?? null,
+    documents: Array.isArray(r.documents) ? (r.documents as DocumentRef[]) : [],
     updateItemUnitCost: r.update_item_unit_cost === true,
     createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
     createdBy: (r.created_by as string) ?? '',
@@ -66,6 +67,7 @@ export interface PurchaseInput {
   invoiceDate: Date
   notes?: string | null
   updateItemUnitCost?: boolean
+  documents?: DocumentRef[]
   lines: PurchaseLineInput[]
 }
 
@@ -125,10 +127,12 @@ export interface ListOpts {
 
 export class PurchasesRepository {
   async list(tenant: TenantContext, opts?: ListOpts) {
-    const { data, error } = await supabaseAdmin
+    let q = supabaseAdmin
       .from('purchases')
       .select('*')
       .eq('organization_id', tenant.organizationId)
+    if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
+    const { data, error } = await q
     if (error) throw error
     let items = (data ?? []).map(toPurchase)
     if (opts?.status) items = items.filter((p) => p.status === opts.status)
@@ -180,6 +184,7 @@ export class PurchasesRepository {
         tax_total: priced.taxTotal,
         total: priced.total,
         notes: input.notes ?? null,
+        documents: input.documents ?? [],
         update_item_unit_cost: input.updateItemUnitCost === true,
         created_by: tenant.userId,
         created_by_email: tenant.user.email ?? null,
@@ -209,6 +214,7 @@ export class PurchasesRepository {
     if (input.invoiceNumber !== undefined) patch.invoice_number = input.invoiceNumber ?? null
     if (input.invoiceDate !== undefined) patch.invoice_date = new Date(input.invoiceDate).toISOString()
     if (input.notes !== undefined) patch.notes = input.notes ?? null
+    if (input.documents !== undefined) patch.documents = input.documents
     if (input.updateItemUnitCost !== undefined) patch.update_item_unit_cost = input.updateItemUnitCost
 
     if (input.lines) {

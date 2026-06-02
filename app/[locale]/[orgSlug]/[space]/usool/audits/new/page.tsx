@@ -48,7 +48,7 @@ export default function NewAuditPage() {
         title="Start Physical Audit"
         breadcrumb={[{ label: 'Usool', href: `/${locale}/${orgSlug}/${space}/usool` }, { label: 'Audits', href: `/${locale}/${orgSlug}/${space}/usool/audits` }, { label: 'New', href: `/${locale}/${orgSlug}/${space}/usool/audits/new` }]}
       />
-      <div className="max-w-lg">
+      <div className="max-w-lg mx-auto">
         <div className="bg-[var(--primary-50)] border border-[var(--primary-100)] rounded-lg p-4 mb-6 flex items-start gap-3">
           <ClipboardCheck className="h-4 w-4" strokeWidth={1.75} />
           <p className="text-sm text-[var(--primary-700)]">

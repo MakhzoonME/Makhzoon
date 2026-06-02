@@ -20,7 +20,7 @@ import { Check } from 'lucide-react';
 export default function OrganizationInfoPage() {
   const { t } = useT();
   const { isAllowed } = useAdminGuard('settings.orgInfo');
-  const { data: org, isLoading } = useOrgInfo();
+  const { data: org, isLoading, isError } = useOrgInfo();
   const qc = useQueryClient();
 
   const [name, setName] = useState('');
@@ -40,6 +40,14 @@ export default function OrganizationInfoPage() {
 
   if (!isAllowed) return null;
   if (isLoading) return <LoadingSkeleton rows={5} columns={1} />;
+  if (isError) return (
+    <div className="max-w-[620px] mx-auto rounded-xl border border-border bg-surface-page p-8 text-center space-y-3">
+      <p className="text-sm text-gray-500">{t('common.failed')}</p>
+      <button onClick={() => qc.invalidateQueries({ queryKey: ['org-info-self'] })} className="text-sm text-primary-600 hover:underline">
+        Retry
+      </button>
+    </div>
+  );
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();

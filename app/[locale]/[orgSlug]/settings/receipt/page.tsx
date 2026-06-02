@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Printer, Plug2, Unplug, TestTube2, Copy, Download, Check,
-  MessageCircle, Mail, Upload, X,
+  MessageCircle, Mail, Upload, X, Save,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -58,6 +59,24 @@ function TemplateSelector({ value, onChange }: { value: TemplateId; onChange: (t
   );
 }
 
+const DEFAULT_CONFIG: ReceiptConfig = {
+  template: 'thermal-58',
+  showLogo: true,
+  showTaxNumber: true,
+  showCashier: true,
+  showFawtaraQr: true,
+  showItemizedTax: true,
+  showAddress: true,
+  showPhone: true,
+  showWebsite: false,
+  footerText: 'Thank you for your purchase!',
+  accentColor: '#1d4ed8',
+  logo: null,
+  phone: '',
+  address: '',
+  website: '',
+};
+
 export default function ReceiptSettingsPage() {
   const { t } = useT();
   const orgSlug = useOrgSlug();
@@ -65,33 +84,54 @@ export default function ReceiptSettingsPage() {
   const { isAllowed } = useAdminGuard('settings.fawtara');
   const { paperWidth, copies, paired, hydrate, pair, unpair, setCopies } = usePrinterStore();
   const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
   const supported = isWebUsbSupported();
   const [copied, setCopied] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const qc = useQueryClient();
 
   const [tagline, setTagline] = useState('');
   const [taxNumber, setTaxNumber] = useState('');
-  const [config, setConfig] = useState<ReceiptConfig>({
-    template: 'thermal-58',
-    showLogo: true,
-    showTaxNumber: true,
-    showCashier: true,
-    showFawtaraQr: true,
-    showItemizedTax: true,
-    showAddress: true,
-    showPhone: true,
-    showWebsite: false,
-    footerText: 'Thank you for your purchase!',
-    accentColor: '#1d4ed8',
-    logo: null,
-    phone: '',
-    address: '',
-    website: '',
+  const [config, setConfig] = useState<ReceiptConfig>(DEFAULT_CONFIG);
+
+  // Load saved config
+  const { data: saved } = useQuery<{ tagline?: string; taxNumber?: string; config?: ReceiptConfig }>({
+    queryKey: ['receipt-config'],
+    queryFn: async () => {
+      const res = await fetch('/api/organizations/receipt-config');
+      return res.ok ? res.json() : {};
+    },
+    staleTime: 60_000,
   });
+
+  useEffect(() => {
+    if (!saved) return;
+    if (saved.tagline !== undefined) setTagline(saved.tagline);
+    if (saved.taxNumber !== undefined) setTaxNumber(saved.taxNumber);
+    if (saved.config) setConfig({ ...DEFAULT_CONFIG, ...saved.config });
+  }, [saved]);
 
   useEffect(() => { hydrate(); }, [hydrate]);
 
   if (!isAllowed) return null;
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/organizations/receipt-config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tagline, taxNumber, config }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'Failed to save');
+      toast.success(t('common.updated'));
+      qc.invalidateQueries({ queryKey: ['receipt-config'] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.updateFailed'));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   function set<K extends keyof ReceiptConfig>(key: K, val: ReceiptConfig[K]) {
     setConfig((c) => ({ ...c, [key]: val }));
@@ -138,9 +178,14 @@ export default function ReceiptSettingsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-[17px] font-semibold text-gray-900">{t('nav.receipt')}</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Customize the receipt your customers receive after a sale.</p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-[17px] font-semibold text-gray-900">{t('nav.receipt')}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Customize the receipt your customers receive after a sale.</p>
+        </div>
+        <Button onClick={handleSave} disabled={saving} className="gap-2 shrink-0">
+          <Save size={14} />{saving ? t('common.saving') : t('common.save')}
+        </Button>
       </div>
 
       <div className="flex gap-8 items-start">
@@ -155,8 +200,8 @@ export default function ReceiptSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Printer hardware — only for thermal */}
-          {isThermal && (
+          {/* Printer hardware */}
+          {(
             <Card>
               <CardContent className="p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -312,12 +357,17 @@ export default function ReceiptSettingsPage() {
             className="rounded-xl overflow-hidden border border-border p-5"
             style={{ background: 'repeating-linear-gradient(45deg,#f4f4f4,#f4f4f4 6px,#fafafa 6px,#fafafa 12px)' }}
           >
-            <ReceiptPreview
-              orgName={orgInfo?.name ?? ''}
-              taxNumber={taxNumber}
-              tagline={tagline}
-              config={config}
-            />
+            {/* A4 templates (320px) are scaled to fit the 280px inner pane */}
+            <div style={!isThermal ? { width: 280, overflow: 'hidden' } : undefined}>
+              <div style={!isThermal ? { transform: 'scale(0.875)', transformOrigin: 'top left', width: 320 } : undefined}>
+                <ReceiptPreview
+                  orgName={orgInfo?.name ?? ''}
+                  taxNumber={taxNumber}
+                  tagline={tagline}
+                  config={config}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Deliver card */}

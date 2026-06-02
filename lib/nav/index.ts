@@ -112,10 +112,12 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
     items: [
       { href: '/settings/organization', label: 'Organization Info', labelKey: 'nav.orgInfo',       permissionKey: 'settings.orgInfo',   scope: 'org' },
       { href: '/settings/spaces',       label: 'Spaces',            labelKey: 'nav.spaces',        permissionKey: 'settings.orgInfo',   scope: 'org' },
+      { href: '/settings/lists',        label: 'Lists',             labelKey: 'nav.lists',         permissionKey: 'settings.orgInfo',   scope: 'org' },
       { href: '/subscription',          label: 'Subscription',      labelKey: 'nav.subscription',  permissionKey: 'settings.subscription', scope: 'org' },
       { href: '/users',                 label: 'Users',             labelKey: 'nav.users',         permissionKey: 'settings.users',     scope: 'org' },
       { href: '/settings/tax-rates',    label: 'Tax Rates',         labelKey: 'nav.taxRates',      permissionKey: 'settings.taxRates',  featureKey: 'pos', scope: 'org' },
       { href: '/settings/jo-fotara',    label: 'Jo Fotara',         labelKey: 'nav.fawtara',       permissionKey: 'settings.fawtara',   featureKey: 'pos', scope: 'org' },
+      { href: '/settings/receipt',      label: 'Receipt',           labelKey: 'nav.receipt',       permissionKey: 'settings.fawtara',   featureKey: 'pos', scope: 'org' },
     ],
   },
 ];

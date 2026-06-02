@@ -3,19 +3,21 @@
 import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Printer } from 'lucide-react';
-import { ReceiptPreview, type ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
+import { ReceiptPreview, type ReceiptConfig, type ReceiptData } from '@/components/settings/receipt/ReceiptPreview';
 
 interface Props {
   orgName: string;
   taxNumber: string;
   tagline: string;
   config: ReceiptConfig;
+  /** Real sale data; omit to render the template with sample data. */
+  data?: ReceiptData;
 }
 
 /* Public, unauthenticated receipt page rendered at /r/[orgSlug]/preview.
    When opened with ?download=1 the browser's print-to-PDF dialog opens
    automatically (used by the "Download PDF" share button). */
-export function ReceiptPublicView({ orgName, taxNumber, tagline, config }: Props) {
+export function ReceiptPublicView({ orgName, taxNumber, tagline, config, data }: Props) {
   const params = useSearchParams();
   const autoDownload = params.get('download') === '1';
 
@@ -28,7 +30,7 @@ export function ReceiptPublicView({ orgName, taxNumber, tagline, config }: Props
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center gap-5 py-10 px-4">
-      <ReceiptPreview orgName={orgName} taxNumber={taxNumber} tagline={tagline} config={config} />
+      <ReceiptPreview orgName={orgName} taxNumber={taxNumber} tagline={tagline} config={config} data={data} />
 
       <button
         onClick={() => window.print()}

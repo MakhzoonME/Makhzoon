@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useState } from 'react';
-import { Ban, RotateCcw, Send, Printer } from 'lucide-react';
+import { Ban, RotateCcw, Send, Printer, Share2, MessageCircle } from 'lucide-react';
 import { PageHeader, StatusBadge, ConfirmDialog, SubscriptionGate, LoadingSkeleton } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -43,6 +43,15 @@ export default function TransactionDetailPage(props: Props) {
 
   const tx: PosTransaction = data.transaction;
   const isMutable = tx.status === 'completed';
+
+  const receiptBase = (process.env.NEXT_PUBLIC_RECEIPT_URL ?? 'https://rcpt-app.makhzoon.me').replace(/\/$/, '');
+  const shareUrl = `${receiptBase}/r/${params.orgSlug}/${tx.id}`;
+  function copyShareLink() {
+    navigator.clipboard.writeText(shareUrl).then(() => toast.success('Receipt link copied'));
+  }
+  function shareOnWhatsApp() {
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareUrl)}`, '_blank');
+  }
   const canVoid = !!user && hasPermission(user, 'pos', 'void_transaction');
   const canRefund = !!user && hasPermission(user, 'pos', 'issue_refund');
   const canResubmitFawtara = !!user && hasPermission(user, 'pos', 'fawtara_submit');
@@ -93,6 +102,12 @@ export default function TransactionDetailPage(props: Props) {
             <StatusBadge status={tx.status} />
             <Button variant="outline" size="sm" onClick={() => window.print()}>
               <Printer size={14} className="me-1" /> Print
+            </Button>
+            <Button variant="outline" size="sm" onClick={copyShareLink}>
+              <Share2 size={14} className="me-1" /> Share
+            </Button>
+            <Button variant="outline" size="sm" onClick={shareOnWhatsApp}>
+              <MessageCircle size={14} className="me-1" /> WhatsApp
             </Button>
             {isMutable && canRefund && (
               <SubscriptionGate>

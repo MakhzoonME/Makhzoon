@@ -17,6 +17,10 @@ import { apiFetch } from '@/lib/utils/api-fetch';
 import { ORG_CATEGORIES } from '@/types';
 import { Check } from 'lucide-react';
 
+// Radix Select forbids an empty-string value, so we use a sentinel for "none"
+// and map it back to '' (→ null on save).
+const NONE_CATEGORY = '__none__';
+
 export default function OrganizationInfoPage() {
   const { t } = useT();
   const { isAllowed } = useAdminGuard('settings.orgInfo');
@@ -102,12 +106,15 @@ export default function OrganizationInfoPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="org-category">{t('settings.category')}</Label>
-                <Select value={category} onValueChange={setCategory}>
+                <Select
+                  value={category || NONE_CATEGORY}
+                  onValueChange={(v) => setCategory(v === NONE_CATEGORY ? '' : v)}
+                >
                   <SelectTrigger id="org-category">
                     <SelectValue placeholder={t('settings.selectCategory')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">{t('settings.noneSelected')}</SelectItem>
+                    <SelectItem value={NONE_CATEGORY}>{t('settings.noneSelected')}</SelectItem>
                     {ORG_CATEGORIES.map((c) => (
                       <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}

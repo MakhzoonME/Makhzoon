@@ -181,7 +181,7 @@ export default function ReceiptSettingsPage() {
     finally { setBusy(false); }
   }
 
-  const receiptBase = (process.env.NEXT_PUBLIC_RECEIPT_URL ?? 'https://rcpt.makhzoon.me').replace(/\/$/, '');
+  const receiptBase = (process.env.NEXT_PUBLIC_RECEIPT_URL ?? 'https://rcpt-app.makhzoon.me').replace(/\/$/, '');
   const shareLink = `${receiptBase}/r/${orgSlug}/preview`;
 
   const isThermal = config.template === 'thermal-58' || config.template === 'thermal-80';
@@ -361,8 +361,8 @@ export default function ReceiptSettingsPage() {
           </Card>
         </div>
 
-        {/* ── Right: preview + share ── */}
-        <div className="w-80 flex-shrink-0 space-y-4">
+        {/* ── Right: preview + share (sticky so it stays visible while editing) ── */}
+        <div className="w-80 flex-shrink-0 space-y-4 sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto">
           <div
             className="rounded-xl overflow-hidden border border-border p-5"
             style={{ background: 'repeating-linear-gradient(45deg,#f4f4f4,#f4f4f4 6px,#fafafa 6px,#fafafa 12px)' }}

@@ -92,9 +92,8 @@ export default function PurchasesListPage() {
         ]}
         actions={
           <Button
+            size="sm"
             onClick={() => router.push(`${base}/new`)}
-            className="cursor-pointer transition-colors duration-150"
-            style={{ background: 'var(--mod-raseed)' }}
           >
             <Plus aria-hidden size={16} className="me-1" /> {t('purchases.newPurchase')}
           </Button>

@@ -14,36 +14,38 @@ import { formatActionLabel, formatKeyLabel, formatAuditValue } from '@/lib/utils
 import { useT } from '@/hooks/ui';
 import { cn } from '@/lib/utils/cn';
 
-/* ── Before/After diff cards ─────────────────────────────────────── */
+/* ── Before/After diff table ─────────────────────────────────────── */
 function DiffCards({ oldValue, newValue }: { oldValue?: Record<string, unknown> | null; newValue?: Record<string, unknown> | null }) {
   const { t } = useT();
   if (!oldValue && !newValue) return null;
+  const allKeys = Array.from(new Set([...Object.keys(oldValue ?? {}), ...Object.keys(newValue ?? {})]));
+  if (allKeys.length === 0) return null;
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <div
-        className="rounded-lg border p-3"
-        style={{
-          background: 'color-mix(in srgb, var(--red-600) 7%, var(--surface-card))',
-          borderColor: 'var(--red-100)',
-        }}
-      >
-        <div className="text-[11px] font-bold text-red-700 mb-2 uppercase tracking-wide">{t('auditLogs.before')}</div>
-        <pre dir="ltr" className="m-0 font-mono text-[11.5px] text-gray-600 whitespace-pre-wrap break-all leading-relaxed">
-          {oldValue ? JSON.stringify(oldValue, null, 2) : '{}'}
-        </pre>
+    <div className="rounded-lg border border-border overflow-hidden">
+      <div className="grid grid-cols-[1fr_1fr_1fr] text-[11px] font-semibold uppercase tracking-wide bg-surface-page border-b border-border">
+        <div className="px-3 py-2 text-gray-500">Field</div>
+        <div className="px-3 py-2 text-red-600 border-s border-border">{t('auditLogs.before')}</div>
+        <div className="px-3 py-2 text-green-700 border-s border-border">{t('auditLogs.after')}</div>
       </div>
-      <div
-        className="rounded-lg border p-3"
-        style={{
-          background: 'color-mix(in srgb, var(--green-600) 7%, var(--surface-card))',
-          borderColor: 'var(--green-100)',
-        }}
-      >
-        <div className="text-[11px] font-bold text-green-700 mb-2 uppercase tracking-wide">{t('auditLogs.after')}</div>
-        <pre dir="ltr" className="m-0 font-mono text-[11.5px] text-gray-800 whitespace-pre-wrap break-all leading-relaxed">
-          {newValue ? JSON.stringify(newValue, null, 2) : '{}'}
-        </pre>
-      </div>
+      {allKeys.map((key, i) => {
+        const before = formatAuditValue(oldValue?.[key]);
+        const after  = formatAuditValue(newValue?.[key]);
+        const changed = before !== after;
+        return (
+          <div
+            key={key}
+            className={`grid grid-cols-[1fr_1fr_1fr] text-xs border-b border-border last:border-b-0 ${i % 2 === 0 ? 'bg-surface-card' : 'bg-surface-page'}`}
+          >
+            <div className="px-3 py-2 font-medium text-gray-900">{formatKeyLabel(key)}</div>
+            <div className={`px-3 py-2 border-s border-border font-mono ${changed ? 'text-red-600 line-through opacity-70' : 'text-gray-500'}`}>
+              {before || '—'}
+            </div>
+            <div className={`px-3 py-2 border-s border-border font-mono ${changed ? 'text-green-700 font-semibold' : 'text-gray-500'}`}>
+              {after || '—'}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -196,7 +198,6 @@ export default function OrgAuditLogsPage() {
               </button>
             </div>
           )}
-          <span className="text-[12.5px] text-gray-400">{t('auditLogs.immutableNote')}</span>
         </div>
 
         {/* Filters */}

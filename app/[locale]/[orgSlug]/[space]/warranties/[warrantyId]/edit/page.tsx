@@ -27,7 +27,7 @@ export default function EditWarrantyPage(props: { params: Promise<{ warrantyId: 
   const label = (warranty as { vendor?: string }).vendor ?? t('warranties.editWarranty');
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl mx-auto">
       <PageHeader
         title={label}
         breadcrumb={[

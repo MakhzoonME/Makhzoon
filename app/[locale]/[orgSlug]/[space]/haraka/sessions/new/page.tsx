@@ -27,16 +27,16 @@ export default function NewSessionPage() {
 
   async function onSubmit(values: OpenSessionFormData) {
     try {
-      await openMut.mutateAsync(values);
+      const session = await openMut.mutateAsync(values);
       toast.success(t('haraka.openNewSession'));
-      router.push(`${base}/register`);
+      router.push(`${base}/sessions/${session.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to open session');
     }
   }
 
   return (
-    <div className="max-w-lg">
+    <div className="max-w-lg mx-auto">
       <PageHeader
         title={t('haraka.openNewSession')}
         description={t('haraka.openSessionDesc')}

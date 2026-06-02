@@ -72,12 +72,14 @@ export default function SubscriptionPage() {
 
   const { data: sub, isLoading: subLoading } = useSubscription(orgId);
   const { data: usage, isLoading: usageLoading } = useOrgUsage(orgId);
-  const { data: packages = [] } = usePackages();
+  const { data: packages = [], isLoading: packagesLoading } = usePackages();
 
   if (!isAllowed) return <div className="flex items-center justify-center h-48"><div className="h-7 w-7 rounded-full border-2 border-primary-600 border-t-transparent animate-spin" /></div>;
-  if (subLoading) return <LoadingSkeleton rows={4} columns={2} />;
+  if (subLoading || packagesLoading) return <LoadingSkeleton rows={4} columns={2} />;
 
   const pkg = packages.find((p) => p.id === sub?.packageId) ?? null;
+  // Fall back to cached packageDetails stored on the subscription record
+  const pkgName = pkg?.name ?? (sub?.packageDetails?.name as string | undefined) ?? null;
   const limits = pkg?.limits;
   const priceText = pkg
     ? pkg.pricing.isCustom
@@ -128,7 +130,7 @@ export default function SubscriptionPage() {
               <div>
                 {sub && <StatusBadge status={sub.status} />}
                 <div className="text-2xl font-bold text-gray-900 mt-2">
-                  {pkg?.name ?? t('subscription.noSub')}
+                  {pkgName ?? (sub ? '—' : t('subscription.noSub'))}
                 </div>
                 {renewalText && (
                   <div className="text-[13px] text-gray-500 mt-1">{renewalText}</div>

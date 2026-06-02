@@ -24,7 +24,7 @@ export default function EditInventoryItemPage() {
   if (error || !item) return <ErrorState message={t('assets.notFound')} />;
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl mx-auto">
       <PageHeader
         title={item.name}
         breadcrumb={[

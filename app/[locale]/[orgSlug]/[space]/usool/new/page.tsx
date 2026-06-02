@@ -15,7 +15,7 @@ export default function NewAssetPage() {
   const listHref = `/${locale}/${orgSlug}/${space}/usool/list`;
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl mx-auto">
       <PageHeader
         title={t('assets.addAsset')}
         breadcrumb={[

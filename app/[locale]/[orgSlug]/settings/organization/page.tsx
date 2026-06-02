@@ -75,7 +75,7 @@ export default function OrganizationInfoPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="max-w-[620px] rounded-xl">
+      <Card className="max-w-[620px] mx-auto rounded-xl">
         <CardContent className="p-6">
           <h2 className="text-[17px] font-semibold text-gray-900 mb-5">{t('settings.orgName')}</h2>
           <form onSubmit={handleSave} className="flex flex-col gap-4">

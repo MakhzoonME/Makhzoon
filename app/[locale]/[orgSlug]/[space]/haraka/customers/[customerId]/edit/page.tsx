@@ -33,7 +33,7 @@ export default function EditCustomerPage() {
   if (isLoading || !customer) return <LoadingSkeleton rows={4} columns={2} />;
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl mx-auto">
       <PageHeader
         title={customer.name}
         breadcrumb={[

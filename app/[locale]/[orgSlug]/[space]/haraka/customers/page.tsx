@@ -117,7 +117,7 @@ export default function CustomersListPage() {
           { label: t('customers.title') },
         ]}
         actions={
-          <Button onClick={() => router.push(`${base}/new`)}>
+          <Button size="sm" onClick={() => router.push(`${base}/new`)}>
             <Plus size={16} className="me-1" /> {t('customers.addCustomer')}
           </Button>
         }

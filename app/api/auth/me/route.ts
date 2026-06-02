@@ -21,6 +21,7 @@ export async function GET() {
     if (sub?.features) features = sub.features as Record<string, boolean>;
     orgSlug = org?.subdomain ?? null;
     avatarUrl = dbUser?.avatarUrl ?? null;
+    const displayName = dbUser?.displayName ?? null;
 
     return NextResponse.json(
       {
@@ -29,6 +30,7 @@ export async function GET() {
         organizationId: user.organizationId,
         orgSlug,
         avatarUrl,
+        displayName,
         permissions: user.permissions ?? null,
         features,
       },

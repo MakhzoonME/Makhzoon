@@ -19,6 +19,7 @@ import { useOrgInfo } from '@/hooks/org';
 import { useAdminGuard } from '@/hooks/ui';
 import { cn } from '@/lib/utils/cn';
 import { ReceiptPreview, type TemplateId, type ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
+import { getReceiptBaseUrl } from '@/lib/app-env';
 
 const ACCENT_COLORS = [
   { value: '#1d4ed8', label: 'Indigo' },
@@ -93,6 +94,10 @@ export default function ReceiptSettingsPage() {
   const [tagline, setTagline] = useState('');
   const [taxNumber, setTaxNumber] = useState('');
   const [config, setConfig] = useState<ReceiptConfig>(DEFAULT_CONFIG);
+  // Resolved after mount so the share link matches the current env's rcpt host
+  // (avoids an SSR/client hydration mismatch from window-based derivation).
+  const [receiptBase, setReceiptBase] = useState('https://rcpt-app.makhzoon.me');
+  useEffect(() => { setReceiptBase(getReceiptBaseUrl()); }, []);
 
   // Load saved config
   const { data: saved } = useQuery<{ tagline?: string; taxNumber?: string; config?: ReceiptConfig }>({
@@ -181,7 +186,6 @@ export default function ReceiptSettingsPage() {
     finally { setBusy(false); }
   }
 
-  const receiptBase = (process.env.NEXT_PUBLIC_RECEIPT_URL ?? 'https://rcpt-app.makhzoon.me').replace(/\/$/, '');
   const shareLink = `${receiptBase}/r/${orgSlug}/preview`;
 
   const isThermal = config.template === 'thermal-58' || config.template === 'thermal-80';

@@ -10,6 +10,7 @@ import { toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { useAuthStore } from '@/store/auth.store';
 import { hasPermission } from '@/lib/permissions';
+import { getReceiptBaseUrl } from '@/lib/app-env';
 import type { PosTransaction } from '@/types';
 
 interface Props {
@@ -44,8 +45,7 @@ export default function TransactionDetailPage(props: Props) {
   const tx: PosTransaction = data.transaction;
   const isMutable = tx.status === 'completed';
 
-  const receiptBase = (process.env.NEXT_PUBLIC_RECEIPT_URL ?? 'https://rcpt-app.makhzoon.me').replace(/\/$/, '');
-  const shareUrl = `${receiptBase}/r/${params.orgSlug}/${tx.id}`;
+  const shareUrl = `${getReceiptBaseUrl()}/r/${params.orgSlug}/${tx.id}`;
   function copyShareLink() {
     navigator.clipboard.writeText(shareUrl).then(() => toast.success('Receipt link copied'));
   }

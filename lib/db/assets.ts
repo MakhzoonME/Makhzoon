@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { Asset } from '@/types';
+import { Asset, DocumentRef } from '@/types';
 
 type Row = Record<string, unknown>;
 
@@ -16,6 +16,7 @@ function toAsset(r: Row): Asset {
     assignedTo: r.assigned_to as string,
     location: r.location as string,
     notes: r.notes as string,
+    documents: Array.isArray(r.documents) ? (r.documents as DocumentRef[]) : [],
     createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
     createdBy: r.created_by as string,
     createdByEmail: r.created_by_email as string,
@@ -126,6 +127,7 @@ export async function createAsset(
       assigned_to: data.assignedTo,
       location: data.location,
       notes: data.notes,
+      documents: data.documents ?? [],
       created_by: data.createdBy,
       created_by_email: data.createdByEmail,
       created_by_name: data.createdByName,
@@ -163,6 +165,7 @@ export async function updateAsset(
       ? new Date(data.purchaseDate).toISOString()
       : null;
   }
+  if (data.documents !== undefined) patch.documents = data.documents;
   const { error } = await supabaseAdmin
     .from('assets')
     .update(patch)

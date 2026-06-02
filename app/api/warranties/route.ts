@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
       endDate: new Date(data.endDate),
       reminder: data.reminder,
       notes: data.notes || undefined,
+      documents: data.documents ?? [],
     });
 
     return NextResponse.json(result, { status: 201 });

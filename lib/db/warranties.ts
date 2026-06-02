@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { Warranty } from '@/types';
+import { Warranty, DocumentRef } from '@/types';
 
 type Row = Record<string, unknown>;
 
@@ -14,6 +14,7 @@ function toWarranty(r: Row): Warranty {
     endDate: r.end_date ? new Date(r.end_date as string) : new Date(),
     reminder: (r.reminder as boolean) ?? true,
     notes: r.notes as string,
+    documents: Array.isArray(r.documents) ? (r.documents as DocumentRef[]) : [],
     createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
     createdBy: r.created_by as string,
     updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
@@ -157,6 +158,7 @@ export async function createWarranty(
       end_date: new Date(data.endDate).toISOString(),
       reminder: data.reminder ?? true,
       notes: data.notes,
+      documents: data.documents ?? [],
       created_by: data.createdBy,
       updated_by: data.updatedBy,
     })
@@ -181,6 +183,7 @@ export async function updateWarranty(
     patch.end_date = new Date(data.endDate).toISOString();
   if (data.reminder !== undefined) patch.reminder = data.reminder;
   if (data.notes !== undefined) patch.notes = data.notes;
+  if (data.documents !== undefined) patch.documents = data.documents;
   if (data.updatedBy !== undefined) patch.updated_by = data.updatedBy;
   const { error } = await supabaseAdmin
     .from('warranties')

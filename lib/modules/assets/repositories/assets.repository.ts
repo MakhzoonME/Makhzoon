@@ -24,6 +24,7 @@ function toAsset(r: Row): Asset {
     assignedTo: r.assigned_to as string,
     location: r.location as string,
     notes: r.notes as string,
+    documents: Array.isArray(r.documents) ? (r.documents as Asset['documents']) : [],
     createdAt: d(r.created_at) ?? new Date(),
     createdBy: r.created_by as string,
     createdByEmail: r.created_by_email as string,
@@ -42,6 +43,7 @@ const FIELD_COL: Record<string, string> = {
   name: 'name', category: 'category', status: 'status',
   serialNumber: 'serial_number', purchaseCost: 'purchase_cost',
   assignedTo: 'assigned_to', location: 'location', notes: 'notes',
+  documents: 'documents',
 }
 
 function inputToColumns(input: Record<string, unknown>): Row {

@@ -16,6 +16,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { InventoryTransaction, Warranty } from '@/types';
 import { FormDrawer } from '@/components/shared/FormDrawer';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { DocumentList } from '@/components/shared';
 import { useOrgInfo } from '@/hooks/org';
 import { RequestInventoryModal } from '@/components/inventory/RequestInventoryModal';
 import { WarrantyForm } from '@/components/warranties/WarrantyForm';
@@ -317,6 +318,11 @@ export default function InventoryItemDetailPage() {
               <div className="mt-4 pt-4 border-t border-border">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{t('col.notes')}</p>
                 <p className="text-sm text-gray-700 bg-surface-page rounded-lg p-3 leading-relaxed border border-border">{item.notes}</p>
+              </div>
+            )}
+            {item.documents && item.documents.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <DocumentList value={item.documents} label="Purchase receipts / invoices" />
               </div>
             )}
           </div>

@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
+import { DocumentUpload } from '@/components/shared';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
@@ -71,6 +72,7 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
       assignedTo:   asset?.assignedTo   ?? '',
       location:     asset?.location     ?? '',
       notes:        asset?.notes        ?? '',
+      documents:    asset?.documents    ?? [],
     },
   });
 
@@ -242,6 +244,20 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
                 <FormLabel>{t('col.notes')}</FormLabel>
                 <FormControl>
                   <Textarea {...field} rows={4} placeholder={t('assets.notesPlaceholder')} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="documents" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Purchase receipts / invoices</FormLabel>
+                <FormControl>
+                  <DocumentUpload
+                    kind="asset-receipt"
+                    value={field.value ?? []}
+                    onChange={(refs) => field.onChange(refs)}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -24,4 +24,7 @@ export type { UserCardData } from './UserHoverCard';
 export { BarcodeInput } from './BarcodeInput';
 export type { BarcodeInputHandle, BarcodeInputProps } from './BarcodeInput';
 export { AvatarUpload } from './AvatarUpload';
+export { DocumentUpload } from './DocumentUpload';
+export type { DocRef } from './DocumentUpload';
+export { DocumentList } from './DocumentList';
 export { BulkActionsBar } from './BulkActionsBar';

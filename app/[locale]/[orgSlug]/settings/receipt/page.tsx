@@ -141,12 +141,21 @@ export default function ReceiptSettingsPage() {
     setConfig((c) => ({ ...c, [key]: !c[key] }));
   }
 
-  function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => set('logo', reader.result as string);
-    reader.readAsDataURL(file);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('type', 'logo');
+      const res = await fetch('/api/upload', { method: 'POST', body: form });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'Upload failed');
+      const { url } = (await res.json()) as { url: string };
+      set('logo', url);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.updateFailed'));
+    }
   }
 
   async function handlePair() {

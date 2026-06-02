@@ -3,7 +3,7 @@
 import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil, Trash2, PackageCheck, AlertTriangle } from 'lucide-react';
-import { PageHeader, ConfirmDialog } from '@/components/shared';
+import { PageHeader, ConfirmDialog, DocumentList } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -223,6 +223,13 @@ export default function PurchaseDetailPage(props: Props) {
         <div className="bg-surface-card rounded-xl border border-border p-5">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{t('col.notes')}</p>
           <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{purchase.notes}</p>
+        </div>
+      )}
+
+      {/* Invoices / receipts */}
+      {purchase.documents && purchase.documents.length > 0 && (
+        <div className="bg-surface-card rounded-xl border border-border p-5">
+          <DocumentList value={purchase.documents} label="Invoices / receipts" />
         </div>
       )}
 

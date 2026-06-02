@@ -16,27 +16,17 @@ function monthKey(d: Date): string {
 
 export async function getReportsForOrg(
   orgId: string,
+  spaceId?: string,
 ): Promise<ReportsResponse> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sp = (q: any) => (spaceId ? q.eq('space_id', spaceId) : q);
   const [assets, checkouts, warranties, pendingReqs, maintenance] =
     await Promise.all([
-      supabaseAdmin.from('assets').select('*').eq('organization_id', orgId),
-      supabaseAdmin
-        .from('asset_checkouts')
-        .select('*')
-        .eq('organization_id', orgId),
-      supabaseAdmin
-        .from('warranties')
-        .select('end_date')
-        .eq('organization_id', orgId),
-      supabaseAdmin
-        .from('requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('organization_id', orgId)
-        .eq('status', 'PENDING'),
-      supabaseAdmin
-        .from('maintenance_records')
-        .select('*')
-        .eq('organization_id', orgId),
+      sp(supabaseAdmin.from('assets').select('*').eq('organization_id', orgId)),
+      sp(supabaseAdmin.from('asset_checkouts').select('*').eq('organization_id', orgId)),
+      sp(supabaseAdmin.from('warranties').select('end_date').eq('organization_id', orgId)),
+      sp(supabaseAdmin.from('requests').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'PENDING')),
+      sp(supabaseAdmin.from('maintenance_records').select('*').eq('organization_id', orgId)),
     ]);
 
   const assetRows = (assets.data ?? []) as Row[];

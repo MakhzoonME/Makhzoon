@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
-import { getOrganizationById } from '@/lib/db/organizations';
+import { getOrganizationById, updateOrganization } from '@/lib/db/organizations';
 import { getSuperAdminUserById } from '@/lib/db/superadmin-users';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { ORG_CATEGORIES } from '@/types';
+import { queueAuditLog } from '@/lib/audit/logger';
 
 /** Legacy PII-scrub pattern from the Firestore clone scripts. No clone exists
  *  post-migration so this never matches, but the fallback is kept harmless. */
@@ -62,6 +64,54 @@ export async function GET() {
     });
   } catch (err) {
     console.error('[GET /api/organizations/self]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const user = await verifySessionCookie();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const EDIT_ROLES = new Set(['admin', 'org_owner', 'super_admin']);
+    if (!EDIT_ROLES.has(user.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const orgId = user.organizationId;
+    if (!orgId) return NextResponse.json({ error: 'No organization associated with this account' }, { status: 403 });
+
+    const body = await req.json();
+    const patch: Partial<{ name: string; contactEmail: string; description: string; category: string | null; updatedBy: string }> = {};
+
+    if (typeof body.name === 'string') {
+      const name = body.name.trim();
+      if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 422 });
+      patch.name = name;
+    }
+    if (typeof body.contactEmail === 'string') patch.contactEmail = body.contactEmail.trim() || undefined;
+    if (typeof body.description === 'string') patch.description = body.description.trim() || undefined;
+    if (typeof body.category === 'string') {
+      if (body.category && !(ORG_CATEGORIES as readonly string[]).includes(body.category)) {
+        return NextResponse.json({ error: 'Invalid category' }, { status: 422 });
+      }
+      patch.category = body.category || null;
+    }
+
+    if (!Object.keys(patch).length) return NextResponse.json({ error: 'Nothing to update' }, { status: 422 });
+
+    await updateOrganization(orgId, { ...patch, updatedBy: user.uid } as Parameters<typeof updateOrganization>[1]);
+    queueAuditLog({
+      organizationId: orgId,
+      userId: user.uid,
+      role: user.role,
+      action: 'ORGANIZATION_UPDATED',
+      module: 'settings',
+      newValue: patch as Record<string, unknown>,
+    });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error('[PATCH /api/organizations/self]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

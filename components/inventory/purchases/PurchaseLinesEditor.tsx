@@ -61,7 +61,7 @@ export function PurchaseLinesEditor({ value, onChange }: Props) {
             const next = [...value];
             next[existingIdx] = { ...next[existingIdx], quantity: next[existingIdx].quantity + 1 };
             onChange(next);
-            toast.success(`Incremented ${item.name} (×${next[existingIdx].quantity})`);
+            toast.success(`Incremented ${item.name} (x${next[existingIdx].quantity})`);
           } else {
             onChange([
               ...value,

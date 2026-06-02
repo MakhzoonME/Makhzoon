@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { barcodeRegex } from '@/lib/validations/inventory.schema'
+import { documentsSchema } from '@/lib/validations/document.schema'
 
 export const purchaseLineSchema = z.object({
   /** Null while a barcode hasn't been resolved to an item yet. Server rejects unresolved lines on Receive. */
@@ -26,6 +27,7 @@ export const createPurchaseSchema = z.object({
   invoiceDate: z.coerce.date(),
   notes: z.string().optional().nullable(),
   updateItemUnitCost: z.coerce.boolean().optional(),
+  documents: documentsSchema,
   lines: z.array(purchaseLineSchema).min(1, 'At least one line item is required'),
 })
 

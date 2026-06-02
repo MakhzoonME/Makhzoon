@@ -16,6 +16,7 @@ import { useTaxRates, useCurrentSession, useCompleteSale } from '@/hooks/haraka'
 import { useAuthStore } from '@/store/auth.store';
 import { priceCart } from '@/lib/modules/haraka/pricing/calc';
 import { toast, useT } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import { printRaw } from '@/lib/modules/haraka/printing/webusb-transport';
 import { buildReceipt } from '@/lib/modules/haraka/printing/receipt-template';
 import type { InventoryItem, PosTransaction } from '@/types';
@@ -37,8 +38,9 @@ export default function RegisterPage() {
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
+  const { data: orgInfo } = useOrgInfo();
   const { user } = useAuthStore();
-  const { data: sessionData, isLoading: sessionLoading } = useCurrentSession();
+  const { data: sessionData, isLoading: sessionLoading, isFetched: sessionFetched } = useCurrentSession();
   const { data: taxData } = useTaxRates();
   const { lookup } = useBarcodeLookup();
 
@@ -54,11 +56,13 @@ export default function RegisterPage() {
   const [lastTx, setLastTx] = useState<PosTransaction | null>(null);
 
   // No session → bounce back to the landing page so the cashier opens one.
+  // Only redirect once the query has completed at least one fetch to avoid
+  // bouncing while the freshly-created session is still being refetched.
   useEffect(() => {
-    if (!sessionLoading && !sessionData?.session) {
+    if (sessionFetched && !sessionLoading && !sessionData?.session) {
       router.replace(`/${params.locale}/${params.orgSlug}/${params.space}/haraka`);
     }
-  }, [sessionLoading, sessionData?.session, router, params.locale, params.orgSlug]);
+  }, [sessionFetched, sessionLoading, sessionData?.session, router, params.locale, params.orgSlug]);
 
   const taxRateById = useCallback(
     (id: string | null | undefined): number => {
@@ -163,8 +167,10 @@ export default function RegisterPage() {
         title={t('register.title')}
         description={sessionData?.session ? t('register.sessionLabel').replace('{id}', sessionData.session.id.slice(0, 8)) : ''}
         breadcrumb={[
+          { label: orgInfo?.name ?? params.orgSlug },
+          { label: params.space },
           { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
-          { label: t('register.title'), href: '#' },
+          { label: t('register.title') },
         ]}
         actions={
           <div className="flex items-center gap-2">
@@ -214,10 +220,11 @@ export default function RegisterPage() {
             <Button
               size="lg"
               className="w-full"
+              style={lines.length > 0 ? { background: 'var(--mod-haraka)' } : undefined}
               disabled={lines.length === 0 || completeMut.isPending}
               onClick={() => setPayOpen(true)}
             >
-              Charge {totals.total.toFixed(2)}
+              {t('register.charge')} {totals.total.toFixed(2)}
             </Button>
           </SubscriptionGate>
         </aside>

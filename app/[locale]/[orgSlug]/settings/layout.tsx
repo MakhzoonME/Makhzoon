@@ -1,5 +1,8 @@
 'use client';
-import { useAdminGuard } from '@/hooks/ui';
+
+import { useEffect } from 'react';
+import { useAdminGuard, useT } from '@/hooks/ui';
+import { useUiStore } from '@/store/ui.store';
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const { isAllowed } = useAdminGuard([
@@ -9,6 +12,16 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
     'settings.taxRates',
     'settings.fawtara',
   ]);
+
+  const { t } = useT();
+  const { setPageHeader, clearPageHeader } = useUiStore();
+
+  useEffect(() => {
+    setPageHeader(t('nav.settings'), []);
+    return () => clearPageHeader();
+  // t is intentionally excluded — it's unstable and the translation is static per locale
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!isAllowed) {
     return (

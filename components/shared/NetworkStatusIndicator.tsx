@@ -50,11 +50,9 @@ async function pingServer(): Promise<boolean> {
 
 function WifiOnlineSVG() {
   return (
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden>
-      <circle cx="7.5" cy="12.5" r="1" fill="currentColor" />
-      <path d="M5.2 10.3a3.2 3.2 0 0 1 4.6 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <path d="M2.8 7.8a6.5 6.5 0 0 1 9.4 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <path d="M0.5 5.3a9.8 9.8 0 0 1 14 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M1 8.5l2.5-4 2 3 2.5-5.5 2.5 7 2-3.5L15 8.5"
+        stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

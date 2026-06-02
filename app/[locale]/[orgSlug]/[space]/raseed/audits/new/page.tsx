@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/ui';
 import { ClipboardCheck } from 'lucide-react';
 import { StockItemMultiPicker } from '@/components/inventory/stock-audits/StockItemMultiPicker';
+import { useOrgInfo } from '@/hooks/org';
 
 function defaultTitle() {
   const today = new Date().toLocaleDateString('en-GB', {
@@ -25,6 +26,7 @@ export default function NewStockAuditPage() {
   const orgSlug = useOrgSlug();
   const space = useSpace();
   const { t, locale } = useT();
+  const { data: orgInfo } = useOrgInfo();
   const create = useCreateStockAudit();
 
   const [title, setTitle] = useState(defaultTitle());
@@ -58,13 +60,15 @@ export default function NewStockAuditPage() {
       <PageHeader
         title={t('stockAudits.newTitle')}
         breadcrumb={[
-          { label: t('nav.inventory'), href: base },
-          { label: t('stockAudits.breadcrumb'), href: `${base}/audits` },
-          { label: t('stockAudits.newTitle'), href: `${base}/audits/new` },
+          { label: orgInfo?.name ?? orgSlug },
+          { label: space },
+          { label: t('nav.inventory'), href: `/${locale}/${orgSlug}/${space}/raseed/list` },
+          { label: t('stockAudits.breadcrumb'), href: `/${locale}/${orgSlug}/${space}/raseed/audits` },
+          { label: t('stockAudits.newTitle') },
         ]}
       />
 
-      <div className="max-w-2xl">
+      <div className="max-w-2xl mx-auto">
         <div className="bg-[var(--primary-50)] border border-[var(--primary-100)] rounded-lg p-4 mb-6 flex items-start gap-3">
           <ClipboardCheck className="h-4 w-4 mt-0.5 text-[var(--primary-700)]" strokeWidth={1.75} />
           <p className="text-sm text-[var(--primary-700)]">{t('stockAudits.intro')}</p>

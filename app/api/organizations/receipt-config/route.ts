@@ -1,0 +1,66 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import { queueAuditLog } from '@/lib/audit/logger';
+
+const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin']);
+
+export async function GET() {
+  try {
+    const user = await verifySessionCookie();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ADMIN_ROLES.has(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    const orgId = user.organizationId;
+    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
+
+    const { data } = await supabaseAdmin
+      .from('organization_configs')
+      .select('receipt_config')
+      .eq('organization_id', orgId)
+      .maybeSingle();
+
+    return NextResponse.json(data?.receipt_config ?? {});
+  } catch (err) {
+    console.error('[GET /api/organizations/receipt-config]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const user = await verifySessionCookie();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ADMIN_ROLES.has(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    const orgId = user.organizationId;
+    if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
+
+    const body = await req.json();
+    if (typeof body !== 'object' || body === null) {
+      return NextResponse.json({ error: 'Invalid body' }, { status: 422 });
+    }
+
+    // Upsert: create the row if it doesn't exist yet, then set receipt_config
+    const { error } = await supabaseAdmin
+      .from('organization_configs')
+      .upsert(
+        { organization_id: orgId, receipt_config: body, updated_by: user.uid },
+        { onConflict: 'organization_id' },
+      );
+
+    if (error) throw error;
+    queueAuditLog({
+      organizationId: orgId,
+      userId: user.uid,
+      role: user.role,
+      action: 'RECEIPT_CONFIG_UPDATED',
+      module: 'settings',
+      newValue: body as Record<string, unknown>,
+    });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error('[PATCH /api/organizations/receipt-config]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

@@ -111,7 +111,7 @@ export default function SupportPage() {
 
   return (
     <div>
-      <PageHeader title={t('nav.support')} description={t('support.description2')} />
+      <PageHeader title={t('nav.support')} description={t('support.description2')} breadcrumb={[{ label: t('nav.support') }]} />
 
       <div className="bg-surface-card border border-border rounded-lg p-3 flex flex-wrap gap-2 mb-4">
         <select

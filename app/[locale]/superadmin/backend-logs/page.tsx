@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { RefreshCw, X } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -165,27 +166,28 @@ export default function BackendLogsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">{t('backendLogs.title')}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{t('backendLogs.description')}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={autoRefresh}
-              onChange={(e) => syncAllToUrl({ autoRefresh: String(e.target.checked) })}
-              className="rounded border-border"
-            />
-            {t('backendLogs.autoRefresh')}
-          </label>
-          <Button size="sm" variant="outline" onClick={fetchLogs} disabled={loading}>
-            <RefreshCw className={cn('h-4 w-4 me-1.5', loading && 'animate-spin')} />
-            {t('backendLogs.refresh')}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title={t('backendLogs.title')}
+        description={t('backendLogs.description')}
+        breadcrumb={[{ label: t('nav.backendLogs') }]}
+        actions={
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => syncAllToUrl({ autoRefresh: String(e.target.checked) })}
+                className="rounded border-border"
+              />
+              {t('backendLogs.autoRefresh')}
+            </label>
+            <Button size="sm" variant="outline" onClick={fetchLogs} disabled={loading}>
+              <RefreshCw className={cn('h-4 w-4 me-1.5', loading && 'animate-spin')} />
+              {t('backendLogs.refresh')}
+            </Button>
+          </div>
+        }
+      />
 
       <div className="bg-surface-card rounded-lg border border-border p-4 space-y-4">
         <div className="flex items-center gap-3 flex-wrap">

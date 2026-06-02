@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { InventoryItem, InventoryTransaction, InventoryUnit, StockStatus } from '@/types';
+import { InventoryItem, InventoryTransaction, InventoryUnit, StockStatus, DocumentRef } from '@/types';
 
 type Row = Record<string, unknown>;
 
@@ -26,6 +26,7 @@ function toItem(r: Row): InventoryItem {
     supplier: r.supplier as string,
     unitCost: r.unit_cost as number,
     notes: r.notes as string,
+    documents: Array.isArray(r.documents) ? (r.documents as DocumentRef[]) : [],
     stockStatus: (r.stock_status as StockStatus) ?? stockStatus(qty, min),
     createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
     createdBy: r.created_by as string,
@@ -155,6 +156,7 @@ export async function createInventoryItem(
       supplier: data.supplier,
       unit_cost: data.unitCost,
       notes: data.notes,
+      documents: data.documents ?? [],
       stock_status: status,
       created_by: data.createdBy,
       created_by_email: data.createdByEmail,
@@ -187,6 +189,7 @@ export async function updateInventoryItem(
   }
   if (data.quantityOnHand !== undefined) patch.quantity_on_hand = data.quantityOnHand;
   if (data.minimumThreshold !== undefined) patch.minimum_threshold = data.minimumThreshold;
+  if (data.documents !== undefined) patch.documents = data.documents;
 
   if (data.quantityOnHand !== undefined || data.minimumThreshold !== undefined) {
     const current = await getInventoryItemById(id);

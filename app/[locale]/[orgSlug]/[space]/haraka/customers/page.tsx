@@ -14,11 +14,13 @@ import { hasPermission } from '@/lib/permissions';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
 import type { PosCustomer } from '@/types';
+import { useOrgInfo } from '@/hooks/org';
 
 export default function CustomersListPage() {
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
+  const { data: orgInfo } = useOrgInfo();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const { data, isLoading } = useCustomers({ search: search || undefined, page, pageSize: 20 });
@@ -109,11 +111,13 @@ export default function CustomersListPage() {
         title={t('customers.title')}
         description={t('customers.subtitle')}
         breadcrumb={[
+          { label: orgInfo?.name ?? params.orgSlug },
+          { label: params.space },
           { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
-          { label: t('customers.title'), href: '#' },
+          { label: t('customers.title') },
         ]}
         actions={
-          <Button onClick={() => router.push(`${base}/new`)}>
+          <Button size="sm" onClick={() => router.push(`${base}/new`)}>
             <Plus size={16} className="me-1" /> {t('customers.addCustomer')}
           </Button>
         }
@@ -130,19 +134,19 @@ export default function CustomersListPage() {
 
       <BulkActionsBar count={selectedIds.size} onClear={() => setSelectedIds(new Set())}>
         {hasMultipleSpaces && canBulkDuplicate && (
-          <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={() => setDupeOpen(true)}>
+          <Button size="sm" variant="ghost" className="!text-white hover:bg-white/10" onClick={() => setDupeOpen(true)}>
             <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="ms-1">{t('duplicate.bulk')}</span>
           </Button>
         )}
         {hasMultipleSpaces && canBulkMove && (
-          <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={() => setMoveOpen(true)}>
+          <Button size="sm" variant="ghost" className="!text-white hover:bg-white/10" onClick={() => setMoveOpen(true)}>
             <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="ms-1">{t('move.bulkMove')}</span>
           </Button>
         )}
         {canBulkDelete && (
-          <Button size="sm" variant="ghost" className="text-red-300 hover:bg-red-500/15 hover:text-red-200" onClick={() => setBulkDeleteOpen(true)}>
+          <Button size="sm" variant="ghost" className="!text-red-300 hover:bg-red-500/15 hover:!text-red-200" onClick={() => setBulkDeleteOpen(true)}>
             <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="ms-1">{t('bulk.delete')}</span>
           </Button>

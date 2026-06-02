@@ -35,6 +35,7 @@ export interface CreateAssetInput {
   assignedTo?: string;
   location?: string;
   notes?: string;
+  documents?: import('@/types').DocumentRef[];
 }
 
 export interface UpdateAssetInput {
@@ -47,6 +48,7 @@ export interface UpdateAssetInput {
   assignedTo?: string;
   location?: string;
   notes?: string;
+  documents?: import('@/types').DocumentRef[];
 }
 
 /**

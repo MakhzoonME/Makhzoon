@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { documentsSchema } from './document.schema';
 
 export const assetSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name must be at most 100 characters'),
@@ -13,6 +14,7 @@ export const assetSchema = z.object({
   assignedTo: z.string().optional(),
   location: z.string().optional(),
   notes: z.string().optional(),
+  documents: documentsSchema,
 });
 
 export type AssetFormData = z.infer<typeof assetSchema>;

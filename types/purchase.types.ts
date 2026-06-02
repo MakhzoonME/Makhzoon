@@ -1,3 +1,5 @@
+import { DocumentRef } from './document.types';
+
 export type PurchaseStatus = 'draft' | 'received' | 'cancelled';
 
 export interface PurchaseLine {
@@ -28,6 +30,8 @@ export interface Purchase {
   taxTotal: number;
   total: number;
   notes: string | null;
+  /** Supplier invoices/receipts (private purchase-invoices bucket). */
+  documents?: DocumentRef[];
   /** When true, receiving this purchase updates each item's last-cost on the InventoryItem. */
   updateItemUnitCost: boolean;
   createdAt: Date;

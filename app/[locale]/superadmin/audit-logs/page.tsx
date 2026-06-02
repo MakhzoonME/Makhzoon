@@ -163,6 +163,7 @@ export default function AuditLogsPage() {
     <div>
       <PageHeader
         title={t('nav.auditLogs')}
+        breadcrumb={[{ label: t('nav.auditLogs') }]}
         actions={
           <Button size="sm" variant="outline" asChild>
             <a href={buildExportUrl()} download>{t('auditLogs.exportCsv')}</a>

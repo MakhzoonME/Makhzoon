@@ -3,18 +3,26 @@
 import { useParams } from 'next/navigation';
 import { PageHeader } from '@/components/shared';
 import { PurchaseForm } from '@/components/inventory/purchases/PurchaseForm';
+import { useT } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 
 export default function NewPurchasePage() {
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
+  const { t } = useT();
+  const { data: orgInfo } = useOrgInfo();
+  const base = `/${params.locale}/${params.orgSlug}/${params.space}/raseed`;
+
   return (
-    <div className="p-6 max-w-5xl">
+    <div className="max-w-5xl">
       <PageHeader
-        title="New purchase"
-        description="Record a supplier delivery as a draft. You can edit it before receiving."
+        title={t('purchases.newTitle')}
+        description={t('purchases.newDesc')}
         breadcrumb={[
-          { label: 'Raseed', href: `/${params.locale}/${params.orgSlug}/${params.space}/raseed` },
-          { label: 'Purchases', href: `/${params.locale}/${params.orgSlug}/${params.space}/raseed/purchases` },
-          { label: 'New', href: '#' },
+          { label: orgInfo?.name ?? params.orgSlug },
+          { label: params.space },
+          { label: t('nav.inventory'), href: `${base}/list` },
+          { label: t('nav.purchases'), href: `${base}/purchases` },
+          { label: t('purchases.newTitle') },
         ]}
       />
       <PurchaseForm />

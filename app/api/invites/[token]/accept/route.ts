@@ -76,7 +76,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
 
     await createUser(uid, {
       organizationId: invite.organizationId,
-      email: invite.email,
+      email: userEmail,
       username: invite.username,
       displayName: invite.displayName,
       role: invite.role,

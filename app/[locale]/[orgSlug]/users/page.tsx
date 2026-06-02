@@ -5,12 +5,14 @@ import { useInvites } from '@/hooks/users';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { SubscriptionGate } from '@/components/shared';
 import { OrgUser, Invite } from '@/types';
 import { formatDate } from '@/lib/utils/date';
 import { InviteUserModal } from '@/components/users/InviteUserModal';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { toast, useAdminGuard } from '@/hooks/ui';
+import { toast, useAdminGuard, useOrgSlug } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils/cn';
 import { apiFetch } from '@/lib/utils/api-fetch';
@@ -27,8 +29,7 @@ import { useSubscriptionFeatures } from '@/hooks/org';
 import { UserPermissions, DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from '@/types';
 import { useT } from '@/hooks/ui';
 import type { MessageKey } from '@/locales/messages';
-import { Plus, Pencil, Trash2, MailX, KeyRound, Copy, Check } from 'lucide-react';
-
+import { Plus, Pencil, Trash2, MailX, KeyRound, Copy, Check, Search } from 'lucide-react';
 
 type Row =
   | { _type: 'user'; data: OrgUser }
@@ -82,12 +83,33 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function UserAvatar({ name }: { name: string }) {
+  const initials = name.split(' ').map((w) => w[0] ?? '').join('').toUpperCase().slice(0, 2);
+  return (
+    <div
+      aria-hidden
+      className="inline-flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-semibold flex-shrink-0"
+      style={{ background: 'var(--primary-100)', color: 'var(--primary-700)' }}
+    >
+      {initials || '?'}
+    </div>
+  );
+}
+
 export default function UsersPage() {
   const { t } = useT();
+  const orgSlug = useOrgSlug();
+  const { data: orgInfo } = useOrgInfo();
   const { isAllowed } = useAdminGuard('settings.users');
   const { data: users = [], isLoading: usersLoading } = useUsers();
   const { data: invites = [], isLoading: invitesLoading } = useInvites();
   const { user: currentUser } = useAuthStore();
+
+  const [tab, setTab] = useState<'members' | 'invites'>('members');
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
   const [showInvite, setShowInvite] = useState(false);
   const [revoking, setRevoking] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<OrgUser | null>(null);
@@ -98,10 +120,8 @@ export default function UsersPage() {
   const [editSpaceAccess, setEditSpaceAccess] = useState<{ allSpaces: boolean; spaceIds: string[] }>({ allSpaces: false, spaceIds: [] });
   const { data: serverSpaceAccess } = useUserSpaceAccess(editTarget?.id);
   const updateSpaceAccessMut = useUpdateUserSpaceAccess();
-  // Sync space access from server when the GET resolves for the current target.
   useEffect(() => {
     if (editTarget && serverSpaceAccess) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEditSpaceAccess(serverSpaceAccess);
     }
   }, [editTarget, serverSpaceAccess]);
@@ -121,26 +141,31 @@ export default function UsersPage() {
   const currentRole = currentUser?.role ?? '';
   const isOwnerOrSuperAdmin = currentRole === 'org_owner' || currentRole === 'super_admin';
   const isAdmin = currentRole === 'admin' || isOwnerOrSuperAdmin;
-  const canInvite = isAdmin; // staff cannot invite
+  const canInvite = isAdmin;
 
   const pendingInvites = invites.filter(
     (i) => i.status === 'pending' && new Date(i.expiresAt).getTime() > now
   );
 
-  const rows: Row[] = [
-    ...users.map((u: OrgUser): Row => ({ _type: 'user', data: u })),
-    ...pendingInvites.map((i): Row => ({ _type: 'invite', data: i })),
-  ];
-
   function canEditUser(target: OrgUser): boolean {
-    // Owners and super admins can edit anyone, including themselves and other owners.
     if (isOwnerOrSuperAdmin) return true;
-    // Non-owners cannot edit themselves.
     if (target.id === currentUser?.uid) return false;
-    // Admin cannot edit owners.
     if (target.role === 'org_owner') return false;
     return isAdmin;
   }
+
+  const filteredUsers = users.filter((u: OrgUser) => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || u.displayName.toLowerCase().includes(q) || (u.email ?? '').toLowerCase().includes(q);
+    const matchRole = !roleFilter || u.role === roleFilter;
+    const matchStatus = !statusFilter || u.status === statusFilter;
+    return matchSearch && matchRole && matchStatus;
+  });
+
+  const filteredInvites = pendingInvites.filter((inv) => {
+    const q = search.toLowerCase();
+    return !q || (inv.email ?? '').toLowerCase().includes(q);
+  });
 
   async function handleRevoke(invite: Invite) {
     setRevoking(invite.token);
@@ -184,7 +209,6 @@ export default function UsersPage() {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error ?? 'Failed to update role');
       }
-      // Persist space access (allSpaces + spaceIds) in the same save.
       await updateSpaceAccessMut.mutateAsync({
         userId: editTarget.id,
         allSpaces: editSpaceAccess.allSpaces,
@@ -205,9 +229,7 @@ export default function UsersPage() {
     setDeleting(true);
     const { user: target, permanent } = deleteTarget;
     try {
-      const url = permanent
-        ? `/api/users/${target.id}?permanent=true`
-        : `/api/users/${target.id}`;
+      const url = permanent ? `/api/users/${target.id}?permanent=true` : `/api/users/${target.id}`;
       const res = await apiFetch(url, { method: 'DELETE' });
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
@@ -246,30 +268,109 @@ export default function UsersPage() {
     });
   }
 
+  function hasCustomPermissions(u: OrgUser): boolean {
+    if (!u.permissions) return false;
+    const defaults = defaultPermsForRole(u.role);
+    return JSON.stringify(u.permissions) !== JSON.stringify(defaults);
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         title={t('users.title')}
+        breadcrumb={[
+          { label: orgInfo?.name ?? orgSlug },
+          { label: t('users.title') },
+        ]}
         actions={
-          canInvite
-            ? (
-              <SubscriptionGate>
-                <Button size="sm" onClick={() => setShowInvite(true)}><Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('users.inviteUser')}</span></Button>
-              </SubscriptionGate>
-            )
-            : undefined
+          canInvite ? (
+            <SubscriptionGate>
+              <Button size="sm" onClick={() => setShowInvite(true)} className="cursor-pointer transition-colors duration-150">
+                <Plus aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+                <span className="ms-1">{t('users.inviteUser')}</span>
+              </Button>
+            </SubscriptionGate>
+          ) : undefined
         }
       />
 
-      <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
+      {/* Segmented tabs */}
+      <div className="inline-flex items-center rounded-md border border-border p-0.5 bg-surface-page">
+        <button
+          type="button"
+          onClick={() => setTab('members')}
+          className={cn(
+            'px-3 py-1 text-xs font-medium rounded transition-colors cursor-pointer',
+            tab === 'members' ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-surface-card',
+          )}
+        >
+          {t('users.title')} · {users.length}
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('invites')}
+          className={cn(
+            'px-3 py-1 text-xs font-medium rounded transition-colors cursor-pointer',
+            tab === 'invites' ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-surface-card',
+          )}
+        >
+          {t('users.pendingInvites')} · {pendingInvites.length}
+        </button>
+      </div>
+
+      <div className="bg-surface-card rounded-xl border border-border overflow-hidden">
+        {/* Toolbar */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border flex-wrap">
+          <div className="relative flex-1 min-w-[160px] max-w-[280px]">
+            <Search aria-hidden className="absolute start-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" strokeWidth={1.75} />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('users.searchMembers')}
+              className="h-8 text-xs ps-8"
+            />
+          </div>
+          {tab === 'members' && (
+            <>
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className="h-8 text-xs border border-border rounded-md bg-surface-card px-2 text-gray-600 cursor-pointer"
+              >
+                <option value="">{t('users.role')}</option>
+                <option value="org_owner">{t('role.orgOwner')}</option>
+                <option value="admin">{t('role.admin')}</option>
+                <option value="staff">{t('role.staff')}</option>
+              </select>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="h-8 text-xs border border-border rounded-md bg-surface-card px-2 text-gray-600 cursor-pointer"
+              >
+                <option value="">{t('users.status')}</option>
+                <option value="active">{t('userStatus.active')}</option>
+                <option value="deactivated">{t('userStatus.deactivated')}</option>
+              </select>
+            </>
+          )}
+        </div>
+
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-page">
               <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.name')}</th>
               <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.emailUsername')}</th>
               <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.role')}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.status')}</th>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.joined')}</th>
+              {tab === 'members' && (
+                <>
+                  <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.permissions')}</th>
+                  <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.status')}</th>
+                  <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.joined')}</th>
+                </>
+              )}
+              {tab === 'invites' && (
+                <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('users.status')}</th>
+              )}
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -284,109 +385,128 @@ export default function UsersPage() {
                   ))}
                 </tr>
               ))
-            ) : rows.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-gray-400">{t('users.noResults')}</td>
-              </tr>
-            ) : (
-              rows.map((row) => {
-                if (row._type === 'user') {
-                  const u = row.data;
-                  const editable = canEditUser(u);
-                  return (
-                    <tr key={`user-${u.id}`} className="hover:bg-surface-page transition-colors">
-                      <td className="px-4 py-3 font-medium text-gray-900">{u.displayName || '—'}</td>
-                      <td className="px-4 py-3 text-gray-600" dir="ltr">{u.email || (u.username ? `@${u.username}` : '—')}</td>
-                      <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
-                      <td className="px-4 py-3"><StatusBadge status={u.status} /></td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(u.createdAt)}</td>
-                      <td className="px-4 py-3 text-end">
-                        {editable && (
-                          <div className="flex items-center justify-end gap-1">
-                            {u.status !== 'deactivated' && (
-                              <>
-                                <SubscriptionGate>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-gray-500 hover:text-primary-600 hover:bg-primary-50"
-                                    onClick={() => openEditRole(u)}
-                                    title={t('users.editUser')}
-                                  >
-                                    <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} />
-                                  </Button>
-                                </SubscriptionGate>
-                                <SubscriptionGate>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-blue-500 hover:text-blue-600 hover:bg-blue-50"
-                                    onClick={() => setResetTarget(u)}
-                                    title="Reset password"
-                                  >
-                                    <KeyRound className="h-3.5 w-3.5" strokeWidth={1.75} />
-                                  </Button>
-                                </SubscriptionGate>
-                                <SubscriptionGate>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-amber-500 hover:text-amber-600 hover:bg-amber-50"
-                                    onClick={() => setDeleteTarget({ user: u, permanent: false })}
-                                    title={t('users.deactivate')}
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
-                                  </Button>
-                                </SubscriptionGate>
-                              </>
-                            )}
-                            {u.status === 'deactivated' && (
+            ) : tab === 'members' ? (
+              filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-gray-400">{t('users.noResults')}</td>
+                </tr>
+              ) : filteredUsers.map((u: OrgUser) => {
+                const editable = canEditUser(u);
+                const isCustom = hasCustomPermissions(u);
+                return (
+                  <tr key={`user-${u.id}`} className="hover:bg-surface-page transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <UserAvatar name={u.displayName || u.email || '?'} />
+                        <span className="font-medium text-gray-900">{u.displayName || '—'}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-500" dir="ltr">{u.email || (u.username ? `@${u.username}` : '—')}</td>
+                    <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
+                    <td className="px-4 py-3">
+                      {isCustom ? (
+                        <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--primary-50)] text-[var(--primary-700)]">
+                          {t('users.custom')}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">{t('users.roleDefault')}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3"><StatusBadge status={u.status} /></td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(u.createdAt)}</td>
+                    <td className="px-4 py-3 text-end">
+                      {editable && (
+                        <div className="flex items-center justify-end gap-1">
+                          {u.status !== 'deactivated' && (
+                            <>
                               <SubscriptionGate>
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                                  onClick={() => setDeleteTarget({ user: u, permanent: true })}
-                                  title={t('users.deleteUser')}
+                                  aria-label={t('users.editUser')}
+                                  className="text-gray-500 hover:text-primary-600 hover:bg-primary-50 cursor-pointer transition-colors duration-150"
+                                  onClick={() => openEditRole(u)}
                                 >
-                                  <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                                  <Pencil aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
                                 </Button>
                               </SubscriptionGate>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                }
-
-                const inv = row.data;
-                return (
-                  <tr key={`invite-${inv.id}`} className="hover:bg-surface-page transition-colors bg-amber-50/30">
-                    <td className="px-4 py-3 font-medium text-gray-700">{inv.displayName || '—'}</td>
-                    <td className="px-4 py-3 text-gray-500" dir="ltr">{inv.email || (inv.username ? `@${inv.username}` : '—')}</td>
-                    <td className="px-4 py-3"><RoleBadge role={inv.role} /></td>
-                    <td className="px-4 py-3"><StatusBadge status="pending" /></td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{t('users.expires')} {formatDate(inv.expiresAt)}</td>
-                    <td className="px-4 py-3 text-end">
-                      {isAdmin && (
-                        <SubscriptionGate>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50 gap-1"
-                            disabled={revoking === inv.token}
-                            onClick={() => handleRevoke(inv)}
-                          >
-                            <MailX className="h-3.5 w-3.5" strokeWidth={1.75} />
-                            {revoking === inv.token ? t('users.revoking') : t('users.revokeInvite')}
-                          </Button>
-                        </SubscriptionGate>
+                              <SubscriptionGate>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  aria-label="Reset password"
+                                  className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors duration-150"
+                                  onClick={() => setResetTarget(u)}
+                                >
+                                  <KeyRound aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
+                                </Button>
+                              </SubscriptionGate>
+                              <SubscriptionGate>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  aria-label={t('users.deactivate')}
+                                  className="text-amber-500 hover:text-amber-600 hover:bg-amber-50 cursor-pointer transition-colors duration-150"
+                                  onClick={() => setDeleteTarget({ user: u, permanent: false })}
+                                >
+                                  <Trash2 aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
+                                </Button>
+                              </SubscriptionGate>
+                            </>
+                          )}
+                          {u.status === 'deactivated' && (
+                            <SubscriptionGate>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                aria-label={t('users.deleteUser')}
+                                className="text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer transition-colors duration-150"
+                                onClick={() => setDeleteTarget({ user: u, permanent: true })}
+                              >
+                                <Trash2 aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
+                              </Button>
+                            </SubscriptionGate>
+                          )}
+                        </div>
                       )}
                     </td>
                   </tr>
                 );
               })
+            ) : (
+              filteredInvites.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-12 text-center text-sm text-gray-400">{t('users.noPendingInvites')}</td>
+                </tr>
+              ) : filteredInvites.map((inv) => (
+                <tr key={`invite-${inv.id}`} className="hover:bg-surface-page transition-colors bg-amber-50/30">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <UserAvatar name={inv.displayName || inv.email || '?'} />
+                      <span className="font-medium text-gray-700">{inv.displayName || '—'}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-500" dir="ltr">{inv.email || (inv.username ? `@${inv.username}` : '—')}</td>
+                  <td className="px-4 py-3"><RoleBadge role={inv.role} /></td>
+                  <td className="px-4 py-3"><StatusBadge status="pending" /></td>
+                  <td className="px-4 py-3 text-end">
+                    {isAdmin && (
+                      <SubscriptionGate>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50 gap-1 cursor-pointer transition-colors duration-150"
+                          disabled={revoking === inv.token}
+                          onClick={() => handleRevoke(inv)}
+                        >
+                          <MailX aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          {revoking === inv.token ? t('users.revoking') : t('users.revokeInvite')}
+                        </Button>
+                      </SubscriptionGate>
+                    )}
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
@@ -423,12 +543,11 @@ export default function UsersPage() {
               </Select>
             </div>
 
-            {/* Access permissions */}
             <div className="space-y-2">
               <button
                 type="button"
                 onClick={() => setShowEditPerms((v) => !v)}
-                className="flex items-center gap-2 text-sm font-medium text-primary-700 hover:text-primary-800"
+                className="flex items-center gap-2 text-sm font-medium text-primary-700 hover:text-primary-800 cursor-pointer"
               >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
                   <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none" />
@@ -445,7 +564,6 @@ export default function UsersPage() {
               )}
             </div>
 
-            {/* Space access */}
             <div className="space-y-2 pt-1">
               <p className="text-sm font-medium text-gray-900">{t('userSpaces.title')}</p>
               <UserSpaceAccess
@@ -456,8 +574,8 @@ export default function UsersPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditTarget(null)} disabled={savingRole}>{t('common.cancel')}</Button>
-            <Button onClick={handleSaveRole} disabled={savingRole}>
+            <Button variant="outline" onClick={() => setEditTarget(null)} disabled={savingRole} className="cursor-pointer">{t('common.cancel')}</Button>
+            <Button onClick={handleSaveRole} disabled={savingRole} className="cursor-pointer">
               {savingRole ? t('users.saving') : t('users.saveChanges')}
             </Button>
           </DialogFooter>
@@ -495,18 +613,18 @@ export default function UsersPage() {
                   <code className="flex-1 text-sm font-mono text-gray-900 select-all">{resetResult?.password}</code>
                   <button
                     type="button"
-                    className="text-gray-400 hover:text-primary-600 transition-colors"
+                    aria-label="Copy password"
+                    className="text-gray-400 hover:text-primary-600 transition-colors cursor-pointer"
                     onClick={() => handleCopyPassword(resetResult?.password ?? '')}
-                    title="Copy"
                   >
-                    {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                    {copied ? <Check aria-hidden className="h-4 w-4 text-green-600" /> : <Copy aria-hidden className="h-4 w-4" />}
                   </button>
                 </div>
               </>
             )}
           </div>
           <DialogFooter>
-            <Button onClick={() => setResetResult(null)}>Done</Button>
+            <Button onClick={() => setResetResult(null)} className="cursor-pointer">Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

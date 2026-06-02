@@ -6,6 +6,7 @@ import {
   orgListItemDeleteSchema,
 } from '@/lib/validations/list-item.schema';
 import type { ListKey } from '@/types';
+import { auditLog } from '@/lib/platform/audit';
 
 // Per-org list customization. Org-managers (admin/org_owner) and superadmins in
 // transfer mode may add custom items or override/hide platform defaults for
@@ -35,6 +36,12 @@ export async function POST(req: NextRequest) {
       organizationId: tenant.organizationId,
       userId: tenant.userId,
     });
+    auditLog.queue({
+      tenant,
+      module: 'settings',
+      action: 'ORG_LIST_ITEM_CREATED',
+      newValue: { listKey: parsed.data.listKey, value: parsed.data.value, label: parsed.data.label },
+    });
 
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (err) {
@@ -59,6 +66,12 @@ export async function DELETE(req: NextRequest) {
       parsed.data.listKey as ListKey,
       parsed.data.value,
     );
+    auditLog.queue({
+      tenant,
+      module: 'settings',
+      action: 'ORG_LIST_ITEM_DELETED',
+      newValue: { listKey: parsed.data.listKey, value: parsed.data.value },
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

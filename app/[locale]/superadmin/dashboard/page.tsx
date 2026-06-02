@@ -145,7 +145,11 @@ export default function SuperAdminDashboardPage() {
 
   return (
     <div>
-      <PageHeader title={t('nav.dashboard')} description={t('superDash.description')} />
+      <PageHeader
+        title={t('nav.dashboard')}
+        description={t('superDash.description')}
+        breadcrumb={[{ label: t('nav.dashboard') }]}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard label={t('superDash.totalOrgs')} value={stats.totalOrgs} icon={Building2} tone="indigo" />

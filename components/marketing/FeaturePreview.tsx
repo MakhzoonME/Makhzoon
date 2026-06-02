@@ -335,7 +335,7 @@ export function AuditLogPreview() {
             <div style={{ display: 'flex', gap: 5, fontSize: 10.5, fontFamily: 'monospace', padding: '4px 8px', background: 'var(--gray-50)', borderRadius: 5, border: '1px solid var(--border-default)' }}>
               <span style={{ color: 'var(--gray-400)' }}>{detail}:</span>
               <span style={{ color: 'var(--red-600)', textDecoration: 'line-through' }}>{before}</span>
-              <span style={{ color: 'var(--gray-400)' }}>→</span>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden style={{ color: 'var(--gray-400)' }}><path d="M2 5h6M5.5 2.5L8 5l-2.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
               <span style={{ color: 'var(--green-700)' }}>{after}</span>
             </div>
           )}

@@ -133,7 +133,7 @@ export async function create(
   auditLog.queue({
     tenant,
     module: 'spaces',
-    action: 'CONFIG_LOCATION_CREATED',
+    action: 'SPACE_CREATED',
     recordId: space.id,
     newValue: { name: space.name, slug: space.slug },
   });
@@ -188,7 +188,7 @@ export async function update(
   auditLog.queue({
     tenant,
     module: 'spaces',
-    action: 'CONFIG_LOCATION_UPDATED',
+    action: input.status === 'archived' ? 'SPACE_ARCHIVED' : 'SPACE_UPDATED',
     recordId: space.id,
     newValue: patch,
   });

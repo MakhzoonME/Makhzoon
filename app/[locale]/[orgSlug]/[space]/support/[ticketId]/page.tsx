@@ -14,10 +14,14 @@ import {
   useAddTicketMessage,
 } from '@/hooks/support';
 import { formatDate, formatDateTime } from '@/lib/utils/date';
-import { toast, useT } from '@/hooks/ui';
+import { toast, useT, useOrgSlug, useSpace } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 
 export default function TicketDetailPage() {
   const { t } = useT();
+  const orgSlug = useOrgSlug();
+  const space   = useSpace();
+  const { data: orgInfo } = useOrgInfo();
   const { ticketId } = useParams<{ ticketId: string }>();
   const [replyBody, setReplyBody] = useState('');
 
@@ -55,6 +59,12 @@ export default function TicketDetailPage() {
     <div className="max-w-3xl space-y-6">
       <PageHeader
         title={ticket.subject}
+        breadcrumb={[
+          { label: orgInfo?.name ?? orgSlug },
+          { label: space },
+          { label: t('nav.support') },
+          { label: ticket.subject },
+        ]}
         actions={
           !isClosed ? (
             <Button
@@ -106,19 +116,32 @@ export default function TicketDetailPage() {
         {messages.length === 0 && !messagesLoading && (
           <p className="text-sm text-gray-500">{t('ticket.noReplies')}</p>
         )}
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className="bg-surface-card border border-border rounded-lg p-4 space-y-1"
-          >
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <span className="font-medium text-gray-800">{msg.authorName}</span>
-              <span className="capitalize bg-surface-page px-1.5 py-0.5 rounded">{msg.authorRole}</span>
-              <span className="ms-auto">{formatDateTime(new Date(msg.createdAt))}</span>
+        {messages.map((msg) => {
+          const isSuperAdmin = msg.authorRole === 'super_admin';
+          return (
+            <div
+              key={msg.id}
+              className={`border rounded-lg p-4 space-y-1 ${isSuperAdmin ? 'bg-[color-mix(in_srgb,var(--primary-500)_6%,var(--surface-card))] border-[color-mix(in_srgb,var(--primary-500)_20%,var(--border))]' : 'bg-surface-card border-border'}`}
+            >
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <span className="font-semibold text-gray-900">{msg.authorName}</span>
+                {isSuperAdmin ? (
+                  <span className="inline-flex items-center gap-1 bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300 px-2 py-0.5 rounded-full font-medium">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary-500 inline-block" />
+                    Support
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 bg-surface-page text-gray-500 px-2 py-0.5 rounded-full border border-border">
+                    <span className="h-1.5 w-1.5 rounded-full bg-gray-400 inline-block" />
+                    {msg.authorRole === 'org_owner' ? 'Owner' : 'Member'}
+                  </span>
+                )}
+                <span className="ms-auto">{formatDateTime(new Date(msg.createdAt))}</span>
+              </div>
+              <p className="text-sm text-gray-900 whitespace-pre-wrap">{msg.body}</p>
             </div>
-            <p className="text-sm text-gray-900 whitespace-pre-wrap">{msg.body}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Reply box */}

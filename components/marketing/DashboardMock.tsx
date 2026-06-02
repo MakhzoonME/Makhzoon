@@ -74,7 +74,7 @@ export function DashboardMock() {
           <div style={{ background: '#fff', border: '1px solid var(--border-default)', borderRadius: 10, boxShadow: 'var(--shadow-xs)', overflow: 'hidden' }}>
             <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-default)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-900)' }}>Recent Assets</span>
-              <div style={{ fontSize: 11, color: 'var(--primary-600)', fontWeight: 500 }}>View all →</div>
+              <div style={{ fontSize: 11, color: 'var(--primary-600)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 2 }}>View all <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden><path d="M2 5h6M5.5 2.5L8 5l-2.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>

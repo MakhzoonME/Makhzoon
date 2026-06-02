@@ -119,7 +119,7 @@ export default function ProfilePage() {
     <div>
       <PageHeader title={t('common.profile')} />
 
-      <div className="max-w-2xl space-y-6">
+      <div className="max-w-2xl mx-auto space-y-6">
         <div className="bg-surface-card rounded-lg border border-border p-6">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">{t('profile.accountInfo')}</h2>
           <div className="mb-6">

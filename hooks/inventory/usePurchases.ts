@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useParams } from 'next/navigation';
 import type { Purchase, PurchaseStatus } from '@/types';
 import type { PurchaseFormData } from '@/lib/modules/inventory/purchases/schemas';
 
@@ -15,13 +16,14 @@ interface ListResp {
 }
 
 export function usePurchases(params?: { status?: PurchaseStatus; search?: string; page?: number; pageSize?: number }) {
+  const { space } = useParams<{ space?: string }>();
   const query = new URLSearchParams();
   if (params?.status) query.set('status', params.status);
   if (params?.search) query.set('search', params.search);
   if (params?.page) query.set('page', String(params.page));
   if (params?.pageSize) query.set('pageSize', String(params.pageSize));
   return useQuery<ListResp>({
-    queryKey: [...LIST_KEY, params],
+    queryKey: [...LIST_KEY, space, params],
     queryFn: async () => {
       const res = await fetch(`/api/inventory/purchases?${query.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch purchases');
@@ -32,8 +34,9 @@ export function usePurchases(params?: { status?: PurchaseStatus; search?: string
 }
 
 export function usePurchase(id: string | undefined) {
+  const { space } = useParams<{ space?: string }>();
   return useQuery<{ purchase: Purchase }>({
-    queryKey: ['inventory', 'purchases', id],
+    queryKey: ['inventory', 'purchases', space, id],
     queryFn: async () => {
       const res = await fetch(`/api/inventory/purchases/${id}`);
       if (!res.ok) throw new Error('Failed to fetch purchase');

@@ -88,6 +88,7 @@ export class InventoryService {
       posEnabled?: boolean
       posPrice?: number | null
       taxRateId?: string | null
+      documents?: import('@/types').DocumentRef[]
     }
   ) {
     requirePermission(tenant, 'inventory', 'create')
@@ -128,6 +129,7 @@ export class InventoryService {
       posEnabled?: boolean
       posPrice?: number | null
       taxRateId?: string | null
+      documents?: import('@/types').DocumentRef[]
     }
   ) {
     requirePermission(tenant, 'inventory', 'update')

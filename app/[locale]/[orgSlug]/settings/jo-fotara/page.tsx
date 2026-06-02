@@ -3,14 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CheckCircle2, AlertTriangle, KeyRound } from 'lucide-react';
-import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useFawtaraConfig, useUpdateFawtaraConfig } from '@/hooks/haraka';
-import { toast, useAdminGuard, useT } from '@/hooks/ui';
+import { toast, useAdminGuard, useT, useOrgSlug } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import type { FawtaraConfig } from '@/types';
 
 interface FormShape {
@@ -27,6 +27,8 @@ interface FormShape {
 export default function FawtaraSettingsPage() {
   const { isAllowed } = useAdminGuard('settings.fawtara');
   const { t } = useT();
+  const orgSlug = useOrgSlug();
+  const { data: orgInfo } = useOrgInfo();
   const { data, isLoading } = useFawtaraConfig();
   const updateMut = useUpdateFawtaraConfig();
   const config: FawtaraConfig | undefined = data?.config;
@@ -86,10 +88,10 @@ export default function FawtaraSettingsPage() {
 
   return (
     <div className="p-6 max-w-2xl space-y-6">
-      <PageHeader
-        title={t('fawtara.title')}
-        description={t('fawtara.subtitle')}
-      />
+      <div>
+        <h1 className="text-[17px] font-semibold text-gray-900">{t('fawtara.title')}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{t('fawtara.subtitle')}</p>
+      </div>
 
       <div
         className={`rounded-lg border px-4 py-3 text-sm flex items-start gap-2 ${

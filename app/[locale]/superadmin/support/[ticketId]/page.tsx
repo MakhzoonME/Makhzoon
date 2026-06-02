@@ -23,7 +23,7 @@ export default function SuperAdminTicketDetailPage(props: { params: Promise<{ ti
   const params = use(props.params);
   const { ticketId } = params;
   const router = useRouter();
-  const { locale } = useT();
+  const { t, locale } = useT();
   const { data: ticket, isLoading } = useSupportTicket(ticketId);
   const { data: messages = [], isLoading: messagesLoading } = useTicketMessages(ticketId);
   const updateMut = useUpdateTicket(ticketId);
@@ -72,8 +72,8 @@ export default function SuperAdminTicketDetailPage(props: { params: Promise<{ ti
         title={ticket.subject}
         description={`Ticket #${ticket.id.slice(0, 8)}`}
         breadcrumb={[
-          { label: 'Support', href: `/${locale}/superadmin/support` },
-          { label: 'Detail', href: '' },
+          { label: t('nav.support'), href: `/${locale}/superadmin/support` },
+          { label: ticket.subject },
         ]}
         actions={
           <Button size="sm" variant="outline" onClick={() => router.back()}>

@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import { Plus, Trash2, Pencil } from 'lucide-react';
-import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +15,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useList, useUpsertOrgListItem, useDeleteOrgListItem } from '@/hooks/lists';
-import { toast, useAdminGuard, useT } from '@/hooks/ui';
+import { toast, useAdminGuard, useT, useOrgSlug } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import { LIST_REGISTRY, LIST_KEYS, type ListKey } from '@/types';
 import { cn } from '@/lib/utils/cn';
 import type { ResolvedListItem } from '@/types';
@@ -30,6 +30,8 @@ const ORG_KEYS = LIST_KEYS.filter(
 export default function OrgListsPage() {
   const { isAllowed } = useAdminGuard('settings.orgInfo');
   const { t, locale } = useT();
+  const orgSlug = useOrgSlug();
+  const { data: orgInfo } = useOrgInfo();
   const isAr = locale === 'ar';
   const [selected, setSelected] = useState<ListKey>(ORG_KEYS[0] ?? 'asset_category');
   const meta = LIST_REGISTRY[selected];
@@ -116,12 +118,12 @@ export default function OrgListsPage() {
 
   return (
     <div>
-      <PageHeader
-        title={t('nav.lists')}
-        description={t('lists.subtitle')}
-      />
+      <div className="mb-6">
+        <h1 className="text-[17px] font-semibold text-gray-900">{t('nav.lists')}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{t('lists.subtitle')}</p>
+      </div>
 
-      <div className="flex flex-col md:flex-row gap-6 mt-4">
+      <div className="flex flex-col md:flex-row gap-6">
         <aside className="md:w-52 flex-shrink-0 space-y-0.5">
           {ORG_KEYS.map((k) => (
             <button

@@ -1,7 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Boxes, CheckCircle2, Archive, ShieldAlert, Plus, Upload } from 'lucide-react';
+import { Boxes, CheckCircle2, Archive, ShieldAlert, Plus } from 'lucide-react';
 import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader, StatCard, OverviewSection, DataTable, StatusBadge, SubscriptionGate } from '@/components/shared';
@@ -11,16 +11,18 @@ import { hasPermission } from '@/lib/permissions';
 import { formatDate } from '@/lib/utils/date';
 import { Asset } from '@/types';
 
-function useUsoolOverview() {
+function useUsoolOverview(space: string | null) {
   return useQuery({
-    queryKey: ['usool-overview'],
+    queryKey: ['usool-overview', space],
+    enabled: !!space,
     queryFn: async () => {
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
       const [totalRes, activeRes, retiredRes, recentRes, warrRes] = await Promise.all([
-        fetch('/api/assets?pageSize=1'),
-        fetch('/api/assets?status=Active&pageSize=1'),
-        fetch('/api/assets?status=Retired&pageSize=1'),
-        fetch('/api/assets?pageSize=6&sortBy=createdAt&sortDir=desc'),
-        fetch('/api/warranties?expiringSoon=true'),
+        fetch('/api/assets?pageSize=1', { headers }),
+        fetch('/api/assets?status=Active&pageSize=1', { headers }),
+        fetch('/api/assets?status=Retired&pageSize=1', { headers }),
+        fetch('/api/assets?pageSize=6&sortBy=createdAt&sortDir=desc', { headers }),
+        fetch('/api/warranties?expiringSoon=true', { headers }),
       ]);
       const total = totalRes.ok ? (await totalRes.json())?.total ?? 0 : 0;
       const active = activeRes.ok ? (await activeRes.json())?.total ?? 0 : 0;
@@ -87,7 +89,7 @@ export default function UsoolOverviewPage() {
   const space = useSpace();
   const { user } = useAuthStore();
   const { t, locale } = useT();
-  const { data, isLoading } = useUsoolOverview();
+  const { data, isLoading } = useUsoolOverview(space);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
   const canCreateAsset = !!user && hasPermission(user, 'assets', 'create');
@@ -114,13 +116,6 @@ export default function UsoolOverviewPage() {
         description={t('overview.assets.subtitle')}
         actions={(isAdmin || canCreateAsset) ? (
           <div className="flex items-center gap-2">
-            {isAdmin && (
-              <SubscriptionGate>
-                <Button size="sm" variant="outline" onClick={() => router.push(`${base}/import`)}>
-                  <Upload className="w-4 h-4" /><span className="ms-1">{t('assets.importCsv')}</span>
-                </Button>
-              </SubscriptionGate>
-            )}
             {canCreateAsset && (
               <SubscriptionGate>
                 <Button size="sm" onClick={() => router.push(`${base}/new`)}>

@@ -1,5 +1,6 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'next/navigation';
 import { Warranty } from '@/types';
 
 interface WarrantiesResponse {
@@ -19,6 +20,7 @@ export function useWarranties(params?: {
   sortBy?: string;
   sortDir?: 'asc' | 'desc';
 }) {
+  const { space } = useParams<{ space?: string }>();
   const query = new URLSearchParams();
   if (params?.status) query.set('status', params.status);
   if (params?.assetId) query.set('assetId', params.assetId);
@@ -29,9 +31,11 @@ export function useWarranties(params?: {
   if (params?.sortDir) query.set('sortDir', params.sortDir);
 
   return useQuery<WarrantiesResponse>({
-    queryKey: ['warranties', params],
+    queryKey: ['warranties', space, params],
+    enabled: !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/warranties?${query.toString()}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/warranties?${query.toString()}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch warranties');
       return res.json();
     },
@@ -41,13 +45,15 @@ export function useWarranties(params?: {
 }
 
 export function useWarranty(id: string) {
+  const { space } = useParams<{ space?: string }>();
   return useQuery({
-    queryKey: ['warranties', id],
+    queryKey: ['warranties', space, id],
+    enabled: !!id && !!space,
     queryFn: async () => {
-      const res = await fetch(`/api/warranties/${id}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/warranties/${id}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch warranty');
       return res.json();
     },
-    enabled: !!id,
   });
 }

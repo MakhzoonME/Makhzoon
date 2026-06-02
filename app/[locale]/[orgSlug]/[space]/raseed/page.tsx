@@ -1,7 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Boxes, PackageCheck, AlertTriangle, PackageX, Plus, ClipboardCheck } from 'lucide-react';
+import { Boxes, PackageCheck, AlertTriangle, PackageX, Plus } from 'lucide-react';
 import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader, StatCard, OverviewSection, DataTable, SubscriptionGate } from '@/components/shared';
@@ -10,14 +10,16 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { InventoryItem } from '@/types';
 
-function useRaseedOverview() {
+function useRaseedOverview(space: string | null) {
   return useQuery({
-    queryKey: ['raseed-overview'],
+    queryKey: ['raseed-overview', space],
+    enabled: !!space,
     queryFn: async () => {
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
       const [allRes, lowRes, outRes] = await Promise.all([
-        fetch('/api/inventory?pageSize=6&sortBy=createdAt&sortDir=desc'),
-        fetch('/api/inventory?stockStatus=low&pageSize=1'),
-        fetch('/api/inventory?stockStatus=out&pageSize=1'),
+        fetch('/api/inventory?pageSize=6&sortBy=createdAt&sortDir=desc', { headers }),
+        fetch('/api/inventory?stockStatus=low&pageSize=1', { headers }),
+        fetch('/api/inventory?stockStatus=out&pageSize=1', { headers }),
       ]);
       const allBody = allRes.ok ? await allRes.json() : { items: [], total: 0 };
       const recent: InventoryItem[] = Array.isArray(allBody?.items) ? allBody.items : [];
@@ -87,7 +89,7 @@ export default function RaseedOverviewPage() {
   const space = useSpace();
   const { user } = useAuthStore();
   const { t, locale } = useT();
-  const { data, isLoading } = useRaseedOverview();
+  const { data, isLoading } = useRaseedOverview(space);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
@@ -133,10 +135,6 @@ export default function RaseedOverviewPage() {
         description={t('overview.inventory.subtitle')}
         actions={
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => router.push(`${base}/audits`)}>
-              <ClipboardCheck className="h-4 w-4" strokeWidth={1.75} />
-              <span className="ms-1">{t('stockAudits.title')}</span>
-            </Button>
             {isAdmin && (
               <SubscriptionGate>
                 <Button size="sm" onClick={() => router.push(`${base}/new`)}>

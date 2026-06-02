@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { documentsSchema } from './document.schema';
 
 export const warrantySchema = z.object({
   assetId: z.string().optional(),
@@ -8,6 +9,7 @@ export const warrantySchema = z.object({
   endDate: z.string().min(1, 'End date is required'),
   reminder: z.boolean().default(true),
   notes: z.string().optional(),
+  documents: documentsSchema,
 }).refine((data) => {
   if (!data.assetId && !data.inventoryItemId) {
     return false;

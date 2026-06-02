@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
 import { ArrowRight, RefreshCw, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
@@ -49,6 +49,7 @@ function statusColor(status: string, conclusion: string | null) {
 }
 
 export default function SyncPage() {
+  const { t } = useT();
   const qc = useQueryClient();
   const [pending, setPending] = useState<typeof ALL_PAIRS[number] | null>(null);
 
@@ -76,7 +77,7 @@ export default function SyncPage() {
       return res.json();
     },
     onSuccess: (_data, vars) => {
-      toast.success(`Sync ${vars.source} → ${vars.target} dispatched. Watch the run list below.`);
+      toast.success(`Sync ${vars.source} -> ${vars.target} dispatched. Watch the run list below.`);
       qc.invalidateQueries({ queryKey: ['superadmin-sync-runs'] });
       setPending(null);
     },
@@ -90,7 +91,7 @@ export default function SyncPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Environment Sync" />
+      <PageHeader title={t('nav.sync')} breadcrumb={[{ label: t('nav.sync') }]} />
 
       {tokenMissing && (
         <div className="bg-[var(--yellow-100)] border border-[var(--yellow-100)] rounded-lg p-4 text-sm text-[var(--yellow-700)]">
@@ -118,7 +119,7 @@ export default function SyncPage() {
               </span>
             </div>
             <p className="text-xs text-gray-500">
-              {PROJECT_LABEL[pair.source]} → {PROJECT_LABEL[pair.target]}
+              {PROJECT_LABEL[pair.source]} <ArrowRight size={12} className="inline" aria-hidden /> {PROJECT_LABEL[pair.target]}
             </p>
             <p className="text-sm text-gray-600">{pair.description}</p>
             <Button
@@ -186,7 +187,7 @@ export default function SyncPage() {
       <ConfirmDialog
         open={!!pending}
         onOpenChange={(o) => !o && setPending(null)}
-        title={pending ? `Sync ${pending.source} → ${pending.target}?` : ''}
+        title={pending ? `Sync ${pending.source} -> ${pending.target}?` : ''}
         description={
           pending
             ? `This will OVERWRITE every matching document in ${PROJECT_LABEL[pending.target]} with data from ${PROJECT_LABEL[pending.source]}. PII is not scrubbed. The sync runs as a GitHub Actions workflow — you can watch it below.`

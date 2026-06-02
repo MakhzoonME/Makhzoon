@@ -22,6 +22,7 @@ export function useAuth() {
       let permissions = null;
       let orgSlug: string | null = null;
       let avatarUrl: string | null = null;
+      let displayName: string | null = null;
       let resolvedRole = role;
 
       try {
@@ -35,6 +36,7 @@ export function useAuth() {
           permissions = data.permissions ?? null;
           orgSlug = data.orgSlug ?? null;
           avatarUrl = data.avatarUrl ?? null;
+          displayName = data.displayName ?? null;
         }
       } catch {
         // non-critical
@@ -44,7 +46,7 @@ export function useAuth() {
       setUser({
         uid,
         email,
-        displayName: '',
+        displayName: displayName ?? '',
         avatarUrl,
         role: resolvedRole,
         organizationId,
@@ -71,7 +73,7 @@ export function useAuth() {
             setUser({
               uid: data.uid ?? '',
               email: '',
-              displayName: '',
+              displayName: data.displayName ?? '',
               avatarUrl: data.avatarUrl ?? null,
               role: data.role,
               organizationId: data.organizationId ?? null,

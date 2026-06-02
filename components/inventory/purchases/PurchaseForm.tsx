@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { DocumentUpload } from '@/components/shared';
 import { createPurchaseSchema, type PurchaseFormData } from '@/lib/modules/inventory/purchases/schemas';
 import { useCreatePurchase, useUpdatePurchase } from '@/hooks/inventory';
 import type { Purchase } from '@/types';
@@ -51,6 +52,7 @@ export function PurchaseForm({ purchase, onSuccess, onCancel }: Props) {
       invoiceDate: purchase?.invoiceDate ?? new Date(),
       notes: purchase?.notes ?? '',
       updateItemUnitCost: purchase?.updateItemUnitCost ?? false,
+      documents: purchase?.documents ?? [],
       lines: purchase?.lines.map((l) => ({
         itemId: l.itemId,
         itemName: l.itemName,
@@ -168,6 +170,20 @@ export function PurchaseForm({ purchase, onSuccess, onCancel }: Props) {
             <FormLabel>Notes</FormLabel>
             <FormControl>
               <Textarea {...field} value={field.value ?? ''} rows={2} placeholder="Internal notes about this purchase" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={form.control} name="documents" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Invoices / receipts</FormLabel>
+            <FormControl>
+              <DocumentUpload
+                kind="purchase-invoice"
+                value={field.value ?? []}
+                onChange={(refs) => field.onChange(refs)}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>

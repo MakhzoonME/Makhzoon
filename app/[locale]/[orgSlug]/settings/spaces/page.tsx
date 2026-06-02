@@ -2,8 +2,9 @@
 import { useState } from 'react';
 import { Plus, Pencil, Archive, Undo2, Lock, Users, Info } from 'lucide-react';
 import { SpaceMembersDrawer } from '@/components/spaces/SpaceMembersDrawer';
-import { useT } from '@/hooks/ui';
+import { useT, useOrgSlug } from '@/hooks/ui';
 import { useAdminGuard } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import {
   useAllSpaces,
   useCreateSpace,
@@ -12,7 +13,7 @@ import {
 } from '@/hooks/spaces';
 import { useUsers } from '@/hooks/users';
 import type { OrgUser } from '@/types/user.types';
-import { PageHeader, DataTable, StatusBadge, FormDrawer, ConfirmDialog } from '@/components/shared';
+import { DataTable, StatusBadge, FormDrawer, ConfirmDialog } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,8 @@ import type { Space } from '@/types/space.types';
 
 export default function SpacesSettingsPage() {
   const { t } = useT();
+  const orgSlug = useOrgSlug();
+  const { data: orgInfo } = useOrgInfo();
   const { isAllowed } = useAdminGuard('settings.orgInfo');
   const { data, isLoading } = useAllSpaces();
   const createMut = useCreateSpace();
@@ -111,15 +114,15 @@ export default function SpacesSettingsPage() {
 
   return (
     <div>
-      <PageHeader
-        title={t('spaces.title')}
-        description={t('spaces.description')}
-        actions={(
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('spaces.newSpace')}</span>
-          </Button>
-        )}
-      />
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-[17px] font-semibold text-gray-900">{t('spaces.title')}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{t('spaces.description')}</p>
+        </div>
+        <Button size="sm" onClick={() => setCreateOpen(true)}>
+          <Plus className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('spaces.newSpace')}</span>
+        </Button>
+      </div>
 
       {onlyDefault && (
         <div className="mb-3 flex items-start gap-2 rounded-lg bg-primary-50 border border-primary-100 px-3 py-2.5">

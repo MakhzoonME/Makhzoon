@@ -46,18 +46,25 @@
   --amber-500: #F59E0B;
   --violet-600: #7C3AED;
 
-  /* Super Admin */
-  --sa-bg:   #1E3A5F;
-  --sa-text: #BFDBFE;
-  /* legacy aliases */
-  --super-admin-bg:   #1E3A5F;
-  --super-admin-text: #BFDBFE;
+  /* Module identity colors */
+  --mod-usool:  #00695C;   /* teal   — fixed assets (Usool) */
+  --mod-raseed: #E65100;   /* orange — inventory (Raseed) */
+  --mod-haraka: #C2185B;   /* crimson — point of sale (Haraka) */
+
+  /* DEPRECATED — superadmin navy shell removed per design 2026-05-31.
+     Use standard surface tokens instead. Remove component usages before deleting. */
+  /* --sa-bg:             #1E3A5F; */
+  /* --sa-text:           #BFDBFE; */
+  /* --super-admin-bg:    #1E3A5F; */
+  /* --super-admin-text:  #BFDBFE; */
 
   /* Surfaces — Light mode */
   --surface-page:    #F8FAFC;
   --surface-card:    #FFFFFF;
   --surface-input:   #FFFFFF;
   --surface-sidebar: #FFFFFF;
+  --surface-inset:   #F1F4F9;   /* toolbar backgrounds, inset panels, SegTabs container */
+  --surface-hover:   #F3F4F6;   /* table row hover, list item hover */
   --border-default:  #E5E7EB;
   --border-strong:   #D1D5DB;
   --text-primary:    #111827;
@@ -94,7 +101,8 @@
   --dur-base:  300ms;
   --dur-slow:  450ms;
 
-  --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-mono:   "Geist Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-arabic: var(--font-thmanyah), "Noto Sans Arabic", system-ui, sans-serif;
 }
 
 /* ── Dark mode token overrides ──────────────────────────────────────── */
@@ -107,6 +115,8 @@
   --surface-sidebar: #13151E;
   --border-default:  #3D4160; /* bumped from #2E3147 for visibility */
   --border-strong:   #5A5F7D; /* bumped from #3D4160 for clearer hover */
+  --surface-inset:   #14171F;
+  --surface-hover:   #232734;
   --text-primary:    #F1F2F6;
   --text-secondary:  #8B91A8;
   --text-tertiary:   #8B91A8; /* WCAG AA pass on #0F1117 (6.1:1) */
@@ -345,6 +355,61 @@ html[lang="ar"] body,
     border-color: rgba(99, 102, 241, 0.45) !important;
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
   }
+}
+
+/* ── Coming Soon — cosmic animations ───────────────────────────────── */
+@keyframes cs-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(44px, -34px) scale(1.06); }
+  66%       { transform: translate(-22px, 22px) scale(0.97); }
+}
+@keyframes cs-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40%       { transform: translate(-52px, 32px) scale(1.04); }
+  70%       { transform: translate(24px, -18px) scale(0.96); }
+}
+@keyframes cs-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(28px, -38px) scale(1.05); }
+}
+@keyframes cs-shoot {
+  0%        { transform: translate(-8vw, 0) rotate(25deg); opacity: 0; }
+  4%        { opacity: 1; }
+  28%       { transform: translate(112vw, 28vh) rotate(25deg); opacity: 0; }
+  100%      { transform: translate(112vw, 28vh) rotate(25deg); opacity: 0; }
+}
+@keyframes cs-huerot {
+  0%   { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+@keyframes cs-badge-shimmer {
+  0%   { transform: translateX(-200%); }
+  100% { transform: translateX(200%); }
+}
+@keyframes cs-blink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.35; transform: scale(0.85); }
+}
+@keyframes cs-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.55); }
+  70%  { box-shadow: 0 0 0 5px rgba(74, 222, 128, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+}
+@keyframes cs-gradslide {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+@layer utilities {
+  .cs-orb-1    { animation: cs-drift-1 26s ease-in-out infinite; }
+  .cs-orb-2    { animation: cs-drift-2 30s ease-in-out infinite; }
+  .cs-orb-3    { animation: cs-drift-3 34s ease-in-out infinite; }
+  .cs-shoot    { animation: cs-shoot 11s linear infinite; }
+  .cs-huerot   { animation: cs-huerot 9s linear infinite; }
+  .cs-shimmer  { animation: cs-badge-shimmer 3.8s ease-in-out infinite; }
+  .cs-blink    { animation: cs-blink 2s ease-in-out infinite; }
+  .cs-pulse    { animation: cs-pulse-ring 2s ease-out infinite; }
+  .cs-gradslide { animation: cs-gradslide 7s ease-in-out infinite; background-size: 200% 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

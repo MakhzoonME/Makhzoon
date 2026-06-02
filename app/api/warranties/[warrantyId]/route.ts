@@ -34,6 +34,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ warr
       endDate: new Date(data.endDate),
       reminder: data.reminder,
       notes: data.notes || undefined,
+      documents: data.documents ?? undefined,
     });
 
     return NextResponse.json({ success: true });

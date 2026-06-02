@@ -181,7 +181,8 @@ export default function ReceiptSettingsPage() {
     finally { setBusy(false); }
   }
 
-  const shareLink = `https://rcpt.makhzoon.me/r/${orgSlug}/preview`;
+  const receiptBase = (process.env.NEXT_PUBLIC_RECEIPT_URL ?? 'https://rcpt.makhzoon.me').replace(/\/$/, '');
+  const shareLink = `${receiptBase}/r/${orgSlug}/preview`;
 
   const isThermal = config.template === 'thermal-58' || config.template === 'thermal-80';
 

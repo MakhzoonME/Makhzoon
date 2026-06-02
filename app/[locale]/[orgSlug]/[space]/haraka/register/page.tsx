@@ -19,6 +19,10 @@ import { toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { printRaw } from '@/lib/modules/haraka/printing/webusb-transport';
 import { buildReceipt } from '@/lib/modules/haraka/printing/receipt-template';
+import type { ReceiptPrintText } from '@/lib/modules/haraka/printing/receipt-canvas';
+import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
+import type { ReceiptLang } from '@/lib/receipts/labels';
+import { useQuery } from '@tanstack/react-query';
 import type { InventoryItem, PosTransaction } from '@/types';
 
 /**
@@ -54,6 +58,18 @@ export default function RegisterPage() {
   const [payOpen, setPayOpen] = useState(false);
   const [printerOpen, setPrinterOpen] = useState(false);
   const [lastTx, setLastTx] = useState<PosTransaction | null>(null);
+  // When the org issues in both languages, the cashier picks per print.
+  const [langPickTx, setLangPickTx] = useState<PosTransaction | null>(null);
+
+  // Org receipt branding/config — drives the printed receipt's content + language.
+  const { data: receiptCfg } = useQuery<{ tagline?: string; taglineAr?: string; taxNumber?: string; config?: ReceiptConfig }>({
+    queryKey: ['receipt-config'],
+    queryFn: async () => {
+      const res = await fetch('/api/organizations/receipt-config');
+      return res.ok ? res.json() : {};
+    },
+    staleTime: 60_000,
+  });
 
   // No session → bounce back to the landing page so the cashier opens one.
   // Only redirect once the query has completed at least one fetch to avoid
@@ -134,13 +150,43 @@ export default function RegisterPage() {
       toast.success(`Sale complete — receipt ${result.transaction.receiptNumber}`);
 
       // Print receipt async; failures don't roll back the sale.
-      printReceipt(result.transaction).catch(() => undefined);
+      requestPrint(result.transaction);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Sale failed');
     }
   }
 
-  async function printReceipt(transaction: PosTransaction) {
+  /** Decide how to print: "both" asks the cashier for a language, else prints directly. */
+  function requestPrint(transaction: PosTransaction) {
+    if ((receiptCfg?.config?.language ?? 'en') === 'both') {
+      setLangPickTx(transaction);
+    } else {
+      const lang: ReceiptLang = receiptCfg?.config?.language === 'ar' ? 'ar' : 'en';
+      printReceipt(transaction, lang).catch(() => undefined);
+    }
+  }
+
+  /** Build the localized, bilingual content the printer needs from the org config. */
+  function buildPrintText(): ReceiptPrintText {
+    const cfg = receiptCfg?.config;
+    return {
+      orgName: orgInfo?.name ?? '',
+      orgNameAr: cfg?.orgNameAr ?? '',
+      tagline: receiptCfg?.tagline ?? '',
+      taglineAr: receiptCfg?.taglineAr ?? '',
+      address: cfg?.address ?? '',
+      addressAr: cfg?.addressAr ?? '',
+      phone: cfg?.phone ?? '',
+      taxNumber: receiptCfg?.taxNumber ?? '',
+      footerText: cfg?.footerText ?? '',
+      footerTextAr: cfg?.footerTextAr ?? '',
+      showCashier: cfg?.showCashier ?? true,
+      showTaxNumber: cfg?.showTaxNumber ?? true,
+      showFawtaraQr: cfg?.showFawtaraQr ?? true,
+    };
+  }
+
+  async function printReceipt(transaction: PosTransaction, lang: ReceiptLang) {
     try {
       const { usePrinterStore } = await import('@/store/printer.store');
       const printer = usePrinterStore.getState();
@@ -148,9 +194,11 @@ export default function RegisterPage() {
         paperWidth: printer.paperWidth,
         organization: {
           id: user?.organizationId ?? '',
-          name: 'Makhzoon',
+          name: orgInfo?.name ?? '',
           contactEmail: user?.email ?? '',
         },
+        text: buildPrintText(),
+        lang,
       });
       const ok = await printRaw(bytes);
       if (!ok) toast.info('No printer paired — receipt not printed');
@@ -178,7 +226,7 @@ export default function RegisterPage() {
               <Printer size={14} className="me-1" /> {t('register.printer')}
             </Button>
             {lastTx && (
-              <Button variant="outline" size="sm" onClick={() => printReceipt(lastTx)}>
+              <Button variant="outline" size="sm" onClick={() => requestPrint(lastTx)}>
                 <Receipt size={14} className="me-1" /> {t('register.reprintLast')}
               </Button>
             )}
@@ -238,6 +286,36 @@ export default function RegisterPage() {
         loading={completeMut.isPending}
       />
       <PrinterSettingsDialog open={printerOpen} onOpenChange={setPrinterOpen} />
+
+      {/* Cashier language pick — only when the org issues receipts in both languages */}
+      {langPickTx && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-xs rounded-xl bg-white p-5 shadow-xl">
+            <div className="text-sm font-semibold text-gray-900">Print language</div>
+            <p className="mt-1 text-xs text-gray-500">Choose the language for this receipt.</p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                onClick={() => { const tx = langPickTx; setLangPickTx(null); printReceipt(tx, 'en').catch(() => undefined); }}
+              >
+                English
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => { const tx = langPickTx; setLangPickTx(null); printReceipt(tx, 'ar').catch(() => undefined); }}
+              >
+                العربية
+              </Button>
+            </div>
+            <button
+              onClick={() => setLangPickTx(null)}
+              className="mt-3 w-full text-center text-xs text-gray-400 hover:text-gray-600"
+            >
+              Skip printing
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

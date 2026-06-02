@@ -1,6 +1,12 @@
 'use client';
 
+import { receiptLabels, isRtl, pickText, type ReceiptLang } from '@/lib/receipts/labels';
+
 export type TemplateId = 'thermal-58' | 'thermal-80' | 'a4-modern' | 'a4-invoice';
+
+/** Org-level receipt language policy. 'both' is resolved to a concrete
+ *  'en' | 'ar' by the caller (preview toggle / viewer toggle / cashier pick). */
+export type ReceiptLanguage = 'en' | 'ar' | 'both';
 
 export interface ReceiptConfig {
   template: TemplateId;
@@ -13,11 +19,16 @@ export interface ReceiptConfig {
   showPhone: boolean;
   showWebsite: boolean;
   footerText: string;
+  footerTextAr: string;
   accentColor: string;
   logo: string | null;
   phone: string;
   address: string;
+  addressAr: string;
   website: string;
+  orgNameAr: string;
+  /** Which language(s) the business issues receipts in. */
+  language: ReceiptLanguage;
 }
 
 /* Real receipt content. When omitted, the templates render SAMPLE_DATA so the
@@ -68,8 +79,20 @@ interface PreviewProps {
   taxNumber: string;
   tagline: string;
   config: ReceiptConfig;
+  /** Arabic counterparts for the bilingual free-text fields. */
+  orgNameAr?: string;
+  taglineAr?: string;
+  /** Concrete language to render. Resolves config.language when 'both';
+   *  falls back to config.language (or 'en') when not provided. */
+  lang?: ReceiptLang;
   /** Real sale data; falls back to SAMPLE_DATA for the settings preview. */
   data?: ReceiptData;
+}
+
+/** Resolve the single language a template should render in. */
+function resolveLang(props: PreviewProps): ReceiptLang {
+  if (props.lang) return props.lang;
+  return props.config.language === 'ar' ? 'ar' : 'en';
 }
 
 /* Small QR slot: real code when provided, placeholder box otherwise. */
@@ -84,14 +107,25 @@ function QrSlot({ dataUrl }: { dataUrl?: string | null }) {
 }
 
 /* ── Thermal receipt (58mm / 80mm) ───────────────────────────── */
-export function ThermalPreview({ orgName, taxNumber, tagline, config, data }: PreviewProps) {
+export function ThermalPreview(props: PreviewProps) {
+  const { taxNumber, config, data } = props;
   const d = data ?? SAMPLE_DATA;
+  const lang = resolveLang(props);
+  const L = receiptLabels(lang);
+  const rtl = isRtl(lang);
   const is80 = config.template === 'thermal-80';
   const w = is80 ? 260 : 200;
 
+  const orgName = pickText(lang, props.orgName, props.orgNameAr) || (lang === 'ar' ? 'اسم المتجر' : 'Business Name');
+  const tagline = pickText(lang, props.tagline, props.taglineAr);
+  const address = pickText(lang, config.address, config.addressAr);
+  const footer = pickText(lang, config.footerText, config.footerTextAr);
+  const statusLabel = d.status && d.status !== 'completed' ? L.status[d.status] : '';
+
   return (
     <div
-      className="font-mono text-[10px] leading-[1.45] bg-white border border-gray-200 shadow-md px-4 py-5 mx-auto"
+      dir={rtl ? 'rtl' : 'ltr'}
+      className={`${rtl ? 'font-sans' : 'font-mono'} text-[10px] leading-[1.45] bg-white border border-gray-200 shadow-md px-4 py-5 mx-auto`}
       style={{ width: w, color: '#111' }}
     >
       {config.showLogo && (
@@ -102,24 +136,24 @@ export function ThermalPreview({ orgName, taxNumber, tagline, config, data }: Pr
         </div>
       )}
       <div className="text-center font-bold text-[11px] mb-0.5" style={{ color: config.accentColor }}>
-        {orgName || 'Business Name'}
+        {orgName}
       </div>
       {tagline && <div className="text-center text-[9px] text-gray-500 mb-0.5">{tagline}</div>}
-      {config.showAddress && config.address && <div className="text-center text-[9px] text-gray-400 mb-0.5">{config.address}</div>}
+      {config.showAddress && address && <div className="text-center text-[9px] text-gray-400 mb-0.5">{address}</div>}
       {config.showPhone && config.phone && <div className="text-center text-[9px] text-gray-400 mb-0.5">{config.phone}</div>}
       {config.showWebsite && config.website && <div className="text-center text-[9px] text-gray-400 mb-0.5">{config.website}</div>}
 
-      {d.status && d.status !== 'completed' && (
-        <div className="text-center text-[10px] font-bold uppercase tracking-wide text-red-600 mt-1">{d.status}</div>
+      {statusLabel && (
+        <div className="text-center text-[10px] font-bold uppercase tracking-wide text-red-600 mt-1">{statusLabel}</div>
       )}
 
       <div className="border-t border-dashed border-gray-300 my-2" />
 
       <div className="flex justify-between text-[9px] text-gray-500 mb-1">
-        <span>Receipt #{d.receiptNumber}</span>
+        <span>{L.receipt} #{d.receiptNumber}</span>
         <span>{d.dateLabel}</span>
       </div>
-      {config.showCashier && d.cashierName && <div className="text-[9px] text-gray-500 mb-1">Cashier: {d.cashierName}</div>}
+      {config.showCashier && d.cashierName && <div className="text-[9px] text-gray-500 mb-1">{L.cashier}: {d.cashierName}</div>}
 
       <div className="border-t border-dashed border-gray-300 my-2" />
 
@@ -133,32 +167,32 @@ export function ThermalPreview({ orgName, taxNumber, tagline, config, data }: Pr
       <div className="border-t border-dashed border-gray-300 my-2" />
 
       <div className="flex justify-between text-[9px] text-gray-500 mb-0.5">
-        <span>Subtotal</span><span>{money(d.subtotal, d.currency)}</span>
+        <span>{L.subtotal}</span><span>{money(d.subtotal, d.currency)}</span>
       </div>
       {d.discount > 0 && (
         <div className="flex justify-between text-[9px] text-gray-500 mb-0.5">
-          <span>Discount</span><span>− {money(d.discount, d.currency)}</span>
+          <span>{L.discount}</span><span>− {money(d.discount, d.currency)}</span>
         </div>
       )}
       {config.showItemizedTax && (
         <div className="flex justify-between text-[9px] text-gray-500 mb-0.5">
-          <span>Tax</span><span>{money(d.tax, d.currency)}</span>
+          <span>{L.tax}</span><span>{money(d.tax, d.currency)}</span>
         </div>
       )}
       <div className="flex justify-between font-bold text-[11px] mt-1">
-        <span>Total</span><span style={{ color: config.accentColor }}>{money(d.total, d.currency)}</span>
+        <span>{L.total}</span><span style={{ color: config.accentColor }}>{money(d.total, d.currency)}</span>
       </div>
 
       {config.showTaxNumber && taxNumber && (
-        <div className="text-[9px] text-gray-400 mt-1">Tax #: {taxNumber}</div>
+        <div className="text-[9px] text-gray-400 mt-1">{L.taxNo}: {taxNumber}</div>
       )}
 
       {config.showFawtaraQr && <QrSlot dataUrl={d.qrCodeDataUrl} />}
 
-      {config.footerText && (
+      {footer && (
         <>
           <div className="border-t border-dashed border-gray-300 mt-2 mb-1" />
-          <div className="text-center text-[9px] text-gray-400">{config.footerText}</div>
+          <div className="text-center text-[9px] text-gray-400">{footer}</div>
         </>
       )}
     </div>
@@ -166,10 +200,21 @@ export function ThermalPreview({ orgName, taxNumber, tagline, config, data }: Pr
 }
 
 /* ── A4 Modern receipt ───────────────────────────────────────── */
-export function A4ModernPreview({ orgName, taxNumber, tagline, config, data }: PreviewProps) {
+export function A4ModernPreview(props: PreviewProps) {
+  const { taxNumber, config, data } = props;
   const d = data ?? SAMPLE_DATA;
+  const lang = resolveLang(props);
+  const L = receiptLabels(lang);
+  const rtl = isRtl(lang);
+
+  const orgName = pickText(lang, props.orgName, props.orgNameAr) || (lang === 'ar' ? 'اسم المتجر' : 'Business Name');
+  const tagline = pickText(lang, props.tagline, props.taglineAr);
+  const address = pickText(lang, config.address, config.addressAr);
+  const footer = pickText(lang, config.footerText, config.footerTextAr);
+  const statusLabel = d.status && d.status !== 'completed' ? L.status[d.status] : '';
+
   return (
-    <div className="bg-white border border-gray-200 shadow-md mx-auto text-[10px] leading-relaxed" style={{ width: 320, minHeight: 420, fontFamily: 'sans-serif' }}>
+    <div dir={rtl ? 'rtl' : 'ltr'} className="bg-white border border-gray-200 shadow-md mx-auto text-[10px] leading-relaxed" style={{ width: 320, minHeight: 420, fontFamily: 'sans-serif' }}>
       {/* Header band */}
       <div className="px-6 py-4 text-white" style={{ background: config.accentColor }}>
         <div className="flex items-center gap-3">
@@ -179,13 +224,13 @@ export function A4ModernPreview({ orgName, taxNumber, tagline, config, data }: P
               : <div className="w-10 h-10 rounded bg-white/20 flex items-center justify-center text-[8px]">LOGO</div>
           )}
           <div>
-            <div className="font-bold text-[13px]">{orgName || 'Business Name'}</div>
+            <div className="font-bold text-[13px]">{orgName}</div>
             {tagline && <div className="text-[9px] opacity-80">{tagline}</div>}
           </div>
         </div>
         {(config.showAddress || config.showPhone) && (
           <div className="mt-2 text-[8px] opacity-80 space-y-0.5">
-            {config.showAddress && config.address && <div>{config.address}</div>}
+            {config.showAddress && address && <div>{address}</div>}
             {config.showPhone && config.phone && <div>{config.phone}</div>}
             {config.showWebsite && config.website && <div>{config.website}</div>}
           </div>
@@ -196,16 +241,16 @@ export function A4ModernPreview({ orgName, taxNumber, tagline, config, data }: P
         {/* Receipt meta */}
         <div className="flex justify-between mb-3 text-[9px]">
           <div>
-            <div className="font-semibold text-gray-800">Sales Receipt</div>
+            <div className="font-semibold text-gray-800">{L.salesReceipt}</div>
             <div className="text-gray-500"># {d.receiptNumber}</div>
             <div className="text-gray-500">{d.dateLabel}</div>
-            {d.status && d.status !== 'completed' && (
-              <div className="mt-1 font-bold uppercase text-red-600">{d.status}</div>
+            {statusLabel && (
+              <div className="mt-1 font-bold uppercase text-red-600">{statusLabel}</div>
             )}
           </div>
           {config.showCashier && d.cashierName && (
-            <div className="text-right text-gray-500">
-              <div>Cashier</div>
+            <div className="text-end text-gray-500">
+              <div>{L.cashier}</div>
               <div className="font-medium text-gray-700">{d.cashierName}</div>
             </div>
           )}
@@ -215,9 +260,9 @@ export function A4ModernPreview({ orgName, taxNumber, tagline, config, data }: P
         <table className="w-full text-[9px] mb-3">
           <thead>
             <tr className="border-b border-gray-200">
-              <th className="text-left py-1 text-gray-500 font-medium">Item</th>
-              <th className="text-center py-1 text-gray-500 font-medium">Qty</th>
-              <th className="text-right py-1 text-gray-500 font-medium">Price</th>
+              <th className="text-start py-1 text-gray-500 font-medium">{L.item}</th>
+              <th className="text-center py-1 text-gray-500 font-medium">{L.qty}</th>
+              <th className="text-end py-1 text-gray-500 font-medium">{L.price}</th>
             </tr>
           </thead>
           <tbody>
@@ -225,7 +270,7 @@ export function A4ModernPreview({ orgName, taxNumber, tagline, config, data }: P
               <tr key={`${item.name}-${i}`} className="border-b border-gray-100">
                 <td className="py-1 text-gray-800">{item.name}</td>
                 <td className="py-1 text-center text-gray-600">{item.qty}</td>
-                <td className="py-1 text-right text-gray-800">{money(item.lineTotal, d.currency)}</td>
+                <td className="py-1 text-end text-gray-800">{money(item.lineTotal, d.currency)}</td>
               </tr>
             ))}
           </tbody>
@@ -233,21 +278,21 @@ export function A4ModernPreview({ orgName, taxNumber, tagline, config, data }: P
 
         {/* Totals */}
         <div className="space-y-0.5 text-[9px]">
-          <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>{money(d.subtotal, d.currency)}</span></div>
-          {d.discount > 0 && <div className="flex justify-between text-gray-500"><span>Discount</span><span>− {money(d.discount, d.currency)}</span></div>}
-          {config.showItemizedTax && <div className="flex justify-between text-gray-500"><span>Tax</span><span>{money(d.tax, d.currency)}</span></div>}
+          <div className="flex justify-between text-gray-500"><span>{L.subtotal}</span><span>{money(d.subtotal, d.currency)}</span></div>
+          {d.discount > 0 && <div className="flex justify-between text-gray-500"><span>{L.discount}</span><span>− {money(d.discount, d.currency)}</span></div>}
+          {config.showItemizedTax && <div className="flex justify-between text-gray-500"><span>{L.tax}</span><span>{money(d.tax, d.currency)}</span></div>}
           <div className="flex justify-between font-bold text-[11px] pt-1 border-t border-gray-200" style={{ color: config.accentColor }}>
-            <span>Total</span><span>{money(d.total, d.currency)}</span>
+            <span>{L.total}</span><span>{money(d.total, d.currency)}</span>
           </div>
         </div>
 
         {config.showTaxNumber && taxNumber && (
-          <div className="text-[9px] text-gray-400 mt-3">Tax Reg. #: {taxNumber}</div>
+          <div className="text-[9px] text-gray-400 mt-3">{L.taxReg}: {taxNumber}</div>
         )}
 
-        {config.footerText && (
+        {footer && (
           <div className="text-center text-[9px] text-gray-400 mt-4 pt-3 border-t border-dashed border-gray-200">
-            {config.footerText}
+            {footer}
           </div>
         )}
 
@@ -258,10 +303,21 @@ export function A4ModernPreview({ orgName, taxNumber, tagline, config, data }: P
 }
 
 /* ── A4 Invoice-style receipt ────────────────────────────────── */
-export function A4InvoicePreview({ orgName, taxNumber, tagline, config, data }: PreviewProps) {
+export function A4InvoicePreview(props: PreviewProps) {
+  const { taxNumber, config, data } = props;
   const d = data ?? SAMPLE_DATA;
+  const lang = resolveLang(props);
+  const L = receiptLabels(lang);
+  const rtl = isRtl(lang);
+
+  const orgName = pickText(lang, props.orgName, props.orgNameAr) || (lang === 'ar' ? 'اسم المتجر' : 'Business Name');
+  const tagline = pickText(lang, props.tagline, props.taglineAr);
+  const address = pickText(lang, config.address, config.addressAr);
+  const footer = pickText(lang, config.footerText, config.footerTextAr);
+  const statusLabel = d.status && d.status !== 'completed' ? L.status[d.status] : '';
+
   return (
-    <div className="bg-white border border-gray-200 shadow-md mx-auto text-[10px] leading-relaxed" style={{ width: 320, minHeight: 440, fontFamily: 'sans-serif' }}>
+    <div dir={rtl ? 'rtl' : 'ltr'} className="bg-white border border-gray-200 shadow-md mx-auto text-[10px] leading-relaxed" style={{ width: 320, minHeight: 440, fontFamily: 'sans-serif' }}>
       {/* Top header */}
       <div className="flex justify-between items-start px-6 pt-5 pb-3 border-b border-gray-200">
         <div className="flex items-center gap-2">
@@ -271,18 +327,18 @@ export function A4InvoicePreview({ orgName, taxNumber, tagline, config, data }: 
               : <div className="w-10 h-10 border border-gray-200 bg-gray-50 rounded flex items-center justify-center text-[8px] text-gray-400">LOGO</div>
           )}
           <div>
-            <div className="font-bold text-[12px] text-gray-900">{orgName || 'Business Name'}</div>
+            <div className="font-bold text-[12px] text-gray-900">{orgName}</div>
             {tagline && <div className="text-[8px] text-gray-500">{tagline}</div>}
-            {config.showAddress && config.address && <div className="text-[8px] text-gray-400">{config.address}</div>}
+            {config.showAddress && address && <div className="text-[8px] text-gray-400">{address}</div>}
             {config.showPhone && config.phone && <div className="text-[8px] text-gray-400">{config.phone}</div>}
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-[13px] font-bold tracking-wide" style={{ color: config.accentColor }}>INVOICE</div>
+        <div className="text-end">
+          <div className="text-[13px] font-bold tracking-wide" style={{ color: config.accentColor }}>{L.invoice}</div>
           <div className="text-[9px] text-gray-500 mt-1"># {d.receiptNumber}</div>
           <div className="text-[9px] text-gray-500">{d.dateLabel}</div>
-          {config.showCashier && d.cashierName && <div className="text-[9px] text-gray-500 mt-1">Cashier: {d.cashierName}</div>}
-          {d.status && d.status !== 'completed' && <div className="text-[9px] font-bold uppercase text-red-600 mt-1">{d.status}</div>}
+          {config.showCashier && d.cashierName && <div className="text-[9px] text-gray-500 mt-1">{L.cashier}: {d.cashierName}</div>}
+          {statusLabel && <div className="text-[9px] font-bold uppercase text-red-600 mt-1">{statusLabel}</div>}
         </div>
       </div>
 
@@ -291,10 +347,10 @@ export function A4InvoicePreview({ orgName, taxNumber, tagline, config, data }: 
         <table className="w-full text-[9px] mb-4 border-collapse">
           <thead>
             <tr style={{ background: config.accentColor + '18' }}>
-              <th className="text-left py-1.5 px-2 font-semibold text-gray-700">Description</th>
-              <th className="text-center py-1.5 px-2 font-semibold text-gray-700">Qty</th>
-              <th className="text-right py-1.5 px-2 font-semibold text-gray-700">Unit</th>
-              <th className="text-right py-1.5 px-2 font-semibold text-gray-700">Total</th>
+              <th className="text-start py-1.5 px-2 font-semibold text-gray-700">{L.description}</th>
+              <th className="text-center py-1.5 px-2 font-semibold text-gray-700">{L.qty}</th>
+              <th className="text-end py-1.5 px-2 font-semibold text-gray-700">{L.unit}</th>
+              <th className="text-end py-1.5 px-2 font-semibold text-gray-700">{L.total}</th>
             </tr>
           </thead>
           <tbody>
@@ -302,40 +358,40 @@ export function A4InvoicePreview({ orgName, taxNumber, tagline, config, data }: 
               <tr key={`${item.name}-${i}`} className={i % 2 === 0 ? '' : 'bg-gray-50'}>
                 <td className="py-1.5 px-2 text-gray-800">{item.name}</td>
                 <td className="py-1.5 px-2 text-center text-gray-600">{item.qty}</td>
-                <td className="py-1.5 px-2 text-right text-gray-600">{money(item.unitPrice, d.currency)}</td>
-                <td className="py-1.5 px-2 text-right text-gray-800">{money(item.lineTotal, d.currency)}</td>
+                <td className="py-1.5 px-2 text-end text-gray-600">{money(item.unitPrice, d.currency)}</td>
+                <td className="py-1.5 px-2 text-end text-gray-800">{money(item.lineTotal, d.currency)}</td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {/* Totals block — right aligned */}
+        {/* Totals block — trailing edge aligned */}
         <div className="flex justify-end">
           <div className="w-40 space-y-0.5 text-[9px]">
-            <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>{money(d.subtotal, d.currency)}</span></div>
+            <div className="flex justify-between text-gray-500"><span>{L.subtotal}</span><span>{money(d.subtotal, d.currency)}</span></div>
             {config.showItemizedTax && (
               <>
-                {d.discount > 0 && <div className="flex justify-between text-gray-500"><span>Discount</span><span>− {money(d.discount, d.currency)}</span></div>}
-                <div className="flex justify-between text-gray-500"><span>Tax</span><span>{money(d.tax, d.currency)}</span></div>
+                {d.discount > 0 && <div className="flex justify-between text-gray-500"><span>{L.discount}</span><span>− {money(d.discount, d.currency)}</span></div>}
+                <div className="flex justify-between text-gray-500"><span>{L.tax}</span><span>{money(d.tax, d.currency)}</span></div>
               </>
             )}
             <div className="flex justify-between font-bold text-[11px] pt-1 border-t border-gray-300" style={{ color: config.accentColor }}>
-              <span>Total</span><span>{money(d.total, d.currency)}</span>
+              <span>{L.total}</span><span>{money(d.total, d.currency)}</span>
             </div>
           </div>
         </div>
 
         {config.showTaxNumber && taxNumber && (
-          <div className="text-[9px] text-gray-400 mt-3">Tax Reg. #: {taxNumber}</div>
+          <div className="text-[9px] text-gray-400 mt-3">{L.taxReg}: {taxNumber}</div>
         )}
 
         {config.showWebsite && config.website && (
           <div className="text-[9px] text-gray-400">{config.website}</div>
         )}
 
-        {config.footerText && (
+        {footer && (
           <div className="text-center text-[9px] text-gray-400 mt-4 pt-3 border-t border-dashed border-gray-200">
-            {config.footerText}
+            {footer}
           </div>
         )}
 

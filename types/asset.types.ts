@@ -3,6 +3,8 @@
 // more, so this is an open string. Retire/checkout logic keys off 'Active'/'Retired'.
 export type AssetStatus = string;
 
+import { DocumentRef } from './document.types';
+
 export interface Asset {
   id: string;
   organizationId: string;
@@ -15,6 +17,8 @@ export interface Asset {
   assignedTo?: string;
   location?: string;
   notes?: string;
+  /** Purchase receipts/invoices (private asset-receipts bucket). */
+  documents?: DocumentRef[];
   createdAt: Date;
   createdBy: string;
   createdByEmail?: string;

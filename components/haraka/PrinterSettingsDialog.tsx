@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Printer, Plug2, Unplug, TestTube2 } from 'lucide-react';
+import { Printer, Plug2, Unplug, TestTube2, Check } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -86,7 +86,7 @@ export function PrinterSettingsDialog({ open, onOpenChange }: Props) {
             <div className="rounded-lg border border-border bg-surface-page px-3 py-2 text-sm flex items-center justify-between">
               <span className="text-gray-500">Status</span>
               <span className={paired ? 'text-green-700' : 'text-gray-700'}>
-                {paired ? 'Paired ✓' : 'Not paired'}
+                {paired ? <span className="flex items-center gap-1">Paired <Check size={13} /></span> : 'Not paired'}
               </span>
             </div>
 

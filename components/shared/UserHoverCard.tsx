@@ -43,26 +43,44 @@ interface UserHoverCardProps {
   user: UserCardData;
   /** Text shown as the trigger link — defaults to name → email → uid */
   label?: string;
+  /** When true, renders an initials circle + name as the trigger instead of plain underlined text */
+  showAvatar?: boolean;
   className?: string;
 }
 
-export function UserHoverCard({ user, label, className }: UserHoverCardProps) {
+export function UserHoverCard({ user, label, showAvatar = false, className }: UserHoverCardProps) {
   const displayLabel = label ?? user.name ?? user.email ?? 'Unknown user';
   const roleInfo = user.role ? (ROLE_LABELS[user.role] ?? { label: user.role, className: 'bg-surface-page text-gray-600' }) : null;
+  const initials = getInitials(user.name, user.email);
 
   return (
     <TooltipPrimitive.Provider delayDuration={200}>
       <TooltipPrimitive.Root>
         <TooltipPrimitive.Trigger asChild>
-          {/* Inline trigger — subtle underline so the user knows it's hoverable */}
-          <span
-            className={cn(
-              'cursor-default underline decoration-dotted decoration-gray-400 underline-offset-2 font-medium text-gray-900',
-              className
-            )}
-          >
-            {displayLabel}
-          </span>
+          {showAvatar ? (
+            <span className={cn('inline-flex items-center gap-2 cursor-default', className)}>
+              <span
+                aria-hidden
+                className="inline-flex items-center justify-center rounded-full text-[10px] font-semibold flex-shrink-0"
+                style={{ width: 24, height: 24, background: 'var(--primary-100)', color: 'var(--primary-700)' }}
+              >
+                {initials}
+              </span>
+              <span className="text-sm font-medium text-gray-900 underline decoration-dotted decoration-gray-400 underline-offset-2">
+                {displayLabel}
+              </span>
+            </span>
+          ) : (
+            /* Default trigger — subtle underline so the user knows it's hoverable */
+            <span
+              className={cn(
+                'cursor-default underline decoration-dotted decoration-gray-400 underline-offset-2 font-medium text-gray-900',
+                className
+              )}
+            >
+              {displayLabel}
+            </span>
+          )}
         </TooltipPrimitive.Trigger>
 
         <TooltipPrimitive.Portal>

@@ -6,6 +6,32 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { cn } from '@/lib/utils/cn';
 import type { Locale } from '@/locales/messages';
 
+function FlagEN() {
+  // Simplified Union Jack
+  return (
+    <svg width="18" height="12" viewBox="0 0 18 12" aria-hidden style={{ borderRadius: 2, display: 'block' }}>
+      <rect width="18" height="12" fill="#012169" rx="1" />
+      <path d="M0 0 L18 12 M18 0 L0 12" stroke="#fff" strokeWidth="3.5" />
+      <path d="M0 0 L18 12 M18 0 L0 12" stroke="#C8102E" strokeWidth="2" />
+      <rect x="7.5" y="0" width="3" height="12" fill="#fff" />
+      <rect x="0" y="4.5" width="18" height="3" fill="#fff" />
+      <rect x="8.1" y="0" width="1.8" height="12" fill="#C8102E" />
+      <rect x="0" y="5.1" width="18" height="1.8" fill="#C8102E" />
+    </svg>
+  );
+}
+
+function FlagAR() {
+  // Saudi Arabia: green with white horizontal band
+  return (
+    <svg width="18" height="12" viewBox="0 0 18 12" aria-hidden style={{ borderRadius: 2, display: 'block' }}>
+      <rect width="18" height="12" fill="#006C35" rx="1" />
+      <rect y="4" width="18" height="4" fill="#fff" />
+      <rect y="4" width="18" height="4" fill="#006C35" fillOpacity="0.15" />
+    </svg>
+  );
+}
+
 function GlobeSVG() {
   return (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden>
@@ -60,7 +86,7 @@ export function LanguageToggle({ variant = 'ghost-light', className }: Props) {
               locale === loc && 'font-semibold',
             )}
           >
-            <span className="text-base">{loc === 'en' ? '🇬🇧' : '🇸🇦'}</span>
+            {loc === 'en' ? <FlagEN /> : <FlagAR />}
             {loc === 'en' ? t('lang.en') : t('lang.ar')}
           </DropdownMenuItem>
         ))}

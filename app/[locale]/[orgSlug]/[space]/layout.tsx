@@ -18,16 +18,18 @@ export default function SpaceLayout({ children }: { children: React.ReactNode })
   const params = useParams<{ space?: string }>();
   const slug = (params?.space as string) || null;
   const setSlug = useActiveSpaceStore((s) => s.setSlug);
+  const currentSlug = useActiveSpaceStore((s) => s.slug);
+
+  // Sync slug synchronously during render so the fetch interceptor has it
+  // before any child useQuery fires on the first render.
+  if (currentSlug !== slug) {
+    setSlug(slug);
+  }
 
   // Install once per browser session.
   useEffect(() => {
     installSpaceFetchInterceptor();
   }, []);
-
-  // Keep store in sync with URL on every navigation.
-  useEffect(() => {
-    setSlug(slug);
-  }, [slug, setSlug]);
 
   return <>{children}</>;
 }

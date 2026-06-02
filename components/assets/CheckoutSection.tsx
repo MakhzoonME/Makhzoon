@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { ArrowRight } from 'lucide-react';
 import { useCheckouts, useCheckoutAsset, useReturnAsset } from '@/hooks/assets';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -166,7 +167,7 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
                 <span className="font-medium text-gray-900">{c.checkedOutTo}</span>
                 {' · '}
                 {formatDate(c.checkedOutAt)}
-                {c.returnedAt && <> → {formatDate(c.returnedAt)}</>}
+                {c.returnedAt && <> <ArrowRight size={10} className="inline" aria-hidden /> {formatDate(c.returnedAt)}</>}
               </li>
             ))}
           </ul>

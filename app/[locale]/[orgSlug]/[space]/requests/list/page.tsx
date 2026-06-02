@@ -14,6 +14,7 @@ import { Request } from '@/types';
 import type { MessageKey } from '@/locales/messages';
 import { formatDate } from '@/lib/utils/date';
 import { toast } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import { useQueryClient } from '@tanstack/react-query';
 import { useT } from '@/hooks/ui';
 import { Check, X, ArrowRight, Copy } from 'lucide-react';
@@ -38,6 +39,7 @@ const typeKeys: Record<string, MessageKey> = {
 
 export default function RequestsListPage() {
   const { t, locale } = useT();
+  const { data: orgInfo } = useOrgInfo();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -159,10 +161,12 @@ export default function RequestsListPage() {
   return (
     <div>
       <PageHeader
-        title={t('nav.requestsList')}
+        title={t('nav.requests')}
         breadcrumb={[
+          { label: orgInfo?.name ?? orgSlug },
+          { label: space },
           { label: t('nav.requests'), href: `/${locale}/${orgSlug}/${space}/requests` },
-          { label: t('nav.requestsList'), href: `/${locale}/${orgSlug}/${space}/requests/list` },
+          { label: t('nav.requestsList') },
         ]}
       />
 
@@ -177,13 +181,13 @@ export default function RequestsListPage() {
 
       <BulkActionsBar count={selectedIds.size} onClear={() => setSelectedIds(new Set())}>
         {hasMultipleSpaces && canBulkDuplicate && (
-          <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={() => setDupeOpen(true)}>
+          <Button size="sm" variant="ghost" className="!text-white hover:bg-white/10" onClick={() => setDupeOpen(true)}>
             <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="ms-1">{t('duplicate.bulk')}</span>
           </Button>
         )}
         {hasMultipleSpaces && canBulkMove && (
-          <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={() => setMoveOpen(true)}>
+          <Button size="sm" variant="ghost" className="!text-white hover:bg-white/10" onClick={() => setMoveOpen(true)}>
             <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
             <span className="ms-1">{t('move.bulkMove')}</span>
           </Button>

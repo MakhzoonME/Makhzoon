@@ -16,6 +16,7 @@ function toLog(r: Row): AuditLog {
     newValue: r.new_value as AuditLog['newValue'],
     timestamp: r.timestamp ? new Date(r.timestamp as string) : new Date(),
     transferMode: r.transfer_mode as boolean,
+    spaceId: (r.space_id as string) ?? undefined,
   };
 }
 

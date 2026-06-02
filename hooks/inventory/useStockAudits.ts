@@ -5,6 +5,7 @@ import {
   useQueryClient,
   type QueryKey,
 } from '@tanstack/react-query';
+import { useParams } from 'next/navigation';
 import type {
   StockAudit,
   StockAuditAdjustment,
@@ -24,8 +25,9 @@ const LIST_KEY: QueryKey = ['stock-audits'];
 const detailKey = (id: string): QueryKey => ['stock-audits', id];
 
 export function useStockAudits() {
+  const { space } = useParams<{ space?: string }>();
   return useQuery<AuditsResponse>({
-    queryKey: LIST_KEY,
+    queryKey: [...(LIST_KEY as string[]), space],
     queryFn: async () => {
       const res = await fetch('/api/inventory/stock-audits');
       if (!res.ok) throw new Error('Failed to fetch stock audits');

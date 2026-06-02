@@ -42,6 +42,9 @@ export async function PATCH(req: NextRequest, props: Params) {
       supplier: data.supplier || undefined,
       unitCost: data.unitCost ? Number(data.unitCost) : undefined,
       notes: data.notes || undefined,
+      documents: data.documents ?? undefined,
+      posEnabled: data.posEnabled ?? false,
+      posPrice: data.posPrice ? Number(data.posPrice) : undefined,
     })
     return NextResponse.json({ ok: true })
   } catch (err) {

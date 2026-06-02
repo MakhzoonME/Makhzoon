@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { documentsSchema } from './document.schema';
 
 // Legacy default unit catalog. Units are now managed via the config-driven
 // lists (list_key 'inventory_unit'); kept here only as a seed/fallback.
@@ -31,6 +32,7 @@ export const inventoryItemSchema = z.object({
   posEnabled: z.coerce.boolean().optional(),
   posPrice: z.coerce.number().min(0).optional().or(z.literal('')),
   taxRateId: z.string().optional().or(z.literal('')),
+  documents: documentsSchema,
 });
 
 export const inventoryTransactionSchema = z.object({

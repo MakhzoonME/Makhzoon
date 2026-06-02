@@ -1,12 +1,13 @@
 'use client';
 
 import { use, useState } from 'react';
-import { Ban, RotateCcw, Send, Printer } from 'lucide-react';
+import { Ban, RotateCcw, Send, Printer, Share2, MessageCircle } from 'lucide-react';
 import { PageHeader, StatusBadge, ConfirmDialog, SubscriptionGate, LoadingSkeleton } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTransaction, useVoidSale, useRefundSale, useResubmitFawtara } from '@/hooks/haraka';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import { useAuthStore } from '@/store/auth.store';
 import { hasPermission } from '@/lib/permissions';
 import type { PosTransaction } from '@/types';
@@ -26,6 +27,8 @@ function fmtDate(d: Date | string | null) {
 
 export default function TransactionDetailPage(props: Props) {
   const params = use(props.params);
+  const { t } = useT();
+  const { data: orgInfo } = useOrgInfo();
   const { user } = useAuthStore();
   const { data, isLoading } = useTransaction(params.transactionId);
   const voidMut = useVoidSale();
@@ -40,6 +43,15 @@ export default function TransactionDetailPage(props: Props) {
 
   const tx: PosTransaction = data.transaction;
   const isMutable = tx.status === 'completed';
+
+  const receiptBase = (process.env.NEXT_PUBLIC_RECEIPT_URL ?? 'https://rcpt-app.makhzoon.me').replace(/\/$/, '');
+  const shareUrl = `${receiptBase}/r/${params.orgSlug}/${tx.id}`;
+  function copyShareLink() {
+    navigator.clipboard.writeText(shareUrl).then(() => toast.success('Receipt link copied'));
+  }
+  function shareOnWhatsApp() {
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareUrl)}`, '_blank');
+  }
   const canVoid = !!user && hasPermission(user, 'pos', 'void_transaction');
   const canRefund = !!user && hasPermission(user, 'pos', 'issue_refund');
   const canResubmitFawtara = !!user && hasPermission(user, 'pos', 'fawtara_submit');
@@ -79,15 +91,23 @@ export default function TransactionDetailPage(props: Props) {
         title={`Receipt #${tx.receiptNumber}`}
         description={`Sold ${fmtDate(tx.createdAt)} by ${tx.cashierName}`}
         breadcrumb={[
-          { label: 'Haraka', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
-          { label: 'Sessions', href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions` },
-          { label: `#${tx.receiptNumber}`, href: '#' },
+          { label: orgInfo?.name ?? params.orgSlug },
+          { label: params.space },
+          { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
+          { label: t('nav.transactions'), href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka/transactions` },
+          { label: `#${tx.receiptNumber}` },
         ]}
         actions={
           <div className="flex items-center gap-2">
             <StatusBadge status={tx.status} />
             <Button variant="outline" size="sm" onClick={() => window.print()}>
               <Printer size={14} className="me-1" /> Print
+            </Button>
+            <Button variant="outline" size="sm" onClick={copyShareLink}>
+              <Share2 size={14} className="me-1" /> Share
+            </Button>
+            <Button variant="outline" size="sm" onClick={shareOnWhatsApp}>
+              <MessageCircle size={14} className="me-1" /> WhatsApp
             </Button>
             {isMutable && canRefund && (
               <SubscriptionGate>

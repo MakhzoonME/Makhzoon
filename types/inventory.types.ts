@@ -2,6 +2,8 @@ export type StockStatus = 'ok' | 'low' | 'out';
 export type InventoryUnit = 'each' | 'box' | 'pack' | 'pair' | 'roll' | 'liter' | 'kg' | 'meter' | 'sheet' | 'set';
 export type TransactionType = 'in' | 'out' | 'adjustment';
 
+import { DocumentRef } from './document.types';
+
 export interface InventoryItem {
   id: string;
   organizationId: string;
@@ -21,6 +23,8 @@ export interface InventoryItem {
   barcode?: string | null;
   taxRateId?: string | null;
   posPrice?: number | null;
+  /** Purchase receipts/invoices (private inventory-receipts bucket). */
+  documents?: DocumentRef[];
   createdAt: Date;
   createdBy: string;
   createdByEmail?: string;

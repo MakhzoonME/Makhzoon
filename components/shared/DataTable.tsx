@@ -42,6 +42,8 @@ interface DataTableProps<T> {
     selectedIds: Set<string>;
     onChange: (next: Set<string>) => void;
   };
+  /** Optional per-row className for conditional row styling (e.g. highlight out-of-stock rows) */
+  rowClassName?: (row: T) => string;
 }
 
 export function DataTable<T>({
@@ -53,6 +55,7 @@ export function DataTable<T>({
   pagination,
   keyExtractor,
   selection,
+  rowClassName,
 }: DataTableProps<T>) {
   const { t } = useT();
   if (isLoading) return <LoadingSkeleton rows={5} columns={columns.length + (selection ? 1 : 0)} />;
@@ -158,7 +161,7 @@ export function DataTable<T>({
                 return (
                 <tr
                   key={rowId}
-                  className={`border-b border-border hover:bg-gray-100 transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${isSelected ? 'bg-primary-50/40' : ''}`}
+                  className={`border-b border-border hover:bg-gray-100 transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${isSelected ? 'bg-primary-50/40' : ''} ${rowClassName ? rowClassName(row) : ''}`}
                   onClick={() => onRowClick?.(row)}
                 >
                   {selection && (

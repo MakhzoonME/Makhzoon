@@ -35,7 +35,7 @@ function ChangesTable({ label, value }: { label: string; value: Record<string, u
 export default function OrgAuditLogsPage(props: { params: Promise<{ orgId: string }> }) {
   const params = use(props.params);
   const { orgId } = params;
-  const { locale } = useT();
+  const { t, locale } = useT();
   const [filters, setFilters] = useState({ userId: '', action: '', dateFrom: '', dateTo: '' });
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const { data, isLoading } = useAuditLogs({ ...filters, orgId });
@@ -89,8 +89,8 @@ export default function OrgAuditLogsPage(props: { params: Promise<{ orgId: strin
       <PageHeader
         title="Organization Audit Logs"
         breadcrumb={[
-          { label: 'Organizations', href: `/${locale}/superadmin` },
-          { label: 'Audit Logs', href: '' },
+          { label: t('nav.organizations'), href: `/${locale}/superadmin` },
+          { label: t('nav.auditLogs') },
         ]}
         actions={
           <Button size="sm" variant="outline" asChild>

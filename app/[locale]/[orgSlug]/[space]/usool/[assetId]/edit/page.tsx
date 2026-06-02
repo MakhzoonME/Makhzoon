@@ -25,7 +25,7 @@ export default function EditAssetPage(props: { params: Promise<{ assetId: string
   if (error || !asset) return <ErrorState message={t('assets.notFound')} />;
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl mx-auto">
       <PageHeader
         title={asset.name}
         breadcrumb={[

@@ -18,7 +18,7 @@ import { useDebounce } from '@/hooks/ui';
 import { InventoryItem } from '@/types';
 import { RequestInventoryModal } from '@/components/inventory/RequestInventoryModal';
 import { useT } from '@/hooks/ui';
-import { Plus, Pencil, Trash2, AlertTriangle, FileText, X, ClipboardCheck, ArrowRight, Copy } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, FileText, X, ArrowRight, Copy } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
@@ -357,10 +357,6 @@ export default function InventoryListPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/audits`)}>
-              <ClipboardCheck aria-hidden className="h-4 w-4" strokeWidth={1.75} />
-              <span className="ms-1">{t('stockAudits.title')}</span>
-            </Button>
             {isAdmin && (
               <SubscriptionGate>
                 <Button size="sm" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/new`)}>

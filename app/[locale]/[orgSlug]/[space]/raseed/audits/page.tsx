@@ -88,11 +88,7 @@ export default function StockAuditsPage() {
           { label: t('stockAudits.breadcrumb'), href: base },
         ]}
         actions={isAdmin ? (
-          <Button size="sm"
-            onClick={() => router.push(`${base}/new`)}
-            className="cursor-pointer transition-colors duration-150"
-            style={{ background: 'var(--mod-raseed)' }}
-          >
+          <Button size="sm" onClick={() => router.push(`${base}/new`)}>
             <Plus aria-hidden className="h-4 w-4" strokeWidth={1.75} />
             <span className="ms-1">{t('stockAudits.startAudit')}</span>
           </Button>
@@ -144,8 +140,6 @@ export default function StockAuditsPage() {
                         {STATUS_MAP.in_progress.icon} {t(STATUS_MAP.in_progress.labelKey)}
                       </span>
                       <Button size="sm"
-                        style={{ background: 'var(--mod-raseed)' }}
-                        className="cursor-pointer transition-colors duration-150"
                         onClick={(e) => { e.stopPropagation(); router.push(`${base}/${activeAudit.id}`); }}
                       >
                         {t('stockAudits.continueAudit')}

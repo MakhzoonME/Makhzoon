@@ -1,7 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Boxes, CheckCircle2, Archive, ShieldAlert, Plus, Upload } from 'lucide-react';
+import { Boxes, CheckCircle2, Archive, ShieldAlert, Plus } from 'lucide-react';
 import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader, StatCard, OverviewSection, DataTable, StatusBadge, SubscriptionGate } from '@/components/shared';
@@ -116,13 +116,6 @@ export default function UsoolOverviewPage() {
         description={t('overview.assets.subtitle')}
         actions={(isAdmin || canCreateAsset) ? (
           <div className="flex items-center gap-2">
-            {isAdmin && (
-              <SubscriptionGate>
-                <Button size="sm" variant="outline" onClick={() => router.push(`${base}/import`)}>
-                  <Upload className="w-4 h-4" /><span className="ms-1">{t('assets.importCsv')}</span>
-                </Button>
-              </SubscriptionGate>
-            )}
             {canCreateAsset && (
               <SubscriptionGate>
                 <Button size="sm" onClick={() => router.push(`${base}/new`)}>

@@ -1,7 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Boxes, PackageCheck, AlertTriangle, PackageX, Plus, ClipboardCheck } from 'lucide-react';
+import { Boxes, PackageCheck, AlertTriangle, PackageX, Plus } from 'lucide-react';
 import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader, StatCard, OverviewSection, DataTable, SubscriptionGate } from '@/components/shared';
@@ -135,10 +135,6 @@ export default function RaseedOverviewPage() {
         description={t('overview.inventory.subtitle')}
         actions={
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => router.push(`${base}/audits`)}>
-              <ClipboardCheck className="h-4 w-4" strokeWidth={1.75} />
-              <span className="ms-1">{t('stockAudits.title')}</span>
-            </Button>
             {isAdmin && (
               <SubscriptionGate>
                 <Button size="sm" onClick={() => router.push(`${base}/new`)}>

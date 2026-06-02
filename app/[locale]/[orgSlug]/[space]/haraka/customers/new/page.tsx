@@ -27,7 +27,7 @@ export default function NewCustomerPage() {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl mx-auto">
       <PageHeader
         title={t('customers.addCustomer')}
         breadcrumb={[

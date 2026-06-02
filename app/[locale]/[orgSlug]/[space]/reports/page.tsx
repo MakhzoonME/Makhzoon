@@ -172,22 +172,26 @@ export default function ReportsPage() {
           {maintenanceByMonth.length === 0 ? (
             <p className="text-sm text-gray-500">{t('reports.noMaintenance')}</p>
           ) : (
-            <div className="flex items-end gap-3 h-40">
+            <div className="space-y-3">
               {maintenanceByMonth.map((m, i) => {
                 const isLatest = i === maintenanceByMonth.length - 1;
+                const pct = maxMonthCost === 0 ? 0 : Math.max(2, Math.round((m.cost / maxMonthCost) * 100));
                 return (
-                  <div key={m.month} className="flex-1 flex flex-col items-center justify-end gap-1.5">
-                    <span className="text-[11px] text-gray-500 tabular-nums">{formatCurrency(m.cost)}</span>
-                    <div
-                      className="w-full rounded-t-md transition-[height] duration-500"
-                      style={{
-                        height: `${Math.max(4, (m.cost / maxMonthCost) * 100)}%`,
-                        background: 'var(--primary-500)',
-                        opacity: isLatest ? 1 : 0.55,
-                      }}
-                      title={`${m.count} record${m.count === 1 ? '' : 's'}`}
-                    />
-                    <span className="text-[11px] text-gray-500">{m.month}</span>
+                  <div key={m.month} className="flex items-center gap-3">
+                    <span className="w-12 text-xs text-gray-500 shrink-0 text-end">{m.month}</span>
+                    <div className="flex-1 h-6 bg-surface-page rounded overflow-hidden border border-border">
+                      <div
+                        className="h-full rounded transition-[width] duration-500 flex items-center justify-end pe-2"
+                        style={{
+                          width: `${pct}%`,
+                          background: isLatest ? 'var(--primary-600)' : 'var(--primary-300)',
+                        }}
+                      />
+                    </div>
+                    <div className="w-24 text-xs tabular-nums text-right shrink-0">
+                      <span className="font-medium text-gray-900">{formatCurrency(m.cost)}</span>
+                      <span className="text-gray-500 ms-1">({m.count})</span>
+                    </div>
                   </div>
                 );
               })}

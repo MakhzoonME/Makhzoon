@@ -68,7 +68,7 @@ export default function NewStockAuditPage() {
         ]}
       />
 
-      <div className="max-w-2xl">
+      <div className="max-w-2xl mx-auto">
         <div className="bg-[var(--primary-50)] border border-[var(--primary-100)] rounded-lg p-4 mb-6 flex items-start gap-3">
           <ClipboardCheck className="h-4 w-4 mt-0.5 text-[var(--primary-700)]" strokeWidth={1.75} />
           <p className="text-sm text-[var(--primary-700)]">{t('stockAudits.intro')}</p>

@@ -15,7 +15,7 @@ export default function NewInventoryItemPage() {
   const listHref = `/${locale}/${orgSlug}/${space}/raseed/list`;
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl mx-auto">
       <PageHeader
         title={t('inventory.addInventoryItem')}
         breadcrumb={[

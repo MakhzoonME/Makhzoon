@@ -211,10 +211,7 @@ export default function InventoryListPage() {
         </span>
       ),
     },
-    {
-      key: 'minimumThreshold', header: t('inventory.threshold'), sortable: true,
-      render: (i) => <span className="text-sm text-gray-400 tabular-nums">{i.minimumThreshold} {i.unit}</span>,
-    },
+
     { key: 'location', header: t('col.location'), sortable: true, render: (i) => i.location ? <span className="text-sm text-gray-600">{i.location}</span> : <span className="text-gray-400">—</span> },
     { key: 'supplier', header: t('inventory.supplier'), sortable: true, render: (i) => i.supplier ? <span className="text-sm text-gray-600">{i.supplier}</span> : <span className="text-gray-400">—</span> },
     {

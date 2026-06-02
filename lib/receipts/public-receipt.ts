@@ -16,23 +16,29 @@ export const DEFAULT_RECEIPT_CONFIG: ReceiptConfig = {
   showPhone: true,
   showWebsite: false,
   footerText: 'Thank you for your purchase!',
+  footerTextAr: '',
   accentColor: '#1d4ed8',
   logo: null,
   phone: '',
   address: '',
+  addressAr: '',
   website: '',
+  orgNameAr: '',
+  language: 'en',
 };
 
 export interface OrgReceiptContext {
   orgId: string;
   orgName: string;
   tagline: string;
+  taglineAr: string;
   taxNumber: string;
   config: ReceiptConfig;
 }
 
 interface SavedReceipt {
   tagline?: string;
+  taglineAr?: string;
   taxNumber?: string;
   config?: Partial<ReceiptConfig>;
 }
@@ -53,6 +59,7 @@ export async function loadOrgReceiptContext(orgSlug: string): Promise<OrgReceipt
     orgId: org.id,
     orgName: org.name,
     tagline: saved.tagline ?? '',
+    taglineAr: saved.taglineAr ?? '',
     taxNumber: saved.taxNumber ?? '',
     config: { ...DEFAULT_RECEIPT_CONFIG, ...(saved.config ?? {}) },
   };

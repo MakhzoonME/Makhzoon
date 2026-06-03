@@ -14,7 +14,7 @@ import { PrinterSettingsDialog } from '@/components/haraka/PrinterSettingsDialog
 import { ReceiptShareDialog } from '@/components/haraka/ReceiptShareDialog';
 import { usePosCart } from '@/store/pos-cart.store';
 import { useBarcodeLookup } from '@/hooks/inventory';
-import { useTaxRates, useCurrentSession, useCompleteSale } from '@/hooks/haraka';
+import { useTaxRates, useCurrentSession, useCompleteSale, useFawtaraConfig } from '@/hooks/haraka';
 import { useAuthStore } from '@/store/auth.store';
 import { priceCart } from '@/lib/modules/haraka/pricing/calc';
 import { toast, useT } from '@/hooks/ui';
@@ -37,6 +37,8 @@ export default function RegisterPage() {
   const { user } = useAuthStore();
   const { data: sessionData, isLoading: sessionLoading, isFetched: sessionFetched } = useCurrentSession();
   const { data: taxData } = useTaxRates();
+  const { data: fawtaraCfg } = useFawtaraConfig();
+  const fawtaraEnabled = fawtaraCfg?.config?.enabled === true;
   const { lookup } = useBarcodeLookup();
 
   const lines = usePosCart((s) => s.lines);
@@ -110,7 +112,7 @@ export default function RegisterPage() {
     }
   }, [lookup, taxRateById]);
 
-  async function handleConfirmSale(payments: PaymentLine[]) {
+  async function handleConfirmSale(payments: PaymentLine[], skipFawtara: boolean) {
     if (!sessionData?.session) { toast.error('No open session'); return; }
     const offlineId = crypto.randomUUID();
     try {
@@ -125,8 +127,10 @@ export default function RegisterPage() {
           taxRate: l.taxRate, discount: l.discount,
         })),
         payments: payments.map((p) => ({
-          method: p.method, amount: p.amount, reference: null, cardLast4: p.cardLast4 || null,
+          method: p.method, amount: p.amount,
+          reference: p.reference ?? null, cardLast4: p.cardLast4 || null,
         })),
+        skipFawtara,
       });
       setLastTx(result.transaction);
       setPayOpen(false);
@@ -399,6 +403,7 @@ export default function RegisterPage() {
         onConfirm={handleConfirmSale}
         loading={completeMut.isPending}
         initialTab={payTab}
+        fawtaraEnabled={fawtaraEnabled}
       />
       <PrinterSettingsDialog open={printerOpen} onOpenChange={setPrinterOpen} />
 

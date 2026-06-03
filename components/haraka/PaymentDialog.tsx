@@ -1,18 +1,20 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Banknote, CreditCard, MoreHorizontal, FileCheck, ChevronDown, Trash2 } from 'lucide-react';
+import { Banknote, CreditCard, MoreHorizontal, FileCheck, AlertCircle, Trash2, ArrowLeft } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { computeChange } from '@/lib/modules/haraka/pricing/calc';
 
 export interface PaymentLine {
-  method: 'cash' | 'card';
+  method: 'cash' | 'card' | 'other';
   amount: number;
   cardLast4?: string;
+  reference?: string;
 }
 
 type TabMethod = 'cash' | 'card' | 'other';
@@ -21,63 +23,93 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   total: number;
-  onConfirm: (payments: PaymentLine[]) => void;
+  onConfirm: (payments: PaymentLine[], skipFawtara: boolean) => void;
   loading?: boolean;
   /** Pre-select a payment method when the dialog opens. */
   initialTab?: TabMethod;
+  /** Whether Fawtara is configured and enabled for this org. */
+  fawtaraEnabled?: boolean;
 }
 
-export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading, initialTab }: Props) {
+export function PaymentDialog({
+  open, onOpenChange, total, onConfirm, loading,
+  initialTab, fawtaraEnabled = false,
+}: Props) {
   const [tab, setTab] = useState<TabMethod>(initialTab ?? 'cash');
   const [amount, setAmount] = useState('');
   const [cardLast4, setCardLast4] = useState('');
+  const [otherRef, setOtherRef] = useState('');
   const [splitMode, setSplitMode] = useState(false);
   const [splitRows, setSplitRows] = useState<PaymentLine[]>([]);
+  // Fawtara: default ON when enabled, cashier can bypass per sale
+  const [includeFawtara, setIncludeFawtara] = useState(true);
 
   useEffect(() => {
     if (open) {
       const startTab = initialTab ?? 'cash';
       setTab(startTab);
-      setAmount(startTab !== 'other' ? total.toFixed(2) : '');
+      setAmount(startTab !== 'other' ? total.toFixed(2) : total.toFixed(2));
       setCardLast4('');
+      setOtherRef('');
       setSplitMode(false);
-      setSplitRows([{ method: 'cash', amount: total }]);
+      setSplitRows([
+        { method: 'cash', amount: +(total / 2).toFixed(2) },
+        { method: 'card', amount: +(total - +(total / 2).toFixed(2)).toFixed(2) },
+      ]);
+      setIncludeFawtara(true);
     }
   }, [open, total, initialTab]);
 
+  // ── Simple mode ────────────────────────────────────────────────────────
   const numAmount = Number(amount) || 0;
-  const change = tab === 'cash' ? Math.max(0, numAmount - total) : 0;
-  const remaining = tab === 'cash' ? Math.max(0, total - numAmount) : 0;
-  const simpleCanSubmit = tab !== 'other' && numAmount + 0.001 >= total;
+  const cashChange = tab === 'cash' ? Math.max(0, numAmount - total) : 0;
+  const cashOwed   = tab === 'cash' ? Math.max(0, total - numAmount) : 0;
+  const simpleCanSubmit = tab === 'other'
+    ? true
+    : numAmount + 0.001 >= total;
 
-  const splitPaid = splitRows.reduce((a, r) => a + (Number.isFinite(r.amount) ? r.amount : 0), 0);
+  // ── Split mode ─────────────────────────────────────────────────────────
+  const splitPaid      = splitRows.reduce((a, r) => a + (Number.isFinite(r.amount) ? r.amount : 0), 0);
   const splitRemaining = +(total - splitPaid).toFixed(4);
-  const splitChange = useMemo(() => computeChange(total, splitRows), [total, splitRows]);
+  const splitChange    = useMemo(() => computeChange(total, splitRows), [total, splitRows]);
   const splitCanSubmit = splitPaid + 0.001 >= total && splitRows.every((r) => r.amount >= 0);
 
   function setSplitRow(idx: number, patch: Partial<PaymentLine>) {
     setSplitRows((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
   }
 
+  function enterSplit() {
+    const half = +(total / 2).toFixed(2);
+    setSplitRows([
+      { method: 'cash', amount: half },
+      { method: 'card', amount: +(total - half).toFixed(2) },
+    ]);
+    setSplitMode(true);
+  }
+
   function confirm() {
+    const skipFawtara = !includeFawtara;
     if (splitMode) {
       onConfirm(
         splitRows
           .filter((r) => r.amount > 0)
-          .map((r) => ({ ...r, amount: +r.amount.toFixed(4) })) as PaymentLine[],
+          .map((r) => ({ ...r, amount: +r.amount.toFixed(4) })),
+        skipFawtara,
       );
     } else {
-      onConfirm([{
-        method: tab === 'card' ? 'card' : 'cash',
+      const payment: PaymentLine = {
+        method: tab,
         amount: +numAmount.toFixed(4),
-        cardLast4: tab === 'card' ? cardLast4 || undefined : undefined,
-      }]);
+      };
+      if (tab === 'card') payment.cardLast4 = cardLast4 || undefined;
+      if (tab === 'other') payment.reference = otherRef || undefined;
+      onConfirm([payment], skipFawtara);
     }
   }
 
   const tabs: { key: TabMethod; label: string; icon: React.ReactNode }[] = [
-    { key: 'cash', label: 'Cash', icon: <Banknote size={14} /> },
-    { key: 'card', label: 'Card', icon: <CreditCard size={14} /> },
+    { key: 'cash',  label: 'Cash',  icon: <Banknote size={14} /> },
+    { key: 'card',  label: 'Card',  icon: <CreditCard size={14} /> },
     { key: 'other', label: 'Other', icon: <MoreHorizontal size={14} /> },
   ];
 
@@ -85,7 +117,19 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading, i
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Take payment</DialogTitle>
+          <DialogTitle>
+            {splitMode ? (
+              <button
+                type="button"
+                className="flex items-center gap-1.5 text-[18px] font-semibold hover:text-gray-600 transition-colors"
+                onClick={() => setSplitMode(false)}
+              >
+                <ArrowLeft size={18} /> Split payment
+              </button>
+            ) : (
+              'Take payment'
+            )}
+          </DialogTitle>
           <p className="text-sm text-gray-500 font-mono mt-0.5">
             Grand total JOD {total.toFixed(2)}
           </p>
@@ -102,9 +146,9 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading, i
                     type="button"
                     onClick={() => {
                       setTab(key);
-                      setAmount(key === 'cash' ? total.toFixed(2) : '');
+                      if (key !== 'other') setAmount(total.toFixed(2));
                     }}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-semibold transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-sm font-semibold transition-colors"
                     style={
                       tab === key
                         ? { background: 'var(--surface-card)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-xs)' }
@@ -116,12 +160,8 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading, i
                 ))}
               </div>
 
-              {tab === 'other' ? (
-                <div className="rounded-lg border border-border bg-surface-inset px-4 py-6 text-center space-y-2">
-                  <p className="text-sm text-gray-500">Record a non-cash, non-card payment (voucher, transfer, etc.)</p>
-                  <p className="font-mono font-bold text-gray-800">JOD {total.toFixed(2)}</p>
-                </div>
-              ) : (
+              {/* Cash */}
+              {tab === 'cash' && (
                 <div className="space-y-3">
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1.5 block">
@@ -137,86 +177,153 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading, i
                       className="font-mono text-base"
                     />
                   </div>
-
-                  {tab === 'card' && (
-                    <div>
-                      <label className="text-xs font-medium text-gray-600 mb-1.5 block">
-                        Card last 4 digits (optional)
-                      </label>
-                      <Input
-                        placeholder="••••"
-                        maxLength={4}
-                        value={cardLast4}
-                        onChange={(e) => setCardLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                        className="font-mono w-28"
-                      />
-                    </div>
-                  )}
-
-                  {tab === 'cash' && (
-                    <div
-                      className="flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-semibold"
-                      style={
-                        remaining > 0
-                          ? { background: 'var(--red-50)', color: 'var(--red-700)' }
-                          : { background: 'var(--green-50)', color: 'var(--green-700)' }
-                      }
-                    >
-                      <span>{remaining > 0 ? 'Still owed' : 'Change due'}</span>
-                      <span className="font-mono">{(remaining > 0 ? remaining : change).toFixed(2)}</span>
-                    </div>
-                  )}
+                  <div
+                    className="flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-semibold"
+                    style={
+                      cashOwed > 0
+                        ? { background: 'var(--red-50)', color: 'var(--red-700)' }
+                        : { background: 'var(--green-50)', color: 'var(--green-700)' }
+                    }
+                  >
+                    <span>{cashOwed > 0 ? 'Still owed' : 'Change due'}</span>
+                    <span className="font-mono">{(cashOwed > 0 ? cashOwed : cashChange).toFixed(2)}</span>
+                  </div>
                 </div>
               )}
 
-              {/* Fawtara note */}
-              <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-100 text-green-700 px-3 py-2.5 text-xs">
-                <FileCheck size={14} className="flex-shrink-0" />
-                <span>Fawtara e-invoice will be submitted automatically after sale.</span>
-              </div>
+              {/* Card */}
+              {tab === 'card' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 mb-1.5 block">
+                      Amount charged (JOD)
+                    </label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      autoFocus
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="font-mono text-base"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 mb-1.5 block">
+                      Card last 4 digits <span className="font-normal text-gray-400">(optional)</span>
+                    </label>
+                    <Input
+                      placeholder="••••"
+                      maxLength={4}
+                      value={cardLast4}
+                      onChange={(e) => setCardLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      className="font-mono w-28"
+                    />
+                  </div>
+                  <div
+                    className="flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-semibold"
+                    style={{ background: 'var(--primary-50)', color: 'var(--primary-700)' }}
+                  >
+                    <span>Exact charge</span>
+                    <span className="font-mono">JOD {total.toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
 
-              {/* Split toggle */}
+              {/* Other */}
+              {tab === 'other' && (
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-border bg-surface-inset px-4 py-3 text-sm text-gray-600">
+                    <p className="font-medium text-gray-800 mb-0.5">Other payment method</p>
+                    <p className="text-xs text-gray-500">Voucher, bank transfer, cheque, or any non-cash / non-card method.</p>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-semibold bg-surface-inset border border-border">
+                    <span className="text-gray-500">Amount due</span>
+                    <span className="font-mono font-bold">JOD {total.toFixed(2)}</span>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 mb-1.5 block">
+                      Reference / note <span className="font-normal text-gray-400">(optional)</span>
+                    </label>
+                    <Textarea
+                      autoFocus
+                      rows={2}
+                      placeholder="e.g. Transfer ref #TRF-1234, voucher code…"
+                      value={otherRef}
+                      onChange={(e) => setOtherRef(e.target.value)}
+                      className="text-sm resize-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Fawtara toggle — only when Fawtara is enabled in settings */}
+              {fawtaraEnabled ? (
+                <div
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5 border text-xs gap-3"
+                  style={
+                    includeFawtara
+                      ? { background: 'var(--green-50)', borderColor: 'var(--green-100)', color: 'var(--green-700)' }
+                      : { background: 'var(--yellow-50)', borderColor: 'var(--yellow-100)', color: 'var(--yellow-700)' }
+                  }
+                >
+                  <div className="flex items-center gap-2 flex-1">
+                    {includeFawtara
+                      ? <FileCheck size={14} className="flex-shrink-0" />
+                      : <AlertCircle size={14} className="flex-shrink-0" />
+                    }
+                    <span className="font-medium">
+                      {includeFawtara
+                        ? 'Fawtara (ISTD) e-invoice will be submitted'
+                        : 'Fawtara bypassed — no e-invoice for this sale'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="flex-shrink-0 relative inline-flex h-5 w-9 rounded-full transition-colors focus-visible:outline-none"
+                    style={{ background: includeFawtara ? 'var(--green-600)' : 'var(--gray-300)' }}
+                    onClick={() => setIncludeFawtara((v) => !v)}
+                    aria-checked={includeFawtara}
+                    role="switch"
+                  >
+                    <span
+                      className="pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform mt-0.5"
+                      style={{ transform: includeFawtara ? 'translateX(18px)' : 'translateX(2px)' }}
+                    />
+                  </button>
+                </div>
+              ) : null}
+
+              {/* Split payment link */}
               <button
                 type="button"
-                className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
-                onClick={() => {
-                  // Start split with two rows: first half cash, second half card
-                  const half = +(total / 2).toFixed(2);
-                  const rest = +(total - half).toFixed(2);
-                  setSplitRows([
-                    { method: 'cash', amount: half },
-                    { method: 'card', amount: rest },
-                  ]);
-                  setSplitMode(true);
-                }}
+                className="text-xs text-gray-400 hover:text-gray-600 transition-colors underline-offset-2 hover:underline"
+                onClick={enterSplit}
               >
-                <ChevronDown size={12} /> Split payment
+                Split payment between methods
               </button>
             </>
           ) : (
+            /* ── Split mode ─────────────────────────────────────────────── */
             <>
-              <div className="rounded-lg bg-surface-inset px-4 py-2.5 flex items-center justify-between text-sm border border-border">
-                <span className="text-gray-500">Total due</span>
-                <span className="font-mono font-bold">JOD {total.toFixed(2)}</span>
-              </div>
-
               <div className="space-y-2">
                 {splitRows.map((r, idx) => {
-                  // Remaining if this row were set to 0
                   const otherPaid = splitRows
                     .filter((_, i) => i !== idx)
                     .reduce((a, x) => a + (Number.isFinite(x.amount) ? x.amount : 0), 0);
-                  const needed = +(total - otherPaid).toFixed(2);
+                  const needed     = +(total - otherPaid).toFixed(2);
                   const isBalanced = Math.abs(r.amount - needed) < 0.01;
+
                   return (
-                    <div key={idx} className="grid grid-cols-[90px_1fr_auto_auto] gap-2 items-center">
+                    <div key={idx} className="flex gap-2 items-center">
                       <select
-                        className="rounded-md border border-border px-2 py-1.5 text-sm bg-surface-card"
+                        className="rounded-lg border border-border px-2 py-2 text-sm bg-surface-card w-24 flex-shrink-0"
                         value={r.method}
-                        onChange={(e) => setSplitRow(idx, { method: e.target.value as 'cash' | 'card' })}
+                        onChange={(e) => setSplitRow(idx, { method: e.target.value as PaymentLine['method'] })}
                       >
                         <option value="cash">Cash</option>
                         <option value="card">Card</option>
+                        <option value="other">Other</option>
                       </select>
                       <Input
                         type="number"
@@ -224,53 +331,41 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading, i
                         min="0"
                         value={r.amount || ''}
                         onChange={(e) => setSplitRow(idx, { amount: Number(e.target.value || 0) })}
-                        className="font-mono"
+                        className="font-mono flex-1"
                       />
-                      {/* Balance button: fills this row to cover the remaining */}
                       {!isBalanced && needed > 0 && (
                         <button
                           type="button"
-                          className="text-[10px] font-semibold px-1.5 py-0.5 rounded text-gray-500 hover:text-gray-700 border border-border whitespace-nowrap"
-                          title={`Fill to ${needed.toFixed(2)}`}
+                          title={`Set to ${needed.toFixed(2)} to cover remaining`}
+                          className="text-[10px] font-semibold px-1.5 py-1 rounded-md border border-border text-gray-500 hover:bg-surface-inset whitespace-nowrap flex-shrink-0"
                           onClick={() => setSplitRow(idx, { amount: needed })}
                         >
                           ={needed.toFixed(2)}
                         </button>
                       )}
-                      {splitRows.length > 1 ? (
+                      {splitRows.length > 1 && (
                         <button
                           type="button"
-                          className="text-gray-300 hover:text-red-500 transition-colors"
+                          className="p-1 text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
                           onClick={() => setSplitRows((p) => p.filter((_, i) => i !== idx))}
                         >
                           <Trash2 size={13} />
                         </button>
-                      ) : <span />}
+                      )}
                     </div>
                   );
                 })}
               </div>
 
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-2">
                 <Button size="sm" variant="outline" type="button"
-                  onClick={() => {
-                    // Rebalance: give the new row the remaining balance, zero out overpay on existing rows
-                    const newAmount = Math.max(0, splitRemaining);
-                    setSplitRows((p) => [...p, { method: 'cash', amount: newAmount }]);
-                  }}>
+                  onClick={() => setSplitRows((p) => [...p, { method: 'cash', amount: Math.max(0, splitRemaining) }])}>
                   <Banknote size={13} className="me-1" /> + Cash
                 </Button>
                 <Button size="sm" variant="outline" type="button"
-                  onClick={() => {
-                    const newAmount = Math.max(0, splitRemaining);
-                    setSplitRows((p) => [...p, { method: 'card', amount: newAmount }]);
-                  }}>
+                  onClick={() => setSplitRows((p) => [...p, { method: 'card', amount: Math.max(0, splitRemaining) }])}>
                   <CreditCard size={13} className="me-1" /> + Card
                 </Button>
-                <button type="button" className="ms-auto text-xs text-gray-400 hover:text-gray-600"
-                  onClick={() => setSplitMode(false)}>
-                  Simple
-                </button>
               </div>
 
               <div
@@ -282,13 +377,45 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading, i
                 }
               >
                 <span>{splitRemaining > 0 ? 'Remaining' : 'Change to return'}</span>
-                <span className="font-mono">{(splitRemaining > 0 ? splitRemaining : splitChange).toFixed(2)}</span>
+                <span className="font-mono">
+                  {(splitRemaining > 0 ? splitRemaining : splitChange).toFixed(2)}
+                </span>
               </div>
 
-              <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-100 text-green-700 px-3 py-2.5 text-xs">
-                <FileCheck size={14} className="flex-shrink-0" />
-                <span>Fawtara e-invoice will be submitted automatically.</span>
-              </div>
+              {/* Fawtara toggle in split mode too */}
+              {fawtaraEnabled && (
+                <div
+                  className="flex items-center justify-between rounded-lg px-3 py-2.5 border text-xs gap-3"
+                  style={
+                    includeFawtara
+                      ? { background: 'var(--green-50)', borderColor: 'var(--green-100)', color: 'var(--green-700)' }
+                      : { background: 'var(--yellow-50)', borderColor: 'var(--yellow-100)', color: 'var(--yellow-700)' }
+                  }
+                >
+                  <div className="flex items-center gap-2 flex-1">
+                    {includeFawtara
+                      ? <FileCheck size={14} className="flex-shrink-0" />
+                      : <AlertCircle size={14} className="flex-shrink-0" />
+                    }
+                    <span className="font-medium">
+                      {includeFawtara ? 'Fawtara e-invoice will be submitted' : 'Fawtara bypassed'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="flex-shrink-0 relative inline-flex h-5 w-9 rounded-full transition-colors"
+                    style={{ background: includeFawtara ? 'var(--green-600)' : 'var(--gray-300)' }}
+                    onClick={() => setIncludeFawtara((v) => !v)}
+                    role="switch"
+                    aria-checked={includeFawtara}
+                  >
+                    <span
+                      className="pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform mt-0.5"
+                      style={{ transform: includeFawtara ? 'translateX(18px)' : 'translateX(2px)' }}
+                    />
+                  </button>
+                </div>
+              )}
             </>
           )}
         </DialogBody>

@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
 interface ConfirmDialogProps {
@@ -21,9 +21,16 @@ export function ConfirmDialog({ open, onOpenChange, title, description, confirmL
       <DialogContent className="max-w-[420px]">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <DialogFooter className="gap-2">
+        <DialogBody>
+          <DialogDescription asChild={typeof description !== 'string'}>
+            {typeof description === 'string'
+              ? <span>{description}</span>
+              : <div>{description}</div>
+            }
+          </DialogDescription>
+        </DialogBody>
+        <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             {cancelLabel}
           </Button>

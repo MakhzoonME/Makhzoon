@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Printer, Lock, Receipt } from 'lucide-react';
-import { PageHeader, BarcodeInput, SubscriptionGate } from '@/components/shared';
+import { Printer, Lock, Receipt, ShoppingCart } from 'lucide-react';
+import { BarcodeInput, SubscriptionGate } from '@/components/shared';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { ProductGrid } from '@/components/haraka/ProductGrid';
 import { Cart } from '@/components/haraka/Cart';
 import { CustomerPicker } from '@/components/haraka/CustomerPicker';
@@ -28,19 +29,6 @@ import { getReceiptBaseUrl } from '@/lib/app-env';
 import { useQuery } from '@tanstack/react-query';
 import type { InventoryItem, PosTransaction } from '@/types';
 
-/**
- * Register — the cashier's main workspace.
- *
- *   ┌────────────────────────┬───────────────────┐
- *   │ Barcode scan input     │  Cart             │
- *   │ Product grid           │  Totals           │
- *   │                        │  [Charge button]  │
- *   └────────────────────────┴───────────────────┘
- *
- * Barcode scanning auto-adds to the cart. Charge opens the PaymentDialog
- * (split payments). On success, the cart clears, the receipt prints via
- * ESC/POS (if a printer is paired), and Fawtara submission fires async.
- */
 export default function RegisterPage() {
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
@@ -61,14 +49,10 @@ export default function RegisterPage() {
   const [payOpen, setPayOpen] = useState(false);
   const [printerOpen, setPrinterOpen] = useState(false);
   const [lastTx, setLastTx] = useState<PosTransaction | null>(null);
-  // When the org issues in both languages, the cashier picks per print.
   const [langPickTx, setLangPickTx] = useState<PosTransaction | null>(null);
-  // Post-sale receipt: cashier sees it and can share / download / reprint.
   const [receiptTx, setReceiptTx] = useState<PosTransaction | null>(null);
-  // Resolved after mount so the share link uses the current env's receipt host.
   const [receiptBase] = useState(() => getReceiptBaseUrl());
 
-  // Org receipt branding/config — drives the printed receipt's content + language.
   const { data: receiptCfg } = useQuery<{ tagline?: string; taglineAr?: string; taxNumber?: string; config?: ReceiptConfig }>({
     queryKey: ['receipt-config'],
     queryFn: async () => {
@@ -78,14 +62,11 @@ export default function RegisterPage() {
     staleTime: 60_000,
   });
 
-  // No session → bounce back to the landing page so the cashier opens one.
-  // Only redirect once the query has completed at least one fetch to avoid
-  // bouncing while the freshly-created session is still being refetched.
   useEffect(() => {
     if (sessionFetched && !sessionLoading && !sessionData?.session) {
       router.replace(`/${params.locale}/${params.orgSlug}/${params.space}/haraka`);
     }
-  }, [sessionFetched, sessionLoading, sessionData?.session, router, params.locale, params.orgSlug]);
+  }, [sessionFetched, sessionLoading, sessionData?.session, router, params.locale, params.orgSlug, params.space]);
 
   const taxRateById = useCallback(
     (id: string | null | undefined): number => {
@@ -97,35 +78,22 @@ export default function RegisterPage() {
   );
 
   function pickItem(item: InventoryItem) {
-    const rate = taxRateById(item.taxRateId);
-    addItem(item, rate);
+    addItem(item, taxRateById(item.taxRateId));
   }
 
-  const handleScan = useCallback(
-    async (code: string) => {
-      const result = await lookup(code);
-      if (result.found) {
-        if (!result.item.posEnabled) {
-          toast.error(`${result.item.name} isn't enabled for POS`);
-          return;
-        }
-        if (result.item.quantityOnHand <= 0) {
-          toast.error(`${result.item.name} is out of stock`);
-          return;
-        }
-        pickItem(result.item);
-      } else {
-        toast.error('Item not found');
-      }
-    },
-    [lookup, taxRateById], // pickItem depends on these via taxRateById/addItem
-  );
+  const handleScan = useCallback(async (code: string) => {
+    const result = await lookup(code);
+    if (result.found) {
+      if (!result.item.posEnabled) { toast.error(`${result.item.name} isn't enabled for POS`); return; }
+      if (result.item.quantityOnHand <= 0) { toast.error(`${result.item.name} is out of stock`); return; }
+      pickItem(result.item);
+    } else {
+      toast.error('Item not found');
+    }
+  }, [lookup, taxRateById]);
 
   async function handleConfirmSale(payments: PaymentLine[]) {
-    if (!sessionData?.session) {
-      toast.error('No open session');
-      return;
-    }
+    if (!sessionData?.session) { toast.error('No open session'); return; }
     const offlineId = crypto.randomUUID();
     try {
       const result = await completeMut.mutateAsync({
@@ -134,39 +102,25 @@ export default function RegisterPage() {
         customerId: customer?.id ?? null,
         customerName: customer?.name ?? null,
         lines: lines.map((l) => ({
-          itemId: l.itemId,
-          itemName: l.itemName,
-          sku: l.sku,
-          barcode: l.barcode,
-          quantity: l.quantity,
-          unitPrice: l.unitPrice,
-          taxRateId: l.taxRateId,
-          taxRate: l.taxRate,
-          discount: l.discount,
+          itemId: l.itemId, itemName: l.itemName, sku: l.sku, barcode: l.barcode,
+          quantity: l.quantity, unitPrice: l.unitPrice, taxRateId: l.taxRateId,
+          taxRate: l.taxRate, discount: l.discount,
         })),
         payments: payments.map((p) => ({
-          method: p.method,
-          amount: p.amount,
-          reference: null,
-          cardLast4: p.cardLast4 || null,
+          method: p.method, amount: p.amount, reference: null, cardLast4: p.cardLast4 || null,
         })),
       });
       setLastTx(result.transaction);
       setPayOpen(false);
       clearCart();
       toast.success(`Sale complete — receipt ${result.transaction.receiptNumber}`);
-
-      // Show the receipt so the cashier can share / download / reprint it.
       setReceiptTx(result.transaction);
-
-      // Print receipt async; failures don't roll back the sale.
       requestPrint(result.transaction);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Sale failed');
     }
   }
 
-  /** Decide how to print: "both" asks the cashier for a language, else prints directly. */
   function requestPrint(transaction: PosTransaction) {
     if ((receiptCfg?.config?.language ?? 'en') === 'both') {
       setLangPickTx(transaction);
@@ -176,7 +130,6 @@ export default function RegisterPage() {
     }
   }
 
-  /** Build the localized, bilingual content the printer needs from the org config. */
   function buildPrintText(): ReceiptPrintText {
     const cfg = receiptCfg?.config;
     return {
@@ -202,11 +155,7 @@ export default function RegisterPage() {
       const printer = usePrinterStore.getState();
       const bytes = await buildReceipt(transaction, {
         paperWidth: printer.paperWidth,
-        organization: {
-          id: user?.organizationId ?? '',
-          name: orgInfo?.name ?? '',
-          contactEmail: user?.email ?? '',
-        },
+        organization: { id: user?.organizationId ?? '', name: orgInfo?.name ?? '', contactEmail: user?.email ?? '' },
         text: buildPrintText(),
         lang,
       });
@@ -218,83 +167,131 @@ export default function RegisterPage() {
   }
 
   const totals = priceCart(lines).totals;
+  const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] flex flex-col">
-      <PageHeader
-        title={t('register.title')}
-        description={sessionData?.session ? t('register.sessionLabel').replace('{id}', sessionData.session.id.slice(0, 8)) : ''}
-        breadcrumb={[
-          { label: orgInfo?.name ?? params.orgSlug },
-          { label: params.space },
-          { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
-          { label: t('register.title') },
-        ]}
-        actions={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPrinterOpen(true)}>
-              <Printer size={14} className="me-1" /> {t('register.printer')}
-            </Button>
-            {lastTx && (
-              <Button variant="outline" size="sm" onClick={() => requestPrint(lastTx)}>
-                <Receipt size={14} className="me-1" /> {t('register.reprintLast')}
-              </Button>
-            )}
-            {sessionData?.session && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  router.push(
-                    `/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions/${sessionData.session!.id}`,
-                  )
-                }
-              >
-                <Lock size={14} className="me-1" /> {t('register.closeSession')}
-              </Button>
-            )}
-          </div>
-        }
-      />
+    /* Full-bleed: escape the layout's px-6 py-6 container */
+    <div
+      className="-mx-6 -mt-6 flex flex-col bg-surface-page"
+      style={{ height: 'calc(100vh - 3.5rem)' }}
+    >
+      {/* ── Slim header bar ─────────────────────────────────────────────── */}
+      <div className="h-11 flex items-center gap-3 px-5 border-b border-border bg-surface-card flex-shrink-0">
+        <span className="text-xs text-gray-400">
+          {orgInfo?.name ?? params.orgSlug} / {params.space} /
+        </span>
+        <span className="text-sm font-semibold text-gray-900">{t('register.title')}</span>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 px-6 pb-6 min-h-0">
-        {/* Left: scanner + product grid */}
-        <div className="flex flex-col gap-3 min-h-0">
-          <BarcodeInput
-            onResolve={handleScan}
-            placeholder={t('register.scanPlaceholder')}
-            autoFocus
-          />
+        {sessionData?.session && (
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-100">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse" />
+            {t('haraka.activeSession')}
+          </span>
+        )}
+
+        <div className="ms-auto flex items-center gap-2">
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500" onClick={() => setPrinterOpen(true)}>
+            <Printer size={14} className="me-1" /> {t('register.printer')}
+          </Button>
+          {lastTx && (
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500" onClick={() => requestPrint(lastTx)}>
+              <Receipt size={14} className="me-1" /> {t('register.reprintLast')}
+            </Button>
+          )}
+          {sessionData?.session && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7"
+              onClick={() => router.push(`${base}/sessions/${sessionData.session!.id}`)}
+            >
+              <Lock size={13} className="me-1" /> {t('register.closeSession')}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Two-pane body ────────────────────────────────────────────────── */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+
+        {/* LEFT — product catalog */}
+        <div className="flex flex-col flex-1 min-w-0 overflow-hidden p-4 gap-3">
+          <BarcodeInput onResolve={handleScan} placeholder={t('register.scanPlaceholder')} autoFocus />
           <ProductGrid onPick={pickItem} />
         </div>
 
-        {/* Right: cart */}
-        <aside className="border border-border rounded-xl bg-surface-page p-4 flex flex-col min-h-0">
-          <CustomerPicker />
-          <div className="flex items-center justify-between mt-3 mb-2">
-            <span className="text-sm font-medium">{t('register.cart')} ({lines.length})</span>
-            {!customer && lines.length === 0 && (
-              <span className="text-xs text-gray-400 flex items-center gap-1">
-                <span>👤</span> Walk-in
+        {/* RIGHT — cart panel */}
+        <div
+          className="w-[360px] flex-shrink-0 flex flex-col border-s border-border bg-surface-card overflow-hidden"
+        >
+          {/* Cart header */}
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
+            <span className="text-sm font-semibold">{t('register.cart')} ({lines.length})</span>
+            {!customer && (
+              <span className="flex items-center gap-1 text-xs text-gray-400">
+                <ShoppingCart size={12} /> Walk-in
               </span>
             )}
           </div>
-          <Cart />
 
-          <SubscriptionGate className="mt-3 block">
-            <Button
-              size="lg"
-              className="w-full"
-              style={lines.length > 0 ? { background: 'var(--mod-haraka)' } : undefined}
-              disabled={lines.length === 0 || completeMut.isPending}
-              onClick={() => setPayOpen(true)}
-            >
-              {t('register.charge')} JOD {totals.total.toFixed(2)}
-            </Button>
-          </SubscriptionGate>
-        </aside>
+          {/* Customer picker */}
+          <div className="px-4 pt-3 pb-1 flex-shrink-0">
+            <CustomerPicker />
+          </div>
+
+          {/* Cart items */}
+          <div className="flex-1 overflow-y-auto px-4 min-h-0">
+            <Cart />
+          </div>
+
+          {/* Cart footer — totals + charge button */}
+          <div className="px-4 py-4 border-t border-border flex-shrink-0 space-y-1 bg-surface-card">
+            {lines.length > 0 && (
+              <>
+                <div className="flex justify-between text-xs text-gray-500 font-mono">
+                  <span>{t('reports.subtotal')}</span>
+                  <span>{totals.subtotal.toFixed(2)}</span>
+                </div>
+                {totals.taxTotal > 0 && (
+                  <div className="flex justify-between text-xs text-gray-500 font-mono">
+                    <span>{t('reports.tax')}</span>
+                    <span>{totals.taxTotal.toFixed(2)}</span>
+                  </div>
+                )}
+                {totals.discountTotal > 0 && (
+                  <div className="flex justify-between text-xs text-amber-600 font-mono">
+                    <span>{t('cart.discount')}</span>
+                    <span>-{totals.discountTotal.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex items-baseline justify-between pt-2 border-t border-border mt-1">
+                  <span className="text-sm font-semibold">{t('col.total')}</span>
+                  <span className="text-xl font-bold font-mono" style={{ color: 'var(--mod-haraka)' }}>
+                    JOD {totals.total.toFixed(2)}
+                  </span>
+                </div>
+              </>
+            )}
+
+            <SubscriptionGate className="block pt-2">
+              <button
+                className="w-full h-11 rounded-lg text-sm font-bold text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ background: 'var(--mod-haraka)' }}
+                disabled={lines.length === 0 || completeMut.isPending}
+                onClick={() => setPayOpen(true)}
+              >
+                {completeMut.isPending
+                  ? 'Processing…'
+                  : lines.length === 0
+                  ? t('register.charge') + ' JOD 0.00'
+                  : `${t('register.charge')} JOD ${totals.total.toFixed(2)}`}
+              </button>
+            </SubscriptionGate>
+          </div>
+        </div>
       </div>
 
+      {/* ── Dialogs ─────────────────────────────────────────────────────── */}
       <PaymentDialog
         open={payOpen}
         onOpenChange={setPayOpen}
@@ -304,7 +301,6 @@ export default function RegisterPage() {
       />
       <PrinterSettingsDialog open={printerOpen} onOpenChange={setPrinterOpen} />
 
-      {/* Post-sale receipt — share, download, or reprint */}
       <ReceiptShareDialog
         open={!!receiptTx}
         onOpenChange={(o) => { if (!o) setReceiptTx(null); }}
@@ -319,30 +315,21 @@ export default function RegisterPage() {
         onPrint={(tx) => requestPrint(tx)}
       />
 
-      {/* Cashier language pick — only when the org issues receipts in both languages */}
+      {/* Language pick for bilingual orgs */}
       {langPickTx && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-xs rounded-xl bg-white p-5 shadow-xl">
-            <div className="text-sm font-semibold text-gray-900">Print language</div>
-            <p className="mt-1 text-xs text-gray-500">Choose the language for this receipt.</p>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                onClick={() => { const tx = langPickTx; setLangPickTx(null); printReceipt(tx, 'en').catch(() => undefined); }}
-              >
+          <div className="w-full max-w-xs rounded-xl bg-white p-6 shadow-xl space-y-4">
+            <div className="text-sm font-semibold">Print language</div>
+            <p className="text-xs text-gray-500">Choose the language for this receipt.</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" onClick={() => { const tx = langPickTx; setLangPickTx(null); printReceipt(tx, 'en').catch(() => undefined); }}>
                 English
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => { const tx = langPickTx; setLangPickTx(null); printReceipt(tx, 'ar').catch(() => undefined); }}
-              >
+              <Button variant="outline" onClick={() => { const tx = langPickTx; setLangPickTx(null); printReceipt(tx, 'ar').catch(() => undefined); }}>
                 العربية
               </Button>
             </div>
-            <button
-              onClick={() => setLangPickTx(null)}
-              className="mt-3 w-full text-center text-xs text-gray-400 hover:text-gray-600"
-            >
+            <button onClick={() => setLangPickTx(null)} className="w-full text-center text-xs text-gray-400 hover:text-gray-600">
               Skip printing
             </button>
           </div>

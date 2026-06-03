@@ -132,8 +132,7 @@ export default function ReceiptSettingsPage() {
   const [previewLang, setPreviewLang] = useState<ReceiptLang>(locale === 'ar' ? 'ar' : 'en');
   // Resolved after mount so the share link matches the current env's rcpt host
   // (avoids an SSR/client hydration mismatch from window-based derivation).
-  const [receiptBase, setReceiptBase] = useState('https://rcpt-app.makhzoon.me');
-  useEffect(() => { setReceiptBase(getReceiptBaseUrl()); }, []);
+  const [receiptBase] = useState(() => getReceiptBaseUrl());
 
   // Load saved config
   const { data: saved } = useQuery<{ tagline?: string; taglineAr?: string; taxNumber?: string; config?: ReceiptConfig }>({
@@ -147,9 +146,13 @@ export default function ReceiptSettingsPage() {
 
   useEffect(() => {
     if (!saved) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved.tagline !== undefined) setTagline(saved.tagline);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved.taglineAr !== undefined) setTaglineAr(saved.taglineAr);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved.taxNumber !== undefined) setTaxNumber(saved.taxNumber);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved.config) setConfig({ ...DEFAULT_CONFIG, ...saved.config });
   }, [saved]);
 

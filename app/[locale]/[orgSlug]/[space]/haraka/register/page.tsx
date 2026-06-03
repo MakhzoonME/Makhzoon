@@ -66,8 +66,7 @@ export default function RegisterPage() {
   // Post-sale receipt: cashier sees it and can share / download / reprint.
   const [receiptTx, setReceiptTx] = useState<PosTransaction | null>(null);
   // Resolved after mount so the share link uses the current env's receipt host.
-  const [receiptBase, setReceiptBase] = useState('https://rcpt-app.makhzoon.me');
-  useEffect(() => { setReceiptBase(getReceiptBaseUrl()); }, []);
+  const [receiptBase] = useState(() => getReceiptBaseUrl());
 
   // Org receipt branding/config — drives the printed receipt's content + language.
   const { data: receiptCfg } = useQuery<{ tagline?: string; taglineAr?: string; taxNumber?: string; config?: ReceiptConfig }>({

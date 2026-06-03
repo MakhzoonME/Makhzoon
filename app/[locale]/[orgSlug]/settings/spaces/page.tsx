@@ -23,8 +23,8 @@ import type { Space } from '@/types/space.types';
 
 export default function SpacesSettingsPage() {
   const { t } = useT();
-  const orgSlug = useOrgSlug();
-  const { data: orgInfo } = useOrgInfo();
+  useOrgSlug();
+  useOrgInfo();
   const { isAllowed } = useAdminGuard('settings.orgInfo');
   const { data, isLoading } = useAllSpaces();
   const createMut = useCreateSpace();

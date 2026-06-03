@@ -34,6 +34,7 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading }:
   const [payments, setPayments] = useState<PaymentLine[]>([{ method: 'cash', amount: 0 }]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open) setPayments([{ method: 'cash', amount: total }]);
   }, [open, total]);
 

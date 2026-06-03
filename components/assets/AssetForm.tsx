@@ -77,7 +77,7 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
   });
 
   const { isDirty } = form.formState;
-  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+  useEffect(() => { if (onDirtyChange) onDirtyChange(isDirty); }, [isDirty, onDirtyChange]);
 
   function handleCancel() {
     onCancel ? onCancel() : router.back();

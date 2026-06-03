@@ -24,7 +24,7 @@ import {
   DEFAULT_SUPPORT_PERMISSIONS,
 } from '@/types';
 import { useT } from '@/hooks/ui';
-import { Search, KeyRound, Copy, Check } from 'lucide-react';
+import { Search, KeyRound } from 'lucide-react';
 
 function defaultPermsForRole(role: MakhzoonRole): SuperAdminPermissions {
   if (role === 'super_admin') return DEFAULT_SUPER_ADMIN_PERMISSIONS;
@@ -149,7 +149,7 @@ export default function SuperAdminTeamPage() {
   const [resetTarget, setResetTarget] = useState<TeamMember | null>(null);
   const [resetting, setResetting] = useState(false);
   const [resetSent, setResetSent] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [_copied, _setCopied] = useState(false);
 
   const { data: allMembers = [], isLoading } = useQuery<TeamMember[]>({
     queryKey: ['superadmin-team'],

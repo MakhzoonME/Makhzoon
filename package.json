@@ -10,7 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
-    "cf:build": "npm install --include=dev && opennextjs-cloudflare build",
+    "cf:build": "npm install --include=dev && NODE_ENV=production opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf:check-public-env": "node -e \"const r=['NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_ANON_KEY'].filter(k=>!process.env[k]); if(r.length){console.error('Missing required build-time env vars: '+r.join(', '));process.exit(1)}\"",
     "cf:deploy:dev": "npm run cf:check-public-env && opennextjs-cloudflare build && opennextjs-cloudflare deploy -- --env dev",

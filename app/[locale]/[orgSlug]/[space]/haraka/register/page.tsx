@@ -10,6 +10,7 @@ import { Cart } from '@/components/haraka/Cart';
 import { CustomerPicker } from '@/components/haraka/CustomerPicker';
 import { PaymentDialog, type PaymentLine } from '@/components/haraka/PaymentDialog';
 import { PrinterSettingsDialog } from '@/components/haraka/PrinterSettingsDialog';
+import { ReceiptShareDialog } from '@/components/haraka/ReceiptShareDialog';
 import { usePosCart } from '@/store/pos-cart.store';
 import { useBarcodeLookup } from '@/hooks/inventory';
 import { useTaxRates, useCurrentSession, useCompleteSale } from '@/hooks/haraka';
@@ -21,7 +22,9 @@ import { printRaw } from '@/lib/modules/haraka/printing/webusb-transport';
 import { buildReceipt } from '@/lib/modules/haraka/printing/receipt-template';
 import type { ReceiptPrintText } from '@/lib/modules/haraka/printing/receipt-canvas';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
+import { DEFAULT_RECEIPT_CONFIG } from '@/lib/receipts/receipt-config';
 import type { ReceiptLang } from '@/lib/receipts/labels';
+import { getReceiptBaseUrl } from '@/lib/app-env';
 import { useQuery } from '@tanstack/react-query';
 import type { InventoryItem, PosTransaction } from '@/types';
 
@@ -60,6 +63,11 @@ export default function RegisterPage() {
   const [lastTx, setLastTx] = useState<PosTransaction | null>(null);
   // When the org issues in both languages, the cashier picks per print.
   const [langPickTx, setLangPickTx] = useState<PosTransaction | null>(null);
+  // Post-sale receipt: cashier sees it and can share / download / reprint.
+  const [receiptTx, setReceiptTx] = useState<PosTransaction | null>(null);
+  // Resolved after mount so the share link uses the current env's receipt host.
+  const [receiptBase, setReceiptBase] = useState('https://rcpt-app.makhzoon.me');
+  useEffect(() => { setReceiptBase(getReceiptBaseUrl()); }, []);
 
   // Org receipt branding/config — drives the printed receipt's content + language.
   const { data: receiptCfg } = useQuery<{ tagline?: string; taglineAr?: string; taxNumber?: string; config?: ReceiptConfig }>({
@@ -149,6 +157,9 @@ export default function RegisterPage() {
       clearCart();
       toast.success(`Sale complete — receipt ${result.transaction.receiptNumber}`);
 
+      // Show the receipt so the cashier can share / download / reprint it.
+      setReceiptTx(result.transaction);
+
       // Print receipt async; failures don't roll back the sale.
       requestPrint(result.transaction);
     } catch (err) {
@@ -170,7 +181,7 @@ export default function RegisterPage() {
   function buildPrintText(): ReceiptPrintText {
     const cfg = receiptCfg?.config;
     return {
-      orgName: orgInfo?.name ?? '',
+      orgName: cfg?.orgName?.trim() || orgInfo?.name || '',
       orgNameAr: cfg?.orgNameAr ?? '',
       tagline: receiptCfg?.tagline ?? '',
       taglineAr: receiptCfg?.taglineAr ?? '',
@@ -286,6 +297,21 @@ export default function RegisterPage() {
         loading={completeMut.isPending}
       />
       <PrinterSettingsDialog open={printerOpen} onOpenChange={setPrinterOpen} />
+
+      {/* Post-sale receipt — share, download, or reprint */}
+      <ReceiptShareDialog
+        open={!!receiptTx}
+        onOpenChange={(o) => { if (!o) setReceiptTx(null); }}
+        transaction={receiptTx}
+        orgSlug={params.orgSlug}
+        orgName={orgInfo?.name ?? ''}
+        receiptBase={receiptBase}
+        config={receiptCfg?.config ?? DEFAULT_RECEIPT_CONFIG}
+        tagline={receiptCfg?.tagline ?? ''}
+        taglineAr={receiptCfg?.taglineAr ?? ''}
+        taxNumber={receiptCfg?.taxNumber ?? ''}
+        onPrint={(tx) => requestPrint(tx)}
+      />
 
       {/* Cashier language pick — only when the org issues receipts in both languages */}
       {langPickTx && (

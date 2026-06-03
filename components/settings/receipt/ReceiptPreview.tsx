@@ -26,6 +26,8 @@ export interface ReceiptConfig {
   address: string;
   addressAr: string;
   website: string;
+  /** English business name override. Empty → falls back to the organization name. */
+  orgName: string;
   orgNameAr: string;
   /** Which language(s) the business issues receipts in. */
   language: ReceiptLanguage;
@@ -116,7 +118,7 @@ export function ThermalPreview(props: PreviewProps) {
   const is80 = config.template === 'thermal-80';
   const w = is80 ? 260 : 200;
 
-  const orgName = pickText(lang, props.orgName, props.orgNameAr) || (lang === 'ar' ? 'اسم المتجر' : 'Business Name');
+  const orgName = pickText(lang, config.orgName?.trim() || props.orgName, props.orgNameAr) || (lang === 'ar' ? 'اسم المتجر' : 'Business Name');
   const tagline = pickText(lang, props.tagline, props.taglineAr);
   const address = pickText(lang, config.address, config.addressAr);
   const footer = pickText(lang, config.footerText, config.footerTextAr);
@@ -207,7 +209,7 @@ export function A4ModernPreview(props: PreviewProps) {
   const L = receiptLabels(lang);
   const rtl = isRtl(lang);
 
-  const orgName = pickText(lang, props.orgName, props.orgNameAr) || (lang === 'ar' ? 'اسم المتجر' : 'Business Name');
+  const orgName = pickText(lang, config.orgName?.trim() || props.orgName, props.orgNameAr) || (lang === 'ar' ? 'اسم المتجر' : 'Business Name');
   const tagline = pickText(lang, props.tagline, props.taglineAr);
   const address = pickText(lang, config.address, config.addressAr);
   const footer = pickText(lang, config.footerText, config.footerTextAr);
@@ -310,7 +312,7 @@ export function A4InvoicePreview(props: PreviewProps) {
   const L = receiptLabels(lang);
   const rtl = isRtl(lang);
 
-  const orgName = pickText(lang, props.orgName, props.orgNameAr) || (lang === 'ar' ? 'اسم المتجر' : 'Business Name');
+  const orgName = pickText(lang, config.orgName?.trim() || props.orgName, props.orgNameAr) || (lang === 'ar' ? 'اسم المتجر' : 'Business Name');
   const tagline = pickText(lang, props.tagline, props.taglineAr);
   const address = pickText(lang, config.address, config.addressAr);
   const footer = pickText(lang, config.footerText, config.footerTextAr);

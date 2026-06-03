@@ -58,34 +58,66 @@ export default function TransactionsListPage() {
     {
       key: 'receiptNumber',
       header: 'Receipt',
-      render: (t) => <span className="font-mono text-xs">{t.receiptNumber}</span>,
+      render: (tx) => (
+        <span className="font-mono text-xs font-semibold" style={{ color: 'var(--mod-haraka)' }}>
+          {tx.receiptNumber}
+        </span>
+      ),
     },
-    {
-      key: 'createdAt',
-      header: 'Date',
-      sortable: true,
-      render: (t) => new Date(t.createdAt).toLocaleString(),
-    },
-    { key: 'cashierName', header: 'Cashier', render: (t) => t.cashierName || '—' },
     {
       key: 'customerName',
       header: 'Customer',
-      render: (t) => t.customerName ?? '—',
+      render: (tx) => <span className="text-sm text-gray-600">{tx.customerName ?? '—'}</span>,
     },
     {
       key: 'total',
       header: 'Total',
-      render: (t) => <span className="font-mono">{t.total.toFixed(2)}</span>,
+      render: (tx) => (
+        <span className="font-mono font-semibold text-sm" style={tx.status === 'voided' ? { textDecoration: 'line-through', color: 'var(--text-tertiary)' } : {}}>
+          {tx.total.toFixed(2)}
+        </span>
+      ),
+    },
+    {
+      key: 'payments' as keyof PosTransaction,
+      header: 'Payment',
+      render: (tx) => {
+        const method = tx.payments?.[0]?.method;
+        if (!method) return <span className="text-gray-400 text-xs">—</span>;
+        return (
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
+            style={method === 'card'
+              ? { background: 'var(--blue-100)', color: 'var(--blue-700)' }
+              : { background: 'var(--green-100)', color: 'var(--green-700)' }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-current" />
+            {method === 'card' ? 'Card' : 'Cash'}
+          </span>
+        );
+      },
     },
     {
       key: 'status',
       header: 'Status',
-      render: (t) => <StatusBadge status={t.status} />,
+      render: (tx) => <StatusBadge status={tx.status} />,
     },
     {
       key: 'fawtara',
-      header: 'Jo Fotara',
-      render: (t) => (t.fawtara ? <StatusBadge status={t.fawtara.status} /> : <span className="text-gray-400 text-xs">—</span>),
+      header: 'Fawtara',
+      render: (tx) => tx.fawtara
+        ? <StatusBadge status={tx.fawtara.status} />
+        : <span className="text-gray-400 text-xs">—</span>,
+    },
+    {
+      key: 'createdAt',
+      header: 'Time',
+      sortable: true,
+      render: (tx) => (
+        <span className="font-mono text-xs text-gray-500">
+          {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </span>
+      ),
     },
   ];
 

@@ -271,7 +271,14 @@ export default function RegisterPage() {
         {/* Right: cart */}
         <aside className="border border-border rounded-xl bg-surface-page p-4 flex flex-col min-h-0">
           <CustomerPicker />
-          <div className="text-sm font-medium mt-3 mb-2">{t('register.cart')} ({lines.length})</div>
+          <div className="flex items-center justify-between mt-3 mb-2">
+            <span className="text-sm font-medium">{t('register.cart')} ({lines.length})</span>
+            {!customer && lines.length === 0 && (
+              <span className="text-xs text-gray-400 flex items-center gap-1">
+                <span>👤</span> Walk-in
+              </span>
+            )}
+          </div>
           <Cart />
 
           <SubscriptionGate className="mt-3 block">
@@ -282,7 +289,7 @@ export default function RegisterPage() {
               disabled={lines.length === 0 || completeMut.isPending}
               onClick={() => setPayOpen(true)}
             >
-              {t('register.charge')} {totals.total.toFixed(2)}
+              {t('register.charge')} JOD {totals.total.toFixed(2)}
             </Button>
           </SubscriptionGate>
         </aside>

@@ -27,16 +27,16 @@ export default function NewSessionPage() {
 
   async function onSubmit(values: OpenSessionFormData) {
     try {
-      const session = await openMut.mutateAsync(values);
+      await openMut.mutateAsync(values);
       toast.success(t('haraka.openNewSession'));
-      router.push(`${base}/sessions/${session.id}`);
+      router.push(`${base}/register`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to open session');
     }
   }
 
   return (
-    <div className="max-w-lg mx-auto">
+    <div className="max-w-lg mx-auto space-y-6">
       <PageHeader
         title={t('haraka.openNewSession')}
         description={t('haraka.openSessionDesc')}
@@ -49,39 +49,49 @@ export default function NewSessionPage() {
         ]}
       />
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="openingFloat"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('haraka.float')} (JOD) *</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0"
-                    autoFocus
-                    {...field}
-                    value={field.value === 0 && field.value !== undefined ? '' : field.value}
-                    onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="flex gap-2">
-            <Button type="submit" disabled={openMut.isPending}>
-              {openMut.isPending ? t('common.saving') : t('haraka.openNewSession')}
-            </Button>
-            <Button type="button" variant="outline" onClick={() => router.back()}>{t('common.cancel')}</Button>
+      <div className="rounded-xl border border-border bg-surface-page p-6 space-y-5">
+        {/* Register / till — read-only for now; multi-till support is a future feature */}
+        <div className="space-y-1.5">
+          <div className="text-sm font-medium text-gray-700">{t('haraka.register')}</div>
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-sidebar px-3 py-2 text-sm text-gray-500">
+            <span className="text-base">🏪</span> {t('haraka.mainTill')}
           </div>
-        </form>
-      </Form>
+        </div>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="openingFloat"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('haraka.float')} (JOD) *</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      autoFocus
+                      {...field}
+                      value={field.value === 0 && field.value !== undefined ? '' : field.value}
+                      onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex gap-2 pt-1">
+              <Button type="submit" disabled={openMut.isPending} style={{ background: 'var(--mod-haraka)' }}>
+                {openMut.isPending ? t('common.saving') : t('haraka.openNewSession')}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => router.back()}>{t('common.cancel')}</Button>
+            </div>
+          </form>
+        </Form>
+      </div>
     </div>
   );
 }

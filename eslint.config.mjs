@@ -8,6 +8,14 @@ const config = [
       "node_modules/**",
       "out/**",
       "build/**",
+      // Generated / vendored bundles — linting these blew ESLint past its
+      // ~4 GB heap (OOM, exit 134). The OpenNext worker output in
+      // `.open-next/**` is the main offender; the rest are tooling artifacts.
+      ".open-next/**",
+      ".wrangler/**",
+      ".opencode/**",
+      ".agents/**",
+      "coverage/**",
       ".claude/**",
       ".claude-flow/**",
       ".swarm/**",

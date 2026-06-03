@@ -1,6 +1,7 @@
 'use client';
 import { useTransferStore } from '@/store/transfer.store';
 import { useParams } from 'next/navigation';
+import { buildOrgPath } from '@/lib/utils/tenant-url';
 
 export function useTransferMode() {
   const { active, orgId, orgName, subdomain, setTransfer, clearTransfer } = useTransferStore();
@@ -12,7 +13,7 @@ export function useTransferMode() {
     const data: { subdomain?: string | null } = await res.json().catch(() => ({}));
     const sub = data.subdomain ?? null;
     setTransfer(targetOrgId, targetOrgName, sub);
-    window.location.href = sub ? `/${locale}/${sub}/dashboard` : `/${locale}`;
+    window.location.href = sub ? buildOrgPath(locale, sub) : `/${locale}`;
   }
 
   async function exitTransferMode() {

@@ -8,6 +8,17 @@ function isValidLocale(locale: string): locale is (typeof LOCALES)[number] {
   return LOCALES.includes(locale as (typeof LOCALES)[number]);
 }
 
+/**
+ * Enumerate the locale segment so Next can prerender the static-eligible
+ * leaves (marketing pages, login, signup) for each locale instead of
+ * rendering every route on demand. Data-driven pages under [orgSlug]/[space]
+ * stay dynamic because their own params aren't enumerated and they read
+ * request state.
+ */
+export function generateStaticParams() {
+  return LOCALES.map((locale) => ({ locale }));
+}
+
 export default async function LocaleLayout(
   props: {
     children: React.ReactNode;

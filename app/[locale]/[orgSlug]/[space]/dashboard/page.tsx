@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useOrgSlug, useSpace } from '@/hooks/ui';
@@ -273,7 +273,7 @@ function Initials({ name }: { name: string }) {
   );
 }
 
-function RecentAssetsTable({ assets, isLoading, onViewAll }: {
+function RecentAssetsTable({ assets, isLoading, onViewAll: _onViewAll }: {
   assets: Asset[];
   isLoading: boolean;
   onViewAll: () => void;
@@ -401,7 +401,7 @@ function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: 
 }
 
 /* ── ExpiringWarrantiesCard ──────────────────────────────────────── */
-function ExpiringWarrantiesCard({ warranties, isLoading, onViewAll }: {
+function ExpiringWarrantiesCard({ warranties, isLoading, onViewAll: _onViewAll }: {
   warranties: Warranty[];
   isLoading: boolean;
   onViewAll: () => void;
@@ -645,12 +645,14 @@ export default function DashboardPage() {
 
   const firstName  = (user?.displayName || user?.email?.split('@')[0] || '').split(/\s+/)[0] || t('greeting.there');
   const features   = user?.features ?? {};
-  const syncedAgo  = dataUpdatedAt ? (() => {
+  const syncedAgo  = useMemo(() => {
+    if (!dataUpdatedAt) return null;
+    // eslint-disable-next-line react-hooks/purity
     const diffMin = Math.round((Date.now() - dataUpdatedAt) / 60_000);
     if (diffMin < 1) return t('time.justNow');
     if (diffMin < 60) return `${t('dashboard.synced')} ${diffMin}m ago`;
     return `${t('dashboard.synced')} ${Math.round(diffMin / 60)}h ago`;
-  })() : null;
+  }, [dataUpdatedAt, t]);
   const isAdmin     = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const activeAssets       = data?.assets.filter((a) => a.status === 'Active')  ?? [];
@@ -663,11 +665,11 @@ export default function DashboardPage() {
   const lowStockCount   = totalAssets.filter((a) => a.status === 'Pending').length;
   const criticalWarrantyCount = expiringWarranties.filter((w) => daysUntil(w.endDate) <= 7).length;
 
-  // Sparkline data — derived from already-fetched arrays
-  const assetSpark    = weekBuckets(totalAssets);
-  const pendingSpark  = weekBuckets(pendingRequests);
+  // Sparkline data — derived from already-fetched arrays (retained for future use)
+  const _assetSpark    = weekBuckets(totalAssets);
+  const _pendingSpark  = weekBuckets(pendingRequests);
   // Warranty sparkline: bucket by days-remaining bands (0-7, 7-14, ..., 63-70, 70+)
-  const warrantySpark = (() => {
+  const _warrantySpark = (() => {
     const buckets = Array(10).fill(0);
     for (const w of expiringWarranties) {
       const d = daysUntil(w.endDate);
@@ -677,7 +679,7 @@ export default function DashboardPage() {
     return buckets;
   })();
   // Inventory sparkline: use same weekly bucketing on all assets (proxy for activity)
-  const inventorySpark = weekBuckets(totalAssets.filter((a) => a.status === 'Pending'));
+  const _inventorySpark = weekBuckets(totalAssets.filter((a) => a.status === 'Pending'));
 
   async function handleDecision(requestId: string, action: 'approve' | 'reject') {
     try {
@@ -685,7 +687,7 @@ export default function DashboardPage() {
     } catch { /* Silent — full handling in Requests page */ }
   }
 
-  const warrantyColumns: ColumnDef<Warranty>[] = [
+  const _warrantyColumns: ColumnDef<Warranty>[] = [
     { key: 'assetId', header: t('col.asset'),     render: (w) => <span className="font-medium text-sm">{w.assetName ?? w.assetId}</span> },
     { key: 'vendor',  header: t('col.vendor'),    render: (w) => <span className="text-sm text-gray-600">{w.vendor}</span> },
     { key: 'endDate', header: t('col.expiry'),    render: (w) => <span className="text-red-600 dark:text-red-400 font-medium text-sm tabular-nums">{formatDate(w.endDate)}</span> },

@@ -53,7 +53,7 @@ export default function NewStockAuditPage() {
     }
   }
 
-  const base = `/${locale}/${orgSlug}/${space}/raseed`;
+  const _base = `/${locale}/${orgSlug}/${space}/raseed`;
 
   return (
     <div>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { rateLimitTenant } from '@/lib/rate-limit'
 import { requirePermission } from '@/lib/permissions/require'
 import { TransactionsService } from '@/lib/modules/haraka/transactions/transactions.service'
 import { completeSaleSchema } from '@/lib/modules/haraka/transactions/schemas'
@@ -9,6 +10,8 @@ const service = new TransactionsService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    const limited = rateLimitTenant(tenant, 'haraka-transactions', 120, 60_000)
+    if (limited) return limited
     const { searchParams } = new URL(req.url)
     const result = await service.list(tenant, {
       sessionId: searchParams.get('sessionId') ?? undefined,

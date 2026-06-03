@@ -35,9 +35,13 @@ export default function OrganizationInfoPage() {
 
   useEffect(() => {
     if (org) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(org.name ?? '');
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCategory(org.category ?? '');
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setContactEmail(org.contactEmail ?? '');
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDescription(org.description ?? '');
     }
   }, [org]);

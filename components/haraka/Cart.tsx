@@ -1,14 +1,12 @@
 'use client';
 
-import { Plus, Minus, Trash2, Percent } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { Plus, Minus, Trash2, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { usePosCart } from '@/store/pos-cart.store';
 import { priceCart } from '@/lib/modules/haraka/pricing/calc';
-import { useT } from '@/hooks/ui';
 
 export function Cart() {
-  const { t } = useT();
   const lines = usePosCart((s) => s.lines);
   const incQty = usePosCart((s) => s.incQty);
   const setQty = usePosCart((s) => s.setQty);
@@ -19,99 +17,116 @@ export function Cart() {
 
   if (lines.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-gray-500 text-sm gap-2">
-        <div>{t('cart.empty')}</div>
-        <div className="text-xs">{t('cart.emptyHint')}</div>
+      <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-1 py-10">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="opacity-40">
+          <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+        </svg>
+        <span className="text-xs">Cart is empty</span>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      <div className="flex-1 overflow-y-auto -me-1 pe-1 divide-y divide-border">
+    <div className="flex flex-col h-full">
+      <div className="flex-1 divide-y divide-border overflow-y-auto -mx-1 px-1">
         {priced.lines.map((line) => (
-          <div key={line.itemId} className="py-2 grid grid-cols-[1fr_auto_auto] gap-2 items-center">
-            <div className="min-w-0">
-              <div className="text-sm font-medium truncate">{line.itemName}</div>
-              <div className="text-xs text-gray-500 font-mono">
-                {line.unitPrice.toFixed(2)}
-                {line.taxRate > 0 && <span> • +{(line.taxRate * 100).toFixed(0)}% tax</span>}
-                {line.discount > 0 && <span className="text-amber-600"> • -{line.discount.toFixed(2)} disc</span>}
-              </div>
-              <div className="mt-1 flex items-center gap-1">
-                <Percent size={11} className="text-gray-400" aria-hidden />
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={line.discount || ''}
-                  placeholder="Discount"
-                  onChange={(e) => setLineDiscount(line.itemId, Number(e.target.value || 0))}
-                  className="h-7 text-xs w-20"
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 w-7 p-0"
-                onClick={() => incQty(line.itemId, -1)}
-                aria-label={t('common.decrease')}
-              >
-                <Minus size={12} />
-              </Button>
-              <Input
-                type="number"
-                min="0"
-                value={line.quantity}
-                onChange={(e) => setQty(line.itemId, Number(e.target.value || 0))}
-                className="h-7 w-12 text-center text-sm font-mono"
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 w-7 p-0"
-                onClick={() => incQty(line.itemId, 1)}
-                aria-label={t('common.increase')}
-              >
-                <Plus size={12} />
-              </Button>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="font-mono text-sm w-16 text-end">{line.lineTotal.toFixed(2)}</div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 w-7 p-0"
-                onClick={() => removeLine(line.itemId)}
-                aria-label={t('common.remove')}
-              >
-                <Trash2 size={12} />
-              </Button>
-            </div>
-          </div>
+          <CartLine
+            key={line.itemId}
+            line={line}
+            onInc={() => incQty(line.itemId, 1)}
+            onDec={() => incQty(line.itemId, -1)}
+            onQty={(v) => setQty(line.itemId, v)}
+            onDiscount={(v) => setLineDiscount(line.itemId, v)}
+            onRemove={() => removeLine(line.itemId)}
+          />
         ))}
-      </div>
-
-      <div className="border-t border-border pt-3 mt-3 space-y-1 text-sm font-mono">
-        <Row label={t('reports.subtotal')} value={priced.totals.subtotal} />
-        <Row label={t('cart.discount')} value={-priced.totals.discountTotal} dim={priced.totals.discountTotal === 0} />
-        <Row label={t('reports.tax')} value={priced.totals.taxTotal} dim={priced.totals.taxTotal === 0} />
-        <div className="border-t border-border pt-2 mt-2 flex items-center justify-between text-base">
-          <span className="font-medium font-sans">{t('col.total')}</span>
-          <span className="font-bold">{priced.totals.total.toFixed(2)}</span>
-        </div>
       </div>
     </div>
   );
 }
 
-function Row({ label, value, dim }: { label: string; value: number; dim?: boolean }) {
+interface CartLineProps {
+  line: { itemId: string; itemName: string; unitPrice: number; taxRate: number; discount: number; quantity: number; lineTotal: number };
+  onInc: () => void;
+  onDec: () => void;
+  onQty: (v: number) => void;
+  onDiscount: (v: number) => void;
+  onRemove: () => void;
+}
+
+function CartLine({ line, onInc, onDec, onQty, onDiscount, onRemove }: CartLineProps) {
+  const [discOpen, setDiscOpen] = useState(false);
+
   return (
-    <div className={`flex items-center justify-between ${dim ? 'text-gray-400' : ''}`}>
-      <span className="font-sans text-sm">{label}</span>
-      <span>{value.toFixed(2)}</span>
+    <div className="py-2.5 space-y-1.5">
+      <div className="flex items-start gap-2">
+        {/* Name + price meta */}
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium leading-tight truncate">{line.itemName}</div>
+          <button
+            type="button"
+            className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mt-0.5 transition-colors"
+            onClick={() => setDiscOpen((o) => !o)}
+          >
+            <span className="font-mono">JOD {line.unitPrice.toFixed(2)}</span>
+            {line.taxRate > 0 && <span className="font-mono">+{(line.taxRate * 100).toFixed(0)}%</span>}
+            {line.discount > 0 && (
+              <span className="text-amber-600 font-mono">−{line.discount.toFixed(2)}</span>
+            )}
+            <ChevronDown size={10} className={`transition-transform ${discOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {discOpen && (
+            <div className="flex items-center gap-1 mt-1">
+              <Input
+                type="number" min="0" step="0.01"
+                value={line.discount || ''}
+                placeholder="Discount"
+                autoFocus
+                onChange={(e) => onDiscount(Number(e.target.value || 0))}
+                className="h-6 text-xs w-20 font-mono"
+              />
+              <span className="text-xs text-gray-400">off</span>
+            </div>
+          )}
+        </div>
+
+        {/* Qty controls */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            type="button"
+            className="h-6 w-6 rounded-md border border-border flex items-center justify-center text-gray-500 hover:border-gray-400 transition-colors"
+            onClick={onDec}
+          >
+            <Minus size={11} />
+          </button>
+          <Input
+            type="number" min="0"
+            value={line.quantity}
+            onChange={(e) => onQty(Number(e.target.value || 0))}
+            className="h-6 w-9 text-center text-xs font-mono p-0"
+          />
+          <button
+            type="button"
+            className="h-6 w-6 rounded-md border border-border flex items-center justify-center text-gray-500 hover:border-gray-400 transition-colors"
+            onClick={onInc}
+          >
+            <Plus size={11} />
+          </button>
+        </div>
+
+        {/* Line total + remove */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <span className="font-mono text-sm font-semibold w-14 text-end">{line.lineTotal.toFixed(2)}</span>
+          <button
+            type="button"
+            className="h-6 w-6 rounded-md flex items-center justify-center text-gray-300 hover:text-red-500 transition-colors"
+            onClick={onRemove}
+          >
+            <Trash2 size={11} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

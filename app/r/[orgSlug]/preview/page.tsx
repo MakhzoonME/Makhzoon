@@ -23,8 +23,10 @@ export default async function ReceiptPreviewPage(
   return (
     <ReceiptPublicView
       orgName={ctx.orgName}
+      orgNameAr={ctx.config.orgNameAr}
       taxNumber={ctx.taxNumber}
       tagline={ctx.tagline}
+      taglineAr={ctx.taglineAr}
       config={ctx.config}
     />
   );

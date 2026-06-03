@@ -7,6 +7,7 @@ import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicat
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
+import { buildOrgPath } from '@/lib/utils/tenant-url';
 import { createClient } from '@/lib/supabase/client';
 import { useTransferStore } from '@/store/transfer.store';
 import { useUiStore } from '@/store/ui.store';
@@ -66,7 +67,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   useEffect(() => {
     if (!loading && !user) router.push(`/${locale}/login`);
     if (!loading && user && !SUPERADMIN_ROLES.has(user.role)) {
-      router.push(user.orgSlug ? `/${locale}/${user.orgSlug}/dashboard` : `/${locale}`);
+      router.push(user.orgSlug ? buildOrgPath(locale, user.orgSlug) : `/${locale}`);
     }
   }, [user, loading, router, locale]);
 

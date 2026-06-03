@@ -31,9 +31,6 @@ import { useT } from '@/hooks/ui';
 import type { MessageKey } from '@/locales/messages';
 import { Plus, Pencil, Trash2, MailX, KeyRound, Copy, Check, Search } from 'lucide-react';
 
-type Row =
-  | { _type: 'user'; data: OrgUser }
-  | { _type: 'invite'; data: Invite };
 
 const ROLE_STYLE: Record<string, string> = {
   admin:       'bg-[var(--primary-100)] text-[var(--primary-700)]',
@@ -122,6 +119,7 @@ export default function UsersPage() {
   const updateSpaceAccessMut = useUpdateUserSpaceAccess();
   useEffect(() => {
     if (editTarget && serverSpaceAccess) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEditSpaceAccess(serverSpaceAccess);
     }
   }, [editTarget, serverSpaceAccess]);

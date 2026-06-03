@@ -2,7 +2,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useOrgSlug, useT } from '@/hooks/ui';
+import { useOrgSlug } from '@/hooks/ui';
 import { warrantySchema, WarrantyFormData } from '@/lib/validations/warranty.schema';
 import { Warranty } from '@/types';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -41,8 +41,7 @@ interface WarrantyFormProps { warranty?: Warranty; onSuccess?: () => void; defau
 
 export function WarrantyForm({ warranty, onSuccess, defaultAssetId, defaultInventoryItemId, onCancel, onDirtyChange }: WarrantyFormProps) {
   const router = useRouter();
-  const orgSlug = useOrgSlug();
-  const { locale } = useT();
+  useOrgSlug();
   const searchParams = useSearchParams();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
@@ -137,10 +136,10 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId, defaultInven
   });
 
   const { isDirty } = form.formState;
-  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+  useEffect(() => { if (onDirtyChange) onDirtyChange(isDirty); }, [isDirty, onDirtyChange]);
 
   function handleCancel() {
-    onCancel ? onCancel() : router.back();
+    if (onCancel) onCancel(); else router.back();
   }
 
 

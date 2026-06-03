@@ -30,8 +30,12 @@ export function useBarcodeLookup() {
       if (existing) return existing;
 
       const promise = (async () => {
-        const cached = qc.getQueryData<BarcodeLookupResult>(['inventory', 'by-barcode', code]);
-        if (cached) return cached;
+        // Reuse the cached result only while it's still fresh. A price/stock edit
+        // calls invalidateQueries(['inventory', ...]), which flags this entry as
+        // invalidated; in that case we fall through and refetch so the register
+        // sees the new price on the next scan without a page reload.
+        const state = qc.getQueryState<BarcodeLookupResult>(['inventory', 'by-barcode', code]);
+        if (state?.data && !state.isInvalidated) return state.data;
 
         const res = await fetch(`/api/inventory/by-barcode?code=${encodeURIComponent(code)}`);
         if (res.status === 404) {

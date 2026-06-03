@@ -108,3 +108,25 @@ export function getClientIp(req: Request): string {
   }
   return req.headers.get('x-real-ip') || 'unknown';
 }
+
+/**
+ * Per-user rate limit for authenticated, expensive endpoints (reports,
+ * inventory/asset lists, transaction queries). Keyed by org + user + a route
+ * label so limits don't bleed across endpoints.
+ *
+ * NOTE: the underlying store is in-memory and therefore per-isolate on
+ * Cloudflare Workers — it throttles bursts within a single isolate but is not a
+ * distributed limit. Move `store` to KV/Durable Objects/Redis for hard
+ * cross-isolate guarantees.
+ */
+export function rateLimitTenant(
+  params: { organizationId: string; userId: string },
+  route: string,
+  limit = 60,
+  windowMs = 60_000,
+): NextResponse | null {
+  const key = `tenant:${params.organizationId}:${params.userId}:${route}`;
+  return checkRateLimit(key, limit, windowMs, {
+    errorMessage: 'Too many requests for this resource.',
+  });
+}

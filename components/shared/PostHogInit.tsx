@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { APP_ENV } from '@/lib/app-env';
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 const POSTHOG_HOST =
@@ -8,13 +9,7 @@ const POSTHOG_HOST =
 
 export default function PostHogInit() {
   useEffect(() => {
-    if (!POSTHOG_KEY) return;
-
-    const host = window.location.hostname;
-    const isAllowed =
-      host === 'makhzoon.me' || host.endsWith('.makhzoon.me');
-
-    if (!isAllowed) return;
+    if (!POSTHOG_KEY || APP_ENV !== 'production') return;
 
     import('posthog-js').then(({ default: posthog }) => {
       posthog.init(POSTHOG_KEY, {

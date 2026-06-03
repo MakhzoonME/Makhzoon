@@ -6,6 +6,10 @@ import { AppToastProvider } from '@/components/shared/ToastProvider';
 import { ThemeProvider } from '@/components/shared/ThemeProvider';
 import { EnvBadge } from '@/components/shared/EnvBadge';
 import ClarityInit from '@/components/shared/ClarityInit';
+import PostHogInit from '@/components/shared/PostHogInit';
+import ContentsquareInit from '@/components/shared/ContentsquareInit';
+import HeapInit from '@/components/shared/HeapInit';
+import LogRocketInit from '@/components/shared/LogRocketInit';
 
 const capriola = localFont({
   src: '../fonts/Capriola/Capriola-Regular.ttf',
@@ -65,6 +69,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {children}
               <EnvBadge />
               <ClarityInit />
+              <PostHogInit />
+              <ContentsquareInit />
+              <HeapInit />
+              <LogRocketInit />
             </ThemeProvider>
           </AppToastProvider>
         </QueryProvider>

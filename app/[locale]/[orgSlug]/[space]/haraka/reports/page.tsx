@@ -210,8 +210,7 @@ function SalesByDayWidget({ range }: WidgetProps) {
               <span className="w-20 font-mono text-gray-600">{b.key}</span>
               <div className="flex-1 h-5 bg-surface-page rounded overflow-hidden">
                 <div
-                  className="h-full bg-primary-600/80"
-                  style={{ width: `${(b.total / maxTotal) * 100}%` }}
+                  style={{ width: `${(b.total / maxTotal) * 100}%`, height: '100%', background: 'var(--mod-haraka)', opacity: 0.8 }}
                 />
               </div>
               <span className="w-20 text-end font-mono">{fmt(b.total)}</span>

@@ -95,7 +95,7 @@ export default function SessionsListPage() {
   ];
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title={t('haraka.sessions')}
         description={t('haraka.sessionsSub')}

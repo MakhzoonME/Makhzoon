@@ -52,7 +52,7 @@ export default function HarakaReportsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title={t('nav.harakaReports')}
         description={t('reports.subtitle')}

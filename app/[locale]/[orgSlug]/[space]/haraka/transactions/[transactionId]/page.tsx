@@ -86,7 +86,7 @@ export default function TransactionDetailPage(props: Props) {
   }
 
   return (
-    <div className="p-6 max-w-4xl space-y-6">
+    <div className="max-w-4xl space-y-6">
       <PageHeader
         title={`Receipt #${tx.receiptNumber}`}
         description={`Sold ${fmtDate(tx.createdAt)} by ${tx.cashierName}`}

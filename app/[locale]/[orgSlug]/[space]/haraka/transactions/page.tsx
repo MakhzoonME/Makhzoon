@@ -122,7 +122,7 @@ export default function TransactionsListPage() {
   ];
 
   return (
-    <div className="p-6">
+    <div className="space-y-6">
       <PageHeader
         title="Transactions"
         description="All sales, refunds and voids across the organization."

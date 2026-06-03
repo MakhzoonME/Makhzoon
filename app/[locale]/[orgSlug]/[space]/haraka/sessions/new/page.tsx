@@ -36,7 +36,7 @@ export default function NewSessionPage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto">
+    <div className="max-w-lg mx-auto space-y-6">
       <PageHeader
         title={t('haraka.openNewSession')}
         description={t('haraka.openSessionDesc')}

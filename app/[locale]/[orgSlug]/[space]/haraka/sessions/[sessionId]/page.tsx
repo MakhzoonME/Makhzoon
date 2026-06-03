@@ -9,7 +9,7 @@ import { PageHeader, StatusBadge, SubscriptionGate } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useSession, useCloseSession, useTransactions } from '@/hooks/haraka';
 import { closeSessionSchema, type CloseSessionFormData } from '@/lib/modules/haraka/sessions/schemas';
@@ -62,7 +62,7 @@ export default function SessionDetailPage(props: Props) {
   const expectedVsCounted = Number(counted || 0) - expectedCashSoFar;
 
   return (
-    <div className="p-6 max-w-4xl space-y-6">
+    <div className="max-w-4xl space-y-6">
       <PageHeader
         title={`Session ${session.id.slice(0, 8)}`}
         description={`Opened ${new Date(session.openedAt).toLocaleString()} by ${session.cashierName}`}
@@ -173,7 +173,8 @@ export default function SessionDetailPage(props: Props) {
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onCloseSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onCloseSubmit)}>
+            <DialogBody className="space-y-4">
               {/* Summary row */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-lg bg-surface-inset px-3 py-2 text-sm">
@@ -247,7 +248,8 @@ export default function SessionDetailPage(props: Props) {
                 )}
               />
 
-              <DialogFooter className="gap-2">
+            </DialogBody>
+              <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setClosing(false)}>
                   Cancel
                 </Button>

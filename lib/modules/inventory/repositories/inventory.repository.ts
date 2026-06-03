@@ -78,6 +78,66 @@ async function computeQuantity(itemId: string, fallback: number): Promise<number
   return (data.quantity_after as number) ?? fallback
 }
 
+/**
+ * Latest ledger quantity for many items at once, returned keyed by id.
+ *
+ * Prefers the `inventory_latest_quantities` SQL function (one bounded query
+ * returning a single row per item — see migration 0016). If that function
+ * isn't present yet (e.g. code deployed before the migration is applied),
+ * it falls back to the per-item single-row lookup, chunked to avoid a
+ * connection storm. Either way it never pulls the full ledger into memory,
+ * which is what previously risked OOMing the Worker on busy stores.
+ *
+ * `fallbacks` supplies each item's cached `quantity_on_hand` for items that
+ * have no ledger rows yet.
+ */
+async function latestQuantities(
+  ids: string[],
+  fallbacks: Map<string, number>,
+): Promise<Map<string, number>> {
+  const result = new Map<string, number>()
+  if (ids.length === 0) return result
+
+  const { data, error } = await supabaseAdmin.rpc('inventory_latest_quantities', {
+    item_ids: ids,
+  })
+
+  if (!error && Array.isArray(data)) {
+    for (const row of data as Array<{ item_id: string; quantity: number | null }>) {
+      result.set(row.item_id, Number(row.quantity ?? 0))
+    }
+    for (const id of ids) {
+      if (!result.has(id)) result.set(id, fallbacks.get(id) ?? 0)
+    }
+    return result
+  }
+
+  // Fallback: bounded single-row lookups, 50 at a time.
+  const CHUNK = 50
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const slice = ids.slice(i, i + CHUNK)
+    const entries = await Promise.all(
+      slice.map(async (id) => [id, await computeQuantity(id, fallbacks.get(id) ?? 0)] as const),
+    )
+    for (const [id, qty] of entries) result.set(id, qty)
+  }
+  return result
+}
+
+/** Maps a public sort field to its DB column, or null if the field is
+ *  derived (quantity/stock-status) and therefore can't be sorted in SQL. */
+const SORT_COLUMN: Record<SortField, string | null> = {
+  name: 'name',
+  category: 'category',
+  location: 'location',
+  supplier: 'supplier',
+  minimumThreshold: 'minimum_threshold',
+  unitCost: 'unit_cost',
+  createdAt: 'created_at',
+  stockStatus: null,
+  quantityOnHand: null,
+}
+
 type SortField = 'name' | 'category' | 'stockStatus' | 'quantityOnHand' | 'minimumThreshold' | 'location' | 'supplier' | 'unitCost' | 'createdAt'
 
 export interface GetAllOpts {
@@ -101,51 +161,66 @@ export class InventoryRepository {
     const sortBy = opts?.sortBy ?? 'createdAt'
     const sortDir = opts?.sortDir ?? 'desc'
 
-    let listQ = supabaseAdmin
-      .from('inventory_items')
-      .select('*')
-      .eq('organization_id', tenant.organizationId)
-    if (tenant.spaceId) listQ = listQ.eq('space_id', tenant.spaceId)
-    const { data, error } = await listQ
-    if (error) throw error
-
-    let items: InventoryItem[] = (data ?? []).map((r) => toItem(r))
-
-    // Cheap, item-only filters first so we only ledger-look-up what survives.
-    if (opts?.category) items = items.filter((i) => i.category === opts.category)
-    if (opts?.posEnabled === true) items = items.filter((i) => i.posEnabled === true)
-    if (opts?.search) {
-      const term = opts.search.toLowerCase()
-      items = items.filter(
-        (i) =>
-          i.name.toLowerCase().includes(term) ||
-          (i.category ?? '').toLowerCase().includes(term) ||
-          (i.sku ?? '').toLowerCase().includes(term) ||
-          (i.location ?? '').toLowerCase().includes(term) ||
-          (i.supplier ?? '').toLowerCase().includes(term),
-      )
-    }
-
-    // Quantity is ledger-derived. Fetch the latest quantity_after per item in
-    // one batched query, then recompute quantityOnHand + stockStatus so the
-    // list agrees with the detail page.
-    if (items.length > 0) {
-      const ids = items.map((i) => i.id)
-      const { data: txs } = await supabaseAdmin
-        .from('inventory_transactions')
-        .select('item_id, quantity_after, performed_at')
-        .in('item_id', ids)
-        .order('performed_at', { ascending: false })
-      const latestQty = new Map<string, number>()
-      for (const t of txs ?? []) {
-        const k = t.item_id as string
-        if (!latestQty.has(k)) latestQty.set(k, (t.quantity_after as number) ?? 0)
+    // Build the base query with every filter that can run in SQL. Search is
+    // sanitised of PostgREST filter metacharacters before interpolation.
+    const buildBase = (withCount: boolean) => {
+      let q = supabaseAdmin
+        .from('inventory_items')
+        .select('*', withCount ? { count: 'exact' } : undefined)
+        .eq('organization_id', tenant.organizationId)
+      if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
+      if (opts?.category) q = q.eq('category', opts.category)
+      if (opts?.posEnabled === true) q = q.eq('pos_enabled', true)
+      if (opts?.search) {
+        const term = opts.search.replace(/[,()%*\\]/g, ' ').trim()
+        if (term) {
+          q = q.or(
+            ['name', 'category', 'sku', 'location', 'supplier']
+              .map((c) => `${c}.ilike.%${term}%`)
+              .join(','),
+          )
+        }
       }
-      items = items.map((i) => {
-        const q = latestQty.get(i.id) ?? i.quantityOnHand
-        return { ...i, quantityOnHand: q, stockStatus: stockStatus(q, i.minimumThreshold) }
-      })
+      return q
     }
+
+    // Quantity and stock-status are ledger-derived, so any request that filters
+    // by stock status or sorts by quantity/status can't be paginated in SQL.
+    const needsDerived =
+      !!opts?.stockStatus || sortBy === 'stockStatus' || sortBy === 'quantityOnHand'
+    const sortCol = SORT_COLUMN[sortBy]
+
+    if (!needsDerived && sortCol) {
+      // ── Fast path ──────────────────────────────────────────────
+      // Filter + sort + paginate in SQL; only the page's rows come back, and
+      // we compute quantities for just those (≤ pageSize) items.
+      const from = (Math.max(1, page) - 1) * pageSize
+      const { data, count, error } = await buildBase(true)
+        .order(sortCol, { ascending: sortDir === 'asc' })
+        .range(from, from + pageSize - 1)
+      if (error) throw error
+
+      const rows = data ?? []
+      const total = count ?? rows.length
+      const fallbacks = new Map(rows.map((r) => [r.id as string, (r.quantity_on_hand as number) ?? 0]))
+      const qtyById = await latestQuantities(rows.map((r) => r.id as string), fallbacks)
+      const items = rows.map((r) => toItem(r, qtyById.get(r.id as string)))
+
+      const totalPages = Math.max(1, Math.ceil(total / pageSize))
+      const safePage = Math.min(Math.max(1, page), totalPages)
+      return { items, total, page: safePage, pageSize, totalPages }
+    }
+
+    // ── Derived path ────────────────────────────────────────────
+    // Materialise every matching item (bounded by item count, NOT by ledger
+    // history — that full-ledger scan was the previous OOM risk), compute
+    // quantities, then filter/sort/paginate in memory.
+    const { data, error } = await buildBase(false)
+    if (error) throw error
+    const rows = data ?? []
+    const fallbacks = new Map(rows.map((r) => [r.id as string, (r.quantity_on_hand as number) ?? 0]))
+    const qtyById = await latestQuantities(rows.map((r) => r.id as string), fallbacks)
+    let items: InventoryItem[] = rows.map((r) => toItem(r, qtyById.get(r.id as string)))
 
     if (opts?.stockStatus) {
       // Accepts a single status ('low') or a comma-separated set ('low,out').
@@ -167,7 +242,7 @@ export class InventoryRepository {
     })
 
     const totalPages = Math.max(1, Math.ceil(total / pageSize))
-    const safePage = Math.min(page, totalPages)
+    const safePage = Math.min(Math.max(1, page), totalPages)
     const start = (safePage - 1) * pageSize
     return { items: items.slice(start, start + pageSize), total, page: safePage, pageSize, totalPages }
   }

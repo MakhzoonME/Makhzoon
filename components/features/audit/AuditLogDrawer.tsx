@@ -1,4 +1,5 @@
 'use client';
+import { useMemo } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useAuditLogs } from '@/hooks/org';
 import Link from 'next/link';
@@ -79,10 +80,11 @@ export function AuditLogDrawer({ open, onOpenChange }: { open: boolean; onOpenCh
   const orgSlug = params?.orgSlug ?? '';
   const recent = (data?.logs ?? []).slice(0, 30);
   const { t } = useT();
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  const rtf = useMemo(() => new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }), [locale]);
 
   function relativeTime(ts: string | number | Date): string {
     const d = new Date(ts);
+    // eslint-disable-next-line react-hooks/purity
     const diffMs = Date.now() - d.getTime();
     const diffMin = Math.floor(diffMs / 60_000);
     const diffH = Math.floor(diffMs / 3_600_000);

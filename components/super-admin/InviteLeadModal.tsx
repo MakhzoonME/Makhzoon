@@ -10,7 +10,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from '@/hooks/ui';
-import { cn } from '@/lib/utils/cn';
 import { PermissionsEditor } from '@/components/users/PermissionsEditor';
 import { UserPermissions, DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from '@/types';
 import { useSubscriptionFeatures } from '@/hooks/org';

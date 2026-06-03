@@ -1,7 +1,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 
-export default function OrgError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function OrgError({ error: _error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-4 text-center">
       <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--red-50)] text-[var(--red-700)]">

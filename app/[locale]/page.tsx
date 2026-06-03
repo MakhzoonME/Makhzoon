@@ -113,8 +113,13 @@ export default function ComingSoonPage() {
   const glowY  = useTransform(mouseY, v => v - 240);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsTouch(window.matchMedia('(pointer: coarse)').matches);
-    if (reduced) { setRevealed(true); return; }
+    if (reduced) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRevealed(true);
+      return;
+    }
     const id = setTimeout(() => setRevealed(true), 660);
     return () => clearTimeout(id);
   }, [reduced]);

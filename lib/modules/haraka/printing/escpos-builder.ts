@@ -71,9 +71,14 @@ export class EscPosBuilder {
     return this.line(char.repeat(width))
   }
 
-  /** Print a QR image as raw GS v 0 raster bit-image. */
-  qrRaster(matrix: boolean[][]) {
-    if (matrix.length === 0) return this
+  /**
+   * Print a 1-bit raster bitmap (`true` = black dot) as a GS v 0 bit-image.
+   * Used for QR codes and — crucially — for Arabic receipts, which the printer
+   * cannot render as text (no Arabic font / shaping / RTL), so we rasterize the
+   * whole receipt to a canvas bitmap and send it here.
+   */
+  rasterImage(matrix: boolean[][]) {
+    if (matrix.length === 0 || matrix[0].length === 0) return this
     const rows = matrix.length
     const cols = matrix[0].length
     const widthBytes = Math.ceil(cols / 8)
@@ -85,17 +90,23 @@ export class EscPosBuilder {
     const header = [GS, 0x76, 0x30, 0, xL, xH, yL, yH]
     const data: number[] = []
     for (let y = 0; y < rows; y++) {
+      const row = matrix[y]
       for (let bx = 0; bx < widthBytes; bx++) {
         let byte = 0
         for (let bit = 0; bit < 8; bit++) {
           const x = bx * 8 + bit
           if (x >= cols) continue
-          if (matrix[y][x]) byte |= 1 << (7 - bit)
+          if (row[x]) byte |= 1 << (7 - bit)
         }
         data.push(byte)
       }
     }
     return this.push([...header, ...data])
+  }
+
+  /** Print a QR image as raw GS v 0 raster bit-image. */
+  qrRaster(matrix: boolean[][]) {
+    return this.rasterImage(matrix)
   }
 
   cut() {

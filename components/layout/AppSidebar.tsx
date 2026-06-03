@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { useTransferStore } from '@/store/transfer.store';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, NavSeparator, buildNavUrl } from '@/lib/nav';
+import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, buildNavUrl } from '@/lib/nav';
 import { SpaceSwitcher } from '@/components/layout/SpaceSwitcher';
 import { useOrgInfo } from '@/hooks/org';
 import { useSpace } from '@/hooks/ui';
@@ -169,7 +169,7 @@ function LogOutSVG() {
 export function AppSidebar() {
   const pathname  = usePathname();
   const params    = useParams<{ locale: string; orgSlug: string }>();
-  const router    = useRouter();
+  useRouter();
   const locale    = params?.locale ?? 'en';
   const orgSlug   = (params?.orgSlug as string) ?? '';
   const { user }  = useAuthStore();

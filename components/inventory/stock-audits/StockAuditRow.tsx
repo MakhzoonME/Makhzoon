@@ -29,7 +29,9 @@ export function StockAuditRow({ item, auditId, completed }: Props) {
 
   // Sync local edits if cache refreshes (e.g. after invalidate).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCounted(item.countedQuantity == null ? '' : String(item.countedQuantity));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNote(item.note ?? '');
   }, [item.countedQuantity, item.note]);
 

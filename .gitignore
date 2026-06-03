@@ -18,6 +18,9 @@
 .open-next/
 .wrangler/
 
+# supabase CLI local state (version tracking, temp files)
+supabase/.temp/
+
 # production
 /build
 

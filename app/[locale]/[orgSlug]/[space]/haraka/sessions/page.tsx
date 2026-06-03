@@ -34,12 +34,11 @@ export default function SessionsListPage() {
 
   const columns: ColumnDef<PosSession>[] = [
     {
-      key: 'openedAt',
-      header: t('haraka.opened'),
-      sortable: true,
+      key: 'id',
+      header: 'Session',
       render: (s) => (
-        <span className="text-sm tabular-nums font-mono text-gray-700">
-          {new Date(s.openedAt).toLocaleString()}
+        <span className="font-mono text-xs font-semibold" style={{ color: 'var(--mod-haraka)' }}>
+          #{s.id.slice(0, 8)}
         </span>
       ),
     },
@@ -52,7 +51,7 @@ export default function SessionsListPage() {
       key: 'openingFloat',
       header: t('haraka.float'),
       render: (s) => (
-        <span className="text-sm tabular-nums font-mono text-gray-700">{s.openingFloat.toFixed(2)}</span>
+        <span className="text-sm tabular-nums font-mono">{s.openingFloat.toFixed(2)}</span>
       ),
     },
     {
@@ -61,9 +60,11 @@ export default function SessionsListPage() {
       render: (s) => {
         if (s.discrepancy == null) return <span className="text-gray-400">—</span>;
         const v = s.discrepancy;
-        const colour = v === 0 ? 'text-gray-600' : v > 0 ? 'text-green-700' : 'text-red-700';
         return (
-          <span className={`font-mono text-sm tabular-nums ${colour}`}>
+          <span
+            className="font-mono text-sm tabular-nums font-semibold"
+            style={{ color: v === 0 ? 'var(--text-secondary)' : v > 0 ? 'var(--green-700)' : 'var(--red-700)' }}
+          >
             {v >= 0 ? '+' : ''}{v.toFixed(2)}
           </span>
         );
@@ -73,6 +74,16 @@ export default function SessionsListPage() {
       key: 'status',
       header: t('col.status'),
       render: (s) => <StatusBadge status={s.status} />,
+    },
+    {
+      key: 'openedAt',
+      header: t('haraka.opened'),
+      sortable: true,
+      render: (s) => (
+        <span className="text-sm tabular-nums font-mono text-gray-500">
+          {new Date(s.openedAt).toLocaleString()}
+        </span>
+      ),
     },
     {
       key: 'closedAt',

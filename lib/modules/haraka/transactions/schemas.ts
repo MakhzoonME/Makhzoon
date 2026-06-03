@@ -32,6 +32,8 @@ export const completeSaleSchema = z.object({
   payments: z.array(paymentSchema).min(1, 'At least one payment is required'),
   /** Client-supplied idempotency key (UUID) so a duplicate Submit doesn't double-charge. */
   offlineId: z.string().min(8),
+  /** When true the cashier has chosen to bypass Fawtara for this sale. */
+  skipFawtara: z.boolean().optional(),
 })
 
 export const refundSchema = z.object({

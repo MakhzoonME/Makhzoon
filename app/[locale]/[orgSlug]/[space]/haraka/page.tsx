@@ -7,7 +7,6 @@ import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
 import { PageHeader, StatCard, OverviewSection, DataTable, StatusBadge, SubscriptionGate } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils/format';
 import { formatDate } from '@/lib/utils/date';
 import { useCurrentSession, useSessions, useTransactions, useCustomers, useHarakaReport } from '@/hooks/haraka';
@@ -21,57 +20,51 @@ function SessionCard({ base }: { base: string }) {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="p-5">
-          <div className="h-5 w-40 bg-surface-sidebar rounded animate-pulse mb-3" />
-          <div className="h-4 w-64 bg-surface-sidebar rounded animate-pulse" />
-        </CardContent>
-      </Card>
+      <div className="rounded-xl border border-border bg-surface-card p-5 space-y-2 animate-pulse">
+        <div className="h-4 w-40 bg-surface-inset rounded" />
+        <div className="h-3 w-64 bg-surface-inset rounded" />
+      </div>
     );
   }
 
   if (session) {
     return (
-      <Card className="border-[var(--green-100)] bg-[var(--green-50)]">
-        <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-[var(--green-700)] animate-pulse" />
-              <h2 className="text-sm font-semibold text-[var(--green-700)]">{t('haraka.activeSession')}</h2>
-            </div>
-            <p className="text-sm text-gray-700 mt-1">
-              {t('haraka.openedBy').replace('{name}', session.cashierName)} · {formatDate(session.openedAt)} · {formatCurrency(session.openingFloat)}
-            </p>
+      <div className="rounded-xl border border-green-100 bg-green-50 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="h-2 w-2 rounded-full bg-green-600 animate-pulse" />
+            <span className="text-sm font-semibold text-green-700">{t('haraka.activeSession')}</span>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Button variant="outline" size="sm" onClick={() => router.push(`${base}/sessions/${session.id}`)}>
-              {t('haraka.goToSession')}
-            </Button>
-            <Button size="sm" onClick={() => router.push(`${base}/register`)}>
-              {t('haraka.openRegister')} <ArrowRight className="h-4 w-4 ms-1" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          <p className="text-sm text-gray-600">
+            {t('haraka.openedBy').replace('{name}', session.cashierName)}
+            {' · '}{formatDate(session.openedAt)}
+            {' · '}{formatCurrency(session.openingFloat)}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Button variant="outline" size="sm" onClick={() => router.push(`${base}/sessions/${session.id}`)}>
+            {t('haraka.goToSession')}
+          </Button>
+          <Button size="sm" style={{ background: 'var(--mod-haraka)' }} onClick={() => router.push(`${base}/register`)}>
+            {t('haraka.openRegister')} <ArrowRight className="h-4 w-4 ms-1" />
+          </Button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-gray-900">{t('haraka.noOpenSession')}</h2>
-          <p className="text-sm text-gray-500 mt-1">{t('haraka.openSessionDesc')}</p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <SubscriptionGate>
-            <Button size="sm" onClick={() => router.push(`${base}/sessions/new`)}>
-              <Plus className="h-4 w-4 me-1" /> {t('haraka.openNewSession')}
-            </Button>
-          </SubscriptionGate>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="rounded-xl border border-border bg-surface-card p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="flex-1 min-w-0">
+        <h2 className="text-sm font-semibold text-gray-900">{t('haraka.noOpenSession')}</h2>
+        <p className="text-sm text-gray-500 mt-0.5">{t('haraka.openSessionDesc')}</p>
+      </div>
+      <SubscriptionGate>
+        <Button size="sm" style={{ background: 'var(--mod-haraka)' }} onClick={() => router.push(`${base}/sessions/new`)}>
+          <Plus className="h-4 w-4 me-1" /> {t('haraka.openNewSession')}
+        </Button>
+      </SubscriptionGate>
+    </div>
   );
 }
 
@@ -99,11 +92,39 @@ export default function HarakaOverviewPage() {
   const recent = txns?.items ?? [];
 
   const recentColumns: ColumnDef<PosTransaction>[] = [
-    { key: 'receiptNumber', header: t('haraka.receipt'), render: (x) => <span className="font-mono text-xs text-gray-600">{x.receiptNumber}</span> },
-    { key: 'total', header: t('haraka.amount'), render: (x) => <span className="font-medium text-sm tabular-nums">{formatCurrency(x.total)}</span> },
-    { key: 'cashierName', header: t('haraka.cashier'), render: (x) => <span className="text-sm text-gray-600">{x.cashierName}</span> },
-    { key: 'status', header: t('col.status'), render: (x) => <StatusBadge status={x.status} /> },
-    { key: 'createdAt', header: t('col.date'), render: (x) => <span className="text-sm text-gray-500 tabular-nums">{formatDate(x.createdAt)}</span> },
+    {
+      key: 'receiptNumber',
+      header: t('haraka.receipt'),
+      render: (x) => (
+        <span className="font-mono text-xs font-semibold" style={{ color: 'var(--mod-haraka)' }}>
+          {x.receiptNumber}
+        </span>
+      ),
+    },
+    {
+      key: 'total',
+      header: t('haraka.amount'),
+      render: (x) => <span className="font-mono font-medium text-sm">{formatCurrency(x.total)}</span>,
+    },
+    {
+      key: 'cashierName',
+      header: t('haraka.cashier'),
+      render: (x) => <span className="text-sm text-gray-600">{x.cashierName}</span>,
+    },
+    {
+      key: 'status',
+      header: t('col.status'),
+      render: (x) => <StatusBadge status={x.status} />,
+    },
+    {
+      key: 'createdAt',
+      header: t('col.date'),
+      render: (x) => (
+        <span className="text-xs font-mono text-gray-500">
+          {new Date(x.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </span>
+      ),
+    },
   ];
 
   return (
@@ -112,11 +133,10 @@ export default function HarakaOverviewPage() {
         title={t('nav.pos')}
         description={t('overview.haraka.subtitle')}
         actions={
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => router.push(`${base}/sessions`)}>
-              <ListChecks className="h-4 w-4" strokeWidth={1.75} /><span className="ms-1">{t('haraka.sessions')}</span>
-            </Button>
-          </div>
+          <Button size="sm" variant="outline" onClick={() => router.push(`${base}/sessions`)}>
+            <ListChecks className="h-4 w-4 me-1" strokeWidth={1.75} />
+            {t('haraka.sessions')}
+          </Button>
         }
       />
 
@@ -125,7 +145,7 @@ export default function HarakaOverviewPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={<Banknote className="w-[18px] h-[18px]" />}
-          iconBg="var(--green-50)" iconColor="var(--green-700)"
+          iconBg="rgba(194,24,91,0.08)" iconColor="var(--mod-haraka)"
           label={t('overview.todaysSales')}
           value={formatCurrency(todaySales)}
           loading={reportLoading}
@@ -149,7 +169,7 @@ export default function HarakaOverviewPage() {
         />
         <StatCard
           icon={<Users className="w-[18px] h-[18px]" />}
-          iconBg="var(--primary-50)" iconColor="var(--primary-700)"
+          iconBg="var(--blue-50)" iconColor="var(--blue-700)"
           label={t('overview.customers')}
           value={customerCount}
           loading={customersLoading}

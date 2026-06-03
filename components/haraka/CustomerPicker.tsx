@@ -92,7 +92,9 @@ function CustomerPickerDialog({
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMode('search');
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearch('');
     }
   }, [open]);

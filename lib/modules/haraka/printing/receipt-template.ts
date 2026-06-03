@@ -3,12 +3,18 @@
 import QRCode from 'qrcode';
 import type { PosTransaction, Organization } from '@/types';
 import { EscPosBuilder } from './escpos-builder';
+import { receiptLabels, type ReceiptLang } from '@/lib/receipts/labels';
+import { renderReceiptCanvas, type ReceiptPrintText } from './receipt-canvas';
 
 /**
  * Build a thermal receipt for a completed POS transaction.
  *
- * Width param matches paper size: 32 chars at 58mm, 48 chars at 80mm. We pad
- * label+amount rows manually because ESC/POS has no native table support.
+ * English prints as native ESC/POS text (crisp, fast): 32 chars at 58mm,
+ * 48 chars at 80mm, with manual label+amount padding (ESC/POS has no tables).
+ *
+ * Arabic prints via a canvas raster bit-image — thermal printers have no Arabic
+ * font / shaping / RTL, so we render the receipt to a bitmap (see receipt-canvas)
+ * and stream it as GS v 0. See renderReceiptCanvas.
  *
  * If the transaction has a Fawtara submission with a QR payload, the QR is
  * rendered as a raster bit-image at the bottom of the receipt.
@@ -17,6 +23,10 @@ import { EscPosBuilder } from './escpos-builder';
 export interface ReceiptOptions {
   paperWidth: 58 | 80;
   organization: Pick<Organization, 'id' | 'name' | 'contactEmail'>;
+  /** Localized bilingual content from the org receipt config. */
+  text?: ReceiptPrintText;
+  /** Concrete language to print in. Defaults to English. */
+  lang?: ReceiptLang;
 }
 
 function colsFor(width: 58 | 80): number {
@@ -56,19 +66,36 @@ export async function buildReceipt(
   transaction: PosTransaction,
   opts: ReceiptOptions,
 ): Promise<Uint8Array> {
+  const lang: ReceiptLang = opts.lang === 'ar' ? 'ar' : 'en';
+
+  // Arabic cannot be printed as text — render the whole receipt to a raster.
+  if (lang === 'ar' && opts.text) {
+    const matrix = await renderReceiptCanvas(transaction, { paperWidth: opts.paperWidth, text: opts.text }, 'ar');
+    const rb = new EscPosBuilder().init();
+    rb.rasterImage(matrix);
+    rb.feed(1).cut();
+    return rb.build();
+  }
+
+  // English (and the no-config fallback) → native ESC/POS text.
   const cols = colsFor(opts.paperWidth);
+  const L = receiptLabels('en');
+  const txt = opts.text;
   const b = new EscPosBuilder().init();
 
   // Header
-  b.align('center').bold(true).size(17).line(opts.organization.name);
+  b.align('center').bold(true).size(17).line(txt?.orgName || opts.organization.name);
   b.size(0).bold(false);
-  if (opts.organization.contactEmail) b.line(opts.organization.contactEmail);
+  if (txt?.tagline) b.line(txt.tagline);
+  if (txt?.address) b.line(txt.address);
+  if (txt?.phone) b.line(txt.phone);
+  else if (!txt && opts.organization.contactEmail) b.line(opts.organization.contactEmail);
   b.feed(1);
-  b.line(transaction.status === 'refunded' ? '*** REFUND ***' : 'Sales receipt');
-  b.line(`Receipt ${transaction.receiptNumber}`);
+  b.line(transaction.status === 'refunded' ? `*** ${L.refund} ***` : L.salesReceipt);
+  b.line(`${L.receipt} ${transaction.receiptNumber}`);
   b.line(new Date(transaction.createdAt).toLocaleString());
-  if (transaction.customerName) b.line(`Customer: ${transaction.customerName}`);
-  b.line(`Cashier: ${transaction.cashierName}`);
+  if (transaction.customerName) b.line(`${L.customer}: ${transaction.customerName}`);
+  if (txt?.showCashier !== false) b.line(`${L.cashier}: ${transaction.cashierName}`);
   b.divider('=', cols);
 
   // Lines
@@ -79,40 +106,42 @@ export async function buildReceipt(
     const qtyLine = `  ${line.quantity} × ${fmt(line.unitPrice)}`;
     b.line(row(qtyLine, fmt(line.lineTotal), cols));
     if (line.discountAmount > 0) {
-      b.line(row('  Discount', `-${fmt(line.discountAmount)}`, cols));
+      b.line(row(`  ${L.discount}`, `-${fmt(line.discountAmount)}`, cols));
     }
     if (line.taxAmount > 0) {
-      b.line(row(`  Tax (${(line.taxRate * 100).toFixed(0)}%)`, fmt(line.taxAmount), cols));
+      b.line(row(`  ${L.tax} (${(line.taxRate * 100).toFixed(0)}%)`, fmt(line.taxAmount), cols));
     }
   }
 
   b.divider('-', cols);
-  b.line(row('Subtotal', fmt(transaction.subtotal), cols));
-  if (transaction.discountAmount > 0) b.line(row('Discount', `-${fmt(transaction.discountAmount)}`, cols));
-  if (transaction.taxAmount > 0) b.line(row('Tax', fmt(transaction.taxAmount), cols));
-  b.bold(true).line(row('TOTAL', fmt(transaction.total), cols)).bold(false);
+  b.line(row(L.subtotal, fmt(transaction.subtotal), cols));
+  if (transaction.discountAmount > 0) b.line(row(L.discount, `-${fmt(transaction.discountAmount)}`, cols));
+  if (transaction.taxAmount > 0) b.line(row(L.tax, fmt(transaction.taxAmount), cols));
+  b.bold(true).line(row(L.total.toUpperCase(), fmt(transaction.total), cols)).bold(false);
   b.divider('-', cols);
 
   for (const p of transaction.payments) {
-    const label = p.method === 'cash' ? 'Cash' : p.method === 'card' ? `Card${p.cardLast4 ? ` ****${p.cardLast4}` : ''}` : p.method;
+    const label = p.method === 'cash' ? L.cash : p.method === 'card' ? `${L.card}${p.cardLast4 ? ` ****${p.cardLast4}` : ''}` : p.method;
     b.line(row(label, fmt(p.amount), cols));
   }
-  if (transaction.change > 0) b.line(row('Change', fmt(transaction.change), cols));
+  if (transaction.change > 0) b.line(row(L.change, fmt(transaction.change), cols));
+
+  if (txt?.showTaxNumber && txt.taxNumber) b.line(`${L.taxNo}: ${txt.taxNumber}`);
 
   // Fawtara block
-  if (transaction.fawtara?.status === 'submitted' && transaction.fawtara.qrPayload && transaction.fawtara.uuid) {
+  if (txt?.showFawtaraQr !== false && transaction.fawtara?.status === 'submitted' && transaction.fawtara.qrPayload && transaction.fawtara.uuid) {
     b.feed(1);
     b.align('center');
-    b.line(`Fawtara: ${transaction.fawtara.invoiceNumber ?? '—'}`);
+    b.line(`${L.invoice}: ${transaction.fawtara.invoiceNumber ?? '—'}`);
     const matrix = await qrPayloadToMatrix(transaction.fawtara.qrPayload);
     b.qrRaster(matrix);
     b.line(transaction.fawtara.uuid.slice(0, 12));
   } else if (transaction.fawtara?.status === 'pending' || transaction.fawtara?.status === 'failed') {
-    b.feed(1).align('center').line('Fawtara: pending e-invoicing');
+    b.feed(1).align('center').line(L.fawtaraPending);
   }
 
   // Footer
-  b.feed(2).align('center').line('Thank you!');
+  b.feed(2).align('center').line((txt?.footerText || '').trim() || L.thankYou);
   b.feed(1).cut();
   return b.build();
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
+import { cache } from 'react'
 import { verifySessionCookie } from '@/lib/supabase/auth-helpers'
 import { getSubscriptionByOrg } from '@/lib/db/subscriptions'
 import { supabaseAdmin } from '@/lib/supabase/admin'
@@ -55,14 +56,24 @@ async function listAccessibleSpaces(
     .map((s) => ({ id: s.id, slug: s.slug, isDefault: s.is_default ?? false }))
 }
 
-export async function resolveTenant(): Promise<TenantContext> {
+/**
+ * Resolve the tenant context for the current request.
+ *
+ * Wrapped in React `cache()` so multiple calls within a single request
+ * (e.g. a route handler that resolves the tenant more than once, or a
+ * page + its data loaders) share one result instead of re-running the
+ * session verification and DB lookups each time.
+ *
+ * The two independent lookups (subscription + accessible spaces) run in
+ * parallel rather than sequentially to shave a round-trip off every
+ * authenticated request.
+ */
+export const resolveTenant = cache(async (): Promise<TenantContext> => {
   const user = await verifySessionCookie()
   if (!user) throw NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const organizationId = user.organizationId
   if (!organizationId) throw NextResponse.json({ error: 'No organization context' }, { status: 400 })
-
-  const subscription = await getSubscriptionByOrg(organizationId)
 
   // ── Resolve active space ───────────────────────────────────────
   // Platform-admin family bypasses the space check entirely — they
@@ -73,16 +84,20 @@ export async function resolveTenant(): Promise<TenantContext> {
   const headerStore = await headers()
   const requestedSlug = headerStore.get('x-space-slug') || null
 
-  let spaceId: string | undefined
-  let accessibleSpaceIds: string[] | undefined
   const allSpaces = user.allSpaces ?? isPlatformAdmin
 
+  // Subscription and space access don't depend on each other — fetch together.
+  const [subscription, accessible] = await Promise.all([
+    getSubscriptionByOrg(organizationId),
+    isPlatformAdmin
+      ? Promise.resolve([] as Array<{ id: string; slug: string; isDefault: boolean }>)
+      : listAccessibleSpaces(organizationId, user.uid, allSpaces),
+  ])
+
+  let spaceId: string | undefined
+  let accessibleSpaceIds: string[] | undefined
+
   if (!isPlatformAdmin) {
-    const accessible = await listAccessibleSpaces(
-      organizationId,
-      user.uid,
-      allSpaces,
-    )
     accessibleSpaceIds = accessible.map((s) => s.id)
 
     if (requestedSlug) {
@@ -109,4 +124,4 @@ export async function resolveTenant(): Promise<TenantContext> {
     accessibleSpaceIds,
     allSpaces,
   }
-}
+})

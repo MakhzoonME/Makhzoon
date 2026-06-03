@@ -92,8 +92,10 @@ export default async function ReceiptPage(
   return (
     <ReceiptPublicView
       orgName={res.ctx.orgName}
+      orgNameAr={res.ctx.config.orgNameAr}
       taxNumber={res.ctx.taxNumber}
       tagline={res.ctx.tagline}
+      taglineAr={res.ctx.taglineAr}
       config={res.ctx.config}
       data={res.data}
     />

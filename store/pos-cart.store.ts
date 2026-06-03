@@ -9,9 +9,17 @@ import type { InventoryItem, PosCustomer } from '@/types';
  * the tab clears the cart. We don't want a stale cart to ring up a sale
  * tomorrow with yesterday's prices.
  */
+export interface HeldCart {
+  id: string;
+  lines: CartLineInput[];
+  customer: { id: string; name: string } | null;
+  heldAt: Date;
+}
+
 interface PosCartState {
   lines: CartLineInput[];
   customer: { id: string; name: string } | null;
+  held: HeldCart[];
   /** Add or increment-existing by itemId. Snapshots price/tax at add-time. */
   addItem: (item: InventoryItem, taxRate: number) => void;
   /** Set absolute qty for a line. Qty<=0 removes. */
@@ -22,11 +30,18 @@ interface PosCartState {
   removeLine: (itemId: string) => void;
   clear: () => void;
   setCustomer: (c: PosCustomer | null) => void;
+  /** Save current cart to hold list and clear active cart. */
+  holdCart: () => void;
+  /** Restore a held cart into the active cart (replaces current). */
+  recallCart: (id: string) => void;
+  /** Discard a held cart without recalling. */
+  discardHeld: (id: string) => void;
 }
 
 export const usePosCart = create<PosCartState>((set) => ({
   lines: [],
   customer: null,
+  held: [],
   addItem: (item, taxRate) =>
     set((state) => {
       const idx = state.lines.findIndex((l) => l.itemId === item.id);
@@ -70,4 +85,27 @@ export const usePosCart = create<PosCartState>((set) => ({
   removeLine: (itemId) => set((state) => ({ lines: state.lines.filter((l) => l.itemId !== itemId) })),
   clear: () => set({ lines: [], customer: null }),
   setCustomer: (c) => set({ customer: c ? { id: c.id, name: c.name } : null }),
+  holdCart: () =>
+    set((state) => {
+      if (state.lines.length === 0) return state;
+      const held: HeldCart = {
+        id: crypto.randomUUID(),
+        lines: [...state.lines],
+        customer: state.customer,
+        heldAt: new Date(),
+      };
+      return { held: [...state.held, held], lines: [], customer: null };
+    }),
+  recallCart: (id) =>
+    set((state) => {
+      const cart = state.held.find((h) => h.id === id);
+      if (!cart) return state;
+      return {
+        lines: cart.lines,
+        customer: cart.customer,
+        held: state.held.filter((h) => h.id !== id),
+      };
+    }),
+  discardHeld: (id) =>
+    set((state) => ({ held: state.held.filter((h) => h.id !== id) })),
 }));

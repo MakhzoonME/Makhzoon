@@ -112,6 +112,16 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref == 'refs/heads/DevBranch' && 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dWp0b2FibmV3b3lwaXR0b2t1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODg0MTcsImV4cCI6MjA5NTU2NDQxN30.gZ15djtZQyMAp6Mw_CeYqxQpQjmDty1geHBWLaw2_CY' || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0' }}
           NEXT_PUBLIC_APP_URL: ${{ needs.map-env.outputs.app_url }}
           NEXT_PUBLIC_APP_ENV: ${{ needs.map-env.outputs.env }}
+          # Analytics IDs — all are public client tokens (shipped in the
+          # browser bundle by design), so inline like the anon key above.
+          # Inlined at build time; the per-tracker code only fires in the
+          # production env (APP_ENV gate), so dev/staging stay clean.
+          NEXT_PUBLIC_CLARITY_PROJECT_ID: x1901halan
+          NEXT_PUBLIC_POSTHOG_KEY: phc_kt9AtQ3Gsj4LRWnTnEEYxSSRYvw267bTyu4sTjkNQHYw
+          NEXT_PUBLIC_POSTHOG_HOST: https://eu.i.posthog.com
+          NEXT_PUBLIC_CONTENTSQUARE_TAG_ID: 86994134aec19
+          NEXT_PUBLIC_HEAP_APP_ID: "40760664"
+          NEXT_PUBLIC_LOGROCKET_APP_ID: fyfd49/makhzoon-me
 
       # ── Set Worker secrets (if GitHub secret exists for this env) ──
       # Naming convention: SECRET_NAME_{DEV|STAGING|PRODUCTION}

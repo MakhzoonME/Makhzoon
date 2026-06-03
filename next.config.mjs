@@ -43,7 +43,7 @@ const nextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
           {
             key: 'Content-Security-Policy',
-            value: `default-src 'self'; script-src 'self' 'unsafe-inline'${evalSrc} https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';${upgradeInsecure}`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline'${evalSrc} https://www.googletagmanager.com https://www.clarity.ms; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.clarity.ms; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';${upgradeInsecure}`,
           },
         ],
       },

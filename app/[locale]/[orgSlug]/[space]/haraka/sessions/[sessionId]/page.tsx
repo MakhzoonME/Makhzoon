@@ -32,6 +32,8 @@ export default function SessionDetailPage(props: Props) {
   const { data, isLoading } = useSession(params.sessionId);
   const closeMut = useCloseSession(params.sessionId);
   const [closing, setClosing] = useState(false);
+  // Must be called unconditionally (Rules of Hooks — not after early returns)
+  const { data: txData } = useTransactions({ sessionId: params.sessionId, pageSize: 500 });
 
   const form = useForm<CloseSessionFormData>({
     resolver: zodResolver(closeSessionSchema),
@@ -59,8 +61,6 @@ export default function SessionDetailPage(props: Props) {
 
   const { session, expectedCashSoFar } = data;
   const isOpen = session.status === 'open';
-  // Compute session sales total from completed transactions
-  const { data: txData } = useTransactions({ sessionId: params.sessionId, pageSize: 500 });
   const sessionSalesTotal = (txData?.items ?? [])
     .filter((tx) => tx.status === 'completed')
     .reduce((sum, tx) => sum + tx.total, 0);

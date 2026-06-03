@@ -1,18 +1,13 @@
 'use client';
 
 import { useEffect } from 'react';
+import { APP_ENV } from '@/lib/app-env';
 
 const HEAP_APP_ID = process.env.NEXT_PUBLIC_HEAP_APP_ID;
 
 export default function HeapInit() {
   useEffect(() => {
-    if (!HEAP_APP_ID) return;
-
-    const host = window.location.hostname;
-    const isAllowed =
-      host === 'makhzoon.me' || host.endsWith('.makhzoon.me');
-
-    if (!isAllowed) return;
+    if (!HEAP_APP_ID || APP_ENV !== 'production') return;
 
     const w = window as unknown as {
       heap?: { load?: (id: string) => void };

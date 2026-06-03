@@ -64,6 +64,7 @@ export default function RegisterPage() {
   const completeMut = useCompleteSale();
 
   const [payOpen, setPayOpen] = useState(false);
+  const [payTab, setPayTab] = useState<'cash' | 'card' | 'other'>('cash');
   const [printerOpen, setPrinterOpen] = useState(false);
   const [lastTx, setLastTx] = useState<PosTransaction | null>(null);
   const [langPickTx, setLangPickTx] = useState<PosTransaction | null>(null);
@@ -250,64 +251,67 @@ export default function RegisterPage() {
               </span>
             )}
             <div className="ms-auto flex items-center gap-1">
-              {/* Hold button */}
-              <div className="relative" ref={heldRef}>
-                <button
-                  type="button"
-                  title="Hold cart"
-                  disabled={lines.length === 0}
-                  className="relative flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-gray-500 hover:bg-surface-inset disabled:opacity-30 transition-colors"
-                  onClick={() => {
-                    if (held.length > 0) { setHeldOpen((o) => !o); return; }
-                    if (lines.length > 0) { holdCart(); }
-                  }}
-                >
-                  <PauseCircle size={14} />
-                  Hold
-                  {held.length > 0 && (
-                    <span className="absolute -top-1 -end-1 h-4 w-4 rounded-full text-[9px] font-bold flex items-center justify-center"
-                      style={{ background: 'var(--mod-haraka)', color: '#fff' }}>
-                      {held.length}
-                    </span>
-                  )}
-                </button>
-                {/* Held carts dropdown */}
-                {heldOpen && held.length > 0 && (
-                  <div className="absolute end-0 top-full mt-1 z-50 w-72 rounded-xl border border-border bg-surface-card shadow-lg overflow-hidden">
-                    <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
-                      <span className="text-xs font-semibold text-gray-700">Held sales ({held.length})</span>
-                      <button type="button" className="text-xs text-gray-400 hover:text-gray-600"
-                        onClick={() => { holdCart(); setHeldOpen(false); }}
-                        disabled={lines.length === 0}>
-                        + Hold current
-                      </button>
-                    </div>
-                    {held.map((h) => (
-                      <div key={h.id} className="px-4 py-3 border-b border-border last:border-0 flex items-center gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium text-gray-800 truncate">
-                            {h.customer?.name ?? 'Walk-in'}
-                          </div>
-                          <div className="text-xs text-gray-400 mt-0.5">
-                            {h.lines.length} item{h.lines.length !== 1 ? 's' : ''} · {h.heldAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </div>
-                        </div>
-                        <button type="button"
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-white"
-                          style={{ background: 'var(--mod-haraka)' }}
-                          onClick={() => { recallCart(h.id); setHeldOpen(false); }}>
-                          <RotateCcw size={11} /> Recall
-                        </button>
-                        <button type="button"
-                          className="p-1 rounded-md text-gray-300 hover:text-red-500 transition-colors"
-                          onClick={() => discardHeld(h.id)}>
-                          <Trash2 size={13} />
-                        </button>
+              {/* Hold current cart — always holds, disabled when cart empty */}
+              <button
+                type="button"
+                title="Hold this sale"
+                disabled={lines.length === 0}
+                className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-gray-500 hover:bg-surface-inset disabled:opacity-30 transition-colors"
+                onClick={() => { holdCart(); }}
+              >
+                <PauseCircle size={14} /> Hold
+              </button>
+
+              {/* Held-carts pill — only shown when there are held sales */}
+              {held.length > 0 && (
+                <div className="relative" ref={heldRef}>
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold transition-colors"
+                    style={{ background: 'rgba(194,24,91,0.10)', color: 'var(--mod-haraka)' }}
+                    onClick={() => setHeldOpen((o) => !o)}
+                  >
+                    <RotateCcw size={13} /> {held.length} held
+                  </button>
+
+                  {/* Recall dropdown */}
+                  {heldOpen && (
+                    <div className="absolute end-0 top-full mt-1 z-50 w-72 rounded-xl border border-border bg-surface-card shadow-lg overflow-hidden">
+                      <div className="px-4 py-2.5 border-b border-border">
+                        <span className="text-xs font-semibold text-gray-700">Held sales</span>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                      {held.map((h) => (
+                        <div key={h.id} className="px-4 py-3 border-b border-border last:border-0 flex items-center gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-semibold text-gray-800 truncate">
+                              {h.customer?.name ?? 'Walk-in'}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-0.5">
+                              {h.lines.length} item{h.lines.length !== 1 ? 's' : ''}
+                              {' · '}{h.heldAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-white"
+                            style={{ background: 'var(--mod-haraka)' }}
+                            onClick={() => { recallCart(h.id); setHeldOpen(false); }}
+                          >
+                            <RotateCcw size={11} /> Recall
+                          </button>
+                          <button
+                            type="button"
+                            className="p-1 rounded-md text-gray-300 hover:text-red-500 transition-colors"
+                            onClick={() => discardHeld(h.id)}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -357,7 +361,7 @@ export default function RegisterPage() {
                   type="button"
                   disabled={lines.length === 0 || completeMut.isPending}
                   className="flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-border bg-surface-card text-gray-600 hover:border-gray-400 transition-colors disabled:opacity-30"
-                  onClick={() => { setPayOpen(true); }}
+                  onClick={() => { setPayTab('cash'); setPayOpen(true); }}
                 >
                   <Banknote size={14} /> Cash
                 </button>
@@ -365,7 +369,7 @@ export default function RegisterPage() {
                   type="button"
                   disabled={lines.length === 0 || completeMut.isPending}
                   className="flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-border bg-surface-card text-gray-600 hover:border-gray-400 transition-colors disabled:opacity-30"
-                  onClick={() => { setPayOpen(true); }}
+                  onClick={() => { setPayTab('card'); setPayOpen(true); }}
                 >
                   <CreditCard size={14} /> Card
                 </button>
@@ -374,7 +378,7 @@ export default function RegisterPage() {
                 className="w-full h-11 rounded-lg text-sm font-bold text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ background: 'var(--mod-haraka)' }}
                 disabled={lines.length === 0 || completeMut.isPending}
-                onClick={() => setPayOpen(true)}
+                onClick={() => { setPayTab('cash'); setPayOpen(true); }}
               >
                 {completeMut.isPending
                   ? 'Processing…'
@@ -394,6 +398,7 @@ export default function RegisterPage() {
         total={totals.total}
         onConfirm={handleConfirmSale}
         loading={completeMut.isPending}
+        initialTab={payTab}
       />
       <PrinterSettingsDialog open={printerOpen} onOpenChange={setPrinterOpen} />
 

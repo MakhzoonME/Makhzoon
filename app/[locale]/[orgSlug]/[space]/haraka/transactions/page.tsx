@@ -65,6 +65,13 @@ export default function TransactionsListPage() {
       ),
     },
     {
+      key: 'items' as keyof PosTransaction,
+      header: 'Items',
+      render: (tx) => (
+        <span className="text-sm text-gray-500 font-mono">{tx.items?.length ?? '—'}</span>
+      ),
+    },
+    {
       key: 'customerName',
       header: 'Customer',
       render: (tx) => <span className="text-sm text-gray-600">{tx.customerName ?? '—'}</span>,

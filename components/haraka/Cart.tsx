@@ -69,7 +69,7 @@ function CartLine({ line, onInc, onDec, onQty, onDiscount, onRemove }: CartLineP
             className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mt-0.5 transition-colors"
             onClick={() => setDiscOpen((o) => !o)}
           >
-            <span className="font-mono">{line.unitPrice.toFixed(2)}</span>
+            <span className="font-mono">JOD {line.unitPrice.toFixed(2)}</span>
             {line.taxRate > 0 && <span className="font-mono">+{(line.taxRate * 100).toFixed(0)}%</span>}
             {line.discount > 0 && (
               <span className="text-amber-600 font-mono">−{line.discount.toFixed(2)}</span>

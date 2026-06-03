@@ -59,6 +59,11 @@ export default function SessionDetailPage(props: Props) {
 
   const { session, expectedCashSoFar } = data;
   const isOpen = session.status === 'open';
+  // Compute session sales total from completed transactions
+  const { data: txData } = useTransactions({ sessionId: params.sessionId, pageSize: 500 });
+  const sessionSalesTotal = (txData?.items ?? [])
+    .filter((tx) => tx.status === 'completed')
+    .reduce((sum, tx) => sum + tx.total, 0);
   const expectedVsCounted = Number(counted || 0) - expectedCashSoFar;
 
   return (
@@ -133,27 +138,31 @@ export default function SessionDetailPage(props: Props) {
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-        <Stat label="Opening float" value={fmt(session.openingFloat)} />
+        <Stat label="Cashier" value={session.cashierName} />
+        <Stat label="Opening float" value={`JOD ${fmt(session.openingFloat)}`} />
         <Stat
-          label={isOpen ? 'Expected cash so far' : 'Expected cash at close'}
-          value={fmt(isOpen ? expectedCashSoFar : session.expectedFloat ?? 0)}
-          tone="info"
+          label={isOpen ? 'Sales so far' : 'Total sales'}
+          value={`JOD ${fmt(sessionSalesTotal)}`}
+          tone="good"
         />
-        {!isOpen && (
-          <>
-            <Stat label="Counted at close" value={fmt(session.closingFloat ?? 0)} />
-            <Stat
-              label="Discrepancy"
-              value={`${(session.discrepancy ?? 0) >= 0 ? '+' : ''}${fmt(session.discrepancy ?? 0)}`}
-              tone={
-                session.discrepancy == null || session.discrepancy === 0
-                  ? 'default'
-                  : session.discrepancy > 0
-                  ? 'good'
-                  : 'bad'
-              }
-            />
-          </>
+        {isOpen ? (
+          <Stat
+            label="Expected cash"
+            value={fmt(expectedCashSoFar)}
+            tone="info"
+          />
+        ) : (
+          <Stat
+            label="Discrepancy"
+            value={`${(session.discrepancy ?? 0) >= 0 ? '+' : ''}${fmt(session.discrepancy ?? 0)}`}
+            tone={
+              session.discrepancy == null || session.discrepancy === 0
+                ? 'default'
+                : session.discrepancy > 0
+                ? 'good'
+                : 'bad'
+            }
+          />
         )}
       </div>
 

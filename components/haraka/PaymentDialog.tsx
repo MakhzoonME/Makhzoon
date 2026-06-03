@@ -176,7 +176,16 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading }:
               <button
                 type="button"
                 className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
-                onClick={() => setSplitMode(true)}
+                onClick={() => {
+                  // Start split with two rows: first half cash, second half card
+                  const half = +(total / 2).toFixed(2);
+                  const rest = +(total - half).toFixed(2);
+                  setSplitRows([
+                    { method: 'cash', amount: half },
+                    { method: 'card', amount: rest },
+                  ]);
+                  setSplitMode(true);
+                }}
               >
                 <ChevronDown size={12} /> Split payment
               </button>
@@ -220,18 +229,25 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading }:
                 ))}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <Button size="sm" variant="outline" type="button"
-                  onClick={() => setSplitRows((p) => [...p, { method: 'cash', amount: Math.max(0, splitRemaining) }])}>
-                  <Banknote size={13} className="me-1" /> Cash
+                  onClick={() => {
+                    // Rebalance: give the new row the remaining balance, zero out overpay on existing rows
+                    const newAmount = Math.max(0, splitRemaining);
+                    setSplitRows((p) => [...p, { method: 'cash', amount: newAmount }]);
+                  }}>
+                  <Banknote size={13} className="me-1" /> + Cash
                 </Button>
                 <Button size="sm" variant="outline" type="button"
-                  onClick={() => setSplitRows((p) => [...p, { method: 'card', amount: Math.max(0, splitRemaining) }])}>
-                  <CreditCard size={13} className="me-1" /> Card
+                  onClick={() => {
+                    const newAmount = Math.max(0, splitRemaining);
+                    setSplitRows((p) => [...p, { method: 'card', amount: newAmount }]);
+                  }}>
+                  <CreditCard size={13} className="me-1" /> + Card
                 </Button>
                 <button type="button" className="ms-auto text-xs text-gray-400 hover:text-gray-600"
                   onClick={() => setSplitMode(false)}>
-                  Simple mode
+                  Simple
                 </button>
               </div>
 

@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Printer, Lock, Receipt, ShoppingCart } from 'lucide-react';
+import { Printer, Lock, Receipt, ShoppingCart, PauseCircle, RotateCcw, Trash2, Banknote, CreditCard } from 'lucide-react';
 import { BarcodeInput, SubscriptionGate } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,8 +41,25 @@ export default function RegisterPage() {
 
   const lines = usePosCart((s) => s.lines);
   const customer = usePosCart((s) => s.customer);
+  const held = usePosCart((s) => s.held);
   const addItem = usePosCart((s) => s.addItem);
   const clearCart = usePosCart((s) => s.clear);
+  const holdCart = usePosCart((s) => s.holdCart);
+  const recallCart = usePosCart((s) => s.recallCart);
+  const discardHeld = usePosCart((s) => s.discardHeld);
+  const [heldOpen, setHeldOpen] = useState(false);
+  const heldRef = useRef<HTMLDivElement>(null);
+
+  // Close held-carts dropdown on outside click
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (heldRef.current && !heldRef.current.contains(e.target as Node)) {
+        setHeldOpen(false);
+      }
+    }
+    if (heldOpen) document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [heldOpen]);
 
   const completeMut = useCompleteSale();
 
@@ -225,13 +242,73 @@ export default function RegisterPage() {
           className="w-[360px] flex-shrink-0 flex flex-col border-s border-border bg-surface-card overflow-hidden"
         >
           {/* Cart header */}
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
+          <div className="px-4 py-2.5 border-b border-border flex items-center gap-2 flex-shrink-0">
             <span className="text-sm font-semibold">{t('register.cart')} ({lines.length})</span>
             {!customer && (
               <span className="flex items-center gap-1 text-xs text-gray-400">
-                <ShoppingCart size={12} /> Walk-in
+                <ShoppingCart size={11} /> Walk-in
               </span>
             )}
+            <div className="ms-auto flex items-center gap-1">
+              {/* Hold button */}
+              <div className="relative" ref={heldRef}>
+                <button
+                  type="button"
+                  title="Hold cart"
+                  disabled={lines.length === 0}
+                  className="relative flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-gray-500 hover:bg-surface-inset disabled:opacity-30 transition-colors"
+                  onClick={() => {
+                    if (held.length > 0) { setHeldOpen((o) => !o); return; }
+                    if (lines.length > 0) { holdCart(); }
+                  }}
+                >
+                  <PauseCircle size={14} />
+                  Hold
+                  {held.length > 0 && (
+                    <span className="absolute -top-1 -end-1 h-4 w-4 rounded-full text-[9px] font-bold flex items-center justify-center"
+                      style={{ background: 'var(--mod-haraka)', color: '#fff' }}>
+                      {held.length}
+                    </span>
+                  )}
+                </button>
+                {/* Held carts dropdown */}
+                {heldOpen && held.length > 0 && (
+                  <div className="absolute end-0 top-full mt-1 z-50 w-72 rounded-xl border border-border bg-surface-card shadow-lg overflow-hidden">
+                    <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-700">Held sales ({held.length})</span>
+                      <button type="button" className="text-xs text-gray-400 hover:text-gray-600"
+                        onClick={() => { holdCart(); setHeldOpen(false); }}
+                        disabled={lines.length === 0}>
+                        + Hold current
+                      </button>
+                    </div>
+                    {held.map((h) => (
+                      <div key={h.id} className="px-4 py-3 border-b border-border last:border-0 flex items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium text-gray-800 truncate">
+                            {h.customer?.name ?? 'Walk-in'}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-0.5">
+                            {h.lines.length} item{h.lines.length !== 1 ? 's' : ''} · {h.heldAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                        <button type="button"
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-white"
+                          style={{ background: 'var(--mod-haraka)' }}
+                          onClick={() => { recallCart(h.id); setHeldOpen(false); }}>
+                          <RotateCcw size={11} /> Recall
+                        </button>
+                        <button type="button"
+                          className="p-1 rounded-md text-gray-300 hover:text-red-500 transition-colors"
+                          onClick={() => discardHeld(h.id)}>
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Customer picker */}
@@ -273,7 +350,26 @@ export default function RegisterPage() {
               </>
             )}
 
-            <SubscriptionGate className="block pt-2">
+            <SubscriptionGate className="block space-y-2 pt-2">
+              {/* Quick-pay shortcuts */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  disabled={lines.length === 0 || completeMut.isPending}
+                  className="flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-border bg-surface-card text-gray-600 hover:border-gray-400 transition-colors disabled:opacity-30"
+                  onClick={() => { setPayOpen(true); }}
+                >
+                  <Banknote size={14} /> Cash
+                </button>
+                <button
+                  type="button"
+                  disabled={lines.length === 0 || completeMut.isPending}
+                  className="flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-border bg-surface-card text-gray-600 hover:border-gray-400 transition-colors disabled:opacity-30"
+                  onClick={() => { setPayOpen(true); }}
+                >
+                  <CreditCard size={14} /> Card
+                </button>
+              </div>
               <button
                 className="w-full h-11 rounded-lg text-sm font-bold text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ background: 'var(--mod-haraka)' }}

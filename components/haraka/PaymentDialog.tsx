@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Banknote, CreditCard, MoreHorizontal, FileCheck, ChevronDown } from 'lucide-react';
+import { Banknote, CreditCard, MoreHorizontal, FileCheck, ChevronDown, Trash2 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter,
 } from '@/components/ui/dialog';
@@ -23,10 +23,12 @@ interface Props {
   total: number;
   onConfirm: (payments: PaymentLine[]) => void;
   loading?: boolean;
+  /** Pre-select a payment method when the dialog opens. */
+  initialTab?: TabMethod;
 }
 
-export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading }: Props) {
-  const [tab, setTab] = useState<TabMethod>('cash');
+export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading, initialTab }: Props) {
+  const [tab, setTab] = useState<TabMethod>(initialTab ?? 'cash');
   const [amount, setAmount] = useState('');
   const [cardLast4, setCardLast4] = useState('');
   const [splitMode, setSplitMode] = useState(false);
@@ -34,13 +36,14 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading }:
 
   useEffect(() => {
     if (open) {
-      setTab('cash');
-      setAmount(total.toFixed(2));
+      const startTab = initialTab ?? 'cash';
+      setTab(startTab);
+      setAmount(startTab !== 'other' ? total.toFixed(2) : '');
       setCardLast4('');
       setSplitMode(false);
       setSplitRows([{ method: 'cash', amount: total }]);
     }
-  }, [open, total]);
+  }, [open, total, initialTab]);
 
   const numAmount = Number(amount) || 0;
   const change = tab === 'cash' ? Math.max(0, numAmount - total) : 0;
@@ -198,35 +201,54 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading }:
               </div>
 
               <div className="space-y-2">
-                {splitRows.map((r, idx) => (
-                  <div key={idx} className="grid grid-cols-[90px_1fr_auto] gap-2 items-center">
-                    <select
-                      className="rounded-md border border-border px-2 py-1.5 text-sm bg-surface-card"
-                      value={r.method}
-                      onChange={(e) => setSplitRow(idx, { method: e.target.value as 'cash' | 'card' })}
-                    >
-                      <option value="cash">Cash</option>
-                      <option value="card">Card</option>
-                    </select>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={r.amount || ''}
-                      onChange={(e) => setSplitRow(idx, { amount: Number(e.target.value || 0) })}
-                      className="font-mono"
-                    />
-                    {splitRows.length > 1 && (
-                      <button
-                        type="button"
-                        className="px-2 py-1 text-gray-400 hover:text-gray-600"
-                        onClick={() => setSplitRows((p) => p.filter((_, i) => i !== idx))}
+                {splitRows.map((r, idx) => {
+                  // Remaining if this row were set to 0
+                  const otherPaid = splitRows
+                    .filter((_, i) => i !== idx)
+                    .reduce((a, x) => a + (Number.isFinite(x.amount) ? x.amount : 0), 0);
+                  const needed = +(total - otherPaid).toFixed(2);
+                  const isBalanced = Math.abs(r.amount - needed) < 0.01;
+                  return (
+                    <div key={idx} className="grid grid-cols-[90px_1fr_auto_auto] gap-2 items-center">
+                      <select
+                        className="rounded-md border border-border px-2 py-1.5 text-sm bg-surface-card"
+                        value={r.method}
+                        onChange={(e) => setSplitRow(idx, { method: e.target.value as 'cash' | 'card' })}
                       >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                ))}
+                        <option value="cash">Cash</option>
+                        <option value="card">Card</option>
+                      </select>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={r.amount || ''}
+                        onChange={(e) => setSplitRow(idx, { amount: Number(e.target.value || 0) })}
+                        className="font-mono"
+                      />
+                      {/* Balance button: fills this row to cover the remaining */}
+                      {!isBalanced && needed > 0 && (
+                        <button
+                          type="button"
+                          className="text-[10px] font-semibold px-1.5 py-0.5 rounded text-gray-500 hover:text-gray-700 border border-border whitespace-nowrap"
+                          title={`Fill to ${needed.toFixed(2)}`}
+                          onClick={() => setSplitRow(idx, { amount: needed })}
+                        >
+                          ={needed.toFixed(2)}
+                        </button>
+                      )}
+                      {splitRows.length > 1 ? (
+                        <button
+                          type="button"
+                          className="text-gray-300 hover:text-red-500 transition-colors"
+                          onClick={() => setSplitRows((p) => p.filter((_, i) => i !== idx))}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      ) : <span />}
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="flex gap-2 items-center">

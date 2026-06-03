@@ -99,6 +99,7 @@ const DEFAULT_CONFIG: ReceiptConfig = {
   address: '',
   addressAr: '',
   website: '',
+  orgName: '',
   orgNameAr: '',
   language: 'en',
 };
@@ -358,7 +359,19 @@ export default function ReceiptSettingsPage() {
                 </div>
               </div>
 
-              {/* Business name (Arabic) — English name comes from the organization name */}
+              {/* Business name — per-language override; English falls back to the org name */}
+              {needEn && (
+                <div className="space-y-1.5">
+                  <Label>Business name{bothLangs ? ' (English)' : ''}</Label>
+                  <Input
+                    placeholder={orgInfo?.name ?? 'Business name'}
+                    value={config.orgName}
+                    onChange={(e) => set('orgName', e.target.value)}
+                    maxLength={80}
+                  />
+                  <p className="text-[11px] text-gray-400">Leave blank to use your organization name ({orgInfo?.name ?? '—'}).</p>
+                </div>
+              )}
               {needAr && (
                 <div className="space-y-1.5">
                   <Label>Business name (Arabic)</Label>
@@ -369,7 +382,6 @@ export default function ReceiptSettingsPage() {
                     onChange={(e) => set('orgNameAr', e.target.value)}
                     maxLength={80}
                   />
-                  <p className="text-[11px] text-gray-400">The English name uses your organization name ({orgInfo?.name ?? '—'}).</p>
                 </div>
               )}
 

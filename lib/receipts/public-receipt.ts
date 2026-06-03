@@ -1,31 +1,12 @@
 import { getOrganizationBySubdomain } from '@/lib/db/organizations';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
+import { DEFAULT_RECEIPT_CONFIG } from '@/lib/receipts/receipt-config';
 
 /* Server-side loaders for the public, unauthenticated receipt pages
    (/r/[orgSlug]/...). Shared by the template preview and real receipts. */
 
-export const DEFAULT_RECEIPT_CONFIG: ReceiptConfig = {
-  template: 'thermal-58',
-  showLogo: true,
-  showTaxNumber: true,
-  showCashier: true,
-  showFawtaraQr: true,
-  showItemizedTax: true,
-  showAddress: true,
-  showPhone: true,
-  showWebsite: false,
-  footerText: 'Thank you for your purchase!',
-  footerTextAr: '',
-  accentColor: '#1d4ed8',
-  logo: null,
-  phone: '',
-  address: '',
-  addressAr: '',
-  website: '',
-  orgNameAr: '',
-  language: 'en',
-};
+export { DEFAULT_RECEIPT_CONFIG };
 
 export interface OrgReceiptContext {
   orgId: string;

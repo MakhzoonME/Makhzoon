@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Banknote, ShoppingCart, Lock } from 'lucide-react';

@@ -34,7 +34,7 @@ function stripLocale(pathname: string): { locale: string | null; rest: string } 
   return { locale: null, rest: pathname };
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const hostname = req.headers.get('host')?.split(':')[0] ?? '';
 

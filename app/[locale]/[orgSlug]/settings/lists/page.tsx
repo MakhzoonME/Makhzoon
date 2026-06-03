@@ -30,8 +30,8 @@ const ORG_KEYS = LIST_KEYS.filter(
 export default function OrgListsPage() {
   const { isAllowed } = useAdminGuard('settings.orgInfo');
   const { t, locale } = useT();
-  const orgSlug = useOrgSlug();
-  const { data: orgInfo } = useOrgInfo();
+  useOrgSlug();
+  useOrgInfo();
   const isAr = locale === 'ar';
   const [selected, setSelected] = useState<ListKey>(ORG_KEYS[0] ?? 'asset_category');
   const meta = LIST_REGISTRY[selected];

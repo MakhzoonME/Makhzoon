@@ -10,6 +10,7 @@ import { toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { useAuthStore } from '@/store/auth.store';
 import { hasPermission } from '@/lib/permissions';
+import { getReceiptBaseUrl } from '@/lib/app-env';
 import type { PosTransaction } from '@/types';
 
 interface Props {
@@ -44,8 +45,7 @@ export default function TransactionDetailPage(props: Props) {
   const tx: PosTransaction = data.transaction;
   const isMutable = tx.status === 'completed';
 
-  const receiptBase = (process.env.NEXT_PUBLIC_RECEIPT_URL ?? 'https://rcpt-app.makhzoon.me').replace(/\/$/, '');
-  const shareUrl = `${receiptBase}/r/${params.orgSlug}/${tx.id}`;
+  const shareUrl = `${getReceiptBaseUrl()}/r/${params.orgSlug}/${tx.id}`;
   function copyShareLink() {
     navigator.clipboard.writeText(shareUrl).then(() => toast.success('Receipt link copied'));
   }
@@ -86,7 +86,7 @@ export default function TransactionDetailPage(props: Props) {
   }
 
   return (
-    <div className="p-6 max-w-4xl space-y-6">
+    <div className="max-w-4xl space-y-6">
       <PageHeader
         title={`Receipt #${tx.receiptNumber}`}
         description={`Sold ${fmtDate(tx.createdAt)} by ${tx.cashierName}`}
@@ -140,12 +140,30 @@ export default function TransactionDetailPage(props: Props) {
         }
       />
 
-      {tx.parentTransactionId && (
-        <Card>
-          <CardContent className="p-4 text-sm text-gray-600">
-            This transaction refunds <span className="font-mono">{tx.parentTransactionId}</span>.
-          </CardContent>
-        </Card>
+      {/* Voided / refunded state banner */}
+      {tx.status === 'voided' && (
+        <div className="rounded-xl border border-[var(--red-100)] bg-[var(--red-50)] px-5 py-4 flex items-center gap-3">
+          <span className="text-2xl">⊘</span>
+          <div>
+            <div className="text-sm font-bold text-[var(--red-700)]">This sale was voided</div>
+            <div className="text-xs text-[var(--red-700)] opacity-80">
+              {fmtDate(tx.updatedAt ?? tx.createdAt)}
+            </div>
+          </div>
+        </div>
+      )}
+      {tx.status === 'refunded' && (
+        <div className="rounded-xl border border-[var(--yellow-100)] bg-[var(--yellow-50)] px-5 py-4 flex items-center gap-3">
+          <span className="text-2xl">↩</span>
+          <div>
+            <div className="text-sm font-bold text-[var(--yellow-700)]">This sale was refunded</div>
+            {tx.parentTransactionId && (
+              <div className="text-xs text-[var(--yellow-700)] opacity-80 font-mono">
+                Refund ref: {tx.parentTransactionId.slice(0, 8)}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {tx.customerId && (
@@ -196,7 +214,19 @@ export default function TransactionDetailPage(props: Props) {
             <Row label="Discount" value={fmt(tx.discountAmount)} />
             <Row label="Tax" value={fmt(tx.taxAmount)} />
             <div className="border-t border-border my-2" />
-            <Row label="Total" value={fmt(tx.total)} bold />
+            <div className="flex justify-between font-semibold">
+              <span className="text-gray-500">Total</span>
+              <span
+                className="font-mono"
+                style={
+                  tx.status === 'voided'
+                    ? { textDecoration: 'line-through', color: 'var(--text-tertiary)' }
+                    : { color: 'var(--mod-haraka)' }
+                }
+              >
+                JOD {fmt(tx.total)}
+              </span>
+            </div>
             <Row label="Change" value={fmt(tx.change)} />
           </CardContent>
         </Card>
@@ -225,7 +255,13 @@ export default function TransactionDetailPage(props: Props) {
         <Card>
           <CardContent className="p-4 text-sm space-y-1.5">
             <div className="font-medium flex items-center gap-2">
-              Fawtara <StatusBadge status={tx.fawtara.status} />
+              Fawtara (Jo-Fotara)
+              <StatusBadge status={tx.fawtara.status} />
+              {tx.status === 'voided' && tx.fawtara.status === 'submitted' && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--yellow-100)] text-[var(--yellow-700)]">
+                  Credit note sent
+                </span>
+              )}
             </div>
             <Row label="Invoice #" value={tx.fawtara.invoiceNumber ?? '—'} />
             <Row label="UUID" value={tx.fawtara.uuid ?? '—'} />
@@ -242,8 +278,20 @@ export default function TransactionDetailPage(props: Props) {
         open={confirmVoid}
         onOpenChange={setConfirmVoid}
         title="Void this transaction?"
-        description="Stock will be returned and the sale removed from session totals. This can't be undone."
-        confirmLabel="Void"
+        description={
+          <div className="space-y-3">
+            <p>Stock will be returned and the sale removed from session totals. This can&apos;t be undone.</p>
+            {tx.items.length > 0 && (
+              <div className="rounded-lg bg-[var(--red-50)] border border-[var(--red-100)] px-3 py-2 text-xs text-[var(--red-700)] space-y-1">
+                <div className="font-semibold mb-1">Items to restock:</div>
+                {tx.items.map((item, i) => (
+                  <div key={i}>{item.quantity}× {item.inventoryItemName}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        }
+        confirmLabel="Void sale"
         onConfirm={doVoid}
         loading={voidMut.isPending}
       />

@@ -156,6 +156,7 @@ async function currentQty(itemId: string): Promise<number> {
   return Number(item?.quantity_on_hand ?? 0)
 }
 
+
 export class TransactionsRepository {
   async aggregate(tenant: TenantContext, opts: AggregateOpts): Promise<AggregateResult> {
     const to = opts.to ?? new Date()
@@ -311,28 +312,20 @@ export class TransactionsRepository {
       throw new Error('Session is closed — open a new session before selling')
     }
 
-    // Validate stock for every line up front.
+    // Verify every item belongs to this org before writing anything. The RPC
+    // will also catch this, but an early read-only check surfaces a clear 400
+    // rather than a Postgres exception.
     const uniqueItemIds = Array.from(new Set(input.lines.map((l) => l.itemId)))
     const { data: itemRows, error: itemErr } = await supabaseAdmin
       .from('inventory_items')
-      .select('id, organization_id, minimum_threshold')
+      .select('id, organization_id')
       .in('id', uniqueItemIds)
     if (itemErr) throw itemErr
-    const itemById = new Map<string, Row>()
-    for (const r of itemRows ?? []) itemById.set((r as Row).id as string, r as Row)
     for (const iid of uniqueItemIds) {
-      const r = itemById.get(iid)
+      const r = (itemRows ?? []).find((row) => (row as Row).id === iid) as Row | undefined
       if (!r || r.organization_id !== tenant.organizationId) {
         throw new Error(`Inventory item not found: ${iid}`)
       }
-    }
-
-    const running = new Map<string, number>()
-    for (const iid of uniqueItemIds) running.set(iid, await currentQty(iid))
-    for (const line of priced.lines) {
-      const after = (running.get(line.itemId) ?? 0) - line.quantity
-      if (after < 0) throw new Error(`Insufficient stock for ${line.itemName}`)
-      running.set(line.itemId, after)
     }
 
     const receiptNumber = await allocateReceiptNumber(tenant.organizationId, tenant.spaceId)
@@ -386,44 +379,43 @@ export class TransactionsRepository {
     if (txErr) throw txErr
     const posTxId = tx.id as string
 
-    // Per-line stock-OUT ledger rows (running before/after per item).
-    const before = new Map<string, number>()
-    for (const iid of uniqueItemIds) before.set(iid, await currentQty(iid))
-    for (const line of priced.lines) {
-      const b = before.get(line.itemId) ?? 0
-      const a = b - line.quantity
-      before.set(line.itemId, a)
-      const { error: invErr } = await supabaseAdmin.from('inventory_transactions').insert({
-        organization_id: tenant.organizationId,
-        space_id: tenant.spaceId,
-        item_id: line.itemId,
-        item_name: line.itemName,
-        type: 'out',
-        quantity: line.quantity,
-        quantity_before: b,
-        quantity_after: a,
-        reason: 'POS sale',
-        note: `Receipt ${receiptNumber}`,
-        source: 'pos',
-        pos_transaction_id: posTxId,
-        performed_by: tenant.userId,
-        performed_by_email: tenant.user.email ?? null,
-        performed_by_name: tenant.user.displayName ?? null,
-        performed_by_role: tenant.role ?? null,
-      })
-      if (invErr) throw invErr
-    }
-
-    for (const iid of uniqueItemIds) {
-      const threshold = Number(itemById.get(iid)!.minimum_threshold ?? 0)
-      const q = running.get(iid) ?? 0
-      await supabaseAdmin
-        .from('inventory_items')
-        .update({
-          stock_status: q === 0 ? 'out' : q < threshold ? 'low' : 'ok',
-          updated_by: tenant.userId,
-        })
-        .eq('id', iid)
+    // Each line decrements stock atomically via the `inventory_apply_stock_out`
+    // RPC (migration 0016). The function row-locks the item before reading the
+    // current quantity, then inserts the ledger row and updates stock_status in
+    // one transaction — preventing oversell from concurrent sales of the same
+    // item. Lines for different items run in parallel; lines sharing an item
+    // are serialised by Postgres's row lock (the second caller waits for the
+    // first to commit, then reads the already-updated quantity_after).
+    const stockResults = await Promise.allSettled(
+      priced.lines.map((line) =>
+        supabaseAdmin.rpc('inventory_apply_stock_out', {
+          p_org:      tenant.organizationId,
+          p_space:    tenant.spaceId ?? null,
+          p_item:     line.itemId,
+          p_qty:      line.quantity,
+          p_item_name: line.itemName,
+          p_reason:   'POS sale',
+          p_note:     `Receipt ${receiptNumber}`,
+          p_source:   'pos',
+          p_pos_tx:   posTxId,
+          p_by:       tenant.userId,
+          p_by_email: tenant.user.email ?? null,
+          p_by_name:  tenant.user.displayName ?? null,
+          p_by_role:  tenant.role ?? null,
+        }),
+      ),
+    )
+    for (const result of stockResults) {
+      if (result.status === 'rejected') throw result.reason
+      if (result.value.error) {
+        const msg = result.value.error.message ?? ''
+        if (msg.includes('INSUFFICIENT_STOCK')) {
+          const itemId = msg.split(':')[1]?.trim() ?? ''
+          const name = priced.lines.find((l) => l.itemId === itemId)?.itemName ?? itemId
+          throw new Error(`Insufficient stock for ${name}`)
+        }
+        throw result.value.error
+      }
     }
 
     return toTransaction(tx)

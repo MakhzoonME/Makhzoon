@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
@@ -17,12 +17,8 @@ interface FormDrawerProps {
 
 export function FormDrawer({ open, onOpenChange, onCloseAttempt, title, description, children, width = 'lg' }: FormDrawerProps) {
   const { t } = useT();
-  const [isRtl, setIsRtl] = useState(false);
+  const [isRtl] = useState(() => typeof document !== 'undefined' && document.documentElement.dir === 'rtl');
   const widthClass = { md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-xl' }[width];
-
-  useEffect(() => {
-    setIsRtl(document.documentElement.dir === 'rtl');
-  }, []);
 
   function handleOpenChange(next: boolean) {
     if (!next && onCloseAttempt) {

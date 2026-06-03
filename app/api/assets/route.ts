@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { rateLimitTenant } from '@/lib/rate-limit'
 import { requirePermission } from '@/lib/permissions/require'
 import { AssetsService } from '@/lib/modules/assets/services/assets.service'
 import { createAssetSchema } from '@/lib/modules/assets/validators/schemas'
@@ -9,6 +10,8 @@ const service = new AssetsService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    const limited = rateLimitTenant(tenant, 'assets', 60, 60_000)
+    if (limited) return limited
     const { searchParams } = new URL(req.url)
 
     if (searchParams.get('categoriesOnly') === 'true') {

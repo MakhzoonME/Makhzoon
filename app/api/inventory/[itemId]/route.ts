@@ -37,14 +37,14 @@ export async function PATCH(req: NextRequest, props: Params) {
       sku: data.sku || undefined,
       unit: data.unit,
       minimumThreshold: data.minimumThreshold,
-      reorderQuantity: data.reorderQuantity ? Number(data.reorderQuantity) : undefined,
+      reorderQuantity: data.reorderQuantity === undefined ? undefined : Number(data.reorderQuantity),
       location: data.location || undefined,
       supplier: data.supplier || undefined,
-      unitCost: data.unitCost ? Number(data.unitCost) : undefined,
+      unitCost: data.unitCost === undefined ? undefined : Number(data.unitCost),
       notes: data.notes || undefined,
       documents: data.documents ?? undefined,
       posEnabled: data.posEnabled ?? false,
-      posPrice: data.posPrice ? Number(data.posPrice) : undefined,
+      posPrice: data.posPrice === undefined ? undefined : Number(data.posPrice),
     })
     return NextResponse.json({ ok: true })
   } catch (err) {

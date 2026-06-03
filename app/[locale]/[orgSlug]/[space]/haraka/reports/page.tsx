@@ -52,7 +52,7 @@ export default function HarakaReportsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title={t('nav.harakaReports')}
         description={t('reports.subtitle')}
@@ -66,9 +66,13 @@ export default function HarakaReportsPage() {
 
       <DateRangePicker range={range} onChange={setRange} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Hero row: sales chart (1.6fr) + top items (1fr) — matches design */}
+      <div className="grid gap-6" style={{ gridTemplateColumns: '1.6fr 1fr' }}>
         <SalesByDayWidget range={range} />
         <TopItemsWidget range={range} />
+      </div>
+      {/* Secondary widgets */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SalesByCashierWidget range={range} />
         <SalesByPaymentMethodWidget range={range} />
         <SessionSummariesWidget range={range} />
@@ -204,20 +208,22 @@ function SalesByDayWidget({ range }: WidgetProps) {
       filename="sales-by-day.csv"
     >
       <EmptyOrLoading isLoading={isLoading} empty={buckets.length === 0}>
-        <div className="space-y-1.5">
-          {buckets.map((b) => (
-            <div key={b.key} className="flex items-center gap-3 text-xs">
-              <span className="w-20 font-mono text-gray-600">{b.key}</span>
-              <div className="flex-1 h-5 bg-surface-page rounded overflow-hidden">
-                <div
-                  className="h-full bg-primary-600/80"
-                  style={{ width: `${(b.total / maxTotal) * 100}%` }}
-                />
+        {/* Vertical bar chart matching the design */}
+        <div className="flex items-end gap-2 h-44 mb-3">
+          {buckets.map((b, i) => {
+            const pct = (b.total / maxTotal) * 100;
+            const isLast = i === buckets.length - 1;
+            return (
+              <div key={b.key} className="flex-1 flex flex-col items-center gap-1 min-w-0">
+                <span className="text-[10px] font-semibold text-gray-500 font-mono">{fmt(b.total)}</span>
+                <div className="w-full rounded-t-md" style={{
+                  height: `${Math.max(pct, 4)}%`,
+                  background: isLast ? 'var(--mod-haraka)' : 'color-mix(in srgb, var(--mod-haraka) 45%, var(--surface-inset))',
+                }} />
+                <span className="text-[10px] text-gray-400 truncate w-full text-center">{b.key.slice(5)}</span>
               </div>
-              <span className="w-20 text-end font-mono">{fmt(b.total)}</span>
-              <span className="w-12 text-end text-gray-400">×{b.count}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
         {data && <Totals data={data.totals} />}
       </EmptyOrLoading>

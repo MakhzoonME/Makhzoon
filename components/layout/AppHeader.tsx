@@ -8,7 +8,7 @@ import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
 import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
-import { cn } from '@/lib/utils/cn';
+
 import { SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from '@/components/layout/AppSidebar';
 
 const EASE = 'cubic-bezier(0.4,0,0.2,1)';
@@ -31,7 +31,7 @@ function SearchSVG() {
     </svg>
   );
 }
-function ChevronRightSVG() {
+function _ChevronRightSVG() {
   return (
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
       <path d="M4 2.5l3.5 3.5L4 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -52,7 +52,7 @@ export function AppHeader() {
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
   const { setMobileMenuOpen, sidebarCollapsed, headerTitle, headerBreadcrumb } = useUiStore();
   const { t, dir } = useT();
-  const isRtl = dir === 'rtl';
+  const _isRtl = dir === 'rtl';
 
   const shortcutLabel = useSyncExternalStore(
     () => () => {},

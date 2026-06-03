@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { rateLimitTenant } from '@/lib/rate-limit'
 import { requirePermission } from '@/lib/permissions/require'
 import { InventoryService } from '@/lib/modules/inventory/services/inventory.service'
 import { createInventoryItemSchema } from '@/lib/modules/inventory/validators/schemas'
@@ -9,6 +10,8 @@ const service = new InventoryService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    const limited = rateLimitTenant(tenant, 'inventory', 60, 60_000)
+    if (limited) return limited
     const { searchParams } = new URL(req.url)
 
     if (searchParams.get('categoriesOnly') === 'true') {
@@ -52,14 +55,14 @@ export async function POST(req: NextRequest) {
       unit: data.unit,
       quantityOnHand: data.quantityOnHand,
       minimumThreshold: data.minimumThreshold,
-      reorderQuantity: data.reorderQuantity ? Number(data.reorderQuantity) : undefined,
+      reorderQuantity: data.reorderQuantity === undefined ? undefined : Number(data.reorderQuantity),
       location: data.location || undefined,
       supplier: data.supplier || undefined,
-      unitCost: data.unitCost ? Number(data.unitCost) : undefined,
+      unitCost: data.unitCost === undefined ? undefined : Number(data.unitCost),
       notes: data.notes || undefined,
       barcode: data.barcode ? data.barcode.trim() : null,
       posEnabled: data.posEnabled ?? undefined,
-      posPrice: data.posPrice ? Number(data.posPrice) : null,
+      posPrice: data.posPrice === undefined ? null : Number(data.posPrice),
       taxRateId: data.taxRateId || null,
       documents: data.documents ?? [],
     })

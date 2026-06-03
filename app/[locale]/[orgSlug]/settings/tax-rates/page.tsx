@@ -18,11 +18,11 @@ import { useOrgInfo } from '@/hooks/org';
 import type { TaxRate } from '@/types';
 
 export default function TaxRatesPage() {
-  const orgSlug = useOrgSlug();
-  const { data: orgInfo } = useOrgInfo();
+  useOrgSlug();
+  useOrgInfo();
   const { isAllowed } = useAdminGuard('settings.taxRates');
   const { t } = useT();
-  const user = useAuthStore((s) => s.user);
+  useAuthStore((s) => s.user);
   const { data, isLoading } = useTaxRates();
   const createMut = useCreateTaxRate();
   const updateMut = useUpdateTaxRate();

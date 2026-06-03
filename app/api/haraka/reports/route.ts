@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { rateLimitTenant } from '@/lib/rate-limit'
 import { TransactionsService } from '@/lib/modules/haraka/transactions/transactions.service'
 import type {
   AggregateGroupBy,
@@ -57,6 +58,8 @@ function toCsv(result: AggregateResult): string {
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    const limited = rateLimitTenant(tenant, 'haraka-reports', 30, 60_000)
+    if (limited) return limited
     const { searchParams } = new URL(req.url)
     const parsed = querySchema.safeParse({
       groupBy: searchParams.get('groupBy') ?? undefined,

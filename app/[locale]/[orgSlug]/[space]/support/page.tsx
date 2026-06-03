@@ -239,7 +239,7 @@ export default function SupportPage() {
   const [subject, setSubject]   = useState('');
   const [description, setDescription] = useState('');
   const [search, setSearch]     = useState('');
-  const [page, setPage]         = useState(1);
+  const [page, _setPage]         = useState(1);
 
   const { data: ticketsData, isLoading } = useSupportTickets({
     page,

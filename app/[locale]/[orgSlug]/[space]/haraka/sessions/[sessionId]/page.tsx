@@ -93,6 +93,44 @@ export default function SessionDetailPage(props: Props) {
         }
       />
 
+      {/* Closed session summary banner */}
+      {!isOpen && (
+        <div
+          className="rounded-xl border px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3"
+          style={{
+            background: (session.discrepancy ?? 0) < 0 ? 'var(--red-50)' : 'var(--green-50)',
+            borderColor: (session.discrepancy ?? 0) < 0 ? 'var(--red-100)' : 'var(--green-100)',
+          }}
+        >
+          <div className="flex-1 space-y-0.5">
+            <div
+              className="text-sm font-semibold"
+              style={{ color: (session.discrepancy ?? 0) < 0 ? 'var(--red-700)' : 'var(--green-700)' }}
+            >
+              Session closed
+            </div>
+            <div className="text-xs" style={{ color: (session.discrepancy ?? 0) < 0 ? 'var(--red-700)' : 'var(--green-700)', opacity: 0.8 }}>
+              {new Date(session.openedAt).toLocaleString()} → {session.closedAt ? new Date(session.closedAt).toLocaleString() : '—'} · {session.cashierName}
+            </div>
+          </div>
+          <div className="flex items-center gap-6 text-sm">
+            <div className="text-center">
+              <div className="text-xs text-gray-500">Closing float</div>
+              <div className="font-mono font-bold">{fmt(session.closingFloat ?? 0)}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-gray-500">Discrepancy</div>
+              <div
+                className="font-mono font-bold"
+                style={{ color: (session.discrepancy ?? 0) < 0 ? 'var(--red-700)' : 'var(--green-700)' }}
+              >
+                {(session.discrepancy ?? 0) >= 0 ? '+' : ''}{fmt(session.discrepancy ?? 0)}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
         <Stat label="Opening float" value={fmt(session.openingFloat)} />
         <Stat

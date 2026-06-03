@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Banknote, CreditCard, X } from 'lucide-react';
+import { Banknote, CreditCard, X, FileCheck } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -135,6 +135,11 @@ export function PaymentDialog({ open, onOpenChange, total, onConfirm, loading }:
               </div>
             )}
           </div>
+        </div>
+
+        <div className="flex items-center gap-2 rounded-lg bg-green-50 text-green-700 px-3 py-2 text-xs">
+          <FileCheck size={13} className="flex-shrink-0" />
+          <span>Fawtara e-invoice will be submitted automatically after sale.</span>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">

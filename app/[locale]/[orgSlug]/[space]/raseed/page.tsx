@@ -1,7 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Boxes, PackageCheck, AlertTriangle, PackageX, Plus } from 'lucide-react';
+import { Boxes, PackageCheck, AlertTriangle, PackageX, Plus, Clock } from 'lucide-react';
 import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader, StatCard, OverviewSection, DataTable, SubscriptionGate } from '@/components/shared';
@@ -16,17 +16,21 @@ function useRaseedOverview(space: string | null) {
     enabled: !!space,
     queryFn: async () => {
       const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
-      const [allRes, lowRes, outRes] = await Promise.all([
+      const [allRes, lowRes, outRes, expiringSoonRes, expiredRes] = await Promise.all([
         fetch('/api/inventory?pageSize=6&sortBy=createdAt&sortDir=desc', { headers }),
         fetch('/api/inventory?stockStatus=low&pageSize=1', { headers }),
         fetch('/api/inventory?stockStatus=out&pageSize=1', { headers }),
+        fetch('/api/inventory?expiringWithin=30&pageSize=1', { headers }),
+        fetch('/api/inventory?expired=true&pageSize=1', { headers }),
       ]);
       const allBody = allRes.ok ? await allRes.json() : { items: [], total: 0 };
       const recent: InventoryItem[] = Array.isArray(allBody?.items) ? allBody.items : [];
       const total = allBody?.total ?? 0;
       const low = lowRes.ok ? (await lowRes.json())?.total ?? 0 : 0;
       const out = outRes.ok ? (await outRes.json())?.total ?? 0 : 0;
-      return { total, low, out, recent };
+      const expiringSoon = expiringSoonRes.ok ? (await expiringSoonRes.json())?.total ?? 0 : 0;
+      const expired = expiredRes.ok ? (await expiredRes.json())?.total ?? 0 : 0;
+      return { total, low, out, recent, expiringSoon, expired };
     },
     staleTime: 30_000,
   });
@@ -98,6 +102,8 @@ export default function RaseedOverviewPage() {
   const out = data?.out ?? 0;
   const ok = Math.max(0, total - low - out);
   const recent = data?.recent ?? [];
+  const expiringSoon = data?.expiringSoon ?? 0;
+  const expired = data?.expired ?? 0;
 
   const base = `/${locale}/${orgSlug}/${space}/raseed`;
 
@@ -146,7 +152,7 @@ export default function RaseedOverviewPage() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard
           icon={<Boxes className="w-[18px] h-[18px]" />}
           iconBg="var(--primary-50)" iconColor="var(--primary-700)"
@@ -178,6 +184,22 @@ export default function RaseedOverviewPage() {
           value={out}
           loading={isLoading}
           onClick={() => router.push(`${base}/list?stockStatus=out`)}
+        />
+        <StatCard
+          icon={<Clock className="w-[18px] h-[18px]" />}
+          iconBg="var(--yellow-50)" iconColor="var(--yellow-700)"
+          label={t('inventory.expiringSoon')}
+          value={expiringSoon}
+          loading={isLoading}
+          onClick={() => router.push(`${base}/list?expiringWithin=30`)}
+        />
+        <StatCard
+          icon={<AlertTriangle className="w-[18px] h-[18px]" />}
+          iconBg="var(--red-50)" iconColor="var(--red-700)"
+          label={t('inventory.expired')}
+          value={expired}
+          loading={isLoading}
+          onClick={() => router.push(`${base}/list?expired=true`)}
         />
       </div>
 

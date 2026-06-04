@@ -17,6 +17,7 @@ import { UserPermissions } from '@/types';
 import { useT } from '@/hooks/ui';
 import { createClient } from '@/lib/supabase/client';
 import type { MessageKey } from '@/locales/messages';
+import { analytics } from '@/lib/analytics';
 
 /** Display email/username without the synthetic @makhzoon.local suffix */
 function displayIdentity(email?: string | null): string {
@@ -182,6 +183,8 @@ export function AppSidebar() {
   const [userToggles, setUserToggles] = useState<Record<string, boolean>>({});
 
   async function handleSignOut() {
+    analytics.track('user_signed_out');
+    analytics.reset();
     try {
       await fetch('/api/auth/session', { method: 'DELETE' });
       const supabase = await createClient();

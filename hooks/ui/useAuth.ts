@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth.store';
 import { AuthUser, UserRole } from '@/types';
+import { analytics } from '@/lib/analytics';
 
 export function useAuth() {
   const { user, loading, setUser, setLoading } = useAuthStore();
@@ -43,7 +44,7 @@ export function useAuth() {
       }
 
       if (cancelled) return;
-      setUser({
+      const authUser = {
         uid,
         email,
         displayName: displayName ?? '',
@@ -53,8 +54,17 @@ export function useAuth() {
         orgSlug,
         permissions,
         features,
-      } as AuthUser);
+      } as AuthUser;
+      setUser(authUser);
       setLoading(false);
+      analytics.identify({
+        uid,
+        email,
+        displayName: displayName ?? '',
+        role: resolvedRole,
+        orgSlug: orgSlug ?? undefined,
+        organizationId,
+      });
     }
 
     async function setup() {

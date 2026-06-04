@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { DeliveryAgentPicker } from '@/components/haraka/DeliveryAgentPicker';
 import type { DeliveryAgentValue } from '@/components/haraka/DeliveryAgentPicker';
+import { CustomerSelect } from '@/components/haraka/CustomerSelect';
+import type { SelectedCustomer } from '@/components/haraka/CustomerSelect';
 import { useCreateOrder } from '@/hooks/haraka';
 import { useInventoryItems } from '@/hooks/inventory/useInventory';
 import { useSpaceMembers } from '@/hooks/spaces';
@@ -50,6 +52,7 @@ export default function NewOrderPage() {
   const [itemSearch, setItemSearch] = useState('');
   const [showItemSearch, setShowItemSearch] = useState(false);
   const [deliveryAgent, setDeliveryAgent] = useState<DeliveryAgentValue | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<SelectedCustomer | null>(null);
   const debouncedSearch = useDebounce(itemSearch, 300);
 
   const { data: inventoryData } = useInventoryItems({
@@ -199,80 +202,101 @@ export default function NewOrderPage() {
           {/* ── Customer ───────────────────────────────────────────── */}
           <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
             <h3 className="text-sm font-semibold text-gray-700">Customer</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="customerName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name *</FormLabel>
-                    <FormControl><Input placeholder="Customer name" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+
+            {/* Customer picker — links to pos_customers */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">Customer *</label>
+              <CustomerSelect
+                value={selectedCustomer}
+                onChange={(c) => {
+                  setSelectedCustomer(c);
+                  form.setValue('customerName', c?.name ?? '', { shouldValidate: true });
+                  form.setValue('customerPhone', c?.phone ?? null);
+                  form.setValue('customerId', c?.id ?? null);
+                }}
               />
-              <FormField
-                control={form.control}
-                name="customerPhone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone</FormLabel>
-                    <FormControl><Input placeholder="+962..." {...field} value={field.value ?? ''} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {form.formState.errors.customerName && (
+                <p className="text-[12px] text-red-500">{form.formState.errors.customerName.message}</p>
+              )}
             </div>
 
-            {/* Delivery address — only when fulfillmentType = delivery */}
-            {fulfillmentType === 'delivery' && (
-              <div className="space-y-3 pt-1">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Delivery address</div>
-                <div className="grid grid-cols-2 gap-3">
-                  <FormField
-                    control={form.control}
-                    name="deliveryAddress.street"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Street</FormLabel>
-                        <FormControl><Input placeholder="Street / building" {...field} value={field.value ?? ''} /></FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="deliveryAddress.area"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Area</FormLabel>
-                        <FormControl><Input placeholder="Neighborhood / area" {...field} value={field.value ?? ''} /></FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="deliveryAddress.city"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>City</FormLabel>
-                        <FormControl><Input placeholder="City" {...field} value={field.value ?? ''} /></FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="deliveryAddress.notes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address notes</FormLabel>
-                        <FormControl><Input placeholder="Landmark, floor…" {...field} value={field.value ?? ''} /></FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
+            {/* Manual override — visible when no customer selected */}
+            {!selectedCustomer && (
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="customerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name *</FormLabel>
+                      <FormControl><Input placeholder="Customer name" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="customerPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl><Input placeholder="+962..." {...field} value={field.value ?? ''} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             )}
           </div>
+
+          {/* Delivery address — only when fulfillmentType = delivery */}
+          {fulfillmentType === 'delivery' && (
+            <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
+              <h3 className="text-sm font-semibold text-gray-700">Delivery address</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <FormField
+                  control={form.control}
+                  name="deliveryAddress.street"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Street</FormLabel>
+                      <FormControl><Input placeholder="Street / building" {...field} value={field.value ?? ''} /></FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="deliveryAddress.area"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Area</FormLabel>
+                      <FormControl><Input placeholder="Neighborhood / area" {...field} value={field.value ?? ''} /></FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="deliveryAddress.city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City</FormLabel>
+                      <FormControl><Input placeholder="City" {...field} value={field.value ?? ''} /></FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="deliveryAddress.notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address notes</FormLabel>
+                      <FormControl><Input placeholder="Landmark, floor…" {...field} value={field.value ?? ''} /></FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+          )}
 
           {/* ── Items ──────────────────────────────────────────────── */}
           <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">

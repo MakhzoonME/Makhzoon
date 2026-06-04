@@ -80,6 +80,12 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function displayIdentifier(email?: string | null, username?: string | null): string {
+  if (email && !email.endsWith('@makhzoon.local')) return email;
+  if (username) return `@${username}`;
+  return '—';
+}
+
 function UserAvatar({ name }: { name: string }) {
   const initials = name.split(' ').map((w) => w[0] ?? '').join('').toUpperCase().slice(0, 2);
   return (
@@ -399,7 +405,7 @@ export default function UsersPage() {
                         <span className="font-medium text-gray-900">{u.displayName || '—'}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500" dir="ltr">{u.email || (u.username ? `@${u.username}` : '—')}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-500" dir="ltr">{displayIdentifier(u.email, u.username)}</td>
                     <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
                     <td className="px-4 py-3">
                       {isCustom ? (
@@ -484,7 +490,7 @@ export default function UsersPage() {
                       <span className="font-medium text-gray-700">{inv.displayName || '—'}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-500" dir="ltr">{inv.email || (inv.username ? `@${inv.username}` : '—')}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-500" dir="ltr">{displayIdentifier(inv.email, inv.username)}</td>
                   <td className="px-4 py-3"><RoleBadge role={inv.role} /></td>
                   <td className="px-4 py-3"><StatusBadge status="pending" /></td>
                   <td className="px-4 py-3 text-end">

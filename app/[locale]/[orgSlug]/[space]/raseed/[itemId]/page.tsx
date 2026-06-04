@@ -314,6 +314,13 @@ export default function InventoryItemDetailPage() {
             )}
             {item.location && <KVRow label={t('col.location')}>{item.location}</KVRow>}
             {item.supplier && <KVRow label={t('inventory.supplier')}>{item.supplier}</KVRow>}
+            {item.expiryDate != null && (
+              <KVRow label={t('inventory.expiryDate')}>
+                <span className={`font-mono tabular-nums text-sm ${item.expiryDate < new Date() ? 'text-red-600 font-semibold' : ''}`}>
+                  {formatDate(item.expiryDate)}
+                </span>
+              </KVRow>
+            )}
             {item.notes && (
               <div className="mt-4 pt-4 border-t border-border">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{t('col.notes')}</p>
@@ -433,7 +440,7 @@ export default function InventoryItemDetailPage() {
         {/* ── Right: stock alert + adjust form ────────────────────── */}
         {isAdmin && (
           <div className="space-y-5">
-            {/* Alert banner */}
+            {/* Stock alert banner */}
             {item.stockStatus !== 'ok' && (
               <div className={cn('flex items-start gap-2.5 p-4 rounded-xl border text-sm', stockColor)}>
                 <AlertTriangle aria-hidden className="h-4 w-4 flex-shrink-0 mt-0.5" strokeWidth={1.75} />
@@ -444,6 +451,30 @@ export default function InventoryItemDetailPage() {
                 </span>
               </div>
             )}
+
+            {/* Expiry alert banner */}
+            {item.expiryDate != null && (() => {
+              const now = new Date();
+              const exp = item.expiryDate!;
+              const daysLeft = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+              if (daysLeft < 0) {
+                return (
+                  <div className="flex items-start gap-2.5 p-4 rounded-xl border text-sm bg-[var(--red-100)] text-[var(--red-700)] border-[var(--red-100)]">
+                    <AlertTriangle aria-hidden className="h-4 w-4 flex-shrink-0 mt-0.5" strokeWidth={1.75} />
+                    <span>{t('inventory.expiryExpired')} ({formatDate(exp)})</span>
+                  </div>
+                );
+              }
+              if (daysLeft <= 30) {
+                return (
+                  <div className="flex items-start gap-2.5 p-4 rounded-xl border text-sm bg-[var(--yellow-100)] text-[var(--yellow-700)] border-[var(--yellow-100)]">
+                    <AlertTriangle aria-hidden className="h-4 w-4 flex-shrink-0 mt-0.5" strokeWidth={1.75} />
+                    <span>{t('inventory.expiryWarn').replace('{days}', String(daysLeft))} ({formatDate(exp)})</span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
 
             {/* Adjust stock form */}
             <div className="bg-surface-card rounded-xl border border-border p-5">

@@ -24,6 +24,8 @@ export async function GET(req: NextRequest) {
       stockStatus: searchParams.get('stockStatus') ?? undefined,
       search: searchParams.get('search') ?? undefined,
       posEnabled: searchParams.get('posEnabled') === 'true' ? true : undefined,
+      expiringWithin: searchParams.get('expiringWithin') ? parseInt(searchParams.get('expiringWithin')!, 10) : undefined,
+      expired: searchParams.get('expired') === 'true' ? true : undefined,
       page: searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined,
       pageSize: searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined,
       sortBy: searchParams.get('sortBy') as never ?? undefined,
@@ -64,6 +66,7 @@ export async function POST(req: NextRequest) {
       posEnabled: data.posEnabled ?? undefined,
       posPrice: data.posPrice === undefined ? null : Number(data.posPrice),
       taxRateId: data.taxRateId || null,
+      expiryDate: data.expiryDate || null,
       documents: data.documents ?? [],
     })
 

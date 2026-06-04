@@ -18,7 +18,7 @@ import { useDebounce } from '@/hooks/ui';
 import { InventoryItem } from '@/types';
 import { RequestInventoryModal } from '@/components/inventory/RequestInventoryModal';
 import { useT } from '@/hooks/ui';
-import { Plus, Pencil, Trash2, AlertTriangle, FileText, X, ArrowRight, Copy } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, FileText, X, ArrowRight, Copy, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
@@ -108,6 +108,8 @@ export default function InventoryListPage() {
   const search = searchParams.get('search') ?? '';
   const category = searchParams.get('category') ?? '';
   const stockFilter = searchParams.get('stockStatus') ?? '';
+  const expiringWithinParam = searchParams.get('expiringWithin') ? parseInt(searchParams.get('expiringWithin')!, 10) : undefined;
+  const expiredParam = searchParams.get('expired') === 'true' ? true : undefined;
   const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
   const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10;
   const sortBy = searchParams.get('sortBy') ?? 'createdAt';
@@ -131,6 +133,8 @@ export default function InventoryListPage() {
     category: category || undefined,
     stockStatus: stockFilter || undefined,
     search: search || undefined,
+    expiringWithin: expiringWithinParam,
+    expired: expiredParam,
     page,
     pageSize,
     sortBy: sortDir === 'none' ? undefined : sortBy,
@@ -296,6 +300,14 @@ export default function InventoryListPage() {
 
   const lowCount = items.filter((i) => i.stockStatus === 'low').length;
   const outCount = items.filter((i) => i.stockStatus === 'out').length;
+  const today = new Date();
+  const expiredCount = items.filter((i) => i.expiryDate != null && i.expiryDate < today).length;
+  const expiringSoonCount = items.filter((i) => {
+    if (!i.expiryDate) return false;
+    const d = i.expiryDate instanceof Date ? i.expiryDate : new Date(i.expiryDate);
+    const days = Math.ceil((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return days >= 0 && days <= 30;
+  }).length;
 
   const stockValue = items.reduce((sum, i) => sum + (i.quantityOnHand * (i.unitCost ?? 0)), 0);
   const stockValueDisplay = stockValue >= 1000
@@ -405,8 +417,40 @@ export default function InventoryListPage() {
         </div>
       )}
 
-      {(lowCount > 0 || outCount > 0) && (
+      {(lowCount > 0 || outCount > 0 || expiredCount > 0 || expiringSoonCount > 0) && (
         <div className="mb-4 flex gap-3 flex-wrap items-center">
+          {expiredCount > 0 && (
+            <button
+              type="button"
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list?expired=true`)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors cursor-pointer',
+                'bg-red-50 border-red-200 text-red-700 dark:text-red-700',
+                'hover:bg-red-100 hover:border-red-300',
+                expiredParam && 'ring-2 ring-red-400 bg-red-100',
+              )}
+            >
+              <AlertTriangle aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+              <span>{expiredCount > 1 ? t('inventory.expiredItemsPlural').replace('{count}', String(expiredCount)) : t('inventory.expiredItems').replace('{count}', String(expiredCount))}</span>
+              {expiredParam && <X className="h-3.5 w-3.5 ms-1 opacity-70" strokeWidth={2} aria-hidden />}
+            </button>
+          )}
+          {expiringSoonCount > 0 && (
+            <button
+              type="button"
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list?expiringWithin=30`)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors cursor-pointer',
+                'bg-amber-50 border-amber-200 text-amber-700 dark:text-amber-700',
+                'hover:bg-amber-100 hover:border-amber-300',
+                expiringWithinParam != null && 'ring-2 ring-amber-400 bg-amber-100',
+              )}
+            >
+              <Clock aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+              <span>{expiringSoonCount > 1 ? t('inventory.expiringSoonItemsPlural').replace('{count}', String(expiringSoonCount)) : t('inventory.expiringSoonItems').replace('{count}', String(expiringSoonCount))}</span>
+              {expiringWithinParam != null && <X className="h-3.5 w-3.5 ms-1 opacity-70" strokeWidth={2} aria-hidden />}
+            </button>
+          )}
           {outCount > 0 && (
             <button
               type="button"

@@ -48,6 +48,7 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
       posEnabled: item?.posEnabled ?? false,
       posPrice: item?.posPrice ?? '',
       taxRateId: item?.taxRateId ?? '',
+      expiryDate: item?.expiryDate ? item.expiryDate.toISOString().split('T')[0] : '',
       documents: item?.documents ?? [],
     },
   });
@@ -180,6 +181,14 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
             <FormItem>
               <FormLabel>Supplier</FormLabel>
               <FormControl><Input {...field} placeholder="Supplier name" /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={form.control} name="expiryDate" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Expiry Date</FormLabel>
+              <FormControl><Input type="date" {...field} /></FormControl>
               <FormMessage />
             </FormItem>
           )} />

@@ -88,6 +88,7 @@ export class InventoryService {
       posEnabled?: boolean
       posPrice?: number | null
       taxRateId?: string | null
+      expiryDate?: string | null
       documents?: import('@/types').DocumentRef[]
     }
   ) {
@@ -129,6 +130,7 @@ export class InventoryService {
       posEnabled?: boolean
       posPrice?: number | null
       taxRateId?: string | null
+      expiryDate?: string | null
       documents?: import('@/types').DocumentRef[]
     }
   ) {

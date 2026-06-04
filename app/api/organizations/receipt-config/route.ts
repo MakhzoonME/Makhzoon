@@ -41,11 +41,29 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid body' }, { status: 422 });
     }
 
-    // Upsert: create the row if it doesn't exist yet, then set receipt_config
+    // Load existing config so we can merge instead of replace — this lets
+    // the org-info branding section and the receipt settings page each save
+    // their own slice without clobbering the other's fields.
+    const { data: existing } = await supabaseAdmin
+      .from('organization_configs')
+      .select('receipt_config')
+      .eq('organization_id', orgId)
+      .maybeSingle();
+
+    const prev = (existing?.receipt_config ?? {}) as Record<string, unknown>;
+    const merged = {
+      ...prev,
+      ...body,
+      config: {
+        ...(prev.config as Record<string, unknown> ?? {}),
+        ...((body.config as Record<string, unknown>) ?? {}),
+      },
+    };
+
     const { error } = await supabaseAdmin
       .from('organization_configs')
       .upsert(
-        { organization_id: orgId, receipt_config: body, updated_by: user.uid },
+        { organization_id: orgId, receipt_config: merged, updated_by: user.uid },
         { onConflict: 'organization_id' },
       );
 

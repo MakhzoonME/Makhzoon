@@ -161,7 +161,7 @@ export default function OrdersListPage() {
         onRowClick={(o) => router.push(`${base}/orders/${o.id}`)}
         pagination={
           data && data.totalPages > 1
-            ? { page: data.page, totalPages: data.totalPages, onPageChange: setPage }
+            ? { page: data.page, pageSize: data.pageSize, total: data.total, totalPages: data.totalPages, onPageChange: setPage }
             : undefined
         }
       />

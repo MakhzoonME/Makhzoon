@@ -12,6 +12,9 @@ export default function ContentsquareInit() {
     const id = 'contentsquare-tag';
     if (document.getElementById(id)) return;
 
+    // ContentSquare requires _sqSettings to be set before the script loads
+    (window as unknown as Record<string, unknown>)._sqSettings = { site_id: CSQ_TAG_ID };
+
     const script = document.createElement('script');
     script.id = id;
     script.async = true;

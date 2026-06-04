@@ -1,7 +1,8 @@
 'use client';
 
 import { use, useState } from 'react';
-import { Ban, RotateCcw, Send, Printer, Share2, MessageCircle } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Ban, RotateCcw, Send, Printer, Share2 } from 'lucide-react';
 import { PageHeader, StatusBadge, ConfirmDialog, SubscriptionGate, LoadingSkeleton } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,6 +12,8 @@ import { useOrgInfo } from '@/hooks/org';
 import { useAuthStore } from '@/store/auth.store';
 import { hasPermission } from '@/lib/permissions';
 import { getReceiptBaseUrl } from '@/lib/app-env';
+import { ReceiptShareDialog } from '@/components/haraka/ReceiptShareDialog';
+import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import type { PosTransaction } from '@/types';
 
 interface Props {
@@ -38,6 +41,16 @@ export default function TransactionDetailPage(props: Props) {
 
   const [confirmVoid, setConfirmVoid] = useState(false);
   const [confirmRefund, setConfirmRefund] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
+
+  const { data: receiptCfg } = useQuery<{ tagline?: string; taglineAr?: string; taxNumber?: string; config?: ReceiptConfig }>({
+    queryKey: ['receipt-config'],
+    queryFn: async () => {
+      const res = await fetch('/api/organizations/receipt-config');
+      return res.ok ? res.json() : {};
+    },
+    staleTime: 60_000,
+  });
 
   if (isLoading) return <LoadingSkeleton rows={6} columns={1} />;
   if (!data) return <div className="p-6">Transaction not found.</div>;
@@ -45,13 +58,7 @@ export default function TransactionDetailPage(props: Props) {
   const tx: PosTransaction = data.transaction;
   const isMutable = tx.status === 'completed';
 
-  const shareUrl = `${getReceiptBaseUrl()}/r/${params.orgSlug}/${tx.id}`;
-  function copyShareLink() {
-    navigator.clipboard.writeText(shareUrl).then(() => toast.success('Receipt link copied'));
-  }
-  function shareOnWhatsApp() {
-    window.open(`https://wa.me/?text=${encodeURIComponent(shareUrl)}`, '_blank');
-  }
+  const receiptBase = getReceiptBaseUrl();
   const canVoid = !!user && hasPermission(user, 'pos', 'void_transaction');
   const canRefund = !!user && hasPermission(user, 'pos', 'issue_refund');
   const canResubmitFawtara = !!user && hasPermission(user, 'pos', 'fawtara_submit');
@@ -100,14 +107,11 @@ export default function TransactionDetailPage(props: Props) {
         actions={
           <div className="flex items-center gap-2">
             <StatusBadge status={tx.status} />
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Button variant="outline" size="sm" onClick={() => setShowReceipt(true)}>
               <Printer size={14} className="me-1" /> Print
             </Button>
-            <Button variant="outline" size="sm" onClick={copyShareLink}>
+            <Button variant="outline" size="sm" onClick={() => setShowReceipt(true)}>
               <Share2 size={14} className="me-1" /> Share
-            </Button>
-            <Button variant="outline" size="sm" onClick={shareOnWhatsApp}>
-              <MessageCircle size={14} className="me-1" /> WhatsApp
             </Button>
             {isMutable && canRefund && (
               <SubscriptionGate>
@@ -152,16 +156,22 @@ export default function TransactionDetailPage(props: Props) {
           </div>
         </div>
       )}
-      {tx.status === 'refunded' && (
+      {tx.status === 'refunded' && !tx.parentTransactionId && (
         <div className="rounded-xl border border-[var(--yellow-100)] bg-[var(--yellow-50)] px-5 py-4 flex items-center gap-3">
           <span className="text-2xl">↩</span>
           <div>
             <div className="text-sm font-bold text-[var(--yellow-700)]">This sale was refunded</div>
-            {tx.parentTransactionId && (
-              <div className="text-xs text-[var(--yellow-700)] opacity-80 font-mono">
-                Refund ref: {tx.parentTransactionId.slice(0, 8)}
-              </div>
-            )}
+          </div>
+        </div>
+      )}
+      {tx.parentTransactionId && (
+        <div className="rounded-xl border border-[var(--blue-100)] bg-[var(--blue-50)] px-5 py-4 flex items-center gap-3">
+          <span className="text-2xl">↩</span>
+          <div>
+            <div className="text-sm font-bold text-[var(--blue-700)]">This is a refund credit note</div>
+            <div className="text-xs text-[var(--blue-700)] opacity-80 font-mono">
+              Original sale ref: {tx.parentTransactionId.slice(0, 8)}
+            </div>
           </div>
         </div>
       )}
@@ -304,6 +314,19 @@ export default function TransactionDetailPage(props: Props) {
         variant="default"
         onConfirm={doRefund}
         loading={refundMut.isPending}
+      />
+
+      <ReceiptShareDialog
+        open={showReceipt}
+        onOpenChange={setShowReceipt}
+        transaction={tx}
+        orgSlug={params.orgSlug}
+        orgName={orgInfo?.name ?? params.orgSlug}
+        receiptBase={receiptBase}
+        config={receiptCfg?.config ?? { template: 'a4-modern', showLogo: false, showTaxNumber: false, showCashier: true, showFawtaraQr: false, showItemizedTax: false, showAddress: false, showPhone: false, showWebsite: false, footerText: '', footerTextAr: '', accentColor: '#000', logo: null, phone: '', address: '', addressAr: '', website: '', orgName: '', orgNameAr: '', language: 'en' } as ReceiptConfig}
+        tagline={receiptCfg?.tagline ?? ''}
+        taglineAr={receiptCfg?.taglineAr ?? ''}
+        taxNumber={receiptCfg?.taxNumber ?? ''}
       />
     </div>
   );

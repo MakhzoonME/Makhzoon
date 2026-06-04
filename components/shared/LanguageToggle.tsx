@@ -22,12 +22,20 @@ function FlagEN() {
 }
 
 function FlagAR() {
-  // Saudi Arabia: green with white horizontal band
+  // UAE flag: green/white/black horizontal stripes + red vertical bar on left
   return (
-    <svg width="18" height="12" viewBox="0 0 18 12" aria-hidden style={{ borderRadius: 2, display: 'block' }}>
-      <rect width="18" height="12" fill="#006C35" rx="1" />
-      <rect y="4" width="18" height="4" fill="#fff" />
-      <rect y="4" width="18" height="4" fill="#006C35" fillOpacity="0.15" />
+    <svg width="18" height="12" viewBox="0 0 18 12" aria-hidden style={{ borderRadius: 2, display: 'block', overflow: 'hidden' }}>
+      <defs>
+        <clipPath id="flag-ar-clip">
+          <rect width="18" height="12" rx="1" />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#flag-ar-clip)">
+        <rect width="18" height="4" fill="#00732F" />
+        <rect y="4" width="18" height="4" fill="#fff" />
+        <rect y="8" width="18" height="4" fill="#000" />
+        <rect width="6" height="12" fill="#EF3340" />
+      </g>
     </svg>
   );
 }

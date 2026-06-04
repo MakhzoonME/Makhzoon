@@ -124,7 +124,9 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/settings/tax-rates',    label: 'Tax Rates',         labelKey: 'nav.taxRates',      permissionKey: 'settings.taxRates',  featureKey: 'pos', scope: 'org' },
       { href: '/settings/jo-fotara',    label: 'Jo Fotara',         labelKey: 'nav.fawtara',       permissionKey: 'settings.fawtara',   featureKey: 'pos', scope: 'org' },
       { href: '/settings/receipt',         label: 'Receipt',          labelKey: 'nav.receipt',          permissionKey: 'settings.fawtara',   featureKey: 'pos', scope: 'org' },
-      { href: '/settings/invoice', label: 'Invoice',  labelKey: 'nav.orderDocuments',   permissionKey: 'settings.fawtara',   featureKey: 'pos', scope: 'org' },
+      { href: '/settings/invoice',       label: 'Invoice',       labelKey: 'nav.orderDocuments', permissionKey: 'settings.fawtara', featureKey: 'pos', scope: 'org' },
+      { href: '/settings/cash-drawer',   label: 'Cash Drawer',   labelKey: 'nav.cashDrawer',     permissionKey: 'settings.fawtara', featureKey: 'pos', scope: 'org' },
+      { href: '/settings/card-terminal', label: 'Card Terminal', labelKey: 'nav.cardTerminal',   permissionKey: 'settings.fawtara', featureKey: 'pos', scope: 'org' },
     ],
   },
 ];

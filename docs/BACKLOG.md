@@ -1,0 +1,97 @@
+# Makhzoon — Work Backlog
+
+> **Start here after every pull.** This file lists everything that is planned but not yet built, in priority order. Each item links to the detailed plan/TODO doc.
+
+---
+
+## 🔴 Not started — pick up next
+
+### 1. Card Terminal Integration (Visa / payment terminal)
+**Plan doc**: `docs/HARAKA_CARD_TERMINAL_TODO.md`
+**Feature doc**: `docs/modules-and-features/23-haraka-card-terminal.md`
+
+Connect the POS register to a card/Visa payment terminal so the sale amount is sent to the machine automatically when the cashier picks "Card". Supports four modes: display-only (default), local bridge, cloud API, webhook.
+
+**Key files to create:**
+- `supabase/migrations/0024_haraka_card_terminal.sql`
+- `lib/modules/haraka/card-terminal/` — schemas, repository, service
+- `app/api/haraka/card-terminal-config/` — GET, PATCH, test
+- `app/api/haraka/card-charges/` — POST initiate, GET status
+- `app/api/haraka/card-payment-result/route.ts` — webhook receiver
+- `hooks/haraka/useCardTerminal.ts`
+- `components/haraka/CardTerminalPayment.tsx` — replaces card tab in PaymentDialog
+- `app/[locale]/[orgSlug]/settings/card-terminal/page.tsx`
+- Modify `components/haraka/PaymentDialog.tsx` to use `CardTerminalPayment` when enabled
+
+---
+
+### 2. Warranty Certificates
+**Plan doc**: `docs/HARAKA_WARRANTY_CERTS_TODO.md`
+**Feature doc**: `docs/modules-and-features/20-haraka-warranty-certs.md`
+
+Customer-facing warranty documents generated from an order or POS transaction. Printable (thermal + A4), shareable (WhatsApp/email/link), downloadable (PDF/PNG). Same infrastructure as receipts. Configurable via Settings → Warranty Certificate.
+
+**Key files to create:**
+- `supabase/migrations/0023_haraka_warranty_certs.sql`
+- `lib/modules/haraka/warranty-certs/` — schemas, repository, service
+- `app/api/haraka/warranty-certs/` — list, create, delete
+- `app/api/haraka/warranty-config/route.ts`
+- `hooks/haraka/useWarrantyCerts.ts` + `useWarrantyConfig.ts`
+- `components/haraka/WarrantyCertPreview.tsx` — the certificate template
+- `components/haraka/WarrantyCertShareDialog.tsx` — share/print/download
+- `app/w/[orgSlug]/[certId]/page.tsx` — public cert view
+- `app/[locale]/[orgSlug]/[space]/haraka/warranty-certs/page.tsx`
+- `app/[locale]/[orgSlug]/settings/warranty-cert/page.tsx`
+- Modify order detail page to add "Generate Warranty" button
+
+---
+
+### 3. Notifications System
+**Plan doc**: `docs/NOTIFICATIONS_TODO.md`
+**Feature doc**: `docs/modules-and-features/21-notifications.md`
+
+Platform-wide in-app (bell icon + panel) and email notifications for all business events: new orders, low stock, refunds, request approvals, Fawtara failures, warranty expiry, etc. Per-user preferences + org-level defaults.
+
+**Key files to create:**
+- `supabase/migrations/0025_notifications.sql`
+- `lib/notifications/catalog.ts` + `notification-queue.ts` + `types.ts`
+- `app/api/notifications/` — list, unread-count, mark-read, mark-all, delete
+- `app/api/notification-preferences/route.ts`
+- `app/api/notification-org-defaults/route.ts`
+- `hooks/notifications/` — useNotifications, useUnreadCount, useNotificationPreferences, etc.
+- `components/notifications/NotificationBell.tsx` + `NotificationPanel.tsx`
+- `app/[locale]/[orgSlug]/notifications/page.tsx`
+- `app/[locale]/[orgSlug]/settings/notifications/page.tsx`
+- Modify `components/layout/AppSidebar.tsx` (or AppHeader) to add bell icon
+- Wire `notificationQueue.enqueue()` into: orders.service, transactions.service, sessions.service, inventory.service, purchases.service, stock-audit.service, requests service, fawtara service, cron/warranty-alerts
+
+---
+
+## 🟡 Planned — lower priority
+
+### 4. Haraka Orders — Delivery Agent App (public token page)
+The delivery token system is partially built in the orders backend (`deliveryToken` field on orders). The public-facing page for delivery agents needs to be built:
+- `app/delivery/[token]/page.tsx` — no auth, shows order details, lets agent advance status and record payments from their phone
+
+### 5. Haraka Orders — Invoice / Receipt Document generation
+Invoice and receipt document rendering for orders (currently the UI has Invoice/Receipt buttons in the order detail header that open `OrderDocumentDialog`, but the full document renderer + PDF export path may not be complete). Check `components/haraka/OrderDocumentDialog.tsx`.
+
+---
+
+## ✅ Recently completed (last session)
+
+- Haraka Orders system — full implementation (orders list, new order, detail, status stepper, payment recording, delivery agent assignment)
+- Managed Lists — `order_status`, `order_channel`, `order_payment_method` list keys
+- Permissions — `pos.view_orders`, `pos.manage_orders`, `pos.assign_delivery`, `pos.manage_delivery_agents`
+- Cash Drawer — ESC/POS `kickDrawer` command, `openCashDrawer()`, backend config API, `CashDrawerButton`, Settings → Cash Drawer page, auto-open on cash sale in register
+- Context.md — fully updated to reflect current platform state (June 2026)
+- Docs — `docs/modules-and-features/` files 19–23 covering Orders, Warranty Certs, Notifications, Cash Drawer, Card Terminal
+
+---
+
+## How to use this file
+
+1. **After pulling**: Read this file first. Pick the top unchecked item.
+2. **When starting a feature**: Open its `*_TODO.md` doc — it has a detailed checklist.
+3. **When finishing a feature**: Check off items in its `*_TODO.md` and move it to the "Recently completed" section here.
+4. **When adding new planned work**: Add it to this file with a link to its plan docs.

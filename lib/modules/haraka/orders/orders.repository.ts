@@ -55,6 +55,8 @@ function toOrder(r: Row): HarakaOrder {
     deliveryAgentName:      (r.delivery_agent_name as string) ?? null,
     notes:                  (r.notes as string) ?? null,
     scheduledAt:            r.scheduled_at ? new Date(r.scheduled_at as string) : null,
+    invoiceNumber:          (r.invoice_number as string) ?? null,
+    deliveryToken:          (r.delivery_token as string) ?? null,
     createdAt:              r.created_at ? new Date(r.created_at as string) : new Date(),
     createdBy:              (r.created_by as string) ?? null,
     updatedAt:              r.updated_at ? new Date(r.updated_at as string) : new Date(),

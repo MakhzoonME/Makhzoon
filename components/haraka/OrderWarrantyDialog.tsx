@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { Copy, Check, Download, FileImage, Loader2, ShieldCheck } from 'lucide-react';
+import { useCreateWarrantyCert } from '@/hooks/haraka';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter,
 } from '@/components/ui/dialog';
@@ -37,6 +38,8 @@ function addYear(d: string) {
 }
 
 export function OrderWarrantyDialog({ open, onOpenChange, order, orgName, orgSlug, tagline, taxNumber, receiptConfig, space }: Props) {
+  const createCertMut = useCreateWarrantyCert();
+  const [createdCertId, setCreatedCertId] = useState<string | null>(null);
   const items = order.items.filter((i: OrderLineItem) => i.inventoryItemId);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(items.map((i) => i.inventoryItemId)));
@@ -86,15 +89,34 @@ export function OrderWarrantyDialog({ open, onOpenChange, order, orgName, orgSlu
 
     setSaving(true);
     try {
-      // Create warranty records for each selected inventory item
-      const results = await Promise.allSettled(
+      // Persist the certificate in haraka_warranty_certs (new backend)
+      const { cert } = await createCertMut.mutateAsync({
+        sourceType:        'order',
+        orderId:           order.id,
+        customerName:      order.customerName,
+        customerPhone:     order.customerPhone ?? undefined,
+        items:             selectedItems.map((i) => ({
+          inventoryItemId:   i.inventoryItemId,
+          inventoryItemName: i.inventoryItemName,
+          sku:               i.sku ?? undefined,
+          quantity:          i.quantity,
+          unitPrice:         i.unitPrice,
+        })),
+        warrantyStartDate: startDate,
+        warrantyEndDate:   endDate,
+        notes:             notes || undefined,
+      });
+      setCreatedCertId(cert.id);
+
+      // Also create Usool warranty records for each selected inventory item (existing behaviour)
+      await Promise.allSettled(
         selectedItems.map((item) =>
           apiFetch('/api/warranties', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-space-slug': space },
             body: JSON.stringify({
               inventoryItemId: item.inventoryItemId,
-              vendor,
+              vendor: vendor || orgName,
               startDate,
               endDate,
               reminder: true,
@@ -104,11 +126,7 @@ export function OrderWarrantyDialog({ open, onOpenChange, order, orgName, orgSlu
         )
       );
 
-      const failed = results.filter((r) => r.status === 'rejected').length;
-      const ok     = results.length - failed;
-      if (ok > 0) toast.success(`${ok} warranty record${ok > 1 ? 's' : ''} created`);
-      if (failed > 0) toast.error(`${failed} item${failed > 1 ? 's' : ''} failed — check if warranties already exist`);
-
+      toast.success(`Warranty certificate ${cert.warrantyNumber} created`);
       setStep('preview');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to create warranty');
@@ -116,17 +134,12 @@ export function OrderWarrantyDialog({ open, onOpenChange, order, orgName, orgSlu
   }
 
   function buildPublicUrl() {
-    const payload = {
-      vendor:    vendor || orgName,
-      startDate,
-      endDate,
-      notes:     notes || null,
-      terms,
-      certNumber: certNumber,
-      items:     selectedItems.map((i) => ({ name: i.inventoryItemName, quantity: i.quantity, sku: i.sku })),
-    };
-    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-    return `${typeof window !== 'undefined' ? window.location.origin : ''}/w/${orgSlug}/${order.id}?d=${encoded}`;
+    const base = typeof window !== 'undefined' ? window.location.origin : '';
+    // If a cert was persisted, use the canonical /w/ URL
+    if (createdCertId) return `${base}/w/${orgSlug}/${createdCertId}`;
+    // Fallback: encode cert data in query string (for preview before save)
+    const payload = { vendor: vendor || orgName, startDate, endDate, notes: notes || null, terms, certNumber, items: selectedItems.map((i) => ({ name: i.inventoryItemName, quantity: i.quantity, sku: i.sku })) };
+    return `${base}/w/${orgSlug}/${order.id}?d=${btoa(unescape(encodeURIComponent(JSON.stringify(payload))))}`;
   }
 
   async function handleCopyLink() {

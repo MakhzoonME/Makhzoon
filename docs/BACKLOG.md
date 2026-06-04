@@ -6,28 +6,7 @@
 
 ## 🔴 Not started — pick up next
 
-### 1. Warranty Certificates
-**Plan doc**: `docs/HARAKA_WARRANTY_CERTS_TODO.md`
-**Feature doc**: `docs/modules-and-features/20-haraka-warranty-certs.md`
-
-Customer-facing warranty documents generated from an order or POS transaction. Printable (thermal + A4), shareable (WhatsApp/email/link), downloadable (PDF/PNG). Same infrastructure as receipts. Configurable via Settings → Warranty Certificate.
-
-**Key files to create:**
-- `supabase/migrations/0023_haraka_warranty_certs.sql`
-- `lib/modules/haraka/warranty-certs/` — schemas, repository, service
-- `app/api/haraka/warranty-certs/` — list, create, delete
-- `app/api/haraka/warranty-config/route.ts`
-- `hooks/haraka/useWarrantyCerts.ts` + `useWarrantyConfig.ts`
-- `components/haraka/WarrantyCertPreview.tsx` — the certificate template
-- `components/haraka/WarrantyCertShareDialog.tsx` — share/print/download
-- `app/w/[orgSlug]/[certId]/page.tsx` — public cert view
-- `app/[locale]/[orgSlug]/[space]/haraka/warranty-certs/page.tsx`
-- `app/[locale]/[orgSlug]/settings/warranty-cert/page.tsx`
-- Modify order detail page to add "Generate Warranty" button
-
----
-
-### 3. Notifications System
+### 1. Notifications System
 **Plan doc**: `docs/NOTIFICATIONS_TODO.md`
 **Feature doc**: `docs/modules-and-features/21-notifications.md`
 
@@ -50,11 +29,11 @@ Platform-wide in-app (bell icon + panel) and email notifications for all busines
 
 ## 🟡 Planned — lower priority
 
-### 4. Haraka Orders — Delivery Agent App (public token page)
+### 2. Haraka Orders — Delivery Agent App (public token page)
 The delivery token system is partially built in the orders backend (`deliveryToken` field on orders). The public-facing page for delivery agents needs to be built:
 - `app/delivery/[token]/page.tsx` — no auth, shows order details, lets agent advance status and record payments from their phone
 
-### 5. Haraka Orders — Invoice / Receipt Document generation
+### 3. Haraka Orders — Invoice / Receipt Document generation
 Invoice and receipt document rendering for orders (currently the UI has Invoice/Receipt buttons in the order detail header that open `OrderDocumentDialog`, but the full document renderer + PDF export path may not be complete). Check `components/haraka/OrderDocumentDialog.tsx`.
 
 ---
@@ -65,9 +44,10 @@ Invoice and receipt document rendering for orders (currently the UI has Invoice/
 - Managed Lists — `order_status`, `order_channel`, `order_payment_method` list keys
 - Permissions — `pos.view_orders`, `pos.manage_orders`, `pos.assign_delivery`, `pos.manage_delivery_agents`
 - Cash Drawer — ESC/POS `kickDrawer` command, `openCashDrawer()`, backend config API, `CashDrawerButton`, Settings → Cash Drawer page, auto-open on cash sale in register
-- Card Terminal Integration — 4 modes (display, local bridge, cloud, webhook), `CardTerminalPayment` component, polling for terminal result, Settings → Card Terminal page, PaymentDialog integration, webhook receiver with HMAC verification
+- Card Terminal Integration — 4 modes (display, local bridge, cloud, webhook), `CardTerminalPayment` component, polling, Settings → Card Terminal page, PaymentDialog integration, webhook receiver with HMAC
+- Warranty Certificates — `haraka_warranty_certs` table, `WarrantyCertPreview` (A4/thermal/certificate templates, EN/AR), `WarrantyCertShareDialog`, public cert page at `/w/[orgSlug]/[certId]`, certs list page, Settings → Warranty Certificate page, order detail integration via `OrderWarrantyDialog`
 - Context.md — fully updated to reflect current platform state (June 2026)
-- Docs — `docs/modules-and-features/` files 19–23 covering Orders, Warranty Certs, Notifications, Cash Drawer, Card Terminal
+- Docs — `docs/modules-and-features/` files 19–23
 
 ---
 
@@ -75,5 +55,5 @@ Invoice and receipt document rendering for orders (currently the UI has Invoice/
 
 1. **After pulling**: Read this file first. Pick the top unchecked item.
 2. **When starting a feature**: Open its `*_TODO.md` doc — it has a detailed checklist.
-3. **When finishing a feature**: Check off items in its `*_TODO.md` and move it to the "Recently completed" section here.
-4. **When adding new planned work**: Add it to this file with a link to its plan docs.
+3. **When finishing a feature**: Move it to "Recently completed" here.
+4. **When adding new planned work**: Add it here with a link to its plan docs.

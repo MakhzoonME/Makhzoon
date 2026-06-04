@@ -72,9 +72,10 @@ export class TransactionsService {
       newValue: { receiptNumber: tx.receiptNumber, total: tx.total, lineCount: tx.items.length },
     })
     await eventBus.emit('pos.transaction.completed', { tenant, transaction: tx })
-    // Fawtara submission is async; the cashier sees the sale complete immediately,
-    // and the receipt printer renders with QR only if/when the submission succeeds.
-    fireAndForgetFawtara(tenant, tx.id)
+    // Fawtara submission is async unless the cashier explicitly bypassed it.
+    if (!input.skipFawtara) {
+      fireAndForgetFawtara(tenant, tx.id)
+    }
     return tx
   }
 

@@ -65,6 +65,7 @@ export interface CompleteSaleInput {
   lines: CartLineInput[]
   payments: Array<{ method: 'cash' | 'card' | 'other'; amount: number; reference?: string | null; cardLast4?: string | null }>
   offlineId: string
+  skipFawtara?: boolean
 }
 
 interface ListOpts {

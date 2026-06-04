@@ -76,9 +76,10 @@ const statusConfig: Record<string, { variant: BadgeVariant; label: string }> = {
   open:      { variant: 'active',   label: 'Open' },
   closed:    { variant: 'default',  label: 'Closed' },
   /* POS transaction statuses */
-  completed: { variant: 'approved', label: 'Completed' },
-  refunded:  { variant: 'orange',   label: 'Refunded' },
-  voided:    { variant: 'rejected', label: 'Voided' },
+  completed:   { variant: 'approved', label: 'Completed' },
+  refunded:    { variant: 'orange',   label: 'Refunded' },
+  voided:      { variant: 'rejected', label: 'Voided' },
+  credit_note: { variant: 'blue',     label: 'Refund' },
   /* Support ticket statuses */
   OPEN:        { variant: 'info',    label: 'Open' },
   IN_PROGRESS: { variant: 'pending', label: 'In Progress' },

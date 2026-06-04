@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
         reference: p.reference ?? null,
         cardLast4: p.cardLast4 || null,
       })),
+      skipFawtara: d.skipFawtara ?? false,
     })
     return NextResponse.json({ transaction: tx }, { status: 201 })
   } catch (err) {

@@ -107,7 +107,7 @@ export default function TransactionsListPage() {
     {
       key: 'status',
       header: 'Status',
-      render: (tx) => <StatusBadge status={tx.status} />,
+      render: (tx) => <StatusBadge status={tx.parentTransactionId ? 'credit_note' : tx.status} />,
     },
     {
       key: 'fawtara',

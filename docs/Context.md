@@ -74,12 +74,14 @@ Makhzoon is organized around named modules, each with a distinct Arabic name, En
 #### Orders System *(fully implemented)*
 For businesses that receive orders via phone, WhatsApp, Instagram, Facebook, or other channels:
 - Order lifecycle: `new → confirmed → assigned → in_transit → delivered` (delivery) or `ready_for_pickup → picked_up` (pickup)
-- Items sourced from Raseed catalog; payment tracked separately (unpaid / partial / paid)
+- Items sourced from Raseed catalog; payment tracked separately via `haraka_order_payments` table (multiple payment entries per order; `amountPaid` + `paymentStatus` recalculated on each change)
 - Sales agent (org member) + delivery agent (org member or external `haraka_delivery_agents`)
 - Channel and payment method configurable via managed lists (`order_channel`, `order_payment_method`)
 - Order statuses relabelable/recolorable by org via managed lists (`order_status`)
 - Sequential order numbers: `ORD-000001`
-- **Routes:** `/{locale}/{orgSlug}/{space}/haraka/orders/`
+- **Invoice generation:** on-demand `INV-YYYY-NNNNNN` number allocation; renders a configurable A4 invoice document
+- **Delivery token sharing:** "Share Delivery Link" generates a capability token; delivery agent opens `/delivery/[token]` (public, no auth) to view order, advance status, and record payments from their phone
+- **Routes:** `/{locale}/{orgSlug}/{space}/haraka/orders/` · Public delivery: `/delivery/[token]`
 
 #### POS Customers
 - Customer database (name, phone, email, tax number, notes)
@@ -131,9 +133,10 @@ For businesses that receive orders via phone, WhatsApp, Instagram, Facebook, or 
 | Organization Info | `/settings/organization` | `settings.orgInfo` |
 | Spaces | `/settings/spaces` | Admin only |
 | Managed Lists | `/settings/lists` | `settings.orgInfo` |
-| Tax Rates | `/settings/tax-rates` | `settings.taxRates` |
-| Jo-Fotara (e-invoicing) | `/settings/jo-fotara` | `settings.fawtara` |
-| Receipt | `/settings/receipt` | `settings.fawtara` |
+| Tax Rates | `/settings/tax-rates` | `settings.taxRates` + `pos` feature |
+| Jo-Fotara (e-invoicing) | `/settings/jo-fotara` | `settings.fawtara` + `pos` feature |
+| Receipt | `/settings/receipt` | `settings.fawtara` + `pos` feature |
+| Order Documents | `/settings/order-documents` | `settings.fawtara` + `pos` feature |
 | Users | `/users` | `settings.users` |
 | Subscription | `/subscription` | `settings.subscription` |
 
@@ -231,6 +234,7 @@ The four **bold** `pos.*` keys are new additions from the Haraka Orders system.
   - Superadmin: `/{locale}/superadmin/*`
   - Public receipt: `/r/[orgSlug]/[receiptId]`
   - Public receipt preview: `/r/[orgSlug]/preview`
+  - Public delivery page: `/delivery/[token]` (no auth — delivery agent portal)
 - **`proxy.ts`** (project root) — ALL routing: domain routing (`makhzoon.me` → coming soon), session enforcement, locale detection/redirect. **Never create `middleware.ts` alongside this file** — it causes a build conflict.
 
 ### Event & Audit Infrastructure
@@ -250,7 +254,7 @@ The four **bold** `pos.*` keys are new additions from the Haraka Orders system.
 
 ## 8. Data Models (Key Tables)
 
-All tables use Supabase Postgres with Row-Level Security. Schema in `supabase/migrations/` (0001–0017).
+All tables use Supabase Postgres with Row-Level Security. Schema in `supabase/migrations/` (0001–0020+).
 
 | Table | Description |
 |-------|-------------|
@@ -274,9 +278,11 @@ All tables use Supabase Postgres with Row-Level Security. Schema in `supabase/mi
 | `pos_transactions` | POS sales — items (jsonb), payments (jsonb), fawtara (jsonb) |
 | `pos_receipt_counters` | Sequential receipt number per org/space |
 | `pos_customers` | Haraka customer records |
-| `haraka_orders` | Orders system — channel, status, fulfillment_type, delivery_address (jsonb), items (jsonb), payment_status |
+| `haraka_orders` | Orders system — channel, status, fulfillment_type, delivery_address (jsonb), items (jsonb), payment_status, invoice_number, delivery_token |
+| `haraka_order_payments` | Individual payment entries per order — amount, payment_method, note, paid_at |
 | `haraka_delivery_agents` | External delivery people (not necessarily org members) |
 | `haraka_order_counters` | Sequential order number per org/space |
+| `haraka_invoice_counters` | Sequential invoice number per org per calendar year (`INV-YYYY-NNNNNN`) |
 | `requests` | Staff requests — type, status (PENDING/APPROVED/REJECTED) |
 | `support_tickets` + `ticket_messages` | In-app support thread |
 | `audit_logs` | Immutable mutation trail — organization_id, user_id, action, module, old_value, new_value |

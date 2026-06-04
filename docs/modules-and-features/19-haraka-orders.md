@@ -24,6 +24,8 @@ Key characteristics:
 ```
 id, organizationId, spaceId
 orderNumber                    ← sequential, e.g. ORD-000042
+invoiceNumber?                 ← sequential, e.g. INV-2026-000001 (allocated on demand)
+deliveryToken?                 ← unique capability token for public delivery page sharing
 
 channel                        ← value from order_channel managed list
 status                         ← value from order_status managed list
@@ -41,7 +43,7 @@ items: OrderLineItem[]
 subtotal, discountAmount, taxAmount, total
 
 paymentStatus: 'unpaid' | 'partial' | 'paid'
-amountPaid
+amountPaid                     ← computed from sum of haraka_order_payments entries
 paymentMethod?                 ← value from order_payment_method managed list
 
 salesAgentId, salesAgentName   ← org member
@@ -52,6 +54,19 @@ deliveryAgentName?
 notes?, scheduledAt?
 createdAt, createdBy, updatedAt, updatedBy
 ```
+
+### HarakaOrderPayment
+Individual payment entries for an order. An order accumulates payments over time until fully paid.
+```
+id, orderId, organizationId
+amount
+paymentMethod?    ← free-text (cash_on_delivery, bank_transfer, card, other, etc.)
+note?             ← optional note (e.g. "Change given: 5 JOD")
+paidAt            ← timestamptz (defaults to now)
+createdAt, createdBy
+```
+
+`amountPaid` and `paymentStatus` on `haraka_orders` are recomputed after every insert/delete on this table.
 
 ### HarakaDeliveryAgent
 External delivery people who are not necessarily org members.
@@ -113,8 +128,47 @@ Sections:
 - **Fulfillment info** — type, delivery address, scheduled time.
 - **Agents** — sales agent, delivery agent with reassign (gated by `pos.assign_delivery`).
 - **Items table** — line items, totals.
-- **Payment panel** — status badge, amount paid, "Record Payment" inline form.
+- **Payment panel** — status badge, amount paid. Lists all `HarakaOrderPayment` entries with add / delete per entry. `amountPaid` and `paymentStatus` recalculate after each change.
+- **Invoice** — "Generate Invoice" button allocates a sequential `INV-YYYY-NNNNNN` invoice number and renders a printable/downloadable A4 invoice via the order document template.
+- **Delivery share** — "Share Delivery Link" generates (or returns existing) `deliveryToken` and copies the public URL `/delivery/[token]` to clipboard. The link can be sent to a delivery agent.
 - **Customer info**, notes.
+
+---
+
+## Invoice Generation
+
+**API**: `POST /api/haraka/orders/[orderId]/invoice`
+
+Allocates (or returns existing) a sequential invoice number for an order.
+
+- Format: `INV-YYYY-NNNNNN` (per org, per calendar year — resets each year)
+- Counter stored in `haraka_invoice_counters(organization_id, year, last_sequence)`
+- Once allocated, the number never changes for that order
+- The `GET` variant of the same endpoint returns the full order + org config for document rendering (no auth — public document link)
+- The rendered document is an A4 template configured via **Settings → Order Documents**
+
+---
+
+## Delivery Token / Public Delivery Page
+
+**API**: `POST /api/haraka/orders/[orderId]/delivery-token`
+
+Generates (or returns existing) a `deliveryToken` — a capability key stored on the order. Possession of the token grants access to the public delivery page; no authentication is required.
+
+**Public Delivery Page**: `/delivery/[token]` (no auth)
+
+This is a mobile-optimised page designed for delivery agents. It shows:
+- Order status with colored badge
+- "Mark as [Next Status]" primary action button — advances the status to the next step
+- Customer name, phone (tap-to-call), delivery address
+- Collapsible items list with total
+- Payment section — lists recorded payment entries; "Record Payment" form to add a new entry (amount, method, note)
+- Remaining balance when partially paid
+- Order notes
+
+Payment methods on this page: Cash on Delivery, Bank Transfer, Card, Other.
+
+The page is intentionally minimal and inline-styled for maximum compatibility (no Next.js layout, no Tailwind build required).
 
 ---
 

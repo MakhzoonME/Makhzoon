@@ -88,6 +88,11 @@ For businesses that receive orders via phone, WhatsApp, Instagram, Facebook, or 
 - Attach customers to sales for receipt personalization and Fawtara B2B submissions
 - Bulk delete / move / duplicate across spaces
 
+#### POS Transactions
+- Cross-session view of all transactions: receipt number, customer, items, total, payment method, status, cashier
+- Status filter (completed / refunded / voided); today's summary stat cards
+- Routes: `/{locale}/{orgSlug}/{space}/haraka/transactions/` · `haraka/transactions/[transactionId]`
+
 #### POS Reports
 - Sales by day, top items, by cashier, by payment method, by session
 - Date range picker, CSV export

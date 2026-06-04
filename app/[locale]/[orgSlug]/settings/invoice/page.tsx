@@ -127,7 +127,7 @@ export default function InvoiceSettingsPage() {
         </Button>
       </div>
 
-      <div className="flex gap-8 items-start">
+      <div className="flex gap-8 items-start max-w-5xl">
         {/* ── Left: configuration ── */}
         <div className="w-72 shrink-0 space-y-5">
 
@@ -195,7 +195,7 @@ export default function InvoiceSettingsPage() {
         </div>
 
         {/* ── Right: live preview (sticky) ── */}
-        <div className="flex-1 min-w-0 sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto space-y-3">
+        <div className="w-[640px] shrink-0 sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto space-y-3">
           <p className="text-[11px] text-gray-400 text-center">Preview</p>
           <div
             className="rounded-xl border border-border p-3"

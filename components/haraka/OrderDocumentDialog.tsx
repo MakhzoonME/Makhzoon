@@ -117,8 +117,8 @@ export function OrderDocumentDialog({
     salesAgentName:   order.salesAgentName,
     deliveryAgentName: order.deliveryAgentName,
     notes:            order.notes,
-    scheduledAt:      order.scheduledAt?.toISOString() ?? null,
-    createdAt:        order.createdAt.toISOString(),
+    scheduledAt:      order.scheduledAt ? (order.scheduledAt instanceof Date ? order.scheduledAt.toISOString() : String(order.scheduledAt)) : null,
+    createdAt:        order.createdAt instanceof Date ? order.createdAt.toISOString() : String(order.createdAt),
   };
 
   return (

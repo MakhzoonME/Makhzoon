@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Banknote, CreditCard, MoreHorizontal, FileCheck, AlertCircle, Trash2, ArrowLeft } from 'lucide-react';
+import { CardTerminalPayment } from './CardTerminalPayment';
+import { useCardTerminalConfig } from '@/hooks/haraka';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter,
 } from '@/components/ui/dialog';
@@ -43,12 +45,18 @@ export function PaymentDialog({
   const [splitRows, setSplitRows] = useState<PaymentLine[]>([]);
   // Fawtara: default ON when enabled, cashier can bypass per sale
   const [includeFawtara, setIncludeFawtara] = useState(true);
+  // Card terminal integration
+  const { data: terminalData } = useCardTerminalConfig();
+  const terminalConfig = terminalData?.config;
+  const terminalEnabled = terminalConfig?.enabled === true;
+  // When the terminal handles the card payment we track it here before confirm()
+  const [terminalPayment, setTerminalPayment] = useState<PaymentLine | null>(null);
 
   useEffect(() => {
     if (open) {
       const startTab = initialTab ?? 'cash';
       setTab(startTab);
-      setAmount(startTab !== 'other' ? total.toFixed(2) : total.toFixed(2));
+      setAmount(total.toFixed(2));
       setCardLast4('');
       setOtherRef('');
       setSplitMode(false);
@@ -57,6 +65,7 @@ export function PaymentDialog({
         { method: 'card', amount: +(total - +(total / 2).toFixed(2)).toFixed(2) },
       ]);
       setIncludeFawtara(true);
+      setTerminalPayment(null);
     }
   }, [open, total, initialTab]);
 
@@ -66,6 +75,8 @@ export function PaymentDialog({
   const cashOwed   = tab === 'cash' ? Math.max(0, total - numAmount) : 0;
   const simpleCanSubmit = tab === 'other'
     ? true
+    : tab === 'card' && terminalEnabled
+    ? !!terminalPayment                    // must wait for terminal confirmation
     : numAmount + 0.001 >= total;
 
   // ── Split mode ─────────────────────────────────────────────────────────
@@ -191,43 +202,67 @@ export function PaymentDialog({
                 </div>
               )}
 
-              {/* Card */}
+              {/* Card — integrated terminal or manual input */}
               {tab === 'card' && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-medium text-gray-600 mb-1.5 block">
-                      Amount charged (JOD)
-                    </label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      autoFocus
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="font-mono text-base"
-                    />
+                terminalEnabled && terminalConfig && !terminalPayment ? (
+                  <CardTerminalPayment
+                    total={total}
+                    config={terminalConfig}
+                    onPaymentConfirmed={(amt, last4) => {
+                      setTerminalPayment({ method: 'card', amount: amt, cardLast4: last4 });
+                      setAmount(String(amt));
+                      setCardLast4(last4 ?? '');
+                    }}
+                    onCancel={() => setTab('cash')}
+                  />
+                ) : terminalEnabled && terminalPayment ? (
+                  <div className="rounded-xl bg-green-50 border border-green-100 px-4 py-3 text-sm flex items-center justify-between">
+                    <span className="text-green-700 font-medium">Card payment confirmed</span>
+                    <button
+                      type="button"
+                      className="text-xs text-gray-400 hover:text-gray-600"
+                      onClick={() => setTerminalPayment(null)}
+                    >
+                      Change
+                    </button>
                   </div>
-                  <div>
-                    <label className="text-xs font-medium text-gray-600 mb-1.5 block">
-                      Card last 4 digits <span className="font-normal text-gray-400">(optional)</span>
-                    </label>
-                    <Input
-                      placeholder="••••"
-                      maxLength={4}
-                      value={cardLast4}
-                      onChange={(e) => setCardLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      className="font-mono w-28"
-                    />
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 mb-1.5 block">
+                        Amount charged (JOD)
+                      </label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        autoFocus
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        className="font-mono text-base"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 mb-1.5 block">
+                        Card last 4 digits <span className="font-normal text-gray-400">(optional)</span>
+                      </label>
+                      <Input
+                        placeholder="••••"
+                        maxLength={4}
+                        value={cardLast4}
+                        onChange={(e) => setCardLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                        className="font-mono w-28"
+                      />
+                    </div>
+                    <div
+                      className="flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-semibold"
+                      style={{ background: 'var(--primary-50)', color: 'var(--primary-700)' }}
+                    >
+                      <span>Exact charge</span>
+                      <span className="font-mono">JOD {total.toFixed(2)}</span>
+                    </div>
                   </div>
-                  <div
-                    className="flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-semibold"
-                    style={{ background: 'var(--primary-50)', color: 'var(--primary-700)' }}
-                  >
-                    <span>Exact charge</span>
-                    <span className="font-mono">JOD {total.toFixed(2)}</span>
-                  </div>
-                </div>
+                )
               )}
 
               {/* Other */}

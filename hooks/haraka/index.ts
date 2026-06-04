@@ -33,3 +33,10 @@ export {
 } from './useDeliveryAgents';
 export { useCashDrawerConfig, useUpdateCashDrawerConfig, useVerifyDrawerPin } from './useCashDrawer';
 export type { CashDrawerConfig } from './useCashDrawer';
+export {
+  useCardTerminalConfig,
+  useUpdateCardTerminalConfig,
+  useInitiateCharge,
+  useChargeStatus,
+  useUpdateChargeStatus,
+} from './useCardTerminal';

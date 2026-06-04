@@ -6,26 +6,7 @@
 
 ## 🔴 Not started — pick up next
 
-### 1. Card Terminal Integration (Visa / payment terminal)
-**Plan doc**: `docs/HARAKA_CARD_TERMINAL_TODO.md`
-**Feature doc**: `docs/modules-and-features/23-haraka-card-terminal.md`
-
-Connect the POS register to a card/Visa payment terminal so the sale amount is sent to the machine automatically when the cashier picks "Card". Supports four modes: display-only (default), local bridge, cloud API, webhook.
-
-**Key files to create:**
-- `supabase/migrations/0024_haraka_card_terminal.sql`
-- `lib/modules/haraka/card-terminal/` — schemas, repository, service
-- `app/api/haraka/card-terminal-config/` — GET, PATCH, test
-- `app/api/haraka/card-charges/` — POST initiate, GET status
-- `app/api/haraka/card-payment-result/route.ts` — webhook receiver
-- `hooks/haraka/useCardTerminal.ts`
-- `components/haraka/CardTerminalPayment.tsx` — replaces card tab in PaymentDialog
-- `app/[locale]/[orgSlug]/settings/card-terminal/page.tsx`
-- Modify `components/haraka/PaymentDialog.tsx` to use `CardTerminalPayment` when enabled
-
----
-
-### 2. Warranty Certificates
+### 1. Warranty Certificates
 **Plan doc**: `docs/HARAKA_WARRANTY_CERTS_TODO.md`
 **Feature doc**: `docs/modules-and-features/20-haraka-warranty-certs.md`
 
@@ -78,12 +59,13 @@ Invoice and receipt document rendering for orders (currently the UI has Invoice/
 
 ---
 
-## ✅ Recently completed (last session)
+## ✅ Recently completed
 
 - Haraka Orders system — full implementation (orders list, new order, detail, status stepper, payment recording, delivery agent assignment)
 - Managed Lists — `order_status`, `order_channel`, `order_payment_method` list keys
 - Permissions — `pos.view_orders`, `pos.manage_orders`, `pos.assign_delivery`, `pos.manage_delivery_agents`
 - Cash Drawer — ESC/POS `kickDrawer` command, `openCashDrawer()`, backend config API, `CashDrawerButton`, Settings → Cash Drawer page, auto-open on cash sale in register
+- Card Terminal Integration — 4 modes (display, local bridge, cloud, webhook), `CardTerminalPayment` component, polling for terminal result, Settings → Card Terminal page, PaymentDialog integration, webhook receiver with HMAC verification
 - Context.md — fully updated to reflect current platform state (June 2026)
 - Docs — `docs/modules-and-features/` files 19–23 covering Orders, Warranty Certs, Notifications, Cash Drawer, Card Terminal
 

@@ -226,3 +226,36 @@ export interface HarakaDeliveryAgent {
   updatedAt: Date;
   updatedBy: string | null;
 }
+
+// ── Haraka Card Terminal ──────────────────────────────────────────────────
+
+export type CardTerminalMode = 'display' | 'local_bridge' | 'cloud' | 'webhook';
+export type CardTerminalProvider = 'sumup' | 'square' | 'paymob' | 'custom';
+export type CardChargeStatus = 'pending' | 'approved' | 'declined' | 'timeout' | 'cancelled';
+
+export interface HarakaCardTerminalConfig {
+  organizationId: string;
+  enabled: boolean;
+  mode: CardTerminalMode;
+  bridgeUrl: string | null;
+  provider: CardTerminalProvider | null;
+  /** api_key_enc is never returned to the client — only a boolean `apiKeySet` */
+  apiKeySet: boolean;
+  terminalId: string | null;
+  /** webhook_secret is never returned to the client */
+  webhookSecretSet: boolean;
+  currency: string;
+  timeoutSeconds: number;
+}
+
+export interface HarakaCardCharge {
+  id: string;
+  organizationId: string;
+  reference: string;
+  amount: number;
+  currency: string;
+  status: CardChargeStatus;
+  providerRef: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}

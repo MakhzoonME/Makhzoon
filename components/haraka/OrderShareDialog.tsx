@@ -30,6 +30,7 @@ interface Props {
 function buildShareText(order: HarakaOrder, link: string, currency: string): string {
   const lines: string[] = [
     `📦 *Order ${order.orderNumber}*`,
+    `Status: ${order.status.replace(/_/g, ' ')}`,
     `Customer: ${order.customerName}`,
   ];
   if (order.customerPhone) lines.push(`Phone: ${order.customerPhone}`);
@@ -141,6 +142,7 @@ export function OrderShareDialog({ open, onOpenChange, order, orgSlug, currency 
               </div>
               <div className="text-right">
                 <div className="font-bold text-primary-700">{formatCurrency(order.total, currency)}</div>
+                <div className="text-xs text-gray-400 capitalize">{order.status.replace(/_/g, ' ')}</div>
                 <div className="text-xs text-gray-400 capitalize">{order.paymentStatus}</div>
               </div>
             </div>

@@ -23,7 +23,7 @@ const en = {
   'nav.taxRates':      'Tax Rates',
   'nav.fawtara':       'Jo Fotara (e-invoicing)',
   'nav.receipt':          'Receipt',
-  'nav.orderDocuments':   'Order Documents',
+  'nav.orderDocuments':   'Invoice',
   'nav.customers':     'Customers',
   'nav.harakaOrders':       'Orders',
   'nav.deliveryAgents':     'Delivery Agents',

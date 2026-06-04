@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Search, Plus, Trash2, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -78,6 +78,11 @@ export default function NewOrderPage() {
   });
 
   const fulfillmentType = form.watch('fulfillmentType');
+
+  // Keep the form's items field in sync so Zod validates the actual line items
+  useEffect(() => {
+    form.setValue('items', items as CreateOrderPayload['items'], { shouldValidate: true });
+  }, [items, form]);
 
   function addItem(inv: { id: string; name: string; sku?: string; posPrice?: number | null; taxRateId?: string | null; unitCost?: number }) {
     const existing = items.find((l) => l.inventoryItemId === inv.id);

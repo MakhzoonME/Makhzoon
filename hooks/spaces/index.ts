@@ -20,6 +20,21 @@ export function useAccessibleSpaces() {
   });
 }
 
+/** Single space by ID (derived from the all-spaces list). */
+export function useSpace(spaceId: string | undefined) {
+  const query = useQuery<ListResp>({
+    queryKey: [...LIST_KEY, 'all'],
+    queryFn: async () => {
+      const res = await fetch('/api/spaces?scope=all');
+      if (!res.ok) throw new Error('Failed to load spaces');
+      return res.json();
+    },
+    staleTime: 30_000,
+  });
+  const space = spaceId ? (query.data?.items ?? []).find((s) => s.id === spaceId) : undefined;
+  return { ...query, space };
+}
+
 /** All org spaces (including archived) — admin/owner. */
 export function useAllSpaces() {
   return useQuery<ListResp>({

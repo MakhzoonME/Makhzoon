@@ -133,7 +133,7 @@ export function SpaceSwitcher({ collapsed = false }: { collapsed?: boolean }) {
         <DropdownMenuSeparator className="my-1" />
 
         <DropdownMenuItem
-          onSelect={() => router.push(`/${params.locale}/${params.orgSlug}/settings/spaces`)}
+          onSelect={() => router.push(`/${params.locale}/${params.orgSlug}/settings/spaces/new`)}
           className="flex items-center gap-2 px-2 py-2 rounded-md text-primary-600 dark:text-primary-400 text-sm font-medium cursor-pointer"
         >
           <Plus className="h-3.5 w-3.5" strokeWidth={2} />

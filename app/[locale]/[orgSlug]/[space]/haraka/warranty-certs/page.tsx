@@ -85,7 +85,7 @@ export default function WarrantyCertsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Warranty Certificates"
-        subtitle="Customer-facing warranty documents generated from orders and sales."
+        description="Customer-facing warranty documents generated from orders and sales."
       />
 
       <DataTable

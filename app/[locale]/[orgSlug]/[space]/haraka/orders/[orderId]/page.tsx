@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Truck, Users, CreditCard, MapPin, CalendarClock, StickyNote, Share2, FileText, Receipt } from 'lucide-react';
+import { Truck, Users, MapPin, CalendarClock, StickyNote, Share2, FileText, Receipt, ShieldCheck } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { OrderStatusBadge } from '@/components/haraka/OrderStatusBadge';
@@ -12,6 +12,7 @@ import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { OrderShareDialog } from '@/components/haraka/OrderShareDialog';
 import { OrderPaymentsPanel } from '@/components/haraka/OrderPaymentsPanel';
 import { OrderDocumentDialog } from '@/components/haraka/OrderDocumentDialog';
+import { OrderWarrantyDialog } from '@/components/haraka/OrderWarrantyDialog';
 import { useOrder, useUpdateOrderStatus, useUpdateOrder } from '@/hooks/haraka';
 import { useList } from '@/hooks/lists/useList';
 import { useOrgInfo } from '@/hooks/org';
@@ -39,6 +40,7 @@ export default function OrderDetailPage() {
   const [shareOpen,       setShareOpen]       = useState(false);
   const [docOpen,         setDocOpen]         = useState(false);
   const [docType,         setDocType]         = useState<'invoice' | 'receipt'>('invoice');
+  const [warrantyOpen,    setWarrantyOpen]    = useState(false);
   const [reassignAgent,   setReassignAgent]   = useState(false);
   const [newAgent,        setNewAgent]        = useState<DeliveryAgentValue | null>(null);
 
@@ -121,6 +123,12 @@ export default function OrderDetailPage() {
             {order.paymentStatus === 'paid' && (
               <Button size="sm" variant="outline" onClick={() => { setDocType('receipt'); setDocOpen(true); }}>
                 <Receipt className="h-3.5 w-3.5 me-1" strokeWidth={1.75} /> Receipt
+              </Button>
+            )}
+            {/* Warranty certificate */}
+            {order.items.some((i) => i.inventoryItemId) && (
+              <Button size="sm" variant="outline" onClick={() => setWarrantyOpen(true)}>
+                <ShieldCheck className="h-3.5 w-3.5 me-1" strokeWidth={1.75} /> Warranty
               </Button>
             )}
             {/* Share with driver */}
@@ -323,6 +331,13 @@ export default function OrderDetailPage() {
         orgName={orgInfo?.name ?? params.orgSlug}
         currency={currency}
         defaultType={docType}
+      />
+      <OrderWarrantyDialog
+        open={warrantyOpen}
+        onOpenChange={setWarrantyOpen}
+        order={order}
+        orgName={orgInfo?.name ?? params.orgSlug}
+        space={params.space}
       />
     </div>
   );

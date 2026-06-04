@@ -8,6 +8,8 @@ import {
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import { DEFAULT_RECEIPT_CONFIG } from '@/lib/receipts/receipt-config';
 
+type Row = Record<string, unknown>;
+
 export interface OrderDocumentContext {
   orgId:      string;
   orgName:    string;
@@ -57,7 +59,7 @@ export async function loadOrderDocument(
   const org = await getOrganizationBySubdomain(orgSlug);
   if (!org) return null;
 
-  const [receiptCtx, orderRow, configRow] = await Promise.all([
+  const [receiptCtx, orderRes, configRes] = await Promise.all([
     loadOrgReceiptContext(orgSlug),
     supabaseAdmin
       .from('haraka_orders')
@@ -78,10 +80,11 @@ export async function loadOrderDocument(
       .maybeSingle(),
   ]);
 
-  if (!orderRow.data || orderRow.error) return null;
+  if (!orderRes.data || orderRes.error) return null;
 
-  const raw = orderRow.data;
-  const saved = (configRow.data?.order_document_config ?? {}) as Partial<OrderDocumentConfig>;
+  // haraka_orders is not in the Supabase generated types — cast explicitly
+  const raw = orderRes.data as Row;
+  const saved = ((configRes.data as Row | null)?.order_document_config ?? {}) as Partial<OrderDocumentConfig>;
   const rc = receiptCtx ?? {
     orgId: org.id,
     orgName: org.name,
@@ -99,7 +102,8 @@ export async function loadOrderDocument(
     lineTotal?: number;
   };
 
-  const items = (Array.isArray(raw.items) ? raw.items as RawItem[] : []).map((l) => {
+  const rawItems = raw.items;
+  const items = (Array.isArray(rawItems) ? rawItems as RawItem[] : []).map((l) => {
     const sub = Number(l.quantity ?? 0) * Number(l.unitPrice ?? 0) - Number(l.discountAmount ?? 0);
     return {
       inventoryItemName: l.inventoryItemName ?? 'Item',
@@ -112,37 +116,37 @@ export async function loadOrderDocument(
 
   return {
     ctx: {
-      orgId:       org.id,
-      orgName:     org.name,
+      orgId:         org.id,
+      orgName:       org.name,
       orgSlug,
-      tagline:     rc.tagline,
-      taglineAr:   rc.taglineAr,
-      taxNumber:   rc.taxNumber,
+      tagline:       rc.tagline,
+      taglineAr:     rc.taglineAr,
+      taxNumber:     rc.taxNumber,
       receiptConfig: rc.config,
-      docConfig:   { ...DEFAULT_ORDER_DOCUMENT_CONFIG, ...saved },
+      docConfig:     { ...DEFAULT_ORDER_DOCUMENT_CONFIG, ...saved },
     },
     order: {
-      id:              raw.id,
-      orderNumber:     raw.order_number as string,
-      invoiceNumber:   raw.invoice_number as string | null,
-      channel:         raw.channel as string,
-      fulfillmentType: raw.fulfillment_type as string,
-      customerName:    raw.customer_name as string,
-      customerPhone:   raw.customer_phone as string | null,
-      deliveryAddress: raw.delivery_address as Record<string, string | null> | null,
+      id:               raw.id as string,
+      orderNumber:      raw.order_number as string,
+      invoiceNumber:    (raw.invoice_number as string) ?? null,
+      channel:          raw.channel as string,
+      fulfillmentType:  raw.fulfillment_type as string,
+      customerName:     raw.customer_name as string,
+      customerPhone:    (raw.customer_phone as string) ?? null,
+      deliveryAddress:  (raw.delivery_address as Record<string, string | null>) ?? null,
       items,
-      subtotal:        Number(raw.subtotal),
-      discountAmount:  Number(raw.discount_amount),
-      taxAmount:       Number(raw.tax_amount),
-      total:           Number(raw.total),
-      paymentStatus:   raw.payment_status as string,
-      amountPaid:      Number(raw.amount_paid),
-      paymentMethod:   raw.payment_method as string | null,
-      salesAgentName:  raw.sales_agent_name as string,
-      deliveryAgentName: raw.delivery_agent_name as string | null,
-      notes:           raw.notes as string | null,
-      scheduledAt:     raw.scheduled_at as string | null,
-      createdAt:       raw.created_at as string,
+      subtotal:         Number(raw.subtotal),
+      discountAmount:   Number(raw.discount_amount),
+      taxAmount:        Number(raw.tax_amount),
+      total:            Number(raw.total),
+      paymentStatus:    raw.payment_status as string,
+      amountPaid:       Number(raw.amount_paid),
+      paymentMethod:    (raw.payment_method as string) ?? null,
+      salesAgentName:   raw.sales_agent_name as string,
+      deliveryAgentName:(raw.delivery_agent_name as string) ?? null,
+      notes:            (raw.notes as string) ?? null,
+      scheduledAt:      (raw.scheduled_at as string) ?? null,
+      createdAt:        raw.created_at as string,
     },
   };
 }

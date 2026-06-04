@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 
+type Row = Record<string, unknown>
+
 /** GET — public, no auth. Returns order details by delivery token. */
 export async function GET(
   _req: NextRequest,
@@ -9,7 +11,7 @@ export async function GET(
   try {
     const { token } = await params
 
-    const { data: order } = await supabaseAdmin
+    const orderRes = await supabaseAdmin
       .from('haraka_orders')
       .select(
         'id, order_number, invoice_number, channel, status, fulfillment_type, ' +
@@ -22,27 +24,32 @@ export async function GET(
       .eq('delivery_token', token)
       .maybeSingle()
 
+    const order = orderRes.data as Row | null
     if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+    const orgId        = order.organization_id as string
+    const orderId      = order.id as string
 
     // Fetch payment entries
     const { data: payments } = await supabaseAdmin
       .from('haraka_order_payments')
       .select('id, amount, payment_method, note, paid_at')
-      .eq('order_id', order.id)
-      .eq('organization_id', order.organization_id)
+      .eq('order_id', orderId)
+      .eq('organization_id', orgId)
       .order('paid_at', { ascending: true })
 
     // Fetch org name for display
-    const { data: org } = await supabaseAdmin
+    const orgRes = await supabaseAdmin
       .from('organizations')
       .select('name')
-      .eq('id', order.organization_id)
+      .eq('id', orgId)
       .maybeSingle()
+    const org = orgRes.data as Row | null
 
     return NextResponse.json({
-      order: { ...order, orderId: order.id },
+      order: { ...order, orderId },
       payments: payments ?? [],
-      orgName: org?.name ?? '',
+      orgName: (org?.name as string) ?? '',
     })
   } catch (err) {
     console.error('[GET /api/delivery/[token]]', err)

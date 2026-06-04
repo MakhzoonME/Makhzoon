@@ -8,6 +8,7 @@ export interface OrgInfo {
   contactEmail: string;
   description: string | null;
   category: string | null;
+  currency?: string;
   accountManager: { id: string; name: string; email: string } | null;
 }
 

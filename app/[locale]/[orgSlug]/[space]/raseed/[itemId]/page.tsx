@@ -314,13 +314,16 @@ export default function InventoryItemDetailPage() {
             )}
             {item.location && <KVRow label={t('col.location')}>{item.location}</KVRow>}
             {item.supplier && <KVRow label={t('inventory.supplier')}>{item.supplier}</KVRow>}
-            {item.expiryDate != null && (
-              <KVRow label={t('inventory.expiryDate')}>
-                <span className={`font-mono tabular-nums text-sm ${item.expiryDate < new Date() ? 'text-red-600 font-semibold' : ''}`}>
-                  {formatDate(item.expiryDate)}
-                </span>
-              </KVRow>
-            )}
+            {item.expiryDate != null && (() => {
+              const expDate = item.expiryDate instanceof Date ? item.expiryDate : new Date(item.expiryDate as unknown as string);
+              return (
+                <KVRow label={t('inventory.expiryDate')}>
+                  <span className={`font-mono tabular-nums text-sm ${expDate < new Date() ? 'text-red-600 font-semibold' : ''}`}>
+                    {formatDate(expDate)}
+                  </span>
+                </KVRow>
+              );
+            })()}
             {item.notes && (
               <div className="mt-4 pt-4 border-t border-border">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{t('col.notes')}</p>
@@ -455,7 +458,7 @@ export default function InventoryItemDetailPage() {
             {/* Expiry alert banner */}
             {item.expiryDate != null && (() => {
               const now = new Date();
-              const exp = item.expiryDate!;
+              const exp = item.expiryDate instanceof Date ? item.expiryDate : new Date(item.expiryDate as unknown as string);
               const daysLeft = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
               if (daysLeft < 0) {
                 return (

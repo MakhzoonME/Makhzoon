@@ -301,10 +301,14 @@ export default function InventoryListPage() {
   const lowCount = items.filter((i) => i.stockStatus === 'low').length;
   const outCount = items.filter((i) => i.stockStatus === 'out').length;
   const today = new Date();
-  const expiredCount = items.filter((i) => i.expiryDate != null && i.expiryDate < today).length;
+  const expiredCount = items.filter((i) => {
+    if (!i.expiryDate) return false;
+    const d = i.expiryDate instanceof Date ? i.expiryDate : new Date(i.expiryDate as unknown as string);
+    return d < today;
+  }).length;
   const expiringSoonCount = items.filter((i) => {
     if (!i.expiryDate) return false;
-    const d = i.expiryDate instanceof Date ? i.expiryDate : new Date(i.expiryDate);
+    const d = i.expiryDate instanceof Date ? i.expiryDate : new Date(i.expiryDate as unknown as string);
     const days = Math.ceil((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     return days >= 0 && days <= 30;
   }).length;

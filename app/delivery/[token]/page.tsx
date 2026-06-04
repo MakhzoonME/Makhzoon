@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { Check, Truck, Package, CreditCard, ChevronDown, ChevronUp, Plus, MapPin, Phone, Clock, ShoppingBag } from 'lucide-react';
 
+type Lang = 'en' | 'ar';
+
 interface PaymentEntry {
   id: string;
   amount: number;
@@ -34,13 +36,6 @@ interface OrderData {
 }
 
 function fmt(n: number) { return Number(n).toFixed(3) + ' JOD'; }
-function capFirst(s: string) { return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
-
-const STATUS_LABEL: Record<string, string> = {
-  new: 'New', confirmed: 'Confirmed', assigned: 'Assigned',
-  in_transit: 'In Transit', ready_for_pickup: 'Ready for Pickup',
-  delivered: 'Delivered', picked_up: 'Picked Up', cancelled: 'Cancelled',
-};
 
 const STATUS_COLOR: Record<string, string> = {
   new: '#6366f1', confirmed: '#a855f7', assigned: '#f97316',
@@ -59,10 +54,91 @@ const NEXT_STATUS: Record<string, string> = {
   ready_for_pickup: 'picked_up',
 };
 
-const NEXT_STATUS_LABEL: Record<string, string> = {
-  in_transit: 'Mark as In Transit',
-  delivered: 'Mark as Delivered ✓',
-  picked_up: 'Mark as Picked Up ✓',
+const T = {
+  en: {
+    deliveryOrder: (n: string) => `Delivery Order ${n}`,
+    status: 'Status',
+    customer: 'Customer',
+    scheduled: 'Scheduled',
+    items: (n: number) => `${n} item${n !== 1 ? 's' : ''}`,
+    total: 'Total',
+    payment: 'Payment',
+    paid: 'Paid',
+    remaining: 'Remaining',
+    recordPayment: 'Record Payment',
+    amount: 'Amount',
+    method: 'Method',
+    note: 'Note (optional)',
+    notePlaceholder: 'e.g. Change given: 5 JOD',
+    cancel: 'Cancel',
+    confirmPayment: 'Confirm Payment',
+    saving: 'Saving…',
+    notes: 'Notes',
+    updating: 'Updating…',
+    completed: 'Completed',
+    orderCancelled: 'Order Cancelled',
+    notFound: 'Order not found',
+    invalidLink: 'This link may be invalid or expired.',
+    failedLoad: 'Failed to load order',
+    statusLabel: {
+      new: 'New', confirmed: 'Confirmed', assigned: 'Assigned',
+      in_transit: 'In Transit', ready_for_pickup: 'Ready for Pickup',
+      delivered: 'Delivered', picked_up: 'Picked Up', cancelled: 'Cancelled',
+    } as Record<string, string>,
+    nextStatusLabel: {
+      in_transit: 'Mark as In Transit',
+      delivered: 'Mark as Delivered ✓',
+      picked_up: 'Mark as Picked Up ✓',
+    } as Record<string, string>,
+    paymentMethod: {
+      cash_on_delivery: 'Cash on Delivery',
+      bank_transfer: 'Bank Transfer',
+      card: 'Card',
+      other: 'Other',
+    } as Record<string, string>,
+  },
+  ar: {
+    deliveryOrder: (n: string) => `طلب توصيل ${n}`,
+    status: 'الحالة',
+    customer: 'العميل',
+    scheduled: 'موعد مجدول',
+    items: (n: number) => `${n} ${n === 1 ? 'منتج' : 'منتجات'}`,
+    total: 'الإجمالي',
+    payment: 'الدفع',
+    paid: 'المدفوع',
+    remaining: 'المتبقي',
+    recordPayment: 'تسجيل دفعة',
+    amount: 'المبلغ',
+    method: 'طريقة الدفع',
+    note: 'ملاحظة (اختياري)',
+    notePlaceholder: 'مثال: الباقي 5 دينار',
+    cancel: 'إلغاء',
+    confirmPayment: 'تأكيد الدفع',
+    saving: 'جارٍ الحفظ…',
+    notes: 'ملاحظات',
+    updating: 'جارٍ التحديث…',
+    completed: 'مكتمل',
+    orderCancelled: 'تم إلغاء الطلب',
+    notFound: 'الطلب غير موجود',
+    invalidLink: 'هذا الرابط غير صالح أو منتهي الصلاحية.',
+    failedLoad: 'فشل تحميل الطلب',
+    statusLabel: {
+      new: 'جديد', confirmed: 'مؤكد', assigned: 'تم التعيين',
+      in_transit: 'في الطريق', ready_for_pickup: 'جاهز للاستلام',
+      delivered: 'تم التوصيل', picked_up: 'تم الاستلام', cancelled: 'ملغي',
+    } as Record<string, string>,
+    nextStatusLabel: {
+      in_transit: 'تحديد كـ: في الطريق',
+      delivered: 'تحديد كـ: تم التوصيل ✓',
+      picked_up: 'تحديد كـ: تم الاستلام ✓',
+    } as Record<string, string>,
+    paymentMethod: {
+      cash_on_delivery: 'الدفع عند التسليم',
+      bank_transfer: 'تحويل بنكي',
+      card: 'بطاقة',
+      other: 'أخرى',
+    } as Record<string, string>,
+  },
 };
 
 export default function DeliveryPage() {
@@ -79,6 +155,10 @@ export default function DeliveryPage() {
   const [payNote, setPayNote] = useState('');
   const [addingPay, setAddingPay] = useState(false);
   const [showItems, setShowItems] = useState(false);
+  const [lang, setLang] = useState<Lang>('en');
+
+  const t = T[lang];
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
 
   const load = useCallback(async () => {
     try {
@@ -142,8 +222,8 @@ export default function DeliveryPage() {
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb', padding: 24 }}>
         <div style={{ textAlign: 'center', color: '#6b7280' }}>
           <Package size={48} style={{ marginBottom: 12, opacity: 0.4 }} />
-          <div style={{ fontSize: 18, fontWeight: 600 }}>{error || 'Order not found'}</div>
-          <div style={{ fontSize: 14, marginTop: 6 }}>This link may be invalid or expired.</div>
+          <div style={{ fontSize: 18, fontWeight: 600 }}>{t.notFound}</div>
+          <div style={{ fontSize: 14, marginTop: 6 }}>{t.invalidLink}</div>
         </div>
       </div>
     );
@@ -157,13 +237,37 @@ export default function DeliveryPage() {
   const isDone = ['delivered', 'picked_up', 'cancelled'].includes(order.status);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f3f4f6', fontFamily: "'Segoe UI', system-ui, sans-serif", color: '#111' }}>
+    <div dir={dir} style={{ minHeight: '100vh', background: '#f3f4f6', fontFamily: lang === 'ar' ? "'Segoe UI', Tahoma, Arial, sans-serif" : "'Segoe UI', system-ui, sans-serif", color: '#111' }}>
       {/* Top bar */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Truck size={20} style={{ color: '#6366f1' }} />
-        <div>
-          <div style={{ fontWeight: 700, fontSize: 15 }}>{orgName}</div>
-          <div style={{ fontSize: 12, color: '#9ca3af' }}>Delivery Order {order.order_number}</div>
+      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Truck size={20} style={{ color: '#6366f1', flexShrink: 0 }} />
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15 }}>{orgName}</div>
+            <div style={{ fontSize: 12, color: '#9ca3af' }}>{t.deliveryOrder(order.order_number)}</div>
+          </div>
+        </div>
+
+        {/* Language toggle */}
+        <div style={{ display: 'flex', borderRadius: 8, border: '1.5px solid #e5e7eb', overflow: 'hidden', flexShrink: 0 }}>
+          {(['en', 'ar'] as Lang[]).map((l) => (
+            <button
+              key={l}
+              onClick={() => setLang(l)}
+              style={{
+                padding: '5px 12px',
+                border: 'none',
+                background: lang === l ? '#6366f1' : '#fff',
+                color: lang === l ? '#fff' : '#6b7280',
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: 'pointer',
+                transition: 'background 0.15s, color 0.15s',
+              }}
+            >
+              {l === 'en' ? 'EN' : 'ع'}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -172,9 +276,9 @@ export default function DeliveryPage() {
         {/* Status card */}
         <div style={{ background: '#fff', borderRadius: 16, padding: 16, boxShadow: '0 1px 4px #0001' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5 }}>Status</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.status}</span>
             <span style={{ background: statusColor + '20', color: statusColor, fontWeight: 700, fontSize: 13, padding: '3px 10px', borderRadius: 99 }}>
-              {STATUS_LABEL[order.status] ?? order.status}
+              {t.statusLabel[order.status] ?? order.status}
             </span>
           </div>
 
@@ -190,20 +294,20 @@ export default function DeliveryPage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               }}
             >
-              {updatingStatus ? 'Updating…' : (NEXT_STATUS_LABEL[nextStatus] ?? `Mark as ${capFirst(nextStatus)}`)}
+              {updatingStatus ? t.updating : (t.nextStatusLabel[nextStatus] ?? `Mark as ${nextStatus}`)}
             </button>
           )}
 
           {isDone && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#22c55e', fontWeight: 600, fontSize: 15, justifyContent: 'center', paddingTop: 4 }}>
-              <Check size={20} /> {order.status === 'cancelled' ? 'Order Cancelled' : 'Completed'}
+              <Check size={20} /> {order.status === 'cancelled' ? t.orderCancelled : t.completed}
             </div>
           )}
         </div>
 
         {/* Customer + address */}
         <div style={{ background: '#fff', borderRadius: 16, padding: 16, boxShadow: '0 1px 4px #0001' }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Customer</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>{t.customer}</div>
           <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 4 }}>{order.customer_name}</div>
           {order.customer_phone && (
             <a href={`tel:${order.customer_phone}`} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#6366f1', textDecoration: 'none', fontSize: 15, marginBottom: 8 }}>
@@ -222,7 +326,7 @@ export default function DeliveryPage() {
           {order.scheduled_at && (
             <div style={{ display: 'flex', gap: 6, color: '#555', fontSize: 13, marginTop: 8 }}>
               <Clock size={14} style={{ flexShrink: 0, marginTop: 1, color: '#9ca3af' }} />
-              Scheduled: {new Date(order.scheduled_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              {t.scheduled}: {new Date(order.scheduled_at).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
             </div>
           )}
         </div>
@@ -235,7 +339,7 @@ export default function DeliveryPage() {
           >
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14 }}>
               <ShoppingBag size={16} style={{ color: '#9ca3af' }} />
-              {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+              {t.items(order.items.length)}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#9ca3af' }}>
               <span style={{ fontWeight: 700, color: '#111', fontSize: 15 }}>{fmt(order.total)}</span>
@@ -251,7 +355,7 @@ export default function DeliveryPage() {
                 </div>
               ))}
               <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15 }}>
-                <span>Total</span><span style={{ fontFamily: 'monospace' }}>{fmt(order.total)}</span>
+                <span>{t.total}</span><span style={{ fontFamily: 'monospace' }}>{fmt(order.total)}</span>
               </div>
             </div>
           )}
@@ -260,25 +364,25 @@ export default function DeliveryPage() {
         {/* Payment */}
         <div style={{ background: '#fff', borderRadius: 16, padding: 16, boxShadow: '0 1px 4px #0001' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5 }}>Payment</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.payment}</div>
             <span style={{ background: payStatusColor + '20', color: payStatusColor, fontWeight: 700, fontSize: 12, padding: '2px 8px', borderRadius: 99 }}>
-              {capFirst(order.payment_status)}
+              {t.statusLabel[order.payment_status] ?? order.payment_status}
             </span>
           </div>
 
           {payments.map((p) => (
             <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, paddingBottom: 4, color: '#555' }}>
-              <span>{p.payment_method ? capFirst(p.payment_method) : 'Payment'}{p.note ? ` — ${p.note}` : ''}</span>
+              <span>{p.payment_method ? (t.paymentMethod[p.payment_method] ?? p.payment_method) : t.payment}{p.note ? ` — ${p.note}` : ''}</span>
               <span style={{ fontWeight: 600, fontFamily: 'monospace' }}>{fmt(p.amount)}</span>
             </div>
           ))}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, paddingTop: 6, borderTop: payments.length ? '1px solid #f3f4f6' : 'none', marginTop: 4 }}>
-            <span>Paid</span><span style={{ fontFamily: 'monospace', color: '#22c55e' }}>{fmt(order.amount_paid)}</span>
+            <span>{t.paid}</span><span style={{ fontFamily: 'monospace', color: '#22c55e' }}>{fmt(order.amount_paid)}</span>
           </div>
           {remaining > 0.001 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, paddingTop: 4, color: '#b45309' }}>
-              <span>Remaining</span><span style={{ fontFamily: 'monospace' }}>{fmt(remaining)}</span>
+              <span>{t.remaining}</span><span style={{ fontFamily: 'monospace' }}>{fmt(remaining)}</span>
             </div>
           )}
 
@@ -289,40 +393,40 @@ export default function DeliveryPage() {
                   onClick={() => { setShowPayForm(true); setPayAmount(remaining.toFixed(3)); }}
                   style={{ width: '100%', padding: '12px', borderRadius: 12, border: '2px dashed #e5e7eb', background: 'none', color: '#6366f1', fontWeight: 600, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
-                  <Plus size={16} /> Record Payment
+                  <Plus size={16} /> {t.recordPayment}
                 </button>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 4 }}>Amount</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 4 }}>{t.amount}</label>
                     <input
                       type="number" step="0.001" value={payAmount} onChange={e => setPayAmount(e.target.value)}
                       style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5e7eb', fontSize: 16, fontFamily: 'monospace', boxSizing: 'border-box' }}
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 4 }}>Method</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 4 }}>{t.method}</label>
                     <select
                       value={payMethod} onChange={e => setPayMethod(e.target.value)}
                       style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5e7eb', fontSize: 15, background: '#fff', boxSizing: 'border-box' }}
                     >
-                      <option value="cash_on_delivery">Cash on Delivery</option>
-                      <option value="bank_transfer">Bank Transfer</option>
-                      <option value="card">Card</option>
-                      <option value="other">Other</option>
+                      <option value="cash_on_delivery">{t.paymentMethod.cash_on_delivery}</option>
+                      <option value="bank_transfer">{t.paymentMethod.bank_transfer}</option>
+                      <option value="card">{t.paymentMethod.card}</option>
+                      <option value="other">{t.paymentMethod.other}</option>
                     </select>
                   </div>
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 4 }}>Note (optional)</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 4 }}>{t.note}</label>
                     <input
-                      type="text" value={payNote} onChange={e => setPayNote(e.target.value)} placeholder="e.g. Change given: 5 JOD"
+                      type="text" value={payNote} onChange={e => setPayNote(e.target.value)} placeholder={t.notePlaceholder}
                       style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5e7eb', fontSize: 15, boxSizing: 'border-box' }}
                     />
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => setShowPayForm(false)} style={{ flex: 1, padding: '12px', borderRadius: 12, border: '1.5px solid #e5e7eb', background: '#fff', fontSize: 15, cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+                    <button onClick={() => setShowPayForm(false)} style={{ flex: 1, padding: '12px', borderRadius: 12, border: '1.5px solid #e5e7eb', background: '#fff', fontSize: 15, cursor: 'pointer', fontWeight: 600 }}>{t.cancel}</button>
                     <button onClick={recordPayment} disabled={addingPay} style={{ flex: 2, padding: '12px', borderRadius: 12, border: 'none', background: '#22c55e', color: '#fff', fontSize: 15, fontWeight: 700, cursor: addingPay ? 'not-allowed' : 'pointer', opacity: addingPay ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                      <CreditCard size={16} /> {addingPay ? 'Saving…' : 'Confirm Payment'}
+                      <CreditCard size={16} /> {addingPay ? t.saving : t.confirmPayment}
                     </button>
                   </div>
                 </div>
@@ -334,7 +438,7 @@ export default function DeliveryPage() {
         {/* Notes */}
         {order.notes && (
           <div style={{ background: '#fff', borderRadius: 16, padding: 16, boxShadow: '0 1px 4px #0001', fontSize: 14, color: '#555', whiteSpace: 'pre-wrap' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Notes</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>{t.notes}</div>
             {order.notes}
           </div>
         )}

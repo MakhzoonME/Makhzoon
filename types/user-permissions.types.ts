@@ -139,7 +139,11 @@ export interface ModuleOperationConfig {
   key: string;
   label: string;
   labelKey: MessageKey;
+  /** When true, this op is disabled unless the gate key is enabled. */
   requiresView?: boolean;
+  /** The specific permission key that must be true to unlock this op.
+   *  Defaults to 'view' when omitted. Use when the module's gate isn't named 'view'. */
+  requiresKey?: string;
 }
 
 export type ModuleGroup = 'core' | 'commerce' | 'workflow' | 'admin';
@@ -309,9 +313,9 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'customers_bulk_move',      label: 'Bulk move customers to space',   labelKey: 'permOp.pos.customers_bulk_move' },
       { key: 'customers_bulk_duplicate', label: 'Bulk duplicate customers',       labelKey: 'permOp.pos.customers_bulk_duplicate' },
       { key: 'view_orders',             label: 'View Orders',                    labelKey: 'permOp.pos.view_orders' },
-      { key: 'manage_orders',           label: 'Create & Update Orders',         labelKey: 'permOp.pos.manage_orders',           requiresView: true },
-      { key: 'assign_delivery',         label: 'Assign Delivery Agent',          labelKey: 'permOp.pos.assign_delivery',         requiresView: true },
-      { key: 'manage_delivery_agents',  label: 'Manage Delivery Agents',         labelKey: 'permOp.pos.manage_delivery_agents',  requiresView: true },
+      { key: 'manage_orders',           label: 'Create & Update Orders',         labelKey: 'permOp.pos.manage_orders',           requiresView: true, requiresKey: 'view_orders' },
+      { key: 'assign_delivery',         label: 'Assign Delivery Agent',          labelKey: 'permOp.pos.assign_delivery',         requiresView: true, requiresKey: 'view_orders' },
+      { key: 'manage_delivery_agents',  label: 'Manage Delivery Agents',         labelKey: 'permOp.pos.manage_delivery_agents',  requiresView: true, requiresKey: 'view_orders' },
     ],
   },
   {

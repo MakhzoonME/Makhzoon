@@ -25,6 +25,7 @@ const en = {
   'nav.receipt':       'Receipt',
   'nav.customers':     'Customers',
   'nav.harakaOrders':       'Orders',
+  'nav.deliveryAgents':     'Delivery Agents',
   'nav.harakaReports':      'POS Reports',
   'nav.transactions':       'Transactions',
   'nav.packages':           'Packages',
@@ -314,7 +315,7 @@ const en = {
 
   // ── Users page ───────────────────────────────────────────────────
   'users.title':        'Users',
-  'users.inviteUser':   'Invite User',
+  'users.inviteUser':   'Create User',
   'users.name':         'Name',
   'users.emailUsername':'Email / Username',
   'users.role':         'Role',
@@ -604,7 +605,7 @@ const en = {
   'assetDetail.linked':           'Linked records',
   'assetDetail.activityTimeline': 'Activity timeline',
   'assetDetail.createdBy':        'Created by',
-  'assetDetail.updatedBy':        'Updated by',
+  'assetDetail.updatedBy':        'Last updated by',
   'warranties.searchPlaceholder':  'Search by asset or vendor…',
   'warranties.daysLeft':           'Days left',
   'warranties.tracked':            'tracked',
@@ -664,6 +665,15 @@ const en = {
   'inventory.itemDeleteFailed':'Failed to delete item',
   'inventory.deleteBlockedOpenRequests': "Can't delete: this item has open requests. Resolve or reject them first.",
   'inventory.deleteBlockedActiveWarranty': "Can't delete: this item has an active warranty. Delete the warranty or wait for it to expire.",
+  'inventory.expiryDate':              'Expiry Date',
+  'inventory.expiryExpired':           'This item has expired.',
+  'inventory.expiryWarn':              'Expires in {days} days.',
+  'inventory.expiringSoon':            'Expiring Soon',
+  'inventory.expired':                 'Expired',
+  'inventory.expiredItems':            '{count} item expired',
+  'inventory.expiredItemsPlural':      '{count} items expired',
+  'inventory.expiringSoonItems':       '{count} item expiring soon',
+  'inventory.expiringSoonItemsPlural': '{count} items expiring soon',
 
   // ── Warranties page (extra) ───────────────────────────────────────
   'warranties.startDate':      'Start Date',
@@ -1451,6 +1461,7 @@ const ar: Record<keyof typeof en, string> = {
   'nav.receipt':       'الإيصال',
   'nav.customers':     'العملاء',
   'nav.harakaOrders':       'الطلبات',
+  'nav.deliveryAgents':     'موزعو الطلبات',
   'nav.harakaReports':      'تقارير المبيعات',
   'nav.transactions':       'المعاملات',
   'nav.packages':           'الباقات',
@@ -1739,7 +1750,7 @@ const ar: Record<keyof typeof en, string> = {
 
   // ── Users page ───────────────────────────────────────────────────
   'users.title':         'المستخدمون',
-  'users.inviteUser':    'دعوة مستخدم',
+  'users.inviteUser':    'إنشاء مستخدم',
   'users.name':          'الاسم',
   'users.emailUsername': 'البريد / اسم المستخدم',
   'users.role':          'الدور',
@@ -2029,7 +2040,7 @@ const ar: Record<keyof typeof en, string> = {
   'assetDetail.linked':           'السجلات المرتبطة',
   'assetDetail.activityTimeline': 'الخط الزمني',
   'assetDetail.createdBy':        'أُنشئ بواسطة',
-  'assetDetail.updatedBy':        'عُدّل بواسطة',
+  'assetDetail.updatedBy':        'آخر تعديل بواسطة',
   'warranties.searchPlaceholder':  'بحث بالأصل أو المورد...',
   'warranties.daysLeft':           'الأيام المتبقية',
   'warranties.tracked':            'مُتابَع',
@@ -2089,6 +2100,15 @@ const ar: Record<keyof typeof en, string> = {
   'inventory.itemDeleteFailed':'فشل حذف العنصر',
   'inventory.deleteBlockedOpenRequests': 'لا يمكن الحذف: يوجد طلبات مفتوحة على هذا العنصر. عالجها أو ارفضها أولاً.',
   'inventory.deleteBlockedActiveWarranty': 'لا يمكن الحذف: يوجد ضمان فعّال على هذا العنصر. احذف الضمان أو انتظر انتهاءه.',
+  'inventory.expiryDate':              'تاريخ الانتهاء',
+  'inventory.expiryExpired':           'انتهت صلاحية هذا الصنف.',
+  'inventory.expiryWarn':              'تنتهي الصلاحية خلال {days} يوم.',
+  'inventory.expiringSoon':            'تنتهي قريباً',
+  'inventory.expired':                 'منتهية الصلاحية',
+  'inventory.expiredItems':            '{count} صنف منتهي الصلاحية',
+  'inventory.expiredItemsPlural':      '{count} أصناف منتهية الصلاحية',
+  'inventory.expiringSoonItems':       '{count} صنف تنتهي صلاحيته قريباً',
+  'inventory.expiringSoonItemsPlural': '{count} أصناف تنتهي صلاحيتها قريباً',
 
   // ── Warranties page (extra) ───────────────────────────────────────
   'warranties.startDate':      'تاريخ البداية',

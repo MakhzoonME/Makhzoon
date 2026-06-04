@@ -227,6 +227,54 @@ export interface HarakaDeliveryAgent {
   updatedBy: string | null;
 }
 
+// ── Haraka Warranty Certificates ─────────────────────────────────────────
+
+export type WarrantyCertSourceType = 'order' | 'pos_transaction';
+
+export interface WarrantyCertItem {
+  inventoryItemId: string;
+  inventoryItemName: string;
+  sku: string | null;
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface HarakaWarrantyCert {
+  id: string;
+  organizationId: string;
+  spaceId: string | null;
+  warrantyNumber: string;
+  sourceType: WarrantyCertSourceType;
+  orderId: string | null;
+  transactionId: string | null;
+  customerName: string;
+  customerPhone: string | null;
+  items: WarrantyCertItem[];
+  warrantyStartDate: string; // ISO date
+  warrantyEndDate: string;   // ISO date
+  notes: string | null;
+  createdAt: Date;
+  createdBy: string | null;
+  updatedAt: Date;
+  updatedBy: string | null;
+}
+
+export interface HarakaWarrantyConfig {
+  organizationId: string;
+  defaultDurationDays: number;
+  termsText: string | null;
+  termsTextAr: string | null;
+  headerText: string | null;
+  headerTextAr: string | null;
+  footerText: string | null;
+  footerTextAr: string | null;
+  showLogo: boolean;
+  showQr: boolean;
+  language: 'en' | 'ar' | 'both';
+  template: string;
+  accentColor: string;
+}
+
 // ── Haraka Card Terminal ──────────────────────────────────────────────────
 
 export type CardTerminalMode = 'display' | 'local_bridge' | 'cloud' | 'webhook';

@@ -40,3 +40,12 @@ export {
   useChargeStatus,
   useUpdateChargeStatus,
 } from './useCardTerminal';
+export {
+  useWarrantyCerts,
+  useWarrantyCert,
+  useWarrantyCertByOrder,
+  useCreateWarrantyCert,
+  useDeleteWarrantyCert,
+  useWarrantyConfig,
+  useUpdateWarrantyConfig,
+} from './useWarrantyCerts';

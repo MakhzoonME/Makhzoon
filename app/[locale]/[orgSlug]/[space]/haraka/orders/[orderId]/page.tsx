@@ -335,6 +335,7 @@ export default function OrderDetailPage() {
         onOpenChange={setWarrantyOpen}
         order={order}
         orgName={orgInfo?.name ?? params.orgSlug}
+        orgSlug={params.orgSlug}
         space={params.space}
       />
     </div>

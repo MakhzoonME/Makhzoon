@@ -114,7 +114,7 @@ export default function HarakaOverviewPage() {
     {
       key: 'status',
       header: t('col.status'),
-      render: (x) => <StatusBadge status={x.status} />,
+      render: (x) => <StatusBadge status={x.parentTransactionId ? 'credit_note' : x.status} />,
     },
     {
       key: 'createdAt',

@@ -132,11 +132,9 @@ export default function OrderDetailPage() {
               </Button>
             )}
             {/* Share with driver */}
-            {order.status !== 'new' && order.status !== 'cancelled' && (
-              <Button size="sm" variant="outline" onClick={() => setShareOpen(true)}>
-                <Share2 className="h-3.5 w-3.5 me-1" strokeWidth={1.75} /> Share
-              </Button>
-            )}
+            <Button size="sm" variant="outline" onClick={() => setShareOpen(true)}>
+              <Share2 className="h-3.5 w-3.5 me-1" strokeWidth={1.75} /> Share
+            </Button>
             {nextStatus && (
               <Button
                 size="sm"

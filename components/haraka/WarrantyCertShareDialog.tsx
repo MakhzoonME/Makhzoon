@@ -43,7 +43,7 @@ export function WarrantyCertShareDialog({
   const [previewLang, setPreviewLang] = useState<CertLang>(fixedLang);
   const lang = bothLangs ? previewLang : fixedLang;
 
-  const shareLink = cert ? `${certBaseUrl}/w/${orgSlug}/${cert.id}` : '';
+  const shareLink = cert ? `${certBaseUrl}/w/${orgSlug}/cert/${cert.id}` : '';
 
   function copyLink() {
     navigator.clipboard.writeText(shareLink).then(() => {

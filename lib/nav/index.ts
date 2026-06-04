@@ -82,6 +82,9 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
     items: [
       { href: '/haraka', label: 'Overview', labelKey: 'nav.overview',
         featureKey: 'pos', moduleColor: '#C2185B', moduleName: 'حركة' },
+      { href: '/haraka/orders', label: 'Orders', labelKey: 'nav.harakaOrders',
+        featureKey: 'pos', permissionKey: 'pos.view_orders',
+        moduleColor: '#AD1457', moduleName: 'طلبات' },
       { href: '/haraka/customers', label: 'Customers', labelKey: 'nav.customers',
         featureKey: 'pos', permissionKey: 'pos.process_sale',
         moduleColor: '#AD1457', moduleName: 'عملاء' },

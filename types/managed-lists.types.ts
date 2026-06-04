@@ -23,7 +23,11 @@ export type ListKey =
   | 'pos_session_status'
   | 'warranty_status'
   | 'warranty_target'
-  | 'maintenance_type';
+  | 'maintenance_type'
+  // Haraka Orders
+  | 'order_status'
+  | 'order_channel'
+  | 'order_payment_method';
 
 /** Where a list is administered. 'org' lists support per-org overrides;
  *  'platform' lists are global (e.g. org_industry, system enums). */
@@ -62,6 +66,10 @@ export const LIST_REGISTRY: Record<ListKey, ListMeta> = {
   warranty_status:    { key: 'warranty_status',    label: 'Warranty Statuses',   labelKey: 'managedList.warranty_status',    scope: 'platform', isSystem: true,  description: 'Computed from dates — values locked.' },
   warranty_target:    { key: 'warranty_target',    label: 'Warranty Coverage',   labelKey: 'managedList.warranty_target',    scope: 'platform', isSystem: true,  description: 'Asset vs inventory — values locked.' },
   maintenance_type:   { key: 'maintenance_type',   label: 'Maintenance Types',   labelKey: 'managedList.maintenance_type',   scope: 'platform', isSystem: true,  description: 'Has color logic — values locked.' },
+
+  order_status:         { key: 'order_status',         label: 'Order Statuses',        labelKey: 'managedList.order_status',         scope: 'org', isSystem: true,  description: 'Order lifecycle — values locked, labels/colors customizable.' },
+  order_channel:        { key: 'order_channel',        label: 'Order Channels',        labelKey: 'managedList.order_channel',        scope: 'org', isSystem: false, description: 'Source channels for orders (phone, WhatsApp, etc.). Orgs can add custom channels.' },
+  order_payment_method: { key: 'order_payment_method', label: 'Order Payment Methods', labelKey: 'managedList.order_payment_method', scope: 'org', isSystem: true,  description: 'Payment method types for orders — values locked.' },
 };
 
 export const LIST_KEYS = Object.keys(LIST_REGISTRY) as ListKey[];

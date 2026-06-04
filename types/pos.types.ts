@@ -139,3 +139,88 @@ export interface PosReceiptCounter {
   organizationId: string;
   lastReceiptNumber: number;
 }
+
+// ── Haraka Orders ─────────────────────────────────────────────────────────
+
+export type OrderChannel = 'phone' | 'whatsapp' | 'instagram' | 'facebook' | 'other' | string;
+
+export type OrderStatus =
+  | 'new'
+  | 'confirmed'
+  | 'assigned'
+  | 'in_transit'
+  | 'ready_for_pickup'
+  | 'delivered'
+  | 'picked_up'
+  | 'cancelled';
+
+export type OrderFulfillmentType = 'delivery' | 'pickup';
+
+export type OrderPaymentStatus = 'unpaid' | 'partial' | 'paid';
+
+export type OrderPaymentMethod = 'cash_on_delivery' | 'bank_transfer' | 'card' | 'other';
+
+export interface OrderDeliveryAddress {
+  street?: string | null;
+  area?: string | null;
+  city?: string | null;
+  notes?: string | null;
+}
+
+export interface OrderLineItem {
+  inventoryItemId: string;
+  inventoryItemName: string;
+  sku: string | null;
+  quantity: number;
+  unitPrice: number;
+  taxRate: number;
+  taxAmount: number;
+  discountAmount: number;
+  lineTotal: number;
+}
+
+export interface HarakaOrder {
+  id: string;
+  organizationId: string;
+  spaceId: string | null;
+  orderNumber: string;
+  channel: OrderChannel;
+  status: OrderStatus;
+  fulfillmentType: OrderFulfillmentType;
+  customerId: string | null;
+  customerName: string;
+  customerPhone: string | null;
+  deliveryAddress: OrderDeliveryAddress | null;
+  items: OrderLineItem[];
+  subtotal: number;
+  discountAmount: number;
+  taxAmount: number;
+  total: number;
+  paymentStatus: OrderPaymentStatus;
+  amountPaid: number;
+  paymentMethod: OrderPaymentMethod | null;
+  salesAgentId: string;
+  salesAgentName: string;
+  deliveryAgentId: string | null;
+  deliveryAgentMemberId: string | null;
+  deliveryAgentName: string | null;
+  notes: string | null;
+  scheduledAt: Date | null;
+  createdAt: Date;
+  createdBy: string | null;
+  updatedAt: Date;
+  updatedBy: string | null;
+}
+
+export interface HarakaDeliveryAgent {
+  id: string;
+  organizationId: string;
+  name: string;
+  phone: string | null;
+  notes: string | null;
+  isActive: boolean;
+  createdAt: Date;
+  createdBy: string | null;
+  updatedAt: Date;
+  updatedBy: string | null;
+}

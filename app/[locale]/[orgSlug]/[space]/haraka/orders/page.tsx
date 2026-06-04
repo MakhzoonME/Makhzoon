@@ -120,7 +120,7 @@ export default function OrdersListPage() {
     <div className="space-y-6">
       <PageHeader
         title="Orders"
-        subtitle="Orders received via phone, WhatsApp, and social media."
+        description="Orders received via phone, WhatsApp, and social media."
         actions={
           <Button onClick={() => router.push(`${base}/orders/new`)} style={{ background: 'var(--mod-haraka)' }}>
             <Plus className="h-4 w-4 mr-2" /> New Order

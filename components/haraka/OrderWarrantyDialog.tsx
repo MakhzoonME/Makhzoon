@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
-import { Download, FileImage, Loader2, ShieldCheck } from 'lucide-react';
+import { Copy, Check, Download, FileImage, Loader2, ShieldCheck } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter,
 } from '@/components/ui/dialog';
@@ -22,6 +22,7 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   order: HarakaOrder;
   orgName: string;
+  orgSlug: string;
   tagline?: string;
   taxNumber?: string;
   receiptConfig?: ReceiptConfig;
@@ -35,7 +36,7 @@ function addYear(d: string) {
   return dt.toISOString().slice(0, 10);
 }
 
-export function OrderWarrantyDialog({ open, onOpenChange, order, orgName, tagline, taxNumber, receiptConfig, space }: Props) {
+export function OrderWarrantyDialog({ open, onOpenChange, order, orgName, orgSlug, tagline, taxNumber, receiptConfig, space }: Props) {
   const items = order.items.filter((i: OrderLineItem) => i.inventoryItemId);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(items.map((i) => i.inventoryItemId)));
@@ -45,8 +46,9 @@ export function OrderWarrantyDialog({ open, onOpenChange, order, orgName, taglin
   const [notes,      setNotes]      = useState('');
   const [terms,      setTerms]      = useState('This warranty covers manufacturing defects only. Physical damage, misuse, or unauthorized modifications void this warranty.');
   const [step,       setStep]       = useState<'form' | 'preview'>('form');
-  const [saving,     setSaving]     = useState(false);
-  const [capturing,  setCapturing]  = useState(false);
+  const [saving,      setSaving]     = useState(false);
+  const [capturing,   setCapturing]  = useState(false);
+  const [copiedLink,  setCopiedLink] = useState(false);
   const captureRef = useRef<HTMLDivElement>(null);
 
   const selectedItems = items.filter((i) => selectedIds.has(i.inventoryItemId));
@@ -113,8 +115,28 @@ export function OrderWarrantyDialog({ open, onOpenChange, order, orgName, taglin
     } finally { setSaving(false); }
   }
 
+  function buildPublicUrl() {
+    const payload = {
+      vendor:    vendor || orgName,
+      startDate,
+      endDate,
+      notes:     notes || null,
+      terms,
+      certNumber: certNumber,
+      items:     selectedItems.map((i) => ({ name: i.inventoryItemName, quantity: i.quantity, sku: i.sku })),
+    };
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    return `${typeof window !== 'undefined' ? window.location.origin : ''}/w/${orgSlug}/${order.id}?d=${encoded}`;
+  }
+
+  async function handleCopyLink() {
+    await navigator.clipboard.writeText(buildPublicUrl());
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  }
+
   async function handleDownloadPDF() {
-    window.print();
+    window.open(`${buildPublicUrl()}&download=1`, '_blank');
   }
 
   async function handleScreenshot() {
@@ -217,10 +239,14 @@ export function OrderWarrantyDialog({ open, onOpenChange, order, orgName, taglin
                 </div>
               </div>
               <div className="flex gap-2 mt-3">
-                <Button variant="outline" onClick={handleDownloadPDF} className="gap-2 flex-1">
+                <Button variant="outline" onClick={handleDownloadPDF} className="flex-1 gap-2 justify-center">
                   <Download size={14} /> Download PDF
                 </Button>
-                <Button variant="outline" onClick={handleScreenshot} disabled={capturing} className="gap-2 flex-1">
+                <Button variant="outline" onClick={handleCopyLink} className="flex-1 gap-2 justify-center">
+                  {copiedLink ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+                  {copiedLink ? 'Copied!' : 'Copy Link'}
+                </Button>
+                <Button variant="outline" onClick={handleScreenshot} disabled={capturing} className="flex-1 gap-2 justify-center">
                   {capturing ? <Loader2 size={14} className="animate-spin" /> : <FileImage size={14} />}
                   Screenshot
                 </Button>

@@ -130,7 +130,7 @@ export function OrderDocumentDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <DialogBody className="space-y-4">
+        <DialogBody className="space-y-3">
           {/* Type toggle */}
           <div className="inline-flex rounded-lg border border-border p-0.5 bg-surface-page">
             <button
@@ -150,8 +150,9 @@ export function OrderDocumentDialog({
           </div>
 
           {/* Preview (scrollable) */}
-          <div className="overflow-auto rounded-lg border border-border bg-gray-100 max-h-[52vh]">
-            <div ref={captureRef} className="origin-top-left" style={{ transform: 'scale(0.6)', transformOrigin: 'top left', width: '166.67%' }}>
+          <div className="overflow-x-hidden overflow-y-auto rounded-lg border border-border bg-gray-50 max-h-[52vh]">
+            {/* A4 content is 210mm ≈ 794px; scale to ~79% so it fills the ~624px dialog body */}
+            <div ref={captureRef} style={{ transform: 'scale(0.79)', transformOrigin: 'top left', width: '126.6%' }}>
               <OrderDocumentPreview
                 type={type}
                 order={orderForDoc}
@@ -167,16 +168,16 @@ export function OrderDocumentDialog({
           </div>
 
           {/* Actions */}
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" onClick={handleDownloadPDF} disabled={allocateMut.isPending} className="gap-2 justify-start">
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleDownloadPDF} disabled={allocateMut.isPending} className="flex-1 gap-2 justify-center">
               {allocateMut.isPending ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
               Download PDF
             </Button>
-            <Button variant="outline" onClick={handleCopyLink} className="gap-2 justify-start">
+            <Button variant="outline" onClick={handleCopyLink} className="flex-1 gap-2 justify-center">
               {copiedLink ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
               {copiedLink ? 'Copied!' : 'Copy Link'}
             </Button>
-            <Button variant="outline" onClick={handleScreenshot} disabled={capturing} className="gap-2 justify-start">
+            <Button variant="outline" onClick={handleScreenshot} disabled={capturing} className="flex-1 gap-2 justify-center">
               {capturing ? <Loader2 size={14} className="animate-spin" /> : <FileImage size={14} />}
               Screenshot
             </Button>

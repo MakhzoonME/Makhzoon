@@ -206,6 +206,8 @@ export interface HarakaOrder {
   deliveryAgentName: string | null;
   notes: string | null;
   scheduledAt: Date | null;
+  invoiceNumber: string | null;
+  deliveryToken: string | null;
   createdAt: Date;
   createdBy: string | null;
   updatedAt: Date;

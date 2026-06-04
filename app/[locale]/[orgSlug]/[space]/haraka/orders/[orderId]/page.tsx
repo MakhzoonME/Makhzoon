@@ -2,15 +2,17 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Truck, Users, CreditCard, MapPin, CalendarClock, StickyNote } from 'lucide-react';
+import { Truck, Users, CreditCard, MapPin, CalendarClock, StickyNote, Share2, FileText, Receipt } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { OrderStatusBadge } from '@/components/haraka/OrderStatusBadge';
 import { DeliveryAgentPicker } from '@/components/haraka/DeliveryAgentPicker';
 import type { DeliveryAgentValue } from '@/components/haraka/DeliveryAgentPicker';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
-import { useOrder, useUpdateOrderStatus, useUpdateOrder, useRecordPayment } from '@/hooks/haraka';
+import { OrderShareDialog } from '@/components/haraka/OrderShareDialog';
+import { OrderPaymentsPanel } from '@/components/haraka/OrderPaymentsPanel';
+import { OrderDocumentDialog } from '@/components/haraka/OrderDocumentDialog';
+import { useOrder, useUpdateOrderStatus, useUpdateOrder } from '@/hooks/haraka';
 import { useList } from '@/hooks/lists/useList';
 import { useOrgInfo } from '@/hooks/org';
 import { toast } from '@/hooks/ui';
@@ -32,12 +34,11 @@ export default function OrderDetailPage() {
   const { data, isLoading, refetch } = useOrder(params.orderId);
   const updateStatusMut = useUpdateOrderStatus();
   const updateOrderMut  = useUpdateOrder();
-  const recordPayMut    = useRecordPayment();
   const { data: statusItems } = useList('order_status');
 
-  const [showPayForm,     setShowPayForm]     = useState(false);
-  const [payAmount,       setPayAmount]       = useState('');
-  const [payMethod,       setPayMethod]       = useState('');
+  const [shareOpen,       setShareOpen]       = useState(false);
+  const [docOpen,         setDocOpen]         = useState(false);
+  const [docType,         setDocType]         = useState<'invoice' | 'receipt'>('invoice');
   const [reassignAgent,   setReassignAgent]   = useState(false);
   const [newAgent,        setNewAgent]        = useState<DeliveryAgentValue | null>(null);
 
@@ -81,19 +82,6 @@ export default function OrderDetailPage() {
     }
   }
 
-  async function submitPayment() {
-    const amount = parseFloat(payAmount);
-    if (isNaN(amount) || amount < 0) { toast.error('Enter a valid amount.'); return; }
-    try {
-      await recordPayMut.mutateAsync({ id: order!.id, body: { amountPaid: amount, paymentMethod: payMethod || null } });
-      toast.success('Payment recorded.');
-      setShowPayForm(false);
-      refetch();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to record payment');
-    }
-  }
-
   async function submitAgentReassign() {
     try {
       await updateOrderMut.mutateAsync({
@@ -112,11 +100,6 @@ export default function OrderDetailPage() {
     }
   }
 
-  const payColor =
-    order.paymentStatus === 'paid'    ? '#22c55e'
-    : order.paymentStatus === 'partial' ? '#f97316'
-    : '#9ca3af';
-
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <PageHeader
@@ -128,9 +111,27 @@ export default function OrderDetailPage() {
           { label: order.orderNumber },
         ]}
         actions={
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {/* Invoice / Receipt */}
+            {order.paymentStatus !== 'paid' && (
+              <Button size="sm" variant="outline" onClick={() => { setDocType('invoice'); setDocOpen(true); }}>
+                <FileText className="h-3.5 w-3.5 me-1" strokeWidth={1.75} /> Invoice
+              </Button>
+            )}
+            {order.paymentStatus === 'paid' && (
+              <Button size="sm" variant="outline" onClick={() => { setDocType('receipt'); setDocOpen(true); }}>
+                <Receipt className="h-3.5 w-3.5 me-1" strokeWidth={1.75} /> Receipt
+              </Button>
+            )}
+            {/* Share with driver */}
+            {order.status !== 'new' && order.status !== 'cancelled' && (
+              <Button size="sm" variant="outline" onClick={() => setShareOpen(true)}>
+                <Share2 className="h-3.5 w-3.5 me-1" strokeWidth={1.75} /> Share
+              </Button>
+            )}
             {nextStatus && (
               <Button
+                size="sm"
                 onClick={advanceStatus}
                 disabled={updateStatusMut.isPending}
                 style={{ background: 'var(--mod-haraka)' }}
@@ -139,8 +140,8 @@ export default function OrderDetailPage() {
               </Button>
             )}
             {order.status !== 'cancelled' && order.status !== 'delivered' && order.status !== 'picked_up' && (
-              <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50" onClick={cancelOrder}>
-                Cancel order
+              <Button size="sm" variant="outline" className="text-red-500 border-red-200 hover:bg-red-50" onClick={cancelOrder}>
+                Cancel
               </Button>
             )}
           </div>
@@ -287,62 +288,8 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      {/* ── Payment ─────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-border bg-surface-page p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">Payment</div>
-          {order.status !== 'cancelled' && (
-            <button
-              type="button"
-              className="text-xs text-primary-600 hover:underline"
-              onClick={() => { setShowPayForm((s) => !s); setPayAmount(String(order.total - order.amountPaid)); }}
-            >
-              {showPayForm ? 'Cancel' : 'Record payment'}
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <CreditCard className="h-4 w-4 text-gray-300" />
-          <div>
-            <span className="text-sm font-medium capitalize" style={{ color: payColor }}>
-              {order.paymentStatus}
-            </span>
-            {order.amountPaid > 0 && (
-              <span className="text-sm text-gray-400 ml-2">
-                {formatCurrency(order.amountPaid, currency)} paid
-                {order.paymentMethod && ` · ${order.paymentMethod.replace('_', ' ')}`}
-              </span>
-            )}
-          </div>
-        </div>
-        {showPayForm && (
-          <div className="flex items-end gap-3 pt-1">
-            <div className="space-y-1.5 flex-1">
-              <div className="text-xs text-gray-500">Amount paid</div>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={payAmount}
-                onChange={(e) => setPayAmount(e.target.value)}
-                className="font-mono"
-              />
-            </div>
-            <div className="space-y-1.5 flex-1">
-              <div className="text-xs text-gray-500">Method</div>
-              <ConfigSelect
-                listKey="order_payment_method"
-                value={payMethod}
-                onValueChange={setPayMethod}
-                placeholder="Select…"
-              />
-            </div>
-            <Button onClick={submitPayment} disabled={recordPayMut.isPending} style={{ background: 'var(--mod-haraka)' }}>
-              {recordPayMut.isPending ? 'Saving…' : 'Save'}
-            </Button>
-          </div>
-        )}
-      </div>
+      {/* ── Payment (split payments panel) ──────────────────────── */}
+      <OrderPaymentsPanel order={order} currency={currency} onUpdated={refetch} />
 
       {/* ── Notes ───────────────────────────────────────────────── */}
       {order.notes && (
@@ -359,6 +306,24 @@ export default function OrderDetailPage() {
         Channel: <span className="capitalize">{order.channel}</span> ·
         {order.fulfillmentType === 'delivery' ? ' Delivery' : ' Pickup'}
       </div>
+
+      {/* ── Dialogs ─────────────────────────────────────────────── */}
+      <OrderShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        order={order}
+        orgSlug={params.orgSlug}
+        currency={currency}
+      />
+      <OrderDocumentDialog
+        open={docOpen}
+        onOpenChange={setDocOpen}
+        order={order}
+        orgSlug={params.orgSlug}
+        orgName={orgInfo?.name ?? params.orgSlug}
+        currency={currency}
+        defaultType={docType}
+      />
     </div>
   );
 }

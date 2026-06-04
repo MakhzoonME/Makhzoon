@@ -19,8 +19,12 @@ export {
   useUpdateOrder,
   useUpdateOrderStatus,
   useRecordPayment,
+  useOrderPayments,
+  useAddOrderPayment,
+  useRemoveOrderPayment,
+  useAllocateInvoiceNumber,
 } from './useOrders';
-export type { UseOrdersParams } from './useOrders';
+export type { UseOrdersParams, OrderPaymentEntry } from './useOrders';
 export {
   useDeliveryAgents,
   useCreateDeliveryAgent,

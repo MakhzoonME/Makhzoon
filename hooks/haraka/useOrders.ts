@@ -5,6 +5,15 @@ import { useParams } from 'next/navigation';
 import type { HarakaOrder, OrderStatus } from '@/types';
 import type { CreateOrderPayload, UpdateOrderPayload, RecordPaymentPayload } from '@/lib/modules/haraka/orders/schemas';
 
+export interface OrderPaymentEntry {
+  id: string;
+  amount: number;
+  paymentMethod: string | null;
+  note: string | null;
+  paidAt: string;
+  createdAt: string;
+}
+
 const LIST_KEY = ['haraka', 'orders'] as const;
 
 function spaceHeaders(space?: string): HeadersInit {
@@ -145,6 +154,76 @@ export function useRecordPayment() {
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: LIST_KEY });
       qc.invalidateQueries({ queryKey: ['haraka', 'orders', vars.id] });
+    },
+  });
+}
+
+export function useOrderPayments(orderId: string | undefined) {
+  return useQuery<{ payments: OrderPaymentEntry[] }>({
+    queryKey: ['haraka', 'order-payments', orderId],
+    enabled: !!orderId,
+    queryFn: async () => {
+      const res = await fetch(`/api/haraka/orders/${orderId}/payments`);
+      if (!res.ok) throw new Error('Failed to fetch payments');
+      return res.json();
+    },
+    staleTime: 10_000,
+  });
+}
+
+export function useAddOrderPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { orderId: string; amount: number; paymentMethod?: string | null; note?: string | null }) => {
+      const res = await fetch(`/api/haraka/orders/${vars.orderId}/payments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: vars.amount, paymentMethod: vars.paymentMethod, note: vars.note }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(typeof err.error === 'string' ? err.error : 'Failed to add payment');
+      }
+      return res.json();
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['haraka', 'order-payments', vars.orderId] });
+      qc.invalidateQueries({ queryKey: ['haraka', 'orders'] });
+    },
+  });
+}
+
+export function useRemoveOrderPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { orderId: string; paymentId: string }) => {
+      const res = await fetch(`/api/haraka/orders/${vars.orderId}/payments/${vars.paymentId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(typeof err.error === 'string' ? err.error : 'Failed to remove payment');
+      }
+      return res.json();
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['haraka', 'order-payments', vars.orderId] });
+      qc.invalidateQueries({ queryKey: ['haraka', 'orders'] });
+    },
+  });
+}
+
+export function useAllocateInvoiceNumber() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderId: string) => {
+      const res = await fetch(`/api/haraka/orders/${orderId}/invoice`, { method: 'POST' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(typeof err.error === 'string' ? err.error : 'Failed to allocate invoice number');
+      }
+      return res.json() as Promise<{ invoiceNumber: string }>;
+    },
+    onSuccess: (_, orderId) => {
+      qc.invalidateQueries({ queryKey: ['haraka', 'orders', undefined, orderId] });
     },
   });
 }

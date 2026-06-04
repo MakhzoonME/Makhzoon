@@ -82,9 +82,10 @@ export async function loadOrderDocument(
 
   if (!orderRes.data || orderRes.error) return null;
 
-  // haraka_orders is not in the Supabase generated types — cast explicitly
-  const raw = orderRes.data as Row;
-  const saved = ((configRes.data as Row | null)?.order_document_config ?? {}) as Partial<OrderDocumentConfig>;
+  // haraka_orders is not in the Supabase generated types — double-cast via unknown
+  const raw = orderRes.data as unknown as Row;
+  const configData = configRes.data as unknown as Row | null;
+  const saved = (configData?.order_document_config ?? {}) as Partial<OrderDocumentConfig>;
   const rc = receiptCtx ?? {
     orgId: org.id,
     orgName: org.name,

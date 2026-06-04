@@ -10,6 +10,7 @@ export async function GET() {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!ADMIN_ROLES.has(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
 
     const { data } = await supabaseAdmin
       .from('organization_configs')
@@ -29,6 +30,9 @@ export async function PATCH(req: NextRequest) {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!ADMIN_ROLES.has(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!user.organizationId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
+
+    const orgId = user.organizationId;
 
     const body = await req.json();
     if (typeof body !== 'object' || body === null) {
@@ -38,13 +42,13 @@ export async function PATCH(req: NextRequest) {
     const { error } = await supabaseAdmin
       .from('organization_configs')
       .upsert(
-        { organization_id: user.organizationId, order_document_config: body, updated_by: user.uid },
+        { organization_id: orgId, order_document_config: body, updated_by: user.uid },
         { onConflict: 'organization_id' },
       );
 
     if (error) throw error;
     queueAuditLog({
-      organizationId: user.organizationId,
+      organizationId: orgId,
       userId: user.uid,
       role: user.role,
       action: 'ORDER_DOCUMENT_CONFIG_UPDATED',

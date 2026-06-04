@@ -1,6 +1,17 @@
 import { z } from 'zod'
 import type { OrderStatus } from '@/types'
 
+// datetime-local inputs produce "YYYY-MM-DDTHH:mm" (no seconds, no tz).
+// Zod's .datetime() requires a full ISO string — coerce before validating.
+function coerceLocalDatetime(v: unknown): unknown {
+  if (!v || typeof v !== 'string') return v;
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) {
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? v : d.toISOString();
+  }
+  return v;
+}
+
 const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   new:              ['confirmed', 'cancelled'],
   confirmed:        ['assigned', 'cancelled'],
@@ -47,7 +58,7 @@ export const createOrderSchema = z.object({
   deliveryAgentMemberId: z.string().nullable().optional(),
   deliveryAgentName:     z.string().max(120).nullable().optional(),
   paymentMethod:         z.string().max(60).nullable().optional(),
-  scheduledAt:           z.string().datetime().nullable().optional(),
+  scheduledAt:           z.preprocess(coerceLocalDatetime, z.string().datetime().nullable().optional()),
   notes:                 z.string().trim().max(2000).nullable().optional(),
 })
 
@@ -57,7 +68,7 @@ export const updateOrderSchema = z.object({
   deliveryAgentId:       z.string().uuid().nullable().optional(),
   deliveryAgentMemberId: z.string().nullable().optional(),
   deliveryAgentName:     z.string().max(120).nullable().optional(),
-  scheduledAt:           z.string().datetime().nullable().optional(),
+  scheduledAt:           z.preprocess(coerceLocalDatetime, z.string().datetime().nullable().optional()),
   channel:               z.string().min(1).max(60).optional(),
 })
 

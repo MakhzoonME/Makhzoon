@@ -220,7 +220,7 @@ export default function ReceiptSettingsPage() {
 
       <div className="flex gap-8 items-start">
         {/* ── Left: configuration ── */}
-        <div className="flex-1 min-w-0 space-y-5">
+        <div className="w-72 shrink-0 space-y-5">
 
           {/* Template */}
           <Card>
@@ -347,7 +347,7 @@ export default function ReceiptSettingsPage() {
         </div>
 
         {/* ── Right: preview + share (sticky) ── */}
-        <div className="w-80 flex-shrink-0 space-y-4 sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto">
+        <div className="flex-1 min-w-0 space-y-4 sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto">
           {bothLangs && (
             <div className="flex items-center justify-center gap-2">
               <span className="text-[11px] text-gray-400">Preview:</span>
@@ -372,19 +372,15 @@ export default function ReceiptSettingsPage() {
             className="rounded-xl overflow-hidden border border-border p-5"
             style={{ background: 'repeating-linear-gradient(45deg,#f4f4f4,#f4f4f4 6px,#fafafa 6px,#fafafa 12px)' }}
           >
-            <div style={!isThermal ? { width: 280, overflow: 'hidden' } : undefined}>
-              <div style={!isThermal ? { transform: 'scale(0.875)', transformOrigin: 'top left', width: 320 } : undefined}>
-                <ReceiptPreview
-                  orgName={previewConfig.orgName || orgInfo?.name || ''}
-                  orgNameAr={previewConfig.orgNameAr}
-                  taxNumber={saved?.taxNumber ?? ''}
-                  tagline={saved?.tagline ?? ''}
-                  taglineAr={saved?.taglineAr ?? ''}
-                  lang={effPreviewLang}
-                  config={previewConfig}
-                />
-              </div>
-            </div>
+            <ReceiptPreview
+              orgName={previewConfig.orgName || orgInfo?.name || ''}
+              orgNameAr={previewConfig.orgNameAr}
+              taxNumber={saved?.taxNumber ?? ''}
+              tagline={saved?.tagline ?? ''}
+              taglineAr={saved?.taglineAr ?? ''}
+              lang={effPreviewLang}
+              config={previewConfig}
+            />
           </div>
 
           {/* Deliver card */}

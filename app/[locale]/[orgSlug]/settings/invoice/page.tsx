@@ -129,7 +129,7 @@ export default function InvoiceSettingsPage() {
 
       <div className="flex gap-8 items-start">
         {/* ── Left: configuration ── */}
-        <div className="flex-1 min-w-0 space-y-5">
+        <div className="w-72 shrink-0 space-y-5">
 
           {/* Invoice title */}
           <Card>
@@ -195,26 +195,24 @@ export default function InvoiceSettingsPage() {
         </div>
 
         {/* ── Right: live preview (sticky) ── */}
-        <div className="w-80 flex-shrink-0 sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto space-y-3">
+        <div className="flex-1 min-w-0 sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto space-y-3">
           <p className="text-[11px] text-gray-400 text-center">Preview</p>
           <div
-            className="rounded-xl overflow-hidden border border-border p-3"
+            className="rounded-xl border border-border p-3"
             style={{ background: 'repeating-linear-gradient(45deg,#f4f4f4,#f4f4f4 6px,#fafafa 6px,#fafafa 12px)' }}
           >
-            <div style={{ width: 280, overflow: 'hidden' }}>
-              <div style={{ transform: 'scale(0.405)', transformOrigin: 'top left', width: 692 }}>
-                <OrderDocumentPreview
-                  type="invoice"
-                  order={MOCK_ORDER}
-                  payments={MOCK_PAYMENTS}
-                  orgName={receiptConfig.orgName || orgInfo?.name || 'Your Business'}
-                  tagline={receiptSaved?.tagline ?? ''}
-                  taxNumber={receiptSaved?.taxNumber ?? ''}
-                  receiptConfig={receiptConfig}
-                  docConfig={config}
-                  currency="JOD"
-                />
-              </div>
+            <div style={{ zoom: 0.75 }}>
+              <OrderDocumentPreview
+                type="invoice"
+                order={MOCK_ORDER}
+                payments={MOCK_PAYMENTS}
+                orgName={receiptConfig.orgName || orgInfo?.name || 'Your Business'}
+                tagline={receiptSaved?.tagline ?? ''}
+                taxNumber={receiptSaved?.taxNumber ?? ''}
+                receiptConfig={receiptConfig}
+                docConfig={config}
+                currency="JOD"
+              />
             </div>
           </div>
         </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, UserPlus, X, User } from 'lucide-react';
+import { Search, UserPlus, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -141,19 +141,22 @@ function CustomerPickerDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{mode === 'new' ? 'New customer' : 'Attach customer'}</DialogTitle>
+          {mode === 'search' && (
+            <p className="text-sm text-gray-500 mt-0.5">
+              Search your customer list or create a new one.
+            </p>
+          )}
         </DialogHeader>
 
         {mode === 'search' ? (
           <>
             <DialogBody className="space-y-3">
               <div className="relative">
-                <span className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                  <Search size={14} />
-                </span>
+                <Search size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <Input
                   autoFocus
-                  className="ps-8"
-                  placeholder="Search by name, phone, email, tax #"
+                  className="ps-9"
+                  placeholder="Name, phone, email, or tax number"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />

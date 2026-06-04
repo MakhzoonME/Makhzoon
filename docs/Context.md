@@ -2,591 +2,536 @@
 
 ## 1. Project Overview
 
-**Makhzoon** (مخزون) is a **Business OS for Arab organizations** — a multi-tenant SaaS platform built to replace spreadsheets across five core business domains: assets, inventory, sales/POS, finance, and workspace configuration.
+**Makhzoon** (مخزون) is a **Business OS for Arab organizations** — a multi-tenant SaaS platform built to replace spreadsheets across core business domains: assets, inventory, sales/POS, orders, finance, and workspace configuration.
 
 **Vision / Positioning:** "أدير عملك في مكان واحد. بدون جداول بيانات." (Run your business in one place. No spreadsheets.)
 
 **Target Users:**
 - Small to medium-sized organizations across multiple industries (Technology, Healthcare, Finance, Retail, Manufacturing, Education, Government, Non-Profit)
-- Org owners and admins (manage users, subscriptions, configurations)
-- Staff members (create requests, view assets, track inventory)
-- Makhzoon support team (manage subscriptions, troubleshoot issues)
-- Superadmin (manage all organizations, team, backend logs, configurations)
-
-**Key Value Propositions:**
-- Centralized asset register with full audit trail
-- Inventory tracking with reorder thresholds and stock movements
-- Warranty expiry alerts and management
-- Request workflow (new asset, retire, extend warranty requests)
-- Detailed usage and cost reports
-- In-app support ticketing
-- Granular role-based access control (RBAC) with custom permissions per user
+- Org owners and admins — manage users, subscriptions, configurations
+- Staff members — create requests, view assets, track inventory, take orders
+- Makhzoon support team — manage subscriptions, troubleshoot issues
+- Superadmin — manage all organizations, team, backend logs, configurations
 
 ---
 
-## 2. The Five Modules (Module Identity System)
+## 2. The Modules (Module Identity System)
 
-Makhzoon is organized around five named modules, each with a distinct Arabic name, English brand name, and brand color. These identities are applied consistently across nav, marketing, and UI.
+Makhzoon is organized around named modules, each with a distinct Arabic name, English brand name, and brand color applied consistently across nav, marketing, and UI.
 
 | Module | Arabic | English | Color | Domain |
 |--------|--------|---------|-------|--------|
 | أصول | Usool | Assets | `#00695C` (deep teal) | Asset management |
-| رصيد | Raseed | Inventory | `#E65100` (deep orange) | Inventory management |
-| حركة | Haraka | POS/Sales | `#6A1B9A` (deep purple) | Point of sale |
-| مال | Maal | Finance | `#1B5E20` (deep green) | Finance & reporting |
-| بنّا | Banna | Workspace | `#1565C0` (deep blue) | Workspace builder |
+| رصيد | Raseed | Inventory | `#E65100` (deep orange) | Inventory + purchasing |
+| حركة | Haraka | Sales / POS | `#C2185B` (deep pink) | Point of sale + orders |
+| مال | Maal | Finance | `#1B5E20` (deep green) | Finance & reporting *(future)* |
+| بنّا | Banna | Workspace | `#1565C0` (deep blue) | Workspace builder *(future)* |
 
-**Brand colors:**
-- Brand Navy: `#0F3F5C`
-- Brand Teal: `#1A7A9A`
+**Brand colors:** Navy `#0F3F5C` · Teal `#1A7A9A`
 
 **How module identity is applied:**
-- `lib/nav/index.ts` — Each nav item has `moduleColor?: string` and `moduleName?: string`
+- `lib/nav/index.ts` — Each nav entry carries `moduleColor` and `moduleName`
 - `components/layout/AppSidebar.tsx` — Active nav items use module color for pill background, left border, and icon; Arabic module name shown as subtitle in EN locale
-- `components/layout/BottomNav.tsx` — Module-aware icons on mobile bottom nav
-- `locales/messages.ts` — `nav.assets = 'Usool'` / `nav.inventory = 'Raseed'` (EN); `nav.assets = 'أصول'` / `nav.inventory = 'رصيد'` (AR)
-- Marketing pages — Module cards use module color for border, background tint, and name display
+- `locales/messages.ts` — `nav.assets = 'Usool'` / `'أصول'`, `nav.inventory = 'Raseed'` / `'رصيد'`, etc.
 
 ---
 
-## 3. Core Features
+## 3. Core Feature Modules
 
-### 3.1 Asset Management (أصول / Usool)
+### 3.1 Asset Management — Usool (أصول)
 - **Asset Register:** Create, edit, retire, and import assets (CSV)
 - **Asset Fields:** Name, category, status, serial number, purchase date/cost, assigned person, location, notes
-- **Asset Statuses:** Active, Retired (configurable via org config)
-- **Asset Actions:** QR code generation and download, checkout/check-in, maintenance records, asset notes
-- **Asset Import:** Bulk import via CSV file with validation
+- **Asset Statuses:** Configurable via managed lists (`asset_status`)
+- **Asset Actions:** QR code generation, checkout/check-in, maintenance records, asset notes
+- **Asset Import:** Bulk import via CSV with validation
 - **Asset Export:** Export all assets to CSV with audit metadata
-- **Routes:** `/[orgSlug]/assets/`, `/[orgSlug]/assets/[assetId]/`, `/[orgSlug]/assets/new`, `/[orgSlug]/assets/import`
+- **Routes:** `/{locale}/{orgSlug}/{space}/usool/`
 
-### 3.2 Inventory Management (رصيد / Raseed)
+### 3.2 Inventory Management — Raseed (رصيد)
 - **Inventory Items:** Track stocked items with quantity, reorder thresholds, unit cost
-- **Stock Status:** Automatic calculation of stock health (ok, low, out)
-- **Units:** Each, box, pack, pair, roll, liter, kg, meter, sheet, set
-- **Transactions:** Record in/out/adjustment movements with reason and performer tracking
-- **Inventory Audits:** Physical count audits (draft → in_progress → completed)
-- **Routes:** `/[orgSlug]/inventory/`, `/[orgSlug]/inventory/[itemId]/`, `/[orgSlug]/inventory/audits/`
+- **Stock Status:** `ok` / `low` / `out` — computed from `quantityOnHand` vs `minimumThreshold`
+- **Ledger Transactions:** In / Out / Adjustment movements with reason + performer tracking
+- **POS Integration:** Items flagged `posEnabled` appear in the Haraka register; `posPrice` is used for sales
+- **Purchases (POs):** Draft → Received or Cancelled; receiving triggers stock-in transactions
+- **Stock Audits:** Physical count audits (draft → in_progress → completed) with variance reconciliation
+- **Routes:** `/{locale}/{orgSlug}/{space}/raseed/`
 
-### 3.3 Warranty Management
-- **Warranty Tracking:** Track vendor warranties per asset with start/end dates
-- **Alerts:** Progressive alerts at 30, 14, and 7 days before expiration
-- **Cron Endpoint:** `/api/cron/warranty-alerts` (triggered externally, secured by `CRON_SECRET`)
-- **Routes:** `/[orgSlug]/warranties/`, `/[orgSlug]/warranties/[warrantyId]/edit`
+### 3.3 Point of Sale — Haraka (حركة)
 
-### 3.4 Requests Workflow
-- **Request Types:** REFILL, RETIRE, BUY_NEW, EXTEND_WARRANTY
-- **Status Flow:** PENDING → APPROVED or REJECTED
-- **Routes:** `/[orgSlug]/requests/`
+#### POS Register
+- Session-based selling: cashier opens a session (with opening float), rings up sales, closes session
+- Product search by name, SKU, or barcode scan (keyboard input)
+- Category filter tabs on the product grid
+- Multi-payment: Cash, Card, Other — split payments supported
+- Per-line discounts (gated by `pos.apply_discount`)
+- Cart hold / recall — cashier can pause and resume multiple carts
+- Refunds (full or partial line) and voids
+- **Receipt printing:** Thermal printer via WebUSB (ESC/POS), 58mm and 80mm paper; Arabic via canvas raster
+- **Receipt sharing:** Share link (public `/r/[orgSlug]/[txId]`), WhatsApp, email, download PNG/PDF
+- **Receipt configuration:** Templates (thermal-58, thermal-80, a4-modern, a4-invoice), language (EN/AR/both), logo, footer, accent color
+- **Fawtara (Jordan ISTD e-invoicing):** Optional; when enabled, every transaction is submitted to Fawtara async and a QR payload is printed on the receipt
 
-### 3.5 Reports & Analytics
-- **Dashboard Metrics:** Quick stats on assets, inventory, warranties, requests
-- **Reports Module:** Utilization, depreciation, and cost analytics
-- **Routes:** `/[orgSlug]/dashboard/`, `/[orgSlug]/reports/`
+#### Orders System *(fully implemented)*
+For businesses that receive orders via phone, WhatsApp, Instagram, Facebook, or other channels:
+- Order lifecycle: `new → confirmed → assigned → in_transit → delivered` (delivery) or `ready_for_pickup → picked_up` (pickup)
+- Items sourced from Raseed catalog; payment tracked separately (unpaid / partial / paid)
+- Sales agent (org member) + delivery agent (org member or external `haraka_delivery_agents`)
+- Channel and payment method configurable via managed lists (`order_channel`, `order_payment_method`)
+- Order statuses relabelable/recolorable by org via managed lists (`order_status`)
+- Sequential order numbers: `ORD-000001`
+- **Routes:** `/{locale}/{orgSlug}/{space}/haraka/orders/`
 
-### 3.6 Support Ticketing
-- **In-App Tickets:** Staff create tickets; Makhzoon support team replies
-- **Ticket Lifecycle:** OPEN → IN_PROGRESS → RESOLVED → CLOSED
-- **Priority Levels:** LOW, MEDIUM, HIGH, URGENT
-- **Routes:** `/[orgSlug]/support/`, `/superadmin/support/`
+#### POS Customers
+- Customer database (name, phone, email, tax number, notes)
+- Attach customers to sales for receipt personalization and Fawtara B2B submissions
+- Bulk delete / move / duplicate across spaces
 
-### 3.7 Audit Logs
-- **Immutable Audit Trail:** Every create/update/delete action is logged
-- **Logged Actions:** ORGANIZATION_CREATED, ASSET_CREATED, WARRANTY_UPDATED, REQUEST_APPROVED, etc.
-- **Permissions:** Admins view and export org logs; superadmin views global audit logs
-- **Routes:** `/[orgSlug]/audit-logs/`, `/superadmin/audit-logs/`
+#### POS Reports
+- Sales by day, top items, by cashier, by payment method, by session
+- Date range picker, CSV export
 
-### 3.8 User Management & Permissions
-- **Org Roles:** org_owner, admin, staff
-- **Default Permissions:** Admins get full access; staff get view + limited create
-- **Granular Permissions:** Per-user customization per module operation
-- **Routes:** `/[orgSlug]/users/`, `/superadmin/organizations/[orgId]/configuration`
+### 3.4 Warranty Management — Usool (أصول)
+- **Vendor warranty tracking:** Per-asset, with start/end dates and reminder toggle
+- **Expiry status:** Active / Expiring Soon / Expired (computed daily)
+- **Cron alerts:** Cloudflare Worker cron emails all org admins at 30, 14, and 7 days before expiry
+- **Routes:** `/{locale}/{orgSlug}/{space}/warranties/`
 
-### 3.9 Organization Configuration
-- **Customizable:** Asset statuses, locations, categories
-- **Subscription & Packages:** Feature flags per org based on active subscription
-- **Routes:** `/superadmin/organizations/[orgId]/configuration`
+### 3.5 Requests Workflow
+- **Types:** REFILL, RETIRE, BUY_NEW, EXTEND_WARRANTY
+- **Status flow:** PENDING → APPROVED or REJECTED
+- **Routes:** `/{locale}/{orgSlug}/{space}/requests/`
 
-### 3.10 Subscriptions & Packages
-- **Packages:** Bundles of features with asset/user/warranty/request limits
-- **Feature System:** 11 features (dashboard, assets, inventory, warranties, requests, reports, support, audit logs, maintenance, checkouts, asset notes)
-- **Subscription Status:** ACTIVE, EXPIRED, SUSPENDED
-- **Routes:** `/[orgSlug]/subscription/`, `/superadmin/organizations/[orgId]/subscription`
+### 3.6 Reports & Analytics
+- **Dashboard:** Quick stats across assets, inventory, warranties, requests
+- **Reports:** Utilization, depreciation, cost analytics
+- **Routes:** `/{locale}/{orgSlug}/{space}/dashboard/` · `/{locale}/{orgSlug}/{space}/reports/`
 
-### 3.11 Authentication & Session Management
-- **Auth Methods:** Email/password, username/password, invite-based onboarding
-- **Session Management:** Supabase Auth + httpOnly session cookies via `@supabase/ssr` + server-side cache (5-10s TTL)
-- **SSO:** OIDC/PKCE implemented but disabled (not production-ready)
-- **Routes:** `/login`, `/invites/[token]`, `/api/auth/session`, `/api/auth/me`
+### 3.7 Support Ticketing
+- **In-app tickets:** Staff creates; Makhzoon team replies
+- **Thread-based:** Messages per ticket
+- **Lifecycle:** OPEN → IN_PROGRESS → RESOLVED → CLOSED
+- **Priority:** LOW / MEDIUM / HIGH / URGENT
+- **Routes:** `/{locale}/{orgSlug}/{space}/support/` · `/superadmin/support/`
 
-### 3.12 Superadmin Portal
-- **Dashboard:** System overview, organization count, activity
-- **Organization Management:** Create org, edit, view subscription, view audit logs, configuration
-- **Backend Logs:** System-level logs for debugging
-- **Team Management:** Manage Makhzoon platform staff
-- **Transfer Mode:** Superadmins can "transfer into" an org to troubleshoot
-- **Collapsible Sidebar:** Animated sidebar (240px ↔ 68px) with Framer Motion, persistent via Zustand; RTL-aware toggle
-- **Mobile Support:** Sidebar hidden on mobile; mobile header bar with hamburger opens sidebar as overlay with backdrop
-- **Routes:** `/superadmin/`, `/superadmin/organizations/`, `/superadmin/team/`, `/superadmin/backend-logs/`
-
-### 3.13 Marketing Pages (Public)
-All under `/(marketing)` route group. Fully responsive on all screen sizes.
-
-- `/home` — Landing page (Business OS positioning, 5 module cards, role workflow, stats, testimonials)
-- `/product` — Feature overview (pillar sections alternating text/preview, integrations grid)
-- `/pricing` — Package and pricing details
-- `/customers` — Customer testimonials
-- `/security` — Security and compliance info
-- `/about` — Company info
-- `/contact` — Contact form
-
-**Copy Tone:** Arabic-first, direct, no-nonsense. Headlines in Arabic. Body in English or bilingual. Module names in `Arabic · English` format.
-
-### 3.14 Coming Soon Page
-- **Route:** `/[locale]/` (root path per locale)
-- **Shows:** Business OS pitch, early-access signup form (name + email), login link
-- **Domain routing:** When accessed from `makhzoon.me` or `www.makhzoon.me`, the entire site routes to this page (all other paths redirect to `/[locale]`)
-- **Future:** Will be replaced by full marketing website once `/home` and related pages are deployed to `makhzoon.me`
-
-### 3.15 Localization
-- **Languages:** Arabic (RTL), English (LTR)
-- **Translation Hook:** `useT()` provides `t()`, `lang`, `dir` (rtl/ltr)
-- **Locale Files:** `/locales/messages.ts` with EN + AR translation keys
-- **Store:** `locale.store.ts` manages current language/locale
-
-### 3.16 Dark Mode & Theme
-- **Theme Support:** Light and dark modes
-- **Store:** `theme.store.ts` manages preference
-- **CSS Variables:** `--primary-*`, `--gray-*`, `--surface-*` etc. applied per theme
-- **Dropdown Menus:** `components/ui/dropdown-menu.tsx` has full dark mode variants (`dark:text-gray-200`, `dark:focus:bg-gray-700/60`, etc.)
-
-### 3.17 Network Status Indicator
-- **Component:** `components/shared/NetworkStatusIndicator.tsx`
-- **States:** `online` (green), `slow` (amber), `offline` (red)
-- **Icons:** Custom SVG wifi icons — full bars (online), lower bars faded (slow), bars with X (offline)
-- **Detection:**
-  - Polls `/api/ping` every 15 seconds
-  - Listens to `window` online/offline events
-  - Listens to Network Information API `change` events
-  - Uses `_isSlowConnection()` (checks `effectiveType === '2g' || 'slow-2g'`) on each successful ping to decide between `online` and `slow`
-  - Requires 3 consecutive ping failures before showing `offline`
-- **Toast notifications:** Shows on state change (error for offline, info for slow, success for back online)
-- **Placement:**
-  - Superadmin: `components/layout/SuperAdminBanner.tsx` (top-right of dark banner, `variant="ghost-dark"`)
-  - Org portal: `components/layout/AppHeader.tsx` (right actions row, `variant="ghost-light"`)
+### 3.8 Audit Logs
+- Immutable trail for every create/update/delete action across all modules
+- 41+ logged action types
+- Space scope / org scope toggle
+- CSV export
+- **Routes:** `/{locale}/{orgSlug}/audit-logs/` · `/superadmin/audit-logs/`
 
 ---
 
-## 4. Business Model
+## 4. Settings & Configuration
 
-### Monetization Strategy
-- **SaaS Subscription Model:** Organizations pay for subscriptions based on features and usage limits
-- **Feature Tiering:** Packages define which features are available
-- **Usage Limits:** Each package specifies max assets, max users, max warranties, max requests
-- **Payment Methods:** Card, bank transfer, manual, other
-- **Subscription Lifecycle:** Start date, end date, status (ACTIVE, EXPIRED, SUSPENDED)
+**Route base:** `/{locale}/{orgSlug}/settings/` (org-scoped, no space in URL)
 
-### User Tiers
-- **Superadmin:** Full platform access, manage all orgs, billing, team, backend
-- **Makhzoon Admin/Support:** View backend logs, manage support tickets, team management
-- **Org Owner:** Full access to org features, manage team, subscription, settings
-- **Org Admin:** Most features except org settings and subscription management
-- **Org Staff:** Limited access determined by custom permissions
+| Page | Route | Permission |
+|------|-------|-----------|
+| Organization Info | `/settings/organization` | `settings.orgInfo` |
+| Spaces | `/settings/spaces` | Admin only |
+| Managed Lists | `/settings/lists` | `settings.orgInfo` |
+| Tax Rates | `/settings/tax-rates` | `settings.taxRates` |
+| Jo-Fotara (e-invoicing) | `/settings/jo-fotara` | `settings.fawtara` |
+| Receipt | `/settings/receipt` | `settings.fawtara` |
+| Users | `/users` | `settings.users` |
+| Subscription | `/subscription` | `settings.subscription` |
 
-### Access Control Model
-- **Organization Isolation:** Strict multi-tenant isolation
-- **RBAC:** Org roles (owner, admin, staff) + Makhzoon platform roles (superadmin, admin, support)
-- **Custom Permissions:** Beyond role defaults, each user's access per module can be customized
-- **Feature Gating:** Feature availability tied to subscription, enforced in UI and API
+### Managed Lists
+Config-driven dropdown system. Two tiers:
+- **Platform defaults** — seeded by superadmin; apply to all orgs
+- **Org overrides/additions** — org admin can add, rename, recolor, reorder
+
+**Free lists** (org can add/remove): `asset_status`, `asset_category`, `location`, `inventory_unit`, `inventory_category`, `inventory_storage_location`, `vendor`, `org_industry`, **`order_channel`**
+
+**System lists** (values locked; label/color/order editable): `request_status`, `request_type`, `purchase_status`, `inventory_movement`, `pos_txn_status`, `pos_session_status`, `warranty_status`, `warranty_target`, `maintenance_type`, **`order_status`**, **`order_payment_method`**
+
+The three **bold** list keys are new additions from the Haraka Orders system.
 
 ---
 
-## 5. Technical Architecture
+## 5. Spaces Architecture
+
+Every org has one or more Spaces (branches, warehouses, departments). All module data is scoped to `space_id`. Org-wide data (users, billing, settings, managed lists, tax rates) is not space-scoped.
+
+- Default space auto-created on signup; cannot be deleted
+- Users gain access via `space_members` rows (org_owner with `all_spaces = true` is implicitly in all)
+- **SpaceSwitcher** in sidebar — navigates to same module path under new space slug
+- **Move / Duplicate to Space** bulk actions across assets, inventory, requests, POS customers
+
+---
+
+## 6. Users & Permissions
+
+### Roles
+| Role | Description |
+|------|-------------|
+| `org_owner` | Full access; cannot be deactivated by others |
+| `admin` | Full access by default; manages users and settings |
+| `staff` | View-only on most modules; submits requests and support tickets |
+
+### Permission System
+- Default permissions defined in `types/user-permissions.types.ts`
+- Per-user custom overrides per module+operation
+- UI: Permissions Editor with module groups (Core, Commerce, Workflow, Admin)
+- Server: `lib/permissions/require.ts` — `requirePermission()` called in every API route
+
+### Permission Keys (full list)
+
+| Module | Operations |
+|--------|-----------|
+| `assets` | view, create, update, delete, import, checkout, maintenance, notes, bulk_delete, bulk_move, bulk_duplicate |
+| `inventory` | view, create, update, delete, transactions, audits, bulk_delete, bulk_move, bulk_duplicate |
+| `purchases` | view, create, update, delete, receive |
+| `warranties` | view, create, update, delete |
+| `requests` | view, create, approve, bulk_move, bulk_duplicate |
+| `reports` | view |
+| `support` | view, create |
+| `auditLogs` | view |
+| `leads` | view |
+| `pos` | open_session, close_session, process_sale, apply_discount, issue_refund, void_transaction, view_reports, fawtara_submit, customers_bulk_delete, customers_bulk_move, customers_bulk_duplicate, **view_orders**, **manage_orders**, **assign_delivery**, **manage_delivery_agents** |
+| `settings` | view, orgInfo, subscription, users, taxRates, fawtara |
+
+The four **bold** `pos.*` keys are new additions from the Haraka Orders system.
+
+---
+
+## 7. Technical Architecture
 
 ### Stack
-- **Frontend:** Next.js 16 (App Router, Turbopack), React 18, TypeScript
-- **Backend:** Next.js 16 API Routes
-- **Database:** Supabase (Postgres + RLS)
-- **Auth:** Supabase Auth + `@supabase/ssr` for server-side session management
-- **State Management:** Zustand (global state), TanStack Query v5 (server state)
-- **Email:** Resend (invites, alerts, notifications)
+- **Frontend:** Next.js 15 (App Router, Turbopack), React 18, TypeScript
+- **Backend:** Next.js API Routes (serverless, Cloudflare Workers)
+- **Database:** Supabase (Postgres + Row-Level Security)
+- **Auth:** Supabase Auth + `@supabase/ssr` (httpOnly session cookies)
+- **State:** Zustand (global/UI state) + TanStack Query v5 (server state)
+- **Email:** Resend (transactional: invites, alerts, notifications)
 - **Error Tracking:** Sentry
-- **Styling:** Tailwind CSS + Radix UI components + Framer Motion (animations)
-- **Validation:** Zod (runtime schema validation)
-- **Localization:** Custom i18n system with `useT()` hook
+- **Analytics:** ContentSquare, LogRocket
+- **Styling:** Tailwind CSS + Radix UI primitives + Framer Motion
+- **Validation:** Zod
+- **i18n:** Custom `useT()` hook, `locales/messages.ts` (EN + AR)
+- **Thermal printing:** ESC/POS via WebUSB (`lib/modules/haraka/printing/`)
+- **Image capture:** `html-to-image` (receipt/cert download as PNG/JPG)
 
 ### Deployment
-- **Hosting:** Cloudflare Workers via `@opennextjs/cloudflare` (`npm run cf:deploy`)
-- **Database:** Supabase (Postgres, hosted)
-- **Domain:** `app.makhzoon.me` — production; `dev.makhzoon.me` — DevBranch; `stage.makhzoon.me` — STGBranch; `makhzoon.me` / `www.makhzoon.me` — marketing
-- **Crons:** Moved from Vercel/Amplify to `workers/cron/` (Cloudflare Workers)
+- **Hosting:** Cloudflare Workers via `@opennextjs/cloudflare`
+- **Database:** Supabase (hosted Postgres)
+- **Environments:**
+  - Production: `app.makhzoon.me` (main branch)
+  - Staging: `stg.makhzoon.me` (STGBranch)
+  - Dev: `dev.makhzoon.me` (DevBranch)
+  - Marketing: `makhzoon.me` / `www.makhzoon.me`
+- **Crons:** Cloudflare Workers cron in `workers/cron/` — triggers Next.js API endpoints on schedule
 
-### Routing Architecture
-- **Multi-Tenant Path-Based Routing:**
-  - Marketing root: `/{locale}` — coming soon / landing page (at `makhzoon.me`)
-  - Public marketing: `/{locale}/home`, `/product`, `/pricing`, `/customers`, `/security`, `/about`, `/contact`
+### Routing
+- **Multi-tenant, path-based:**
+  - Marketing: `/{locale}/home`, `/product`, `/pricing`, etc.
   - Auth: `/{locale}/login`, `/{locale}/invites/[token]`
-  - Org Portal: `/{locale}/[orgSlug]/[spaceSlug]/{module}` — e.g., `/en/acme-corp/main/usool/list`
+  - Org Portal: `/{locale}/[orgSlug]/[spaceSlug]/{module}`
   - Superadmin: `/{locale}/superadmin/*`
-- **Middleware (`middleware.ts`):** Domain routing, locale detection, and soft session gate.
-- **Spaces:** Every org has one or more Spaces. All module data is scoped to a space. The active space is tracked in `store/active-space.store.ts` and shown in the sidebar via `components/layout/SpaceSwitcher.tsx`.
-- **API Routes:** `/api/*` — all require session verification via Supabase server client
+  - Public receipt: `/r/[orgSlug]/[receiptId]`
+  - Public receipt preview: `/r/[orgSlug]/preview`
+- **`proxy.ts`** (project root) — ALL routing: domain routing (`makhzoon.me` → coming soon), session enforcement, locale detection/redirect. **Never create `middleware.ts` alongside this file** — it causes a build conflict.
+
+### Event & Audit Infrastructure
+- **Event bus** (`lib/platform/events/event-bus.ts`) — in-memory, emits 27+ typed events across 9 service modules (pos, inventory, assets, fawtara, etc.). No subscribers yet — used as a hook point for future consumers.
+- **Audit log** (`lib/platform/audit/`) — `auditLog.queue()` fire-and-forget; writes to `audit_logs` table. Called in every service mutation.
+- **Email** (`lib/email/resend.ts`) — `sendEmail({ to, subject, html, text })` via Resend. Gracefully skips if unconfigured.
 
 ### Session & Auth Flow
-1. User signs in (email/password) via Supabase Auth
-2. `@supabase/ssr` manages session cookies automatically (httpOnly, secure, sameSite: strict)
-3. Server-side session cache (5-10s TTL) via `lib/supabase/session-cache.ts`
-4. Logout: `supabase.auth.signOut()` + hard redirect to `/login`
-5. Session revocation tracked in `lib/supabase/session-revocation.ts`
-
-### Sidebar Architecture
-Both portals use animated collapsible sidebars with Framer Motion:
-
-**Org portal (`components/layout/AppSidebar.tsx`):**
-- Widths: 240px (expanded) / 68px (collapsed)
-- `hidden md:flex` — desktop only; mobile uses `BottomNav`
-- State: `useUiStore().sidebarCollapsed`
-- Module-aware active states (color per module)
-
-**Superadmin portal (`app/[locale]/superadmin/layout.tsx`):**
-- Widths: 240px (expanded) / 68px (collapsed)
-- Desktop: animated `motion.aside` with collapse toggle button
-- Mobile: hidden by default; hamburger in mobile header opens as full-width overlay with backdrop
-- State: `useUiStore().superAdminSidebarCollapsed`; mobile state: local `mobileNavOpen` + `isMobile` (resize listener)
-- `isMobile` check prevents `marginLeft` from being applied to main content on mobile
-
-### Permission Caching
-- **Session Cache:** 5-10 second TTL for decoded Supabase sessions (`lib/supabase/session-cache.ts`)
-- **Permission Cache:** 10 second TTL keyed by user UID
-- **Invalidation:** `invalidateCachedSession(token)` on logout
+1. Sign in via Supabase Auth (email/password)
+2. `@supabase/ssr` manages httpOnly session cookies
+3. Server-side session cache: 5–10s TTL (`lib/supabase/session-cache.ts`)
+4. Permission cache: 10s TTL keyed by user UID
+5. Logout: `supabase.auth.signOut()` + hard redirect
+6. Superadmin transfer mode: `transferOrgId` cookie → org portal with Transfer Mode banner
 
 ---
 
-## 6. Data Models
+## 8. Data Models (Key Tables)
 
-The database is **Supabase Postgres** with Row-Level Security. Schema lives in `supabase/migrations/` and `supabase/combined.sql`. Key tables:
+All tables use Supabase Postgres with Row-Level Security. Schema in `supabase/migrations/` (0001–0017).
 
-- **organizations** — tenants; `id`, `slug` (URL segment), `name`, `contact_email`, `category`
-- **spaces** — sub-units of an org; `id`, `organization_id`, `slug`, `name`; all module records carry `space_id`
-- **users** — org members; `id` (Supabase Auth UID), `organization_id`, `space_id`, `role` (`org_owner | admin | staff`), `status`
-- **user_permissions** — per-user, per-module, per-space custom permission overrides
-- **superadmin_users** — platform staff; `role` (`super_admin | makhzoon_admin | makhzoon_support`)
-- **assets** — asset register; `id`, `space_id`, `name`, `category`, `status`, `serial_number`, `purchase_date`, `purchase_cost`, `assigned_to`, `location`
-- **asset_checkouts** — checkout/check-in log
-- **asset_notes** — free-form notes per asset
-- **maintenance_records** — service/repair/inspection events
-- **warranties** — per-asset warranties; `vendor`, `start_date`, `end_date`, `reminder`
-- **inventory_items** — stocked items; `space_id`, `quantity_on_hand`, `minimum_threshold`, `unit_cost`, `stock_status` (computed: ok/low/out)
-- **inventory_transactions** — in/out/adjustment movements
-- **inventory_audits** + **inventory_audit_items** — physical count audits
-- **pos_sessions** — Haraka register sessions
-- **pos_transactions** — POS sales
-- **customers** — Haraka customer records
-- **requests** — staff requests; `type` (REFILL | RETIRE | BUY_NEW | EXTEND_WARRANTY), `status` (PENDING | APPROVED | REJECTED)
-- **support_tickets** + **ticket_messages** — in-app support thread
-- **subscriptions** — `organization_id`, `package_id`, `features` (JSONB), `status` (ACTIVE | EXPIRED | SUSPENDED)
-- **audit_logs** — immutable mutation trail; `organization_id`, `space_id`, `user_id`, `action`, `module`, `record_id`, `old_value`, `new_value`
-- **managed_lists** — configurable dropdown data (categories, locations, etc.) per org
-- **invites** — one-time invitation tokens
-- **backend_logs** — system-level logs for superadmin debugging
-- **payment_logs** — subscription payment tracking
-
----
-
-## 7. User Flows
-
-### 7.1 Login Flow
-1. Visit `/login` → enter email/password
-2. Supabase Auth signs in; `@supabase/ssr` sets session cookies automatically
-3. Redirect: superadmin roles → `/superadmin/dashboard`; org users → `/{orgSlug}/{spaceSlug}/dashboard`
-
-### 7.2 Invite Acceptance Flow
-1. User receives invite email with unique token: `/invites/[token]`
-2. Page fetches invite info, shows inviter name, role, org
-3. User sets password → POST `/api/invites/[token]/accept`
-4. Backend creates account, auto-signs in, redirects to `/{orgSlug}/dashboard`
-
-### 7.3 Asset Management CRUD
-1. All asset routes are space-scoped: `GET /api/assets?spaceId=...`, `POST /api/assets`, `PATCH /api/assets/[id]`, `DELETE /api/assets/[id]`
-2. Every mutation logs to `audit_logs` with old/new values via `lib/audit/`
-
-### 7.4 Superadmin Transfer Mode
-1. Superadmin logs in → navigates to org → clicks "Transfer"
-2. Sets `transferOrgId` cookie; superadmin sees org portal with Transfer Mode banner (`components/layout/TransferModeBanner.tsx`)
-3. Exit → clears cookie → returns to `/superadmin`
-
-### 7.5 Warranty Alert Cron
-1. Cloudflare Worker cron in `workers/cron/` triggers the endpoint
-2. GET `/api/cron/warranty-alerts` with `Authorization: Bearer {CRON_SECRET}`
-3. Queries warranties expiring within 30 days, emails org admins via Resend, logs `WARRANTY_ALERT_SENT`
+| Table | Description |
+|-------|-------------|
+| `organizations` | Tenants — `id`, `slug`, `name`, `contact_email` |
+| `spaces` | Sub-units of org — `id`, `organization_id`, `slug`, `name`, `is_default` |
+| `space_members` | User ↔ space membership |
+| `users` | Org members — `id` (Supabase UID), `role`, `status`, `permissions` (jsonb) |
+| `superadmin_users` | Platform staff — `role` (super_admin / makhzoon_admin / makhzoon_support) |
+| `invites` | One-time invite tokens |
+| `subscriptions` | `organization_id`, `package_id`, `features` (jsonb), `status` |
+| `assets` | Asset register — name, category, status, serial_number, purchase_date/cost, location |
+| `asset_checkouts` | Checkout/check-in log |
+| `asset_notes` | Free-form notes per asset |
+| `maintenance_records` | Service/repair/inspection events per asset |
+| `warranties` | Vendor warranties — asset_id or inventory_item_id, vendor, start/end dates |
+| `inventory_items` | Stocked items — quantity_on_hand, minimum_threshold, stock_status, posEnabled, posPrice |
+| `inventory_transactions` | In/out/adjustment ledger |
+| `inventory_audits` + `inventory_audit_items` | Physical count audits |
+| `purchases` + `purchase_lines` | Purchase orders |
+| `pos_sessions` | Haraka register sessions — cashier, opening/closing float, discrepancy |
+| `pos_transactions` | POS sales — items (jsonb), payments (jsonb), fawtara (jsonb) |
+| `pos_receipt_counters` | Sequential receipt number per org/space |
+| `pos_customers` | Haraka customer records |
+| `haraka_orders` | Orders system — channel, status, fulfillment_type, delivery_address (jsonb), items (jsonb), payment_status |
+| `haraka_delivery_agents` | External delivery people (not necessarily org members) |
+| `haraka_order_counters` | Sequential order number per org/space |
+| `requests` | Staff requests — type, status (PENDING/APPROVED/REJECTED) |
+| `support_tickets` + `ticket_messages` | In-app support thread |
+| `audit_logs` | Immutable mutation trail — organization_id, user_id, action, module, old_value, new_value |
+| `platform_list_items` | Superadmin-owned managed list catalog + defaults |
+| `org_list_items` | Per-org managed list additions and overrides |
+| `tax_rates` | Org-level tax rates — shared across Raseed, Purchases, and Haraka |
+| `fawtara_counters` | Sequential Fawtara invoice number per org |
+| `backend_logs` | System-level logs for superadmin debugging |
+| `payment_logs` | Subscription payment tracking |
 
 ---
 
-## 8. Services Layer
+## 9. Cron Jobs
 
-Architecture: `API Route → Service Layer (auth + permissions + business logic) → Database Layer`
+| Endpoint | Schedule | What it does |
+|----------|----------|-------------|
+| `/api/cron/warranty-alerts` | Mondays 9 AM UTC | Emails org admins about warranties expiring within 30 days |
+| `/api/cron/subscription-status` | Daily 1 AM UTC | Auto-expires overdue subscriptions |
 
-**Base service (`lib/services/base.service.ts`):** `requireAuth()`, `requirePermission()`, `requireActiveSubscription()`, `requireFeature()`, `getUserContext()`, `errorResponse()`, `successResponse()`
-
-**Domain services:** `lib/services/` — handle permission checks, subscription validation, DB ops (via Supabase), and audit logging. All data access goes through `lib/db/` (typed Supabase query helpers).
+Auth: `Authorization: Bearer {CRON_SECRET}` header.
 
 ---
 
-## 9. Current State (as of May 2026)
+## 10. Superadmin Portal
 
-### Implemented & Stable
-- ✅ **Supabase** as sole data layer (Postgres + RLS) — Firebase fully removed
-- ✅ **Cloudflare Workers** deployment via `@opennextjs/cloudflare` — Amplify/Vercel removed
-- ✅ **Spaces** — per-org multi-space architecture; all module data scoped to `space_id`; SpaceSwitcher in sidebar; Duplicate-to-space, bulk move/duplicate, Members panel
-- ✅ Multi-tenant organization management (path-based routing: `/{locale}/{orgSlug}/{spaceSlug}/{module}`)
-- ✅ Email/password + invite-based auth (Supabase Auth)
-- ✅ Org RBAC + custom per-user, per-module, per-space permissions
-- ✅ **Bulk actions** — floating `BulkActionsBar` per module; bulk delete, bulk move/duplicate; per-module bulk permissions
-- ✅ Asset register — Usool: create, edit, retire, QR, import/export CSV, asset audits
-- ✅ Inventory management — Raseed: items, purchases, stock audits, reconcile
-- ✅ **Haraka (POS)** — register, sessions, customers, transactions, reports
-- ✅ Warranty tracking + cron-triggered email alerts (Cloudflare Workers cron)
-- ✅ Request workflow (submit, approve/reject)
-- ✅ Asset checkout/check-in, maintenance records, asset notes
+**Route:** `/{locale}/superadmin/`
+
+- Dashboard: system overview
+- Organizations: create, view, edit subscriptions, view users, transfer into org (Transfer Mode)
+- Lists: platform managed list catalog (seeds platform defaults; orgs see these via their settings)
+- Packages: subscription package management
+- Team: manage Makhzoon platform staff
+- Backend Logs: system-level debugging
+- Support: view all org support tickets
+- Audit Logs: cross-org audit trail
+- Sync: environment sync tooling
+
+**Superadmin Transfer Mode:** Superadmin sets `transferOrgId` cookie → sees org portal with Transfer Mode banner → exit clears cookie.
+
+**Sidebar:** Animated collapsible (240px ↔ 68px). Mobile: hidden by default; hamburger opens full-width overlay drawer.
+
+---
+
+## 11. Planned Features (Not Yet Implemented)
+
+### Warranty Certificates — Haraka (حركة)
+Customer-facing warranty documents generated from an order or POS transaction. Printable, shareable (WhatsApp/email/link), downloadable (PDF/PNG). Same infrastructure as receipts (template system, WebUSB printing, share dialog). Configurable via Settings → Warranty Certificate.
+- Plan: `docs/HARAKA_WARRANTY_CERTS_TODO.md`
+- Feature doc: `docs/modules-and-features/20-haraka-warranty-certs.md`
+
+### Notifications System — Platform-wide
+Unified in-app (bell icon + panel) and email notifications for all business events: new orders, low stock, refunds, request approvals, Fawtara failures, warranty expiry, etc. Per-user opt-in preferences + org-level defaults with role targeting. 19 event types across all modules.
+- Plan: `docs/NOTIFICATIONS_TODO.md`
+- Feature doc: `docs/modules-and-features/21-notifications.md`
+
+---
+
+## 12. Current State (June 2026)
+
+### Fully Implemented & Stable
+- ✅ Supabase as sole data layer (Postgres + RLS) — Firebase fully removed
+- ✅ Cloudflare Workers deployment — Amplify/Vercel removed
+- ✅ Multi-tenant, multi-space architecture (`/{locale}/{orgSlug}/{spaceSlug}/{module}`)
+- ✅ Supabase Auth — email/password + invite-based onboarding
+- ✅ Granular RBAC + custom per-user, per-module permissions
+- ✅ **Usool (Assets):** register, QR, checkout, maintenance, notes, CSV import/export, audits
+- ✅ **Raseed (Inventory):** items, transactions, purchases, stock audits, POS integration
+- ✅ **Haraka POS:** sessions, register, multi-payment, discounts, refunds, voids, receipt printing/sharing, customers, reports, Fawtara integration
+- ✅ **Haraka Orders:** full order management system (channel, lifecycle, delivery agents, payment tracking)
+- ✅ **Managed Lists:** platform + org tier, bilingual, free/system lists — appears in org Settings and Superadmin Lists
+- ✅ Warranties — tracking + cron email alerts
+- ✅ Requests workflow
 - ✅ Support ticketing (thread-based)
-- ✅ Immutable audit logs (searchable, space/org scope toggle, CSV export)
+- ✅ Audit logs (immutable, searchable, CSV export, space/org scope toggle)
 - ✅ Dashboard + reports
-- ✅ Org configuration (managed lists: statuses, locations, categories)
-- ✅ Subscription + package management + payment logs
-- ✅ Dark mode, Arabic/English with RTL, Sentry, server-side session caching
-- ✅ Module identity system (Usool/Raseed/Haraka/Maal/Banna with brand colors)
-- ✅ Full-app responsiveness; marketing website; coming soon page
+- ✅ Bulk actions across all modules (delete, move to space, duplicate to space)
+- ✅ Subscription + package management + feature gating
+- ✅ Spaces: create, manage members, switch, move/duplicate data
+- ✅ Settings: org info, spaces, managed lists, tax rates, Jo-Fotara, receipt config
+- ✅ Superadmin portal with full org management and Transfer Mode
+- ✅ Dark mode, Arabic/English with RTL, Sentry, ContentSquare, LogRocket
+- ✅ Module identity system (brand colors + Arabic names in sidebar)
+- ✅ Fully responsive (mobile + tablet + desktop); marketing website; coming soon page
+- ✅ Cron jobs (warranty alerts, subscription expiry) via Cloudflare Workers
 
-### Recent Changes (May 2026 session)
+### Disabled / Not Production-Ready
+- ⏳ **SSO/OIDC:** Implemented but disabled (`/api/auth/sso/*` returns disabled errors)
+- ⏳ **Cloudflare Turnstile:** Bot verification implemented but disabled
+- ❌ **SMS:** Stub exists (`lib/sms/provider.ts`) but not integrated
 
-**Module Identity:**
-- `lib/nav/index.ts` — `NavItemConfig` extended with `moduleColor` and `moduleName`
-- `components/layout/AppSidebar.tsx` — Active states use module color for pill/border/icon; Arabic name subtitle shown in EN locale
-- `locales/messages.ts` — nav.assets = 'Usool' / 'أصول', nav.inventory = 'Raseed' / 'رصيد'
-- `components/layout/BottomNav.tsx` — Module-aware labels
-
-**Coming soon page (`app/[locale]/page.tsx`):**
-- Business OS copy in both EN and AR
-- Vertical padding (`py-16`) above logo and below login link
-
-**Marketing website copy + components:**
-- `app/[locale]/(marketing)/home/page.tsx` — MODULES array (5 modules with colors), Business OS headlines, role workflow section, stats, testimonials
-- `app/[locale]/(marketing)/product/page.tsx` — Module kickers with colors, Business OS headline
-- `components/marketing/Footer.tsx` — Business OS tagline and copyright
-- `components/marketing/CTABand.tsx` — Responsive padding + `clamp()` headline + `flex-wrap` CTAs
-
-**Dark mode fix:**
-- `components/ui/dropdown-menu.tsx` — All `DropdownMenuItem`, `DropdownMenuLabel`, `DropdownMenuShortcut`, `DropdownMenuSubTrigger`, `DropdownMenuContent` have full `dark:` variants
-
-**Login redirect loop fix:**
-- `app/[locale]/(auth)/login/page.tsx` — `/api/auth/me` fetch uses `{ cache: 'no-store' }` to bypass browser caching
-
-**Superadmin sidebar collapsible:**
-- `store/ui.store.ts` — Added `superAdminSidebarCollapsed` state and `toggleSuperAdminSidebar`
-- `app/[locale]/superadmin/layout.tsx` — `motion.aside` animates width (240px ↔ 68px), ChevronLeft/Right toggle, animated labels, user info collapses, mobile overlay drawer
-
-**Network status indicator:**
-- `components/shared/NetworkStatusIndicator.tsx` — Fixed: `_isSlowConnection()` now called in `checkConnectivity()` so slow state is actually detected
-- `components/layout/AppHeader.tsx` — `NetworkStatusIndicator` added to org portal header right-actions
-
-**Full-app responsiveness:**
-- `components/marketing/Header.tsx` — Mobile hamburger menu + collapsible nav dropdown (closes on route change)
-- `app/[locale]/(marketing)/home/page.tsx` — All grids responsive: modules (1→2→5 cols), roles/testimonials (1→3 cols), stats (2→4 cols), logo cloud (3→6 cols); section padding responsive
-- `components/marketing/Footer.tsx` — Grid responsive (2→3→5 cols); padding responsive
-- `app/[locale]/(marketing)/product/page.tsx` — Pillars single column on mobile; integrations (2→4 cols); padding responsive
-- `app/[locale]/superadmin/layout.tsx` — isMobile state (resize listener); sidebar hidden on mobile; marginLeft only applied on md+; mobile header bar with hamburger opens sidebar as overlay with backdrop
-
-**Domain routing:**
-- `proxy.ts` (project root) — Already contained `MARKETING_HOSTS` logic. No new file needed; the `makhzoon.me` → coming soon redirect was already implemented here. `middleware.ts` must NOT exist alongside `proxy.ts` — the project uses only `proxy.ts` for all routing.
-
-### Commented Out / Not Production-Ready
-- ⏳ **SSO/OIDC:** Full flow implemented but disabled (`/api/auth/sso/*` returns disabled errors)
-- ⏳ **Cloudflare Turnstile:** Bot verification implemented but disabled on login page and session endpoint
-- ❌ **SMS Provider:** Stub exists (`lib/sms/provider.ts`) but not integrated
-
-### Known Issues
-1. No rate limiting on public endpoints (`/api/early-access`, `/api/organizations/self-serve`, `/api/invites/*`)
-2. Email delivery failures not tracked separately from successful sends
-3. No pagination on large asset/inventory lists (could implement cursor-based)
-4. Audit logs not indexed by field (every filtered query is a collection scan)
+### Known Gaps
+- No in-app notifications (planned — see `docs/NOTIFICATIONS_TODO.md`)
+- No customer-facing warranty certificates (planned — see `docs/HARAKA_WARRANTY_CERTS_TODO.md`)
+- No pagination on large asset/inventory lists (full list fetched, client-side slice)
+- Audit logs not indexed by field (filter queries scan the whole collection)
+- Email delivery failures not tracked separately
+- No password complexity enforcement
+- No test suite (Vitest configured, zero test files written)
 
 ---
 
-## 10. Code Organization
+## 13. Code Organization
 
-### Directory Structure
 ```
-/app                              — Next.js App Router routes
+/app                                    — Next.js App Router
   /[locale]
-    /(auth)/login                 — Login page (email + username tabs, forgot password modal)
-    /(marketing)                  — Public marketing pages (home, product, pricing, etc.)
-    /[orgSlug]                    — Org portal routes
-    /superadmin                   — Superadmin portal
-    /invites/[token]              — Invite acceptance
-    /page.tsx                     — Coming soon page (root per locale)
-  /api                            — API route handlers
-    /auth                         — session, me, sso (disabled)
-    /assets                       — Asset CRUD
-    /inventory                    — Inventory CRUD
-    /warranties, /requests, /support, /users, /organizations, /packages
-    /cron                         — Cron job triggers
-    /ping                         — Used by NetworkStatusIndicator health check
-    /contact, /early-access       — Public form submissions
+    /(auth)/login, /signup              — Auth pages
+    /(marketing)/home, /product, ...    — Public marketing pages
+    /[orgSlug]/[space]/{module}         — Org portal (all module pages)
+    /[orgSlug]/settings/                — Org-level settings
+    /[orgSlug]/users                    — User management
+    /[orgSlug]/notifications            — Notifications list (planned)
+    /superadmin/                        — Superadmin portal
+    /invites/[token]                    — Invite acceptance
+    /page.tsx                           — Coming soon page
+  /api/                                 — API routes
+    /auth/                              — session, me, sso (disabled)
+    /assets, /inventory, /warranties, /requests, /support
+    /haraka/orders, /haraka/delivery-agents
+    /haraka/transactions, /haraka/sessions, /haraka/customers
+    /haraka/tax-rates, /haraka/reports, /haraka/fawtara-config
+    /lists/[listKey]                    — Managed list resolution (org + platform merge)
+    /spaces, /users, /organizations
+    /superadmin/lists, /superadmin/organizations, /superadmin/team
+    /cron/warranty-alerts, /cron/subscription-status
+    /ping                               — Health check for NetworkStatusIndicator
+  /r/[orgSlug]/[receiptId]              — Public receipt view
+  /r/[orgSlug]/preview                  — Receipt preview (settings page)
 
 /components
-  /layout                         — AppHeader, AppSidebar, BottomNav, SuperAdminBanner, MobileDrawer, TransferModeBanner
-  /marketing                      — MarketingHeader, MarketingFooter, CTABand, DashboardMock, FeaturePreview
-  /shared                         — NetworkStatusIndicator, ThemeToggle, LanguageToggle, CommandPalette, QueryProvider
-  /ui                             — Base UI components (button, input, dialog, dropdown-menu, tooltip, badge, etc.)
+  /layout                               — AppHeader, AppSidebar, BottomNav, SpaceSwitcher,
+                                          SuperAdminBanner, TransferModeBanner, MobileDrawer
+  /haraka                               — Cart, ProductGrid, CustomerPicker, PaymentDialog,
+                                          PrinterSettingsDialog, ReceiptShareDialog,
+                                          CustomerForm, OrderStatusBadge, DeliveryAgentPicker
+  /settings/receipt                     — ReceiptPreview, ReceiptPublicView
+  /notifications                        — NotificationBell, NotificationPanel (planned)
+  /shared                               — PageHeader, DataTable, FilterBar, StatusBadge,
+                                          StatCard, SubscriptionGate, NetworkStatusIndicator,
+                                          ConfigSelect, BulkActionsBar
+  /ui                                   — Base components (button, input, dialog, badge, etc.)
+  /marketing                            — MarketingHeader, Footer, CTABand
 
-/hooks                            — Custom hooks organized by domain
+/hooks
+  /haraka                               — useOrders, useTransactions, useSessions,
+                                          useCustomers, useDeliveryAgents, useTaxRates,
+                                          useFawtara, useReports
+  /inventory                            — useInventory, usePurchases, useStockAudits
+  /lists                                — useList (managed list resolution)
+  /spaces                               — useSpaceMembers, useSpaces
+  /org                                  — useOrgInfo
+  /notifications                        — useNotifications (planned)
+  /ui                                   — useT, useAdminGuard, useDebounce, toast
+
 /lib
-  /db                             — Firestore access layer (one file per collection)
-  /services                       — Business logic layer (base, assets, inventory)
-  /firebase                       — Client + admin SDK initialization
-  /permissions                    — hasPermission, hasModuleAccess
-  /nav                            — ORG_NAV_ENTRIES, ALL_NAV_ITEMS, NavItemConfig (with moduleColor, moduleName)
-  /email                          — Resend email templates
-  /audit                          — writeAuditLog()
-  /middleware                     — withAuth, withRole helpers
-  /validations                    — Zod schemas
-  /utils                          — cn, date, format, tenant-url, api-fetch
-  /export                         — CSV export
+  /platform
+    /tenancy                            — resolveTenant(), TenantContext type
+    /events                             — EventBus (emits 27+ events; no subscribers yet)
+    /audit                              — auditLog.queue() fire-and-forget
+    /permissions                        — hasPermission(), hasPermByKey()
+  /modules
+    /haraka
+      /orders                           — schemas, repository, service
+      /delivery-agents                  — schemas, repository, service
+      /transactions                     — repository, service
+      /sessions, /customers, /tax, /fawtara, /pricing, /printing
+    /inventory
+      /services, /purchases
+    /assets/services
+    /spaces/services
+  /email                                — resend.ts, templates.ts
+  /supabase                             — client.ts, admin.ts, auth-helpers.ts, session-cache.ts
+  /permissions                          — index.ts (hasPermission), require.ts
+  /notifications                        — catalog.ts, notification-queue.ts (planned)
+  /receipts                             — labels.ts (bilingual receipt text)
+  /nav                                  — ORG_NAV_ENTRIES, buildNavUrl, getFirstAccessiblePath
+  /utils                                — cn, date, format, tenant-url
+  /rate-limit                           — rateLimitTenant()
 
 /store
-  auth.store.ts                   — Auth user + loading state
-  theme.store.ts                  — Dark/light mode
-  locale.store.ts                 — Language/RTL
-  transfer.store.ts               — Superadmin transfer mode
-  ui.store.ts                     — sidebarCollapsed, superAdminSidebarCollapsed, mobileMenuOpen
+  auth.store.ts                         — Auth user + session state
+  theme.store.ts                        — Dark/light mode
+  locale.store.ts                       — Language + RTL
+  transfer.store.ts                     — Superadmin transfer mode
+  ui.store.ts                           — sidebarCollapsed, superAdminSidebarCollapsed
+  pos-cart.store.ts                     — Haraka POS in-progress cart
 
-/locales/messages.ts              — EN + AR translation keys (including module names and network status strings)
-/types                            — TypeScript type definitions
-proxy.ts                          — ALL routing logic: domain routing (makhzoon.me → coming soon), session enforcement, locale detection/redirect. NEVER create middleware.ts alongside this file — it causes a build conflict.
-next.config.ts                    — Turbopack, env vars, CORS headers, CSP, redirects
-tailwind.config.ts                — Tailwind CSS config
+/types
+  pos.types.ts                          — PosTransaction, PosSession, HarakaOrder,
+                                          HarakaDeliveryAgent, OrderStatus, etc.
+  user-permissions.types.ts             — UserPermissions, MODULE_PERMISSIONS_CONFIG,
+                                          DEFAULT_ADMIN/STAFF_PERMISSIONS
+  managed-lists.types.ts                — ListKey, LIST_REGISTRY, ResolvedListItem
+  inventory.types.ts, auth.types.ts, ...
+
+/supabase/migrations/                   — 0001–0017 (0017 = haraka orders system)
+/workers/cron/                          — Cloudflare Worker cron orchestrator
+/locales/messages.ts                    — All EN + AR translation keys
+proxy.ts                                — ALL routing (domain, locale, session gate)
+                                          NEVER create middleware.ts alongside this
 ```
-
-### Key Files
-- **`proxy.ts`** — ALL routing: domain routing for `makhzoon.me`, session enforcement, locale detection. Do NOT create `middleware.ts` — it conflicts with `proxy.ts` and breaks the build.
-- **`store/ui.store.ts`** — `sidebarCollapsed` + `superAdminSidebarCollapsed` — persistent sidebar states
-- **`components/shared/NetworkStatusIndicator.tsx`** — Three-state wifi icon (online/slow/offline) used in both portals
-- **`components/layout/AppHeader.tsx`** — Org portal header with NetworkStatusIndicator, ThemeToggle, LanguageToggle, user menu
-- **`components/layout/AppSidebar.tsx`** — Org portal sidebar with module-aware active states, collapse animation
-- **`app/[locale]/superadmin/layout.tsx`** — Superadmin layout: collapsible animated sidebar, mobile overlay drawer
-- **`components/marketing/Header.tsx`** — Marketing header with mobile hamburger menu
-- **`lib/nav/index.ts`** — Nav config with `moduleColor` and `moduleName` per entry
-- **`locales/messages.ts`** — All EN + AR translations including module names (Usool/Raseed etc.)
-- **`lib/firebase/auth-helpers.ts`** — `verifySessionCookie()` for API routes
-- **`lib/audit/logger.ts`** — `writeAuditLog()` called by all mutation endpoints
-- **`lib/services/base.service.ts`** — Shared service utilities (requireAuth, requirePermission, etc.)
 
 ---
 
-## 11. Environment Variables
+## 14. Environment Variables
 
-### Public Variables (NEXT_PUBLIC_*)
+### Public (`NEXT_PUBLIC_*`)
 - `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key
 - `NEXT_PUBLIC_APP_URL` — Domain for email links (`https://app.makhzoon.me`)
-- `NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY` — Disabled
+- `NEXT_PUBLIC_APP_ENV` — `dev` | `staging` | `production`
 - `NEXT_PUBLIC_SENTRY_DSN`
+- `NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY` — Disabled
 
-### Server-Only Variables (set via `wrangler secret put --env <name>`)
-- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service-role key (bypasses RLS)
+### Server-only (via `wrangler secret put`)
+- `SUPABASE_SERVICE_ROLE_KEY` — Bypasses RLS; server-side only
 - `CRON_SECRET` — Authorization for `/api/cron/*`
 - `RESEND_API_KEY`, `RESEND_FROM_EMAIL`
 - `GOOGLE_DRIVE_PRIVATE_KEY` — Google Drive service-account
-- `FAWTARA_SECRET_ENC_KEY` — ZATCA e-invoicing encryption
+- `FAWTARA_SECRET_ENC_KEY` — Jordan ISTD e-invoicing encryption key
 - `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`
-- `CLOUDFLARE_TURNSTILE_SECRET_KEY` — Disabled
+- `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` — Manual deploy (GitHub Actions minutes exhausted until July 1 2026)
 
 ---
 
-## 12. Security
+## 15. Security
 
 ### Implemented
 - ✅ httpOnly session cookies via `@supabase/ssr`
-- ✅ Session verification on every API route (Supabase server client)
-- ✅ Supabase service-role key used only server-side; anon key in browser
-- ✅ Row-Level Security (RLS) on all Supabase tables for multi-tenant isolation
-- ✅ Role + permission checks on all mutation endpoints
+- ✅ Supabase service-role key used server-side only
+- ✅ Row-Level Security on all Supabase tables
+- ✅ Role + permission checks on every mutation API route
 - ✅ Immutable audit logs
-- ✅ Sentry error tracking (no PII in logs)
-- ✅ CRON_SECRET via Authorization header only (not query param)
-- ✅ CSP headers configured in next.config.mjs
-- ✅ Rate limiting on auth and public endpoints (`lib/rate-limit.ts`)
+- ✅ Sentry (no PII in logs)
+- ✅ CRON_SECRET via Authorization header only
+- ✅ CSP headers in `next.config.ts`
+- ✅ Rate limiting on auth and tenant endpoints (`lib/rate-limit.ts`)
 - ✅ CSRF origin checking (`lib/csrf.ts`)
 
 ### Gaps
-- ⚠️ No rate limiting on public endpoints
+- ⚠️ No rate limiting on some public endpoints (`/api/early-access`, `/api/organizations/self-serve`)
 - ⚠️ Email delivery failures not tracked
-- ⚠️ SSO code disabled but present (security review needed before enabling)
+- ⚠️ SSO code present but disabled (security review needed before enabling)
 - ⚠️ Turnstile disabled (bot verification gap)
 - ⚠️ No password complexity enforcement
-- ⚠️ 5-10 second session cache window where stale tokens remain valid (acceptable trade-off)
+- ⚠️ 5–10s session cache window where stale tokens remain valid (accepted trade-off)
 
 ---
 
-## 13. Performance
+## 16. Not in Codebase
 
-### Optimizations
-- ✅ Server-side session + permission caching (5-10 second TTL)
-- ✅ React Query with staleTime + cacheTime
-- ✅ Firestore indexing by organizationId
-- ✅ Bulk Firestore get for asset name lookups in warranty alerts
-- ✅ CSV chunking for exports
-
-### Bottlenecks
-- ⚠️ No pagination on large lists (cursor-based pagination not implemented)
-- ⚠️ Audit logs not indexed (collection scans on filter queries)
-- ⚠️ Session verification hits Firestore on cache miss
-
----
-
-## 14. Animations & Motion
-
-- **Library:** Framer Motion
-- **Easing Tokens:** CSS custom properties (ease-out-expo, ease-spring, ease-in-sharp, ease-in-out-smooth)
-- **Duration Tokens:** CSS custom properties (120ms, 180ms, 250ms, 350ms, 450ms)
-- **Page Transitions:** Fade + translate on route changes
-- **Sidebar Animation:** `motion.aside` animates width (240 ↔ 68px) with `EASE_SLIDE = [0.4, 0, 0.2, 1]`; `motion.span` animates label width/opacity; both org and superadmin portals use the same pattern
-- **Button Interactions:** Hover lifts, active scales
-- **Skeleton Loading:** Gradient shimmer
-- **Preference:** `prefers-reduced-motion` reduces all animations to near-zero
-
----
-
-## 15. Responsiveness
-
-All pages are fully responsive across mobile, tablet, and desktop.
-
-### Marketing
-- **Header:** Mobile hamburger button; nav collapses to drawer; closes on route change
-- **Home:** All grids fluid — modules (1→2→5 cols), roles/testimonials (1→3 cols), stats (2→4 cols), logos (3→6 cols); section padding uses Tailwind responsive prefixes
-- **Product:** Pillar sections stack vertically on mobile; integrations grid (2→4 cols)
-- **Footer:** 2→3→5 column grid; padding responsive
-- **CTABand:** `clamp()` headline, `flex-wrap` CTAs, responsive padding
-
-### App Portal
-- **Sidebar:** `hidden md:flex` — desktop only. Mobile uses `BottomNav` at the bottom of the screen.
-- **Header:** Burger button on mobile opens `MobileDrawer`; search moves to CommandPalette
-
-### Superadmin Portal
-- **Sidebar:** `hidden md:flex` on desktop; on mobile shows as full-width overlay drawer triggered by hamburger in mobile header bar
-- **Main content:** `marginLeft/Right` only applied when `!isMobile` (checked via resize listener)
-
-### Auth / Invites
-- **Login:** Right marketing panel `hidden lg:flex`; form column fills full width on mobile
-- **Invites:** `max-w-md w-full px-4` — inherently responsive
-
----
-
-## 16. Not Found in Codebase
-
-- Test suite (Vitest configured but zero test files written)
-- GraphQL API (REST only)
-- Stripe/payment processing (payment logs tracked but no processor integrated)
-- Redis caching (in-memory session cache only)
-- Pagination (no cursor-based pagination yet)
-- OpenAPI/Swagger docs
+- No test suite (Vitest configured, zero tests written)
+- No GraphQL (REST only)
+- No Stripe/payment processor (payment logs tracked, no processor integrated)
+- No Redis (in-memory session cache only)
+- No cursor-based pagination (full list fetch, client-side slice)
+- No WebSocket or Supabase Realtime (all polling via React Query)
+- No OpenAPI/Swagger docs

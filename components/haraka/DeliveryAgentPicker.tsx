@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Search, Truck, Users } from 'lucide-react';
+import { Search, Truck, Users, ChevronDown, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import {
   Popover,
   PopoverContent,
@@ -12,6 +11,7 @@ import {
 import { useDeliveryAgents } from '@/hooks/haraka';
 import { useSpaceMembers } from '@/hooks/spaces';
 import { useParams } from 'next/navigation';
+import { cn } from '@/lib/utils/cn';
 
 export interface DeliveryAgentValue {
   type: 'member' | 'external';
@@ -66,26 +66,46 @@ export function DeliveryAgentPicker({ value, onChange, placeholder = 'Assign del
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className="w-full justify-start font-normal text-left truncate"
-        >
-          {value ? (
-            <span className="flex items-center gap-2 truncate">
-              {value.type === 'member' ? (
-                <Users className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-              ) : (
-                <Truck className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-              )}
-              <span className="truncate">{value.name}</span>
-            </span>
-          ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
+        <button
+          type="button"
+          className={cn(
+            'flex h-9 w-full items-center justify-between gap-2 rounded-md border border-border bg-surface-card px-3 text-[14px] transition-colors',
+            'hover:border-gray-300 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-500/20 focus-visible:border-primary-600',
+            value ? 'text-gray-900' : 'text-gray-400',
           )}
-        </Button>
+        >
+          <span className="flex items-center gap-2 truncate min-w-0">
+            {value ? (
+              <>
+                {value.type === 'member'
+                  ? <Users className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                  : <Truck className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                }
+                <span className="truncate text-gray-700">{value.name}</span>
+              </>
+            ) : (
+              <span>{placeholder}</span>
+            )}
+          </span>
+          <span className="flex items-center gap-1 flex-shrink-0 text-gray-400">
+            {value && (
+              <span
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onChange(null); } }}
+                onClick={(e) => { e.stopPropagation(); onChange(null); }}
+                className="hover:text-gray-700 transition-colors"
+                aria-label="Remove agent"
+              >
+                <X className="h-3 w-3" strokeWidth={1.75} />
+              </span>
+            )}
+            <ChevronDown className="h-3.5 w-3.5" strokeWidth={1.75} />
+          </span>
+        </button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0" align="start">
-        <div className="p-2 border-b">
+      <PopoverContent className="w-72 p-0 bg-surface-card border border-border shadow-lg rounded-xl" align="start">
+        <div className="p-2 border-b border-border">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-400" />
             <Input
@@ -107,7 +127,7 @@ export function DeliveryAgentPicker({ value, onChange, placeholder = 'Assign del
                 <button
                   key={m.id}
                   type="button"
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-accent rounded transition-colors"
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-surface-page rounded transition-colors"
                   onClick={() => select(m)}
                 >
                   {m.name}
@@ -124,7 +144,7 @@ export function DeliveryAgentPicker({ value, onChange, placeholder = 'Assign del
                 <button
                   key={a.id}
                   type="button"
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-accent rounded transition-colors"
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-surface-page rounded transition-colors"
                   onClick={() => select(a)}
                 >
                   {a.name}
@@ -133,18 +153,7 @@ export function DeliveryAgentPicker({ value, onChange, placeholder = 'Assign del
             </div>
           )}
           {filteredMembers.length === 0 && filteredExternals.length === 0 && (
-            <p className="px-3 py-4 text-sm text-center text-muted-foreground">No agents found.</p>
-          )}
-          {value && (
-            <div className="border-t mt-1 pt-1">
-              <button
-                type="button"
-                className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded transition-colors"
-                onClick={() => { onChange(null); setOpen(false); }}
-              >
-                Remove agent
-              </button>
-            </div>
+            <p className="px-3 py-4 text-sm text-center text-gray-400">No agents found.</p>
           )}
         </div>
       </PopoverContent>

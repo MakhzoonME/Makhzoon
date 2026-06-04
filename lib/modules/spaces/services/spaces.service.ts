@@ -203,10 +203,23 @@ export async function listMembers(
   if (!isOrgManager(tenant) && !isPlatformAdmin(tenant))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+  // spaceId may be a slug (e.g. "default") or a UUID — resolve to UUID if needed
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  let resolvedSpaceId = spaceId;
+  if (!UUID_RE.test(spaceId)) {
+    const { data: spaceRow } = await supabaseAdmin
+      .from('spaces')
+      .select('id')
+      .eq('organization_id', tenant.organizationId)
+      .eq('slug', spaceId)
+      .maybeSingle();
+    if (spaceRow) resolvedSpaceId = spaceRow.id;
+  }
+
   const { data, error } = await supabaseAdmin
     .from('space_members')
     .select('id, organization_id, space_id, user_id, created_at, created_by, users!inner(display_name, email)')
-    .eq('space_id', spaceId)
+    .eq('space_id', resolvedSpaceId)
     .eq('organization_id', tenant.organizationId);
   if (error) throw error;
 

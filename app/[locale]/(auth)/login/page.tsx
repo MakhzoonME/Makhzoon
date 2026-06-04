@@ -3,6 +3,7 @@ import { useState, useEffect, useSyncExternalStore } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
+import { analytics } from '@/lib/analytics';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -435,6 +436,7 @@ export default function LoginPage() {
         password: emailPassword,
       });
       if (error) throw error;
+      analytics.track('user_signed_in', { method: 'email' });
       await redirectFromSession();
     } catch (err: unknown) {
       setEmailError(getAuthErrorMessage(err, 'email'));
@@ -458,6 +460,7 @@ export default function LoginPage() {
         password: usernamePassword,
       });
       if (error) throw error;
+      analytics.track('user_signed_in', { method: 'username' });
       await redirectFromSession();
     } catch (err: unknown) {
       setUsernameError(getAuthErrorMessage(err, 'username'));

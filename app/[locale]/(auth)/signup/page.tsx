@@ -27,6 +27,7 @@ import { ArrowRight } from 'lucide-react';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { buildOrgPath, buildSuperAdminPath } from '@/lib/utils/tenant-url';
 import { useAuthStore } from '@/store/auth.store';
+import { analytics } from '@/lib/analytics';
 
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
@@ -142,6 +143,7 @@ export default function SignupPage() {
         body: '{}',
       });
       if (!sessionRes.ok) throw new Error('Session creation failed');
+      analytics.track('user_signed_up', { org_slug: subdomain });
       window.location.href = buildOrgPath(locale, subdomain, '/dashboard');
     } catch (err) {
       console.error('[signup] failed:', err);

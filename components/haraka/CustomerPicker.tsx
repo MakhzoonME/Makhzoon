@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, UserPlus, X, User } from 'lucide-react';
+import { Search, UserPlus, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,41 +34,48 @@ export function CustomerPicker() {
 
   if (customer) {
     return (
-      <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-surface-subtle px-2 py-1.5 text-sm">
+      <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface-inset px-3 py-2 text-sm">
         <div className="flex items-center gap-2 min-w-0">
-          <User size={14} className="text-gray-500 shrink-0" />
-          <span className="truncate">{customer.name}</span>
+          <div
+            className="h-6 w-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+            style={{ background: 'var(--mod-haraka)' }}
+          >
+            {customer.name.charAt(0).toUpperCase()}
+          </div>
+          <span className="truncate font-medium text-gray-800">{customer.name}</span>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setOpen(true)}>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            type="button"
+            className="text-xs text-gray-400 hover:text-gray-600 px-1.5 py-0.5 rounded transition-colors"
+            onClick={() => setOpen(true)}
+          >
             Change
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 w-7 p-0"
+          </button>
+          <button
+            type="button"
+            className="p-1 text-gray-300 hover:text-red-500 rounded transition-colors"
             aria-label={t('common.remove')}
             onClick={() => setCustomer(null)}
           >
-            <X size={12} />
-          </Button>
-          <CustomerPickerDialog open={open} onOpenChange={setOpen} />
+            <X size={13} />
+          </button>
         </div>
+        <CustomerPickerDialog open={open} onOpenChange={setOpen} />
       </div>
     );
   }
 
   return (
     <>
-      <Button
+      <button
         type="button"
-        variant="outline"
-        size="sm"
-        className="w-full justify-start"
+        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border text-sm text-gray-400 hover:border-gray-300 hover:text-gray-600 transition-colors"
         onClick={() => setOpen(true)}
       >
-        <UserPlus size={14} className="me-2" /> Add customer
-      </Button>
+        <UserPlus size={14} className="flex-shrink-0" />
+        <span>Add customer (optional)</span>
+      </button>
       <CustomerPickerDialog open={open} onOpenChange={setOpen} />
     </>
   );
@@ -132,71 +141,73 @@ function CustomerPickerDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{mode === 'new' ? 'New customer' : 'Attach customer'}</DialogTitle>
+          {mode === 'search' && (
+            <p className="text-sm text-gray-500 mt-0.5">
+              Search your customer list or create a new one.
+            </p>
+          )}
         </DialogHeader>
 
         {mode === 'search' ? (
-          <div className="space-y-3">
-            <div className="relative">
-              <span className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                <Search size={14} />
-              </span>
-              <Input
-                autoFocus
-                className="ps-8"
-                placeholder="Search by name, phone, email, tax #"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
+          <>
+            <DialogBody className="space-y-3">
+              <div className="relative">
+                <Search size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <Input
+                  autoFocus
+                  className="ps-9"
+                  placeholder="Name, phone, email, or tax number"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
 
-            <div className="max-h-80 overflow-y-auto rounded-md border border-border divide-y divide-border">
-              {isLoading ? (
-                <div className="p-4 text-sm text-gray-500">Loading…</div>
-              ) : (data?.items ?? []).length === 0 ? (
-                <div className="p-4 text-sm text-gray-500">
-                  {debounced
-                    ? 'No matches. Create a new customer below.'
-                    : 'No customers yet — create one to attach to this sale.'}
-                </div>
-              ) : (
-                (data?.items ?? []).map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => pick(c)}
-                    className="w-full text-start px-3 py-2 hover:bg-surface-subtle"
-                  >
-                    <div className="text-sm font-medium">{c.name}</div>
-                    <div className="text-xs text-gray-500">
-                      {[c.phone, c.email, c.taxNumber].filter(Boolean).join(' · ') || '—'}
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
+              <div className="overflow-y-auto rounded-lg border border-border divide-y divide-border" style={{ maxHeight: '18rem' }}>
+                {isLoading ? (
+                  <div className="px-4 py-5 text-sm text-gray-500 text-center">Loading…</div>
+                ) : (data?.items ?? []).length === 0 ? (
+                  <div className="px-4 py-5 text-sm text-gray-500 text-center">
+                    {debounced
+                      ? 'No matches. Create a new customer below.'
+                      : 'No customers yet — create one to attach to this sale.'}
+                  </div>
+                ) : (
+                  (data?.items ?? []).map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => pick(c)}
+                      className="w-full text-start px-4 py-3 hover:bg-surface-inset transition-colors"
+                    >
+                      <div className="text-sm font-medium text-gray-900">{c.name}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {[c.phone, c.email, c.taxNumber].filter(Boolean).join(' · ') || '—'}
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </DialogBody>
 
-            <div className="flex justify-between">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setMode('new')}
-              >
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setMode('new')}>
                 <UserPlus size={14} className="me-1" /> New customer
               </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-            </div>
-          </div>
+            </DialogFooter>
+          </>
         ) : (
-          <CustomerForm
-            initial={{ name: search.trim() || '' }}
-            submitLabel="Create & attach"
-            loading={createMut.isPending}
-            onSubmit={handleCreate}
-            onCancel={() => setMode('search')}
-          />
+          <DialogBody>
+            <CustomerForm
+              initial={{ name: search.trim() || '' }}
+              submitLabel="Create & attach"
+              loading={createMut.isPending}
+              onSubmit={handleCreate}
+              onCancel={() => setMode('search')}
+            />
+          </DialogBody>
         )}
       </DialogContent>
     </Dialog>

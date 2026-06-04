@@ -31,3 +31,5 @@ export {
   useUpdateDeliveryAgent,
   useDeleteDeliveryAgent,
 } from './useDeliveryAgents';
+export { useCashDrawerConfig, useUpdateCashDrawerConfig, useVerifyDrawerPin } from './useCashDrawer';
+export type { CashDrawerConfig } from './useCashDrawer';

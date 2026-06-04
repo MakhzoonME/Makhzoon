@@ -66,6 +66,10 @@ export interface PosPermissions {
   customers_bulk_delete: boolean;
   customers_bulk_move: boolean;
   customers_bulk_duplicate: boolean;
+  view_orders: boolean;
+  manage_orders: boolean;
+  assign_delivery: boolean;
+  manage_delivery_agents: boolean;
 }
 
 export interface PurchasePermissions {
@@ -113,7 +117,7 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   support:   { view: true,  create: true  },
   auditLogs: { view: true  },
   leads:     { view: true  },
-  pos:       { open_session: true, close_session: true, process_sale: true, apply_discount: true, issue_refund: true, void_transaction: true, view_reports: true, fawtara_submit: true, customers_bulk_delete: true, customers_bulk_move: true, customers_bulk_duplicate: true },
+  pos:       { open_session: true, close_session: true, process_sale: true, apply_discount: true, issue_refund: true, void_transaction: true, view_reports: true, fawtara_submit: true, customers_bulk_delete: true, customers_bulk_move: true, customers_bulk_duplicate: true, view_orders: true, manage_orders: true, assign_delivery: true, manage_delivery_agents: true },
   settings:  { view: true,  orgInfo: true,  subscription: true,  users: true,  taxRates: true,  fawtara: true  },
 };
 
@@ -127,7 +131,7 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   support:   { view: true,  create: true },
   auditLogs: { view: false },
   leads:     { view: true  },
-  pos:       { open_session: false, close_session: false, process_sale: false, apply_discount: false, issue_refund: false, void_transaction: false, view_reports: false, fawtara_submit: false, customers_bulk_delete: false, customers_bulk_move: false, customers_bulk_duplicate: false },
+  pos:       { open_session: false, close_session: false, process_sale: false, apply_discount: false, issue_refund: false, void_transaction: false, view_reports: false, fawtara_submit: false, customers_bulk_delete: false, customers_bulk_move: false, customers_bulk_duplicate: false, view_orders: false, manage_orders: false, assign_delivery: false, manage_delivery_agents: false },
   settings:  { view: false, orgInfo: false, subscription: false, users: false, taxRates: false, fawtara: false },
 };
 
@@ -304,6 +308,10 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'customers_bulk_delete',    label: 'Bulk delete customers',          labelKey: 'permOp.pos.customers_bulk_delete' },
       { key: 'customers_bulk_move',      label: 'Bulk move customers to space',   labelKey: 'permOp.pos.customers_bulk_move' },
       { key: 'customers_bulk_duplicate', label: 'Bulk duplicate customers',       labelKey: 'permOp.pos.customers_bulk_duplicate' },
+      { key: 'view_orders',             label: 'View Orders',                    labelKey: 'permOp.pos.view_orders' },
+      { key: 'manage_orders',           label: 'Create & Update Orders',         labelKey: 'permOp.pos.manage_orders',           requiresView: true },
+      { key: 'assign_delivery',         label: 'Assign Delivery Agent',          labelKey: 'permOp.pos.assign_delivery',         requiresView: true },
+      { key: 'manage_delivery_agents',  label: 'Manage Delivery Agents',         labelKey: 'permOp.pos.manage_delivery_agents',  requiresView: true },
     ],
   },
   {

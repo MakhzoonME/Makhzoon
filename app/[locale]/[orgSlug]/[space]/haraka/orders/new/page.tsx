@@ -22,6 +22,7 @@ import { createOrderSchema, type CreateOrderPayload } from '@/lib/modules/haraka
 import { useOrgInfo } from '@/hooks/org';
 import { formatCurrency } from '@/lib/utils/format';
 import { useDebounce } from '@/hooks/ui';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 
 interface LineItem {
   inventoryItemId: string;
@@ -423,8 +424,9 @@ export default function NewOrderPage() {
                   <FormItem>
                     <FormLabel>Scheduled at</FormLabel>
                     <FormControl>
-                      <Input type="datetime-local" {...field} value={field.value ?? ''} />
+                      <DateTimePicker value={field.value ?? ''} onChange={field.onChange} />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />

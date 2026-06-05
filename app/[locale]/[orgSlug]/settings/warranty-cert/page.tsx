@@ -176,7 +176,7 @@ export default function WarrantyCertSettingsPage() {
       </div>
 
       {/* ── Right: live preview ────────────────────────────────────── */}
-      <div className="w-[480px] shrink-0 sticky top-6 self-start">
+      <div className="flex-1 min-w-[520px] sticky top-6 self-start">
         <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Preview</p>
         <div
           className="rounded-xl overflow-hidden border border-border p-4 overflow-y-auto max-h-[80vh]"

@@ -1,3 +1,4 @@
+import 'server-only';
 import { NextResponse } from 'next/server'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import { hasPermission } from '@/lib/platform/permissions'

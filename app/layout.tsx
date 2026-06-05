@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
+import Script from 'next/script';
 import './globals.css';
 import { QueryProvider } from '@/components/shared/QueryProvider';
 import { AppToastProvider } from '@/components/shared/ToastProvider';
@@ -59,9 +60,8 @@ const themeScript = `
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html suppressHydrationWarning>
-      { }
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <Script id="theme-init" strategy="beforeInteractive">{themeScript}</Script>
       </head>
       <body className={`${capriola.variable} ${thmanyah.variable} antialiased bg-surface-page`}>
         <QueryProvider>

@@ -67,6 +67,7 @@ function EditOrgForm({
       qc.invalidateQueries({ queryKey: ['organizations'] });
       qc.invalidateQueries({ queryKey: ['all-orgs-usage'] });
       qc.invalidateQueries({ queryKey: ['org-info-self'] });
+      onCancel();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('orgs.updateFailed'));
     } finally {

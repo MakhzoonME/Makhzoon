@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { ReportsResponse } from '@/types/report.types';
 

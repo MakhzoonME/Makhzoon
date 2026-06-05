@@ -8,6 +8,7 @@
  * persist between requests, making them unreliable for notifications.
  */
 
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendEmail } from '@/lib/email/resend'
 import { getCatalogEntry } from './catalog'

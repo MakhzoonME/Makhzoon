@@ -29,7 +29,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ orgI
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'super_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!SUPERADMIN_ROLES.has(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { orgId } = await params;
     const existing = await getOrganizationById(orgId);

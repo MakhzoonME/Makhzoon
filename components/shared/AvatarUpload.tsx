@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast, useT } from '@/hooks/ui';
+import Image from 'next/image';
 import { Camera, Loader2, X } from 'lucide-react';
 
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
@@ -66,10 +67,9 @@ export function AvatarUpload({ value, onChange, fallbackText }: Props) {
   return (
     <div className="flex items-center gap-4">
       <div className="relative">
-        <div className="h-20 w-20 overflow-hidden rounded-full border border-border bg-surface-card">
+        <div className="relative h-20 w-20 overflow-hidden rounded-full border border-border bg-surface-card">
           {value ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={value} alt="Profile picture" className="h-full w-full object-cover" />
+            <Image src={value} alt="Profile picture" fill className="object-cover" sizes="80px" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-gray-500">
               {initial}

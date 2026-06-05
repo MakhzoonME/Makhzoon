@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
     let q = supabaseAdmin
       .from('notifications')
-      .select('*')
+      .select('id,organization_id,space_id,recipient_id,event_type,title,body,data,link,is_read,read_at,created_at')
       .eq('organization_id', tenant.organizationId)
       .eq('recipient_id', tenant.userId)
       .order('created_at', { ascending: false })

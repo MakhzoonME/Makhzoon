@@ -14,7 +14,7 @@ export async function GET() {
     const tenant = await resolveTenant()
     const { data, error } = await supabaseAdmin
       .from('notification_preferences')
-      .select('*')
+      .select('organization_id,user_id,event_type,in_app,email')
       .eq('organization_id', tenant.organizationId)
       .eq('user_id', tenant.userId)
     if (error) throw error

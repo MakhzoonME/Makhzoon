@@ -307,6 +307,20 @@
         "app/api/banna/custom-fields/[fieldId]/route.ts"
       ],
       "mergeWarning": "MZ-018 also modifies types/banna.types.ts — co-author responsible for merging"
+    },
+    {
+      "id": "MZ-020",
+      "title": "Performance audit — add missing database indexes",
+      "description": "Add missing organization_id indexes and foreign key indexes identified by performance audit. Creates 21 indexes total across 18 organization_id columns and 3 FK columns.",
+      "status": "done",
+      "assignee": "database",
+      "requestedBy": "user",
+      "branch": null,
+      "createdAt": "2026-06-06T00:00:00Z",
+      "completedAt": "2026-06-06T00:00:00Z",
+      "files": [
+        "supabase/migrations/0028_performance_indexes.sql"
+      ]
     }
   ]
 }

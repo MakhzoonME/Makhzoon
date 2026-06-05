@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element */
+import Image from 'next/image';
 import { receiptLabels, isRtl, pickText, type ReceiptLang } from '@/lib/receipts/labels';
 
 export type TemplateId = 'thermal-58' | 'thermal-80' | 'a4-modern' | 'a4-invoice';
@@ -133,7 +135,9 @@ export function ThermalPreview(props: PreviewProps) {
       {config.showLogo && (
         <div className="flex justify-center mb-2">
           {config.logo
-            ? <img src={config.logo} alt="logo" className="max-h-12 max-w-[80px] object-contain" />
+            ? <div className="relative" style={{ width: 80, height: 48 }}>
+                <Image src={config.logo} alt="logo" fill sizes="80px" className="object-contain" />
+              </div>
             : <div className="w-10 h-10 rounded bg-gray-100 border border-gray-200 flex items-center justify-center text-[8px] text-gray-400">LOGO</div>}
         </div>
       )}
@@ -222,7 +226,9 @@ export function A4ModernPreview(props: PreviewProps) {
         <div className="flex items-center gap-3">
           {config.showLogo && (
             config.logo
-              ? <img src={config.logo} alt="logo" className="w-10 h-10 object-contain bg-white rounded p-0.5" />
+              ? <div className="relative w-10 h-10 bg-white rounded overflow-hidden">
+                  <Image src={config.logo} alt="logo" fill className="object-contain p-0.5" sizes="40px" />
+                </div>
               : <div className="w-10 h-10 rounded bg-white/20 flex items-center justify-center text-[8px]">LOGO</div>
           )}
           <div>
@@ -325,7 +331,9 @@ export function A4InvoicePreview(props: PreviewProps) {
         <div className="flex items-center gap-2">
           {config.showLogo && (
             config.logo
-              ? <img src={config.logo} alt="logo" className="w-10 h-10 object-contain" />
+              ? <div className="relative w-10 h-10">
+                  <Image src={config.logo} alt="logo" fill className="object-contain" sizes="40px" />
+                </div>
               : <div className="w-10 h-10 border border-gray-200 bg-gray-50 rounded flex items-center justify-center text-[8px] text-gray-400">LOGO</div>
           )}
           <div>

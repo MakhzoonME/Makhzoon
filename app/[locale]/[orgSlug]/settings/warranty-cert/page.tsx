@@ -81,9 +81,9 @@ export default function WarrantyCertSettingsPage() {
   if (isLoading) return <div className="flex justify-center py-12"><div className="h-6 w-6 rounded-full border-2 border-primary-600 border-t-transparent animate-spin" /></div>;
 
   return (
-    <div className="flex gap-8 min-h-0">
-      {/* ── Left: form ─────────────────────────────────────────────── */}
-      <div className="w-[360px] flex-shrink-0 space-y-6">
+      <div className="flex gap-8 items-start">
+        {/* ── Left: form ─────────────────────────────────────────────── */}
+        <div className="flex-1 min-w-0 space-y-6">
         <div>
           <h1 className="text-lg font-semibold text-gray-900">Warranty Certificate</h1>
           <p className="text-sm text-gray-500 mt-0.5">Configure the customer-facing warranty document.</p>
@@ -176,7 +176,7 @@ export default function WarrantyCertSettingsPage() {
       </div>
 
       {/* ── Right: live preview ────────────────────────────────────── */}
-      <div className="flex-1 min-w-0">
+      <div className="w-[480px] shrink-0 sticky top-6 self-start">
         <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Preview</p>
         <div
           className="rounded-xl overflow-hidden border border-border p-4 overflow-y-auto max-h-[80vh]"

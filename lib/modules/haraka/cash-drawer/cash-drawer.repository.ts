@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 
@@ -6,7 +7,6 @@ export interface CashDrawerConfig {
   enabled: boolean
   autoOpenOnCash: boolean
   requirePin: boolean
-  /** PIN is never returned to the client — only used server-side for verify */
   drawerPort: 0 | 1
   onTimeMs: number
   offTimeMs: number
@@ -61,7 +61,9 @@ export class CashDrawerRepository {
     if (patch.drawerPort     !== undefined) update.drawer_port      = patch.drawerPort
     if (patch.onTimeMs       !== undefined) update.on_time_ms       = patch.onTimeMs
     if (patch.offTimeMs      !== undefined) update.off_time_ms      = patch.offTimeMs
-    if (pin !== undefined) update.pin = pin   // null clears the PIN
+    if (pin !== undefined) {
+      update.pin_hash = pin ? bcrypt.hashSync(pin, 10) : null  // null clears
+    }
 
     const { data, error } = await supabaseAdmin
       .from('haraka_cash_drawer_config')
@@ -72,14 +74,14 @@ export class CashDrawerRepository {
     return toConfig(data)
   }
 
-  /** Returns true when the supplied PIN matches the stored PIN. */
+  /** Returns true when the supplied PIN matches the stored bcrypt hash. */
   async verifyPin(tenant: TenantContext, pin: string): Promise<boolean> {
     const { data } = await supabaseAdmin
       .from('haraka_cash_drawer_config')
-      .select('pin')
+      .select('pin_hash')
       .eq('organization_id', tenant.organizationId)
       .maybeSingle()
-    if (!data || !data.pin) return false
-    return data.pin === pin
+    if (!data || !data.pin_hash) return false
+    return bcrypt.compareSync(pin, data.pin_hash as string)
   }
 }

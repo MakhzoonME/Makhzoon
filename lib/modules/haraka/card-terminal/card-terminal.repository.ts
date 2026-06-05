@@ -143,6 +143,16 @@ export class CardTerminalRepository {
     return toCharge(data)
   }
 
+  /** Fetch the stored API key (server-side only — never sent to client). */
+  async getApiKey(orgId: string): Promise<string | null> {
+    const { data } = await supabaseAdmin
+      .from('haraka_card_terminal_config')
+      .select('api_key_enc')
+      .eq('organization_id', orgId)
+      .maybeSingle()
+    return (data?.api_key_enc as string) ?? null
+  }
+
   /** Fetch webhook secret (server-side only — never sent to client). */
   async getWebhookSecret(orgId: string): Promise<string | null> {
     const { data } = await supabaseAdmin

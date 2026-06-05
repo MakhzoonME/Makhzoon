@@ -4,6 +4,7 @@ import { hasPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
 import type { HarakaCardTerminalConfig, HarakaCardCharge, CardChargeStatus } from '@/types'
 import { CardTerminalRepository, type ConfigPatchInput } from './card-terminal.repository'
+import { getProvider } from './providers/registry'
 
 const repo = new CardTerminalRepository()
 
@@ -41,7 +42,7 @@ export class CardTerminalService {
   /**
    * Initiate a charge. For display/webhook modes: just create a pending DB row.
    * For local_bridge: forward the charge to the bridge URL.
-   * For cloud: call the provider's API (v1 stub — extend per provider).
+   * For cloud: call the provider's API via the registered provider implementation.
    */
   async initiateCharge(
     tenant: TenantContext,
@@ -55,7 +56,7 @@ export class CardTerminalService {
     }
 
     // Create the pending charge row first — it's the source of truth for polling
-    const charge = await repo.createCharge(tenant, input)
+    let charge = await repo.createCharge(tenant, input)
 
     if (config.mode === 'local_bridge' && config.bridgeUrl) {
       // Fire-and-forget to the local bridge; it will update status via webhook or
@@ -65,8 +66,34 @@ export class CardTerminalService {
       )
     }
 
-    // Cloud mode: extend here per provider (SumUp, Square, Paymob)
-    // if (config.mode === 'cloud') { ... }
+    if (config.mode === 'cloud' && config.provider) {
+      const apiKey = await repo.getApiKey(tenant.organizationId)
+      if (!apiKey) {
+        throw NextResponse.json({ error: 'Cloud provider API key not configured' }, { status: 400 })
+      }
+
+      const provider = getProvider(config.provider)
+      if (!provider) {
+        throw NextResponse.json({ error: `Unknown provider: ${config.provider}` }, { status: 400 })
+      }
+
+      // Call the provider API to initiate the charge
+      const result = await provider.initiateCharge({
+        reference: charge.reference,
+        amount: charge.amount,
+        currency: charge.currency,
+        terminalId: config.terminalId,
+        apiKey,
+      })
+
+      // Update the charge row with the provider result
+      charge = await repo.updateChargeStatus(
+        tenant,
+        charge.reference,
+        result.status,
+        result.providerRef,
+      )
+    }
 
     return charge
   }
@@ -75,6 +102,27 @@ export class CardTerminalService {
     requireCashier(tenant)
     const charge = await repo.getChargeByRef(tenant, ref)
     if (!charge) throw NextResponse.json({ error: 'Charge not found' }, { status: 404 })
+
+    // For cloud mode, poll the provider for status updates
+    if (charge.status === 'pending' && charge.providerRef) {
+      const config = await repo.getConfig(tenant)
+      if (config.mode === 'cloud' && config.provider) {
+        const apiKey = await repo.getApiKey(tenant.organizationId)
+        if (apiKey) {
+          const provider = getProvider(config.provider)
+          if (provider) {
+            const result = await provider.checkStatus({
+              providerRef: charge.providerRef,
+              apiKey,
+            })
+            if (result.status !== 'pending') {
+              return repo.updateChargeStatus(tenant, ref, result.status, result.providerRef)
+            }
+          }
+        }
+      }
+    }
+
     return charge
   }
 

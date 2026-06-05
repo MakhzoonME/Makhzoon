@@ -64,6 +64,8 @@ export class TransactionsService {
   async completeSale(tenant: TenantContext, input: CompleteSaleInput) {
     requirePos(tenant, 'process_sale')
     requireActiveSubscription(tenant)
+    const hasDiscount = input.lines.some((l) => l.discount > 0)
+    if (hasDiscount) requirePos(tenant, 'apply_discount')
     const tx = await repo.completeSale(tenant, input)
     auditLog.queue({
       tenant,

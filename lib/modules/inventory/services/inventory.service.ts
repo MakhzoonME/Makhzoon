@@ -232,27 +232,40 @@ export class InventoryService {
 
     await eventBus.emit('inventory.transaction.created', { tenant, itemId, type, quantity, reason, result })
 
-    // Fire stock alerts after OUT transactions
-    if (type === 'out' && result.quantityAfter !== undefined) {
-      const after     = Number(result.quantityAfter)
-      const threshold = Number(result.minimumThreshold ?? 0)
-      if (after === 0) {
-        notificationQueue.enqueue({
-          tenant,
-          eventType: 'inventory.out_of_stock',
-          data: { itemId, itemName: result.itemName ?? itemId },
-          link: `/raseed/${itemId}`,
-          titleOverride: `${result.itemName ?? 'Item'} is out of stock`,
-        })
-      } else if (after <= threshold) {
-        notificationQueue.enqueue({
-          tenant,
-          eventType: 'inventory.low_stock',
-          data: { itemId, itemName: result.itemName ?? itemId, quantityOnHand: after, minimumThreshold: threshold },
-          link: `/raseed/${itemId}`,
-          titleOverride: `${result.itemName ?? 'Item'} stock is low (${after} remaining)`,
-        })
-      }
+    // Fire stock alerts after OUT transactions — fetch item metadata for the notification title
+    if (type === 'out') {
+      const after = Number(result.quantityAfter);
+      // Async but fire-and-forget — never blocks the caller
+      (async () => {
+        try {
+          const { data: item } = await supabaseAdmin
+            .from('inventory_items')
+            .select('name, minimum_threshold')
+            .eq('id', itemId)
+            .maybeSingle()
+          const itemName  = (item?.name as string) ?? itemId
+          const threshold = Number(item?.minimum_threshold ?? 0)
+          if (after === 0) {
+            notificationQueue.enqueue({
+              tenant,
+              eventType: 'inventory.out_of_stock',
+              data: { itemId, itemName },
+              link: `/raseed/${itemId}`,
+              titleOverride: `${itemName} is out of stock`,
+            })
+          } else if (after <= threshold) {
+            notificationQueue.enqueue({
+              tenant,
+              eventType: 'inventory.low_stock',
+              data: { itemId, itemName, quantityOnHand: after, minimumThreshold: threshold },
+              link: `/raseed/${itemId}`,
+              titleOverride: `${itemName} stock is low (${after} remaining)`,
+            })
+          }
+        } catch {
+          // never surface to caller
+        }
+      })()
     }
 
     return result

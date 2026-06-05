@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils/cn';
@@ -120,10 +121,9 @@ export function MobileDrawer() {
             {user && (
               <div className="px-4 py-3 border-b border-gray-100">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-semibold text-indigo-700 flex-shrink-0 overflow-hidden">
+                  <div className="relative h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-semibold text-indigo-700 flex-shrink-0 overflow-hidden">
                     {user.avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                      <Image src={user.avatarUrl} alt="" fill className="object-cover" sizes="32px" />
                     ) : (
                       user.displayName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase()
                     )}

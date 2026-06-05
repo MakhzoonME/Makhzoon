@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getOrganizationBySubdomain } from '@/lib/db/organizations';
 import { loadOrgReceiptContext } from '@/lib/receipts/public-receipt';

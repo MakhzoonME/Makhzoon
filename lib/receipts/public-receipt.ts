@@ -1,3 +1,4 @@
+import 'server-only';
 import { getOrganizationBySubdomain } from '@/lib/db/organizations';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';

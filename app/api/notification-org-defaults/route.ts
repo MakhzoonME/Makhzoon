@@ -16,7 +16,7 @@ export async function GET() {
     const tenant = await resolveTenant()
     const { data, error } = await supabaseAdmin
       .from('notification_org_defaults')
-      .select('*')
+      .select('organization_id,event_type,in_app_enabled,email_enabled,notify_roles')
       .eq('organization_id', tenant.organizationId)
     if (error) throw error
     return NextResponse.json({ defaults: data ?? [] })

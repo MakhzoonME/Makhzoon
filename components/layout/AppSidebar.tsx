@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils/cn';
@@ -543,11 +544,10 @@ export function AppSidebar() {
                 <TooltipTrigger asChild>
                   <Link
                     href={`/${locale}/${orgSlug}/profile`}
-                    className="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-semibold text-primary-700 flex-shrink-0 overflow-hidden hover:ring-2 hover:ring-primary-400 transition-shadow"
+                    className="relative h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-semibold text-primary-700 flex-shrink-0 overflow-hidden hover:ring-2 hover:ring-primary-400 transition-shadow"
                   >
                     {user.avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                      <Image src={user.avatarUrl} alt="" fill className="object-cover" sizes="28px" />
                     ) : (
                       user.displayName?.[0]?.toUpperCase() ?? displayIdentity(user.email)?.[0]?.toUpperCase()
                     )}

@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
+import Image from 'next/image';
 
 export interface WarrantyCertificateData {
   certificateNumber: string;
@@ -54,8 +55,9 @@ export function WarrantyCertificatePreview({ data, orgName, tagline, taxNumber, 
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '8mm', paddingBottom: '6mm', borderBottom: `3px solid ${accent}` }}>
         {receiptConfig?.showLogo && receiptConfig.logo && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={receiptConfig.logo} alt="logo" style={{ height: 56, marginBottom: 8, objectFit: 'contain' }} />
+          <div style={{ position: 'relative', width: 120, height: 56, marginBottom: 8 }}>
+            <Image src={receiptConfig.logo} alt="logo" fill sizes="120px" style={{ objectFit: 'contain' }} />
+          </div>
         )}
         <div style={{ fontSize: '18pt', fontWeight: 800, color: '#111', letterSpacing: '-0.5px' }}>{displayOrgName}</div>
         {tagline && <div style={{ fontSize: '10pt', color: '#666', marginTop: 2 }}>{tagline}</div>}

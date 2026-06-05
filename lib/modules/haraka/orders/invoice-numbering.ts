@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 /** Allocate the next sequential invoice number for an org (per calendar year).

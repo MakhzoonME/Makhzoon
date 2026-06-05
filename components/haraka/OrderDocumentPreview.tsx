@@ -3,6 +3,7 @@
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import type { OrderDocumentConfig } from '@/lib/modules/haraka/orders/order-document-config';
 import type { OrderDocumentOrder } from '@/lib/modules/haraka/orders/order-document-loader';
+import Image from 'next/image';
 
 export type DocumentType = 'invoice' | 'receipt';
 
@@ -66,8 +67,9 @@ export function OrderDocumentPreview({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8mm', borderBottom: `2px solid ${accent}`, paddingBottom: '6mm' }}>
         <div>
           {receiptConfig.showLogo && receiptConfig.logo && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={receiptConfig.logo} alt="logo" style={{ height: 48, marginBottom: 8, objectFit: 'contain' }} />
+            <div style={{ position: 'relative', width: 120, height: 48, marginBottom: 8 }}>
+              <Image src={receiptConfig.logo} alt="logo" fill sizes="120px" style={{ objectFit: 'contain' }} />
+            </div>
           )}
           <div style={{ fontSize: '16pt', fontWeight: 700, color: '#111' }}>
             {receiptConfig.orgName || orgName}

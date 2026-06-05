@@ -95,6 +95,13 @@ export interface LeadsPermissions {
   view: boolean;
 }
 
+export interface BannaPermissions {
+  view: boolean;
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+}
+
 export interface UserPermissions {
   assets: AssetPermissions;
   inventory: InventoryPermissions;
@@ -105,6 +112,7 @@ export interface UserPermissions {
   support: SupportPermissions;
   auditLogs: AuditLogsPermissions;
   leads: LeadsPermissions;
+  banna: BannaPermissions;
   pos: PosPermissions;
   settings: SettingsPermissions;
 }
@@ -119,6 +127,7 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   support:   { view: true,  create: true  },
   auditLogs: { view: true  },
   leads:     { view: true  },
+  banna:     { view: true,  create: true,  update: true,  delete: true  },
   pos:       { open_session: true, close_session: true, process_sale: true, apply_discount: true, issue_refund: true, void_transaction: true, view_reports: true, fawtara_submit: true, customers_bulk_delete: true, customers_bulk_move: true, customers_bulk_duplicate: true, view_orders: true, manage_orders: true, assign_delivery: true, manage_delivery_agents: true, view_warranty_certs: true, manage_warranty_certs: true },
   settings:  { view: true,  orgInfo: true,  subscription: true,  users: true,  taxRates: true,  fawtara: true  },
 };
@@ -133,6 +142,7 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   support:   { view: true,  create: true },
   auditLogs: { view: false },
   leads:     { view: true  },
+  banna:     { view: true,  create: false, update: false, delete: false },
   pos:       { open_session: false, close_session: false, process_sale: false, apply_discount: false, issue_refund: false, void_transaction: false, view_reports: false, fawtara_submit: false, customers_bulk_delete: false, customers_bulk_move: false, customers_bulk_duplicate: false, view_orders: false, manage_orders: false, assign_delivery: false, manage_delivery_agents: false, view_warranty_certs: false, manage_warranty_certs: false },
   settings:  { view: false, orgInfo: false, subscription: false, users: false, taxRates: false, fawtara: false },
 };
@@ -320,6 +330,19 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'manage_delivery_agents',  label: 'Manage Delivery Agents',         labelKey: 'permOp.pos.manage_delivery_agents',  requiresView: true, requiresKey: 'view_orders' },
       { key: 'view_warranty_certs',     label: 'View Warranty Certificates',     labelKey: 'permOp.pos.view_warranty_certs' },
       { key: 'manage_warranty_certs',   label: 'Generate & Delete Warranties',   labelKey: 'permOp.pos.manage_warranty_certs',   requiresView: true },
+    ],
+  },
+  {
+    key: 'banna',
+    label: 'Workspace Builder',
+    labelKey: 'permModule.banna',
+    featureKey: 'banna',
+    group: 'admin',
+    operations: [
+      { key: 'view',   label: 'View',   labelKey: 'permOp.banna.view' },
+      { key: 'create', label: 'Create', labelKey: 'permOp.banna.create', requiresView: true },
+      { key: 'update', label: 'Update', labelKey: 'permOp.banna.update', requiresView: true },
+      { key: 'delete', label: 'Delete', labelKey: 'permOp.banna.delete', requiresView: true },
     ],
   },
   {

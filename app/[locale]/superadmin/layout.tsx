@@ -164,7 +164,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
               }
               const { href, labelKey, icon: Icon } = item;
               const label = t(labelKey as MessageKey);
-              const active = pathname === href || (href !== `/${locale}/superadmin` && pathname.startsWith(href));
+              const active = pathname === href || (href !== `/${locale}/superadmin/dashboard` && pathname.startsWith(href));
               return (
                 <Link
                   key={href}
@@ -219,7 +219,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                     user.role === 'super_admin'      ? t('role.superAdmin') :
                     user.role === 'makhzoon_admin'   ? t('role.makhzoonAdmin') :
                     user.role === 'makhzoon_support' ? t('role.makhzoonSupport') :
-                    user.role.replace(/_/g, ' ')
+                    user.role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
                   }
                 </p>
               </motion.div>

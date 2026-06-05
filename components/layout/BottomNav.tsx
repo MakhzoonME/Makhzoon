@@ -11,11 +11,13 @@ function AssetsSVG() { return <svg width="22" height="22" viewBox="0 0 18 18" fi
 function RequestsSVG() { return <svg width="22" height="22" viewBox="0 0 18 18" fill="none" aria-hidden><rect x="2" y="2" width="14" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M5 6h8M5 9h6M5 12h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
 function WarrantySVG() { return <svg width="22" height="22" viewBox="0 0 18 18" fill="none" aria-hidden><path d="M9 1.5L2.5 4v6.5C2.5 13.8 5.5 16.5 9 17.5c3.5-1 6.5-3.7 6.5-7V4L9 1.5z" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M6 9l2 2 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
 function MenuSVG() { return <svg width="22" height="22" viewBox="0 0 18 18" fill="none" aria-hidden><path d="M2.5 5h13M2.5 9h13M2.5 13h13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>; }
+function BannaSVG() { return <svg width="22" height="22" viewBox="0 0 18 18" fill="none" aria-hidden><path d="M2.5 3h13v12H2.5V3z" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M5.5 7h7M5.5 10h5M5.5 13h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /><circle cx="14" cy="5" r="1.5" fill="currentColor" opacity="0.6" /></svg>; }
 
 const PRIMARY_NAV: { href: string; labelKey: MessageKey; Icon: React.FC }[] = [
   { href: '/dashboard',  labelKey: 'nav.dashboard',  Icon: DashboardSVG },
   { href: '/usool',      labelKey: 'nav.assets',     Icon: AssetsSVG },
   { href: '/requests',   labelKey: 'nav.requests',   Icon: RequestsSVG },
+  { href: '/banna',      labelKey: 'nav.banna',      Icon: BannaSVG },
   { href: '/warranties', labelKey: 'nav.warranties', Icon: WarrantySVG },
 ];
 

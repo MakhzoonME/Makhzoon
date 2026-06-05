@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { RefreshCw, X } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -81,41 +82,26 @@ export default function BackendLogsPage() {
   const dateFrom = searchParams.get('dateFrom') ?? '';
   const dateTo = searchParams.get('dateTo') ?? '';
 
-  const [logs, setLogs] = useState<BackendLog[]>([]);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
-    try {
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['superadmin-backend-logs', level, orgId, page, pageSize, userSearch, dateFrom, dateTo],
+    queryFn: async () => {
       const params = new URLSearchParams({ level, page: String(page), pageSize: String(pageSize) });
       if (orgId.trim()) params.set('orgId', orgId.trim());
+      if (userSearch.trim()) params.set('userSearch', userSearch.trim());
+      if (dateFrom) params.set('dateFrom', dateFrom);
+      if (dateTo) params.set('dateTo', dateTo);
       const res = await fetch(`/api/superadmin/backend-logs?${params}`);
-      if (res.ok) {
-        const data = await res.json();
-        setLogs(data.items ?? []);
-        setTotal(data.total ?? 0);
-        setTotalPages(data.totalPages ?? 1);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [level, orgId, page, pageSize]);
-
-  // TODO: migrate fetchLogs to useQuery so loading/logs/total/totalPages
-  // become derived rather than kept in local state. Until then this effect
-  // legitimately needs to setState on filter change.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { fetchLogs(); }, [fetchLogs]);
-
-  useEffect(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    if (autoRefresh) intervalRef.current = setInterval(fetchLogs, 10_000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [autoRefresh, fetchLogs]);
+      if (!res.ok) throw new Error('Failed to fetch logs');
+      return res.json();
+    },
+    placeholderData: (prev) => prev,
+    refetchInterval: autoRefresh ? 10_000 : false,
+  });
+  const logs: BackendLog[] = data?.items ?? [];
+  const total: number = data?.total ?? 0;
+  const totalPages: number = data?.totalPages ?? 1;
 
   const updateUrl = useCallback((params: Record<string, string>) => {
     const url = syncFiltersToUrl(pathname, params);
@@ -135,26 +121,7 @@ export default function BackendLogsPage() {
     });
   }
 
-  const filteredLogs = useMemo(() => {
-    let result = logs;
-    if (userSearch.trim()) {
-      const q = userSearch.trim().toLowerCase();
-      result = result.filter(
-        (l) =>
-          l.userDisplayName?.toLowerCase().includes(q) ||
-          l.userId?.toLowerCase().includes(q)
-      );
-    }
-    if (dateFrom) {
-      const from = new Date(dateFrom).getTime();
-      result = result.filter((l) => new Date(l.timestamp).getTime() >= from);
-    }
-    if (dateTo) {
-      const to = new Date(dateTo).getTime();
-      result = result.filter((l) => new Date(l.timestamp).getTime() <= to);
-    }
-    return result;
-  }, [logs, userSearch, dateFrom, dateTo]);
+
 
   const levels = ['all', 'success', 'warning', 'error', 'info'];
 
@@ -181,12 +148,12 @@ export default function BackendLogsPage() {
               />
               {t('backendLogs.autoRefresh')}
             </label>
-            <Button size="sm" variant="outline" onClick={fetchLogs} disabled={loading}>
-              <RefreshCw className={cn('h-4 w-4 me-1.5', loading && 'animate-spin')} />
+            <Button size="sm" variant="outline" onClick={refetch} disabled={isLoading}>
+              <RefreshCw className={cn('h-4 w-4 me-1.5', isLoading && 'animate-spin')} />
               {t('backendLogs.refresh')}
             </Button>
           </div>
-        }
+  }
       />
 
       <div className="bg-surface-card rounded-lg border border-border p-4 space-y-4">
@@ -362,14 +329,14 @@ export default function BackendLogsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredLogs.length === 0 && (
+              {logs.length === 0 && (
                 <tr>
                   <td colSpan={10} className="px-4 py-10 text-center text-gray-400">
-                    {loading ? t('common.loading') : t('backendLogs.noLogs')}
+                    {isLoading ? t('common.loading') : t('backendLogs.noLogs')}
                   </td>
                 </tr>
               )}
-              {filteredLogs.map((log) => (
+              {logs.map((log) => (
                 <>
                   <tr
                     key={log.id}

@@ -34,6 +34,7 @@ function EditOrgForm({
   teamMembers: TeamMember[];
   onCancel: () => void;
 }) {
+  const { t } = useT();
   const qc = useQueryClient();
   const [name, setName] = useState(org.name);
   const [contactEmail, setContactEmail] = useState(org.contactEmail);
@@ -61,13 +62,13 @@ function EditOrgForm({
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || 'Failed to update');
       }
-      toast.success('Organization updated');
+      toast.success(t('orgs.updated'));
       qc.invalidateQueries({ queryKey: ['org', orgId] });
       qc.invalidateQueries({ queryKey: ['organizations'] });
       qc.invalidateQueries({ queryKey: ['all-orgs-usage'] });
       qc.invalidateQueries({ queryKey: ['org-info-self'] });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update');
+      toast.error(err instanceof Error ? err.message : t('orgs.updateFailed'));
     } finally {
       setSaving(false);
     }
@@ -78,15 +79,15 @@ function EditOrgForm({
   return (
     <form onSubmit={handleSave} className="space-y-4">
       <div className="space-y-1.5">
-        <Label htmlFor="name">Organization Name</Label>
+        <Label htmlFor="name">{t('orgs.name')}</Label>
         <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="email">Contact Email</Label>
+        <Label htmlFor="email">{t('orgs.contactEmail')}</Label>
         <Input id="email" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} required />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="category">Category</Label>
+        <Label htmlFor="category">{t('orgs.category')}</Label>
         <select
           id="category"
           value={category}
@@ -102,7 +103,7 @@ function EditOrgForm({
         </select>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="description">{t('orgs.description')}</Label>
         <Textarea
           id="description"
           value={description}
@@ -113,7 +114,7 @@ function EditOrgForm({
         <p className="text-xs text-gray-500">{description.length}/500</p>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="assignedMember">Account Manager</Label>
+        <Label htmlFor="assignedMember">{t('settings.accountManager')}</Label>
         <select
           id="assignedMember"
           value={assignedMemberId}
@@ -127,14 +128,14 @@ function EditOrgForm({
             </option>
           ))}
         </select>
-        <p className="text-xs text-gray-500">The Makhzoon team member responsible for this organization.</p>
+        <p className="text-xs text-gray-500">{t('orgs.accountManagerHint')}</p>
       </div>
       <div className="flex gap-2 pt-2">
         <Button type="submit" disabled={saving}>
-          {saving ? 'Saving…' : 'Save Changes'}
+          {saving ? t('common.saving') : t('common.saveChanges')}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     </form>
@@ -180,7 +181,7 @@ export default function EditOrganizationPage(props: { params: Promise<{ orgId: s
       <Card className="max-w-2xl">
         <CardContent className="p-6">
           {isLoading || !org ? (
-            <p className="text-sm text-gray-500">Loading…</p>
+            <p className="text-sm text-gray-500">{t('common.loading')}</p>
           ) : (
             <EditOrgForm
               key={org.id}

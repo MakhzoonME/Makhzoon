@@ -28,7 +28,7 @@ interface LeadsResponse {
 }
 
 export function useLeads(type?: 'early-access' | 'contact-sales') {
-  return useQuery<LeadsResponse | EarlyAccessLead[] | ContactSalesLead[]>({
+  return useQuery<LeadsResponse>({
     queryKey: ['superadmin-leads', type],
     queryFn: async () => {
       const url = type ? `/api/superadmin/leads?type=${type}` : '/api/superadmin/leads';

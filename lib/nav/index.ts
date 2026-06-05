@@ -107,6 +107,16 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/requests/list', label: 'All Requests', labelKey: 'nav.requestsList', featureKey: 'requests' },
     ],
   },
+  {
+    type: 'group', href: '/banna', label: 'Banna', labelKey: 'nav.banna',
+    featureKey: 'banna', moduleColor: '#1565C0', moduleName: 'بنّا',
+    items: [
+      { href: '/banna', label: 'Overview', labelKey: 'nav.overview',
+        featureKey: 'banna', moduleColor: '#1565C0', moduleName: 'بنّا' },
+      { href: '/banna/custom-fields', label: 'Custom Fields', labelKey: 'banna.customFields',
+        featureKey: 'banna', moduleColor: '#1565C0', moduleName: 'بنّا' },
+    ],
+  },
   { href: '/reports',      label: 'Reports',      labelKey: 'nav.reports',      adminOnly: true, featureKey: 'reports' },
   { type: 'separator' } as NavSeparator,
   { href: '/support',      label: 'Support',      labelKey: 'nav.support',      featureKey: 'support' },

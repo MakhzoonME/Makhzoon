@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
@@ -27,8 +27,23 @@ export default function LeadsPage() {
 
   const { data, isLoading } = useLeads();
 
-  const earlyAccess = (data as { earlyAccess?: EarlyAccessLead[] } | undefined)?.earlyAccess ?? [];
-  const contactSales = (data as { contactSales?: ContactSalesLead[] } | undefined)?.contactSales ?? [];
+  const earlyAccess = data?.earlyAccess ?? [];
+  const contactSales = data?.contactSales ?? [];
+
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+
+  const paginatedEarlyAccess = useMemo(() => {
+    return earlyAccess.slice(0, page * pageSize);
+  }, [earlyAccess, page, pageSize]);
+
+  const paginatedContactSales = useMemo(() => {
+    return contactSales.slice(0, page * pageSize);
+  }, [contactSales, page, pageSize]);
+
+  const hasMore = tab === 'early-access'
+    ? earlyAccess.length > page * pageSize
+    : contactSales.length > page * pageSize;
 
   function openInvite(email: string, name?: string) {
     setInviteEmail(email);
@@ -201,7 +216,7 @@ export default function LeadsPage() {
       <div className="bg-surface-card rounded-lg border border-border">
         {tab === 'early-access' ? (
           <DataTable
-            data={earlyAccess}
+            data={paginatedEarlyAccess}
             columns={eaColumns}
             isLoading={isLoading}
             emptyMessage={t('leads.noEarlyAccess')}
@@ -209,12 +224,19 @@ export default function LeadsPage() {
           />
         ) : (
           <DataTable
-            data={contactSales}
+            data={paginatedContactSales}
             columns={csColumns}
             isLoading={isLoading}
             emptyMessage={t('leads.noContactSales')}
             keyExtractor={(entry) => entry.id}
           />
+        )}
+        {hasMore && (
+          <div className="flex justify-center py-4 border-t border-border">
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)}>
+              Load More ({(tab === 'early-access' ? earlyAccess.length : contactSales.length) - page * pageSize} remaining)
+            </Button>
+          </div>
         )}
       </div>
 

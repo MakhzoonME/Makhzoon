@@ -218,9 +218,9 @@ export default function ReceiptSettingsPage() {
         </Button>
       </div>
 
-      <div className="flex gap-8 items-start max-w-4xl">
+      <div className="flex gap-8 items-start">
         {/* ── Left: configuration ── */}
-        <div className="w-72 shrink-0 space-y-5">
+        <div className="flex-1 min-w-0 space-y-5">
 
           {/* Template */}
           <Card>

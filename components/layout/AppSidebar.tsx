@@ -116,6 +116,15 @@ function SettingsSVG() {
     </svg>
   );
 }
+function BannaSVG() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+      <path d="M2.5 3h13v12H2.5V3z" stroke="currentColor" strokeWidth="1.3" fill="none" rx="1.2" />
+      <path d="M5.5 7h7M5.5 10h5M5.5 13h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="14" cy="5" r="1.5" fill="currentColor" opacity="0.6" />
+    </svg>
+  );
+}
 function ChevronLeftSVG() {
   return (
     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
@@ -148,6 +157,7 @@ const NAV_ICONS: Record<string, React.FC> = {
   '/support':      SupportSVG,
   '/audit-logs':   AuditSVG,
   '/haraka':       PosSVG,
+  '/banna':        BannaSVG,
   '/settings':     SettingsSVG,
 };
 

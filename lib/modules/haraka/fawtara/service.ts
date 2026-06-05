@@ -4,6 +4,7 @@ import type { TenantContext } from '@/lib/platform/tenancy/types'
 import type { FawtaraSubmission, Organization, PosTransaction } from '@/types'
 import { hasPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
+import { notificationQueue } from '@/lib/notifications/notification-queue'
 import { eventBus } from '@/lib/platform/events/event-bus'
 import { decrypt } from '@/lib/platform/crypto/secret-cipher'
 import { toFawtaraPayload } from './mapper'
@@ -229,6 +230,13 @@ export class FawtaraService {
         },
       })
       await eventBus.emit('fawtara.failed', { tenant, transactionId, submission })
+      notificationQueue.enqueue({
+        tenant,
+        eventType: 'fawtara.failed',
+        data: { transactionId, errorCode: submission.errorCode ?? null, attempts },
+        link: `/haraka/transactions/${transactionId}`,
+        titleOverride: 'Fawtara submission failed — manual resubmission required',
+      })
       return submission
     }
   }

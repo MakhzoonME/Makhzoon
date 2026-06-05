@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import { hasPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
+import { notificationQueue } from '@/lib/notifications/notification-queue'
 import { eventBus } from '@/lib/platform/events/event-bus'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { InventoryRepository, GetAllOpts } from '../repositories/inventory.repository'
@@ -230,6 +231,29 @@ export class InventoryService {
     })
 
     await eventBus.emit('inventory.transaction.created', { tenant, itemId, type, quantity, reason, result })
+
+    // Fire stock alerts after OUT transactions
+    if (type === 'out' && result.quantityAfter !== undefined) {
+      const after     = Number(result.quantityAfter)
+      const threshold = Number(result.minimumThreshold ?? 0)
+      if (after === 0) {
+        notificationQueue.enqueue({
+          tenant,
+          eventType: 'inventory.out_of_stock',
+          data: { itemId, itemName: result.itemName ?? itemId },
+          link: `/raseed/${itemId}`,
+          titleOverride: `${result.itemName ?? 'Item'} is out of stock`,
+        })
+      } else if (after <= threshold) {
+        notificationQueue.enqueue({
+          tenant,
+          eventType: 'inventory.low_stock',
+          data: { itemId, itemName: result.itemName ?? itemId, quantityOnHand: after, minimumThreshold: threshold },
+          link: `/raseed/${itemId}`,
+          titleOverride: `${result.itemName ?? 'Item'} stock is low (${after} remaining)`,
+        })
+      }
+    }
 
     return result
   }

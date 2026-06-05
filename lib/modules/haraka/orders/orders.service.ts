@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import { hasPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
+import { notificationQueue } from '@/lib/notifications/notification-queue'
 import type { OrderStatus } from '@/types'
 import { isValidTransition } from './schemas'
 import { OrdersRepository, type CreateOrderInput, type ListOrdersOpts } from './orders.repository'
@@ -49,6 +50,13 @@ export class OrdersService {
       recordId: order.id,
       newValue: { orderNumber: order.orderNumber, channel: order.channel, total: order.total },
     })
+    notificationQueue.enqueue({
+      tenant,
+      eventType: 'order.created',
+      data: { orderNumber: order.orderNumber, channel: order.channel, customerName: order.customerName },
+      link: `/haraka/orders/${order.id}`,
+      titleOverride: `New order ${order.orderNumber} received`,
+    })
     return order
   }
 
@@ -84,6 +92,13 @@ export class OrdersService {
       action: 'ORDER_STATUS_CHANGED',
       recordId: id,
       newValue: { from: order.status, to: newStatus },
+    })
+    notificationQueue.enqueue({
+      tenant,
+      eventType: 'order.status_changed',
+      data: { orderNumber: order.orderNumber, status: newStatus },
+      link: `/haraka/orders/${id}`,
+      titleOverride: `Order ${order.orderNumber} is now ${newStatus.replace('_', ' ')}`,
     })
     return updated
   }

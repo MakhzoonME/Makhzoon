@@ -4,29 +4,6 @@
 
 ---
 
-## 🔴 Not started — pick up next
-
-### 1. Notifications System
-**Plan doc**: `docs/NOTIFICATIONS_TODO.md`
-**Feature doc**: `docs/modules-and-features/21-notifications.md`
-
-Platform-wide in-app (bell icon + panel) and email notifications for all business events: new orders, low stock, refunds, request approvals, Fawtara failures, warranty expiry, etc. Per-user preferences + org-level defaults.
-
-**Key files to create:**
-- `supabase/migrations/0025_notifications.sql`
-- `lib/notifications/catalog.ts` + `notification-queue.ts` + `types.ts`
-- `app/api/notifications/` — list, unread-count, mark-read, mark-all, delete
-- `app/api/notification-preferences/route.ts`
-- `app/api/notification-org-defaults/route.ts`
-- `hooks/notifications/` — useNotifications, useUnreadCount, useNotificationPreferences, etc.
-- `components/notifications/NotificationBell.tsx` + `NotificationPanel.tsx`
-- `app/[locale]/[orgSlug]/notifications/page.tsx`
-- `app/[locale]/[orgSlug]/settings/notifications/page.tsx`
-- Modify `components/layout/AppSidebar.tsx` (or AppHeader) to add bell icon
-- Wire `notificationQueue.enqueue()` into: orders.service, transactions.service, sessions.service, inventory.service, purchases.service, stock-audit.service, requests service, fawtara service, cron/warranty-alerts
-
----
-
 ## 🟡 Planned — lower priority
 
 ### 2. Haraka Orders — Delivery Agent App (public token page)
@@ -46,6 +23,7 @@ Invoice and receipt document rendering for orders (currently the UI has Invoice/
 - Cash Drawer — ESC/POS `kickDrawer` command, `openCashDrawer()`, backend config API, `CashDrawerButton`, Settings → Cash Drawer page, auto-open on cash sale in register
 - Card Terminal Integration — 4 modes (display, local bridge, cloud, webhook), `CardTerminalPayment` component, polling, Settings → Card Terminal page, PaymentDialog integration, webhook receiver with HMAC
 - Warranty Certificates — `haraka_warranty_certs` table, `WarrantyCertPreview` (A4/thermal/certificate templates, EN/AR), `WarrantyCertShareDialog`, public cert page at `/w/[orgSlug]/[certId]`, certs list page, Settings → Warranty Certificate page, order detail integration via `OrderWarrantyDialog`
+- Notifications System — `notifications`, `notification_preferences`, `notification_org_defaults` tables; `notificationQueue.enqueue()` (service-layer fanout pattern); bell icon in AppHeader; NotificationPanel; full list page; user preferences settings; wired into orders, transactions, inventory, and Fawtara services; 19 event types across all modules
 - Context.md — fully updated to reflect current platform state (June 2026)
 - Docs — `docs/modules-and-features/` files 19–23
 

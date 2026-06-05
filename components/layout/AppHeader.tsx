@@ -7,6 +7,7 @@ import { useT } from '@/hooks/ui';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
 import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 
 import { SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from '@/components/layout/AppSidebar';
@@ -148,6 +149,7 @@ export function AppHeader() {
               <SearchSVG />
             </button>
 
+            <NotificationBell />
             <NetworkStatusIndicator variant="ghost-light" />
             <ThemeToggle />
             <LanguageToggle />

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Bell, BellOff } from 'lucide-react';
 import {
   useNotificationPreferences,
   useUpdateNotificationPreferences,
@@ -27,10 +28,95 @@ const MODULE_LABELS: Record<string, string> = {
   system:    'System',
 }
 
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+}
+
+function usePushSubscription() {
+  const [subscribed, setSubscribed] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setSubscribed(false);
+      return;
+    }
+    navigator.serviceWorker.ready.then(async (reg) => {
+      const sub = await reg.pushManager.getSubscription();
+      setSubscribed(!!sub);
+    });
+  }, []);
+
+  const subscribe = useCallback(async () => {
+    setLoading(true);
+    try {
+      const keyRes = await fetch('/api/push-subscriptions/vapid-key');
+      if (!keyRes.ok) throw new Error('Push not configured on server');
+      const { publicKey } = await keyRes.json() as { publicKey: string };
+
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey).buffer as ArrayBuffer,
+      });
+
+      const json = sub.toJSON() as {
+        endpoint: string;
+        keys: { p256dh: string; auth: string };
+      };
+
+      await fetch('/api/push-subscriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          endpoint:  json.endpoint,
+          keys:      json.keys,
+          userAgent: navigator.userAgent,
+        }),
+      });
+
+      setSubscribed(true);
+    } catch (err) {
+      console.error('[push] subscribe error', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const unsubscribe = useCallback(async () => {
+    setLoading(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        await fetch('/api/push-subscriptions', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: sub.endpoint }),
+        });
+        await sub.unsubscribe();
+      }
+      setSubscribed(false);
+    } catch (err) {
+      console.error('[push] unsubscribe error', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { subscribed, loading, subscribe, unsubscribe };
+}
+
 export default function NotificationSettingsPage() {
   const { data: prefsData }   = useNotificationPreferences();
   const { data: defaultsData } = useOrgNotificationDefaults();
   const updateMut              = useUpdateNotificationPreferences();
+  const push                   = usePushSubscription();
 
   const [prefs, setPrefs] = useState<Record<NotificationEventType, PrefState>>({} as Record<NotificationEventType, PrefState>)
 
@@ -87,6 +173,46 @@ export default function NotificationSettingsPage() {
           Choose how you receive notifications. These override the organization defaults for your account only.
         </p>
       </div>
+
+      {/* Browser push notifications */}
+      {'serviceWorker' in (typeof navigator !== 'undefined' ? navigator : {}) && (
+        <div className="rounded-xl border border-border bg-surface-page p-5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            {push.subscribed
+              ? <Bell className="h-5 w-5 text-primary-600" />
+              : <BellOff className="h-5 w-5 text-gray-400" />}
+            <div>
+              <p className="text-sm font-medium text-gray-900">Browser push notifications</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {push.subscribed
+                  ? 'This browser will receive push notifications.'
+                  : 'Get instant alerts in this browser even when the tab is closed.'}
+              </p>
+            </div>
+          </div>
+          {push.subscribed === null ? null : push.subscribed ? (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={push.loading}
+              onClick={push.unsubscribe}
+              className="flex-shrink-0"
+            >
+              {push.loading ? 'Disabling…' : 'Disable'}
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              disabled={push.loading}
+              onClick={push.subscribe}
+              className="flex-shrink-0"
+              style={{ background: 'var(--mod-haraka)' }}
+            >
+              {push.loading ? 'Enabling…' : 'Enable'}
+            </Button>
+          )}
+        </div>
+      )}
 
       {Object.entries(byModule).map(([module, entries]) => (
         <div key={module} className="rounded-xl border border-border bg-surface-page overflow-hidden">

@@ -179,6 +179,7 @@ export default function RequestsOverviewPage() {
             isLoading={isLoading}
             emptyMessage={t('requests.noRequests')}
             keyExtractor={(r) => r.id}
+            onRowClick={(r) => router.push(`${base}/${r.id}`)}
           />
         </OverviewSection>
 

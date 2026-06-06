@@ -11,6 +11,7 @@
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendEmail } from '@/lib/email/resend'
+import { sendWebPush } from '@/lib/webpush'
 import { getCatalogEntry } from './catalog'
 import type { NotificationEnqueueInput, NotificationRow } from './types'
 
@@ -156,6 +157,13 @@ async function _send(input: NotificationEnqueueInput): Promise<void> {
         text:    `${title}\n\n${link ?? ''}`,
       }).catch((err) => console.error('[notificationQueue] email error', err))
     }
+  }
+
+  // Send web push to all recipients who have subscriptions registered
+  if (allRecipients.length > 0) {
+    sendWebPush(allRecipients, { title, url: link }).catch(
+      (err) => console.error('[notificationQueue] push error', err),
+    )
   }
 }
 

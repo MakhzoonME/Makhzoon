@@ -3,10 +3,10 @@ import { useState, useMemo } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
-import { useLeads, EarlyAccessLead, ContactSalesLead } from '@/hooks/superadmin/useLeads';
+import { useLeads, useDeleteLead, EarlyAccessLead, ContactSalesLead } from '@/hooks/superadmin/useLeads';
 import { InviteLeadModal } from '@/components/super-admin/InviteLeadModal';
 import { formatDate } from '@/lib/utils/date';
-import { useT } from '@/hooks/ui';
+import { useT, toast } from '@/hooks/ui';
 
 type Tab = 'early-access' | 'contact-sales';
 
@@ -14,6 +14,14 @@ function InviteSVG() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
       <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function TrashSVG() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1M5.5 6v4M8.5 6v4M3 3.5l.667 7.333A.667.667 0 0 0 4.333 11.5h5.334a.667.667 0 0 0 .666-.667L11 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -26,9 +34,20 @@ export default function LeadsPage() {
   const [inviteName, setInviteName] = useState('');
 
   const { data, isLoading } = useLeads();
+  const deleteLead = useDeleteLead();
 
   const earlyAccess = data?.earlyAccess ?? [];
   const contactSales = data?.contactSales ?? [];
+
+  async function handleDelete(id: string, type: 'early-access' | 'contact-sales') {
+    if (!confirm(t('leads.confirmDelete'))) return;
+    try {
+      await deleteLead.mutateAsync({ id, type });
+      toast.success(t('leads.deleted'));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('common.deleteFailed'));
+    }
+  }
 
   const [page, setPage] = useState(1);
   const pageSize = 20;
@@ -58,14 +77,24 @@ export default function LeadsPage() {
       render: (entry) => (
         <div className="flex items-center gap-2">
           <span className="font-medium text-sm text-gray-900">{entry.email}</span>
-          <button
-            type="button"
-            onClick={() => openInvite(entry.email, [entry.firstName, entry.lastName].filter(Boolean).join(' ') || undefined)}
-            className="ms-auto flex-shrink-0 p-1.5 rounded-md text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors"
-            title={t('leads.inviteToOrg')}
-          >
-            <InviteSVG />
-          </button>
+          <div className="ms-auto flex items-center gap-1 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => openInvite(entry.email, [entry.firstName, entry.lastName].filter(Boolean).join(' ') || undefined)}
+              className="p-1.5 rounded-md text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors"
+              title={t('leads.inviteToOrg')}
+            >
+              <InviteSVG />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDelete(entry.id, 'early-access')}
+              className="p-1.5 rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+              title={t('common.delete')}
+            >
+              <TrashSVG />
+            </button>
+          </div>
         </div>
       ),
     },
@@ -135,14 +164,24 @@ export default function LeadsPage() {
       key: 'invite',
       header: '',
       render: (entry) => (
-        <button
-          type="button"
-          onClick={() => openInvite(entry.email, [entry.firstName, entry.lastName].filter(Boolean).join(' ') || entry.name)}
-          className="ms-auto flex-shrink-0 p-1.5 rounded-md text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors"
-          title={t('leads.inviteToOrg')}
-        >
-          <InviteSVG />
-        </button>
+        <div className="flex items-center gap-1 justify-end">
+          <button
+            type="button"
+            onClick={() => openInvite(entry.email, [entry.firstName, entry.lastName].filter(Boolean).join(' ') || entry.name)}
+            className="p-1.5 rounded-md text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/40 transition-colors"
+            title={t('leads.inviteToOrg')}
+          >
+            <InviteSVG />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDelete(entry.id, 'contact-sales')}
+            className="p-1.5 rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+            title={t('common.delete')}
+          >
+            <TrashSVG />
+          </button>
+        </div>
       ),
     },
     {

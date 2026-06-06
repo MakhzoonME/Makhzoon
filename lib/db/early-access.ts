@@ -51,3 +51,20 @@ export async function getEarlyAccessEntries(): Promise<EarlyAccessEntry[]> {
   if (error) throw error;
   return (data ?? []).map(toEntry);
 }
+
+export async function earlyAccessEmailExists(email: string): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .from('early_access')
+    .select('id')
+    .eq('email', email.toLowerCase())
+    .maybeSingle();
+  return !!data;
+}
+
+export async function deleteEarlyAccessEntry(id: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('early_access')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}

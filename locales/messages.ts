@@ -1035,6 +1035,8 @@ const en = {
   'leads.phone':               'Phone',
   'leads.notes':               'Notes',
   'leads.inviteToOrg':         'Invite to organization',
+  'leads.confirmDelete':       'Are you sure you want to delete this entry? This cannot be undone.',
+  'leads.deleted':             'Entry deleted.',
 
   // ── Extra column headers ──────────────────────────────────────────
   'col.supplier':      'Supplier',
@@ -2633,6 +2635,8 @@ const ar: Record<keyof typeof en, string> = {
   'leads.phone':               'الهاتف',
   'leads.notes':               'ملاحظات',
   'leads.inviteToOrg':         'دعوة إلى منظمة',
+  'leads.confirmDelete':       'هل أنت متأكد من حذف هذا السجل؟ لا يمكن التراجع.',
+  'leads.deleted':             'تم حذف السجل.',
 
   // ── Extra column headers ──────────────────────────────────────────
   'col.supplier':      'المورد',

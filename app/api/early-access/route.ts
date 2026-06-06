@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/email/resend';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { checkOrigin } from '@/lib/csrf';
-import { createEarlyAccessEntry } from '@/lib/db/early-access';
+import { createEarlyAccessEntry, earlyAccessEmailExists } from '@/lib/db/early-access';
 
 const notifyHtml = (email: string, firstName?: string) => `
 <!DOCTYPE html>
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid email' }, { status: 422 });
   }
 
-  // Rate limit by email as well
+  // Rate limit by email as well (in-memory fallback — real gate is the DB check below)
   const rateLimitEmail = checkRateLimit(
     `early-access:email:${email}`,
     1,
@@ -86,6 +86,14 @@ export async function POST(req: NextRequest) {
     { errorMessage: 'You have already requested early access from this email. Please check your inbox for updates.' }
   );
   if (rateLimitEmail) return rateLimitEmail;
+
+  // DB-level duplicate check (works across all serverless instances)
+  if (await earlyAccessEmailExists(email)) {
+    return NextResponse.json(
+      { error: 'You have already requested early access from this email. Please check your inbox for updates.' },
+      { status: 409 }
+    );
+  }
 
   await Promise.all([
     sendEmail({

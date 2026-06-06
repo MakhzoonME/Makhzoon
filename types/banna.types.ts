@@ -55,3 +55,22 @@ export interface UpdateCustomFieldPayload {
   sortOrder?: number;
   active?: boolean;
 }
+
+export type CreateCustomFieldInput = CreateCustomFieldPayload;
+
+export interface UpdateCustomFieldInput {
+  label?: string;
+  labelAr?: string;
+  required?: boolean;
+  options?: CustomFieldOption[];
+  placeholder?: string;
+  placeholderAr?: string;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export interface WorkspaceProfile {
+  id: string;
+  organizationId: string;
+  spaceId: string;
+}

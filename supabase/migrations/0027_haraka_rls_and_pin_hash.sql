@@ -145,6 +145,7 @@ CREATE POLICY haraka_card_charges_staff_read ON haraka_card_charges
 -- ════════════════════════════════════════════════════════════════════════
 -- PIN hashing — add pin_hash column to cash drawer config
 -- ════════════════════════════════════════════════════════════════════════
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 ALTER TABLE haraka_cash_drawer_config
   ADD COLUMN IF NOT EXISTS pin_hash text;

@@ -856,6 +856,10 @@ const en = {
   'subscription.paymentReference':'Reference',
   'subscription.suspended':      'Suspended',
   'subscription.featuresUpdateFailed': 'Failed to update features',
+  'subscription.packageUpdateFailedMsg': 'Failed to update package',
+  'subscription.deletePayment':      'Delete payment',
+  'subscription.deletePaymentTitle': 'Delete Payment',
+  'subscription.deletePaymentDesc':  'Are you sure you want to delete the {amount} {currency} payment recorded on {date}? This cannot be undone.',
 
   // ── Environment Sync ───────────────────────────────────────────────
   'sync.setupRequired':          'Setup required.',
@@ -2448,6 +2452,10 @@ const ar: Record<keyof typeof en, string> = {
   'subscription.paymentReference':'المرجع',
   'subscription.suspended':      'موقوف',
   'subscription.featuresUpdateFailed': 'فشل تحديث الميزات',
+  'subscription.packageUpdateFailedMsg': 'فشل تحديث الباقة',
+  'subscription.deletePayment':      'حذف الدفعة',
+  'subscription.deletePaymentTitle': 'حذف الدفعة',
+  'subscription.deletePaymentDesc':  'هل أنت متأكد من حذف دفعة {amount} {currency} المسجلة بتاريخ {date}؟ لا يمكن التراجع عن هذا الإجراء.',
 
   // ── Environment Sync ─────────────────────────────────────────────
   'sync.setupRequired':          'يتطلب إعداداً.',

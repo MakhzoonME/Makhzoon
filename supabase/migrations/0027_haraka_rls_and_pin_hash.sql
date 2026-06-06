@@ -153,7 +153,7 @@ ALTER TABLE haraka_cash_drawer_config
 -- Migrate existing plaintext PINs to bcrypt hashes via pgcrypto.
 -- The application layer will now write to pin_hash and ignore the pin column.
 UPDATE haraka_cash_drawer_config
-  SET pin_hash = public.crypt(pin, public.gen_salt('bf', 8))
+  SET pin_hash = crypt(pin, gen_salt('bf', 8))
   WHERE pin IS NOT NULL AND pin != ''
     AND (pin_hash IS NULL OR pin_hash = '');
 

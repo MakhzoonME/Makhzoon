@@ -67,3 +67,11 @@ export async function getContactSalesEntries(): Promise<ContactSalesEntry[]> {
   if (error) throw error;
   return (data ?? []).map(toEntry);
 }
+
+export async function deleteContactSalesEntry(id: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('contact_sales')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}

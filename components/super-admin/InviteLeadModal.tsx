@@ -19,7 +19,7 @@ const inviteLeadSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(100).optional(),
   lastName: z.string().min(1, 'Last name is required').max(100).optional(),
   orgId: z.string().min(1, 'Please select an organization'),
-  role: z.enum(['admin', 'staff']),
+  role: z.enum(['org_owner', 'admin', 'staff']),
 });
 
 type InviteLeadFormData = z.infer<typeof inviteLeadSchema>;
@@ -34,7 +34,7 @@ function CopySVG() {
 }
 
 function defaultPermissionsForRole(role: string): UserPermissions {
-  if (role === 'admin') return DEFAULT_ADMIN_PERMISSIONS;
+  if (role === 'org_owner' || role === 'admin') return DEFAULT_ADMIN_PERMISSIONS;
   return DEFAULT_STAFF_PERMISSIONS;
 }
 
@@ -48,7 +48,7 @@ interface InviteLeadModalProps {
 export function InviteLeadModal({ open, onOpenChange, leadEmail, leadName }: InviteLeadModalProps) {
   const features = useSubscriptionFeatures();
   const [loading, setLoading] = useState(false);
-  const [permissions, setPermissions] = useState<UserPermissions>(DEFAULT_STAFF_PERMISSIONS);
+  const [permissions, setPermissions] = useState<UserPermissions>(DEFAULT_ADMIN_PERMISSIONS);
   const [showPermissions, setShowPermissions] = useState(false);
   const [result, setResult] = useState<{ acceptUrl: string; qrDataUrl?: string; expiresAt: string; messageSent: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -65,21 +65,21 @@ export function InviteLeadModal({ open, onOpenChange, leadEmail, leadName }: Inv
 
   const form = useForm<InviteLeadFormData>({
     resolver: zodResolver(inviteLeadSchema),
-    defaultValues: { firstName: '', lastName: '', orgId: '', role: 'staff' },
+    defaultValues: { firstName: '', lastName: '', orgId: '', role: 'org_owner' },
   });
 
   function handleClose() {
     setResult(null);
-    setPermissions(DEFAULT_STAFF_PERMISSIONS);
+    setPermissions(DEFAULT_ADMIN_PERMISSIONS);
     setShowPermissions(false);
     setCopied(false);
-    form.reset({ firstName: '', lastName: '', orgId: '', role: 'staff' });
+    form.reset({ firstName: '', lastName: '', orgId: '', role: 'org_owner' });
     onOpenChange(false);
   }
 
   function handleInviteAnother() {
     setResult(null);
-    setPermissions(DEFAULT_STAFF_PERMISSIONS);
+    setPermissions(DEFAULT_ADMIN_PERMISSIONS);
     setCopied(false);
   }
 
@@ -136,6 +136,8 @@ export function InviteLeadModal({ open, onOpenChange, leadEmail, leadName }: Inv
   const selectedRole = form.watch('role');
   const permissionsLabel = selectedRole === 'staff'
     ? 'Staff has limited default access — customise below.'
+    : selectedRole === 'org_owner'
+    ? 'Owner has full access to the organization — customise below.'
     : 'All permissions enabled by default — customise below.';
 
   return (
@@ -247,6 +249,7 @@ export function InviteLeadModal({ open, onOpenChange, leadEmail, leadName }: Inv
                   <Select onValueChange={handleRoleChange} defaultValue={field.value}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
+                      <SelectItem value="org_owner">Owner</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="staff">Staff</SelectItem>
                     </SelectContent>

@@ -164,7 +164,8 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
               }
               const { href, labelKey, icon: Icon } = item;
               const label = t(labelKey as MessageKey);
-              const active = pathname === href || (href !== `/${locale}/superadmin/dashboard` && pathname.startsWith(href));
+              const isExactOnly = href === `/${locale}/superadmin/dashboard` || href === `/${locale}/superadmin`;
+              const active = pathname === href || (!isExactOnly && pathname.startsWith(href));
               return (
                 <Link
                   key={href}

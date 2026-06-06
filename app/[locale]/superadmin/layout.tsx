@@ -152,7 +152,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                 {t('brand.name')}
               </span>
               <span className="text-[9px] font-semibold text-blue-400 uppercase tracking-widest whitespace-nowrap leading-tight">
-                Platform Console
+                Superadmin Platform
               </span>
             </motion.span>
           </div>

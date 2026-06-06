@@ -9,6 +9,7 @@ export interface ContactSalesEntry {
   organizationName: string;
   phone: string;
   email: string;
+  assetCount: string | null;
   notes: string | null;
   ip: string | null;
   createdAt: string;
@@ -25,6 +26,7 @@ function toEntry(r: Row): ContactSalesEntry {
     organizationName: r.organization_name as string,
     phone: r.phone as string,
     email: r.email as string,
+    assetCount: (r.asset_count as string) ?? null,
     notes: (r.notes as string) ?? null,
     ip: (r.ip as string) ?? null,
     createdAt: new Date((r.created_at as string) ?? Date.now()).toISOString(),
@@ -38,6 +40,7 @@ export async function createContactSalesEntry(data: {
   organizationName: string;
   phone: string;
   email: string;
+  assetCount?: string;
   notes?: string;
   ip: string | null;
 }): Promise<string> {
@@ -50,6 +53,7 @@ export async function createContactSalesEntry(data: {
       organization_name: data.organizationName,
       phone: data.phone,
       email: data.email.toLowerCase(),
+      asset_count: data.assetCount ?? null,
       notes: data.notes ?? null,
       ip: data.ip,
     })

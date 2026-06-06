@@ -94,7 +94,8 @@ export async function POST(req: NextRequest) {
       organizationName: organization ?? '',
       phone: '',
       email,
-      notes: [assetCount ? `Asset count: ${assetCount}` : '', message].filter(Boolean).join('\n\n') || undefined,
+      assetCount: assetCount || undefined,
+      notes: message,
       ip: clientIp,
     });
 

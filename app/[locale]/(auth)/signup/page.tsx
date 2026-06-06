@@ -54,9 +54,6 @@ export default function SignupPage() {
 
   const [orgName, setOrgName] = useState('');
   const [subdomain, setSubdomain] = useState('');
-  const [subdomainTouched, setSubdomainTouched] = useState(false);
-  const [subdomainTaken, setSubdomainTaken] = useState(false);
-  const [subdomainChecking, setSubdomainChecking] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [emailExists, setEmailExists] = useState(false);
@@ -72,28 +69,7 @@ export default function SignupPage() {
 
   function handleOrgName(v: string) {
     setOrgName(v);
-    if (!subdomainTouched) {
-      setSubdomain(deriveSubdomain(v));
-      setSubdomainTaken(false);
-    }
-  }
-
-  async function checkSubdomain(value: string) {
-    if (!value || value.length < 3) return;
-    setSubdomainChecking(true);
-    try {
-      const res = await fetch('/api/organizations/check-subdomain', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subdomain: value.toLowerCase() }),
-      });
-      const { available } = await res.json().catch(() => ({ available: true }));
-      setSubdomainTaken(!available);
-    } catch {
-      // silent — don't block on network blip
-    } finally {
-      setSubdomainChecking(false);
-    }
+    setSubdomain(deriveSubdomain(v));
   }
 
   async function checkEmail(value: string) {
@@ -116,7 +92,7 @@ export default function SignupPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (emailExists || subdomainTaken) return;
+    if (emailExists) return;
     setError('');
     setLoading(true);
     try {
@@ -230,64 +206,6 @@ export default function SignupPage() {
                 <Input id="orgName" value={orgName} onChange={(e) => handleOrgName(e.target.value)} placeholder="Acme Corp" required />
               </motion.div>
 
-              {/* Workspace URL */}
-              <motion.div variants={item} className="space-y-1.5">
-                <Label htmlFor="subdomain">
-                  Workspace URL
-                  <span className="ms-1.5 text-xs font-normal text-gray-400">You can change this later.</span>
-                </Label>
-                <div className="flex items-center gap-2">
-                  <div className={`flex-1 flex items-center rounded-md border bg-surface-card focus-within:ring-2 overflow-hidden transition-colors ${
-                    subdomainTaken
-                      ? 'border-red-400 focus-within:ring-red-400/20 focus-within:border-red-400'
-                      : 'border-border focus-within:ring-primary-500/30 focus-within:border-primary-500'
-                  }`}>
-                    <input
-                      id="subdomain"
-                      value={subdomain}
-                      onChange={(e) => {
-                        setSubdomainTouched(true);
-                        setSubdomain(e.target.value.toLowerCase());
-                        setSubdomainTaken(false);
-                      }}
-                      onBlur={(e) => checkSubdomain(e.target.value)}
-                      placeholder="acme-corp"
-                      required
-                      pattern="^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
-                      minLength={3}
-                      maxLength={40}
-                      className="flex-1 px-3 py-2 text-sm outline-none bg-transparent"
-                    />
-                  </div>
-                  <span className="text-xs text-gray-400 font-mono whitespace-nowrap flex-shrink-0">.makhzoon.me</span>
-                </div>
-                {subdomainChecking && (
-                  <p className="text-xs text-gray-400 flex items-center gap-1.5 mt-1">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden className="animate-spin">
-                      <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1.5" />
-                      <path d="M6 1.5a4.5 4.5 0 0 1 4.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                    Checking availability…
-                  </p>
-                )}
-                {subdomainTaken && !subdomainChecking && (
-                  <p className="text-xs text-red-600 flex items-center gap-1.5 mt-1">
-                    <AlertCircleSVG />
-                    <span>
-                      <strong>{subdomain}</strong> is already taken. Try{' '}
-                      <button
-                        type="button"
-                        className="font-semibold underline underline-offset-2 hover:text-red-700 transition-colors"
-                        onClick={() => { setSubdomain(`${subdomain}-2`); setSubdomainTaken(false); }}
-                      >
-                        {subdomain}-2
-                      </button>
-                      {' '}or choose a different name.
-                    </span>
-                  </p>
-                )}
-              </motion.div>
-
               {/* Name + Industry — 2-column */}
               <motion.div variants={item} className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -369,7 +287,7 @@ export default function SignupPage() {
               </AnimatePresence>
 
               <motion.div variants={item}>
-                <Button type="submit" className="w-full gap-2" disabled={loading || emailExists || emailChecking || subdomainTaken || subdomainChecking}>
+                <Button type="submit" className="w-full gap-2" disabled={loading || emailExists || emailChecking}>
                   <AnimatePresence mode="wait" initial={false}>
                     {loading ? (
                       <motion.span key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}

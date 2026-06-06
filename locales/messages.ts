@@ -116,6 +116,7 @@ const en = {
   'banna.fieldCreated': 'Field created.',
   'banna.fieldUpdated': 'Field updated.',
   'banna.fieldDeleted': 'Field deleted.',
+  'banna.additionalInfo': 'Additional Info',
 
   'userSpaces.title':          'Space access',
   'userSpaces.accessAll':      'Access all spaces',
@@ -1711,6 +1712,7 @@ const ar: Record<keyof typeof en, string> = {
   'banna.fieldCreated': 'تم إنشاء الحقل.',
   'banna.fieldUpdated': 'تم تحديث الحقل.',
   'banna.fieldDeleted': 'تم حذف الحقل.',
+  'banna.additionalInfo': 'معلومات إضافية',
 
   'userSpaces.title':          'الوصول إلى المساحات',
   'userSpaces.accessAll':      'الوصول إلى كل المساحات',

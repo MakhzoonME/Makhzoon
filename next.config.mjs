@@ -6,11 +6,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: { ignoreBuildErrors: true },
-  images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: '*.supabase.co' },
-    ],
-  },
   turbopack: {
     root: __dirname,
   },

@@ -134,8 +134,12 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
       if (newId) {
         const pkg = packages.find((p) => p.id === newId);
         if (pkg) {
-          setFeatures(pkg.features);
-          payload.features = pkg.features;
+          const merged = FEATURE_KEYS.reduce(
+            (acc, k) => ({ ...acc, [k]: pkg.features?.[k] ?? false }),
+            {} as Record<FeatureKey, boolean>,
+          );
+          setFeatures(merged);
+          payload.features = merged;
         }
       }
       await patchSubscription(payload);

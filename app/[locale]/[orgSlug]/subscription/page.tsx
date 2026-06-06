@@ -19,13 +19,19 @@ import { useOrgSlug, useSpace } from '@/hooks/ui';
 import { cn } from '@/lib/utils/cn';
 
 const FEATURE_LABEL_KEY: Record<string, MessageKey> = {
-  warranties: 'subscription.warranties',
-  requests: 'subscription.requests',
-  reports: 'subscription.feature.reports',
-  maintenance: 'subscription.feature.maintenance',
-  checkouts: 'subscription.feature.checkouts',
-  notes: 'subscription.feature.notes',
-  support: 'subscription.feature.support',
+  dashboard:     'nav.dashboard',
+  assets:        'nav.assets',
+  inventory:     'nav.inventory',
+  warranties:    'subscription.warranties',
+  requests:      'subscription.requests',
+  reports:       'subscription.feature.reports',
+  maintenance:   'subscription.feature.maintenance',
+  assetCheckouts:'subscription.feature.checkouts',
+  assetNotes:    'subscription.feature.notes',
+  support:       'subscription.feature.support',
+  auditLogs:     'nav.auditLogs',
+  pos:           'nav.pos',
+  banna:         'nav.banna',
 };
 
 /* ── Mini progress bar ───────────────────────────────────────────── */

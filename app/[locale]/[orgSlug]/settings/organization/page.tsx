@@ -16,7 +16,6 @@ import { toast } from '@/hooks/ui';
 import { apiFetch } from '@/lib/utils/api-fetch';
 import { ORG_CATEGORIES } from '@/types';
 import { Check, Upload, X } from 'lucide-react';
-import Image from 'next/image';
 import { cn } from '@/lib/utils/cn';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 
@@ -302,7 +301,7 @@ export default function OrganizationInfoPage() {
             <div className="flex items-center gap-3">
               {logo
                 ? <div className="relative w-12 h-12 border border-border rounded p-1 bg-white">
-                    <Image src={logo} alt="logo" fill className="object-contain" sizes="48px" />
+                    <img src={logo} alt="logo" className="object-contain w-full h-full" />
                   </div>
                 : <div className="w-12 h-12 rounded border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-[9px] text-gray-400">LOGO</div>
               }

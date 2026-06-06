@@ -116,17 +116,12 @@ function ForgotPasswordModal({ open, onClose }: { open: boolean; onClose: () => 
         return;
       }
 
-      const supabase = await createClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(
-        resetEmail.trim(),
-        {
-          redirectTo:
-            typeof window !== 'undefined'
-              ? `${window.location.origin}/reset-password`
-              : undefined,
-        },
-      );
-      if (error && error.status === 429) {
+      const res = await fetch('/api/auth/send-password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail.trim() }),
+      });
+      if (res.status === 429) {
         setError('Too many attempts. Please wait a moment before trying again.');
       } else {
         setSubmitted(true);

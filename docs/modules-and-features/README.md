@@ -40,6 +40,7 @@ Complete reference for every module, feature, and UI system in Makhzoon.
 | [13-settings.md](13-settings.md) | Org info, managed lists, tax rates, Jo-Fotara (e-invoicing) |
 | [14-support.md](14-support.md) | In-app support tickets |
 | [15-bulk-actions.md](15-bulk-actions.md) | Floating bulk-actions bar (delete, move, duplicate) |
+| [24-banna.md](24-banna.md) | Banna — Workspace Builder, custom fields for modules |
 
 ---
 

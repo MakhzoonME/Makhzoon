@@ -148,7 +148,7 @@ export default function BackendLogsPage() {
               />
               {t('backendLogs.autoRefresh')}
             </label>
-            <Button size="sm" variant="outline" onClick={refetch} disabled={isLoading}>
+            <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isLoading}>
               <RefreshCw className={cn('h-4 w-4 me-1.5', isLoading && 'animate-spin')} />
               {t('backendLogs.refresh')}
             </Button>

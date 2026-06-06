@@ -53,12 +53,11 @@ export async function getEarlyAccessEntries(): Promise<EarlyAccessEntry[]> {
 }
 
 export async function earlyAccessEmailExists(email: string): Promise<boolean> {
-  const { data } = await supabaseAdmin
+  const { count } = await supabaseAdmin
     .from('early_access')
-    .select('id')
-    .eq('email', email.toLowerCase())
-    .maybeSingle();
-  return !!data;
+    .select('id', { count: 'exact', head: true })
+    .eq('email', email.toLowerCase());
+  return (count ?? 0) > 0;
 }
 
 export async function deleteEarlyAccessEntry(id: string): Promise<void> {

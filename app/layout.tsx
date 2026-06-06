@@ -12,6 +12,7 @@ import ContentsquareInit from '@/components/shared/ContentsquareInit';
 import HeapInit from '@/components/shared/HeapInit';
 import LogRocketInit from '@/components/shared/LogRocketInit';
 import AnalyticsIdentify from '@/components/shared/AnalyticsIdentify';
+import DebugInit from '@/components/shared/DebugInit';
 
 const capriola = localFont({
   src: '../fonts/Capriola/Capriola-Regular.ttf',
@@ -75,6 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <HeapInit />
               <LogRocketInit />
               <AnalyticsIdentify />
+              <DebugInit />
             </ThemeProvider>
           </AppToastProvider>
         </QueryProvider>

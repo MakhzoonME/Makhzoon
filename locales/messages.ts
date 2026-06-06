@@ -1041,6 +1041,7 @@ const en = {
 
   // ── Website Messages ──────────────────────────────────────────────
   'websiteMessages.description':    'Contact form submissions from the website.',
+  'websiteMessages.assetCount':     'Asset Count',
   'websiteMessages.message':        'Message',
   'websiteMessages.empty':          'No website messages yet.',
   'websiteMessages.confirmDelete':  'Are you sure you want to delete this message? This cannot be undone.',
@@ -2649,6 +2650,7 @@ const ar: Record<keyof typeof en, string> = {
 
   // ── Website Messages ──────────────────────────────────────────────
   'websiteMessages.description':    'رسائل نموذج التواصل الواردة من الموقع.',
+  'websiteMessages.assetCount':     'عدد الأصول',
   'websiteMessages.message':        'الرسالة',
   'websiteMessages.empty':          'لا توجد رسائل من الموقع بعد.',
   'websiteMessages.confirmDelete':  'هل أنت متأكد من حذف هذه الرسالة؟ لا يمكن التراجع.',

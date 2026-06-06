@@ -62,6 +62,13 @@ export default function WebsiteMessagesPage() {
       ),
     },
     {
+      key: 'assetCount',
+      header: t('websiteMessages.assetCount'),
+      render: (entry) => (
+        <span className="text-sm text-gray-700">{entry.assetCount || '—'}</span>
+      ),
+    },
+    {
       key: 'notes',
       header: t('websiteMessages.message'),
       render: (entry) => {

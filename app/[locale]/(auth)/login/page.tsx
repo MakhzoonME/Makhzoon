@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
-import { buildOrgPath, buildSuperAdminPath } from '@/lib/utils/tenant-url';
+import { buildSuperAdminPath } from '@/lib/utils/tenant-url';
 import { getFirstAccessiblePath } from '@/lib/nav';
 import { cn } from '@/lib/utils/cn';
 import { toast, useT } from '@/hooks/ui';
@@ -372,8 +372,7 @@ export default function LoginPage() {
       if (SUPERADMIN_ROLES.has(role)) {
         router.replace(buildSuperAdminPath(locale, '/dashboard'));
       } else if (orgSlug) {
-        const firstPath = getFirstAccessiblePath({ locale, role, features, permissions });
-        router.replace(buildOrgPath(locale, orgSlug, firstPath));
+        router.replace(getFirstAccessiblePath({ locale, orgSlug, role, features, permissions }));
       }
     }).catch(() => {});
   }, [locale, router, sessionExpiredMessage]);
@@ -412,8 +411,7 @@ export default function LoginPage() {
     if (SUPERADMIN_ROLES.has(role)) {
       router.push(buildSuperAdminPath(locale, '/dashboard'));
     } else if (orgSlug) {
-      const firstPath = getFirstAccessiblePath({ locale, role, features, permissions });
-      router.push(buildOrgPath(locale, orgSlug, firstPath));
+      router.push(getFirstAccessiblePath({ locale, orgSlug, role, features, permissions }));
     } else {
       throw new Error('Your workspace could not be found. Please contact support.');
     }

@@ -50,38 +50,61 @@ export class PaymobProvider implements CardTerminalProvider {
 
     const order = await orderRes.json() as { id: number }
 
-    // Step 3: Request payment key
-    const keyRes = await fetch(`${PAYMOB_API}/acceptance/payments/pay`, {
+    // Step 3: Get payment key (Paymob requires a short-lived payment_key scoped to the order)
+    const pkRes = await fetch(`${PAYMOB_API}/acceptance/payment_keys`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         auth_token: token,
+        amount_cents: Math.round(req.amount * 100),
+        expiration: 3600,
+        order_id: order.id,
+        currency: req.currency,
+        integration_id: req.terminalId,
+        billing_data: {
+          apartment: 'NA', email: 'NA', floor: 'NA', first_name: 'NA',
+          street: 'NA', building: 'NA', phone_number: 'NA', shipping_method: 'NA',
+          postal_code: 'NA', city: 'NA', country: 'NA', last_name: 'NA',
+          state: 'NA',
+        },
+      }),
+      signal: AbortSignal.timeout(10_000),
+    })
+
+    if (!pkRes.ok) {
+      const body = await pkRes.text()
+      throw new Error(`Paymob payment_key failed (${pkRes.status}): ${body}`)
+    }
+
+    const { token: paymentKey } = await pkRes.json() as { token: string }
+
+    // Step 4: Initiate terminal charge using the payment key
+    const payRes = await fetch(`${PAYMOB_API}/acceptance/payments/pay`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         source: {
           identifier: req.terminalId ?? 'default',
           subtype: 'TERMINAL',
         },
-        payment_token: token,
-        order_id: order.id,
-        amount_cents: Math.round(req.amount * 100),
-        currency: req.currency,
-        reference: req.reference,
+        payment_token: paymentKey,
       }),
       signal: AbortSignal.timeout(15_000),
     })
 
-    if (!keyRes.ok) {
-      const body = await keyRes.text()
-      throw new Error(`Paymob payment failed (${keyRes.status}): ${body}`)
+    if (!payRes.ok) {
+      const body = await payRes.text()
+      throw new Error(`Paymob payment failed (${payRes.status}): ${body}`)
     }
 
-    const payment = await keyRes.json() as { id?: string; reference?: string; status?: string }
-    const status = payment.status === 'success' ? 'approved' as const
-      : payment.status === 'failed' ? 'declined' as const
+    const payment = await payRes.json() as { id?: string; reference?: string; success?: boolean; pending?: boolean }
+    const status = payment.success === true ? 'approved' as const
+      : payment.success === false ? 'declined' as const
       : 'pending' as const
 
     return {
       approved: status === 'approved',
-      providerRef: payment.id ?? null,
+      providerRef: payment.id?.toString() ?? null,
       status,
     }
   }

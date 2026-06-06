@@ -730,6 +730,7 @@ const en = {
   'requests.reference':        'Reference',
   'requests.submittedBy':      'Submitted By',
   'requests.description':      'Description',
+  'requests.decisionDate':     'Decision Date',
 
   // ── Support page ──────────────────────────────────────────────────
   'support.title':             'Support Tickets',
@@ -2325,6 +2326,7 @@ const ar: Record<keyof typeof en, string> = {
   'requests.reference':        'المرجع',
   'requests.submittedBy':      'مقدم الطلب',
   'requests.description':      'الوصف',
+  'requests.decisionDate':     'تاريخ القرار',
   //'requests.approved':         'تمت الموافقة على الطلب',
   //'requests.rejected':         'تم رفض الطلب',
 

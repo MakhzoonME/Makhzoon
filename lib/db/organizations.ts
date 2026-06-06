@@ -113,6 +113,33 @@ export async function getOrganizationBySubdomain(
   return data ? toOrg(data) : null;
 }
 
+export async function deleteOrganizationWithData(
+  id: string,
+): Promise<{ deletedUserUids: string[] }> {
+  // Collect auth UIDs before the org row is gone
+  const { data: userRows } = await supabaseAdmin
+    .from('users')
+    .select('id')
+    .eq('organization_id', id);
+  const uids = (userRows ?? []).map((r) => r.id as string);
+
+  // Deleting the org cascades to all child tables (assets, inventory, haraka, etc.)
+  const { error } = await supabaseAdmin
+    .from('organizations')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+
+  // Remove auth identities — best-effort per user
+  await Promise.all(
+    uids.map((uid) =>
+      supabaseAdmin.auth.admin.deleteUser(uid).catch(() => undefined),
+    ),
+  );
+
+  return { deletedUserUids: uids };
+}
+
 export async function getOrganizationsWithSearch(filters?: {
   search?: string;
   category?: string;

@@ -150,42 +150,17 @@ Any string works as a custom agent type.
 npm run build && npm test
 ```
 
-## Deploying (Manual — GitHub Actions minutes exhausted until July 1, 2026)
+## Deploying (GitHub Actions)
 
-GitHub Actions is blocked. After every `git push`, deploy manually from your local machine.
+Pushing to any of these branches automatically triggers a deploy via GitHub Actions:
 
-**Prerequisites** — add these to `~/.zshrc` once (ask Osama for the values if you don't have them):
-```bash
-export CLOUDFLARE_API_TOKEN="your_token_here"
-export CLOUDFLARE_ACCOUNT_ID="your_account_id_here"
-```
+| Branch | Environment | URL |
+|--------|-------------|-----|
+| `DevBranch` | dev | dev.makhzoon.me |
+| `STGBranch` | staging | stg.makhzoon.me |
+| `main` | production | app.makhzoon.me |
 
-**Deploy commands** (run from the project root after pushing):
-
-```bash
-# Dev (dev.makhzoon.me)
-NEXT_PUBLIC_SUPABASE_URL=https://ltujtoabnewoypittoku.supabase.co \
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dWp0b2FibmV3b3lwaXR0b2t1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODg0MTcsImV4cCI6MjA5NTU2NDQxN30.gZ15djtZQyMAp6Mw_CeYqxQpQjmDty1geHBWLaw2_CY \
-NEXT_PUBLIC_APP_URL=https://dev.makhzoon.me \
-NEXT_PUBLIC_APP_ENV=dev \
-npm run cf:deploy:dev
-
-# Staging (stg.makhzoon.me)
-NEXT_PUBLIC_SUPABASE_URL=https://ncjzozvzjtyycdlwohtr.supabase.co \
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0 \
-NEXT_PUBLIC_APP_URL=https://stg.makhzoon.me \
-NEXT_PUBLIC_APP_ENV=staging \
-npm run cf:deploy:staging
-
-# Production (app.makhzoon.me)
-NEXT_PUBLIC_SUPABASE_URL=https://ncjzozvzjtyycdlwohtr.supabase.co \
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0 \
-NEXT_PUBLIC_APP_URL=https://app.makhzoon.me \
-NEXT_PUBLIC_APP_ENV=production \
-npm run cf:deploy:prod
-```
-
-Actions will resume automatically on **July 1, 2026** — remove this section then.
+Monitor runs at **github.com/MakhzoonME/Makhzoon/actions**.
 
 ## CLI Quick Reference
 

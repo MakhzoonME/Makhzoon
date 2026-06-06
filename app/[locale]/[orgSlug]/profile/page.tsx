@@ -1,8 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
 import { useOrgSlug, useT } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { AvatarUpload } from '@/components/shared/AvatarUpload';
 import { Button } from '@/components/ui/button';
@@ -22,16 +22,7 @@ export default function ProfilePage() {
   const { user, setUser } = useAuthStore();
   const orgSlug = useOrgSlug();
   const { t } = useT();
-  const { data: orgData } = useQuery({
-    queryKey: ['org-by-slug', orgSlug],
-    queryFn: async () => {
-      const res = await fetch(`/api/organizations/by-subdomain/${orgSlug}`);
-      if (!res.ok) return null;
-      return res.json() as Promise<{ name: string }>;
-    },
-    enabled: !!orgSlug,
-    staleTime: 60_000,
-  });
+  const { data: orgData } = useOrgInfo();
 
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
   const [savingName, setSavingName] = useState(false);

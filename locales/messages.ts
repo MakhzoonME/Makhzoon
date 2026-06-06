@@ -182,9 +182,10 @@ const en = {
   'nav.team':          'Team',
   'nav.sync':          'Environment Sync',
   'nav.backendLogs':   'Backend Logs',
-  'nav.leads':         'Leads',
-  'nav.lists':         'Lists',
-  'nav.settings':      'Settings',
+  'nav.leads':           'Leads',
+  'nav.websiteMessages': 'Website Messages',
+  'nav.lists':           'Lists',
+  'nav.settings':        'Settings',
   'nav.orgInfo':       'Organization Info',
 
   // ── Common actions ───────────────────────────────────────────────
@@ -1038,6 +1039,13 @@ const en = {
   'leads.confirmDelete':       'Are you sure you want to delete this entry? This cannot be undone.',
   'leads.deleted':             'Entry deleted.',
 
+  // ── Website Messages ──────────────────────────────────────────────
+  'websiteMessages.description':    'Contact form submissions from the website.',
+  'websiteMessages.message':        'Message',
+  'websiteMessages.empty':          'No website messages yet.',
+  'websiteMessages.confirmDelete':  'Are you sure you want to delete this message? This cannot be undone.',
+  'websiteMessages.deleted':        'Message deleted.',
+
   // ── Extra column headers ──────────────────────────────────────────
   'col.supplier':      'Supplier',
   'col.invoiceNumber': 'Invoice #',
@@ -1780,9 +1788,10 @@ const ar: Record<keyof typeof en, string> = {
   'nav.team':          'الفريق',
   'nav.sync':          'مزامنة البيئات',
   'nav.backendLogs':   'سجلات النظام',
-  'nav.leads':         'العملاء المحتملون',
-  'nav.lists':         'القوائم',
-  'nav.settings':      'الإعدادات',
+  'nav.leads':           'العملاء المحتملون',
+  'nav.websiteMessages': 'رسائل الموقع',
+  'nav.lists':           'القوائم',
+  'nav.settings':        'الإعدادات',
   'nav.orgInfo':       'معلومات المنظمة',
 
   // ── Common actions ───────────────────────────────────────────────
@@ -2637,6 +2646,13 @@ const ar: Record<keyof typeof en, string> = {
   'leads.inviteToOrg':         'دعوة إلى منظمة',
   'leads.confirmDelete':       'هل أنت متأكد من حذف هذا السجل؟ لا يمكن التراجع.',
   'leads.deleted':             'تم حذف السجل.',
+
+  // ── Website Messages ──────────────────────────────────────────────
+  'websiteMessages.description':    'رسائل نموذج التواصل الواردة من الموقع.',
+  'websiteMessages.message':        'الرسالة',
+  'websiteMessages.empty':          'لا توجد رسائل من الموقع بعد.',
+  'websiteMessages.confirmDelete':  'هل أنت متأكد من حذف هذه الرسالة؟ لا يمكن التراجع.',
+  'websiteMessages.deleted':        'تم حذف الرسالة.',
 
   // ── Extra column headers ──────────────────────────────────────────
   'col.supplier':      'المورد',

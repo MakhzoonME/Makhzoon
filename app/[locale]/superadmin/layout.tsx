@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/ui';
-import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity, Mail, RefreshCw, ChevronLeft, ChevronRight, Package } from 'lucide-react';
+import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity, Mail, RefreshCw, ChevronLeft, ChevronRight, Package, Inbox } from 'lucide-react';
 import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -32,6 +32,7 @@ const ALL_NAV_ITEMS = (locale: string): NavEntry[] => [
   { href: `/${locale}/superadmin/dashboard`,     labelKey: 'nav.dashboard',     icon: LayoutDashboard, roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
   { href: `/${locale}/superadmin`,               labelKey: 'nav.organizations', icon: Building2,       roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
   { href: `/${locale}/superadmin/leads`,         labelKey: 'nav.leads',         icon: Mail,            roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+  { href: `/${locale}/superadmin/messages`,      labelKey: 'nav.websiteMessages', icon: Inbox,           roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
   { href: `/${locale}/superadmin/lists`,         labelKey: 'nav.lists',         icon: FileText,        roles: ['super_admin', 'makhzoon_admin'] },
   { href: `/${locale}/superadmin/packages`,      labelKey: 'nav.packages',      icon: Package,         roles: ['super_admin', 'makhzoon_admin'] },
   { href: `/${locale}/superadmin/configuration`, labelKey: 'nav.configuration', icon: Settings,        roles: ['super_admin', 'makhzoon_admin'] },

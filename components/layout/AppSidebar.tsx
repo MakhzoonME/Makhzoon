@@ -192,6 +192,7 @@ export function AppSidebar() {
   const isRtl = dir === 'rtl';
 
   const [userToggles, setUserToggles] = useState<Record<string, boolean>>({});
+  const [avatarError, setAvatarError] = useState(false);
 
   async function handleSignOut() {
     analytics.track('user_signed_out');
@@ -546,8 +547,8 @@ export function AppSidebar() {
                     href={`/${locale}/${orgSlug}/profile`}
                     className="relative h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-semibold text-primary-700 flex-shrink-0 overflow-hidden hover:ring-2 hover:ring-primary-400 transition-shadow"
                   >
-                    {user.avatarUrl ? (
-                      <Image src={user.avatarUrl} alt="" fill className="object-cover" sizes="28px" />
+                    {user.avatarUrl && !avatarError ? (
+                      <Image src={user.avatarUrl} alt="" fill className="object-cover" sizes="28px" onError={() => setAvatarError(true)} />
                     ) : (
                       user.displayName?.[0]?.toUpperCase() ?? displayIdentity(user.email)?.[0]?.toUpperCase()
                     )}

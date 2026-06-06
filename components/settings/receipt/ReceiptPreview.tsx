@@ -1,7 +1,5 @@
 'use client';
 
-/* eslint-disable @next/next/no-img-element */
-import Image from 'next/image';
 import { receiptLabels, isRtl, pickText, type ReceiptLang } from '@/lib/receipts/labels';
 
 export type TemplateId = 'thermal-58' | 'thermal-80' | 'a4-modern' | 'a4-invoice';
@@ -136,7 +134,7 @@ export function ThermalPreview(props: PreviewProps) {
         <div className="flex justify-center mb-2">
           {config.logo
             ? <div className="relative" style={{ width: 80, height: 48 }}>
-                <Image src={config.logo} alt="logo" fill sizes="80px" className="object-contain" />
+                <img src={config.logo} alt="logo" className="object-contain w-full h-full" />
               </div>
             : <div className="w-10 h-10 rounded bg-gray-100 border border-gray-200 flex items-center justify-center text-[8px] text-gray-400">LOGO</div>}
         </div>
@@ -227,7 +225,7 @@ export function A4ModernPreview(props: PreviewProps) {
           {config.showLogo && (
             config.logo
               ? <div className="relative w-10 h-10 bg-white rounded overflow-hidden">
-                  <Image src={config.logo} alt="logo" fill className="object-contain p-0.5" sizes="40px" />
+                  <img src={config.logo} alt="logo" className="object-contain p-0.5 w-full h-full" />
                 </div>
               : <div className="w-10 h-10 rounded bg-white/20 flex items-center justify-center text-[8px]">LOGO</div>
           )}
@@ -332,7 +330,7 @@ export function A4InvoicePreview(props: PreviewProps) {
           {config.showLogo && (
             config.logo
               ? <div className="relative w-10 h-10">
-                  <Image src={config.logo} alt="logo" fill className="object-contain" sizes="40px" />
+                  <img src={config.logo} alt="logo" className="object-contain w-full h-full" />
                 </div>
               : <div className="w-10 h-10 border border-gray-200 bg-gray-50 rounded flex items-center justify-center text-[8px] text-gray-400">LOGO</div>
           )}

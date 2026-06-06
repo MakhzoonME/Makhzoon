@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Eye, FileText, Loader2 } from 'lucide-react';
 import { toast, useT } from '@/hooks/ui';
-import Image from 'next/image';
 import type { DocumentRef } from '@/types';
 
 interface Props {
@@ -62,7 +61,7 @@ export function DocumentList({ value, label, emptyText }: Props) {
           >
             <div className="relative h-9 w-9 flex-shrink-0 rounded border border-border bg-white overflow-hidden flex items-center justify-center">
               {ref.public && isImage(ref) && ref.url
-                ? <Image src={ref.url} alt={ref.name} fill className="object-cover" sizes="36px" />
+                ? <img src={ref.url} alt={ref.name} className="object-cover w-full h-full" />
                 : <FileText className="h-4 w-4 text-gray-400" strokeWidth={1.75} />}
             </div>
             <span className="flex-1 min-w-0 truncate text-sm text-gray-700">{ref.name}</span>

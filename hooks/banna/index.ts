@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/ui';
-import type { CustomField } from '@/types/banna.types';
+import type { CustomField, CustomFieldWithValue, CustomFieldRecordType, UpsertCustomFieldValueInput } from '@/types/banna.types';
 
 export function useCustomFields(module?: string) {
   return useQuery<{ items: CustomField[] }>({
@@ -60,6 +60,38 @@ export function useUpdateCustomField() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['banna-custom-fields'] });
       toast.success('Field updated');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+export function useCustomFieldValues(recordType: CustomFieldRecordType, recordId: string) {
+  return useQuery<{ items: CustomFieldWithValue[] }>({
+    queryKey: ['banna-field-values', recordType, recordId],
+    enabled: !!recordId,
+    queryFn: async () => {
+      const res = await fetch(`/api/banna/values?recordType=${recordType}&recordId=${recordId}`);
+      if (!res.ok) throw new Error('Failed to load field values');
+      return res.json();
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useSaveCustomFieldValues(recordType: CustomFieldRecordType, recordId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (values: UpsertCustomFieldValueInput[]) => {
+      const res = await fetch('/api/banna/values', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recordType, recordId, values }),
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error ?? 'Failed to save'); }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['banna-field-values', recordType, recordId] });
+      toast.success('Saved');
     },
     onError: (err: Error) => toast.error(err.message),
   });

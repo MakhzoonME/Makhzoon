@@ -74,3 +74,33 @@ export interface WorkspaceProfile {
   organizationId: string;
   spaceId: string;
 }
+
+export type CustomFieldRecordType = 'assets' | 'inventory' | 'requests';
+
+export interface CustomFieldValue {
+  id: string;
+  organizationId: string;
+  spaceId?: string | null;
+  recordType: CustomFieldRecordType;
+  recordId: string;
+  fieldId: string;
+  value: unknown;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomFieldWithValue extends CustomField {
+  value?: unknown;
+  valueId?: string;
+}
+
+export interface UpsertCustomFieldValueInput {
+  fieldId: string;
+  value: unknown;
+}
+
+export interface SaveCustomFieldValuesInput {
+  recordType: CustomFieldRecordType;
+  recordId: string;
+  values: UpsertCustomFieldValueInput[];
+}

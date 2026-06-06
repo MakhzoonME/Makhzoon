@@ -30,6 +30,7 @@ import { useAccessibleSpaces } from '@/hooks/spaces';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
 import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
+import { CustomFieldValuesSection } from '@/components/banna/CustomFieldValuesSection';
 
 /* ── Icons ───────────────────────────────────────────────────────── */
 function BoxIcon() {
@@ -335,6 +336,7 @@ export default function InventoryItemDetailPage() {
                 <DocumentList value={item.documents} label="Purchase receipts / invoices" />
               </div>
             )}
+            <CustomFieldValuesSection recordType="inventory" recordId={itemId} />
           </div>
 
           {/* Transaction history */}

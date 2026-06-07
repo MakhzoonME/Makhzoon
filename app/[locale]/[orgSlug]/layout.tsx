@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth, useAuthStore } from '@/hooks/ui';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -64,6 +64,15 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   const showBanner = SUPERADMIN_ROLES.has(user.role) && active;
   const sidebarWidth = sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
 
+  const [isMd, setIsMd] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    setIsMd(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMd(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   return (
     <div className="min-h-screen bg-surface-page">
       <AppHeader />
@@ -74,7 +83,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
       <main
         className={`pt-14 ${showBanner ? 'mt-10' : ''} min-h-screen pb-16 md:pb-0`}
         style={{
-          [isRtl ? 'marginRight' : 'marginLeft']: `${sidebarWidth}px`,
+          [isRtl ? 'marginRight' : 'marginLeft']: isMd ? `${sidebarWidth}px` : 0,
           transition: 'margin 0.28s cubic-bezier(0.4,0,0.2,1)',
         }}
       >

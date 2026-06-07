@@ -48,7 +48,12 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ userId:
 
   await updateUser(userId, { role, permissions: permissions ?? undefined, updatedBy: caller.uid });
   await updateAuthUser(userId, { role });
-  await revokeAuthUserSessions(userId);
+  // Only revoke sessions when editing someone else — revoking your own session
+  // forces an immediate logout, making it impossible to see the updated state.
+  // The caller's client refreshes its auth store separately.
+  if (userId !== caller.uid) {
+    await revokeAuthUserSessions(userId);
+  }
   invalidateCachedPermissions(userId);
   invalidateCachedSessionsForUser(userId);
 

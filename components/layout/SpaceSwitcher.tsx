@@ -80,10 +80,10 @@ export function SpaceSwitcher({ collapsed = false }: { collapsed?: boolean }) {
           {!collapsed && (
             <>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 truncate leading-tight">
+                <p className="text-[13px] font-semibold text-gray-900 truncate leading-tight">
                   {currentName}
                 </p>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate leading-tight">
+                <p className="text-[11px] text-gray-500 truncate leading-tight">
                   {orgInfo?.name ?? orgSlug}
                 </p>
               </div>

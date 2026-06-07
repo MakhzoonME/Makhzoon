@@ -139,7 +139,7 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
 };
 
 export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
-  dashboard: { view: true   },
+  dashboard: { view: false  },
   assets:    { view: true,  create: false, update: false, delete: false, import: false, checkout: false, maintenance: false, notes: false, bulk_delete: false, bulk_move: false, bulk_duplicate: false },
   inventory: { view: true,  create: false, update: false, delete: false, transactions: false, audits: false, bulk_delete: false, bulk_move: false, bulk_duplicate: false },
   purchases: { view: false, create: false, update: false, delete: false, receive: false },

@@ -41,6 +41,10 @@ export interface RequestPermissions {
   bulk_duplicate: boolean;
 }
 
+export interface DashboardPermissions {
+  view: boolean;
+}
+
 export interface ReportsPermissions {
   view: boolean;
 }
@@ -103,6 +107,7 @@ export interface BannaPermissions {
 }
 
 export interface UserPermissions {
+  dashboard: DashboardPermissions;
   assets: AssetPermissions;
   inventory: InventoryPermissions;
   purchases: PurchasePermissions;
@@ -118,6 +123,7 @@ export interface UserPermissions {
 }
 
 export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
+  dashboard: { view: true  },
   assets:    { view: true,  create: true,  update: true,  delete: true,  import: true,  checkout: true,  maintenance: true,  notes: true,  bulk_delete: true,  bulk_move: true,  bulk_duplicate: true  },
   inventory: { view: true,  create: true,  update: true,  delete: true,  transactions: true,  audits: true,  bulk_delete: true,  bulk_move: true,  bulk_duplicate: true  },
   purchases: { view: true,  create: true,  update: true,  delete: true,  receive: true },
@@ -133,6 +139,7 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
 };
 
 export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
+  dashboard: { view: true   },
   assets:    { view: true,  create: false, update: false, delete: false, import: false, checkout: false, maintenance: false, notes: false, bulk_delete: false, bulk_move: false, bulk_duplicate: false },
   inventory: { view: true,  create: false, update: false, delete: false, transactions: false, audits: false, bulk_delete: false, bulk_move: false, bulk_duplicate: false },
   purchases: { view: false, create: false, update: false, delete: false, receive: false },
@@ -187,6 +194,16 @@ export const MODULE_GROUP_LABEL_KEYS: Record<ModuleGroup, MessageKey> = {
 export const MODULE_GROUP_ORDER: ModuleGroup[] = ['core', 'commerce', 'workflow', 'admin'];
 
 export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
+  {
+    key: 'dashboard',
+    label: 'Dashboard',
+    labelKey: 'permModule.dashboard',
+    featureKey: 'dashboard',
+    group: 'core',
+    operations: [
+      { key: 'view', label: 'View Dashboard', labelKey: 'permOp.dashboard.view' },
+    ],
+  },
   {
     key: 'assets',
     label: 'Assets',

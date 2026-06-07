@@ -195,7 +195,20 @@ export default function UsersPage() {
   function openEditRole(u: OrgUser) {
     setEditTarget(u);
     setEditRole(u.role);
-    setEditPermissions(u.permissions ?? defaultPermsForRole(u.role));
+    const defaults = defaultPermsForRole(u.role);
+    if (u.permissions) {
+      // Deep-merge: role defaults fill any new fields added after permissions were last saved
+      const merged: Record<string, unknown> = {};
+      for (const key of Object.keys(defaults) as (keyof UserPermissions)[]) {
+        merged[key] = {
+          ...(defaults[key] as unknown as Record<string, boolean>),
+          ...(u.permissions[key] as unknown as Record<string, boolean> ?? {}),
+        };
+      }
+      setEditPermissions(merged as unknown as UserPermissions);
+    } else {
+      setEditPermissions(defaults);
+    }
     setPermissionsModified(false);
     setShowEditPerms(false);
     setEditSpaceAccess({ allSpaces: u.role === 'org_owner', spaceIds: [] });

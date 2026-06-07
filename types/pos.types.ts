@@ -307,3 +307,98 @@ export interface HarakaCardCharge {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// ── Haraka Service Jobs ───────────────────────────────────────────────────
+
+export type ServiceJobStatus = 'new' | 'confirmed' | 'in_progress' | 'done' | 'cancelled';
+
+export interface ServiceLine {
+  name: string;
+  description: string | null;
+  quantity: number;
+  unitPrice: number;
+  taxRate: number;
+  taxAmount: number;
+  discountAmount: number;
+  lineTotal: number;
+}
+
+export interface HarakaServiceJob {
+  id: string;
+  organizationId: string;
+  spaceId: string | null;
+  jobNumber: string;
+  invoiceNumber: string | null;
+  serviceType: string | null;
+  status: ServiceJobStatus;
+  customerId: string | null;
+  customerName: string;
+  customerPhone: string | null;
+  staffMemberId: string | null;
+  staffMemberName: string | null;
+  items: ServiceLine[];
+  subtotal: number;
+  discountAmount: number;
+  taxAmount: number;
+  total: number;
+  paymentStatus: OrderPaymentStatus;
+  amountPaid: number;
+  paymentMethod: string | null;
+  scheduledAt: Date | null;
+  serviceAddress: OrderDeliveryAddress | null;
+  notes: string | null;
+  createdAt: Date;
+  createdBy: string | null;
+  updatedAt: Date;
+  updatedBy: string | null;
+}
+
+// ── Haraka Retainers ──────────────────────────────────────────────────────
+
+export type RetainerStatus = 'active' | 'paused' | 'cancelled' | 'expired';
+export type BillingCycle = 'monthly' | 'quarterly' | 'annual';
+
+export interface HarakaRetainer {
+  id: string;
+  organizationId: string;
+  spaceId: string | null;
+  retainerNumber: string;
+  name: string;
+  customerId: string | null;
+  customerName: string;
+  customerPhone: string | null;
+  staffMemberId: string | null;
+  staffMemberName: string | null;
+  billingCycle: BillingCycle;
+  amountPerCycle: number;
+  taxRate: number;
+  startDate: string;
+  endDate: string | null;
+  status: RetainerStatus;
+  nextBillingDate: string | null;
+  notes: string | null;
+  createdAt: Date;
+  createdBy: string | null;
+  updatedAt: Date;
+  updatedBy: string | null;
+}
+
+export interface HarakaRetainerInvoice {
+  id: string;
+  retainerId: string;
+  organizationId: string;
+  invoiceNumber: string;
+  billingPeriodStart: string;
+  billingPeriodEnd: string;
+  dueDate: string | null;
+  amount: number;
+  taxAmount: number;
+  total: number;
+  paymentStatus: OrderPaymentStatus;
+  amountPaid: number;
+  paymentMethod: string | null;
+  paidAt: Date | null;
+  notes: string | null;
+  createdAt: Date;
+  createdBy: string | null;
+}

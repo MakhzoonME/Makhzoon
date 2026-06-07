@@ -81,6 +81,7 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
   }
 
   const visibleModules = MODULE_PERMISSIONS_CONFIG.filter((m) => {
+    if (m.hideFromEditor) return false;
     if (m.featureKey && availableFeatures[m.featureKey] === false) return false;
     return true;
   });

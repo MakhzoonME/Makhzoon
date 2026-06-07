@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { updateAuthUser } from '@/lib/supabase/auth-admin';
 import { updateUser } from '@/lib/db/users';
@@ -16,8 +16,8 @@ export async function PATCH(req: NextRequest) {
   if (rateLimitResult) return rateLimitResult;
 
   try {
-    const tenant = await resolveTenant();
-    const user = tenant.user;
+    const user = await verifySessionCookie();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { displayName, avatarUrl } = await req.json();
     if (!displayName && avatarUrl === undefined) {

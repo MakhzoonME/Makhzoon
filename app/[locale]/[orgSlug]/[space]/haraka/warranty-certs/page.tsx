@@ -7,16 +7,17 @@ import { PageHeader, DataTable } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
 import { WarrantyCertShareDialog } from '@/components/haraka/WarrantyCertShareDialog';
 import { useWarrantyCerts, useWarrantyConfig } from '@/hooks/haraka';
-import { useAdminGuard } from '@/hooks/ui';
+import { useAdminGuard, useModuleGuard } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { formatDate } from '@/lib/utils/date';
 import { getReceiptBaseUrl } from '@/lib/app-env';
 import type { HarakaWarrantyCert } from '@/types';
 
 export default function WarrantyCertsPage() {
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
+  const { isAllowed } = useAdminGuard('pos.view_warranty_certs');
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { data: orgInfo } = useOrgInfo();
-  const { isAllowed } = useAdminGuard('pos.view_warranty_certs');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<HarakaWarrantyCert | null>(null);
 
@@ -26,8 +27,8 @@ export default function WarrantyCertsPage() {
   const config      = cfgData?.config;
   const certBaseUrl = getReceiptBaseUrl();
 
-  if (!isAllowed) {
-    return <div className="flex justify-center py-12"><div className="h-6 w-6 rounded-full border-2 border-primary-600 border-t-transparent animate-spin" /></div>;
+  if (!featureAllowed || !isAllowed) {
+    return null;
   }
 
   const columns: ColumnDef<HarakaWarrantyCert>[] = [

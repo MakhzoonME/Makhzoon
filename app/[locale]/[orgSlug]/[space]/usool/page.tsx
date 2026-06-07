@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Boxes, CheckCircle2, Archive, ShieldAlert, Plus } from 'lucide-react';
-import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
+import { useOrgSlug, useSpace, useT, useModuleGuard } from '@/hooks/ui';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader, StatCard, OverviewSection, DataTable, StatusBadge, SubscriptionGate } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
@@ -86,11 +86,13 @@ function StatusBreakdown({ active, retired, total, isLoading }: { active: number
 }
 
 export default function UsoolOverviewPage() {
+  const { isAllowed } = useModuleGuard({ featureKey: 'assets', moduleKey: 'assets' });
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const space = useSpace();
   const { user } = useAuthStore();
   const { t, locale } = useT();
+  if (!isAllowed) return null;
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
   const canViewWarranties = !!user && hasPermission(user, 'warranties', 'view');

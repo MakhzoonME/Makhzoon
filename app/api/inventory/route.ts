@@ -10,6 +10,7 @@ const service = new InventoryService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requirePermission(tenant.user, 'inventory', 'view')
     const limited = rateLimitTenant(tenant, 'inventory', 60, 60_000)
     if (limited) return limited
     const { searchParams } = new URL(req.url)

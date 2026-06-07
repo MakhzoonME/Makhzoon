@@ -208,9 +208,16 @@ export function getFirstAccessiblePath(opts: {
   for (const item of ORG_NAV_FLAT) {
     if (item.adminOnly && !isAdmin) continue;
     if (item.featureKey && !opts.features[item.featureKey]) continue;
-    if (!isAdmin && item.featureKey && opts.permissions) {
-      const mod = opts.permissions[item.featureKey];
-      if (mod && mod['view'] === false) continue;
+    if (!isAdmin && opts.permissions) {
+      // Use permissionKey's module when available (e.g. 'purchases.view' → 'purchases'),
+      // otherwise fall back to featureKey. Prevents 'inventory' featureKey from being
+      // incorrectly used to look up 'purchases' permissions.
+      const permKey = item.permissionKey ?? (item.featureKey ? `${item.featureKey}.view` : null);
+      if (permKey) {
+        const [modKey, opKey = 'view'] = permKey.split('.');
+        const mod = opts.permissions[modKey];
+        if (mod && mod[opKey] === false) continue;
+      }
     }
     // If the caller passed orgSlug + space, build a full per-tenant URL.
     // Otherwise return the locale-prefixed nav href as before (legacy callers).

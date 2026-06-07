@@ -1,7 +1,7 @@
 'use client';
 import { useReports, useOrgInfo } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
-import { useT, useOrgSlug, useSpace } from '@/hooks/ui';
+import { useT, useOrgSlug, useSpace, useModuleGuard } from '@/hooks/ui';
 import { Package, PackageCheck, PackageX, Wallet, UserCheck, AlertTriangle, ShieldCheck, ClipboardList, Wrench } from 'lucide-react';
 
 /* Wrap each Lucide icon to add aria-hidden — used as React.FC in Stat */
@@ -57,7 +57,9 @@ function SkeletonCard() {
 }
 
 export default function ReportsPage() {
+  const { isAllowed } = useModuleGuard({ featureKey: 'reports', moduleKey: 'reports' });
   const { t } = useT();
+  if (!isAllowed) return null;
   const orgSlug = useOrgSlug();
   const space   = useSpace();
   const { data: orgInfo } = useOrgInfo();

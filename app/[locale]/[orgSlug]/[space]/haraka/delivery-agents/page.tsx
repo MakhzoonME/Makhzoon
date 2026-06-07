@@ -19,7 +19,7 @@ import {
 import {
   useDeliveryAgents, useCreateDeliveryAgent, useUpdateDeliveryAgent, useDeleteDeliveryAgent,
 } from '@/hooks/haraka';
-import { toast } from '@/hooks/ui';
+import { toast, useModuleGuard } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { cn } from '@/lib/utils/cn';
 import { deliveryAgentSchema, type DeliveryAgentFormData } from '@/lib/modules/haraka/delivery-agents/schemas';
@@ -124,8 +124,10 @@ function AgentFormDialog({
 }
 
 export default function DeliveryAgentsPage() {
+  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { data: orgInfo } = useOrgInfo();
+  if (!isAllowed) return null;
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
 
   const { data, isLoading } = useDeliveryAgents();

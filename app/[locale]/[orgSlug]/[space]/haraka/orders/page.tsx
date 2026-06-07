@@ -9,17 +9,19 @@ import { Button } from '@/components/ui/button';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { OrderStatusBadge } from '@/components/haraka/OrderStatusBadge';
 import { useOrders } from '@/hooks/haraka';
-import { useAdminGuard } from '@/hooks/ui';
+import { useAdminGuard, useModuleGuard } from '@/hooks/ui';
 import { formatCurrency } from '@/lib/utils/format';
 import { formatDate } from '@/lib/utils/date';
 import { useOrgInfo } from '@/hooks/org';
 import type { HarakaOrder } from '@/types';
 
 export default function OrdersListPage() {
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
+  const { isAllowed } = useAdminGuard('pos.view_orders');
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { data: orgInfo } = useOrgInfo();
-  const { isAllowed } = useAdminGuard('pos.view_orders');
+  if (!featureAllowed || !isAllowed) return null;
 
   const [status, setStatus]   = useState('all');
   const [channel, setChannel] = useState('all');

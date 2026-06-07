@@ -10,9 +10,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast, useT } from '@/hooks/ui';
+import { SuperAdminPermissionGate } from '@/components/shared/SuperAdminPermissionGate';
 import { ORG_CATEGORIES, type Organization, type OrgCategory } from '@/types';
+import { formatDate } from '@/lib/utils/date';
 
 const NONE = '__none__';
+
+// ─── Delete org ───────────────────────────────────────────────────────────────
 
 function DeleteOrgDialog({
   org,
@@ -87,6 +91,8 @@ function DeleteOrgDialog({
   );
 }
 
+// ─── Team members type ─────────────────────────────────────────────────────────
+
 interface TeamMember {
   id: string;
   displayName: string;
@@ -96,8 +102,15 @@ interface TeamMember {
 }
 
 interface OrgWithSub extends Organization {
-  subscription?: unknown;
+  subscription?: {
+    status?: string;
+    packageId?: string | null;
+    endDate?: string | null;
+    features?: Record<string, boolean>;
+  } | null;
 }
+
+// ─── Info edit form ────────────────────────────────────────────────────────────
 
 function EditOrgForm({
   org,
@@ -217,11 +230,81 @@ function EditOrgForm({
   );
 }
 
+// ─── Read-only info view ───────────────────────────────────────────────────────
+
+function OrgInfoReadOnly({ org }: { org: OrgWithSub }) {
+  const { t } = useT();
+  const rows: { label: string; value: string | null }[] = [
+    { label: t('orgs.name'), value: org.name },
+    { label: t('orgs.contactEmail'), value: org.contactEmail },
+    { label: t('orgs.category'), value: (org.category as string | null) ?? '—' },
+    { label: t('orgs.description'), value: org.description || '—' },
+  ];
+  return (
+    <dl className="space-y-3">
+      {rows.map(({ label, value }) => (
+        <div key={label}>
+          <dt className="text-xs font-medium text-gray-500">{label}</dt>
+          <dd className="text-sm text-gray-900 mt-0.5">{value ?? '—'}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+// ─── Subscription section ──────────────────────────────────────────────────────
+
+function SubscriptionSection({ org }: { org: OrgWithSub }) {
+  const sub = org.subscription;
+  if (!sub) return <p className="text-sm text-gray-400">No subscription data.</p>;
+
+  const statusColor: Record<string, string> = {
+    ACTIVE:    'text-green-700 bg-green-50',
+    EXPIRED:   'text-red-700 bg-red-50',
+    SUSPENDED: 'text-amber-700 bg-amber-50',
+  };
+
+  const enabledFeatures = sub.features
+    ? Object.entries(sub.features).filter(([, v]) => v).map(([k]) => k)
+    : [];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusColor[sub.status ?? ''] ?? 'text-gray-600 bg-surface-page'}`}>
+          {sub.status ?? 'Unknown'}
+        </span>
+        {sub.endDate && (
+          <span className="text-sm text-gray-500">
+            Expires {formatDate(new Date(sub.endDate))}
+          </span>
+        )}
+      </div>
+
+      {enabledFeatures.length > 0 && (
+        <div>
+          <p className="text-xs font-medium text-gray-500 mb-1.5">Enabled features</p>
+          <div className="flex flex-wrap gap-1.5">
+            {enabledFeatures.map((f) => (
+              <span key={f} className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--primary-100)] text-[var(--primary-700)]">
+                {f}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function EditOrganizationPage(props: { params: Promise<{ orgId: string }> }) {
   const params = use(props.params);
   const { orgId } = params;
   const router = useRouter();
   const { t, locale } = useT();
+  const [editing, setEditing] = useState(false);
 
   const { data: org, isLoading } = useQuery<OrgWithSub>({
     queryKey: ['org', orgId],
@@ -242,10 +325,10 @@ export default function EditOrganizationPage(props: { params: Promise<{ orgId: s
   });
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title={org?.name ?? t('common.edit')}
-        description={`ID: ${org?.subdomain ?? '—'}`}
+        description={org ? `${org.subdomain} · ID: ${org.id}` : '—'}
         breadcrumb={[
           { label: t('nav.organizations'), href: `/${locale}/superadmin` },
           { label: org?.name ?? '' },
@@ -253,38 +336,72 @@ export default function EditOrganizationPage(props: { params: Promise<{ orgId: s
         ]}
       />
 
+      {/* ── Info section ─────────────────────────────────────────────── */}
       <Card className="max-w-2xl">
-        <CardContent className="p-6">
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-900">Organization Info</h3>
+            {/* Edit button — only shown with update permission and when not already editing */}
+            {!editing && (
+              <SuperAdminPermissionGate module="organizations" operation="update">
+                <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+                  {t('common.edit')}
+                </Button>
+              </SuperAdminPermissionGate>
+            )}
+          </div>
+
           {isLoading || !org ? (
             <p className="text-sm text-gray-500">{t('common.loading')}</p>
+          ) : editing ? (
+            <SuperAdminPermissionGate
+              module="organizations"
+              operation="update"
+              fallback={<OrgInfoReadOnly org={org} />}
+            >
+              <EditOrgForm
+                key={org.id}
+                org={org}
+                orgId={orgId}
+                teamMembers={teamMembers}
+                onCancel={() => setEditing(false)}
+              />
+            </SuperAdminPermissionGate>
           ) : (
-            <EditOrgForm
-              key={org.id}
-              org={org}
-              orgId={orgId}
-              teamMembers={teamMembers}
-              onCancel={() => router.back()}
-            />
+            <OrgInfoReadOnly org={org} />
           )}
         </CardContent>
       </Card>
 
+      {/* ── Subscription section ──────────────────────────────────────── */}
       {org && (
-        <Card className="max-w-2xl border-red-200 mt-6">
+        <Card className="max-w-2xl">
           <CardContent className="p-6 space-y-3">
-            <div>
-              <h3 className="text-sm font-semibold text-red-700">Danger Zone</h3>
-              <p className="text-sm text-gray-500 mt-0.5">
-                Permanently delete this organization and all its data from the database.
-              </p>
-            </div>
-            <DeleteOrgDialog
-              org={org}
-              orgId={orgId}
-              onDeleted={() => router.replace(`/${locale}/superadmin`)}
-            />
+            <h3 className="text-sm font-semibold text-gray-900">Subscription</h3>
+            <SubscriptionSection org={org} />
           </CardContent>
         </Card>
+      )}
+
+      {/* ── Danger zone — only rendered when user has delete permission ── */}
+      {org && (
+        <SuperAdminPermissionGate module="organizations" operation="delete">
+          <Card className="max-w-2xl border-red-200">
+            <CardContent className="p-6 space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold text-red-700">Danger Zone</h3>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Permanently delete this organization and all its data from the database.
+                </p>
+              </div>
+              <DeleteOrgDialog
+                org={org}
+                orgId={orgId}
+                onDeleted={() => router.replace(`/${locale}/superadmin`)}
+              />
+            </CardContent>
+          </Card>
+        </SuperAdminPermissionGate>
       )}
     </div>
   );

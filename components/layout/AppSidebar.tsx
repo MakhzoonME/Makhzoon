@@ -210,6 +210,8 @@ export function AppSidebar() {
 
   const features    = user?.features ?? {};
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
+  // Admins with stored custom permissions may have module restrictions.
+  const adminHasCustomPerms = canSeeAdmin && !!user?.permissions;
 
   const visibleEntries = ORG_NAV_ENTRIES.filter((entry): entry is NavEntry => {
     if ('type' in entry && entry.type === 'separator') return false; // handled in finalEntries
@@ -221,16 +223,19 @@ export function AppSidebar() {
           (sub) => sub.permissionKey && hasPermByKey(user, sub.permissionKey)
         );
       }
-      // Non-adminOnly group — staff still need module-level access
-      if (!canSeeAdmin && user?.role === 'staff' && entry.featureKey && user) {
-        return hasModuleAccess({ ...user, organizationId: user.organizationId ?? null }, entry.featureKey as keyof UserPermissions);
+      // Check module access for staff, and for admins with custom restrictions
+      if (entry.featureKey && user) {
+        const moduleKey = entry.featureKey as keyof UserPermissions;
+        if (user.role === 'staff' || adminHasCustomPerms) {
+          return hasModuleAccess({ ...user, organizationId: user.organizationId ?? null }, moduleKey);
+        }
       }
       return true;
     }
     const item = entry as { adminOnly?: boolean; featureKey?: string };
     if (item.adminOnly && !canSeeAdmin) return false;
     if (item.featureKey && !features[item.featureKey]) return false;
-    if (user?.role === 'staff' && item.featureKey) {
+    if (item.featureKey && user && (user.role === 'staff' || adminHasCustomPerms)) {
       const moduleKey = item.featureKey as keyof UserPermissions;
       if (!hasModuleAccess({ ...user, organizationId: user.organizationId ?? null }, moduleKey)) return false;
     }

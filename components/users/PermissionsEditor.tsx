@@ -44,8 +44,16 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
 
   function setModuleEnabled(moduleKey: keyof UserPermissions, enabled: boolean) {
     const mod = value[moduleKey] as unknown as Record<string, boolean>;
+    const modConfig = MODULE_PERMISSIONS_CONFIG.find((m) => m.key === moduleKey);
     const updated: Record<string, boolean> = {};
-    for (const k of Object.keys(mod)) updated[k] = enabled;
+    for (const k of Object.keys(mod)) {
+      if (enabled) {
+        const opCfg = modConfig?.operations.find((op) => op.key === k);
+        updated[k] = !opCfg?.featureKey || !!availableFeatures[opCfg.featureKey];
+      } else {
+        updated[k] = false;
+      }
+    }
     onChange({ ...value, [moduleKey]: updated as never });
     if (enabled) {
       setExpandedModules((prev) => new Set(Array.from(prev).concat(moduleKey)));
@@ -82,7 +90,7 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
 
   const visibleModules = MODULE_PERMISSIONS_CONFIG.filter((m) => {
     if (m.hideFromEditor) return false;
-    if (m.featureKey && availableFeatures[m.featureKey] === false) return false;
+    if (m.featureKey && !availableFeatures[m.featureKey]) return false;
     return true;
   });
 
@@ -105,9 +113,10 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
           </div>
           {modules.map((mod) => {
         const modulePerms = value[mod.key] as unknown as Record<string, boolean>;
+        const visibleOps = mod.operations.filter((op) => !op.featureKey || !!availableFeatures[op.featureKey]);
         const isModuleEnabled = modulePerms?.view === true;
         const isExpanded = expandedModules.has(mod.key);
-        const hasAnyOp = Object.values(modulePerms ?? {}).some(Boolean);
+        const hasAnyOp = visibleOps.some((op) => modulePerms?.[op.key] === true);
 
         return (
           <div key={mod.key} className="rounded-lg border border-border overflow-hidden">
@@ -145,7 +154,7 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
               </span>
               {hasAnyOp && (
                 <span className="text-xs text-gray-400">
-                  {Object.values(modulePerms).filter(Boolean).length} of {Object.keys(modulePerms).length}
+                  {visibleOps.filter((op) => modulePerms?.[op.key] === true).length} of {visibleOps.length}
                 </span>
               )}
               <ChevronSVG open={isExpanded} />
@@ -154,7 +163,7 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
             {/* Operations */}
             {isExpanded && (
               <div className="border-t border-border bg-surface-card px-3 py-2 flex flex-col gap-1.5">
-                {mod.operations.map((op) => {
+                {visibleOps.map((op) => {
                   const checked = modulePerms?.[op.key] === true;
                   const gateKey = op.requiresKey ?? 'view';
                   const disabled = op.requiresView && modulePerms?.[gateKey] !== true;

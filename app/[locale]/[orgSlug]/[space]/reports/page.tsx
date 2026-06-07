@@ -2,6 +2,8 @@
 import { useReports, useOrgInfo } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { useT, useOrgSlug, useSpace, useModuleGuard } from '@/hooks/ui';
+import { useAuthStore } from '@/store/auth.store';
+import { hasModuleAccess } from '@/lib/permissions';
 import { Package, PackageCheck, PackageX, Wallet, UserCheck, AlertTriangle, ShieldCheck, ClipboardList, Wrench } from 'lucide-react';
 
 /* Wrap each Lucide icon to add aria-hidden — used as React.FC in Stat */
@@ -62,8 +64,14 @@ export default function ReportsPage() {
   if (!isAllowed) return null;
   const orgSlug = useOrgSlug();
   const space   = useSpace();
+  const { user } = useAuthStore();
   const { data: orgInfo } = useOrgInfo();
   const { data, isLoading } = useReports();
+
+  const features = user?.features ?? {};
+  const canViewAssets    = !!user && features.assets    !== false && hasModuleAccess(user, 'assets');
+  const canViewWarranties= !!user && features.warranties!== false && hasModuleAccess(user, 'warranties');
+  const canViewRequests  = !!user && features.requests  !== false && hasModuleAccess(user, 'requests');
 
   const breadcrumb = [
     { label: orgInfo?.name ?? orgSlug },
@@ -91,35 +99,41 @@ export default function ReportsPage() {
     <div>
       <PageHeader title={t('nav.reports')} description={t('reports.description')} />
 
-      <section className="mb-6">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('reports.inventory')}</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label={t('reports.totalAssets')} value={summary.totalAssets} icon={Pkg} tone="indigo" />
-          <Stat label={t('reports.active')} value={summary.activeAssets} icon={PkgOk} tone="green" />
-          <Stat label={t('reports.retired')} value={summary.retiredAssets} icon={PkgX} />
-          <Stat label={t('reports.totalValue')} value={formatCurrency(summary.totalValue)} icon={Wal} tone="indigo" />
-        </div>
-      </section>
+      {canViewAssets && (
+        <section className="mb-6">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('reports.inventory')}</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Stat label={t('reports.totalAssets')} value={summary.totalAssets} icon={Pkg} tone="indigo" />
+            <Stat label={t('reports.active')} value={summary.activeAssets} icon={PkgOk} tone="green" />
+            <Stat label={t('reports.retired')} value={summary.retiredAssets} icon={PkgX} />
+            <Stat label={t('reports.totalValue')} value={formatCurrency(summary.totalValue)} icon={Wal} tone="indigo" />
+          </div>
+        </section>
+      )}
 
-      <section className="mb-6">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('reports.activity')}</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label={t('reports.checkedOut')} value={summary.activeCheckouts} icon={UsrCk} tone="amber" />
-          <Stat label={t('reports.overdue')} value={summary.overdueCheckouts} icon={Alert} tone="red" />
-          <Stat label={t('reports.expiringWarranties')} value={summary.warrantiesExpiringSoon} icon={Shld} tone="amber" />
-          <Stat label={t('reports.openRequests')} value={summary.openRequests} icon={Clip} />
-        </div>
-      </section>
+      {(canViewAssets || canViewWarranties || canViewRequests) && (
+        <section className="mb-6">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('reports.activity')}</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {canViewAssets && <Stat label={t('reports.checkedOut')} value={summary.activeCheckouts} icon={UsrCk} tone="amber" />}
+            {canViewAssets && <Stat label={t('reports.overdue')} value={summary.overdueCheckouts} icon={Alert} tone="red" />}
+            {canViewWarranties && <Stat label={t('reports.expiringWarranties')} value={summary.warrantiesExpiringSoon} icon={Shld} tone="amber" />}
+            {canViewRequests && <Stat label={t('reports.openRequests')} value={summary.openRequests} icon={Clip} />}
+          </div>
+        </section>
+      )}
 
-      <section className="mb-6">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('reports.maintenance')}</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label={t('reports.totalCost')} value={formatCurrency(summary.maintenanceCost)} icon={Wrch} tone="indigo" />
-          <Stat label={t('reports.records')} value={summary.maintenanceCount} icon={Wrch} />
-        </div>
-      </section>
+      {canViewAssets && (
+        <section className="mb-6">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('reports.maintenance')}</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Stat label={t('reports.totalCost')} value={formatCurrency(summary.maintenanceCost)} icon={Wrch} tone="indigo" />
+            <Stat label={t('reports.records')} value={summary.maintenanceCount} icon={Wrch} />
+          </div>
+        </section>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+      {canViewAssets && <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <div className="bg-surface-card rounded-xl border border-border overflow-hidden">
           <div className="px-5 py-4 border-b border-border">
             <h2 className="text-sm font-semibold text-gray-900">{t('reports.byCategory')}</h2>

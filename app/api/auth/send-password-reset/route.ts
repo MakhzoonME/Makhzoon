@@ -35,12 +35,17 @@ export async function POST(req: NextRequest) {
       const resetLink = `${appUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
       const displayName = (userRow.display_name as string | null) ?? 'there';
 
-      await sendEmail({
+      const sendResult = await sendEmail({
         to: email,
         subject: 'Reset your Makhzoon password',
         html: `<p>Hi ${displayName},</p><p>We received a request to reset the password for your Makhzoon account. Click the link below to set a new password.</p><p><a href="${resetLink}">Reset Password</a></p><p>This link expires in 24 hours. If you did not request this, you can safely ignore this email.</p>`,
         text: `Hi ${displayName},\n\nWe received a request to reset the password for your Makhzoon account. Visit the link below to set a new password:\n\n${resetLink}\n\nThis link expires in 24 hours. If you did not request this, you can safely ignore this email.`,
       });
+      if (sendResult.skipped) {
+        console.error('[POST /api/auth/send-password-reset] email skipped — missing RESEND_API_KEY or RESEND_FROM_EMAIL');
+      } else {
+        console.log('[POST /api/auth/send-password-reset] email sent', sendResult.id);
+      }
     }
   } catch (err) {
     console.error('[POST /api/auth/send-password-reset]', err);

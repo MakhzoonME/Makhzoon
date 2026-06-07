@@ -7,7 +7,7 @@ import { PageHeader, DataTable, FilterBar, ConfirmDialog, BulkActionsBar } from 
 import type { ColumnDef } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { useCustomers, useDeleteCustomer } from '@/hooks/haraka';
-import { toast, useT } from '@/hooks/ui';
+import { toast, useT, useModuleGuard } from '@/hooks/ui';
 import { useAuthStore } from '@/store/auth.store';
 import { useAccessibleSpaces } from '@/hooks/spaces';
 import { hasPermission } from '@/lib/permissions';
@@ -17,9 +17,11 @@ import type { PosCustomer } from '@/types';
 import { useOrgInfo } from '@/hooks/org';
 
 export default function CustomersListPage() {
+  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
+  if (!isAllowed) return null;
   const { data: orgInfo } = useOrgInfo();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);

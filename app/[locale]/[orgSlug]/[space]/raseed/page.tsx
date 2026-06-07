@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Boxes, PackageCheck, AlertTriangle, PackageX, Plus, Clock } from 'lucide-react';
-import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
+import { useOrgSlug, useSpace, useT, useModuleGuard } from '@/hooks/ui';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader, StatCard, OverviewSection, DataTable, SubscriptionGate } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
@@ -88,12 +88,14 @@ const STOCK_TONE: Record<InventoryItem['stockStatus'], string> = {
 };
 
 export default function RaseedOverviewPage() {
+  const { isAllowed } = useModuleGuard({ featureKey: 'inventory', moduleKey: 'inventory' });
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const space = useSpace();
   const { user } = useAuthStore();
   const { t, locale } = useT();
   const { data, isLoading } = useRaseedOverview(space);
+  if (!isAllowed) return null;
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getAuditLogs } from '@/lib/db/audit-logs';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { hasPermission } from '@/lib/permissions';
+import { hasSuperAdminPermission } from '@/lib/permissions/superadmin';
 import { AuditLog } from '@/types';
 
 async function batchGetNames(
@@ -102,9 +104,16 @@ export async function GET(req: NextRequest) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!SUPERADMIN_ROLES.has(user.role) && user.role !== 'admin' && user.role !== 'org_owner') {
+
+    const isSuperadmin = SUPERADMIN_ROLES.has(user.role);
+    const isOrgAdmin = user.role === 'admin' || user.role === 'org_owner';
+
+    if (isSuperadmin && !hasSuperAdminPermission(user, 'auditLogs', 'view'))
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    if (isOrgAdmin && !hasPermission(user, 'auditLogs', 'view'))
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!isSuperadmin && !isOrgAdmin)
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { searchParams } = new URL(req.url);
     const orgId =

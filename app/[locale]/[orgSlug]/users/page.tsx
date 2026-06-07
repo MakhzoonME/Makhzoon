@@ -118,6 +118,7 @@ export default function UsersPage() {
   const [editTarget, setEditTarget] = useState<OrgUser | null>(null);
   const [editRole, setEditRole] = useState<string>('');
   const [editPermissions, setEditPermissions] = useState<UserPermissions>(DEFAULT_STAFF_PERMISSIONS);
+  const [permissionsModified, setPermissionsModified] = useState(false);
   const [showEditPerms, setShowEditPerms] = useState(false);
   const [savingRole, setSavingRole] = useState(false);
   const [editSpaceAccess, setEditSpaceAccess] = useState<{ allSpaces: boolean; spaceIds: string[] }>({ allSpaces: false, spaceIds: [] });
@@ -196,6 +197,7 @@ export default function UsersPage() {
     setEditTarget(u);
     setEditRole(u.role);
     setEditPermissions(u.permissions ?? defaultPermsForRole(u.role));
+    setPermissionsModified(false);
     setShowEditPerms(false);
     setEditSpaceAccess({ allSpaces: u.role === 'org_owner', spaceIds: [] });
   }
@@ -204,10 +206,20 @@ export default function UsersPage() {
     if (!editTarget) return;
     setSavingRole(true);
     try {
+      // Only persist custom permissions when:
+      //  1. The user is staff (always needs explicit permissions), OR
+      //  2. The user already had stored permissions (keep them updated), OR
+      //  3. The admin explicitly opened and changed permissions in this session.
+      const shouldSendPermissions =
+        editRole === 'staff' || !!editTarget.permissions || permissionsModified;
+
       const res = await apiFetch(`/api/users/${editTarget.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: editRole, permissions: editPermissions }),
+        body: JSON.stringify({
+          role: editRole,
+          permissions: shouldSendPermissions ? editPermissions : null,
+        }),
       });
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
@@ -535,6 +547,7 @@ export default function UsersPage() {
                 onValueChange={(v) => {
                   setEditRole(v);
                   setEditPermissions(defaultPermsForRole(v));
+                  setPermissionsModified(false);
                   setShowEditPerms(false);
                 }}
               >
@@ -562,7 +575,7 @@ export default function UsersPage() {
               {showEditPerms && (
                 <PermissionsEditor
                   value={editPermissions}
-                  onChange={setEditPermissions}
+                  onChange={(v) => { setEditPermissions(v); setPermissionsModified(true); }}
                   availableFeatures={features}
                 />
               )}

@@ -10,15 +10,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { useSessions, useCurrentSession } from '@/hooks/haraka';
 import { useOrgInfo } from '@/hooks/org';
-import { useT } from '@/hooks/ui';
+import { useT, useModuleGuard } from '@/hooks/ui';
 import { formatDate } from '@/lib/utils/date';
 import { formatCurrency } from '@/lib/utils/format';
 import type { PosSession } from '@/types';
 
 export default function SessionsListPage() {
+  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
+  if (!isAllowed) return null;
   const { data: orgInfo } = useOrgInfo();
   const [status, setStatus] = useState<'open' | 'closed' | 'all'>('all');
   const [page, setPage] = useState(1);

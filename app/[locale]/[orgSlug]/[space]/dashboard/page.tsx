@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug, useSpace } from '@/hooks/ui';
+import { useOrgSlug, useSpace, useModuleGuard } from '@/hooks/ui';
 import { useAuthStore } from '@/store/auth.store';
 import { useT } from '@/hooks/ui';
 import { Card, CardContent } from '@/components/ui/card';
@@ -636,8 +636,10 @@ function SectionHeader({ title, count, action, onClick }: { title: string; count
 
 /* ── Page ────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
+  const { isAllowed } = useModuleGuard({ featureKey: 'dashboard', moduleKey: 'dashboard' });
   const router  = useRouter();
   const orgSlug = useOrgSlug();
+  if (!isAllowed) return null;
   const space   = useSpace();
   const { user } = useAuthStore();
   const { data, isLoading, dataUpdatedAt } = useDashboard(space);

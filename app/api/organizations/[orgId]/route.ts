@@ -4,14 +4,14 @@ import { getOrganizationById, updateOrganization, deleteOrganizationWithData } f
 import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
 import { queueAuditLog } from '@/lib/audit/logger';
 import { organizationUpdateSchema } from '@/lib/validations/organization.schema';
-
-const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+import { hasSuperAdminPermission } from '@/lib/permissions/superadmin';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!SUPERADMIN_ROLES.has(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!hasSuperAdminPermission(user, 'organizations', 'view'))
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { orgId } = await params;
     const org = await getOrganizationById(orgId);
@@ -29,7 +29,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ orgI
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!SUPERADMIN_ROLES.has(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!hasSuperAdminPermission(user, 'organizations', 'update'))
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { orgId } = await params;
     const existing = await getOrganizationById(orgId);
@@ -66,7 +67,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!SUPERADMIN_ROLES.has(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!hasSuperAdminPermission(user, 'organizations', 'delete'))
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { orgId } = await params;
     const existing = await getOrganizationById(orgId);

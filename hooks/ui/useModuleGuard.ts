@@ -30,7 +30,9 @@ export function useModuleGuard(opts: {
     if (!user) return true;
     if (adminOnly && !isAdmin) return false;
     if (featureKey && !user.features?.[featureKey]) return false;
-    if (!isAdmin && user.role === 'staff' && moduleKey) {
+    // Check module permissions for staff always, and for admins when they have
+    // stored custom permissions (which may restrict their access).
+    if (moduleKey && (user.role === 'staff' || (isAdmin && user.permissions))) {
       return hasModuleAccess(
         { ...user, organizationId: user.organizationId ?? null },
         moduleKey,

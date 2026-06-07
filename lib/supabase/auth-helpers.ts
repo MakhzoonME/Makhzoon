@@ -11,6 +11,7 @@ import {
 import { isSessionRevoked } from './session-revocation';
 import type { AuthUser, UserRole } from '@/types';
 import type { UserPermissions } from '@/types/user-permissions.types';
+import type { SuperAdminPermissions } from '@/types/superadmin-permissions.types';
 
 const SUPERADMIN_ROLES = new Set<UserRole>([
   'super_admin',
@@ -154,6 +155,7 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
     let displayName = '';
     let email = baseEmail;
     let permissions: UserPermissions | null = null;
+    let saPermissions: SuperAdminPermissions | null = null;
     let allSpaces = false;
 
     // public.users is authoritative for org-scoped accounts (mirrors the
@@ -177,10 +179,23 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
         if (cachedPerms !== undefined) {
           permissions = cachedPerms;
         } else {
-          permissions =
-            ((row?.permissions as UserPermissions | null) ?? null);
+          permissions = ((row?.permissions as UserPermissions | null) ?? null);
           setCachedPermissions(baseUid, permissions);
         }
+      }
+    }
+
+    // Load platform-scoped permissions for superadmin team members.
+    if (SUPERADMIN_ROLES.has(role)) {
+      const { data: saRow } = await supabaseAdmin
+        .from('superadmin_users')
+        .select('display_name, email, permissions')
+        .eq('id', baseUid)
+        .maybeSingle();
+      if (saRow) {
+        displayName = (saRow.display_name as string) ?? displayName;
+        email = (saRow.email as string) ?? email;
+        saPermissions = (saRow.permissions as SuperAdminPermissions | null) ?? null;
       }
     }
 
@@ -191,6 +206,7 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
       role,
       organizationId,
       permissions,
+      saPermissions,
       allSpaces: ORG_ROLES.has(role) ? allSpaces : undefined,
     };
 

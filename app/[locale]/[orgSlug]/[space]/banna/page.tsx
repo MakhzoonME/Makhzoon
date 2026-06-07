@@ -1,6 +1,6 @@
 'use client';
 
-import { useT } from '@/hooks/ui';
+import { useT, useModuleGuard } from '@/hooks/ui';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -15,7 +15,9 @@ function PaintbrushSVG() {
 }
 
 export default function BannaOverviewPage() {
+  const { isAllowed } = useModuleGuard({ featureKey: 'banna', moduleKey: 'banna' });
   const { t } = useT();
+  if (!isAllowed) return null;
 
   return (
     <div className="space-y-6">

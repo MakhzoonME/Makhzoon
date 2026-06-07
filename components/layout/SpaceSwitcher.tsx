@@ -144,7 +144,7 @@ export function SpaceSwitcher({ collapsed = false }: { collapsed?: boolean }) {
             >
               <SpaceAvatar name={s.name} size={28} />
               <div className="flex-1 min-w-0">
-                <p className={cn('text-sm font-medium truncate', active ? 'text-primary-700 dark:text-primary-400' : 'text-gray-900 dark:text-gray-100')}>
+                <p className={cn('text-sm font-medium truncate', active ? 'text-primary-700 dark:text-primary-400' : 'text-gray-900')}>
                   {s.name}
                 </p>
                 {(s as { description?: string }).description && (

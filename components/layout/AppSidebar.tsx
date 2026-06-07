@@ -185,7 +185,6 @@ export function AppSidebar() {
   const orgSlug   = (params?.orgSlug as string) ?? '';
   const { user }  = useAuthStore();
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
-  const { active: transferActive } = useTransferStore();
   const { data: orgInfo } = useOrgInfo();
   const space = useSpace();
   const { t, dir } = useT();
@@ -208,7 +207,6 @@ export function AppSidebar() {
     window.location.href = `/${locale}/login`;
   }
 
-  const showTransferBanner = transferActive && (user?.role === 'super_admin' || user?.role === 'makhzoon_admin' || user?.role === 'makhzoon_support');
   const features    = user?.features ?? {};
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
@@ -271,8 +269,7 @@ export function AppSidebar() {
         animate={{ width: sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED }}
         transition={{ duration: 0.28, ease: EASE_SLIDE }}
         className={cn(
-          'hidden md:flex fixed bottom-0 bg-surface-sidebar border-border flex-col z-30',
-          showTransferBanner ? 'top-24' : 'top-14',
+          'hidden md:flex fixed top-14 bottom-0 bg-surface-sidebar border-border flex-col z-30',
           isRtl ? 'right-0 border-l' : 'left-0 border-r',
         )}
         style={{ overflow: 'visible', willChange: 'width' }}

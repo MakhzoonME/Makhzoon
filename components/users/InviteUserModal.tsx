@@ -13,7 +13,6 @@ import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
-import { useSubscriptionFeatures } from '@/hooks/org';
 import { PermissionsEditor } from './PermissionsEditor';
 import { UserPermissions, DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from '@/types';
 
@@ -39,7 +38,7 @@ interface InviteUserModalProps {
 export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
   const qc = useQueryClient();
   const { user: currentUser } = useAuthStore();
-  const features = useSubscriptionFeatures();
+  const features = currentUser?.features ?? {};
   const canInviteOwner = currentUser?.role === 'super_admin' || currentUser?.role === 'org_owner';
   const [loading, setLoading] = useState(false);
   const [permissions, setPermissions] = useState<UserPermissions>(DEFAULT_STAFF_PERMISSIONS);
@@ -305,7 +304,6 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                       value={permissions}
                       onChange={setPermissions}
                       availableFeatures={features}
-                      showAllModules={selectedRole === 'org_owner' || selectedRole === 'admin'}
                     />
                   ) : (
                     <p className="text-xs text-gray-400">{permissionsLabel}</p>

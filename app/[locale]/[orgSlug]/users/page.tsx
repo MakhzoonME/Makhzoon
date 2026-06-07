@@ -25,7 +25,6 @@ import {
 import { PermissionsEditor } from '@/components/users/PermissionsEditor';
 import { UserSpaceAccess } from '@/components/users/UserSpaceAccess';
 import { useUserSpaceAccess, useUpdateUserSpaceAccess } from '@/hooks/spaces';
-import { useSubscriptionFeatures } from '@/hooks/org';
 import { UserPermissions, DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from '@/types';
 import { useT } from '@/hooks/ui';
 import type { MessageKey } from '@/locales/messages';
@@ -130,7 +129,7 @@ export default function UsersPage() {
       setEditSpaceAccess(serverSpaceAccess);
     }
   }, [editTarget, serverSpaceAccess]);
-  const features = useSubscriptionFeatures();
+  const features = currentUser?.features ?? {};
   const [deleteTarget, setDeleteTarget] = useState<{ user: OrgUser; permanent: boolean } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [resetTarget, setResetTarget] = useState<OrgUser | null>(null);
@@ -577,7 +576,6 @@ export default function UsersPage() {
                   value={editPermissions}
                   onChange={(v) => { setEditPermissions(v); setPermissionsModified(true); }}
                   availableFeatures={features}
-                  showAllModules={editRole === 'org_owner' || editRole === 'admin'}
                 />
               )}
             </div>

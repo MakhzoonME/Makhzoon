@@ -607,7 +607,7 @@ export default function UsersPage() {
           <DialogHeader>
             <DialogTitle>Password Reset</DialogTitle>
           </DialogHeader>
-          <div className="px-6 pt-2 pb-4 space-y-3">
+          <div className="px-6 py-5 space-y-3">
             {resetResult?.type === 'email_sent' ? (
               <p className="text-sm text-gray-700">A password reset link has been sent. The link expires in 24 hours.</p>
             ) : (

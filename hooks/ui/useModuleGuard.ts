@@ -30,11 +30,22 @@ export function useModuleGuard(opts: {
     if (!user) return true;
     if (adminOnly && !isAdmin) return false;
     if (featureKey && !user.features?.[featureKey]) return false;
-    if (!isAdmin && user.role === 'staff' && moduleKey) {
-      return hasModuleAccess(
-        { ...user, organizationId: user.organizationId ?? null },
-        moduleKey,
-      );
+    if (!isAdmin && user.role === 'staff') {
+      if (moduleKey) {
+        return hasModuleAccess(
+          { ...user, organizationId: user.organizationId ?? null },
+          moduleKey,
+        );
+      }
+      // No moduleKey (e.g. dashboard): if the user has stored permissions,
+      // replicate hasPermission's behaviour — deny when the module key is
+      // absent from the permissions object (matches AppSidebar logic).
+      if (featureKey && user.permissions) {
+        const perms = user.permissions as unknown as Record<string, Record<string, boolean>>;
+        const mod = perms[featureKey];
+        if (!mod) return false;
+        return mod['view'] === true;
+      }
     }
     return true;
   })();

@@ -163,8 +163,9 @@ const NAV_ICONS: Record<string, React.FC> = {
 
 const EASE_OUT   = [0.16, 1, 0.3, 1] as const;
 const EASE_SLIDE = [0.4, 0, 0.2, 1] as const;
-// Icon is 18px. Collapsed sidebar is 68px. Center = (68-18)/2 = 25px inline-start padding.
-const ICON_INDENT = 'ps-[25px]';
+// Icon is 18px. Collapsed sidebar is 68px. Nav has p-2.5 (10px) padding.
+// Center from sidebar edge = (68-18)/2 = 25px → padding from link start = 25-10 = 15px.
+const ICON_INDENT = 'ps-[15px]';
 export const SIDEBAR_WIDTH_EXPANDED  = 240;
 export const SIDEBAR_WIDTH_COLLAPSED = 68;
 
@@ -316,7 +317,7 @@ export function AppSidebar() {
             /* ── Separator ──────────────────────────────────────── */
             if ('type' in entry && entry.type === 'separator') {
               return (
-                <div key={`sep-${idx}`} className="my-1.5 mx-2 border-t border-border" />
+                <div key={`sep-${idx}`} className={cn('my-1.5 border-t border-border', sidebarCollapsed ? 'mx-[15px]' : 'mx-2')} />
               );
             }
 
@@ -357,9 +358,11 @@ export function AppSidebar() {
                         className="absolute inset-0 rounded-lg bg-primary-50"
                         transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                       />
-                      <span
-                        className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r bg-primary-600', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')}
-                      />
+                      {!sidebarCollapsed && (
+                        <span
+                          className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r bg-primary-600', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')}
+                        />
+                      )}
                     </>
                   )}
                   <span className="relative z-10 flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
@@ -479,9 +482,11 @@ export function AppSidebar() {
                       className="absolute inset-0 rounded-lg bg-primary-50"
                       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                     />
-                    <span
-                      className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r bg-primary-600', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')}
-                    />
+                    {!sidebarCollapsed && (
+                      <span
+                        className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r bg-primary-600', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')}
+                      />
+                    )}
                   </>
                 )}
                 <span className="relative z-10 flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">

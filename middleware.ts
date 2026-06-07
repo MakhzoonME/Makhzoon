@@ -13,7 +13,7 @@ const MARKETING_ONLY_PATHS = new Set([
   '/home', '/product', '/pricing', '/customers', '/security', '/about', '/contact',
 ]);
 
-const AUTH_PATHS = new Set(['/login', '/signup']);
+const AUTH_PATHS = new Set(['/login', '/signup', '/reset-password']);
 
 function detectLocale(req: NextRequest): string {
   const cookieLocale = req.cookies.get(LOCALE_COOKIE)?.value;

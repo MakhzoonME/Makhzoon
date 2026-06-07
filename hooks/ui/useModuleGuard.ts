@@ -1,6 +1,6 @@
 'use client';
 import { useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 import { useOrgSlug } from '@/hooks/ui/useOrgSlug';
 import { useSpace } from '@/hooks/ui/useSpace';
@@ -18,6 +18,7 @@ export function useModuleGuard(opts: {
   const { featureKey, moduleKey, adminOnly } = opts;
   const { user, loading } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
   const orgSlug = useOrgSlug();
   const space = useSpace();
   const params = useParams<{ locale: string }>();
@@ -49,9 +50,12 @@ export function useModuleGuard(opts: {
         features: user.features ?? {},
         permissions: user.permissions as Record<string, Record<string, boolean>> | null | undefined,
       });
-      router.replace(fallback);
+      // guard against redirecting to the same page (e.g. when user has zero features)
+      if (fallback !== pathname) {
+        router.replace(fallback);
+      }
     }
-  }, [user, loading, canAccess, router, orgSlug, space, locale]);
+  }, [user, loading, canAccess, router, orgSlug, space, locale, pathname]);
 
   return { isAllowed: loading || !user || canAccess };
 }

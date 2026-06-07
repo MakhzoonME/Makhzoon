@@ -47,7 +47,7 @@ export function useModuleGuard(opts: {
         space,
         role: user.role,
         features: user.features ?? {},
-        permissions: user.permissions,
+        permissions: user.permissions as Record<string, Record<string, boolean>> | null | undefined,
       });
       router.replace(fallback);
     }

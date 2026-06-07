@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth, useAuthStore } from '@/hooks/ui';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -8,7 +8,6 @@ import {
   SIDEBAR_WIDTH_COLLAPSED,
   SIDEBAR_WIDTH_EXPANDED,
 } from '@/components/layout/AppSidebar';
-import { useT } from '@/hooks/ui';
 import { TransferModeBanner } from '@/components/layout/TransferModeBanner';
 import { ExpiryWarningBanner } from '@/components/features/subscription';
 import { PageTransition } from '@/components/layout/PageTransition';
@@ -26,17 +25,6 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   const { active, setTransfer } = useTransferStore();
   const { sidebarCollapsed } = useUiStore();
   const refreshFromServer = useAuthStore((s) => s.refreshFromServer);
-  const { dir } = useT();
-  const isRtl = dir === 'rtl';
-
-  const [isMd, setIsMd] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 768px)');
-    setIsMd(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsMd(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
 
   useEffect(() => {
     if (loading) return;
@@ -81,11 +69,11 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
       <MobileDrawer />
       <BottomNav />
       <main
-        className={`pt-14 ${showBanner ? 'mt-10' : ''} min-h-screen pb-16 md:pb-0`}
+        className={`pt-14 ${showBanner ? 'mt-10' : ''} min-h-screen pb-16 md:pb-0 ms-0 md:ms-[var(--sw)]`}
         style={{
-          [isRtl ? 'marginRight' : 'marginLeft']: isMd ? `${sidebarWidth}px` : 0,
-          transition: 'margin 0.28s cubic-bezier(0.4,0,0.2,1)',
-        }}
+          '--sw': `${sidebarWidth}px`,
+          transition: 'margin-inline-start 0.28s cubic-bezier(0.4,0,0.2,1)',
+        } as React.CSSProperties}
       >
         <ExpiryWarningBanner />
         <div className="px-6 py-6 max-w-7xl">

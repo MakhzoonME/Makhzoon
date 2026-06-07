@@ -51,7 +51,6 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
   const [inviteUsername, setInviteUsername] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [inviteMode, setInviteMode] = useState<'email' | 'username'>('email');
-  const [formError, setFormError] = useState<string | null>(null);
 
   const form = useForm<InviteUserFormData>({
     resolver: zodResolver(inviteUserSchema),
@@ -100,7 +99,6 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
 
   function switchMode(mode: 'email' | 'username') {
     setInviteMode(mode);
-    setFormError(null);
     if (mode === 'email') {
       form.setValue('username', '');
     } else {
@@ -116,7 +114,6 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
 
   async function onSubmit(data: InviteUserFormData) {
     setLoading(true);
-    setFormError(null);
     try {
       const payload = {
         email: inviteMode === 'email' ? data.email?.trim() || undefined : undefined,
@@ -146,9 +143,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
       setInviteExpiresAt(result.expiresAt ?? null);
       setInviteUsername(result.username ?? null);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to invite user';
-      setFormError(msg);
-      toast.error(msg);
+      toast.error(err instanceof Error ? err.message : 'Failed to invite user');
     } finally {
       setLoading(false);
     }
@@ -317,11 +312,6 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                 </div>
               </div>
 
-              {formError && (
-                <div className="px-6 pb-2">
-                  <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{formError}</p>
-                </div>
-              )}
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>Cancel</Button>
                 <Button type="submit" disabled={loading || !canSubmit}>

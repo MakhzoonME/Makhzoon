@@ -58,23 +58,21 @@ export async function POST(req: NextRequest) {
 
   if (normalizedEmail) {
     if (await authEmailExists(normalizedEmail)) {
-      // SECURITY: Don't reveal if user exists (prevents user enumeration)
-      return NextResponse.json({ error: 'This email cannot be invited' }, { status: 409 });
+      return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409 });
     }
     const pending = await getPendingInviteForEmail(tenant.organizationId, normalizedEmail);
     if (pending) {
-      return NextResponse.json({ error: 'This email cannot be invited' }, { status: 409 });
+      return NextResponse.json({ error: 'This email already has a pending invite.' }, { status: 409 });
     }
   }
   if (normalizedUsername) {
     const syntheticEmail = `${normalizedUsername}@makhzoon.local`;
     if (await authEmailExists(syntheticEmail)) {
-      // SECURITY: Don't reveal if username exists
-      return NextResponse.json({ error: 'This username cannot be invited' }, { status: 409 });
+      return NextResponse.json({ error: 'An account with this username already exists.' }, { status: 409 });
     }
     const pending = await getPendingInviteForUsername(tenant.organizationId, normalizedUsername);
     if (pending) {
-      return NextResponse.json({ error: 'This username cannot be invited' }, { status: 409 });
+      return NextResponse.json({ error: 'This username already has a pending invite.' }, { status: 409 });
     }
   }
 

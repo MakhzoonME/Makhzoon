@@ -185,6 +185,7 @@ export function AppSidebar() {
   const orgSlug   = (params?.orgSlug as string) ?? '';
   const { user }  = useAuthStore();
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
+  const { active: transferActive } = useTransferStore();
   const { data: orgInfo } = useOrgInfo();
   const space = useSpace();
   const { t, dir } = useT();
@@ -207,6 +208,7 @@ export function AppSidebar() {
     window.location.href = `/${locale}/login`;
   }
 
+  const showTransferBanner = transferActive && (user?.role === 'super_admin' || user?.role === 'makhzoon_admin' || user?.role === 'makhzoon_support');
   const features    = user?.features ?? {};
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
@@ -214,11 +216,17 @@ export function AppSidebar() {
     if ('type' in entry && entry.type === 'separator') return true;
     if ('type' in entry && entry.type === 'group') {
       if (entry.featureKey && !features[entry.featureKey]) return false;
-      if (!entry.adminOnly || canSeeAdmin) return true;
-      // Staff: show group if any sub-item permission is granted
-      return user?.role === 'staff' && !!user && entry.items.some(
-        (sub) => sub.permissionKey && hasPermByKey(user, sub.permissionKey)
-      );
+      if (entry.adminOnly && !canSeeAdmin) {
+        // adminOnly group — staff can see it only if they have a specific sub-perm
+        return user?.role === 'staff' && !!user && entry.items.some(
+          (sub) => sub.permissionKey && hasPermByKey(user, sub.permissionKey)
+        );
+      }
+      // Non-adminOnly group — staff still need module-level access
+      if (!canSeeAdmin && user?.role === 'staff' && entry.featureKey && user) {
+        return hasModuleAccess({ ...user, organizationId: user.organizationId ?? null }, entry.featureKey as keyof UserPermissions);
+      }
+      return true;
     }
     const item = entry as { adminOnly?: boolean; featureKey?: string };
     if (item.adminOnly && !canSeeAdmin) return false;
@@ -263,7 +271,8 @@ export function AppSidebar() {
         animate={{ width: sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED }}
         transition={{ duration: 0.28, ease: EASE_SLIDE }}
         className={cn(
-          'hidden md:flex fixed top-14 bottom-0 bg-surface-sidebar border-border flex-col z-30',
+          'hidden md:flex fixed bottom-0 bg-surface-sidebar border-border flex-col z-30',
+          showTransferBanner ? 'top-24' : 'top-14',
           isRtl ? 'right-0 border-l' : 'left-0 border-r',
         )}
         style={{ overflow: 'visible', willChange: 'width' }}

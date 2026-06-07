@@ -8,8 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast, useT } from '@/hooks/ui';
 import { ORG_CATEGORIES, type Organization, type OrgCategory } from '@/types';
+
+const NONE = '__none__';
 
 function DeleteOrgDialog({
   org,
@@ -161,20 +164,18 @@ function EditOrgForm({
         <Input id="email" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} required />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="category">{t('orgs.category')}</Label>
-        <select
-          id="category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value as OrgCategory | '')}
-          className="flex h-9 w-full rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
-        >
-          <option value="">— None —</option>
-          {ORG_CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
+        <Label>{t('orgs.category')}</Label>
+        <Select value={category || NONE} onValueChange={(v) => setCategory(v === NONE ? '' : v as OrgCategory)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE}>— None —</SelectItem>
+            {ORG_CATEGORIES.map((c) => (
+              <SelectItem key={c} value={c}>{c}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="description">{t('orgs.description')}</Label>
@@ -188,20 +189,20 @@ function EditOrgForm({
         <p className="text-xs text-gray-500">{description.length}/500</p>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="assignedMember">{t('settings.accountManager')}</Label>
-        <select
-          id="assignedMember"
-          value={assignedMemberId}
-          onChange={(e) => setAssignedMemberId(e.target.value)}
-          className="flex h-9 w-full rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
-        >
-          <option value="">— Unassigned —</option>
-          {activeMembers.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.displayName} ({m.email})
-            </option>
-          ))}
-        </select>
+        <Label>{t('settings.accountManager')}</Label>
+        <Select value={assignedMemberId || NONE} onValueChange={(v) => setAssignedMemberId(v === NONE ? '' : v)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE}>— Unassigned —</SelectItem>
+            {activeMembers.map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                {m.displayName} ({m.email})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <p className="text-xs text-gray-500">{t('orgs.accountManagerHint')}</p>
       </div>
       <div className="flex gap-2 pt-2">
@@ -269,7 +270,7 @@ export default function EditOrganizationPage(props: { params: Promise<{ orgId: s
       </Card>
 
       {org && (
-        <Card className="max-w-2xl border-red-200">
+        <Card className="max-w-2xl border-red-200 mt-6">
           <CardContent className="p-6 space-y-3">
             <div>
               <h3 className="text-sm font-semibold text-red-700">Danger Zone</h3>

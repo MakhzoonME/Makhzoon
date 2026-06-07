@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useOrgSlug } from '@/hooks/ui/useOrgSlug';
 import { useSpace } from '@/hooks/ui/useSpace';
 import { hasModuleAccess } from '@/lib/permissions';
+import { getFirstAccessiblePath } from '@/lib/nav';
 import type { UserPermissions } from '@/types/user-permissions.types';
 
 const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin', 'makhzoon_admin', 'makhzoon_support']);
@@ -40,7 +41,15 @@ export function useModuleGuard(opts: {
   useEffect(() => {
     if (loading || !user) return;
     if (!canAccess) {
-      router.replace(`/${locale}/${orgSlug}/${space}/dashboard`);
+      const fallback = getFirstAccessiblePath({
+        locale,
+        orgSlug,
+        space,
+        role: user.role,
+        features: user.features ?? {},
+        permissions: user.permissions,
+      });
+      router.replace(fallback);
     }
   }, [user, loading, canAccess, router, orgSlug, space, locale]);
 

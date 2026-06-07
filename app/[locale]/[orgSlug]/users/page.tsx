@@ -105,7 +105,7 @@ export default function UsersPage() {
   const { isAllowed } = useAdminGuard('settings.users');
   const { data: users = [], isLoading: usersLoading } = useUsers();
   const { data: invites = [], isLoading: invitesLoading } = useInvites();
-  const { user: currentUser } = useAuthStore();
+  const { user: currentUser, refreshFeatures } = useAuthStore();
 
   const [tab, setTab] = useState<'members' | 'invites'>('members');
   const [search, setSearch] = useState('');
@@ -244,6 +244,11 @@ export default function UsersPage() {
       });
       toast.success(t('common.updated'));
       qc.invalidateQueries({ queryKey: ['users'] });
+      // If editing self, refresh auth store so sidebar + features reflect the
+      // new permissions immediately without requiring a logout/login cycle.
+      if (editTarget.id === currentUser?.uid) {
+        await refreshFeatures();
+      }
       setEditTarget(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('common.updateFailed'));

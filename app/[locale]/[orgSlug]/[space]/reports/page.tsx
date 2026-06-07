@@ -133,88 +133,92 @@ export default function ReportsPage() {
         </section>
       )}
 
-      {canViewAssets && <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        <div className="bg-surface-card rounded-xl border border-border overflow-hidden">
-          <div className="px-5 py-4 border-b border-border">
-            <h2 className="text-sm font-semibold text-gray-900">{t('reports.byCategory')}</h2>
-          </div>
-          <div className="p-5">
-            {categories.length === 0 ? (
-              <p className="text-sm text-gray-500">{t('reports.noAssets')}</p>
-            ) : (
-              <ul className="space-y-2.5">
-                {categories.slice(0, 8).map((c) => (
-                  <li key={c.category}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-medium text-gray-700">{c.category}</span>
-                      <span className="text-gray-500 tabular-nums">{c.count} · {formatCurrency(c.value)}</span>
-                    </div>
-                    <div className="h-2 bg-surface-page rounded-full overflow-hidden">
-                      <div className="h-full bg-primary-500 rounded-full" style={{ width: `${(c.count / maxCatCount) * 100}%` }} />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-
-        <div className="bg-surface-card rounded-xl border border-border overflow-hidden">
-          <div className="px-5 py-4 border-b border-border">
-            <h2 className="text-sm font-semibold text-gray-900">{t('reports.byLocation')}</h2>
-          </div>
-          <div className="p-5">
-            {locations.length === 0 ? (
-              <p className="text-sm text-gray-500">{t('reports.noAssets')}</p>
-            ) : (
-              <ul className="space-y-1.5">
-                {locations.slice(0, 8).map((l) => (
-                  <li key={l.location} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-700">{l.location}</span>
-                    <span className="text-gray-500 tabular-nums text-xs">{l.count}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-surface-card rounded-xl border border-border overflow-hidden">
-        <div className="px-5 py-4 border-b border-border">
-          <h2 className="text-sm font-semibold text-gray-900">{t('reports.maintenanceCost')}</h2>
-        </div>
-        <div className="p-5">
-          {maintenanceByMonth.length === 0 ? (
-            <p className="text-sm text-gray-500">{t('reports.noMaintenance')}</p>
-          ) : (
-            <div className="space-y-3">
-              {maintenanceByMonth.map((m, i) => {
-                const isLatest = i === maintenanceByMonth.length - 1;
-                const pct = maxMonthCost === 0 ? 0 : Math.max(2, Math.round((m.cost / maxMonthCost) * 100));
-                return (
-                  <div key={m.month} className="flex items-center gap-3">
-                    <span className="w-12 text-xs text-gray-500 shrink-0 text-end">{m.month}</span>
-                    <div className="flex-1 h-6 bg-surface-page rounded overflow-hidden border border-border">
-                      <div
-                        className="h-full rounded transition-[width] duration-500 flex items-center justify-end pe-2"
-                        style={{
-                          width: `${pct}%`,
-                          background: isLatest ? 'var(--primary-600)' : 'var(--primary-300)',
-                        }}
-                      />
-                    </div>
-                    <div className="w-24 text-xs tabular-nums text-right shrink-0">
-                      <span className="font-medium text-gray-900">{formatCurrency(m.cost)}</span>
-                      <span className="text-gray-500 ms-1">({m.count})</span>
-                    </div>
-                  </div>
-                );
-              })}
+      {canViewAssets && (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <div className="bg-surface-card rounded-xl border border-border overflow-hidden">
+              <div className="px-5 py-4 border-b border-border">
+                <h2 className="text-sm font-semibold text-gray-900">{t('reports.byCategory')}</h2>
+              </div>
+              <div className="p-5">
+                {categories.length === 0 ? (
+                  <p className="text-sm text-gray-500">{t('reports.noAssets')}</p>
+                ) : (
+                  <ul className="space-y-2.5">
+                    {categories.slice(0, 8).map((c) => (
+                      <li key={c.category}>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="font-medium text-gray-700">{c.category}</span>
+                          <span className="text-gray-500 tabular-nums">{c.count} · {formatCurrency(c.value)}</span>
+                        </div>
+                        <div className="h-2 bg-surface-page rounded-full overflow-hidden">
+                          <div className="h-full bg-primary-500 rounded-full" style={{ width: `${(c.count / maxCatCount) * 100}%` }} />
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-      </div>
+
+            <div className="bg-surface-card rounded-xl border border-border overflow-hidden">
+              <div className="px-5 py-4 border-b border-border">
+                <h2 className="text-sm font-semibold text-gray-900">{t('reports.byLocation')}</h2>
+              </div>
+              <div className="p-5">
+                {locations.length === 0 ? (
+                  <p className="text-sm text-gray-500">{t('reports.noAssets')}</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {locations.slice(0, 8).map((l) => (
+                      <li key={l.location} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-700">{l.location}</span>
+                        <span className="text-gray-500 tabular-nums text-xs">{l.count}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-surface-card rounded-xl border border-border overflow-hidden">
+            <div className="px-5 py-4 border-b border-border">
+              <h2 className="text-sm font-semibold text-gray-900">{t('reports.maintenanceCost')}</h2>
+            </div>
+            <div className="p-5">
+              {maintenanceByMonth.length === 0 ? (
+                <p className="text-sm text-gray-500">{t('reports.noMaintenance')}</p>
+              ) : (
+                <div className="space-y-3">
+                  {maintenanceByMonth.map((m, i) => {
+                    const isLatest = i === maintenanceByMonth.length - 1;
+                    const pct = maxMonthCost === 0 ? 0 : Math.max(2, Math.round((m.cost / maxMonthCost) * 100));
+                    return (
+                      <div key={m.month} className="flex items-center gap-3">
+                        <span className="w-12 text-xs text-gray-500 shrink-0 text-end">{m.month}</span>
+                        <div className="flex-1 h-6 bg-surface-page rounded overflow-hidden border border-border">
+                          <div
+                            className="h-full rounded transition-[width] duration-500 flex items-center justify-end pe-2"
+                            style={{
+                              width: `${pct}%`,
+                              background: isLatest ? 'var(--primary-600)' : 'var(--primary-300)',
+                            }}
+                          />
+                        </div>
+                        <div className="w-24 text-xs tabular-nums text-right shrink-0">
+                          <span className="font-medium text-gray-900">{formatCurrency(m.cost)}</span>
+                          <span className="text-gray-500 ms-1">({m.count})</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

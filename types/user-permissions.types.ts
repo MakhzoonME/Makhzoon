@@ -167,6 +167,8 @@ export interface ModuleOperationConfig {
   /** The specific permission key that must be true to unlock this op.
    *  Defaults to 'view' when omitted. Use when the module's gate isn't named 'view'. */
   requiresKey?: string;
+  /** Subscription feature key that must be enabled for this op to appear in the editor. */
+  featureKey?: string;
 }
 
 export type ModuleGroup = 'core' | 'commerce' | 'workflow' | 'admin';
@@ -222,9 +224,9 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'update',         label: 'Edit Assets',         labelKey: 'permOp.assets.update',         requiresView: true },
       { key: 'delete',         label: 'Delete Assets',       labelKey: 'permOp.assets.delete',         requiresView: true },
       { key: 'import',         label: 'Import Assets',       labelKey: 'permOp.assets.import',         requiresView: true },
-      { key: 'checkout',       label: 'Check In / Out',      labelKey: 'permOp.assets.checkout',       requiresView: true },
-      { key: 'maintenance',    label: 'Maintenance Records', labelKey: 'permOp.assets.maintenance',    requiresView: true },
-      { key: 'notes',           label: 'Asset Notes',         labelKey: 'permOp.assets.notes',         requiresView: true },
+      { key: 'checkout',       label: 'Check In / Out',      labelKey: 'permOp.assets.checkout',       requiresView: true, featureKey: 'assetCheckouts' },
+      { key: 'maintenance',    label: 'Maintenance Records', labelKey: 'permOp.assets.maintenance',    requiresView: true, featureKey: 'maintenance' },
+      { key: 'notes',           label: 'Asset Notes',         labelKey: 'permOp.assets.notes',         requiresView: true, featureKey: 'assetNotes' },
       { key: 'bulk_delete',    label: 'Bulk delete',         labelKey: 'permOp.assets.bulk_delete',    requiresView: true },
       { key: 'bulk_move',      label: 'Bulk move to space',  labelKey: 'permOp.assets.bulk_move',      requiresView: true },
       { key: 'bulk_duplicate', label: 'Bulk duplicate to space', labelKey: 'permOp.assets.bulk_duplicate', requiresView: true },

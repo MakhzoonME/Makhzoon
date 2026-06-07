@@ -19,7 +19,6 @@ export default function NewServiceJobPage() {
   const router = useRouter();
   const params  = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { data: orgInfo }    = useOrgInfo();
-  const { data: currentUser } = useCurrentUser();
   const createMut = useCreateServiceJob();
   if (!featureAllowed || !isAllowed) return null;
 
@@ -90,15 +89,12 @@ export default function NewServiceJobPage() {
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-600">Customer name *</label>
               <CustomerSelect
-                value={customerName}
-                onSelect={(c) => {
-                  if (c) {
-                    setCustomerId(c.id);
-                    setCustomerName(c.name);
-                    setCustomerPhone(c.phone ?? '');
-                  }
+                value={customerId ? { id: customerId, name: customerName, phone: customerPhone || null } : null}
+                onChange={(c) => {
+                  setCustomerId(c?.id ?? null);
+                  setCustomerName(c?.name ?? '');
+                  setCustomerPhone(c?.phone ?? '');
                 }}
-                onNameChange={(v) => { setCustomerName(v); setCustomerId(null); }}
               />
             </div>
             <div className="space-y-1.5">

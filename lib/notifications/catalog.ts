@@ -24,9 +24,11 @@ export type NotificationEventType =
   | 'warranty.expiring'
   | 'subscription.expiring'
   | 'fawtara.failed'
+  | 'service_job.created'
+  | 'service_job.status_changed'
 
 export type NotificationModule =
-  | 'orders' | 'pos' | 'inventory' | 'requests' | 'users' | 'warranty' | 'system'
+  | 'orders' | 'pos' | 'inventory' | 'requests' | 'users' | 'warranty' | 'system' | 'service_jobs'
 
 export interface NotificationCatalogEntry {
   key: NotificationEventType
@@ -63,6 +65,9 @@ export const NOTIFICATION_CATALOG: NotificationCatalogEntry[] = [
   { key: 'warranty.expiring',      label: 'Warranty expiring soon',      module: 'warranty',  defaultRoles: ['admin', 'org_owner'], defaultInApp: true,  defaultEmail: true  },
   { key: 'subscription.expiring',  label: 'Subscription expiring',       module: 'system',    defaultRoles: ['org_owner'],          defaultInApp: true,  defaultEmail: true  },
   { key: 'fawtara.failed',         label: 'Fawtara submission failed',   module: 'system',    defaultRoles: ['admin', 'org_owner'], defaultInApp: true,  defaultEmail: true  },
+  // ── Service Jobs ────────────────────────────────────────────────────────
+  { key: 'service_job.created',       label: 'New service job created',       module: 'service_jobs', defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: false },
+  { key: 'service_job.status_changed', label: 'Service job status updated',   module: 'service_jobs', defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: false },
 ]
 
 export const NOTIFICATION_EVENT_TYPES = NOTIFICATION_CATALOG.map((e) => e.key) as readonly NotificationEventType[]

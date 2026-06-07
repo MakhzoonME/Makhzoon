@@ -1381,6 +1381,7 @@ const en = {
   'permModule.reports':    'Reports',
   'permModule.support':    'Support',
   'permModule.auditLogs':  'Audit Logs',
+  'permModule.dashboard':  'Dashboard',
   'permModule.leads':      'Leads',
   'permModule.purchases':  'Purchases',
   'permModule.pos':        'Point of Sale (Haraka)',
@@ -1424,6 +1425,7 @@ const en = {
   'permOp.reports.view':     'View Reports',
   'permOp.support.view':     'View Tickets',
   'permOp.support.create':   'Create Tickets',
+  'permOp.dashboard.view':   'View Dashboard',
   'permOp.auditLogs.view':   'View Audit Logs',
   'permOp.leads.view':       'View Leads',
 
@@ -2990,6 +2992,7 @@ const ar: Record<keyof typeof en, string> = {
   'permModule.reports':    'التقارير',
   'permModule.support':    'الدعم',
   'permModule.auditLogs':  'سجل المراجعة',
+  'permModule.dashboard':  'لوحة التحكم',
   'permModule.leads':      'العملاء المحتملون',
   'permModule.purchases':  'المشتريات',
   'permModule.pos':        'نقطة البيع (حركة)',
@@ -3033,6 +3036,7 @@ const ar: Record<keyof typeof en, string> = {
   'permOp.reports.view':     'عرض التقارير',
   'permOp.support.view':     'عرض التذاكر',
   'permOp.support.create':   'إنشاء تذاكر',
+  'permOp.dashboard.view':   'عرض لوحة التحكم',
   'permOp.auditLogs.view':   'عرض سجل المراجعة',
   'permOp.leads.view':       'عرض العملاء المحتملين',
 

@@ -596,7 +596,7 @@ export function AppSidebar() {
                     className="flex-1 min-w-0"
                   >
                     <Link href={`/${locale}/${orgSlug}/profile`} className="block group">
-                      <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-primary-600 transition-colors duration-150">
+                      <p className="text-xs font-medium text-gray-900 truncate group-hover:text-primary-600 transition-colors duration-150">
                         {user.displayName || displayIdentity(user.email)}
                       </p>
                       <p className="text-[11px] text-gray-400 truncate leading-tight">

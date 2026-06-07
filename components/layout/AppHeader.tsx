@@ -86,7 +86,7 @@ export function AppHeader() {
                 transition: `opacity 0.14s ${EASE}, width 0.22s ${EASE}`,
               }}
             >
-              <span className="text-[14px] font-bold text-gray-900 dark:text-gray-100">
+              <span className="text-[14px] font-bold text-gray-900">
                 {t('brand.name')}
               </span>
             </div>
@@ -114,11 +114,11 @@ export function AppHeader() {
             const pageName   = crumbs.length > 1 ? crumbs[crumbs.length - 1]?.label : null;
             return (
               <div className="hidden md:flex flex-col justify-center min-w-0 flex-shrink-0 max-w-xs">
-                <p className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 leading-tight truncate">
+                <p className="text-[15px] font-semibold text-gray-900 leading-tight truncate">
                   {moduleName}
                 </p>
                 {pageName && pageName !== moduleName && (
-                  <p className="text-[12px] text-gray-400 dark:text-gray-500 leading-tight truncate mt-0.5">
+                  <p className="text-[12px] text-gray-500 leading-tight truncate mt-0.5">
                     {pageName}
                   </p>
                 )}

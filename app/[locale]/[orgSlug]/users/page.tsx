@@ -235,7 +235,7 @@ export default function UsersPage() {
     try {
       const url = permanent ? `/api/users/${target.id}?permanent=true` : `/api/users/${target.id}`;
       const res = await apiFetch(url, { method: 'DELETE' });
-      if (!res.ok) {
+      if (!res.ok && res.status !== 404) {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error ?? (permanent ? 'Failed to delete user' : 'Failed to deactivate user'));
       }

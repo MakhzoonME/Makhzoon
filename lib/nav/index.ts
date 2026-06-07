@@ -106,6 +106,12 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/haraka/reports', label: 'Reports', labelKey: 'nav.harakaReports',
         featureKey: 'pos', permissionKey: 'pos.view_reports',
         moduleColor: '#AD1457', moduleName: 'تقارير' },
+      { href: '/haraka/service-jobs', label: 'Services', labelKey: 'nav.harakaServiceJobs',
+        featureKey: 'pos', permissionKey: 'pos.view_service_jobs',
+        moduleColor: '#AD1457', moduleName: 'خدمات' },
+      { href: '/haraka/retainers', label: 'Retainers', labelKey: 'nav.harakaRetainers',
+        featureKey: 'pos', permissionKey: 'pos.view_retainers',
+        moduleColor: '#AD1457', moduleName: 'عقود' },
     ],
   },
   {

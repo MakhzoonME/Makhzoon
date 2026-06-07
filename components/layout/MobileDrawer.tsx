@@ -5,6 +5,8 @@ import { usePathname, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
+import { hasModuleAccess } from '@/lib/permissions';
+import type { UserPermissions } from '@/types/user-permissions.types';
 import { useUiStore } from '@/store/ui.store';
 import { useTransferStore } from '@/store/transfer.store';
 import { useSubscriptionFeatures } from '@/hooks/org';
@@ -64,6 +66,12 @@ export function MobileDrawer() {
   const visibleItems = navItems.filter((item) => {
     if (item.adminOnly && !canSeeAdmin) return false;
     if (item.featureKey && !features[item.featureKey]) return false;
+    if (user?.role === 'staff' && item.featureKey && user) {
+      if (!hasModuleAccess(
+        { ...user, organizationId: user.organizationId ?? null },
+        item.featureKey as keyof UserPermissions,
+      )) return false;
+    }
     return true;
   });
 

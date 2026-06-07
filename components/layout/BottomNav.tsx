@@ -2,7 +2,11 @@
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 import { useUiStore } from '@/store/ui.store';
+import { useAuthStore } from '@/store/auth.store';
 import { useSpace, useT } from '@/hooks/ui';
+import { useSubscriptionFeatures } from '@/hooks/org';
+import { hasModuleAccess } from '@/lib/permissions';
+import type { UserPermissions } from '@/types/user-permissions.types';
 import type { MessageKey } from '@/locales/messages';
 import { cn } from '@/lib/utils/cn';
 
@@ -13,12 +17,22 @@ function WarrantySVG() { return <svg width="22" height="22" viewBox="0 0 18 18" 
 function MenuSVG() { return <svg width="22" height="22" viewBox="0 0 18 18" fill="none" aria-hidden><path d="M2.5 5h13M2.5 9h13M2.5 13h13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>; }
 function BannaSVG() { return <svg width="22" height="22" viewBox="0 0 18 18" fill="none" aria-hidden><path d="M2.5 3h13v12H2.5V3z" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M5.5 7h7M5.5 10h5M5.5 13h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /><circle cx="14" cy="5" r="1.5" fill="currentColor" opacity="0.6" /></svg>; }
 
-const PRIMARY_NAV: { href: string; labelKey: MessageKey; Icon: React.FC }[] = [
-  { href: '/dashboard',  labelKey: 'nav.dashboard',  Icon: DashboardSVG },
-  { href: '/usool',      labelKey: 'nav.assets',     Icon: AssetsSVG },
-  { href: '/requests',   labelKey: 'nav.requests',   Icon: RequestsSVG },
-  { href: '/banna',      labelKey: 'nav.banna',      Icon: BannaSVG },
-  { href: '/warranties', labelKey: 'nav.warranties', Icon: WarrantySVG },
+const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin', 'makhzoon_admin', 'makhzoon_support']);
+
+interface PrimaryNavItem {
+  href: string;
+  labelKey: MessageKey;
+  Icon: React.FC;
+  featureKey?: string;
+  moduleKey?: keyof UserPermissions;
+}
+
+const PRIMARY_NAV: PrimaryNavItem[] = [
+  { href: '/dashboard',  labelKey: 'nav.dashboard',  Icon: DashboardSVG, featureKey: 'dashboard' },
+  { href: '/usool',      labelKey: 'nav.assets',     Icon: AssetsSVG,    featureKey: 'assets',     moduleKey: 'assets' },
+  { href: '/requests',   labelKey: 'nav.requests',   Icon: RequestsSVG,  featureKey: 'requests',   moduleKey: 'requests' },
+  { href: '/banna',      labelKey: 'nav.banna',      Icon: BannaSVG,     featureKey: 'banna',      moduleKey: 'banna' },
+  { href: '/warranties', labelKey: 'nav.warranties', Icon: WarrantySVG,  featureKey: 'warranties', moduleKey: 'warranties' },
 ];
 
 export function BottomNav() {
@@ -29,10 +43,29 @@ export function BottomNav() {
   const space = useSpace();
   const { setMobileMenuOpen } = useUiStore();
   const { t } = useT();
+  const { user } = useAuthStore();
+  const features = useSubscriptionFeatures();
+
+  const isAdmin = !!user && ADMIN_ROLES.has(user.role);
+  const isStaff = user?.role === 'staff';
+
+  const visibleNav = PRIMARY_NAV.filter(({ featureKey, moduleKey }) => {
+    if (featureKey && !features[featureKey]) return false;
+    if (isStaff && moduleKey && user) {
+      return hasModuleAccess(
+        { ...user, organizationId: user.organizationId ?? null },
+        moduleKey,
+      );
+    }
+    return true;
+  });
+
+  // suppress the nav entirely when user context isn't ready
+  if (!user) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-surface-card border-t border-border flex md:hidden" style={{ height: 64, paddingBottom: 'env(safe-area-inset-bottom, 4px)' }}>
-      {PRIMARY_NAV.map(({ href, labelKey, Icon }) => {
+      {visibleNav.map(({ href, labelKey, Icon }) => {
         const fullHref = `/${locale}/${orgSlug}/${space}${href}`;
         const active = pathname === fullHref || pathname.startsWith(fullHref + '/');
         return (

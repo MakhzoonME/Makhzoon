@@ -1,5 +1,6 @@
 export { useAuth } from './useAuth';
 export { useAdminGuard } from './useAdminGuard';
+export { useModuleGuard } from './useModuleGuard';
 export { useDebounce } from './useDebounce';
 export { useOrgSlug } from './useOrgSlug';
 export { useSpace } from './useSpace';

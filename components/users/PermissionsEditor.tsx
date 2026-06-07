@@ -16,8 +16,6 @@ interface Props {
   value: UserPermissions;
   onChange: (v: UserPermissions) => void;
   availableFeatures: Record<string, boolean>;
-  /** When true, skip subscription feature-gating so all modules are visible (used for admin/owner roles). */
-  showAllModules?: boolean;
 }
 
 function ChevronSVG({ open }: { open: boolean }) {
@@ -32,7 +30,7 @@ function ChevronSVG({ open }: { open: boolean }) {
   );
 }
 
-export function PermissionsEditor({ value, onChange, availableFeatures, showAllModules = false }: Props) {
+export function PermissionsEditor({ value, onChange, availableFeatures }: Props) {
   const { t } = useT();
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
 
@@ -92,7 +90,7 @@ export function PermissionsEditor({ value, onChange, availableFeatures, showAllM
 
   const visibleModules = MODULE_PERMISSIONS_CONFIG.filter((m) => {
     if (m.hideFromEditor) return false;
-    if (!showAllModules && m.featureKey && !availableFeatures[m.featureKey]) return false;
+    if (m.featureKey && !availableFeatures[m.featureKey]) return false;
     return true;
   });
 

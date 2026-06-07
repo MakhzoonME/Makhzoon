@@ -211,7 +211,7 @@ export function AppSidebar() {
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const visibleEntries = ORG_NAV_ENTRIES.filter((entry): entry is NavEntry => {
-    if ('type' in entry && entry.type === 'separator') return true;
+    if ('type' in entry && entry.type === 'separator') return false; // handled in finalEntries
     if ('type' in entry && entry.type === 'group') {
       if (entry.featureKey && !features[entry.featureKey]) return false;
       if (entry.adminOnly && !canSeeAdmin) {
@@ -236,9 +236,22 @@ export function AppSidebar() {
     return true;
   });
 
+  // Re-insert separators only when at least one visible entry follows them
+  const visibleSet = new Set(visibleEntries);
+  const finalEntries: NavEntry[] = [];
+  for (let i = 0; i < ORG_NAV_ENTRIES.length; i++) {
+    const entry = ORG_NAV_ENTRIES[i];
+    if ('type' in entry && entry.type === 'separator') {
+      const hasFollowing = ORG_NAV_ENTRIES.slice(i + 1).some((e) => visibleSet.has(e as NavEntry));
+      if (hasFollowing && finalEntries.length > 0) finalEntries.push(entry);
+    } else if (visibleSet.has(entry as NavEntry)) {
+      finalEntries.push(entry as NavEntry);
+    }
+  }
+
   // Auto-open groups containing the active route, merged with user toggles
   const autoOpenGroups: Record<string, boolean> = {};
-  for (const entry of visibleEntries) {
+  for (const entry of finalEntries) {
     if (!('type' in entry) || entry.type !== 'group') continue;
     const hasActive = entry.items.some((sub) => {
       const full = buildNavUrl({ locale, orgSlug, space, entry: sub });
@@ -299,7 +312,7 @@ export function AppSidebar() {
         </div>
 
         <nav className="flex-1 p-2.5 space-y-0.5 overflow-y-auto overflow-x-hidden">
-          {visibleEntries.map((entry, idx) => {
+          {finalEntries.map((entry, idx) => {
             /* ── Separator ──────────────────────────────────────── */
             if ('type' in entry && entry.type === 'separator') {
               return (

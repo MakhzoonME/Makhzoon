@@ -355,7 +355,7 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'assign_delivery',         label: 'Assign Delivery Agent',          labelKey: 'permOp.pos.assign_delivery',         requiresView: true, requiresKey: 'view_orders' },
       { key: 'manage_delivery_agents',  label: 'Manage Delivery Agents',         labelKey: 'permOp.pos.manage_delivery_agents',  requiresView: true, requiresKey: 'view_orders' },
       { key: 'view_warranty_certs',     label: 'View Warranty Certificates',     labelKey: 'permOp.pos.view_warranty_certs' },
-      { key: 'manage_warranty_certs',   label: 'Generate & Delete Warranties',   labelKey: 'permOp.pos.manage_warranty_certs',   requiresView: true },
+      { key: 'manage_warranty_certs',   label: 'Generate & Delete Warranties',   labelKey: 'permOp.pos.manage_warranty_certs',   requiresView: true, requiresKey: 'view_warranty_certs' },
       { key: 'view_service_jobs',       label: 'View Service Jobs',               labelKey: 'permOp.pos.view_service_jobs' },
       { key: 'manage_service_jobs',     label: 'Create & Manage Service Jobs',    labelKey: 'permOp.pos.manage_service_jobs',     requiresView: true, requiresKey: 'view_service_jobs' },
       { key: 'view_retainers',          label: 'View Retainers',                  labelKey: 'permOp.pos.view_retainers' },

@@ -5,6 +5,7 @@ import { useAccessibleSpaces } from '@/hooks/spaces';
 import { useT, useOrgSlug } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { useActiveSpaceStore } from '@/store/active-space.store';
+import { useAuthStore } from '@/store/auth.store';
 import { cn } from '@/lib/utils/cn';
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
@@ -44,6 +45,9 @@ export function SpaceSwitcher({ collapsed = false }: { collapsed?: boolean }) {
   const { data: orgInfo } = useOrgInfo();
   const { data, isLoading } = useAccessibleSpaces();
   const storeSlug = useActiveSpaceStore((s) => s.slug);
+  const user = useAuthStore((s) => s.user);
+
+  const canManageSpaces = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const currentSlug = (params?.space as string) || storeSlug || null;
   const spaces = data?.items ?? [];
@@ -53,6 +57,30 @@ export function SpaceSwitcher({ collapsed = false }: { collapsed?: boolean }) {
 
   const current = currentSlug ? spaces.find((s) => s.slug === currentSlug) : spaces[0];
   const currentName = current?.name ?? currentSlug ?? t('spaces.pickSpace');
+
+  // Staff with only 1 accessible space can't switch — render as static display
+  if (spaces.length === 1 && !canManageSpaces) {
+    return (
+      <div
+        className={cn(
+          'w-full flex items-center gap-2.5 rounded-lg px-2 py-2',
+          collapsed && 'justify-center px-0',
+        )}
+      >
+        <SpaceAvatar name={currentName} size={28} />
+        {!collapsed && (
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-semibold text-gray-900 truncate leading-tight">
+              {currentName}
+            </p>
+            <p className="text-[11px] text-gray-500 truncate leading-tight">
+              {orgInfo?.name ?? orgSlug}
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   function switchTo(slug: string) {
     if (!params?.locale || !params?.orgSlug) return;
@@ -130,15 +158,18 @@ export function SpaceSwitcher({ collapsed = false }: { collapsed?: boolean }) {
           );
         })}
 
-        <DropdownMenuSeparator className="my-1" />
-
-        <DropdownMenuItem
-          onSelect={() => router.push(`/${params.locale}/${params.orgSlug}/settings/spaces/new`)}
-          className="flex items-center gap-2 px-2 py-2 rounded-md text-primary-600 dark:text-primary-400 text-sm font-medium cursor-pointer"
-        >
-          <Plus className="h-3.5 w-3.5" strokeWidth={2} />
-          {t('spaces.createSpace')}
-        </DropdownMenuItem>
+        {canManageSpaces && (
+          <>
+            <DropdownMenuSeparator className="my-1" />
+            <DropdownMenuItem
+              onSelect={() => router.push(`/${params.locale}/${params.orgSlug}/settings/spaces/new`)}
+              className="flex items-center gap-2 px-2 py-2 rounded-md text-primary-600 dark:text-primary-400 text-sm font-medium cursor-pointer"
+            >
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+              {t('spaces.createSpace')}
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

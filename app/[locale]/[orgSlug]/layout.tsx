@@ -29,6 +29,15 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   const { dir } = useT();
   const isRtl = dir === 'rtl';
 
+  const [isMd, setIsMd] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    setIsMd(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMd(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -63,15 +72,6 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
   const showBanner = SUPERADMIN_ROLES.has(user.role) && active;
   const sidebarWidth = sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
-
-  const [isMd, setIsMd] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 768px)');
-    setIsMd(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsMd(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
 
   return (
     <div className="min-h-screen bg-surface-page">

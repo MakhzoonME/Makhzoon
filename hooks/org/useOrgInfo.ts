@@ -1,5 +1,6 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
+import { useAuthStore } from '@/store/auth.store';
 
 export interface OrgInfo {
   id: string;
@@ -12,18 +13,25 @@ export interface OrgInfo {
   accountManager: { id: string; name: string; email: string } | null;
 }
 
+const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin']);
+
 export function useOrgInfo() {
+  const user = useAuthStore((s) => s.user);
+  const canFetch =
+    !!user &&
+    (ADMIN_ROLES.has(user.role) ||
+      (user.role === 'staff' && user.permissions?.settings?.orgInfo === true));
+
   return useQuery<OrgInfo | null>({
     queryKey: ['org-info-self'],
     queryFn: async () => {
       const res = await fetch('/api/organizations/self');
-      // 403 = staff without settings.orgInfo permission — degrade gracefully
-      if (res.status === 403) return null;
       if (!res.ok) throw new Error('Failed to fetch organization info');
       return res.json();
     },
-    staleTime: 0,
-    refetchOnWindowFocus: true,
+    enabled: canFetch,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
     retry: false,
   });
 }

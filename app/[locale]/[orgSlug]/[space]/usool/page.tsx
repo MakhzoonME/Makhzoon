@@ -11,9 +11,9 @@ import { hasPermission } from '@/lib/permissions';
 import { formatDate } from '@/lib/utils/date';
 import { Asset } from '@/types';
 
-function useUsoolOverview(space: string | null) {
+function useUsoolOverview(space: string | null, canViewWarranties: boolean) {
   return useQuery({
-    queryKey: ['usool-overview', space],
+    queryKey: ['usool-overview', space, canViewWarranties],
     enabled: !!space,
     queryFn: async () => {
       const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
@@ -22,14 +22,16 @@ function useUsoolOverview(space: string | null) {
         fetch('/api/assets?status=Active&pageSize=1', { headers }),
         fetch('/api/assets?status=Retired&pageSize=1', { headers }),
         fetch('/api/assets?pageSize=6&sortBy=createdAt&sortDir=desc', { headers }),
-        fetch('/api/warranties?expiringSoon=true', { headers }),
+        canViewWarranties
+          ? fetch('/api/warranties?expiringSoon=true', { headers })
+          : Promise.resolve(null),
       ]);
       const total = totalRes.ok ? (await totalRes.json())?.total ?? 0 : 0;
       const active = activeRes.ok ? (await activeRes.json())?.total ?? 0 : 0;
       const retired = retiredRes.ok ? (await retiredRes.json())?.total ?? 0 : 0;
       const recentBody = recentRes.ok ? await recentRes.json() : { items: [] };
       const recent: Asset[] = Array.isArray(recentBody?.items) ? recentBody.items : [];
-      const warrBody = warrRes.ok ? await warrRes.json() : [];
+      const warrBody = warrRes?.ok ? await warrRes.json() : [];
       const expiring = Array.isArray(warrBody) ? warrBody.length : 0;
       return { total, active, retired, recent, expiring };
     },
@@ -89,10 +91,12 @@ export default function UsoolOverviewPage() {
   const space = useSpace();
   const { user } = useAuthStore();
   const { t, locale } = useT();
-  const { data, isLoading } = useUsoolOverview(space);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
+  const canViewWarranties = !!user && hasPermission(user, 'warranties', 'view');
   const canCreateAsset = !!user && hasPermission(user, 'assets', 'create');
+
+  const { data, isLoading } = useUsoolOverview(space, canViewWarranties);
 
   const total = data?.total ?? 0;
   const active = data?.active ?? 0;

@@ -34,7 +34,10 @@ Prerequisites: items 1 & 2 above must be done first.
 - AI-generated custom field suggestions based on business type + existing usage
 - Ongoing recommendations surfaced in Banna overview
 
-### 6. Haraka — Card Terminal: live sandbox verification
+### 6. Haraka — POS Register: camera barcode scanner button
+For mobile/tablet users who don't have a physical scanner. A scan button in the POS register opens the device camera; on success it closes and auto-fills the barcode field; on failure it shows an appropriate error (unreadable barcode, permission denied, no camera, timeout, etc.). Likely uses `@zxing/browser` or the native `BarcodeDetector` API.
+
+### 7. Haraka — Card Terminal: live sandbox verification
 Paymob, SumUp, and Square providers are fully wired (Paymob 4-step auth/order/payment_key/pay flow fixed). End-to-end verification against each provider's live sandbox still needs real API credentials and a physical terminal.
 
 ---

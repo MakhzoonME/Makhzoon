@@ -305,6 +305,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                       value={permissions}
                       onChange={setPermissions}
                       availableFeatures={features}
+                      showAllModules={selectedRole === 'org_owner' || selectedRole === 'admin'}
                     />
                   ) : (
                     <p className="text-xs text-gray-400">{permissionsLabel}</p>

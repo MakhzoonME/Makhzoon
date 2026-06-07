@@ -577,6 +577,7 @@ export default function UsersPage() {
                   value={editPermissions}
                   onChange={(v) => { setEditPermissions(v); setPermissionsModified(true); }}
                   availableFeatures={features}
+                  showAllModules={editRole === 'org_owner' || editRole === 'admin'}
                 />
               )}
             </div>

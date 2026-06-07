@@ -21,6 +21,7 @@ export function useAuth() {
     ) {
       let features: Record<string, boolean> = {};
       let permissions = null;
+      let saPermissions = null;
       let orgSlug: string | null = null;
       let avatarUrl: string | null = null;
       let displayName: string | null = null;
@@ -35,6 +36,7 @@ export function useAuth() {
           resolvedRole = data.role ?? role;
           features = data.features ?? {};
           permissions = data.permissions ?? null;
+          saPermissions = data.saPermissions ?? null;
           orgSlug = data.orgSlug ?? null;
           avatarUrl = data.avatarUrl ?? null;
           displayName = data.displayName ?? null;
@@ -53,6 +55,7 @@ export function useAuth() {
         organizationId,
         orgSlug,
         permissions,
+        saPermissions,
         features,
       } as AuthUser;
       setUser(authUser);
@@ -89,6 +92,7 @@ export function useAuth() {
               organizationId: data.organizationId ?? null,
               orgSlug: data.orgSlug ?? null,
               permissions: data.permissions ?? null,
+              saPermissions: data.saPermissions ?? null,
               features: data.features ?? {},
             } as AuthUser);
           } else {

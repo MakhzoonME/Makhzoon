@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   const parsed = createInviteSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
-  const { email, username, displayName, role, permissions } = parsed.data as typeof parsed.data & { permissions?: unknown };
+  const { email, username, displayName, role, permissions } = parsed.data;
   const normalizedEmail = email || undefined;
   const normalizedUsername = username ? username.toLowerCase() : undefined;
 
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     invitedByEmail: user.email,
     invitedByName: user.displayName,
     expiresAt,
-    permissions: (permissions ?? null) as import('@/types').UserPermissions | null,
+    permissions: (permissions as import('@/types').UserPermissions | null | undefined) ?? null,
   });
 
   const org = await getOrganizationById(tenant.organizationId);

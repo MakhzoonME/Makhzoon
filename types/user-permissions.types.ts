@@ -174,6 +174,8 @@ export interface ModuleConfig {
   featureKey?: string;
   /** Optional visual grouping in the PermissionsEditor. Defaults to 'core' when omitted. */
   group?: ModuleGroup;
+  /** When true, this module is hidden from the org-user PermissionsEditor. */
+  hideFromEditor?: boolean;
   operations: ModuleOperationConfig[];
 }
 
@@ -305,6 +307,7 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     label: 'Leads',
     labelKey: 'permModule.leads',
     group: 'admin',
+    hideFromEditor: true,
     operations: [
       { key: 'view', label: 'View Leads', labelKey: 'permOp.leads.view' },
     ],

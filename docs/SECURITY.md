@@ -138,24 +138,21 @@ return NextResponse.json({ error: 'This operation is not allowed' }, { status: 4
 
 ---
 
-#### 5. Missing Authorization Checks on Sensitive Reads ⚠️ REQUIRES ACTION
-**Severity:** MEDIUM  
-**Files:**
-- `app/api/assets/route.ts` (GET) - No permission check
-- `app/api/inventory/route.ts` (GET) - No permission check
-- `app/api/warranties/route.ts` (GET) - No permission check
+#### 5. Missing Authorization Checks on Sensitive Reads ✅ FIXED (2026-06-08)
+**Severity:** MEDIUM — RESOLVED  
+**Fixed files:**
+- `app/api/assets/route.ts` — `requirePermission(tenant.user, 'assets', 'view')` added to GET
+- `app/api/inventory/route.ts` — `requirePermission(tenant.user, 'inventory', 'view')` added to GET
+- `app/api/requests/route.ts` — `requirePermission(tenant.user, 'requests', 'view')` added to GET
+- `app/api/reports/route.ts` — `requirePermission(tenant.user, 'reports', 'view')` added to GET
+- `app/api/audit-logs/route.ts` — `hasSuperAdminPermission(user, 'auditLogs', 'view')` + `hasPermission(user, 'auditLogs', 'view')` for org admins
 
-**Issue:** `requireAuth()` validates user exists but doesn't check if they can access that org's assets.
-
-**Current:**
-```typescript
-const user = await verifySessionCookie();
-if (!user) return unauthorized();
-// MISSING: if (user.organizationId !== orgId) return forbidden();
-```
-
-**Remediation:** Add organization ownership validation.
-**Estimated effort:** 3 hours
+**Additional fixes applied:**
+- All superadmin API routes now use `hasSuperAdminPermission()` instead of role-set checks, enforcing granular `SuperAdminPermissions` including stored custom restrictions
+- `GET /api/organizations/[orgId]` checks `organizations.view`; PUT checks `organizations.update`; DELETE checks `organizations.delete`
+- `GET /api/superadmin/backend-logs` checks `backendLogs.view`
+- `GET /api/superadmin/team` checks `team.view`; POST checks `team.manage`
+- `PATCH /api/superadmin/team/[id]` checks `team.manage`
 
 ---
 

@@ -219,23 +219,53 @@ Every org has one or more Spaces (branches, warehouses, departments). All module
 
 ## 6. Users & Permissions
 
-### Roles
+### Two Separate Permission Systems
+
+#### 1. Org-scoped Permissions (`UserPermissions`)
+Applied to org members (`org_owner`, `admin`, `staff`). 13 modules, stored in `users.permissions` (JSONB, nullable — `null` means use role defaults).
+
+#### 2. Platform-scoped Permissions (`SuperAdminPermissions`)
+Applied to platform team (`super_admin`, `makhzoon_admin`, `makhzoon_support`). 6 modules, stored in `superadmin_users.permissions` (JSONB, nullable — `null` means use role defaults).
+
+### Feature Flags (separate from permissions)
+Stored on `subscriptions.features` (JSONB). Control whether an entire module is unlocked for the org. Features are layered on top of permissions: **feature OFF = module blocked for everyone**. **Feature ON + permission OFF = that user blocked**.
+
+### Org-Level Roles
 | Role | Description |
 |------|-------------|
 | `org_owner` | Full access; cannot be deactivated by others |
-| `admin` | Full access by default; manages users and settings |
-| `staff` | View-only on most modules; submits requests and support tickets |
+| `admin` | Full access by default; custom restrictions can be stored |
+| `staff` | View-only on most modules by default; submits requests and support tickets |
 
-### Permission System
-- Default permissions defined in `types/user-permissions.types.ts`
-- Per-user custom overrides per module+operation
-- UI: Permissions Editor with module groups (Core, Commerce, Workflow, Admin)
-- Server: `lib/permissions/require.ts` — `requirePermission()` called in every API route
+### Platform Roles
+| Role | Default Access |
+|------|----------------|
+| `super_admin` | Full access to all 6 platform modules |
+| `makhzoon_admin` | Can create/update orgs, manage support, view config; cannot delete orgs or manage team |
+| `makhzoon_support` | View orgs/auditLogs/backendLogs; respond to support tickets; no team access |
 
-### Permission Keys (full list)
+### Permission Enforcement — How It Works
+
+**Backend (authoritative)**:
+- `verifySessionCookie()` (`lib/supabase/auth-helpers.ts`) loads `permissions` for all org roles and `saPermissions` for all platform roles from DB on every request
+- Org routes: `requirePermission(user, module, operation)` in `lib/permissions/require.ts`
+- Platform routes: `hasSuperAdminPermission(user, module, operation)` in `lib/permissions/superadmin.ts`
+- Both use stored-permissions-first logic: if `permissions`/`saPermissions` is set, it overrides role defaults
+- Session endpoint returns both `permissions` (all org roles) and `saPermissions` (all platform roles) to the frontend
+
+**Frontend (UX layer)**:
+- `useModuleGuard({ featureKey, moduleKey })` — guards entire pages; checks both feature flags and module permissions for all roles including admins with stored custom permissions
+- `useAdminGuard(permissionKey)` — guards admin-only pages or specific operations within pages
+- `SuperAdminPermissionGate` component — conditionally renders in superadmin UI based on `saPermissions`
+- `PermissionGate` component — conditionally renders in org portal based on `UserPermissions`
+- `AppSidebar` nav — filtered by feature flags AND permissions for all roles (including admins with stored custom restrictions)
+- Superadmin layout nav — filtered by `saPermissions` using `permModule`/`permOp` per nav entry
+
+### Org Permission Keys
 
 | Module | Operations |
 |--------|-----------|
+| `dashboard` | view |
 | `assets` | view, create, update, delete, import, checkout, maintenance, notes, bulk_delete, bulk_move, bulk_duplicate |
 | `inventory` | view, create, update, delete, transactions, audits, bulk_delete, bulk_move, bulk_duplicate |
 | `purchases` | view, create, update, delete, receive |
@@ -245,8 +275,20 @@ Every org has one or more Spaces (branches, warehouses, departments). All module
 | `support` | view, create |
 | `auditLogs` | view |
 | `leads` | view |
-| `pos` | open_session, close_session, process_sale, apply_discount, issue_refund, void_transaction, view_reports, fawtara_submit, customers_bulk_delete, customers_bulk_move, customers_bulk_duplicate, view_orders, manage_orders, assign_delivery, manage_delivery_agents |
+| `banna` | view, create, update, delete |
+| `pos` | open_session, close_session, process_sale, apply_discount, issue_refund, void_transaction, view_reports, fawtara_submit, customers_bulk_delete, customers_bulk_move, customers_bulk_duplicate, view_orders, manage_orders, assign_delivery, manage_delivery_agents, view_warranty_certs, manage_warranty_certs |
 | `settings` | view, orgInfo, subscription, users, taxRates, fawtara |
+
+### Platform Permission Keys
+
+| Module | Operations |
+|--------|-----------|
+| `organizations` | view, create, update, delete |
+| `support` | view, respond, close |
+| `configuration` | view, edit |
+| `auditLogs` | view |
+| `team` | view, manage |
+| `backendLogs` | view |
 
 ---
 
@@ -300,10 +342,12 @@ Every org has one or more Spaces (branches, warehouses, departments). All module
 ### Session & Auth Flow
 1. Sign in via Supabase Auth (email/password)
 2. `@supabase/ssr` manages httpOnly session cookies
-3. Server-side session cache: 5–10s TTL (`lib/supabase/session-cache.ts`)
-4. Permission cache: 10s TTL keyed by user UID
-5. Logout: `supabase.auth.signOut()` + hard redirect
-6. Superadmin transfer mode: `transferOrgId` cookie → org portal with Transfer Mode banner
+3. `POST /api/auth/session` returns `{ role, orgSlug, features, permissions, saPermissions }` — `permissions` for all org roles, `saPermissions` for all platform roles
+4. `GET /api/auth/me` always returns the same shape (used for refresh after transfer mode)
+5. Server-side session cache: 5–10s TTL (`lib/supabase/session-cache.ts`)
+6. Permission cache: 10s TTL keyed by user UID
+7. Logout: `supabase.auth.signOut()` + hard redirect
+8. Superadmin transfer mode: `transferOrgId` cookie → org portal with Transfer Mode banner
 
 ---
 
@@ -376,19 +420,26 @@ Auth: `Authorization: Bearer {CRON_SECRET}` header.
 
 **Route:** `/{locale}/superadmin/`
 
-- Dashboard: system overview
-- Organizations: create, view, edit subscriptions, view users, transfer into org (Transfer Mode)
-- Lists: platform managed list catalog (seeds platform defaults; orgs see these via their settings)
-- Packages: subscription package management
-- Team: manage Makhzoon platform staff
-- Backend Logs: system-level debugging
-- Support: view all org support tickets
-- Audit Logs: cross-org audit trail with full filtering (org, user, action, date range) and CSV export
-- Sync: environment sync tooling
+- Dashboard: system overview (all platform roles)
+- Organizations: create, view, edit subscriptions, view users, transfer into org (Transfer Mode) — access gated by `organizations.view/update/delete`
+- Leads: early-access and contact-sales submissions (all platform roles)
+- Messages: website contact messages (all platform roles)
+- Lists: platform managed list catalog — gated by `configuration.view`
+- Packages: subscription package management — gated by `configuration.view`
+- Configuration: platform settings — gated by `configuration.view`
+- Support: all org support tickets — gated by `support.view`
+- Team: manage Makhzoon platform staff — gated by `team.view`; add/edit gated by `team.manage`
+- Backend Logs: system-level debugging — gated by `backendLogs.view`
+- Sync: environment sync tooling (super_admin + makhzoon_admin role-only; not permission-gated)
+- Audit Logs: cross-org audit trail — gated by `auditLogs.view`
+
+**Superadmin Permission System:** Each nav item carries a `permModule`/`permOp` pair checked against the user's `saPermissions` (loaded on session). Stored custom permissions override role defaults. `SuperAdminPermissionGate` component wraps UI elements that require specific operations.
 
 **Superadmin Transfer Mode:** Superadmin sets `transferOrgId` cookie → sees org portal with Transfer Mode banner → exit clears cookie.
 
 **Sidebar:** Animated collapsible (240px ↔ 68px). Mobile: hidden by default; hamburger opens full-width overlay drawer.
+
+**Org Edit Page Sections:** Info (read-only view; Edit button gated on `organizations.update`), Subscription (status + enabled features, always visible), Danger Zone (hidden entirely unless `organizations.delete`).
 
 ---
 
@@ -399,7 +450,7 @@ Auth: `Authorization: Bearer {CRON_SECRET}` header.
 - ✅ Cloudflare Workers deployment — Amplify/Vercel removed
 - ✅ Multi-tenant, multi-space architecture (`/{locale}/{orgSlug}/{spaceSlug}/{module}`)
 - ✅ Supabase Auth — email/password + invite-based onboarding
-- ✅ Granular RBAC + custom per-user, per-module permissions
+- ✅ Full dual-system RBAC: org-scoped `UserPermissions` + platform-scoped `SuperAdminPermissions`; both with stored-custom-overrides-first logic, enforced on every backend route and in frontend guards
 - ✅ **Usool (Assets):** register, QR, checkout, maintenance, notes, CSV import/export, audits, custom field values
 - ✅ **Raseed (Inventory):** items, transactions, purchases, stock audits, POS integration, custom field values
 - ✅ **Haraka POS:** sessions, register, multi-payment, discounts, refunds, voids, receipt printing/sharing, customers, reports, Fawtara integration
@@ -498,7 +549,8 @@ Auth: `Authorization: Bearer {CRON_SECRET}` header.
   /notifications                        — NotificationBell, NotificationPanel
   /shared                               — PageHeader, DataTable, FilterBar, StatusBadge,
                                           StatCard, SubscriptionGate, NetworkStatusIndicator,
-                                          ConfigSelect, BulkActionsBar, DocumentList
+                                          ConfigSelect, BulkActionsBar, DocumentList,
+                                          PermissionGate (org), SuperAdminPermissionGate (platform)
   /ui                                   — Base components (button, input, dialog, badge, etc.)
   /marketing                            — MarketingHeader, Footer, CTABand
 
@@ -518,7 +570,7 @@ Auth: `Authorization: Bearer {CRON_SECRET}` header.
   /lists                                — useList (managed list resolution)
   /spaces                               — useSpaceMembers, useSpaces, useAccessibleSpaces
   /org                                  — useOrgInfo
-  /ui                                   — useT, useAdminGuard, useDebounce, toast
+  /ui                                   — useT, useAdminGuard, useModuleGuard, useDebounce, toast
 
 /lib
   /platform
@@ -527,6 +579,10 @@ Auth: `Authorization: Bearer {CRON_SECRET}` header.
     /audit                              — auditLog.queue() fire-and-forget
     /permissions                        — hasPermission(), hasPermByKey()
     /limits                             — checkResourceLimit()
+  /permissions
+    index.ts                            — hasPermission(), hasModuleAccess(), hasPermByKey() (org-scoped)
+    require.ts                          — requirePermission() throws 403 response
+    superadmin.ts                       — hasSuperAdminPermission() (platform-scoped)
   /modules
     /haraka
       /orders                           — schemas, repository, service
@@ -616,7 +672,9 @@ proxy.ts                                — ALL routing (domain, locale, session
 - ✅ httpOnly session cookies via `@supabase/ssr`
 - ✅ Supabase service-role key used server-side only
 - ✅ Row-Level Security on all Supabase tables (incl. `web_push_subscriptions`, `custom_field_values`)
-- ✅ Role + permission checks on every mutation API route
+- ✅ Role + permission checks on every API route (read AND write) — `requirePermission()` on all GET handlers for assets, inventory, requests, reports; `hasSuperAdminPermission()` on all superadmin routes
+- ✅ Both permission systems fully enforced backend: `UserPermissions` (org) + `SuperAdminPermissions` (platform)
+- ✅ `verifySessionCookie()` loads stored custom permissions for ALL roles (org and platform) — enforced on every request
 - ✅ Immutable audit logs
 - ✅ Sentry (no PII in logs)
 - ✅ CRON_SECRET via Authorization header only
@@ -627,6 +685,7 @@ proxy.ts                                — ALL routing (domain, locale, session
 - ✅ HMAC-SHA256 webhook verification on all card terminal providers
 
 ### Gaps
+- ⚠️ Feature flags (subscription features) not enforced on backend API routes — frontend-only via `useModuleGuard`; API calls succeed even if org's feature is disabled
 - ⚠️ No rate limiting on some public endpoints (`/api/early-access`, `/api/organizations/self-serve`)
 - ⚠️ Email delivery failures not tracked
 - ⚠️ SSO code present but disabled (security review needed before enabling)

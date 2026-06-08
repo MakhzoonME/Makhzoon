@@ -39,8 +39,9 @@ export function AssetQRCard({ assetId, assetName, orgSlug, locale, space = 'defa
     queryKey: ['asset-qr', assetId, orgSlug, locale, space],
     queryFn: async () => {
       const origin = window.location.origin;
-      const assetPageUrl = `${origin}/${locale}/${orgSlug}/${space}/usool/${assetId}`;
-      const res = await fetch(`/api/assets/${assetId}/qr?url=${encodeURIComponent(assetPageUrl)}`);
+      // QR opens a public, read-only guest view — no login required.
+      const guestViewUrl = `${origin}/${locale}/asset/${orgSlug}/${space}/${assetId}`;
+      const res = await fetch(`/api/assets/${assetId}/qr?url=${encodeURIComponent(guestViewUrl)}`);
       if (!res.ok) throw new Error('Failed to generate QR');
       return res.json();
     },

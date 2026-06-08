@@ -87,7 +87,17 @@ export async function POST(req: NextRequest) {
       });
       imported++;
     } catch (e) {
-      errors.push({ row: i + 2, errors: [e instanceof Error ? e.message : 'Write failed'] });
+      // Supabase throws plain PostgrestError objects (not Error instances), so
+      // `e instanceof Error` misses their `.message` and we'd otherwise show a
+      // useless generic "Write failed" for constraint violations etc.
+      const message =
+        e instanceof Error
+          ? e.message
+          : (e && typeof e === 'object' && 'message' in e ? String((e as { message: unknown }).message) : 'Write failed');
+      const friendly = message.includes('duplicate key') || message.includes('already exists')
+        ? 'Serial number already exists in this space'
+        : message;
+      errors.push({ row: i + 2, errors: [friendly] });
     }
   }
 

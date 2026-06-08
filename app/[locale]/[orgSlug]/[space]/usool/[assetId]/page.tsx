@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
+import { formatAuditValue, formatKeyLabel } from '@/lib/utils/audit-labels';
 import { Asset, Warranty } from '@/types';
 import { RequestActionPanel } from '@/components/assets/RequestActionPanel';
 import { Pencil, Archive, Trash2, ArrowRight, Copy } from 'lucide-react';
@@ -69,7 +70,21 @@ type AuditEntry = {
   action: string;
   module?: string;
   createdAt: string | number;
+  oldValue?: Record<string, unknown> | null;
+  newValue?: Record<string, unknown> | null;
 };
+
+function entryChangeSummary(entry: AuditEntry): string | null {
+  const keys = Array.from(new Set([...Object.keys(entry.oldValue ?? {}), ...Object.keys(entry.newValue ?? {})]));
+  if (!keys.length) return null;
+  if (keys.length === 1) {
+    const k = keys[0];
+    const before = formatAuditValue(entry.oldValue?.[k]);
+    const after = formatAuditValue(entry.newValue?.[k]);
+    return `${formatKeyLabel(k)}: ${before || '—'} → ${after || '—'}`;
+  }
+  return `${keys.length} ${keys.length === 1 ? 'field' : 'fields'} changed: ${keys.map(formatKeyLabel).join(', ')}`;
+}
 
 const ACTION_COLORS: Record<string, { dot: string; label: string }> = {
   CREATED:  { dot: 'bg-indigo-500', label: 'text-indigo-700 dark:text-indigo-400' },
@@ -88,17 +103,27 @@ function ActivityTimeline({ assetId, createdBy, createdAt, updatedBy, updatedAt,
   asset: Asset;
 }) {
   const { t } = useT();
-  const { data } = useQuery<{ items: AuditEntry[] }>({
-    queryKey: ['asset-audit', assetId],
+  const space = useSpace();
+  const { data } = useQuery<AuditEntry[]>({
+    queryKey: ['asset-audit', assetId, space],
     queryFn: async () => {
-      const res = await fetch(`/api/audit-logs?recordId=${assetId}&limit=6`);
-      if (!res.ok) return { items: [] };
-      return res.json();
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/audit-logs?recordId=${assetId}&pageSize=6`, { headers });
+      if (!res.ok) return [];
+      const json: { logs: Array<{ id: string; action: string; userDisplayName?: string; userId: string; timestamp: string; oldValue?: Record<string, unknown> | null; newValue?: Record<string, unknown> | null }> } = await res.json();
+      return (json.logs ?? []).map((l) => ({
+        id: l.id,
+        action: l.action,
+        actorName: l.userDisplayName ?? l.userId,
+        createdAt: l.timestamp,
+        oldValue: l.oldValue,
+        newValue: l.newValue,
+      }));
     },
     staleTime: 60_000,
   });
 
-  const logs = data?.items ?? [];
+  const logs = data ?? [];
 
   const toStr = (d: string | number | Date): string =>
     d instanceof Date ? d.toISOString() : String(d);
@@ -130,6 +155,9 @@ function ActivityTimeline({ assetId, createdBy, createdAt, updatedBy, updatedAt,
               <p className={`text-xs mt-0.5 font-medium ${colors.label}`}>
                 {entry.action.charAt(0) + entry.action.slice(1).toLowerCase().replace(/_/g, ' ')}
               </p>
+              {entryChangeSummary(entry) && (
+                <p className="text-xs text-gray-500 mt-0.5 truncate" dir="ltr">{entryChangeSummary(entry)}</p>
+              )}
               <p className="text-xs text-gray-400 mt-0.5 tabular-nums font-mono">
                 {formatDate(typeof entry.createdAt === 'number' ? new Date(entry.createdAt) : entry.createdAt)}
               </p>

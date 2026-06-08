@@ -22,7 +22,7 @@ import {
   createAssetNote as dbCreateAssetNote,
   deleteAssetNote as dbDeleteAssetNote,
 } from '@/lib/db/asset-notes';
-import { queueAuditLog } from '@/lib/audit/logger';
+import { writeAuditLog } from '@/lib/audit/logger';
 import { requirePermission, requireActiveSubscription, getUserContext } from './base.service';
 
 export interface CreateAssetInput {
@@ -112,7 +112,7 @@ export async function createAssetWithAudit(
     } as any
   );
 
-  queueAuditLog({
+  await writeAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -170,7 +170,7 @@ export async function updateAssetWithAudit(
     }
   }
 
-  queueAuditLog({
+  await writeAuditLog({
     organizationId: user.organizationId!,
     spaceId: asset.spaceId,
     userId: userContext.uid,
@@ -202,7 +202,7 @@ export async function deleteAssetWithAudit(user: AuthUser, assetId: string) {
   if (asset.status === 'Retired') {
     // Hard-delete already-retired assets
     await dbDeleteAsset(assetId);
-    queueAuditLog({
+    await writeAuditLog({
       organizationId: asset.organizationId,
       spaceId: asset.spaceId,
       userId: userContext.uid,
@@ -222,7 +222,7 @@ export async function deleteAssetWithAudit(user: AuthUser, assetId: string) {
       updatedByName: userContext.displayName,
       updatedByRole: userContext.role,
     });
-    queueAuditLog({
+    await writeAuditLog({
       organizationId: asset.organizationId,
       spaceId: asset.spaceId,
       userId: userContext.uid,
@@ -300,7 +300,7 @@ export async function createAssetCheckout(
     updatedByRole: userContext.role,
   });
 
-  queueAuditLog({
+  await writeAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -342,7 +342,7 @@ export async function returnAssetCheckout(
     updatedByRole: userContext.role,
   });
 
-  queueAuditLog({
+  await writeAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -399,7 +399,7 @@ export async function createAssetMaintenance(
     } as any
   );
 
-  queueAuditLog({
+  await writeAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -450,7 +450,7 @@ export async function createAssetNoteWithAudit(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any);
 
-  queueAuditLog({
+  await writeAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -478,7 +478,7 @@ export async function deleteAssetNoteWithAudit(user: AuthUser, assetId: string, 
   const userContext = getUserContext(user);
   await dbDeleteAssetNote(noteId);
 
-  queueAuditLog({
+  await writeAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,

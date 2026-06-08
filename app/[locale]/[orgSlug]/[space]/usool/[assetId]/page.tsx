@@ -14,8 +14,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
-import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
-import { formatAuditValue, formatKeyLabel } from '@/lib/utils/audit-labels';
+import { formatDate, formatDateTime, isExpired, getWarrantyStatus } from '@/lib/utils/date';
+import { formatAuditValue, formatKeyLabel, formatActionLabel } from '@/lib/utils/audit-labels';
+import { DiffCards } from '@/components/shared/AuditDiffCards';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Asset, Warranty } from '@/types';
 import { RequestActionPanel } from '@/components/assets/RequestActionPanel';
 import { Pencil, Archive, Trash2, ArrowRight, Copy } from 'lucide-react';
@@ -104,6 +106,7 @@ function ActivityTimeline({ assetId, createdBy, createdAt, updatedBy, updatedAt,
 }) {
   const { t } = useT();
   const space = useSpace();
+  const [selectedEntry, setSelectedEntry] = useState<AuditEntry | null>(null);
   const { data } = useQuery<AuditEntry[]>({
     queryKey: ['asset-audit', assetId, space],
     queryFn: async () => {
@@ -133,13 +136,26 @@ function ActivityTimeline({ assetId, createdBy, createdAt, updatedBy, updatedAt,
     { id: 'cre', action: 'CREATED', actorName: asset.createdByName ?? createdBy, createdAt: toStr(createdAt) },
   ];
 
+  const hasDetails = (entry: AuditEntry) => !!(entry.oldValue || entry.newValue) && (Object.keys(entry.oldValue ?? {}).length || Object.keys(entry.newValue ?? {}).length);
+
+  const detailRows = selectedEntry ? [
+    [t('auditLogs.action'), formatActionLabel(selectedEntry.action)],
+    [t('auditLogs.user'), selectedEntry.actorName ?? selectedEntry.actorEmail ?? t('common.system')],
+    [t('auditLogs.timestamp'), formatDateTime(typeof selectedEntry.createdAt === 'number' ? new Date(selectedEntry.createdAt) : selectedEntry.createdAt)],
+  ] : [];
+
   return (
     <div className="space-y-0">
       {timeline.map((entry, i) => {
         const colors = ACTION_COLORS[entry.action?.toUpperCase()] ?? ACTION_COLORS.UPDATED;
         const isLast = i === timeline.length - 1;
+        const clickable = hasDetails(entry);
         return (
-          <div key={entry.id} className="flex gap-3 relative">
+          <div
+            key={entry.id}
+            className={`flex gap-3 relative ${clickable ? 'cursor-pointer' : ''}`}
+            onClick={() => clickable && setSelectedEntry(entry)}
+          >
             {/* connector line */}
             {!isLast && (
               <div className="absolute start-[11px] top-7 bottom-0 w-px bg-border" />
@@ -156,7 +172,9 @@ function ActivityTimeline({ assetId, createdBy, createdAt, updatedBy, updatedAt,
                 {entry.action.charAt(0) + entry.action.slice(1).toLowerCase().replace(/_/g, ' ')}
               </p>
               {entryChangeSummary(entry) && (
-                <p className="text-xs text-gray-500 mt-0.5 truncate" dir="ltr">{entryChangeSummary(entry)}</p>
+                <p className={`text-xs mt-0.5 truncate ${clickable ? 'text-primary-600 underline decoration-dotted underline-offset-2' : 'text-gray-500'}`} dir="ltr">
+                  {entryChangeSummary(entry)}
+                </p>
               )}
               <p className="text-xs text-gray-400 mt-0.5 tabular-nums font-mono">
                 {formatDate(typeof entry.createdAt === 'number' ? new Date(entry.createdAt) : entry.createdAt)}
@@ -165,6 +183,29 @@ function ActivityTimeline({ assetId, createdBy, createdAt, updatedBy, updatedAt,
           </div>
         );
       })}
+
+      <Dialog open={!!selectedEntry} onOpenChange={(o) => !o && setSelectedEntry(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('auditLogs.detail')}</DialogTitle>
+          </DialogHeader>
+          {selectedEntry && (
+            <div className="space-y-4 text-[14px] px-6 py-4">
+              <div className="rounded-lg border border-border overflow-hidden">
+                {detailRows.filter(([, v]) => v).map(([k, v], i) => (
+                  <div key={String(k)} className={`flex text-xs ${i % 2 === 0 ? 'bg-surface-page' : 'bg-surface-card'}`}>
+                    <span className="w-28 flex-shrink-0 px-3 py-2 text-gray-500 font-medium border-r border-border">{k}</span>
+                    <span className="px-3 py-2 text-gray-800">{String(v)}</span>
+                  </div>
+                ))}
+              </div>
+              {(selectedEntry.oldValue || selectedEntry.newValue) && (
+                <DiffCards oldValue={selectedEntry.oldValue} newValue={selectedEntry.newValue} />
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

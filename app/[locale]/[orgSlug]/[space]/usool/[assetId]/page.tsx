@@ -15,7 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { formatDate, formatDateTime, isExpired, getWarrantyStatus } from '@/lib/utils/date';
-import { formatAuditValue, formatKeyLabel, formatActionLabel } from '@/lib/utils/audit-labels';
+import { formatActionLabel } from '@/lib/utils/audit-labels';
 import { DiffCards } from '@/components/shared/AuditDiffCards';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Asset, Warranty } from '@/types';
@@ -75,18 +75,6 @@ type AuditEntry = {
   oldValue?: Record<string, unknown> | null;
   newValue?: Record<string, unknown> | null;
 };
-
-function entryChangeSummary(entry: AuditEntry): string | null {
-  const keys = Array.from(new Set([...Object.keys(entry.oldValue ?? {}), ...Object.keys(entry.newValue ?? {})]));
-  if (!keys.length) return null;
-  if (keys.length === 1) {
-    const k = keys[0];
-    const before = formatAuditValue(entry.oldValue?.[k]);
-    const after = formatAuditValue(entry.newValue?.[k]);
-    return `${formatKeyLabel(k)}: ${before || '—'} → ${after || '—'}`;
-  }
-  return `${keys.length} ${keys.length === 1 ? 'field' : 'fields'} changed: ${keys.map(formatKeyLabel).join(', ')}`;
-}
 
 const ACTION_COLORS: Record<string, { dot: string; label: string }> = {
   CREATED:  { dot: 'bg-indigo-500', label: 'text-indigo-700 dark:text-indigo-400' },
@@ -171,10 +159,14 @@ function ActivityTimeline({ assetId, createdBy, createdAt, updatedBy, updatedAt,
               <p className={`text-xs mt-0.5 font-medium ${colors.label}`}>
                 {entry.action.charAt(0) + entry.action.slice(1).toLowerCase().replace(/_/g, ' ')}
               </p>
-              {entryChangeSummary(entry) && (
-                <p className={`text-xs mt-0.5 truncate ${clickable ? 'text-primary-600 underline decoration-dotted underline-offset-2' : 'text-gray-500'}`} dir="ltr">
-                  {entryChangeSummary(entry)}
-                </p>
+              {clickable && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setSelectedEntry(entry); }}
+                  className="text-xs mt-0.5 font-medium text-primary-600 underline decoration-dotted underline-offset-2 cursor-pointer"
+                >
+                  {t('auditLogs.detail')}
+                </button>
               )}
               <p className="text-xs text-gray-400 mt-0.5 tabular-nums font-mono">
                 {formatDate(typeof entry.createdAt === 'number' ? new Date(entry.createdAt) : entry.createdAt)}

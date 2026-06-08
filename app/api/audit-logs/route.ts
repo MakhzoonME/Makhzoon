@@ -121,6 +121,7 @@ export async function GET(req: NextRequest) {
         ? (user.organizationId ?? undefined)
         : (searchParams.get('orgId') ?? undefined);
     const userId = searchParams.get('userId') ?? undefined;
+    const recordId = searchParams.get('recordId') ?? undefined;
     const action = searchParams.get('action') ?? undefined;
     const dateFrom = searchParams.get('dateFrom') ?? undefined;
     const dateTo = searchParams.get('dateTo') ?? undefined;
@@ -145,7 +146,7 @@ export async function GET(req: NextRequest) {
         .maybeSingle();
       if (s) spaceId = s.id as string;
     }
-    const result = await getAuditLogs({ orgId, spaceId, userId, action, dateFrom, dateTo, page, pageSize, excludeSuperadminActions: isOrgUser });
+    const result = await getAuditLogs({ orgId, spaceId, userId, recordId, action, dateFrom, dateTo, page, pageSize, excludeSuperadminActions: isOrgUser });
     const enriched = await enrichLogs(result.logs);
     return NextResponse.json({ ...result, logs: enriched });
   } catch (err) {

@@ -2,12 +2,14 @@
 import { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useCheckouts, useCheckoutAsset, useReturnAsset } from '@/hooks/assets';
+import { useAssignableUsers } from '@/hooks/users';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { formatDate } from '@/lib/utils/date';
 import { toast } from '@/hooks/ui';
+import type { OrgUser } from '@/types';
 
 function ArrowUpRightSVG() {
   return (
@@ -43,6 +45,7 @@ function HistorySVG() {
 
 export function CheckoutSection({ assetId, assetName }: { assetId: string; assetName: string }) {
   const { data: checkouts = [], isLoading } = useCheckouts(assetId);
+  const { data: assignableUsers = [] } = useAssignableUsers();
   const checkoutMut = useCheckoutAsset(assetId);
   const returnMut = useReturnAsset(assetId);
   const [showForm, setShowForm] = useState(false);
@@ -124,12 +127,19 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
         <form onSubmit={handleCheckout} className="px-5 py-4 space-y-3">
           <div>
             <label className="text-xs text-gray-500 mb-1 block">Checked out to</label>
-            <Input
-              value={checkedOutTo}
-              onChange={(e) => setCheckedOutTo(e.target.value)}
-              placeholder="Name or email"
-              required
-            />
+            <Select value={checkedOutTo} onValueChange={setCheckedOutTo}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a user" />
+              </SelectTrigger>
+              <SelectContent>
+                {assignableUsers.length === 0 && (
+                  <SelectItem value="__none" disabled>No users found</SelectItem>
+                )}
+                {assignableUsers.map((u: OrgUser) => (
+                  <SelectItem key={u.id} value={u.displayName}>{u.displayName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <label className="text-xs text-gray-500 mb-1 block">Due date (optional)</label>

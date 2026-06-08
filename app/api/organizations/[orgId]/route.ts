@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
-import { getOrganizationById, updateOrganization } from '@/lib/db/organizations';
+import { getOrganizationById, updateOrganization, deleteOrganizationWithData } from '@/lib/db/organizations';
 import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
 import { queueAuditLog } from '@/lib/audit/logger';
 import { organizationUpdateSchema } from '@/lib/validations/organization.schema';
-
-const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+import { hasSuperAdminPermission } from '@/lib/permissions/superadmin';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!SUPERADMIN_ROLES.has(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!hasSuperAdminPermission(user, 'organizations', 'view'))
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { orgId } = await params;
     const org = await getOrganizationById(orgId);
@@ -29,7 +29,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ orgI
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (user.role !== 'super_admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!hasSuperAdminPermission(user, 'organizations', 'update'))
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { orgId } = await params;
     const existing = await getOrganizationById(orgId);
@@ -58,6 +59,36 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ orgI
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[PUT /api/organizations/[orgId]]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
+  try {
+    const user = await verifySessionCookie();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!hasSuperAdminPermission(user, 'organizations', 'delete'))
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    const { orgId } = await params;
+    const existing = await getOrganizationById(orgId);
+    if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    const { deletedUserUids } = await deleteOrganizationWithData(orgId);
+
+    queueAuditLog({
+      organizationId: orgId,
+      userId: user.uid,
+      role: user.role,
+      action: 'ORGANIZATION_DELETED',
+      module: 'organizations',
+      recordId: orgId,
+      oldValue: { name: existing.name, subdomain: existing.subdomain, deletedUserCount: deletedUserUids.length },
+    });
+
+    return NextResponse.json({ success: true, deletedUserCount: deletedUserUids.length });
+  } catch (err) {
+    console.error('[DELETE /api/organizations/[orgId]]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

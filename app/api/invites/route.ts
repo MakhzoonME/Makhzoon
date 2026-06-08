@@ -52,29 +52,27 @@ export async function POST(req: NextRequest) {
   const parsed = createInviteSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
-  const { email, username, displayName, role, permissions } = parsed.data as typeof parsed.data & { permissions?: unknown };
+  const { email, username, displayName, role, permissions } = parsed.data;
   const normalizedEmail = email || undefined;
   const normalizedUsername = username ? username.toLowerCase() : undefined;
 
   if (normalizedEmail) {
     if (await authEmailExists(normalizedEmail)) {
-      // SECURITY: Don't reveal if user exists (prevents user enumeration)
-      return NextResponse.json({ error: 'This email cannot be invited' }, { status: 409 });
+      return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409 });
     }
     const pending = await getPendingInviteForEmail(tenant.organizationId, normalizedEmail);
     if (pending) {
-      return NextResponse.json({ error: 'This email cannot be invited' }, { status: 409 });
+      return NextResponse.json({ error: 'This email already has a pending invite.' }, { status: 409 });
     }
   }
   if (normalizedUsername) {
     const syntheticEmail = `${normalizedUsername}@makhzoon.local`;
     if (await authEmailExists(syntheticEmail)) {
-      // SECURITY: Don't reveal if username exists
-      return NextResponse.json({ error: 'This username cannot be invited' }, { status: 409 });
+      return NextResponse.json({ error: 'An account with this username already exists.' }, { status: 409 });
     }
     const pending = await getPendingInviteForUsername(tenant.organizationId, normalizedUsername);
     if (pending) {
-      return NextResponse.json({ error: 'This username cannot be invited' }, { status: 409 });
+      return NextResponse.json({ error: 'This username already has a pending invite.' }, { status: 409 });
     }
   }
 
@@ -92,7 +90,7 @@ export async function POST(req: NextRequest) {
     invitedByEmail: user.email,
     invitedByName: user.displayName,
     expiresAt,
-    permissions: (permissions ?? null) as import('@/types').UserPermissions | null,
+    permissions: (permissions as import('@/types').UserPermissions | null | undefined) ?? null,
   });
 
   const org = await getOrganizationById(tenant.organizationId);

@@ -1,4 +1,4 @@
-const enabled = process.env.NODE_ENV !== 'production';
+const enabled = process.env.NEXT_PUBLIC_APP_ENV !== 'production';
 
 export const logger = {
   log:   (...args: unknown[]) => { if (enabled) console.log(...args); },

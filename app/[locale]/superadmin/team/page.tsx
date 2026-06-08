@@ -24,6 +24,7 @@ import {
   DEFAULT_SUPPORT_PERMISSIONS,
 } from '@/types';
 import { useT } from '@/hooks/ui';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { Search, KeyRound } from 'lucide-react';
 
 function defaultPermsForRole(role: MakhzoonRole): SuperAdminPermissions {
@@ -149,7 +150,7 @@ export default function SuperAdminTeamPage() {
   const [resetTarget, setResetTarget] = useState<TeamMember | null>(null);
   const [resetting, setResetting] = useState(false);
   const [resetSent, setResetSent] = useState(false);
-  const [_copied, _setCopied] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<TeamMember | null>(null);
 
   const { data: allMembers = [], isLoading } = useQuery<TeamMember[]>({
     queryKey: ['superadmin-team'],
@@ -263,13 +264,14 @@ export default function SuperAdminTeamPage() {
     }
   }
 
-  async function handleDelete(member: TeamMember) {
-    if (!confirm(`Permanently delete ${member.displayName}? This cannot be undone.`)) return;
+  async function handleDelete() {
+    if (!deleteTarget) return;
     try {
-      const res = await fetch(`/api/superadmin/team/${member.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/superadmin/team/${deleteTarget.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Failed to delete');
-      toast.success(`${member.displayName} deleted`);
+      toast.success(`${deleteTarget.displayName} deleted`);
+      setDeleteTarget(null);
       qc.invalidateQueries({ queryKey: ['superadmin-team'] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed');
@@ -458,7 +460,7 @@ export default function SuperAdminTeamPage() {
                               size="sm"
                               variant="ghost"
                               className="text-red-500 hover:text-red-600 hover:bg-red-50 text-xs"
-                              onClick={() => handleDelete(m)}
+                              onClick={() => setDeleteTarget(m)}
                             >
                               {t('team.delete')}
                             </Button>
@@ -647,6 +649,16 @@ export default function SuperAdminTeamPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        title="Delete team member?"
+        description={`"${deleteTarget?.displayName}" will be permanently removed. This cannot be undone.`}
+        confirmLabel={t('common.delete')}
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
 
       {/* Reset password confirm dialog */}
       <Dialog open={!!resetTarget} onOpenChange={(o) => !o && setResetTarget(null)}>

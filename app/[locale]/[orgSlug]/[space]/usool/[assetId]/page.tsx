@@ -33,6 +33,7 @@ import { toast } from '@/hooks/ui';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { UserHoverCard } from '@/components/shared/UserHoverCard';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import { CustomFieldValuesSection } from '@/components/banna/CustomFieldValuesSection';
 
 /* ── Icons ───────────────────────────────────────────────────────── */
 function PlusSVG() {
@@ -333,6 +334,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
                       <DocumentList value={asset.documents} label="Purchase receipts / invoices" />
                     </div>
                   )}
+                  <CustomFieldValuesSection recordType="assets" recordId={assetId} />
                 </CardContent>
               </Card>
 

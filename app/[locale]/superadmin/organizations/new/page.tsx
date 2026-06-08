@@ -44,11 +44,11 @@ export default function NewOrganizationPage() {
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.error ?? 'Failed'); }
       await res.json();
-      toast.success('Organization created');
+      toast.success(t('common.created'));
       qc.invalidateQueries({ queryKey: ['organizations'] });
       router.push(`/${locale}/superadmin`);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Something went wrong');
+      toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong'));
     } finally { setLoading(false); }
   }
 
@@ -63,7 +63,7 @@ export default function NewOrganizationPage() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField control={form.control} name="name" render={({ field }) => (
               <FormItem>
-                <FormLabel>Organization Name *</FormLabel>
+                <FormLabel>{t('orgs.name')} *</FormLabel>
                 <FormControl><Input {...field} placeholder="ACME Corp" /></FormControl>
                 <FormMessage />
               </FormItem>
@@ -71,7 +71,7 @@ export default function NewOrganizationPage() {
 
             <FormField control={form.control} name="subdomain" render={({ field }) => (
               <FormItem>
-                <FormLabel>Workspace ID *</FormLabel>
+                <FormLabel>{t('orgs.workspaceId')} *</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
@@ -85,7 +85,7 @@ export default function NewOrganizationPage() {
 
             <FormField control={form.control} name="contactEmail" render={({ field }) => (
               <FormItem>
-                <FormLabel>Contact Email *</FormLabel>
+                <FormLabel>{t('orgs.contactEmail')} *</FormLabel>
                 <FormControl><Input type="email" {...field} placeholder="admin@acme.com" /></FormControl>
                 <FormMessage />
               </FormItem>
@@ -93,7 +93,7 @@ export default function NewOrganizationPage() {
 
             <FormField control={form.control} name="category" render={({ field }) => (
               <FormItem>
-                <FormLabel>Category</FormLabel>
+                <FormLabel>{t('orgs.category')}</FormLabel>
                 <FormControl>
                   <select
                     value={field.value ?? ''}
@@ -112,7 +112,7 @@ export default function NewOrganizationPage() {
 
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem>
-                <FormLabel>Description</FormLabel>
+                <FormLabel>{t('orgs.description')}</FormLabel>
                 <FormControl><Textarea {...field} value={field.value ?? ''} rows={3} maxLength={500} placeholder="Short description of the organization..." /></FormControl>
                 <FormMessage />
               </FormItem>
@@ -120,7 +120,7 @@ export default function NewOrganizationPage() {
 
             <FormField control={form.control} name="packageDetails" render={({ field }) => (
               <FormItem>
-                <FormLabel>Package Details</FormLabel>
+                <FormLabel>{t('orgs.packageDetails')}</FormLabel>
                 <FormControl><Textarea {...field} rows={3} placeholder="Custom plan notes..." /></FormControl>
                 <FormMessage />
               </FormItem>
@@ -129,14 +129,14 @@ export default function NewOrganizationPage() {
             <div className="grid grid-cols-2 gap-4">
               <FormField control={form.control} name="subscriptionStartDate" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Subscription Start *</FormLabel>
+                  <FormLabel>{t('subscription.startDate')} *</FormLabel>
                   <FormControl><DatePicker value={field.value} onChange={(v) => field.onChange(v ?? '')} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
               <FormField control={form.control} name="subscriptionEndDate" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Subscription End *</FormLabel>
+                  <FormLabel>{t('subscription.endDate')} *</FormLabel>
                   <FormControl><DatePicker value={field.value} onChange={(v) => field.onChange(v ?? '')} /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -144,8 +144,8 @@ export default function NewOrganizationPage() {
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button type="submit" disabled={loading}>{loading ? 'Creating...' : 'Create Organization'}</Button>
-              <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
+              <Button type="submit" disabled={loading}>{loading ? t('common.creating') : t('orgs.createOrg')}</Button>
+              <Button type="button" variant="outline" onClick={() => router.back()}>{t('common.cancel')}</Button>
             </div>
           </form>
         </Form>

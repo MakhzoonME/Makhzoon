@@ -88,6 +88,22 @@ export async function pairPrinter(paperWidth: 58 | 80 = 80, copies = 1): Promise
  * Returns false silently if no printer is paired — callers should fall back
  * to a PDF or on-screen receipt preview in that case.
  */
+/**
+ * Send the ESC/POS cash drawer kick command through the paired USB printer.
+ * Returns false silently if no printer is paired — callers show a toast in that case.
+ */
+export async function openCashDrawer(opts: {
+  port?: 0 | 1;
+  onTimeMs?: number;
+  offTimeMs?: number;
+} = {}): Promise<boolean> {
+  const { EscPosBuilder } = await import('./escpos-builder');
+  const bytes = new EscPosBuilder()
+    .kickDrawer(opts.port ?? 0, opts.onTimeMs ?? 100, opts.offTimeMs ?? 100)
+    .build();
+  return printRaw(bytes);
+}
+
 export async function printRaw(bytes: Uint8Array): Promise<boolean> {
   if (!navigator.usb) return false;
   const saved = readSavedPrinter();

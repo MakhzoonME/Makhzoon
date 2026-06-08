@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { ScanBarcode } from 'lucide-react';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
 import { inventoryItemSchema, InventoryItemFormData } from '@/lib/validations/inventory.schema';
 import { InventoryItem } from '@/types';
@@ -48,6 +49,7 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
       posEnabled: item?.posEnabled ?? false,
       posPrice: item?.posPrice ?? '',
       taxRateId: item?.taxRateId ?? '',
+      expiryDate: item?.expiryDate ? String(item.expiryDate).split('T')[0] : '',
       documents: item?.documents ?? [],
     },
   });
@@ -180,6 +182,16 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
             <FormItem>
               <FormLabel>Supplier</FormLabel>
               <FormControl><Input {...field} placeholder="Supplier name" /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={form.control} name="expiryDate" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Expiry Date</FormLabel>
+              <FormControl>
+                <DatePicker value={field.value ?? ''} onChange={field.onChange} placeholder="Select expiry date" />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )} />

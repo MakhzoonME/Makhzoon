@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import type { InventoryItem, InventoryTransaction, InventoryUnit, StockStatus, TransactionType } from '../types'
@@ -33,6 +34,7 @@ function toItem(r: Row, computedQty?: number): InventoryItem {
     barcode: (r.barcode as string) ?? null,
     taxRateId: (r.tax_rate_id as string) ?? null,
     posPrice: (r.pos_price as number) ?? null,
+    expiryDate: r.expiry_date ? new Date(r.expiry_date as string) : null,
     createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
     createdBy: r.created_by as string,
     createdByEmail: r.created_by_email as string,
@@ -145,6 +147,10 @@ export interface GetAllOpts {
   stockStatus?: string
   search?: string
   posEnabled?: boolean
+  /** Return only items expiring within this many days (expiry_date between today and today+N). */
+  expiringWithin?: number
+  /** Return only items whose expiry_date is in the past. */
+  expired?: boolean
   page?: number
   pageSize?: number
   sortBy?: SortField
@@ -171,6 +177,18 @@ export class InventoryRepository {
       if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
       if (opts?.category) q = q.eq('category', opts.category)
       if (opts?.posEnabled === true) q = q.eq('pos_enabled', true)
+      if (opts?.expired === true) {
+        const today = new Date().toISOString().split('T')[0]
+        q = q.not('expiry_date', 'is', null).lt('expiry_date', today)
+      } else if (opts?.expiringWithin != null) {
+        const today = new Date()
+        const future = new Date(today)
+        future.setDate(future.getDate() + opts.expiringWithin)
+        q = q
+          .not('expiry_date', 'is', null)
+          .gte('expiry_date', today.toISOString().split('T')[0])
+          .lte('expiry_date', future.toISOString().split('T')[0])
+      }
       if (opts?.search) {
         const term = opts.search.replace(/[,()%*\\]/g, ' ').trim()
         if (term) {
@@ -301,6 +319,7 @@ export class InventoryRepository {
       quantityOnHand: number; minimumThreshold: number; reorderQuantity?: number
       location?: string; supplier?: string; unitCost?: number; notes?: string
       barcode?: string | null; posEnabled?: boolean; posPrice?: number | null; taxRateId?: string | null
+      expiryDate?: string | null
       documents?: InventoryItem['documents']
     },
   ): Promise<string> {
@@ -324,6 +343,7 @@ export class InventoryRepository {
         pos_enabled: input.posEnabled ?? false,
         pos_price: input.posPrice ?? null,
         tax_rate_id: input.taxRateId ?? null,
+        expiry_date: input.expiryDate || null,
         documents: input.documents ?? [],
         // quantity_on_hand intentionally left at default; on-hand is ledger-derived
         created_by: tenant.userId,
@@ -373,6 +393,7 @@ export class InventoryRepository {
       minimumThreshold?: number; reorderQuantity?: number; location?: string
       supplier?: string; unitCost?: number; notes?: string
       barcode?: string | null; posEnabled?: boolean; posPrice?: number | null; taxRateId?: string | null
+      expiryDate?: string | null
       documents?: InventoryItem['documents']
     },
   ): Promise<void> {
@@ -389,7 +410,7 @@ export class InventoryRepository {
       minimumThreshold: 'minimum_threshold', reorderQuantity: 'reorder_quantity',
       location: 'location', supplier: 'supplier', unitCost: 'unit_cost',
       notes: 'notes', posEnabled: 'pos_enabled', posPrice: 'pos_price',
-      taxRateId: 'tax_rate_id',
+      taxRateId: 'tax_rate_id', expiryDate: 'expiry_date',
     }
     for (const [k, col] of Object.entries(map)) {
       const v = (input as Record<string, unknown>)[k]

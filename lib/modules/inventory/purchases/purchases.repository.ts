@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import type { Purchase, PurchaseLine, PurchaseStatus, DocumentRef } from '@/types'

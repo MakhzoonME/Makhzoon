@@ -59,9 +59,9 @@ export function DocumentList({ value, label, emptyText }: Props) {
             onClick={() => openDoc(ref)}
             className="w-full flex items-center gap-2.5 rounded-md border border-border bg-surface-page px-2.5 py-1.5 text-left hover:bg-surface-hover transition-colors"
           >
-            <div className="h-9 w-9 flex-shrink-0 rounded border border-border bg-white overflow-hidden flex items-center justify-center">
+            <div className="relative h-9 w-9 flex-shrink-0 rounded border border-border bg-white overflow-hidden flex items-center justify-center">
               {ref.public && isImage(ref) && ref.url
-                ? <img src={ref.url} alt={ref.name} className="h-full w-full object-cover" />
+                ? <img src={ref.url} alt={ref.name} className="object-cover w-full h-full" />
                 : <FileText className="h-4 w-4 text-gray-400" strokeWidth={1.75} />}
             </div>
             <span className="flex-1 min-w-0 truncate text-sm text-gray-700">{ref.name}</span>

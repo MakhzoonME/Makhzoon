@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getBackendLogs } from '@/lib/db/backend-logs';
+import { hasSuperAdminPermission } from '@/lib/permissions/superadmin';
 import type { LogLevel } from '@/lib/logging/backend-logger';
-
-const ALLOWED_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
 export async function GET(req: NextRequest) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!ALLOWED_ROLES.has(user.role))
+    if (!hasSuperAdminPermission(user, 'backendLogs', 'view'))
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { searchParams } = new URL(req.url);

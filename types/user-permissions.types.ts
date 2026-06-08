@@ -41,6 +41,10 @@ export interface RequestPermissions {
   bulk_duplicate: boolean;
 }
 
+export interface DashboardPermissions {
+  view: boolean;
+}
+
 export interface ReportsPermissions {
   view: boolean;
 }
@@ -66,6 +70,16 @@ export interface PosPermissions {
   customers_bulk_delete: boolean;
   customers_bulk_move: boolean;
   customers_bulk_duplicate: boolean;
+  view_orders: boolean;
+  manage_orders: boolean;
+  assign_delivery: boolean;
+  manage_delivery_agents: boolean;
+  view_warranty_certs: boolean;
+  manage_warranty_certs: boolean;
+  view_service_jobs: boolean;
+  manage_service_jobs: boolean;
+  view_retainers: boolean;
+  manage_retainers: boolean;
 }
 
 export interface PurchasePermissions {
@@ -89,7 +103,15 @@ export interface LeadsPermissions {
   view: boolean;
 }
 
+export interface BannaPermissions {
+  view: boolean;
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+}
+
 export interface UserPermissions {
+  dashboard: DashboardPermissions;
   assets: AssetPermissions;
   inventory: InventoryPermissions;
   purchases: PurchasePermissions;
@@ -99,11 +121,13 @@ export interface UserPermissions {
   support: SupportPermissions;
   auditLogs: AuditLogsPermissions;
   leads: LeadsPermissions;
+  banna: BannaPermissions;
   pos: PosPermissions;
   settings: SettingsPermissions;
 }
 
 export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
+  dashboard: { view: true  },
   assets:    { view: true,  create: true,  update: true,  delete: true,  import: true,  checkout: true,  maintenance: true,  notes: true,  bulk_delete: true,  bulk_move: true,  bulk_duplicate: true  },
   inventory: { view: true,  create: true,  update: true,  delete: true,  transactions: true,  audits: true,  bulk_delete: true,  bulk_move: true,  bulk_duplicate: true  },
   purchases: { view: true,  create: true,  update: true,  delete: true,  receive: true },
@@ -113,11 +137,13 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   support:   { view: true,  create: true  },
   auditLogs: { view: true  },
   leads:     { view: true  },
-  pos:       { open_session: true, close_session: true, process_sale: true, apply_discount: true, issue_refund: true, void_transaction: true, view_reports: true, fawtara_submit: true, customers_bulk_delete: true, customers_bulk_move: true, customers_bulk_duplicate: true },
+  banna:     { view: true,  create: true,  update: true,  delete: true  },
+  pos:       { open_session: true, close_session: true, process_sale: true, apply_discount: true, issue_refund: true, void_transaction: true, view_reports: true, fawtara_submit: true, customers_bulk_delete: true, customers_bulk_move: true, customers_bulk_duplicate: true, view_orders: true, manage_orders: true, assign_delivery: true, manage_delivery_agents: true, view_warranty_certs: true, manage_warranty_certs: true, view_service_jobs: true, manage_service_jobs: true, view_retainers: true, manage_retainers: true },
   settings:  { view: true,  orgInfo: true,  subscription: true,  users: true,  taxRates: true,  fawtara: true  },
 };
 
 export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
+  dashboard: { view: false  },
   assets:    { view: true,  create: false, update: false, delete: false, import: false, checkout: false, maintenance: false, notes: false, bulk_delete: false, bulk_move: false, bulk_duplicate: false },
   inventory: { view: true,  create: false, update: false, delete: false, transactions: false, audits: false, bulk_delete: false, bulk_move: false, bulk_duplicate: false },
   purchases: { view: false, create: false, update: false, delete: false, receive: false },
@@ -127,7 +153,8 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   support:   { view: true,  create: true },
   auditLogs: { view: false },
   leads:     { view: true  },
-  pos:       { open_session: false, close_session: false, process_sale: false, apply_discount: false, issue_refund: false, void_transaction: false, view_reports: false, fawtara_submit: false, customers_bulk_delete: false, customers_bulk_move: false, customers_bulk_duplicate: false },
+  banna:     { view: true,  create: false, update: false, delete: false },
+  pos:       { open_session: false, close_session: false, process_sale: false, apply_discount: false, issue_refund: false, void_transaction: false, view_reports: false, fawtara_submit: false, customers_bulk_delete: false, customers_bulk_move: false, customers_bulk_duplicate: false, view_orders: false, manage_orders: false, assign_delivery: false, manage_delivery_agents: false, view_warranty_certs: false, manage_warranty_certs: false, view_service_jobs: false, manage_service_jobs: false, view_retainers: false, manage_retainers: false },
   settings:  { view: false, orgInfo: false, subscription: false, users: false, taxRates: false, fawtara: false },
 };
 
@@ -135,7 +162,13 @@ export interface ModuleOperationConfig {
   key: string;
   label: string;
   labelKey: MessageKey;
+  /** When true, this op is disabled unless the gate key is enabled. */
   requiresView?: boolean;
+  /** The specific permission key that must be true to unlock this op.
+   *  Defaults to 'view' when omitted. Use when the module's gate isn't named 'view'. */
+  requiresKey?: string;
+  /** Subscription feature key that must be enabled for this op to appear in the editor. */
+  featureKey?: string;
 }
 
 export type ModuleGroup = 'core' | 'commerce' | 'workflow' | 'admin';
@@ -147,6 +180,8 @@ export interface ModuleConfig {
   featureKey?: string;
   /** Optional visual grouping in the PermissionsEditor. Defaults to 'core' when omitted. */
   group?: ModuleGroup;
+  /** When true, this module is hidden from the org-user PermissionsEditor. */
+  hideFromEditor?: boolean;
   operations: ModuleOperationConfig[];
 }
 
@@ -168,6 +203,16 @@ export const MODULE_GROUP_ORDER: ModuleGroup[] = ['core', 'commerce', 'workflow'
 
 export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
   {
+    key: 'dashboard',
+    label: 'Dashboard',
+    labelKey: 'permModule.dashboard',
+    featureKey: 'dashboard',
+    group: 'core',
+    operations: [
+      { key: 'view', label: 'View Dashboard', labelKey: 'permOp.dashboard.view' },
+    ],
+  },
+  {
     key: 'assets',
     label: 'Assets',
     labelKey: 'permModule.assets',
@@ -179,9 +224,9 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'update',         label: 'Edit Assets',         labelKey: 'permOp.assets.update',         requiresView: true },
       { key: 'delete',         label: 'Delete Assets',       labelKey: 'permOp.assets.delete',         requiresView: true },
       { key: 'import',         label: 'Import Assets',       labelKey: 'permOp.assets.import',         requiresView: true },
-      { key: 'checkout',       label: 'Check In / Out',      labelKey: 'permOp.assets.checkout',       requiresView: true },
-      { key: 'maintenance',    label: 'Maintenance Records', labelKey: 'permOp.assets.maintenance',    requiresView: true },
-      { key: 'notes',           label: 'Asset Notes',         labelKey: 'permOp.assets.notes',         requiresView: true },
+      { key: 'checkout',       label: 'Check In / Out',      labelKey: 'permOp.assets.checkout',       requiresView: true, featureKey: 'assetCheckouts' },
+      { key: 'maintenance',    label: 'Maintenance Records', labelKey: 'permOp.assets.maintenance',    requiresView: true, featureKey: 'maintenance' },
+      { key: 'notes',           label: 'Asset Notes',         labelKey: 'permOp.assets.notes',         requiresView: true, featureKey: 'assetNotes' },
       { key: 'bulk_delete',    label: 'Bulk delete',         labelKey: 'permOp.assets.bulk_delete',    requiresView: true },
       { key: 'bulk_move',      label: 'Bulk move to space',  labelKey: 'permOp.assets.bulk_move',      requiresView: true },
       { key: 'bulk_duplicate', label: 'Bulk duplicate to space', labelKey: 'permOp.assets.bulk_duplicate', requiresView: true },
@@ -268,6 +313,7 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     label: 'Leads',
     labelKey: 'permModule.leads',
     group: 'admin',
+    hideFromEditor: true,
     operations: [
       { key: 'view', label: 'View Leads', labelKey: 'permOp.leads.view' },
     ],
@@ -304,6 +350,29 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'customers_bulk_delete',    label: 'Bulk delete customers',          labelKey: 'permOp.pos.customers_bulk_delete' },
       { key: 'customers_bulk_move',      label: 'Bulk move customers to space',   labelKey: 'permOp.pos.customers_bulk_move' },
       { key: 'customers_bulk_duplicate', label: 'Bulk duplicate customers',       labelKey: 'permOp.pos.customers_bulk_duplicate' },
+      { key: 'view_orders',             label: 'View Orders',                    labelKey: 'permOp.pos.view_orders' },
+      { key: 'manage_orders',           label: 'Create & Update Orders',         labelKey: 'permOp.pos.manage_orders',           requiresView: true, requiresKey: 'view_orders' },
+      { key: 'assign_delivery',         label: 'Assign Delivery Agent',          labelKey: 'permOp.pos.assign_delivery',         requiresView: true, requiresKey: 'view_orders' },
+      { key: 'manage_delivery_agents',  label: 'Manage Delivery Agents',         labelKey: 'permOp.pos.manage_delivery_agents',  requiresView: true, requiresKey: 'view_orders' },
+      { key: 'view_warranty_certs',     label: 'View Warranty Certificates',     labelKey: 'permOp.pos.view_warranty_certs' },
+      { key: 'manage_warranty_certs',   label: 'Generate & Delete Warranties',   labelKey: 'permOp.pos.manage_warranty_certs',   requiresView: true, requiresKey: 'view_warranty_certs' },
+      { key: 'view_service_jobs',       label: 'View Service Jobs',               labelKey: 'permOp.pos.view_service_jobs' },
+      { key: 'manage_service_jobs',     label: 'Create & Manage Service Jobs',    labelKey: 'permOp.pos.manage_service_jobs',     requiresView: true, requiresKey: 'view_service_jobs' },
+      { key: 'view_retainers',          label: 'View Retainers',                  labelKey: 'permOp.pos.view_retainers' },
+      { key: 'manage_retainers',        label: 'Create & Manage Retainers',       labelKey: 'permOp.pos.manage_retainers',        requiresView: true, requiresKey: 'view_retainers' },
+    ],
+  },
+  {
+    key: 'banna',
+    label: 'Workspace Builder',
+    labelKey: 'permModule.banna',
+    featureKey: 'banna',
+    group: 'admin',
+    operations: [
+      { key: 'view',   label: 'View',   labelKey: 'permOp.banna.view' },
+      { key: 'create', label: 'Create', labelKey: 'permOp.banna.create', requiresView: true },
+      { key: 'update', label: 'Update', labelKey: 'permOp.banna.update', requiresView: true },
+      { key: 'delete', label: 'Delete', labelKey: 'permOp.banna.delete', requiresView: true },
     ],
   },
   {

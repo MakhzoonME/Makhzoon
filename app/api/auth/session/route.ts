@@ -106,14 +106,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Load org-scoped permissions for ALL org roles (not just staff) so the
+    // frontend can correctly gate UI for admins with custom restrictions.
     let permissions = null;
-    if (role === 'staff' && orgId) {
+    const ORG_ROLES_SET = new Set(['org_owner', 'admin', 'staff']);
+    if (ORG_ROLES_SET.has(role) && orgId) {
       const u = await getUserById(user.id);
       permissions = u?.permissions ?? null;
     }
 
+    // Load platform-scoped permissions for superadmin team members.
+    let saPermissions = null;
+    const SUPERADMIN_ROLES_SET = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+    if (SUPERADMIN_ROLES_SET.has(role)) {
+      const { data: saRow } = await supabaseAdmin
+        .from('superadmin_users')
+        .select('permissions')
+        .eq('id', user.id)
+        .maybeSingle();
+      saPermissions = (saRow?.permissions as Record<string, unknown> | null) ?? null;
+    }
+
     return NextResponse.json(
-      { role, orgSlug, features, permissions },
+      { role, orgSlug, features, permissions, saPermissions },
       { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (err) {

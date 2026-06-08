@@ -131,7 +131,8 @@ export async function createAssetWithAudit(
 export async function updateAssetWithAudit(
   user: AuthUser,
   assetId: string,
-  data: UpdateAssetInput
+  data: UpdateAssetInput,
+  spaceId?: string,
 ) {
   await requirePermission(user, 'assets', 'update');
   await requireActiveSubscription(user.organizationId!, user);
@@ -172,7 +173,7 @@ export async function updateAssetWithAudit(
 
   await writeAuditLog({
     organizationId: user.organizationId!,
-    spaceId: asset.spaceId,
+    spaceId: asset.spaceId ?? spaceId,
     userId: userContext.uid,
     role: userContext.role,
     action,
@@ -187,7 +188,7 @@ export async function updateAssetWithAudit(
  * Delete asset with audit logging.
  * If asset is retired, hard-delete it. Otherwise, retire it.
  */
-export async function deleteAssetWithAudit(user: AuthUser, assetId: string) {
+export async function deleteAssetWithAudit(user: AuthUser, assetId: string, spaceId?: string) {
   await requirePermission(user, 'assets', 'delete');
   await requireActiveSubscription(user.organizationId!, user);
 
@@ -204,7 +205,7 @@ export async function deleteAssetWithAudit(user: AuthUser, assetId: string) {
     await dbDeleteAsset(assetId);
     await writeAuditLog({
       organizationId: asset.organizationId,
-      spaceId: asset.spaceId,
+      spaceId: asset.spaceId ?? spaceId,
       userId: userContext.uid,
       role: userContext.role,
       action: 'ASSET_DELETED',
@@ -224,7 +225,7 @@ export async function deleteAssetWithAudit(user: AuthUser, assetId: string) {
     });
     await writeAuditLog({
       organizationId: asset.organizationId,
-      spaceId: asset.spaceId,
+      spaceId: asset.spaceId ?? spaceId,
       userId: userContext.uid,
       role: userContext.role,
       action: 'ASSET_RETIRED',

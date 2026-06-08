@@ -41,7 +41,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ asse
       purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : undefined,
       purchaseCost: data.purchaseCost ? Number(data.purchaseCost) : undefined,
     };
-    await assetsService.updateAssetWithAudit(user, assetId, transformedData);
+    await assetsService.updateAssetWithAudit(user, assetId, transformedData, tenant.spaceId);
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof NextResponse) return err;
@@ -60,7 +60,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     requirePermission(user, 'assets', 'delete');
 
     const { assetId } = await params;
-    await assetsService.deleteAssetWithAudit(user, assetId);
+    await assetsService.deleteAssetWithAudit(user, assetId, tenant.spaceId);
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof NextResponse) return err;

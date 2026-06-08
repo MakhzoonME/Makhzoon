@@ -236,12 +236,20 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
       const res = await fetch(`/api/assets/${assetId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed');
       toast.success(isRetired ? 'Asset permanently deleted' : 'Asset retired');
-      qc.setQueriesData<{ items: Asset[]; nextCursor: string | null }>(
-        { queryKey: ['assets'] },
-        (old) => old?.items ? { ...old, items: old.items.filter((a) => a.id !== assetId) } : old,
-      );
-      qc.removeQueries({ queryKey: ['assets', assetId] });
-      router.push(`/${locale}/${orgSlug}/${space}/usool`);
+      if (isRetired) {
+        // Already-retired assets are hard-deleted — nothing left to show, go back to the list.
+        qc.setQueriesData<{ items: Asset[]; nextCursor: string | null }>(
+          { queryKey: ['assets'] },
+          (old) => old?.items ? { ...old, items: old.items.filter((a) => a.id !== assetId) } : old,
+        );
+        qc.removeQueries({ queryKey: ['assets', assetId] });
+        router.push(`/${locale}/${orgSlug}/${space}/usool/list`);
+      } else {
+        // Active assets are retired in place — stay on the page and refresh its details.
+        qc.invalidateQueries({ queryKey: ['assets', space, assetId] });
+        qc.invalidateQueries({ queryKey: ['assets'] });
+        qc.invalidateQueries({ queryKey: ['asset-audit', assetId] });
+      }
     } catch {
       toast.error(isRetired ? 'Failed to delete asset' : 'Failed to retire asset');
     } finally {

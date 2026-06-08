@@ -89,13 +89,18 @@ async function enrichLogs(logs: AuditLog[]): Promise<AuditLog[]> {
   userNamesOrg.forEach((v, k) => userNames.set(k, v));
   userNamesSuperAdmin.forEach((v, k) => { if (!userNames.has(k)) userNames.set(k, v); });
 
-  return logs.map((l) => ({
-    ...l,
-    userDisplayName: userNames.get(l.userId) as string | undefined,
-    orgName: orgNames.get(l.organizationId),
-    spaceName: l.spaceId ? spaceNames.get(l.spaceId) : undefined,
-    recordName: recordNameByModuleAndId.get(`${l.module?.toLowerCase() ?? ''}:${l.recordId}`),
-  }));
+  return logs.map((l) => {
+    // Records that were later deleted/renamed no longer resolve via a live lookup —
+    // fall back to the name captured in the log's own diff snapshot.
+    const snapshotName = (l.newValue?.name ?? l.oldValue?.name) as string | undefined;
+    return {
+      ...l,
+      userDisplayName: userNames.get(l.userId) as string | undefined,
+      orgName: orgNames.get(l.organizationId),
+      spaceName: l.spaceId ? spaceNames.get(l.spaceId) : undefined,
+      recordName: recordNameByModuleAndId.get(`${l.module?.toLowerCase() ?? ''}:${l.recordId}`) ?? snapshotName,
+    };
+  });
 }
 
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);

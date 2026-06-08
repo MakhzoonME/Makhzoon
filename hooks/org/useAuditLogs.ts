@@ -1,5 +1,6 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'next/navigation';
 import { AuditLog } from '@/types';
 
 interface AuditLogsResponse {
@@ -23,6 +24,7 @@ interface AuditLogsParams {
 }
 
 export function useAuditLogs(params?: AuditLogsParams) {
+  const { space } = useParams<{ space?: string }>();
   const query = new URLSearchParams();
   if (params?.orgId) query.set('orgId', params.orgId);
   if (params?.userId) query.set('userId', params.userId);
@@ -34,9 +36,10 @@ export function useAuditLogs(params?: AuditLogsParams) {
   if (params?.scope === 'all') query.set('allSpaces', 'true');
 
   return useQuery<AuditLogsResponse>({
-    queryKey: ['audit-logs', params],
+    queryKey: ['audit-logs', space, params],
     queryFn: async () => {
-      const res = await fetch(`/api/audit-logs?${query.toString()}`);
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/audit-logs?${query.toString()}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch audit logs');
       return res.json();
     },

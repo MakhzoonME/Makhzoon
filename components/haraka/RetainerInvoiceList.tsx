@@ -10,7 +10,7 @@ import {
   useUpdateRetainerInvoice,
   useDeleteRetainerInvoice,
 } from '@/hooks/haraka';
-import { toast } from '@/hooks/ui';
+import { toast, useT } from '@/hooks/ui';
 import { formatCurrency } from '@/lib/utils/format';
 import type { HarakaRetainer, HarakaRetainerInvoice } from '@/types';
 import { cn } from '@/lib/utils/cn';
@@ -34,38 +34,36 @@ function nextPeriodDates(retainer: HarakaRetainer): { start: string; end: string
   if (retainer.billingCycle === 'quarterly') end.setMonth(end.getMonth() + 3);
   if (retainer.billingCycle === 'annual')    end.setFullYear(end.getFullYear() + 1);
   end.setDate(end.getDate() - 1);
-  return {
-    start: d.toISOString().slice(0, 10),
-    end:   end.toISOString().slice(0, 10),
-  };
+  return { start: d.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
 }
 
 export function RetainerInvoiceList({ retainer, currency = 'JOD' }: Props) {
-  const { data, isLoading }  = useRetainerInvoices(retainer.id);
-  const createMut  = useCreateRetainerInvoice();
-  const updateMut  = useUpdateRetainerInvoice();
-  const deleteMut  = useDeleteRetainerInvoice();
+  const { data, isLoading } = useRetainerInvoices(retainer.id);
+  const createMut = useCreateRetainerInvoice();
+  const updateMut = useUpdateRetainerInvoice();
+  const deleteMut = useDeleteRetainerInvoice();
+  const { t }     = useT();
 
-  const [showForm,  setShowForm]  = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const suggested = nextPeriodDates(retainer);
-  const [start,    setStart]    = useState(suggested.start);
-  const [end,      setEnd]      = useState(suggested.end);
-  const [due,      setDue]      = useState('');
-  const [note,     setNote]     = useState('');
+  const [start,   setStart]   = useState(suggested.start);
+  const [end,     setEnd]     = useState(suggested.end);
+  const [due,     setDue]     = useState('');
+  const [note,    setNote]    = useState('');
 
   const invoices = data?.invoices ?? [];
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!start || !end) { toast.error('Start and end dates are required'); return; }
+    if (!start || !end) { toast.error(t('retainerInvoice.periodStart') + ' / ' + t('retainerInvoice.periodEnd')); return; }
     try {
       await createMut.mutateAsync({
         retainerId: retainer.id,
         body: { billingPeriodStart: start, billingPeriodEnd: end, dueDate: due || null, notes: note || null },
       });
-      toast.success('Invoice created');
+      toast.success(t('retainerInvoice.createInvoice'));
       setShowForm(false); setNote('');
-    } catch (err) { toast.error(err instanceof Error ? err.message : 'Failed'); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong')); }
   }
 
   async function markPaid(inv: HarakaRetainerInvoice) {
@@ -73,29 +71,24 @@ export function RetainerInvoiceList({ retainer, currency = 'JOD' }: Props) {
       await updateMut.mutateAsync({
         retainerId: retainer.id,
         invoiceId:  inv.id,
-        body: {
-          paymentStatus: 'paid',
-          amountPaid:    inv.total,
-          paidAt:        new Date().toISOString(),
-        },
+        body: { paymentStatus: 'paid', amountPaid: inv.total, paidAt: new Date().toISOString() },
       });
-      toast.success('Marked as paid');
-    } catch (err) { toast.error(err instanceof Error ? err.message : 'Failed'); }
+      toast.success(t('retainerInvoice.markPaid'));
+    } catch (err) { toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong')); }
   }
 
   async function handleDelete(inv: HarakaRetainerInvoice) {
     try {
       await deleteMut.mutateAsync({ retainerId: retainer.id, invoiceId: inv.id });
-      toast.success('Invoice deleted');
-    } catch (err) { toast.error(err instanceof Error ? err.message : 'Failed'); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong')); }
   }
 
-  if (isLoading) return <div className="text-xs text-gray-400 py-4 text-center">Loading…</div>;
+  if (isLoading) return <div className="text-xs text-gray-400 py-4 text-center">{t('common.loading')}</div>;
 
   return (
     <div className="space-y-3">
       {invoices.length === 0 && !showForm && (
-        <div className="text-sm text-gray-400 text-center py-6">No invoices yet.</div>
+        <div className="text-sm text-gray-400 text-center py-6">{t('retainerInvoice.noInvoices')}</div>
       )}
 
       {invoices.map((inv) => (
@@ -106,7 +99,7 @@ export function RetainerInvoiceList({ retainer, currency = 'JOD' }: Props) {
               <div className="text-sm font-medium text-gray-800">
                 {inv.billingPeriodStart} → {inv.billingPeriodEnd}
               </div>
-              {inv.dueDate && <div className="text-xs text-gray-400">Due: {inv.dueDate}</div>}
+              {inv.dueDate && <div className="text-xs text-gray-400">{t('retainerInvoice.dueDate')}: {inv.dueDate}</div>}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <span className={cn('inline-block px-2 py-0.5 rounded-full text-xs font-semibold', PAY_STATUS_STYLE[inv.paymentStatus] ?? '')}>
@@ -118,20 +111,14 @@ export function RetainerInvoiceList({ retainer, currency = 'JOD' }: Props) {
 
           {inv.paymentStatus !== 'paid' && (
             <div className="flex gap-2 mt-3">
-              <Button
-                size="sm" variant="outline"
+              <Button size="sm" variant="outline"
                 className="gap-1.5 text-green-600 border-green-200 hover:bg-green-50"
-                onClick={() => markPaid(inv)}
-                disabled={updateMut.isPending}
-              >
-                <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} /> Mark Paid
+                onClick={() => markPaid(inv)} disabled={updateMut.isPending}>
+                <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} /> {t('retainerInvoice.markPaid')}
               </Button>
-              <Button
-                size="sm" variant="ghost"
+              <Button size="sm" variant="ghost"
                 className="text-red-400 hover:text-red-600 hover:bg-red-50"
-                onClick={() => handleDelete(inv)}
-                disabled={deleteMut.isPending}
-              >
+                onClick={() => handleDelete(inv)} disabled={deleteMut.isPending}>
                 <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
               </Button>
             </div>
@@ -143,37 +130,34 @@ export function RetainerInvoiceList({ retainer, currency = 'JOD' }: Props) {
       {retainer.status === 'active' && (
         <>
           {!showForm ? (
-            <button
-              type="button"
-              onClick={() => setShowForm(true)}
-              className="w-full flex items-center justify-center gap-1.5 text-xs text-primary-600 hover:text-primary-800 py-2 rounded-xl border border-dashed border-primary-200 hover:border-primary-400 transition-colors"
-            >
-              <Plus className="h-3.5 w-3.5" strokeWidth={1.75} /> Add Invoice
+            <button type="button" onClick={() => setShowForm(true)}
+              className="w-full flex items-center justify-center gap-1.5 text-xs text-primary-600 hover:text-primary-800 py-2 rounded-xl border border-dashed border-primary-200 hover:border-primary-400 transition-colors">
+              <Plus className="h-3.5 w-3.5" strokeWidth={1.75} /> {t('retainerInvoice.addInvoice')}
             </button>
           ) : (
             <form onSubmit={handleCreate} className="rounded-xl border border-border bg-surface-page p-4 space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-gray-600">Period start *</label>
+                  <label className="text-xs font-medium text-gray-600">{t('retainerInvoice.periodStart')} *</label>
                   <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="text-sm h-8" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-gray-600">Period end *</label>
+                  <label className="text-xs font-medium text-gray-600">{t('retainerInvoice.periodEnd')} *</label>
                   <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="text-sm h-8" />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-600">Due date</label>
+                <label className="text-xs font-medium text-gray-600">{t('retainerInvoice.dueDate')}</label>
                 <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="text-sm h-8" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-600">Note</label>
-                <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional note…" className="text-sm h-8" />
+                <label className="text-xs font-medium text-gray-600">{t('retainerInvoice.note')}</label>
+                <Input value={note} onChange={(e) => setNote(e.target.value)} className="text-sm h-8" />
               </div>
               <div className="flex gap-2">
-                <Button size="sm" type="button" variant="outline" onClick={() => setShowForm(false)} className="flex-1">Cancel</Button>
+                <Button size="sm" type="button" variant="outline" onClick={() => setShowForm(false)} className="flex-1">{t('common.cancel')}</Button>
                 <Button size="sm" type="submit" disabled={createMut.isPending} className="flex-1" style={{ background: 'var(--mod-haraka)' }}>
-                  {createMut.isPending ? 'Creating…' : 'Create Invoice'}
+                  {createMut.isPending ? t('retainerInvoice.creating') : t('retainerInvoice.createInvoice')}
                 </Button>
               </div>
             </form>

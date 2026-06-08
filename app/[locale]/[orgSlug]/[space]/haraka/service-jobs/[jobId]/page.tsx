@@ -9,7 +9,7 @@ import { ServiceJobStatusBadge } from '@/components/haraka/ServiceJobStatusBadge
 import { ServiceJobPaymentsPanel } from '@/components/haraka/ServiceJobPaymentsPanel';
 import { ServiceJobInvoiceDialog } from '@/components/haraka/ServiceJobInvoiceDialog';
 import { useServiceJob, useUpdateServiceJobStatus } from '@/hooks/haraka';
-import { useAdminGuard, useModuleGuard, toast } from '@/hooks/ui';
+import { useAdminGuard, useModuleGuard, toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { formatCurrency } from '@/lib/utils/format';
 import { formatDate } from '@/lib/utils/date';
@@ -25,6 +25,7 @@ export default function ServiceJobDetailPage() {
   const { data: orgInfo } = useOrgInfo();
   const { data, isLoading } = useServiceJob(params.jobId);
   const updateStatus = useUpdateServiceJobStatus();
+  const { t } = useT();
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   if (!featureAllowed || !isAllowed) return null;
 
@@ -39,7 +40,7 @@ export default function ServiceJobDetailPage() {
       </div>
     );
   }
-  if (!job) return <div className="text-sm text-gray-400 p-6">Service job not found.</div>;
+  if (!job) return <div className="text-sm text-gray-400 p-6">{t('common.noResults')}</div>;
 
   async function advance() {
     if (!job) return;
@@ -48,16 +49,16 @@ export default function ServiceJobDetailPage() {
     if (!next) return;
     try {
       await updateStatus.mutateAsync({ id: job.id, status: next });
-      toast.success(`Status updated to ${next.replace('_', ' ')}`);
-    } catch (err) { toast.error(err instanceof Error ? err.message : 'Failed'); }
+      toast.success(t('serviceJobs.markAs').replace('{status}', next.replace(/_/g, ' ')));
+    } catch (err) { toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong')); }
   }
 
   async function cancel() {
     if (!job) return;
     try {
       await updateStatus.mutateAsync({ id: job.id, status: 'cancelled' });
-      toast.success('Job cancelled');
-    } catch (err) { toast.error(err instanceof Error ? err.message : 'Failed'); }
+      toast.success(t('serviceJobs.cancelJob'));
+    } catch (err) { toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong')); }
   }
 
   const currentIdx = STATUS_FLOW.indexOf(job.status as ServiceJobStatus);
@@ -68,17 +69,17 @@ export default function ServiceJobDetailPage() {
     <div className="space-y-6 max-w-4xl">
       <PageHeader
         title={job.jobNumber}
-        description={`Service job${job.serviceType ? ` — ${job.serviceType.replace(/_/g, ' ')}` : ''}`}
+        description={`${t('serviceJobs.title')}${job.serviceType ? ` — ${job.serviceType.replace(/_/g, ' ')}` : ''}`}
         actions={
           <div className="flex items-center gap-2">
             {job.status === 'done' && (
               <Button variant="outline" onClick={() => setInvoiceOpen(true)} className="gap-2">
                 <FileText className="h-4 w-4" strokeWidth={1.75} />
-                {job.invoiceNumber ? 'View Invoice' : 'Generate Invoice'}
+                {job.invoiceNumber ? t('serviceJobs.viewInvoice') : t('serviceJobs.generateInvoice')}
               </Button>
             )}
             <Button variant="ghost" onClick={() => router.push(`${base}/service-jobs`)}>
-              <ArrowLeft className="h-4 w-4 mr-2" /> Back
+              <ArrowLeft className="h-4 w-4 me-2" /> {t('common.back')}
             </Button>
           </div>
         }
@@ -96,21 +97,20 @@ export default function ServiceJobDetailPage() {
           <div className="flex gap-2">
             {canAdvance && (
               <Button size="sm" onClick={advance} disabled={updateStatus.isPending} style={{ background: 'var(--mod-haraka)' }}>
-                {updateStatus.isPending ? 'Updating…' : `Mark ${STATUS_FLOW[currentIdx + 1]?.replace('_', ' ')}`}
+                {updateStatus.isPending ? t('common.saving') : t('serviceJobs.markAs').replace('{status}', (STATUS_FLOW[currentIdx + 1] ?? '').replace(/_/g, ' '))}
               </Button>
             )}
             {canCancel && (
               <Button size="sm" variant="outline" className="text-red-500 border-red-200" onClick={cancel} disabled={updateStatus.isPending}>
-                Cancel
+                {t('serviceJobs.cancelJob')}
               </Button>
             )}
           </div>
         </div>
 
-        {/* Stepper visual */}
         <div className="flex items-center gap-1 overflow-x-auto">
           {STATUS_FLOW.map((s, i) => {
-            const done    = currentIdx > i || (currentIdx === STATUS_FLOW.length - 1);
+            const done    = currentIdx > i;
             const current = s === job.status;
             return (
               <div key={s} className="flex items-center gap-1">
@@ -124,7 +124,7 @@ export default function ServiceJobDetailPage() {
             );
           })}
           {job.status === 'cancelled' && (
-            <div className="text-xs px-2.5 py-1 rounded-full font-medium bg-red-100 text-red-600 ml-1">
+            <div className="text-xs px-2.5 py-1 rounded-full font-medium bg-red-100 text-red-600 ms-1">
               cancelled
             </div>
           )}
@@ -132,45 +132,41 @@ export default function ServiceJobDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left column */}
         <div className="space-y-6">
           {/* Customer */}
           <div className="rounded-xl border border-border bg-surface-page p-5 space-y-3">
-            <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">Customer</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t('serviceJobs.sectionCustomer')}</div>
             <div>
               <div className="font-medium text-gray-800">{job.customerName}</div>
               {job.customerPhone && <div className="text-sm text-gray-500 mt-0.5">{job.customerPhone}</div>}
             </div>
             {job.scheduledAt && (
               <div className="text-sm text-gray-500 pt-2 border-t border-border">
-                <span className="text-gray-400">Scheduled: </span>{formatDate(job.scheduledAt)}
+                <span className="text-gray-400">{t('invoicePreview.scheduled')}: </span>{formatDate(job.scheduledAt)}
               </div>
             )}
             {job.serviceAddress && (
               <div className="text-sm text-gray-500 pt-2 border-t border-border">
-                <span className="text-gray-400 block text-xs mb-1">Address</span>
+                <span className="text-gray-400 block text-xs mb-1">{t('serviceJobs.labelAddress')}</span>
                 {[job.serviceAddress.street, job.serviceAddress.area, job.serviceAddress.city].filter(Boolean).join(', ')}
               </div>
             )}
           </div>
 
-          {/* Staff */}
           {job.staffMemberName && (
             <div className="rounded-xl border border-border bg-surface-page p-5">
-              <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Assigned To</div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{t('serviceJobs.labelStaffMember')}</div>
               <div className="font-medium text-gray-800">{job.staffMemberName}</div>
             </div>
           )}
 
-          {/* Payments */}
           <ServiceJobPaymentsPanel job={job} currency={currency} />
         </div>
 
-        {/* Right column */}
         <div className="space-y-6">
           {/* Service lines */}
           <div className="rounded-xl border border-border bg-surface-page p-5 space-y-3">
-            <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">Services</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t('serviceJobs.sectionServices')}</div>
             <div className="space-y-2">
               {job.items.map((item, i) => (
                 <div key={i} className="flex items-start gap-3 text-sm py-2 border-b border-border last:border-0">
@@ -191,44 +187,36 @@ export default function ServiceJobDetailPage() {
             <div className="pt-2 space-y-1 text-sm">
               {job.discountAmount > 0 && (
                 <div className="flex justify-between text-gray-500">
-                  <span>Discount</span>
+                  <span>{t('invoicePreview.discount')}</span>
                   <span className="font-mono text-red-500">−{formatCurrency(job.discountAmount, currency)}</span>
                 </div>
               )}
               {job.taxAmount > 0 && (
                 <div className="flex justify-between text-gray-500">
-                  <span>Tax</span>
+                  <span>{t('invoicePreview.tax')}</span>
                   <span className="font-mono">{formatCurrency(job.taxAmount, currency)}</span>
                 </div>
               )}
               <div className="flex justify-between font-semibold text-gray-900 border-t border-border pt-2">
-                <span>Total</span>
+                <span>{t('invoicePreview.total')}</span>
                 <span className="font-mono">{formatCurrency(job.total, currency)}</span>
               </div>
             </div>
           </div>
 
-          {/* Notes */}
           {job.notes && (
             <div className="rounded-xl border border-border bg-surface-page p-5">
-              <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Notes</div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{t('col.notes')}</div>
               <p className="text-sm text-gray-600 whitespace-pre-line">{job.notes}</p>
             </div>
           )}
 
-          {/* Meta */}
           <div className="rounded-xl border border-border bg-surface-page p-5 space-y-2 text-xs text-gray-400">
-            <div className="flex justify-between">
-              <span>Created</span><span>{formatDate(job.createdAt)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Updated</span><span>{formatDate(job.updatedAt)}</span>
-            </div>
+            <div className="flex justify-between"><span>{t('col.date')}</span><span>{formatDate(job.createdAt)}</span></div>
           </div>
         </div>
       </div>
 
-      {/* Invoice dialog */}
       {invoiceOpen && (
         <ServiceJobInvoiceDialog
           open={invoiceOpen}

@@ -5,6 +5,7 @@ import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
 import { useAsset } from '@/hooks/assets';
 import { useWarranties } from '@/hooks/warranties';
 import { useAuthStore } from '@/store/auth.store';
+import { hasPermission } from '@/lib/permissions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -228,6 +229,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
 
   const isAdmin  = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
   const isStaff  = user?.role === 'staff';
+  const canDeleteAsset = !!user && hasPermission(user, 'assets', 'delete');
   const isRetired = asset?.status === 'Retired';
 
   async function handleRetire() {
@@ -313,12 +315,12 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
             )}
             {asset.status !== 'Retired' && <MoveAssetButton onClick={() => setMoveOpen(true)} />}
             {asset.status !== 'Retired' && <DuplicateAssetButton onClick={() => setDupeOpen(true)} />}
-            {asset.status === 'Active' && (
+            {canDeleteAsset && asset.status === 'Active' && (
               <Button variant="destructive" size="sm" onClick={() => setShowRetire(true)}>
                 <Archive aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ms-1.5">{t('assets.retireBtn')}</span>
               </Button>
             )}
-            {asset.status === 'Retired' && (
+            {canDeleteAsset && asset.status === 'Retired' && (
               <Button variant="destructive" size="sm" onClick={() => setShowRetire(true)}>
                 <Trash2 aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ms-1.5">{t('assets.deleteBtn')}</span>
               </Button>

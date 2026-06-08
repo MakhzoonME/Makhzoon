@@ -13,7 +13,7 @@ const MARKETING_ONLY_PATHS = new Set([
   '/home', '/product', '/pricing', '/customers', '/security', '/about', '/contact',
 ]);
 
-const AUTH_PATHS = new Set(['/login', '/signup']);
+const AUTH_PATHS = new Set(['/login', '/signup', '/reset-password']);
 
 function detectLocale(req: NextRequest): string {
   const cookieLocale = req.cookies.get(LOCALE_COOKIE)?.value;
@@ -42,8 +42,8 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Public shareable receipts (rcpt.makhzoon.me/r/...) — no locale prefix, no session
-  if (pathname.startsWith('/r/')) {
+  // Public shareable pages — no locale prefix, no session required
+  if (pathname.startsWith('/r/') || pathname.startsWith('/inv/') || pathname.startsWith('/delivery/') || pathname.startsWith('/w/')) {
     return NextResponse.next();
   }
 

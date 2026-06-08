@@ -45,6 +45,7 @@ export async function PATCH(req: NextRequest, props: Params) {
       documents: data.documents ?? undefined,
       posEnabled: data.posEnabled ?? false,
       posPrice: data.posPrice === undefined ? undefined : Number(data.posPrice),
+      expiryDate: data.expiryDate || null,
     })
     return NextResponse.json({ ok: true })
   } catch (err) {

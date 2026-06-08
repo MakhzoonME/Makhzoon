@@ -8,8 +8,90 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast, useT } from '@/hooks/ui';
+import { SuperAdminPermissionGate } from '@/components/shared/SuperAdminPermissionGate';
 import { ORG_CATEGORIES, type Organization, type OrgCategory } from '@/types';
+import { formatDate } from '@/lib/utils/date';
+
+const NONE = '__none__';
+
+// ─── Delete org ───────────────────────────────────────────────────────────────
+
+function DeleteOrgDialog({
+  org,
+  orgId,
+  onDeleted,
+}: {
+  org: Organization;
+  orgId: string;
+  onDeleted: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [confirm, setConfirm] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (confirm !== org.name) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/organizations/${orgId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Delete failed');
+      }
+      toast.success(`"${org.name}" and all its data have been permanently deleted.`);
+      onDeleted();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Delete failed');
+      setDeleting(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button type="button" variant="destructive" onClick={() => setOpen(true)}>
+        Delete organization
+      </Button>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-3">
+      <p className="text-sm font-medium text-red-800">
+        This will permanently delete <strong>{org.name}</strong> and all its data — assets, inventory, orders, users, and everything else. This cannot be undone.
+      </p>
+      <div className="space-y-1.5">
+        <Label htmlFor="confirm-name" className="text-sm text-red-700">
+          Type <strong>{org.name}</strong> to confirm
+        </Label>
+        <Input
+          id="confirm-name"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          placeholder={org.name}
+          className="border-red-300 focus:border-red-500 focus:ring-red-500/20"
+          autoComplete="off"
+        />
+      </div>
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="destructive"
+          disabled={confirm !== org.name || deleting}
+          onClick={handleDelete}
+        >
+          {deleting ? 'Deleting…' : 'Permanently delete'}
+        </Button>
+        <Button type="button" variant="outline" onClick={() => { setOpen(false); setConfirm(''); }}>
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Team members type ─────────────────────────────────────────────────────────
 
 interface TeamMember {
   id: string;
@@ -20,8 +102,15 @@ interface TeamMember {
 }
 
 interface OrgWithSub extends Organization {
-  subscription?: unknown;
+  subscription?: {
+    status?: string;
+    packageId?: string | null;
+    endDate?: string | null;
+    features?: Record<string, boolean>;
+  } | null;
 }
+
+// ─── Info edit form ────────────────────────────────────────────────────────────
 
 function EditOrgForm({
   org,
@@ -34,6 +123,7 @@ function EditOrgForm({
   teamMembers: TeamMember[];
   onCancel: () => void;
 }) {
+  const { t } = useT();
   const qc = useQueryClient();
   const [name, setName] = useState(org.name);
   const [contactEmail, setContactEmail] = useState(org.contactEmail);
@@ -61,13 +151,14 @@ function EditOrgForm({
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || 'Failed to update');
       }
-      toast.success('Organization updated');
+      toast.success(t('orgs.updated'));
       qc.invalidateQueries({ queryKey: ['org', orgId] });
       qc.invalidateQueries({ queryKey: ['organizations'] });
       qc.invalidateQueries({ queryKey: ['all-orgs-usage'] });
       qc.invalidateQueries({ queryKey: ['org-info-self'] });
+      onCancel();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update');
+      toast.error(err instanceof Error ? err.message : t('orgs.updateFailed'));
     } finally {
       setSaving(false);
     }
@@ -78,31 +169,29 @@ function EditOrgForm({
   return (
     <form onSubmit={handleSave} className="space-y-4">
       <div className="space-y-1.5">
-        <Label htmlFor="name">Organization Name</Label>
+        <Label htmlFor="name">{t('orgs.name')}</Label>
         <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="email">Contact Email</Label>
+        <Label htmlFor="email">{t('orgs.contactEmail')}</Label>
         <Input id="email" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} required />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="category">Category</Label>
-        <select
-          id="category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value as OrgCategory | '')}
-          className="flex h-9 w-full rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
-        >
-          <option value="">— None —</option>
-          {ORG_CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
+        <Label>{t('orgs.category')}</Label>
+        <Select value={category || NONE} onValueChange={(v) => setCategory(v === NONE ? '' : v as OrgCategory)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE}>— None —</SelectItem>
+            {ORG_CATEGORIES.map((c) => (
+              <SelectItem key={c} value={c}>{c}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="description">{t('orgs.description')}</Label>
         <Textarea
           id="description"
           value={description}
@@ -113,39 +202,109 @@ function EditOrgForm({
         <p className="text-xs text-gray-500">{description.length}/500</p>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="assignedMember">Account Manager</Label>
-        <select
-          id="assignedMember"
-          value={assignedMemberId}
-          onChange={(e) => setAssignedMemberId(e.target.value)}
-          className="flex h-9 w-full rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
-        >
-          <option value="">— Unassigned —</option>
-          {activeMembers.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.displayName} ({m.email})
-            </option>
-          ))}
-        </select>
-        <p className="text-xs text-gray-500">The Makhzoon team member responsible for this organization.</p>
+        <Label>{t('settings.accountManager')}</Label>
+        <Select value={assignedMemberId || NONE} onValueChange={(v) => setAssignedMemberId(v === NONE ? '' : v)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE}>— Unassigned —</SelectItem>
+            {activeMembers.map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                {m.displayName} ({m.email})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-gray-500">{t('orgs.accountManagerHint')}</p>
       </div>
       <div className="flex gap-2 pt-2">
         <Button type="submit" disabled={saving}>
-          {saving ? 'Saving…' : 'Save Changes'}
+          {saving ? t('common.saving') : t('common.saveChanges')}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     </form>
   );
 }
 
+// ─── Read-only info view ───────────────────────────────────────────────────────
+
+function OrgInfoReadOnly({ org }: { org: OrgWithSub }) {
+  const { t } = useT();
+  const rows: { label: string; value: string | null }[] = [
+    { label: t('orgs.name'), value: org.name },
+    { label: t('orgs.contactEmail'), value: org.contactEmail },
+    { label: t('orgs.category'), value: (org.category as string | null) ?? '—' },
+    { label: t('orgs.description'), value: org.description || '—' },
+  ];
+  return (
+    <dl className="space-y-3">
+      {rows.map(({ label, value }) => (
+        <div key={label}>
+          <dt className="text-xs font-medium text-gray-500">{label}</dt>
+          <dd className="text-sm text-gray-900 mt-0.5">{value ?? '—'}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+// ─── Subscription section ──────────────────────────────────────────────────────
+
+function SubscriptionSection({ org }: { org: OrgWithSub }) {
+  const sub = org.subscription;
+  if (!sub) return <p className="text-sm text-gray-400">No subscription data.</p>;
+
+  const statusColor: Record<string, string> = {
+    ACTIVE:    'text-green-700 bg-green-50',
+    EXPIRED:   'text-red-700 bg-red-50',
+    SUSPENDED: 'text-amber-700 bg-amber-50',
+  };
+
+  const enabledFeatures = sub.features
+    ? Object.entries(sub.features).filter(([, v]) => v).map(([k]) => k)
+    : [];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusColor[sub.status ?? ''] ?? 'text-gray-600 bg-surface-page'}`}>
+          {sub.status ?? 'Unknown'}
+        </span>
+        {sub.endDate && (
+          <span className="text-sm text-gray-500">
+            Expires {formatDate(new Date(sub.endDate))}
+          </span>
+        )}
+      </div>
+
+      {enabledFeatures.length > 0 && (
+        <div>
+          <p className="text-xs font-medium text-gray-500 mb-1.5">Enabled features</p>
+          <div className="flex flex-wrap gap-1.5">
+            {enabledFeatures.map((f) => (
+              <span key={f} className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--primary-100)] text-[var(--primary-700)]">
+                {f}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function EditOrganizationPage(props: { params: Promise<{ orgId: string }> }) {
   const params = use(props.params);
   const { orgId } = params;
   const router = useRouter();
   const { t, locale } = useT();
+  const [editing, setEditing] = useState(false);
 
   const { data: org, isLoading } = useQuery<OrgWithSub>({
     queryKey: ['org', orgId],
@@ -166,10 +325,10 @@ export default function EditOrganizationPage(props: { params: Promise<{ orgId: s
   });
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title={org?.name ?? t('common.edit')}
-        description={`ID: ${org?.subdomain ?? '—'}`}
+        description={org ? `${org.subdomain} · ID: ${org.id}` : '—'}
         breadcrumb={[
           { label: t('nav.organizations'), href: `/${locale}/superadmin` },
           { label: org?.name ?? '' },
@@ -177,21 +336,73 @@ export default function EditOrganizationPage(props: { params: Promise<{ orgId: s
         ]}
       />
 
+      {/* ── Info section ─────────────────────────────────────────────── */}
       <Card className="max-w-2xl">
-        <CardContent className="p-6">
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-900">Organization Info</h3>
+            {/* Edit button — only shown with update permission and when not already editing */}
+            {!editing && (
+              <SuperAdminPermissionGate module="organizations" operation="update">
+                <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+                  {t('common.edit')}
+                </Button>
+              </SuperAdminPermissionGate>
+            )}
+          </div>
+
           {isLoading || !org ? (
-            <p className="text-sm text-gray-500">Loading…</p>
+            <p className="text-sm text-gray-500">{t('common.loading')}</p>
+          ) : editing ? (
+            <SuperAdminPermissionGate
+              module="organizations"
+              operation="update"
+              fallback={<OrgInfoReadOnly org={org} />}
+            >
+              <EditOrgForm
+                key={org.id}
+                org={org}
+                orgId={orgId}
+                teamMembers={teamMembers}
+                onCancel={() => setEditing(false)}
+              />
+            </SuperAdminPermissionGate>
           ) : (
-            <EditOrgForm
-              key={org.id}
-              org={org}
-              orgId={orgId}
-              teamMembers={teamMembers}
-              onCancel={() => router.back()}
-            />
+            <OrgInfoReadOnly org={org} />
           )}
         </CardContent>
       </Card>
+
+      {/* ── Subscription section ──────────────────────────────────────── */}
+      {org && (
+        <Card className="max-w-2xl">
+          <CardContent className="p-6 space-y-3">
+            <h3 className="text-sm font-semibold text-gray-900">Subscription</h3>
+            <SubscriptionSection org={org} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Danger zone — only rendered when user has delete permission ── */}
+      {org && (
+        <SuperAdminPermissionGate module="organizations" operation="delete">
+          <Card className="max-w-2xl border-red-200">
+            <CardContent className="p-6 space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold text-red-700">Danger Zone</h3>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Permanently delete this organization and all its data from the database.
+                </p>
+              </div>
+              <DeleteOrgDialog
+                org={org}
+                orgId={orgId}
+                onDeleted={() => router.replace(`/${locale}/superadmin`)}
+              />
+            </CardContent>
+          </Card>
+        </SuperAdminPermissionGate>
+      )}
     </div>
   );
 }

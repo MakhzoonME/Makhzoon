@@ -2,7 +2,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/ui';
-import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity, Mail, RefreshCw, ChevronLeft, ChevronRight, Package } from 'lucide-react';
+import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity, Mail, RefreshCw, ChevronLeft, ChevronRight, Package, Inbox } from 'lucide-react';
+import {
+  DEFAULT_SUPER_ADMIN_PERMISSIONS,
+  DEFAULT_MAKHZOON_ADMIN_PERMISSIONS,
+  DEFAULT_SUPPORT_PERMISSIONS,
+} from '@/types/superadmin-permissions.types';
+import type { SuperAdminPermissions } from '@/types/superadmin-permissions.types';
 import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -24,23 +30,41 @@ const EASE_SLIDE = [0.4, 0, 0.2, 1] as const;
 
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
+function getSaPermissions(user: { role: string; saPermissions?: SuperAdminPermissions | null }): SuperAdminPermissions {
+  if (user.saPermissions) return user.saPermissions;
+  if (user.role === 'super_admin') return DEFAULT_SUPER_ADMIN_PERMISSIONS;
+  if (user.role === 'makhzoon_admin') return DEFAULT_MAKHZOON_ADMIN_PERMISSIONS;
+  return DEFAULT_SUPPORT_PERMISSIONS;
+}
+
 type NavEntry =
   | { separator: true }
-  | { href: string; labelKey: string; icon: React.ElementType; roles: string[]; separator?: false };
+  | {
+      href: string;
+      labelKey: string;
+      icon: React.ElementType;
+      /** roles allowed regardless of granular permissions (no perm key = role-only check) */
+      roles: string[];
+      /** if set, user must also have this superadmin permission */
+      permModule?: keyof SuperAdminPermissions;
+      permOp?: string;
+      separator?: false;
+    };
 
 const ALL_NAV_ITEMS = (locale: string): NavEntry[] => [
   { href: `/${locale}/superadmin/dashboard`,     labelKey: 'nav.dashboard',     icon: LayoutDashboard, roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
-  { href: `/${locale}/superadmin`,               labelKey: 'nav.organizations', icon: Building2,       roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+  { href: `/${locale}/superadmin`,               labelKey: 'nav.organizations', icon: Building2,       roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'], permModule: 'organizations', permOp: 'view' },
   { href: `/${locale}/superadmin/leads`,         labelKey: 'nav.leads',         icon: Mail,            roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
-  { href: `/${locale}/superadmin/lists`,         labelKey: 'nav.lists',         icon: FileText,        roles: ['super_admin', 'makhzoon_admin'] },
-  { href: `/${locale}/superadmin/packages`,      labelKey: 'nav.packages',      icon: Package,         roles: ['super_admin', 'makhzoon_admin'] },
-  { href: `/${locale}/superadmin/configuration`, labelKey: 'nav.configuration', icon: Settings,        roles: ['super_admin', 'makhzoon_admin'] },
+  { href: `/${locale}/superadmin/messages`,      labelKey: 'nav.websiteMessages', icon: Inbox,         roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+  { href: `/${locale}/superadmin/lists`,         labelKey: 'nav.lists',         icon: FileText,        roles: ['super_admin', 'makhzoon_admin'], permModule: 'configuration', permOp: 'view' },
+  { href: `/${locale}/superadmin/packages`,      labelKey: 'nav.packages',      icon: Package,         roles: ['super_admin', 'makhzoon_admin'], permModule: 'configuration', permOp: 'view' },
+  { href: `/${locale}/superadmin/configuration`, labelKey: 'nav.configuration', icon: Settings,        roles: ['super_admin', 'makhzoon_admin'], permModule: 'configuration', permOp: 'view' },
   { separator: true },
-  { href: `/${locale}/superadmin/support`,       labelKey: 'nav.support',       icon: MessageSquare,   roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
-  { href: `/${locale}/superadmin/team`,          labelKey: 'nav.team',          icon: Users,           roles: ['super_admin', 'makhzoon_admin'] },
-  { href: `/${locale}/superadmin/backend-logs`,  labelKey: 'nav.backendLogs',   icon: Activity,        roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+  { href: `/${locale}/superadmin/support`,       labelKey: 'nav.support',       icon: MessageSquare,   roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'], permModule: 'support', permOp: 'view' },
+  { href: `/${locale}/superadmin/team`,          labelKey: 'nav.team',          icon: Users,           roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'], permModule: 'team', permOp: 'view' },
+  { href: `/${locale}/superadmin/backend-logs`,  labelKey: 'nav.backendLogs',   icon: Activity,        roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'], permModule: 'backendLogs', permOp: 'view' },
   { href: `/${locale}/superadmin/sync`,          labelKey: 'nav.sync',          icon: RefreshCw,       roles: ['super_admin', 'makhzoon_admin'] },
-  { href: `/${locale}/superadmin/audit-logs`,    labelKey: 'nav.auditLogs',     icon: FileText,        roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'] },
+  { href: `/${locale}/superadmin/audit-logs`,    labelKey: 'nav.auditLogs',     icon: FileText,        roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'], permModule: 'auditLogs', permOp: 'view' },
 ];
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
@@ -89,9 +113,16 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
     </div>
   );
 
-  const navItems = ALL_NAV_ITEMS(locale).filter((item) =>
-    'separator' in item ? true : item.roles.includes(user.role)
-  );
+  const saPerms = getSaPermissions(user);
+  const navItems = ALL_NAV_ITEMS(locale).filter((item) => {
+    if ('separator' in item) return true;
+    if (!item.roles.includes(user.role)) return false;
+    if (item.permModule && item.permOp) {
+      const mod = saPerms[item.permModule] as unknown as Record<string, boolean> | undefined;
+      if (!mod?.[item.permOp]) return false;
+    }
+    return true;
+  });
 
   const sidebarW = collapsed ? SA_COLLAPSED : SA_EXPANDED;
 
@@ -151,7 +182,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                 {t('brand.name')}
               </span>
               <span className="text-[9px] font-semibold text-blue-400 uppercase tracking-widest whitespace-nowrap leading-tight">
-                Platform Console
+                Superadmin Platform
               </span>
             </motion.span>
           </div>
@@ -164,7 +195,8 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
               }
               const { href, labelKey, icon: Icon } = item;
               const label = t(labelKey as MessageKey);
-              const active = pathname === href || (href !== `/${locale}/superadmin` && pathname.startsWith(href));
+              const isExactOnly = href === `/${locale}/superadmin/dashboard` || href === `/${locale}/superadmin`;
+              const active = pathname === href || (!isExactOnly && pathname.startsWith(href));
               return (
                 <Link
                   key={href}
@@ -219,7 +251,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                     user.role === 'super_admin'      ? t('role.superAdmin') :
                     user.role === 'makhzoon_admin'   ? t('role.makhzoonAdmin') :
                     user.role === 'makhzoon_support' ? t('role.makhzoonSupport') :
-                    user.role.replace(/_/g, ' ')
+                    user.role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
                   }
                 </p>
               </motion.div>

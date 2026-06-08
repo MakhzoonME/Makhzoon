@@ -8,7 +8,6 @@ import {
   SIDEBAR_WIDTH_COLLAPSED,
   SIDEBAR_WIDTH_EXPANDED,
 } from '@/components/layout/AppSidebar';
-import { useT } from '@/hooks/ui';
 import { TransferModeBanner } from '@/components/layout/TransferModeBanner';
 import { ExpiryWarningBanner } from '@/components/features/subscription';
 import { PageTransition } from '@/components/layout/PageTransition';
@@ -26,8 +25,6 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   const { active, setTransfer } = useTransferStore();
   const { sidebarCollapsed } = useUiStore();
   const refreshFromServer = useAuthStore((s) => s.refreshFromServer);
-  const { dir } = useT();
-  const isRtl = dir === 'rtl';
 
   useEffect(() => {
     if (loading) return;
@@ -72,11 +69,11 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
       <MobileDrawer />
       <BottomNav />
       <main
-        className={`pt-14 ${showBanner ? 'mt-10' : ''} min-h-screen pb-16 md:pb-0`}
+        className={`pt-14 ${showBanner ? 'mt-10' : ''} min-h-screen pb-16 md:pb-0 ms-0 md:ms-[var(--sw)]`}
         style={{
-          [isRtl ? 'marginRight' : 'marginLeft']: `${sidebarWidth}px`,
-          transition: 'margin 0.28s cubic-bezier(0.4,0,0.2,1)',
-        }}
+          '--sw': `${sidebarWidth}px`,
+          transition: 'margin-inline-start 0.28s cubic-bezier(0.4,0,0.2,1)',
+        } as React.CSSProperties}
       >
         <ExpiryWarningBanner />
         <div className="px-6 py-6 max-w-7xl">

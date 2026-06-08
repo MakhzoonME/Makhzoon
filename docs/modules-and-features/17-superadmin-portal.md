@@ -2,6 +2,7 @@
 
 **Route base**: `/{locale}/superadmin/`
 **Access**: Platform roles only — `super_admin`, `makhzoon_admin`, `makhzoon_support`
+**Permission model**: Each nav item and UI action is gated by `SuperAdminPermissions` (stored in `superadmin_users.permissions`). Stored permissions override role defaults. Enforced on both backend routes and frontend via `SuperAdminPermissionGate` and nav filtering.
 
 ---
 
@@ -30,19 +31,21 @@ The superadmin portal is the Makhzoon platform management interface. It is compl
 - Backdrop (semi-transparent overlay) closes the drawer on click.
 - `isMobile` state detected via `window.innerWidth < 768` with a resize listener — prevents `marginLeft` from being applied on mobile (which would push content off-screen).
 
-**Navigation items**:
-| Label | Route |
-|-------|-------|
-| Dashboard | `/superadmin/dashboard` |
-| Organizations | `/superadmin/organizations` |
-| Leads | `/superadmin/leads` |
-| Lists | `/superadmin/lists` |
-| Configuration | `/superadmin/configuration` |
-| Support | `/superadmin/support` |
-| Team | `/superadmin/team` |
-| Backend Logs | `/superadmin/backend-logs` |
-| Sync | `/superadmin/sync` |
-| Profile | `/superadmin/profile` |
+**Navigation items** (filtered by `saPermissions` at runtime):
+| Label | Route | Permission Required |
+|-------|-------|---------------------|
+| Dashboard | `/superadmin/dashboard` | any platform role |
+| Organizations | `/superadmin` | `organizations.view` |
+| Leads | `/superadmin/leads` | any platform role |
+| Messages | `/superadmin/messages` | any platform role |
+| Lists | `/superadmin/lists` | `configuration.view` |
+| Packages | `/superadmin/packages` | `configuration.view` |
+| Configuration | `/superadmin/configuration` | `configuration.view` |
+| Support | `/superadmin/support` | `support.view` |
+| Team | `/superadmin/team` | `team.view` |
+| Backend Logs | `/superadmin/backend-logs` | `backendLogs.view` |
+| Sync | `/superadmin/sync` | `super_admin` or `makhzoon_admin` role |
+| Audit Logs | `/superadmin/audit-logs` | `auditLogs.view` |
 
 ### Banner (top)
 
@@ -95,7 +98,11 @@ The superadmin portal is the Makhzoon platform management interface. It is compl
 **Edit Organization**:
 **Route**: `/{locale}/superadmin/organizations/[orgId]/edit`
 
-- Same form as create.
+Three sections with granular permission gating via `SuperAdminPermissionGate`:
+
+- **Info** — always visible (requires `organizations.view`); Edit button and edit form shown only with `organizations.update`
+- **Subscription** — always visible; shows plan status, expiry, and list of enabled features (read-only)
+- **Danger Zone** — entire section hidden unless user has `organizations.delete`; requires org name confirmation before deleting
 
 **Manage Subscription**:
 **Route**: `/{locale}/superadmin/organizations/[orgId]/subscription`
@@ -176,23 +183,32 @@ The full support queue across all organizations. Makhzoon team members reply, ch
 ## Team
 
 **Route**: `/{locale}/superadmin/team`
+**Access**: Requires `team.view` permission.
 
 Manage Makhzoon platform staff accounts.
 
 **Layout**:
-- `PageHeader` "Team" + "+ Invite Member" button.
+- `PageHeader` "Team" + "+ Add Member" button (visible only with `team.manage`).
+- Role summary cards (super_admin / makhzoon_admin / makhzoon_support).
 - `DataTable` with columns: Name, Email, Role, Status, Created At, Actions.
 
 **Roles**:
-| Role | Access |
-|------|--------|
-| `super_admin` | Full platform access |
-| `makhzoon_admin` | Most superadmin features |
-| `makhzoon_support` | Support queue only |
+| Role | Default Access |
+|------|----------------|
+| `super_admin` | Full platform access; can create any role |
+| `makhzoon_admin` | Most superadmin features; can only create `makhzoon_support` accounts |
+| `makhzoon_support` | Configurable via `SuperAdminPermissions`; default: view orgs/auditLogs/backendLogs, respond to support |
 
-**Invite**: Send email invite to a new team member with a role assignment.
+**Add Member**: Creates account with a random password and sends a reset-link email. Sets custom `SuperAdminPermissions` for any role (previously only stored for `makhzoon_support` — now stored for all roles).
 
-**Edit**: Change role or deactivate a team member.
+**Edit**: Change display name, role, or custom `SuperAdminPermissions`. Requires `team.manage`. `makhzoon_admin` cannot edit `super_admin` accounts or promote to `makhzoon_admin`.
+
+**Permission editor**: `SuperAdminPermissionsEditor` component — same toggle pattern as org `PermissionsEditor`. Shown in add and edit dialogs.
+
+**Escalation rules** (enforced server-side):
+- Only `super_admin` can create/promote to `super_admin`
+- Only `super_admin` can permanently delete team members
+- `makhzoon_admin` cannot modify `super_admin` accounts
 
 ---
 
@@ -249,7 +265,33 @@ SuperAdminUser
   id (Supabase Auth UID), email, displayName, avatarUrl?
   role: 'super_admin' | 'makhzoon_admin' | 'makhzoon_support'
   status: 'active' | 'deactivated'
+  permissions?: SuperAdminPermissions | null  ← null = use role defaults
   createdAt/By, updatedAt/By
 ```
 
-Superadmin users are stored separately from org users — in their own table, not in the `users` (org) table.
+Superadmin users are stored in `superadmin_users`, separately from org users (`users` table). `verifySessionCookie()` loads `saPermissions` from this table for all platform-role users on every request and attaches it to `AuthUser.saPermissions`.
+
+## Permission Infrastructure
+
+**Backend**: `lib/permissions/superadmin.ts`
+```typescript
+hasSuperAdminPermission(user: AuthUser, module: keyof SuperAdminPermissions, operation: string): boolean
+// Uses user.saPermissions if set; falls back to role defaults via DEFAULT_*_PERMISSIONS
+```
+
+Called on every superadmin API route:
+- `GET/PUT/DELETE /api/organizations/[orgId]` — `organizations.view/update/delete`
+- `GET /api/superadmin/backend-logs` — `backendLogs.view`
+- `GET /api/superadmin/team` — `team.view`
+- `POST /api/superadmin/team` — `team.manage`
+- `PATCH /api/superadmin/team/[id]` — `team.manage`
+- `GET /api/audit-logs` (platform users) — `auditLogs.view`
+
+**Frontend**: `components/shared/SuperAdminPermissionGate.tsx`
+```tsx
+<SuperAdminPermissionGate module="organizations" operation="delete">
+  <DeleteButton />
+</SuperAdminPermissionGate>
+```
+
+Reads `user.saPermissions` from auth store; falls back to role defaults if null.

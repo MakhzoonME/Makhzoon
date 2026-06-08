@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { startOfDay, endOfDay } from 'date-fns';
 import { Banknote, Receipt, Users, Layers, Plus, ListChecks, ArrowRight } from 'lucide-react';
-import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
+import { useOrgSlug, useSpace, useT, useModuleGuard } from '@/hooks/ui';
 import { PageHeader, StatCard, OverviewSection, DataTable, StatusBadge, SubscriptionGate } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
 import { Button } from '@/components/ui/button';
@@ -69,10 +69,12 @@ function SessionCard({ base }: { base: string }) {
 }
 
 export default function HarakaOverviewPage() {
+  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const space = useSpace();
   const { t, locale } = useT();
+  if (!isAllowed) return null;
   const base = `/${locale}/${orgSlug}/${space}/haraka`;
 
   const [range] = useState(() => {

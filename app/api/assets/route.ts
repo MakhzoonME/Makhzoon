@@ -10,6 +10,7 @@ const service = new AssetsService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requirePermission(tenant.user, 'assets', 'view')
     const limited = rateLimitTenant(tenant, 'assets', 60, 60_000)
     if (limited) return limited
     const { searchParams } = new URL(req.url)

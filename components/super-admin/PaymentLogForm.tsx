@@ -30,11 +30,16 @@ export function PaymentLogForm({ onSubmit, onCancel, submitting }: PaymentLogFor
   const [reference, setReference] = useState('');
   const [paidAt, setPaidAt] = useState(new Date().toISOString().slice(0, 16));
   const [notes, setNotes] = useState('');
+  const [amountError, setAmountError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setAmountError(null);
     const amt = parseFloat(amount);
-    if (!Number.isFinite(amt) || amt <= 0) return;
+    if (!Number.isFinite(amt) || amt <= 0) {
+      setAmountError('Please enter a valid amount greater than 0.');
+      return;
+    }
     await onSubmit({
       amount: amt,
       currency: currency.toUpperCase(),
@@ -59,6 +64,7 @@ export function PaymentLogForm({ onSubmit, onCancel, submitting }: PaymentLogFor
             onChange={(e) => setAmount(e.target.value)}
             required
           />
+          {amountError && <p className="text-xs text-red-500">{amountError}</p>}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="pmt-currency">Currency</Label>

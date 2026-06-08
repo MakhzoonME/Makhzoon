@@ -9,6 +9,7 @@ import * as warrantiesService from '@/lib/modules/warranties/services/warranties
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
+    requirePermission(tenant.user, 'warranties', 'view');
 
     const { searchParams } = new URL(req.url);
     const expiringSoon = searchParams.get('expiringSoon') === 'true';

@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuditLogs, useOrgInfo } from '@/hooks/org';
-import { useTransferMode, useOrgSlug, useSpace } from '@/hooks/ui';
+import { useTransferMode, useOrgSlug, useSpace, useAdminGuard } from '@/hooks/ui';
 import { useAuth } from '@/hooks/ui';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
@@ -65,8 +65,10 @@ function changeSummary(log: AuditLog): string | null {
 }
 
 export default function OrgAuditLogsPage() {
+  const { isAllowed } = useAdminGuard('auditLogs.view');
   const { t } = useT();
   const orgSlug = useOrgSlug();
+  if (!isAllowed) return null;
   const space   = useSpace();
   const { data: orgInfo } = useOrgInfo();
   const { user } = useAuth();

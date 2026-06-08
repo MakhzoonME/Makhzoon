@@ -169,7 +169,13 @@ export default function AuditDetailPage() {
 
   const { audit, items } = data;
   const completed = audit.status === 'completed';
-  const pct = audit.totalAssets ? Math.round(((audit.foundCount + audit.missingCount) / audit.totalAssets) * 100) : 0;
+
+  // Derive counts from actual item statuses so stale audit counters don't mislead.
+  const actualFound = items.filter((i) => i.status === 'found').length;
+  const actualMissing = items.filter((i) => i.status === 'missing').length;
+  const actualPending = items.filter((i) => i.status === 'pending').length;
+  const total = items.length;
+  const pct = total ? Math.round(((actualFound + actualMissing) / total) * 100) : 0;
 
   const filtered = search
     ? items.filter((i) =>
@@ -212,7 +218,7 @@ export default function AuditDetailPage() {
               <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
               <span className="ms-1">Back to Audits</span>
             </Button>
-          ) : audit.pendingCount === 0 ? (
+          ) : actualPending === 0 ? (
             <Button size="sm" onClick={handleComplete} disabled={completing}>
               <CheckCheck className="h-4 w-4" strokeWidth={1.75} />
               <span className="ms-1">{completing ? 'Completing...' : 'Complete Audit'}</span>
@@ -225,16 +231,16 @@ export default function AuditDetailPage() {
       <div className="bg-surface-card rounded-lg border border-border p-5 mb-6">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-6 text-sm">
-            <span><strong className="text-gray-900">{audit.totalAssets}</strong> <span className="text-gray-400">total</span></span>
-            <span><strong className="text-emerald-600">{audit.foundCount}</strong> <span className="text-gray-400">found</span></span>
-            <span><strong className="text-red-500">{audit.missingCount}</strong> <span className="text-gray-400">missing</span></span>
-            <span><strong className="text-gray-400">{audit.pendingCount}</strong> <span className="text-gray-400">pending</span></span>
+            <span><strong className="text-gray-900">{total}</strong> <span className="text-gray-400">total</span></span>
+            <span><strong className="text-emerald-600">{actualFound}</strong> <span className="text-gray-400">found</span></span>
+            <span><strong className="text-red-500">{actualMissing}</strong> <span className="text-gray-400">missing</span></span>
+            <span><strong className="text-gray-400">{actualPending}</strong> <span className="text-gray-400">pending</span></span>
           </div>
           <span className="text-sm font-semibold text-gray-700">{pct}% checked</span>
         </div>
         <div className="h-2 bg-surface-page rounded-full overflow-hidden flex border border-border">
-          <div className="h-2 bg-emerald-500 transition-all" style={{ width: `${audit.totalAssets ? (audit.foundCount / audit.totalAssets) * 100 : 0}%` }} />
-          <div className="h-2 bg-red-400 transition-all" style={{ width: `${audit.totalAssets ? (audit.missingCount / audit.totalAssets) * 100 : 0}%` }} />
+          <div className="h-2 bg-emerald-500 transition-all" style={{ width: `${total ? (actualFound / total) * 100 : 0}%` }} />
+          <div className="h-2 bg-red-400 transition-all" style={{ width: `${total ? (actualMissing / total) * 100 : 0}%` }} />
         </div>
         {completed && (
           <div className="mt-3 flex items-center justify-between gap-2 text-sm">

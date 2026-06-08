@@ -29,6 +29,13 @@ export interface NavItemConfig {
   children?: NavItemConfig[];
 }
 
+/** Visual section divider inside a group's sub-item list */
+export interface NavSectionHeader {
+  type: 'section-header';
+  label: string;
+  labelKey: MessageKey;
+}
+
 export interface NavGroupConfig {
   type: 'group';
   href: string;
@@ -39,7 +46,7 @@ export interface NavGroupConfig {
   moduleColor?: string;
   moduleName?: string;
   scope?: NavScope;
-  items: NavItemConfig[];
+  items: (NavItemConfig | NavSectionHeader)[];
 }
 
 export interface NavSeparator { type: 'separator' }
@@ -51,8 +58,6 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
     type: 'group', href: '/usool', label: 'Usool', labelKey: 'nav.assets',
     featureKey: 'assets', moduleColor: '#00695C', moduleName: 'أصول',
     items: [
-      { href: '/usool', label: 'Overview', labelKey: 'nav.overview',
-        featureKey: 'assets', moduleColor: '#00695C', moduleName: 'أصول' },
       { href: '/usool/list', label: 'Asset Register', labelKey: 'nav.assetsList',
         featureKey: 'assets', moduleColor: '#00695C', moduleName: 'أصول' },
       { href: '/usool/audits', label: 'Audits', labelKey: 'nav.assetAudits',
@@ -64,8 +69,6 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
     type: 'group', href: '/raseed', label: 'Raseed', labelKey: 'nav.inventory',
     featureKey: 'inventory', moduleColor: '#E65100', moduleName: 'رصيد',
     items: [
-      { href: '/raseed', label: 'Overview', labelKey: 'nav.overview',
-        featureKey: 'inventory', moduleColor: '#E65100', moduleName: 'رصيد' },
       { href: '/raseed/list', label: 'Stock Items', labelKey: 'nav.inventoryList',
         featureKey: 'inventory', moduleColor: '#E65100', moduleName: 'رصيد' },
       { href: '/raseed/purchases', label: 'Purchases', labelKey: 'nav.purchases',
@@ -80,32 +83,34 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
     type: 'group', href: '/haraka', label: 'Haraka', labelKey: 'nav.pos',
     featureKey: 'pos', moduleColor: '#C2185B', moduleName: 'حركة',
     items: [
-      { href: '/haraka', label: 'Overview', labelKey: 'nav.overview',
-        featureKey: 'pos', moduleColor: '#C2185B', moduleName: 'حركة' },
+      { type: 'section-header', label: 'Operations', labelKey: 'nav.sectionOperations' },
       { href: '/haraka/register', label: 'Register', labelKey: 'nav.register',
         featureKey: 'pos', permissionKey: 'pos.process_sale',
         moduleColor: '#AD1457', moduleName: 'نقطة بيع' },
-      { href: '/haraka/orders', label: 'Orders', labelKey: 'nav.harakaOrders',
-        featureKey: 'pos', permissionKey: 'pos.view_orders',
-        moduleColor: '#AD1457', moduleName: 'طلبات' },
-      { href: '/haraka/warranty-certs', label: 'Warranty Certs', labelKey: 'nav.harakaWarrantyCerts',
-        featureKey: 'pos', permissionKey: 'pos.view_warranty_certs',
-        moduleColor: '#AD1457', moduleName: 'ضمانات' },
       { href: '/haraka/sessions', label: 'Sessions', labelKey: 'nav.sessions',
         featureKey: 'pos', permissionKey: 'pos.open_session',
         moduleColor: '#AD1457', moduleName: 'جلسات' },
-      { href: '/haraka/transactions', label: 'Transactions', labelKey: 'nav.transactions',
-        featureKey: 'pos', permissionKey: 'pos.view_reports',
-        moduleColor: '#AD1457', moduleName: 'معاملات' },
+      { type: 'section-header', label: 'Commerce', labelKey: 'nav.sectionCommerce' },
+      { href: '/haraka/orders', label: 'Orders', labelKey: 'nav.harakaOrders',
+        featureKey: 'pos', permissionKey: 'pos.view_orders',
+        moduleColor: '#AD1457', moduleName: 'طلبات' },
       { href: '/haraka/customers', label: 'Customers', labelKey: 'nav.customers',
         featureKey: 'pos', permissionKey: 'pos.process_sale',
         moduleColor: '#AD1457', moduleName: 'عملاء' },
       { href: '/haraka/delivery-agents', label: 'Delivery Agents', labelKey: 'nav.deliveryAgents',
         featureKey: 'pos', permissionKey: 'pos.manage_delivery_agents',
         moduleColor: '#AD1457', moduleName: 'موزعون' },
+      { href: '/haraka/warranty-certs', label: 'Warranty Certs', labelKey: 'nav.harakaWarrantyCerts',
+        featureKey: 'pos', permissionKey: 'pos.view_warranty_certs',
+        moduleColor: '#AD1457', moduleName: 'ضمانات' },
+      { type: 'section-header', label: 'Finance', labelKey: 'nav.sectionFinance' },
+      { href: '/haraka/transactions', label: 'Transactions', labelKey: 'nav.transactions',
+        featureKey: 'pos', permissionKey: 'pos.view_reports',
+        moduleColor: '#AD1457', moduleName: 'معاملات' },
       { href: '/haraka/reports', label: 'Reports', labelKey: 'nav.harakaReports',
         featureKey: 'pos', permissionKey: 'pos.view_reports',
         moduleColor: '#AD1457', moduleName: 'تقارير' },
+      { type: 'section-header', label: 'Services', labelKey: 'nav.sectionServices' },
       { href: '/haraka/service-jobs', label: 'Services', labelKey: 'nav.harakaServiceJobs',
         featureKey: 'pos', permissionKey: 'pos.view_service_jobs',
         moduleColor: '#AD1457', moduleName: 'خدمات' },
@@ -118,7 +123,6 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
     type: 'group', href: '/requests', label: 'Requests', labelKey: 'nav.requests',
     featureKey: 'requests',
     items: [
-      { href: '/requests', label: 'Overview', labelKey: 'nav.overview', featureKey: 'requests' },
       { href: '/requests/list', label: 'All Requests', labelKey: 'nav.requestsList', featureKey: 'requests' },
     ],
   },
@@ -126,8 +130,6 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
     type: 'group', href: '/banna', label: 'Banna', labelKey: 'nav.banna',
     featureKey: 'banna', moduleColor: '#1565C0', moduleName: 'بنّا',
     items: [
-      { href: '/banna', label: 'Overview', labelKey: 'nav.overview',
-        featureKey: 'banna', moduleColor: '#1565C0', moduleName: 'بنّا' },
       { href: '/banna/custom-fields', label: 'Custom Fields', labelKey: 'banna.customFields',
         featureKey: 'banna', moduleColor: '#1565C0', moduleName: 'بنّا' },
     ],
@@ -161,15 +163,28 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
   },
 ];
 
-/** Flat list of all nav items (groups expanded); sub-items inherit group's adminOnly + scope */
+/** Flat list of all nav items (groups expanded to include group root + children); section headers skipped */
 const ORG_NAV_FLAT: NavItemConfig[] = ORG_NAV_ENTRIES.flatMap((entry) => {
   if ('type' in entry && entry.type === 'separator') return [];
   if ('type' in entry && entry.type === 'group') {
-    return entry.items.map((item) => ({
-      ...item,
-      adminOnly: item.adminOnly ?? entry.adminOnly,
-      scope: item.scope ?? entry.scope,
-    }));
+    const groupAsItem: NavItemConfig = {
+      href: entry.href,
+      label: entry.label,
+      labelKey: entry.labelKey,
+      adminOnly: entry.adminOnly,
+      featureKey: entry.featureKey,
+      moduleColor: entry.moduleColor,
+      moduleName: entry.moduleName,
+      scope: entry.scope,
+    };
+    const children = entry.items
+      .filter((sub): sub is NavItemConfig => !('type' in sub))
+      .map((sub) => ({
+        ...sub,
+        adminOnly: sub.adminOnly ?? entry.adminOnly,
+        scope: sub.scope ?? entry.scope,
+      }));
+    return [groupAsItem, ...children];
   }
   return [entry as NavItemConfig];
 });

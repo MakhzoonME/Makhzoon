@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { useTransferStore } from '@/store/transfer.store';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, buildNavUrl } from '@/lib/nav';
+import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, NavSectionHeader, buildNavUrl } from '@/lib/nav';
 import { SpaceSwitcher } from '@/components/layout/SpaceSwitcher';
 import { useOrgInfo } from '@/hooks/org';
 import { useSpace } from '@/hooks/ui';
@@ -220,7 +220,7 @@ export function AppSidebar() {
       if (entry.adminOnly && !canSeeAdmin) {
         // adminOnly group — staff can see it only if they have a specific sub-perm
         return user?.role === 'staff' && !!user && entry.items.some(
-          (sub) => sub.permissionKey && hasPermByKey(user, sub.permissionKey)
+          (sub) => !('type' in sub) && sub.permissionKey && hasPermByKey(user, sub.permissionKey)
         );
       }
       // Check module access for staff, and for admins with custom restrictions
@@ -259,10 +259,14 @@ export function AppSidebar() {
   const autoOpenGroups: Record<string, boolean> = {};
   for (const entry of finalEntries) {
     if (!('type' in entry) || entry.type !== 'group') continue;
-    const hasActive = entry.items.some((sub) => {
-      const full = buildNavUrl({ locale, orgSlug, space, entry: sub });
-      return pathname === full || pathname.startsWith(full + '/');
-    });
+    const groupUrl = buildNavUrl({ locale, orgSlug, space, entry });
+    const hasActive = pathname === groupUrl ||
+      entry.items
+        .filter((sub): sub is NavItemConfig => !('type' in sub))
+        .some((sub) => {
+          const full = buildNavUrl({ locale, orgSlug, space, entry: sub });
+          return pathname === full || pathname.startsWith(full + '/');
+        });
     if (hasActive) autoOpenGroups[entry.href] = true;
   }
   // Auto-open always wins over a manual close (user toggled shut) when the current route is inside the group
@@ -271,15 +275,6 @@ export function AppSidebar() {
     if (autoOpenGroups[href]) effectiveToggles[href] = true;
   }
   const openGroups: Record<string, boolean> = { ...autoOpenGroups, ...effectiveToggles };
-
-  function toggleGroup(href: string) {
-    if (sidebarCollapsed) {
-      toggleSidebar();
-      setUserToggles((prev) => ({ ...prev, [href]: true }));
-    } else {
-      setUserToggles((prev) => ({ ...prev, [href]: !openGroups[href] }));
-    }
-  }
 
   return (
     <TooltipProvider delayDuration={120} skipDelayDuration={200}>
@@ -332,25 +327,80 @@ export function AppSidebar() {
               const Icon = NAV_ICONS[group.href] ?? SettingsSVG;
               const isOpen = openGroups[group.href] ?? false;
               const label  = t(group.labelKey as MessageKey, group.label);
-              const visibleSubItems = group.items.filter((sub) => {
-                if (sub.featureKey && !features[sub.featureKey]) return false;
-                if (canSeeAdmin) return true;
-                if (!sub.permissionKey) return true;
-                return !!user && hasPermByKey(user, sub.permissionKey);
-              });
-              const hasActiveChild = visibleSubItems.some((sub) => {
+              const groupFullHref = buildNavUrl({ locale, orgSlug, space, entry: group });
+              const isOnGroupRoot = pathname === groupFullHref;
+
+              // Determine which regular sub-items are visible
+              const visibleRegularItems = (group.items as (NavItemConfig | NavSectionHeader)[])
+                .filter((sub): sub is NavItemConfig => !('type' in sub))
+                .filter((sub) => {
+                  if (sub.featureKey && !features[sub.featureKey]) return false;
+                  if (canSeeAdmin || !sub.permissionKey) return true;
+                  return !!user && hasPermByKey(user, sub.permissionKey);
+                });
+              const visibleRegularSet = new Set(visibleRegularItems);
+
+              // Build the full sub-item list, keeping section headers only when they have visible items below them
+              const visibleSubItems: (NavItemConfig | NavSectionHeader)[] = [];
+              for (let si = 0; si < group.items.length; si++) {
+                const sub = group.items[si];
+                if ('type' in sub && (sub as NavSectionHeader).type === 'section-header') {
+                  let hasVisible = false;
+                  for (let sj = si + 1; sj < group.items.length; sj++) {
+                    const next = group.items[sj];
+                    if ('type' in next) break;
+                    if (visibleRegularSet.has(next as NavItemConfig)) { hasVisible = true; break; }
+                  }
+                  if (hasVisible) visibleSubItems.push(sub as NavSectionHeader);
+                } else if (visibleRegularSet.has(sub as NavItemConfig)) {
+                  visibleSubItems.push(sub as NavItemConfig);
+                }
+              }
+
+              const hasActiveChild = isOnGroupRoot || visibleRegularItems.some((sub) => {
                 const full = buildNavUrl({ locale, orgSlug, space, entry: sub });
                 return pathname === full || pathname.startsWith(full + '/');
               });
 
-              const groupBtn = (
-                <button
-                  type="button"
-                  onClick={() => toggleGroup(group.href)}
-                  aria-label={label}
+              // Collapsed state: icon is a link (navigates + expands sidebar)
+              if (sidebarCollapsed) {
+                return (
+                  <Tooltip key={group.href}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={groupFullHref}
+                        aria-label={label}
+                        onClick={() => { toggleSidebar(); setUserToggles((prev) => ({ ...prev, [group.href]: true })); }}
+                        className={cn(
+                          'group relative flex items-center rounded-lg text-[14px] transition-colors duration-150 h-9',
+                          ICON_INDENT,
+                          hasActiveChild
+                            ? 'font-semibold text-primary-700'
+                            : 'text-gray-600 hover:bg-surface-page hover:text-gray-900',
+                        )}
+                      >
+                        {hasActiveChild && (
+                          <motion.span
+                            layoutId="sidebar-active-group-pill"
+                            className="absolute inset-0 rounded-lg bg-primary-50"
+                            transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                          />
+                        )}
+                        <span className="relative z-10 flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
+                          <Icon />
+                        </span>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side={isRtl ? 'left' : 'right'}>{label}</TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              // Expanded state: link for icon+label navigation, separate chevron button for toggle
+              const groupRow = (
+                <div
                   className={cn(
-                    'group w-full relative flex items-center rounded-lg text-[14px] transition-colors duration-150 h-9',
-                    ICON_INDENT,
+                    'relative flex items-center rounded-lg text-[14px] transition-colors duration-150 h-9',
                     hasActiveChild
                       ? 'font-semibold text-primary-700'
                       : 'text-gray-600 hover:bg-surface-page hover:text-gray-900',
@@ -363,37 +413,37 @@ export function AppSidebar() {
                         className="absolute inset-0 rounded-lg bg-primary-50"
                         transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                       />
-                      {!sidebarCollapsed && (
-                        <span
-                          className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r bg-primary-600', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')}
-                        />
-                      )}
+                      <span
+                        className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r bg-primary-600', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')}
+                      />
                     </>
                   )}
-                  <span className="relative z-10 flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
-                    <Icon />
-                  </span>
-                  <motion.span
-                    animate={{ width: sidebarCollapsed ? 0 : 'auto', opacity: sidebarCollapsed ? 0 : 1 }}
-                    transition={sidebarCollapsed
-                      ? { width: { duration: 0.18, ease: EASE_SLIDE }, opacity: { duration: 0.08 } }
-                      : { width: { duration: 0.22, ease: EASE_SLIDE }, opacity: { duration: 0.14, delay: 0.16 } }
-                    }
-                    className="relative z-10 flex flex-1 items-center justify-between whitespace-nowrap overflow-hidden ms-2.5 pe-3"
-                    style={{ minWidth: 0 }}
+                  <Link
+                    href={groupFullHref}
+                    aria-label={label}
+                    className={cn('group relative z-10 flex flex-1 items-center h-full', ICON_INDENT)}
                   >
-                    {label}
-                    <span className={cn(
-                      'transition-transform duration-200 opacity-60 flex-shrink-0',
-                      isOpen && 'rotate-180',
-                    )}>
+                    <span className="flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
+                      <Icon />
+                    </span>
+                    <span className="whitespace-nowrap overflow-hidden ms-2.5" style={{ minWidth: 0 }}>
+                      {label}
+                    </span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setUserToggles((prev) => ({ ...prev, [group.href]: !openGroups[group.href] }))}
+                    aria-label={isOpen ? 'Collapse section' : 'Expand section'}
+                    className="relative z-10 pe-3 flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+                  >
+                    <span className={cn('transition-transform duration-200 block', isOpen && 'rotate-180')}>
                       <ChevronDownSVG />
                     </span>
-                  </motion.span>
-                </button>
+                  </button>
+                </div>
               );
 
-              const subList = !sidebarCollapsed && isOpen ? (
+              const subList = isOpen ? (
                 <motion.div
                   key={`${group.href}-items`}
                   initial={{ height: 0, opacity: 0 }}
@@ -402,23 +452,32 @@ export function AppSidebar() {
                   transition={{ duration: 0.2, ease: EASE_SLIDE }}
                   style={{ overflow: 'hidden' }}
                 >
-                  <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pe-6' : 'ps-6')}>
-                    {visibleSubItems.map((sub) => {
-                      const fullHref  = buildNavUrl({ locale, orgSlug, space, entry: sub });
-                      const subActive = (() => {
-                        if (pathname === fullHref) return true;
-                        if (!pathname.startsWith(fullHref + '/')) return false;
-                        if (group.href && sub.href === group.href) {
-                          const rest = pathname.slice(fullHref.length + 1);
-                          const nextSegment = rest.split('/')[0];
-                          if (nextSegment && visibleSubItems.some(s => s.href === `${group.href}/${nextSegment}`)) return false;
-                        }
-                        return true;
-                      })();
-                      const subLabel  = t(sub.labelKey as MessageKey, sub.label);
+                  <div className={cn('pt-0.5 pb-0.5', isRtl ? 'pe-6' : 'ps-6')}>
+                    {visibleSubItems.map((sub, subIdx) => {
+                      // Section header divider
+                      if ('type' in sub && (sub as NavSectionHeader).type === 'section-header') {
+                        const sh = sub as NavSectionHeader;
+                        return (
+                          <div
+                            key={`sh-${subIdx}`}
+                            className={cn(
+                              'px-2.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400',
+                              subIdx === 0 ? 'pt-1 pb-0.5' : 'pt-3 pb-0.5 border-t border-border mt-1',
+                            )}
+                          >
+                            {t(sh.labelKey as MessageKey, sh.label)}
+                          </div>
+                        );
+                      }
+
+                      // Regular sub-item
+                      const navSub = sub as NavItemConfig;
+                      const fullHref = buildNavUrl({ locale, orgSlug, space, entry: navSub });
+                      const subActive = pathname === fullHref || pathname.startsWith(fullHref + '/');
+                      const subLabel  = t(navSub.labelKey as MessageKey, navSub.label);
                       return (
                         <Link
-                          key={sub.href}
+                          key={navSub.href}
                           href={fullHref}
                           aria-label={subLabel}
                           className={cn(
@@ -443,18 +502,9 @@ export function AppSidebar() {
                 </motion.div>
               ) : null;
 
-              if (sidebarCollapsed) {
-                return (
-                  <Tooltip key={group.href}>
-                    <TooltipTrigger asChild>{groupBtn}</TooltipTrigger>
-                    <TooltipContent side={isRtl ? 'left' : 'right'}>{label}</TooltipContent>
-                  </Tooltip>
-                );
-              }
-
               return (
                 <div key={group.href}>
-                  {groupBtn}
+                  {groupRow}
                   <AnimatePresence initial={false}>{subList}</AnimatePresence>
                 </div>
               );

@@ -158,15 +158,28 @@ export async function updateAssetWithAudit(
   const isRetirement = data.status === 'Retired' && asset.status !== 'Retired';
   const action = isRetirement ? 'ASSET_RETIRED' : 'ASSET_UPDATED';
 
+  // Record only the fields that actually changed, so the audit trail shows what was edited.
+  const oldValue: Record<string, unknown> = {};
+  const newValue: Record<string, unknown> = {};
+  for (const key of Object.keys(data) as (keyof UpdateAssetInput)[]) {
+    const before = asset[key as keyof typeof asset];
+    const after = data[key];
+    if (JSON.stringify(before) !== JSON.stringify(after)) {
+      oldValue[key] = before;
+      newValue[key] = after;
+    }
+  }
+
   queueAuditLog({
     organizationId: user.organizationId!,
+    spaceId: asset.spaceId,
     userId: userContext.uid,
     role: userContext.role,
     action,
     module: 'assets',
     recordId: assetId,
-    oldValue: { status: asset.status, name: asset.name },
-    newValue: { status: data.status, name: data.name },
+    oldValue,
+    newValue,
   });
 }
 
@@ -191,6 +204,7 @@ export async function deleteAssetWithAudit(user: AuthUser, assetId: string) {
     await dbDeleteAsset(assetId);
     queueAuditLog({
       organizationId: asset.organizationId,
+      spaceId: asset.spaceId,
       userId: userContext.uid,
       role: userContext.role,
       action: 'ASSET_DELETED',
@@ -210,6 +224,7 @@ export async function deleteAssetWithAudit(user: AuthUser, assetId: string) {
     });
     queueAuditLog({
       organizationId: asset.organizationId,
+      spaceId: asset.spaceId,
       userId: userContext.uid,
       role: userContext.role,
       action: 'ASSET_RETIRED',

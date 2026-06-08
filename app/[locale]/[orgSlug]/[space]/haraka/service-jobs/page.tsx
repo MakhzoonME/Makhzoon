@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { ServiceJobStatusBadge } from '@/components/haraka/ServiceJobStatusBadge';
 import { useServiceJobs } from '@/hooks/haraka';
-import { useAdminGuard, useModuleGuard } from '@/hooks/ui';
+import { useAdminGuard, useModuleGuard, useT } from '@/hooks/ui';
 import { formatCurrency } from '@/lib/utils/format';
 import { formatDate } from '@/lib/utils/date';
 import { useOrgInfo } from '@/hooks/org';
@@ -21,6 +21,7 @@ export default function ServiceJobsListPage() {
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { data: orgInfo } = useOrgInfo();
+  const { t } = useT();
   if (!featureAllowed || !isAllowed) return null;
 
   const [status,      setStatus]      = useState('all');
@@ -40,7 +41,7 @@ export default function ServiceJobsListPage() {
   const columns: ColumnDef<HarakaServiceJob>[] = [
     {
       key: 'jobNumber',
-      header: 'Job',
+      header: t('col.job'),
       render: (j) => (
         <span className="font-mono text-xs font-semibold" style={{ color: 'var(--mod-haraka)' }}>
           {j.jobNumber}
@@ -49,7 +50,7 @@ export default function ServiceJobsListPage() {
     },
     {
       key: 'customerName',
-      header: 'Customer',
+      header: t('col.customer'),
       render: (j) => (
         <div className="text-sm">
           <div className="font-medium text-gray-800">{j.customerName}</div>
@@ -59,29 +60,29 @@ export default function ServiceJobsListPage() {
     },
     {
       key: 'serviceType',
-      header: 'Type',
+      header: t('col.serviceType'),
       render: (j) => (
         <span className="text-xs text-gray-500 capitalize">{j.serviceType?.replace(/_/g, ' ') ?? '—'}</span>
       ),
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('col.status'),
       render: (j) => <ServiceJobStatusBadge status={j.status} />,
     },
     {
       key: 'staffMemberName',
-      header: 'Assigned To',
+      header: t('col.assignedTo'),
       render: (j) => <span className="text-sm text-gray-600">{j.staffMemberName ?? '—'}</span>,
     },
     {
       key: 'total',
-      header: 'Total',
+      header: t('col.total'),
       render: (j) => <span className="font-mono text-sm tabular-nums">{formatCurrency(j.total, currency)}</span>,
     },
     {
       key: 'paymentStatus',
-      header: 'Payment',
+      header: t('col.payment'),
       render: (j) => {
         const color =
           j.paymentStatus === 'paid'    ? '#22c55e'
@@ -92,7 +93,7 @@ export default function ServiceJobsListPage() {
     },
     {
       key: 'createdAt',
-      header: 'Date',
+      header: t('col.date'),
       render: (j) => <span className="text-xs text-gray-400">{formatDate(j.createdAt)}</span>,
     },
   ];
@@ -100,11 +101,11 @@ export default function ServiceJobsListPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Services"
-        description="Manage service jobs for repairs, consultations, field visits, and more."
+        title={t('serviceJobs.title')}
+        description={t('serviceJobs.subtitle')}
         actions={
           <Button onClick={() => router.push(`${base}/service-jobs/new`)} style={{ background: 'var(--mod-haraka)' }}>
-            <Plus className="h-4 w-4 mr-2" /> New Service Job
+            <Plus className="h-4 w-4 me-2" /> {t('serviceJobs.newJob')}
           </Button>
         }
       />
@@ -117,7 +118,7 @@ export default function ServiceJobsListPage() {
             value={status}
             onValueChange={(v) => { setStatus(v); setPage(1); }}
             includeAll
-            allLabel="All statuses"
+            allLabel={t('common.selectPlaceholder')}
             allValue="all"
             className="w-44"
           />,
@@ -127,7 +128,7 @@ export default function ServiceJobsListPage() {
             value={serviceType}
             onValueChange={(v) => { setServiceType(v); setPage(1); }}
             includeAll
-            allLabel="All types"
+            allLabel={t('common.selectPlaceholder')}
             allValue="all"
             className="w-40"
           />,
@@ -138,7 +139,7 @@ export default function ServiceJobsListPage() {
         columns={columns}
         data={data?.items ?? []}
         isLoading={isLoading}
-        emptyMessage="No service jobs yet."
+        emptyMessage={t('serviceJobs.noJobs')}
         onRowClick={(j) => router.push(`${base}/service-jobs/${j.id}`)}
         pagination={
           data && data.totalPages > 1

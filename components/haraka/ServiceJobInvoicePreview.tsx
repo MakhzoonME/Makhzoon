@@ -1,5 +1,6 @@
 'use client';
 
+import { useT } from '@/hooks/ui';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import type { ServiceJobDocumentConfig } from '@/lib/modules/haraka/service-jobs/service-job-document-config';
 import type { ServiceJobDocumentJob } from '@/lib/modules/haraka/service-jobs/service-job-document-loader';
@@ -12,6 +13,7 @@ interface Props {
   receiptConfig: ReceiptConfig;
   docConfig:     ServiceJobDocumentConfig;
   currency?:     string;
+  locale?:       string;
 }
 
 function fmt(n: number, currency = 'JOD') {
@@ -29,6 +31,7 @@ function capFirst(s: string) {
 export function ServiceJobInvoicePreview({
   job, orgName, tagline, taxNumber, receiptConfig, docConfig, currency = 'JOD',
 }: Props) {
+  const { t } = useT();
   const accent    = receiptConfig.accentColor || '#1d4ed8';
   const docNumber = job.invoiceNumber ?? job.jobNumber;
   const remaining = job.total - job.amountPaid;
@@ -38,14 +41,10 @@ export function ServiceJobInvoicePreview({
       id="service-job-document"
       style={{
         fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif",
-        background: '#fff',
-        color: '#111',
-        width: '210mm',
-        minHeight: '297mm',
-        padding: '14mm 16mm',
-        boxSizing: 'border-box',
-        fontSize: '10pt',
-        lineHeight: 1.5,
+        background: '#fff', color: '#111',
+        width: '210mm', minHeight: '297mm',
+        padding: '14mm 16mm', boxSizing: 'border-box',
+        fontSize: '10pt', lineHeight: 1.5,
       }}
     >
       {/* Header */}
@@ -56,9 +55,7 @@ export function ServiceJobInvoicePreview({
               <img src={receiptConfig.logo} alt="logo" style={{ objectFit: 'contain', width: '100%', height: '100%' }} />
             </div>
           )}
-          <div style={{ fontSize: '16pt', fontWeight: 700, color: '#111' }}>
-            {receiptConfig.orgName || orgName}
-          </div>
+          <div style={{ fontSize: '16pt', fontWeight: 700 }}>{receiptConfig.orgName || orgName}</div>
           {tagline && <div style={{ fontSize: '9pt', color: '#666', marginTop: 2 }}>{tagline}</div>}
           {receiptConfig.showAddress && receiptConfig.address && (
             <div style={{ fontSize: '9pt', color: '#666', marginTop: 4 }}>{receiptConfig.address}</div>
@@ -66,21 +63,17 @@ export function ServiceJobInvoicePreview({
           {receiptConfig.showPhone && receiptConfig.phone && (
             <div style={{ fontSize: '9pt', color: '#666', marginTop: 2 }}>{receiptConfig.phone}</div>
           )}
-          {taxNumber && (
-            <div style={{ fontSize: '9pt', color: '#666', marginTop: 2 }}>Tax No: {taxNumber}</div>
-          )}
+          {taxNumber && <div style={{ fontSize: '9pt', color: '#666', marginTop: 2 }}>Tax No: {taxNumber}</div>}
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: '18pt', fontWeight: 800, color: accent, letterSpacing: '-0.5px' }}>
             {docConfig.invoiceTitle}
           </div>
-          <div style={{ fontSize: '9pt', color: '#444', marginTop: 4 }}>
-            <strong>#{docNumber}</strong>
-          </div>
+          <div style={{ fontSize: '9pt', color: '#444', marginTop: 4 }}><strong>#{docNumber}</strong></div>
           <div style={{ fontSize: '9pt', color: '#666', marginTop: 2 }}>{fmtDate(job.createdAt)}</div>
           {job.scheduledAt && (
             <div style={{ fontSize: '9pt', color: '#666', marginTop: 2 }}>
-              Scheduled: {fmtDate(job.scheduledAt)}
+              {t('invoicePreview.scheduled')}: {fmtDate(job.scheduledAt)}
             </div>
           )}
         </div>
@@ -89,26 +82,26 @@ export function ServiceJobInvoicePreview({
       {/* Bill to / job meta */}
       <div style={{ display: 'flex', gap: '12mm', marginBottom: '8mm' }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '8pt', fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Bill To</div>
+          <div style={{ fontSize: '8pt', fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>{t('invoicePreview.billTo')}</div>
           <div style={{ fontWeight: 600 }}>{job.customerName}</div>
           {job.customerPhone && <div style={{ fontSize: '9pt', color: '#555' }}>{job.customerPhone}</div>}
         </div>
         <div style={{ flex: 1 }}>
           {docConfig.showServiceType && job.serviceType && (
             <div style={{ marginBottom: 4 }}>
-              <div style={{ fontSize: '8pt', fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Service Type</div>
+              <div style={{ fontSize: '8pt', fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>{t('invoicePreview.serviceType')}</div>
               <div style={{ fontSize: '9pt' }}>{capFirst(job.serviceType)}</div>
             </div>
           )}
           {docConfig.showStaffMember && job.staffMemberName && (
             <div style={{ marginBottom: 4 }}>
-              <div style={{ fontSize: '8pt', fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Assigned To</div>
+              <div style={{ fontSize: '8pt', fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>{t('invoicePreview.assignedTo')}</div>
               <div style={{ fontSize: '9pt' }}>{job.staffMemberName}</div>
             </div>
           )}
           {docConfig.showServiceAddress && job.serviceAddress && (
             <div>
-              <div style={{ fontSize: '8pt', fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Service Address</div>
+              <div style={{ fontSize: '8pt', fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>{t('invoicePreview.serviceAddress')}</div>
               <div style={{ fontSize: '9pt', color: '#555' }}>
                 {[job.serviceAddress.street, job.serviceAddress.area, job.serviceAddress.city].filter(Boolean).join(', ')}
               </div>
@@ -121,11 +114,11 @@ export function ServiceJobInvoicePreview({
       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '8mm', fontSize: '9.5pt' }}>
         <thead>
           <tr style={{ backgroundColor: `${accent}12`, borderBottom: `2px solid ${accent}` }}>
-            <th style={{ padding: '4px 8px', textAlign: 'left', fontWeight: 700 }}>Service</th>
-            <th style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, width: 60 }}>Qty</th>
-            <th style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, width: 90 }}>Unit Price</th>
-            <th style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, width: 90 }}>Discount</th>
-            <th style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, width: 100 }}>Total</th>
+            <th style={{ padding: '4px 8px', textAlign: 'left', fontWeight: 700 }}>{t('invoicePreview.service')}</th>
+            <th style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, width: 60 }}>{t('invoicePreview.qty')}</th>
+            <th style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, width: 90 }}>{t('invoicePreview.unitPrice')}</th>
+            <th style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, width: 90 }}>{t('invoicePreview.discount')}</th>
+            <th style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, width: 100 }}>{t('invoicePreview.total')}</th>
           </tr>
         </thead>
         <tbody>
@@ -150,27 +143,27 @@ export function ServiceJobInvoicePreview({
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8mm' }}>
         <div style={{ width: '55mm', fontSize: '9.5pt' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', color: '#555' }}>
-            <span>Subtotal</span><span style={{ fontFamily: 'monospace' }}>{fmt(job.subtotal, currency)}</span>
+            <span>{t('invoicePreview.subtotal')}</span><span style={{ fontFamily: 'monospace' }}>{fmt(job.subtotal, currency)}</span>
           </div>
           {job.discountAmount > 0 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', color: '#e44' }}>
-              <span>Discount</span><span style={{ fontFamily: 'monospace' }}>−{fmt(job.discountAmount, currency)}</span>
+              <span>{t('invoicePreview.discount')}</span><span style={{ fontFamily: 'monospace' }}>−{fmt(job.discountAmount, currency)}</span>
             </div>
           )}
           {job.taxAmount > 0 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', color: '#555' }}>
-              <span>Tax</span><span style={{ fontFamily: 'monospace' }}>{fmt(job.taxAmount, currency)}</span>
+              <span>{t('invoicePreview.tax')}</span><span style={{ fontFamily: 'monospace' }}>{fmt(job.taxAmount, currency)}</span>
             </div>
           )}
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderTop: `2px solid ${accent}`, marginTop: 4, fontWeight: 700, fontSize: '11pt' }}>
-            <span>Total</span><span style={{ fontFamily: 'monospace', color: accent }}>{fmt(job.total, currency)}</span>
+            <span>{t('invoicePreview.total')}</span><span style={{ fontFamily: 'monospace', color: accent }}>{fmt(job.total, currency)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', color: '#22a' }}>
-            <span>Paid</span><span style={{ fontFamily: 'monospace' }}>{fmt(job.amountPaid, currency)}</span>
+            <span>{t('invoicePreview.subtotal')}</span><span style={{ fontFamily: 'monospace' }}>{fmt(job.amountPaid, currency)}</span>
           </div>
           {remaining > 0.001 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', color: '#c74', fontWeight: 600 }}>
-              <span>Balance due</span><span style={{ fontFamily: 'monospace' }}>{fmt(remaining, currency)}</span>
+              <span>{t('invoicePreview.balanceDue')}</span><span style={{ fontFamily: 'monospace' }}>{fmt(remaining, currency)}</span>
             </div>
           )}
         </div>
@@ -179,7 +172,7 @@ export function ServiceJobInvoicePreview({
       {/* Notes */}
       {job.notes && (
         <div style={{ marginBottom: '6mm', padding: '4mm 6mm', backgroundColor: '#f9f9f9', borderRadius: 4, fontSize: '9pt', color: '#555' }}>
-          <div style={{ fontWeight: 700, marginBottom: 2, color: '#333' }}>Notes</div>
+          <div style={{ fontWeight: 700, marginBottom: 2, color: '#333' }}>{t('invoicePreview.notes')}</div>
           {job.notes}
         </div>
       )}

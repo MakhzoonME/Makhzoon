@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { RetainerStatusBadge } from '@/components/haraka/RetainerStatusBadge';
 import { RetainerInvoiceList } from '@/components/haraka/RetainerInvoiceList';
 import { useRetainer, useUpdateRetainerStatus } from '@/hooks/haraka';
-import { useAdminGuard, useModuleGuard, toast } from '@/hooks/ui';
+import { useAdminGuard, useModuleGuard, toast, useT } from '@/hooks/ui';
 import { formatCurrency } from '@/lib/utils/format';
 import { useOrgInfo } from '@/hooks/org';
 import type { RetainerStatus } from '@/types';
@@ -20,10 +20,10 @@ export default function RetainerDetailPage() {
   const { data: orgInfo } = useOrgInfo();
   const { data, isLoading } = useRetainer(params.retainerId);
   const updateStatus = useUpdateRetainerStatus();
+  const { t } = useT();
   if (!featureAllowed || !isAllowed) return null;
 
   const currency = orgInfo?.currency ?? 'USD';
-
   const base     = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
   const retainer = data?.retainer;
 
@@ -34,33 +34,32 @@ export default function RetainerDetailPage() {
       </div>
     );
   }
-  if (!retainer) return <div className="text-sm text-gray-400 p-6">Retainer not found.</div>;
+  if (!retainer) return <div className="text-sm text-gray-400 p-6">{t('common.noResults')}</div>;
 
   async function changeStatus(status: RetainerStatus) {
     if (!retainer) return;
     try {
       await updateStatus.mutateAsync({ id: retainer.id, status });
-      toast.success(`Retainer ${status}`);
-    } catch (err) { toast.error(err instanceof Error ? err.message : 'Failed'); }
+      toast.success(status);
+    } catch (err) { toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong')); }
   }
 
-  const taxAmount = retainer.amountPerCycle * retainer.taxRate;
+  const taxAmount     = retainer.amountPerCycle * retainer.taxRate;
   const totalPerCycle = retainer.amountPerCycle + taxAmount;
 
   return (
     <div className="space-y-6 max-w-4xl">
       <PageHeader
         title={retainer.name}
-        description={`${retainer.retainerNumber} · ${retainer.billingCycle} retainer`}
+        description={`${retainer.retainerNumber} · ${retainer.billingCycle}`}
         actions={
           <Button variant="ghost" onClick={() => router.push(`${base}/retainers`)}>
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back
+            <ArrowLeft className="h-4 w-4 me-2" /> {t('common.back')}
           </Button>
         }
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left */}
         <div className="space-y-6">
           {/* Status card */}
           <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
@@ -69,17 +68,17 @@ export default function RetainerDetailPage() {
               <div className="flex gap-2">
                 {retainer.status === 'active' && (
                   <Button size="sm" variant="outline" onClick={() => changeStatus('paused')} disabled={updateStatus.isPending}>
-                    Pause
+                    {t('retainers.pause')}
                   </Button>
                 )}
                 {retainer.status === 'paused' && (
                   <Button size="sm" variant="outline" onClick={() => changeStatus('active')} disabled={updateStatus.isPending} style={{ borderColor: '#22c55e', color: '#22c55e' }}>
-                    Reactivate
+                    {t('retainers.reactivate')}
                   </Button>
                 )}
                 {(retainer.status === 'active' || retainer.status === 'paused') && (
                   <Button size="sm" variant="outline" className="text-red-500 border-red-200" onClick={() => changeStatus('cancelled')} disabled={updateStatus.isPending}>
-                    Cancel
+                    {t('retainers.cancelRetainer')}
                   </Button>
                 )}
               </div>
@@ -88,39 +87,39 @@ export default function RetainerDetailPage() {
 
           {/* Contract info */}
           <div className="rounded-xl border border-border bg-surface-page p-5 space-y-3 text-sm">
-            <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">Contract</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t('retainers.sectionContract')}</div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <div className="text-xs text-gray-400">Billing Cycle</div>
+                <div className="text-xs text-gray-400">{t('retainers.labelBillingCycleVal')}</div>
                 <div className="font-medium capitalize">{retainer.billingCycle}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-400">Amount / Cycle</div>
+                <div className="text-xs text-gray-400">{t('retainers.labelAmountCycle')}</div>
                 <div className="font-mono font-semibold">{formatCurrency(retainer.amountPerCycle, currency)}</div>
               </div>
               {retainer.taxRate > 0 && (
                 <>
                   <div>
-                    <div className="text-xs text-gray-400">Tax</div>
+                    <div className="text-xs text-gray-400">{t('retainers.labelTax')}</div>
                     <div className="font-mono">{(retainer.taxRate * 100).toFixed(0)}% ({formatCurrency(taxAmount, currency)})</div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-400">Total / Cycle</div>
+                    <div className="text-xs text-gray-400">{t('retainers.labelTotalCycle')}</div>
                     <div className="font-mono font-semibold">{formatCurrency(totalPerCycle, currency)}</div>
                   </div>
                 </>
               )}
               <div>
-                <div className="text-xs text-gray-400">Start Date</div>
+                <div className="text-xs text-gray-400">{t('retainers.labelStartDateVal')}</div>
                 <div>{retainer.startDate}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-400">End Date</div>
-                <div>{retainer.endDate ?? 'Open-ended'}</div>
+                <div className="text-xs text-gray-400">{t('retainers.labelEndDateVal')}</div>
+                <div>{retainer.endDate ?? t('retainers.openEnded')}</div>
               </div>
               {retainer.nextBillingDate && (
                 <div className="col-span-2">
-                  <div className="text-xs text-gray-400">Next Billing Date</div>
+                  <div className="text-xs text-gray-400">{t('retainers.labelNextBilling')}</div>
                   <div className="font-medium">{retainer.nextBillingDate}</div>
                 </div>
               )}
@@ -129,23 +128,23 @@ export default function RetainerDetailPage() {
 
           {/* Client */}
           <div className="rounded-xl border border-border bg-surface-page p-5 space-y-2">
-            <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">Client</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t('retainers.sectionClient')}</div>
             <div className="font-medium text-gray-800">{retainer.customerName}</div>
             {retainer.customerPhone && <div className="text-sm text-gray-500">{retainer.customerPhone}</div>}
           </div>
 
           {retainer.notes && (
             <div className="rounded-xl border border-border bg-surface-page p-5">
-              <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Notes</div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">{t('col.notes')}</div>
               <p className="text-sm text-gray-600 whitespace-pre-line">{retainer.notes}</p>
             </div>
           )}
         </div>
 
-        {/* Right — Invoices */}
+        {/* Invoices */}
         <div>
           <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
-            <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">Billing History</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t('retainers.sectionBillingHistory')}</div>
             <RetainerInvoiceList retainer={retainer} currency={currency} />
           </div>
         </div>

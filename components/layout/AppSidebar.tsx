@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -276,6 +276,34 @@ export function AppSidebar() {
   }
   const openGroups: Record<string, boolean> = { ...autoOpenGroups, ...effectiveToggles };
 
+  // Stable list of all group hrefs for accordion logic
+  const allGroupHrefs = useMemo(
+    () => (ORG_NAV_ENTRIES as NavEntry[])
+      .filter((e): e is NavGroupConfig => 'type' in e && e.type === 'group')
+      .map((e) => e.href),
+    [],
+  );
+
+  // The href of the group that contains the current route (if any)
+  const activeGroupHref = useMemo(() => {
+    for (const entry of finalEntries) {
+      if (!('type' in entry) || entry.type !== 'group') continue;
+      const groupUrl = buildNavUrl({ locale, orgSlug, space, entry });
+      if (pathname === groupUrl || pathname.startsWith(groupUrl + '/')) return entry.href;
+    }
+    return null;
+  }, [pathname, finalEntries, locale, orgSlug, space]);
+
+  // Accordion: when navigation moves into a group, collapse all others
+  useEffect(() => {
+    if (!activeGroupHref) return;
+    setUserToggles((prev) => {
+      const hasOthersOpen = allGroupHrefs.some((h) => h !== activeGroupHref && prev[h]);
+      if (!hasOthersOpen) return prev;
+      return Object.fromEntries(allGroupHrefs.map((h) => [h, h === activeGroupHref]));
+    });
+  }, [activeGroupHref, allGroupHrefs]);
+
   return (
     <TooltipProvider delayDuration={120} skipDelayDuration={200}>
       <motion.aside
@@ -432,7 +460,14 @@ export function AppSidebar() {
                   </Link>
                   <button
                     type="button"
-                    onClick={() => setUserToggles((prev) => ({ ...prev, [group.href]: !openGroups[group.href] }))}
+                    onClick={() => {
+                      const willOpen = !openGroups[group.href];
+                      setUserToggles(
+                        willOpen
+                          ? Object.fromEntries(allGroupHrefs.map((h) => [h, h === group.href]))
+                          : (prev) => ({ ...prev, [group.href]: false }),
+                      );
+                    }}
                     aria-label={isOpen ? 'Collapse section' : 'Expand section'}
                     className="relative z-10 pe-3 flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity"
                   >

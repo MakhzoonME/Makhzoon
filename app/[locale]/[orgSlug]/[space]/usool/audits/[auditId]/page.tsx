@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useInventoryAudit } from '@/hooks/inventory';
 import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
@@ -16,11 +16,12 @@ import { cn } from '@/lib/utils/cn';
 
 type AuditCache = { audit: InventoryAudit; items: InventoryAuditItem[] };
 
-function ItemRow({ item, auditId, completed }: { item: InventoryAuditItem; auditId: string; completed: boolean }) {
+function ItemRow({ item, auditId, space, completed }: { item: InventoryAuditItem; auditId: string; space: string; completed: boolean }) {
   const qc = useQueryClient();
   const [note, setNote] = useState('');
   const [pendingAction, setPendingAction] = useState<'found' | 'missing' | null>(null);
-  const queryKey = ['inventory-audits', auditId];
+  const submitting = useRef(false);
+  const queryKey = ['inventory-audits', space, auditId];
 
   const markMutation = useMutation({
     mutationFn: async ({ status, note: n }: { status: 'found' | 'missing'; note: string }) => {
@@ -67,17 +68,19 @@ function ItemRow({ item, auditId, completed }: { item: InventoryAuditItem; audit
     onSettled: () => {
       qc.invalidateQueries({ queryKey });
       setPendingAction(null);
+      submitting.current = false;
     },
   });
 
   function mark(status: 'found' | 'missing') {
-    if (markMutation.isPending) return;
+    if (submitting.current) return;
+    submitting.current = true;
     setPendingAction(status);
     markMutation.mutate({ status, note });
   }
 
   const isPending = item.status === 'pending';
-  const busy = markMutation.isPending;
+  const busy = markMutation.isPending || submitting.current;
 
   return (
     <div className={cn(
@@ -189,7 +192,7 @@ export default function AuditDetailPage() {
       });
       if (!res.ok) throw new Error();
       toast.success('Audit completed');
-      qc.invalidateQueries({ queryKey: ['inventory-audits', auditId] });
+      qc.invalidateQueries({ queryKey: ['inventory-audits', space, auditId] });
       qc.invalidateQueries({ queryKey: ['inventory-audits'] });
     } catch {
       toast.error('Failed to complete audit');
@@ -258,7 +261,7 @@ export default function AuditDetailPage() {
             Pending ({pending.length})
           </div>
           {pending.map((item) => (
-            <ItemRow key={item.id} item={item} auditId={auditId} completed={completed} />
+            <ItemRow key={item.id} item={item} auditId={auditId} space={space} completed={completed} />
           ))}
         </div>
       )}
@@ -270,7 +273,7 @@ export default function AuditDetailPage() {
             Checked ({checked.length})
           </div>
           {checked.map((item) => (
-            <ItemRow key={item.id} item={item} auditId={auditId} completed={completed} />
+            <ItemRow key={item.id} item={item} auditId={auditId} space={space} completed={completed} />
           ))}
         </div>
       )}

@@ -35,7 +35,7 @@ export async function PATCH(req: NextRequest, props: Params) {
     const body = await req.json();
     if (body.action === 'complete') {
       await completeAudit(params.auditId);
-      auditLog.queue({
+      await auditLog.create({
         tenant,
         action: 'INVENTORY_AUDIT_COMPLETED',
         module: 'inventory',

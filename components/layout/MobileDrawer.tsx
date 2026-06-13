@@ -35,7 +35,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard',    labelKey: 'nav.dashboard',    Icon: DashboardSVG,    featureKey: 'dashboard' },
   { href: '/usool/list',   labelKey: 'nav.assets',       Icon: AssetsSVG,       featureKey: 'assets' },
   { href: '/raseed/list',  labelKey: 'nav.inventory',    Icon: InventorySVG,    featureKey: 'inventory' },
-  { href: '/haraka/register', labelKey: 'nav.pos',       Icon: AuditSVG,        featureKey: 'pos' },
+  { href: '/haraka',          labelKey: 'nav.pos',       Icon: AuditSVG,        featureKey: 'pos' },
   { href: '/warranties',   labelKey: 'nav.warranties',   Icon: WarrantySVG,     featureKey: 'warranties' },
   { href: '/requests',     labelKey: 'nav.requests',     Icon: RequestsSVG,     featureKey: 'requests' },
   { href: '/reports',      labelKey: 'nav.reports',      Icon: ReportsSVG,      adminOnly: true, featureKey: 'reports' },

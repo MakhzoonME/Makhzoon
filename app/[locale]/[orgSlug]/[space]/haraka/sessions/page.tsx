@@ -2,17 +2,13 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, ArrowRight, Lock } from 'lucide-react';
-import { PageHeader, DataTable, FilterBar, StatusBadge, SubscriptionGate } from '@/components/shared';
+import { PageHeader, DataTable, FilterBar, StatusBadge } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
-import { useSessions, useCurrentSession } from '@/hooks/haraka';
+import { SessionControls } from '@/components/haraka/SessionControls';
+import { useSessions } from '@/hooks/haraka';
 import { useOrgInfo } from '@/hooks/org';
 import { useT, useModuleGuard } from '@/hooks/ui';
-import { formatDate } from '@/lib/utils/date';
-import { formatCurrency } from '@/lib/utils/format';
 import type { PosSession } from '@/types';
 
 export default function SessionsListPage() {
@@ -32,7 +28,6 @@ export default function SessionsListPage() {
   });
 
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
-  const { data: currentData, isLoading: currentLoading } = useCurrentSession();
 
   const columns: ColumnDef<PosSession>[] = [
     {
@@ -107,52 +102,10 @@ export default function SessionsListPage() {
           { label: t('nav.pos'), href: base },
           { label: t('haraka.sessions') },
         ]}
-        actions={
-          <SubscriptionGate>
-            <Button
-              onClick={() => router.push(`${base}/sessions/new`)}
-              style={{ background: 'var(--mod-haraka)' }}
-            >
-              <Plus size={16} className="me-1" /> {t('haraka.openNewSession')}
-            </Button>
-          </SubscriptionGate>
-        }
       />
 
-      {/* Active session highlight card */}
-      {!currentLoading && currentData?.session && (
-        <Card className="mb-4 border-[var(--green-100)] bg-[var(--green-50)]">
-          <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[var(--green-700)] animate-pulse" />
-                <span className="text-sm font-semibold text-[var(--green-700)]">{t('haraka.activeSession')}</span>
-              </div>
-              <p className="text-sm text-gray-600 mt-1">
-                {t('haraka.openedBy').replace('{name}', currentData.session.cashierName)}
-                {' · '}{formatDate(currentData.session.openedAt)}
-                {' · '}{formatCurrency(currentData.session.openingFloat)}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push(`${base}/sessions/${currentData.session!.id}`)}
-              >
-                <Lock size={14} className="me-1" /> {t('register.closeSession')}
-              </Button>
-              <Button
-                size="sm"
-                style={{ background: 'var(--mod-haraka)' }}
-                onClick={() => router.push(`${base}/register`)}
-              >
-                {t('haraka.openRegister')} <ArrowRight className="h-4 w-4 ms-1" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Open / close lifecycle + active-session banner — managed inline here */}
+      <SessionControls base={base} />
 
       <FilterBar
         filters={

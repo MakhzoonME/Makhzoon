@@ -60,7 +60,7 @@ function SessionCard({ base }: { base: string }) {
         <p className="text-sm text-gray-500 mt-0.5">{t('haraka.openSessionDesc')}</p>
       </div>
       <SubscriptionGate>
-        <Button size="sm" style={{ background: 'var(--mod-haraka)' }} onClick={() => router.push(`${base}/sessions/new`)}>
+        <Button size="sm" style={{ background: 'var(--mod-haraka)' }} onClick={() => router.push(`${base}/sessions`)}>
           <Plus className="h-4 w-4 me-1" /> {t('haraka.openNewSession')}
         </Button>
       </SubscriptionGate>

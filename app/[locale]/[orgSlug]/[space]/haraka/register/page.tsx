@@ -87,7 +87,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (sessionFetched && !sessionLoading && !sessionData?.session) {
-      router.replace(`/${params.locale}/${params.orgSlug}/${params.space}/haraka`);
+      router.replace(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions`);
     }
   }, [sessionFetched, sessionLoading, sessionData?.session, router, params.locale, params.orgSlug, params.space]);
 
@@ -241,7 +241,7 @@ export default function RegisterPage() {
               variant="outline"
               size="sm"
               className="h-7"
-              onClick={() => router.push(`${base}/sessions/${sessionData.session!.id}`)}
+              onClick={() => router.push(`${base}/sessions`)}
             >
               <Lock size={13} className="me-1" /> {t('register.closeSession')}
             </Button>

@@ -4,12 +4,6 @@
 
 ---
 
-## 🔴 Needs attention — CI / known bugs
-
-- **GitHub Actions minutes exhausted until July 1, 2026.** Deploy manually from local machine using the commands in `CLAUDE.md`. CI will resume automatically on July 1.
-
----
-
 ## 🟡 Planned — not yet built
 
 ### 1. Banna — WorkspaceProfile

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Orders — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <style>.pipe.active{color:#4F46E5;border-color:#4F46E5;}</style>
+</head>
+<body data-page="orders" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-6 rounded bg-haraka"></span>
+              <div><h1 class="text-xl font-semibold text-slate-900">Orders <span class="text-slate-400 font-normal text-base">· Haraka</span></h1><p class="text-sm text-slate-500">8 active orders</p></div>
+            </div>
+            <button class="h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5"><i data-lucide="plus" class="!w-4 !h-4"></i>New Order</button>
+          </div>
+
+          <div id="pipe" class="flex gap-1 border-b border-slate-200 mb-4 overflow-x-auto"></div>
+
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide"><tr>
+                <th class="px-4 py-3 text-left font-semibold">Order No</th><th class="px-4 py-3 text-left font-semibold">Customer</th>
+                <th class="px-4 py-3 text-left font-semibold">Channel</th><th class="px-4 py-3 text-right font-semibold">Items</th>
+                <th class="px-4 py-3 text-right font-semibold">Total</th><th class="px-4 py-3 text-left font-semibold">Payment</th>
+                <th class="px-4 py-3 text-left font-semibold">Fulfillment</th><th class="px-4 py-3 text-left font-semibold">Agent</th><th class="w-10 px-4 py-3"></th>
+              </tr></thead>
+              <tbody id="rows" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-haraka.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const stages = [['All', null], ['New', 'new'], ['Confirmed', 'confirmed'], ['Assigned', 'assigned'], ['In Transit', 'in_transit'], ['Delivered', 'delivered']];
+    let active = 'All';
+    const PV = App.seed.paymentVariant, CV = App.seed.channelVariant, OV = App.seed.orderStatusVariant;
+    function renderPipe() {
+      document.getElementById('pipe').innerHTML = stages.map(([label, key]) => {
+        const n = key ? App.seed.orders.filter((o) => o.status === key).length : App.seed.orders.length;
+        return `<button onclick="active='${label}';renderPipe();renderRows()" class="pipe ${label === active ? 'active' : ''} px-4 py-2.5 text-sm font-medium border-b-2 -mb-px text-slate-500 border-transparent whitespace-nowrap">${label} <span class="ml-1 text-xs text-slate-400">${n}</span></button>`;
+      }).join('');
+    }
+    function renderRows() {
+      const stage = stages.find(([l]) => l === active)[1];
+      const rows = App.seed.orders.filter((o) => !stage || o.status === stage);
+      document.getElementById('rows').innerHTML = rows.map((o) => `<tr class="hover:bg-slate-50 cursor-pointer" onclick="location.href='haraka-order-detail.html'">
+        <td class="px-4 py-3 font-medium text-slate-800">${o.id}</td>
+        <td class="px-4 py-3 text-slate-600">${o.customer}</td>
+        <td class="px-4 py-3">${App.ui.badge(o.channel, CV[o.channel])}</td>
+        <td class="px-4 py-3 text-right text-slate-600">${o.items}</td>
+        <td class="px-4 py-3 text-right font-medium text-slate-800">${App.ui.money(o.total)}</td>
+        <td class="px-4 py-3">${App.ui.badge(o.payment, PV[o.payment])}</td>
+        <td class="px-4 py-3"><span class="inline-flex items-center gap-1.5 text-slate-600"><i data-lucide="${o.fulfillment === 'Delivery' ? 'truck' : 'store'}" class="!w-4 !h-4 text-slate-400"></i>${o.fulfillment}</span></td>
+        <td class="px-4 py-3 text-slate-600">${o.agent}</td>
+        <td class="px-4 py-3 text-slate-300"><i data-lucide="chevron-right" class="!w-4 !h-4"></i></td></tr>`).join('');
+      App.ui.icons();
+    }
+    renderPipe(); renderRows(); App.ui.icons();
+  </script>
+</body>
+</html>

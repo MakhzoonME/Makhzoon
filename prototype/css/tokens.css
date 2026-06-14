@@ -1,0 +1,76 @@
+/* Makhzoon prototype — design tokens & shell styling */
+
+:root {
+  --brand-navy: #0F3F5C;
+  --brand-teal: #1A7A9A;
+  --usool: #00695C;
+  --raseed: #E65100;
+  --haraka: #C2185B;
+  --maal: #1B5E20;
+  --banna: #1565C0;
+
+  --sidebar-w: 240px;
+  --sidebar-w-collapsed: 64px;
+}
+
+body { font-family: 'Inter', system-ui, sans-serif; }
+.font-brand { font-family: 'Capriola', sans-serif; }
+
+/* ---- Sidebar width / collapse ---- */
+#sidebar {
+  width: var(--sidebar-w);
+  transition: width 0.18s ease;
+}
+#sidebar.collapsed { width: var(--sidebar-w-collapsed); }
+
+#sidebar.collapsed .nav-label,
+#sidebar.collapsed .nav-sub,
+#sidebar.collapsed .group-label,
+#sidebar.collapsed .sb-brand-text {
+  display: none;
+}
+#sidebar.collapsed .nav-item,
+#sidebar.collapsed .sa-nav-item { justify-content: center; padding-left: 0; padding-right: 0; border-left-color: transparent !important; }
+#sidebar.collapsed .group-divider { margin-left: 0.5rem; margin-right: 0.5rem; }
+#sidebar.collapsed .sb-brand { justify-content: center; }
+
+/* ---- Nav item base ---- */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border-left: 3px solid transparent;
+  color: #475569;            /* slate-600 */
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.2;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.nav-item:hover { background-color: #f1f5f9; } /* slate-100 */
+.nav-item .lucide { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* Active state — design-system primary (indigo), not module color */
+.nav-item.active {
+  color: #4F46E5;            /* primary-600 */
+  background-color: #EEF2FF; /* primary-50  */
+  border-left-color: #4F46E5;
+  font-weight: 600;
+}
+.nav-item.active .lucide { color: #4F46E5; }
+
+/* Group labels */
+.group-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #94a3b8;            /* slate-400 */
+}
+
+/* Scrollbar polish */
+#sidebar nav::-webkit-scrollbar,
+#outlet::-webkit-scrollbar { width: 8px; height: 8px; }
+#sidebar nav::-webkit-scrollbar-thumb,
+#outlet::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 8px; }

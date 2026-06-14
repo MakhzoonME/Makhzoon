@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ORD-000012 — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="orders" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6 max-w-[1100px] mx-auto">
+          <a href="haraka-orders.html" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 mb-3"><i data-lucide="arrow-left" class="!w-4 !h-4"></i>Back to Orders</a>
+          <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center gap-3">
+              <span class="w-1.5 h-8 rounded bg-haraka"></span>
+              <div><h1 class="text-xl font-semibold text-slate-900">ORD-000012</h1><p class="text-sm text-slate-500" id="meta"></p></div>
+              <span id="status-pill"></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="h-9 px-3 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1.5"><i data-lucide="file-text" class="!w-4 !h-4"></i>Generate Invoice</button>
+              <button class="h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5"><i data-lucide="arrow-right" class="!w-4 !h-4"></i>Advance Status</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-6">
+              <div class="bg-white rounded-xl border border-slate-200">
+                <div class="px-5 py-3 border-b border-slate-100 font-semibold text-slate-800">Items</div>
+                <table class="w-full text-sm">
+                  <thead class="text-xs uppercase text-slate-400"><tr><th class="text-left font-semibold px-5 py-2">Item</th><th class="text-right font-semibold px-5 py-2">Qty</th><th class="text-right font-semibold px-5 py-2">Price</th><th class="text-right font-semibold px-5 py-2">Total</th></tr></thead>
+                  <tbody id="items" class="divide-y divide-slate-100"></tbody>
+                </table>
+                <div class="px-5 py-3 border-t border-slate-100 flex justify-end"><div class="w-48 space-y-1 text-sm"><div class="flex justify-between text-slate-500"><span>Subtotal</span><span id="subtotal"></span></div><div class="flex justify-between font-bold text-slate-900 text-base"><span>Total</span><span id="total"></span></div></div></div>
+              </div>
+
+              <div class="bg-white rounded-xl border border-slate-200">
+                <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between"><span class="font-semibold text-slate-800">Payments</span><span id="pay-status"></span></div>
+                <div id="payments" class="divide-y divide-slate-50"></div>
+                <div class="px-5 py-3 border-t border-slate-100"><button class="h-9 px-3 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1.5"><i data-lucide="plus" class="!w-4 !h-4"></i>Record Payment</button></div>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div class="bg-white rounded-xl border border-slate-200 p-5">
+                <div class="text-xs uppercase tracking-wide text-slate-400 mb-3">Delivery</div>
+                <div class="space-y-2 text-sm">
+                  <div class="flex items-start gap-2"><i data-lucide="map-pin" class="!w-4 !h-4 text-slate-400 mt-0.5"></i><span class="text-slate-700" id="addr"></span></div>
+                  <div class="flex items-center gap-2"><i data-lucide="phone" class="!w-4 !h-4 text-slate-400"></i><span class="text-slate-700" id="phone"></span></div>
+                </div>
+              </div>
+              <div class="bg-white rounded-xl border border-slate-200 p-5">
+                <div class="text-xs uppercase tracking-wide text-slate-400 mb-3">Delivery Agent</div>
+                <div class="flex items-center gap-3 mb-3"><span class="w-9 h-9 rounded-full bg-haraka/10 text-haraka grid place-items-center"><i data-lucide="bike" class="!w-[18px] !h-[18px]"></i></span><div><div class="text-sm font-medium text-slate-800">Rami (Driver)</div><div class="text-xs text-slate-400">External agent</div></div></div>
+                <button class="w-full h-9 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">Reassign Agent</button>
+              </div>
+              <div class="bg-white rounded-xl border border-slate-200 p-5">
+                <div class="text-xs uppercase tracking-wide text-slate-400 mb-3">Share</div>
+                <button class="w-full h-9 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 inline-flex items-center justify-center gap-1.5"><i data-lucide="link" class="!w-4 !h-4"></i>Share Delivery Link</button>
+                <p class="text-xs text-slate-400 mt-2 text-center">Generates a capability token for the driver's phone.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-haraka.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const o = App.seed.orderDetail;
+    document.getElementById('meta').textContent = o.channel + ' · ' + o.created + ' · ' + o.invoice;
+    document.getElementById('status-pill').innerHTML = App.ui.badge('In Transit', 'orange');
+    document.getElementById('addr').textContent = o.address;
+    document.getElementById('phone').textContent = o.phone;
+
+    document.getElementById('items').innerHTML = o.items.map((i) => `<tr>
+      <td class="px-5 py-2.5 text-slate-700">${i.name}</td><td class="px-5 py-2.5 text-right text-slate-600">${i.qty}</td>
+      <td class="px-5 py-2.5 text-right text-slate-600">${App.ui.money(i.price)}</td><td class="px-5 py-2.5 text-right font-medium text-slate-800">${App.ui.money(i.price * i.qty)}</td></tr>`).join('');
+    const sub = o.items.reduce((s, i) => s + i.price * i.qty, 0);
+    document.getElementById('subtotal').textContent = App.ui.money(sub);
+    document.getElementById('total').textContent = App.ui.money(sub);
+
+    const paid = o.payments.reduce((s, p) => s + p.amount, 0);
+    document.getElementById('pay-status').innerHTML = App.ui.badge('PARTIAL · ' + App.ui.money(paid) + ' / ' + App.ui.money(sub), 'amber');
+    document.getElementById('payments').innerHTML = o.payments.map((p) => `<div class="px-5 py-3 flex items-center justify-between text-sm"><div><span class="font-medium text-slate-700">${p.method}</span><span class="text-slate-400 ml-2">${p.date}</span></div><span class="font-semibold text-slate-800">${App.ui.money(p.amount)}</span></div>`).join('');
+
+    App.ui.icons();
+  </script>
+</body>
+</html>

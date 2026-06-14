@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stock Audits — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="audits" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-6 rounded bg-raseed"></span>
+              <div><h1 class="text-xl font-semibold text-slate-900">Stock Audits <span class="text-slate-400 font-normal text-base">· Raseed</span></h1><p class="text-sm text-slate-500">Physical count reconciliation</p></div>
+            </div>
+            <button class="h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5"><i data-lucide="plus" class="!w-4 !h-4"></i>New Audit</button>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide"><tr>
+                <th class="px-4 py-3 text-left font-semibold">Audit ID</th><th class="px-4 py-3 text-left font-semibold">Space</th>
+                <th class="px-4 py-3 text-left font-semibold">Status</th><th class="px-4 py-3 text-right font-semibold">Item Count</th>
+                <th class="px-4 py-3 text-right font-semibold">Variance</th><th class="px-4 py-3 text-left font-semibold">Started</th>
+                <th class="px-4 py-3 text-left font-semibold">Completed</th><th class="w-10 px-4 py-3"></th>
+              </tr></thead>
+              <tbody id="rows" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-raseed.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const V = App.seed.auditStatusVariant;
+    document.getElementById('rows').innerHTML = App.seed.audits.map((a) => {
+      const vColor = a.variance < 0 ? 'text-red-600' : a.variance > 0 ? 'text-green-600' : 'text-slate-400';
+      const vText = a.variance === 0 ? '0' : (a.variance > 0 ? '+' : '') + a.variance;
+      return `<tr class="hover:bg-slate-50 cursor-pointer">
+        <td class="px-4 py-3 font-medium text-slate-800">${a.id}</td>
+        <td class="px-4 py-3 text-slate-600">${a.space}</td>
+        <td class="px-4 py-3">${App.ui.badge(a.status.replace('_', ' '), V[a.status])}</td>
+        <td class="px-4 py-3 text-right text-slate-600">${a.items}</td>
+        <td class="px-4 py-3 text-right font-medium ${vColor}">${vText}</td>
+        <td class="px-4 py-3 text-slate-500">${a.started}</td>
+        <td class="px-4 py-3 text-slate-500">${a.completed}</td>
+        <td class="px-4 py-3 text-slate-300"><i data-lucide="more-horizontal" class="!w-4 !h-4"></i></td></tr>`;
+    }).join('');
+    App.ui.icons();
+  </script>
+</body>
+</html>

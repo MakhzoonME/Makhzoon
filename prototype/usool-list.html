@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Assets — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="assets" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+          <!-- Page header -->
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-6 rounded bg-usool"></span>
+              <div>
+                <h1 class="text-xl font-semibold text-slate-900">Assets <span class="text-slate-400 font-normal text-base">· Usool</span></h1>
+                <p class="text-sm text-slate-500">142 assets across 3 spaces</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="h-9 px-3 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1.5"><i data-lucide="upload" class="!w-4 !h-4"></i>Import CSV</button>
+              <button class="h-9 px-3 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1.5"><i data-lucide="download" class="!w-4 !h-4"></i>Export CSV</button>
+              <button class="h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5"><i data-lucide="plus" class="!w-4 !h-4"></i>New Asset</button>
+            </div>
+          </div>
+
+          <!-- Module stats -->
+          <div id="stats" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-5"></div>
+
+          <!-- Filter bar -->
+          <div class="flex flex-wrap items-center gap-2 mb-3">
+            <div class="relative">
+              <i data-lucide="search" class="!w-4 !h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input id="search" type="text" placeholder="Search assets…" class="h-9 w-64 pl-9 pr-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary" />
+            </div>
+            <select class="h-9 px-3 rounded-lg border border-slate-200 text-sm text-slate-600 focus:outline-none">
+              <option>All statuses</option><option>Active</option><option>Checked Out</option><option>In Repair</option><option>Retired</option>
+            </select>
+            <select class="h-9 px-3 rounded-lg border border-slate-200 text-sm text-slate-600 focus:outline-none">
+              <option>All categories</option><option>Laptop</option><option>Monitor</option><option>Phone</option><option>Furniture</option><option>Vehicle</option><option>Equipment</option>
+            </select>
+          </div>
+
+          <!-- Bulk action bar -->
+          <div id="bulk-bar" class="hidden items-center gap-3 mb-3 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/20">
+            <span id="bulk-count" class="text-sm font-medium text-primary"></span>
+            <div class="h-4 w-px bg-primary/20"></div>
+            <button class="text-sm font-medium text-slate-600 hover:text-slate-900 inline-flex items-center gap-1.5"><i data-lucide="move" class="!w-4 !h-4"></i>Move to space</button>
+            <button class="text-sm font-medium text-slate-600 hover:text-slate-900 inline-flex items-center gap-1.5"><i data-lucide="copy" class="!w-4 !h-4"></i>Duplicate</button>
+            <button class="text-sm font-medium text-red-600 hover:text-red-700 inline-flex items-center gap-1.5"><i data-lucide="trash-2" class="!w-4 !h-4"></i>Delete</button>
+          </div>
+
+          <!-- Table -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+                <tr>
+                  <th class="w-10 px-4 py-3"><input id="check-all" type="checkbox" class="rounded border-slate-300 text-primary focus:ring-primary" /></th>
+                  <th class="px-4 py-3 text-left font-semibold">Name</th>
+                  <th class="px-4 py-3 text-left font-semibold">Category</th>
+                  <th class="px-4 py-3 text-left font-semibold">Status</th>
+                  <th class="px-4 py-3 text-left font-semibold">Serial No</th>
+                  <th class="px-4 py-3 text-left font-semibold">Assigned To</th>
+                  <th class="px-4 py-3 text-left font-semibold">Location</th>
+                  <th class="px-4 py-3 text-right font-semibold">Purchase Cost</th>
+                  <th class="w-10 px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody id="rows" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-usool.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const C = '#00695C';
+    const statCards = [
+      { label: 'Total Assets', value: '142', icon: 'box' },
+      { label: 'Active', value: '118', icon: 'circle-check' },
+      { label: 'Checked Out', value: '16', icon: 'user-check' },
+      { label: 'In Repair', value: '5', icon: 'wrench' },
+      { label: 'Total Value', value: '$284K', icon: 'banknote' },
+    ];
+    document.getElementById('stats').innerHTML = statCards.map((s) => `<div class="bg-white rounded-xl border border-slate-200 border-l-4 p-4" style="border-left-color:${C}">
+      <div class="flex items-center justify-between"><span class="text-[13px] font-medium text-slate-500">${s.label}</span><span class="grid place-items-center w-8 h-8 rounded-lg" style="background:${C}1a;color:${C}"><i data-lucide="${s.icon}" class="!w-4 !h-4"></i></span></div>
+      <div class="mt-2 text-2xl font-bold text-slate-900">${s.value}</div></div>`).join('');
+
+    const V = App.seed.assetStatusVariant;
+    document.getElementById('rows').innerHTML = App.seed.assets
+      .map(
+        (a) => `<tr class="hover:bg-slate-50 cursor-pointer" onclick="if(event.target.type!=='checkbox')location.href='usool-detail.html'">
+          <td class="px-4 py-3" onclick="event.stopPropagation()"><input type="checkbox" class="row-check rounded border-slate-300 text-primary focus:ring-primary" /></td>
+          <td class="px-4 py-3"><div class="font-medium text-slate-800">${a.name}</div><div class="text-xs text-slate-400">${a.id}</div></td>
+          <td class="px-4 py-3 text-slate-600">${a.category}</td>
+          <td class="px-4 py-3">${App.ui.badge(a.status, V[a.status])}</td>
+          <td class="px-4 py-3 text-slate-500 font-mono text-xs">${a.serial}</td>
+          <td class="px-4 py-3 text-slate-600">${a.assignedTo}</td>
+          <td class="px-4 py-3 text-slate-600">${a.location}</td>
+          <td class="px-4 py-3 text-right font-medium text-slate-800">${App.ui.money(a.cost)}</td>
+          <td class="px-4 py-3 text-slate-300" onclick="event.stopPropagation()"><i data-lucide="more-horizontal" class="!w-4 !h-4"></i></td>
+        </tr>`
+      )
+      .join('');
+
+    // Bulk select wiring
+    const bar = document.getElementById('bulk-bar');
+    const count = document.getElementById('bulk-count');
+    function refresh() {
+      const checks = [...document.querySelectorAll('.row-check')];
+      const n = checks.filter((c) => c.checked).length;
+      bar.classList.toggle('hidden', n === 0);
+      bar.classList.toggle('flex', n > 0);
+      count.textContent = n + ' selected';
+    }
+    document.querySelectorAll('.row-check').forEach((c) => c.addEventListener('change', refresh));
+    document.getElementById('check-all').addEventListener('change', (e) => {
+      document.querySelectorAll('.row-check').forEach((c) => (c.checked = e.target.checked));
+      refresh();
+    });
+
+    App.ui.icons();
+  </script>
+</body>
+</html>

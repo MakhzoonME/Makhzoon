@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Configuration · Superadmin — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="sa-config" data-portal="superadmin" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6 max-w-[1100px] mx-auto space-y-6">
+          <div><h1 class="text-xl font-semibold text-slate-900">Platform Configuration</h1><p class="text-sm text-slate-500">Managed list catalog, packages & platform settings</p></div>
+
+          <!-- Packages -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between"><h2 class="font-semibold text-slate-800">Subscription Packages</h2><button class="h-8 px-3 rounded-lg bg-primary text-white text-xs font-medium hover:opacity-90">New Package</button></div>
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide"><tr>
+                <th class="px-5 py-2.5 text-left font-semibold">Package</th><th class="px-5 py-2.5 text-right font-semibold">Price / mo</th>
+                <th class="px-5 py-2.5 text-right font-semibold">Asset Limit</th><th class="px-5 py-2.5 text-right font-semibold">User Limit</th>
+                <th class="px-5 py-2.5 text-right font-semibold">Active Orgs</th><th class="w-10 px-5 py-2.5"></th></tr></thead>
+              <tbody id="packages" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+
+          <!-- Managed list catalog -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between"><h2 class="font-semibold text-slate-800">Platform Managed Lists</h2><button class="h-8 px-3 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50">Add List Item</button></div>
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide"><tr>
+                <th class="px-5 py-2.5 text-left font-semibold">List Key</th><th class="px-5 py-2.5 text-left font-semibold">Type</th>
+                <th class="px-5 py-2.5 text-right font-semibold">Default Items</th><th class="px-5 py-2.5 text-left font-semibold">Scope</th></tr></thead>
+              <tbody id="lists" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const packages = [
+      { name: 'Starter', price: '$0', assets: '50', users: '5', orgs: 2, variant: 'slate' },
+      { name: 'Growth', price: '$49', assets: '200', users: '15', orgs: 3, variant: 'blue' },
+      { name: 'Business', price: '$99', assets: 'Unlimited', users: '25', orgs: 3, variant: 'teal' },
+    ];
+    document.getElementById('packages').innerHTML = packages.map((p) => `<tr class="hover:bg-slate-50">
+      <td class="px-5 py-3">${App.ui.badge(p.name, p.variant)}</td>
+      <td class="px-5 py-3 text-right font-medium text-slate-800">${p.price}</td>
+      <td class="px-5 py-3 text-right text-slate-600">${p.assets}</td>
+      <td class="px-5 py-3 text-right text-slate-600">${p.users}</td>
+      <td class="px-5 py-3 text-right text-slate-600">${p.orgs}</td>
+      <td class="px-5 py-3 text-right text-slate-300"><i data-lucide="pencil" class="!w-4 !h-4"></i></td></tr>`).join('');
+
+    const lists = [
+      { key: 'asset_status', type: 'Free', items: 4 }, { key: 'order_status', type: 'System', items: 6 },
+      { key: 'request_type', type: 'System', items: 4 }, { key: 'inventory_unit', type: 'Free', items: 7 },
+      { key: 'order_channel', type: 'Free', items: 5 }, { key: 'pos_txn_status', type: 'System', items: 3 },
+    ];
+    document.getElementById('lists').innerHTML = lists.map((l) => `<tr class="hover:bg-slate-50">
+      <td class="px-5 py-3 font-mono text-xs text-slate-700">${l.key}</td>
+      <td class="px-5 py-3">${App.ui.badge(l.type, l.type === 'System' ? 'slate' : 'green')}</td>
+      <td class="px-5 py-3 text-right text-slate-600">${l.items}</td>
+      <td class="px-5 py-3 text-slate-500">Platform default · all orgs</td></tr>`).join('');
+    App.ui.icons();
+  </script>
+</body>
+</html>

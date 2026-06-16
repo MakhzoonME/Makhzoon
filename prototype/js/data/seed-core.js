@@ -24,4 +24,12 @@ App.seed.user = {
   initials: 'SK',
 };
 
+/* Superadmin portal — current user */
+App.seed.saUser = {
+  name: 'Omar Platform',
+  email: 'omar@makhzoon.me',
+  role: 'super_admin',
+  initials: 'OP',
+};
+
 App.seed.notifications = { unread: 3 };

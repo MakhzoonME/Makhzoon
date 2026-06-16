@@ -6,6 +6,7 @@ App.Header = {
     const el = document.getElementById('topbar');
     const sa = document.body.dataset.portal === 'superadmin';
     const { org, currentSpace, notifications } = App.seed;
+    const u = sa ? App.seed.saUser : App.seed.user;
 
     const left = sa
       ? `<div class="flex items-center gap-2 pr-3 mr-1 border-r border-slate-200">
@@ -13,7 +14,6 @@ App.Header = {
            <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-primary/10 text-primary ring-1 ring-primary/20">Superadmin</span>
          </div>`
       : `<div class="flex items-center gap-2 pr-3 mr-1 border-r border-slate-200">
-           <div class="w-7 h-7 rounded-md bg-primary text-white grid place-items-center text-[11px] font-semibold">${org.initials}</div>
            <span class="text-sm font-semibold text-slate-800">${org.name}</span>
          </div>
          <button class="flex items-center gap-2 h-9 px-3 rounded-lg border border-slate-200 hover:bg-slate-50 text-sm text-slate-700">
@@ -41,8 +41,43 @@ App.Header = {
               : ''
           }
         </button>
+        <div class="relative ml-1">
+          <button id="user-menu-btn" class="flex items-center gap-2 h-10 pl-1 pr-2 rounded-lg hover:bg-slate-100">
+            <span class="w-8 h-8 rounded-full bg-primary text-white grid place-items-center text-[11px] font-semibold shrink-0">${u.initials}</span>
+            <span class="hidden sm:block text-left leading-tight">
+              <span class="block text-sm font-medium text-slate-800">${u.name}</span>
+              <span class="block text-[11px] text-slate-400">${App.Sidebar.roleLabel(u.role)}</span>
+            </span>
+            <i data-lucide="chevron-down" class="!w-4 !h-4 text-slate-400"></i>
+          </button>
+          <div id="user-menu-dropdown" class="hidden absolute right-0 top-full mt-2 w-56 bg-white rounded-lg border border-slate-200 shadow-lg py-1 z-50">
+            <div class="px-3 py-2 border-b border-slate-100">
+              <div class="text-sm font-medium text-slate-800 truncate">${u.name}</div>
+              <div class="text-[11px] text-slate-400 truncate">${u.email}</div>
+              <div class="text-[11px] text-slate-400 truncate">${App.Sidebar.roleLabel(u.role)}</div>
+            </div>
+            <button id="sign-out-btn" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 text-left">
+              <i data-lucide="log-out" class="!w-4 !h-4"></i> Sign out
+            </button>
+          </div>
+        </div>
       </div>`;
 
     App.ui.icons();
+    this.wireUserMenu();
+  },
+
+  wireUserMenu() {
+    const btn = document.getElementById('user-menu-btn');
+    const dropdown = document.getElementById('user-menu-dropdown');
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.classList.toggle('hidden');
+    });
+    document.addEventListener('click', () => dropdown.classList.add('hidden'));
+    document.getElementById('sign-out-btn').addEventListener('click', () => {
+      const sa = document.body.dataset.portal === 'superadmin';
+      if (confirm('Sign out of Makhzoon?')) location.href = sa ? 'superadmin-dashboard.html' : 'index.html';
+    });
   },
 };

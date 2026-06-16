@@ -52,7 +52,10 @@
       <td class="px-4 py-3">${App.ui.badge(t.role, RV[t.role])}</td>
       <td class="px-4 py-3">${App.ui.badge(t.status, UV[t.status])}</td>
       <td class="px-4 py-3 text-slate-500">${t.last}</td>
-      <td class="px-4 py-3 text-right"><button class="text-sm font-medium text-primary hover:underline mr-3">Edit</button><button class="text-sm font-medium text-red-600 hover:underline">Remove</button></td></tr>`).join('');
+      <td class="px-4 py-3 text-right">
+        <button title="Edit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10"><i data-lucide="square-pen" class="!w-4 !h-4"></i></button>
+        <button title="Remove" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50"><i data-lucide="trash-2" class="!w-4 !h-4"></i></button>
+      </td></tr>`).join('');
     App.ui.icons();
   </script>
 </body>

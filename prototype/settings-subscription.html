@@ -36,7 +36,11 @@
                   <div>
                     <div class="text-xs uppercase tracking-wide text-slate-400 mb-2">Included Features</div>
                     <ul class="space-y-1.5 text-sm">
-                      ${['Usool (Assets)', 'Raseed (Inventory)', 'Haraka (POS + Orders)', 'Audit Logs', 'Priority Support'].map((f) => `<li class="flex items-center gap-2 text-slate-700"><i data-lucide="check" class="!w-4 !h-4 text-green-600"></i>${f}</li>`).join('')}
+                      <li class="flex items-center gap-2 text-slate-700"><i data-lucide="check" class="!w-4 !h-4 text-green-600"></i>Usool (Assets)</li>
+                      <li class="flex items-center gap-2 text-slate-700"><i data-lucide="check" class="!w-4 !h-4 text-green-600"></i>Raseed (Inventory)</li>
+                      <li class="flex items-center gap-2 text-slate-700"><i data-lucide="check" class="!w-4 !h-4 text-green-600"></i>Haraka (POS + Orders)</li>
+                      <li class="flex items-center gap-2 text-slate-700"><i data-lucide="check" class="!w-4 !h-4 text-green-600"></i>Audit Logs</li>
+                      <li class="flex items-center gap-2 text-slate-700"><i data-lucide="check" class="!w-4 !h-4 text-green-600"></i>Priority Support</li>
                     </ul>
                   </div>
                   <div>
@@ -48,20 +52,6 @@
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <!-- Comparison -->
-              <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-100"><h2 class="font-semibold text-slate-800">Compare Plans</h2></div>
-                <table class="w-full text-sm">
-                  <thead><tr class="text-slate-500">
-                    <th class="text-left font-medium px-6 py-3">Feature</th>
-                    <th class="text-center font-semibold px-4 py-3">Starter</th>
-                    <th class="text-center font-semibold px-4 py-3">Growth</th>
-                    <th class="text-center font-semibold px-4 py-3 text-primary">Business</th>
-                  </tr></thead>
-                  <tbody id="compare" class="divide-y divide-slate-100"></tbody>
-                </table>
               </div>
             </div>
           </div>
@@ -77,22 +67,6 @@
   <script src="js/shell.js"></script>
   <script>
     document.getElementById('settings-nav').innerHTML = App.ui.settingsNav('subscription');
-    const yes = '<i data-lucide="check" class="!w-4 !h-4 text-green-600 inline"></i>';
-    const no = '<span class="text-slate-300">—</span>';
-    const rows = [
-      ['Usool (Assets)', yes, yes, yes],
-      ['Raseed (Inventory)', yes, yes, yes],
-      ['Haraka POS', no, yes, yes],
-      ['Haraka Orders + Delivery', no, yes, yes],
-      ['Audit Logs', no, yes, yes],
-      ['Priority Support', no, no, yes],
-      ['Asset Limit', '50', '200', 'Unlimited'],
-    ];
-    document.getElementById('compare').innerHTML = rows.map((r) => `<tr>
-      <td class="px-6 py-2.5 text-slate-700">${r[0]}</td>
-      <td class="px-4 py-2.5 text-center text-slate-600">${r[1]}</td>
-      <td class="px-4 py-2.5 text-center text-slate-600">${r[2]}</td>
-      <td class="px-4 py-2.5 text-center text-slate-600 bg-primary/5">${r[3]}</td></tr>`).join('');
     App.ui.icons();
   </script>
 </body>

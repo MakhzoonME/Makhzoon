@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Settings · Notifications — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="settings" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+          <h1 class="text-xl font-semibold text-slate-900 mb-5">Settings</h1>
+          <div class="flex gap-6">
+            <nav id="settings-nav" class="w-56 shrink-0 space-y-1"></nav>
+
+            <div class="flex-1 max-w-2xl">
+              <div class="bg-white rounded-xl border border-slate-200">
+                <div class="px-6 py-4 border-b border-slate-100"><h2 class="font-semibold text-slate-800">Notifications</h2><p class="text-sm text-slate-500">Choose which alerts are sent by email</p></div>
+                <div class="divide-y divide-slate-100">
+                  <label class="flex items-center justify-between px-6 py-4">
+                    <div><div class="text-sm font-medium text-slate-800">Low stock alerts</div><div class="text-xs text-slate-500">When inventory drops below its reorder point</div></div>
+                    <input type="checkbox" checked class="rounded border-slate-300 text-primary focus:ring-primary" />
+                  </label>
+                  <label class="flex items-center justify-between px-6 py-4">
+                    <div><div class="text-sm font-medium text-slate-800">New order received</div><div class="text-xs text-slate-500">When a customer places a new order</div></div>
+                    <input type="checkbox" checked class="rounded border-slate-300 text-primary focus:ring-primary" />
+                  </label>
+                  <label class="flex items-center justify-between px-6 py-4">
+                    <div><div class="text-sm font-medium text-slate-800">Purchase order received</div><div class="text-xs text-slate-500">When a purchase order is marked as received</div></div>
+                    <input type="checkbox" class="rounded border-slate-300 text-primary focus:ring-primary" />
+                  </label>
+                  <label class="flex items-center justify-between px-6 py-4">
+                    <div><div class="text-sm font-medium text-slate-800">Stock audit completed</div><div class="text-xs text-slate-500">When a stock audit is finished and reconciled</div></div>
+                    <input type="checkbox" checked class="rounded border-slate-300 text-primary focus:ring-primary" />
+                  </label>
+                  <label class="flex items-center justify-between px-6 py-4">
+                    <div><div class="text-sm font-medium text-slate-800">Request approvals needed</div><div class="text-xs text-slate-500">When a request is waiting for your approval</div></div>
+                    <input type="checkbox" checked class="rounded border-slate-300 text-primary focus:ring-primary" />
+                  </label>
+                  <label class="flex items-center justify-between px-6 py-4">
+                    <div><div class="text-sm font-medium text-slate-800">Warranty expiring soon</div><div class="text-xs text-slate-500">30 days before a tracked warranty expires</div></div>
+                    <input type="checkbox" checked class="rounded border-slate-300 text-primary focus:ring-primary" />
+                  </label>
+                  <label class="flex items-center justify-between px-6 py-4">
+                    <div><div class="text-sm font-medium text-slate-800">Weekly summary email</div><div class="text-xs text-slate-500">A digest of activity across all modules</div></div>
+                    <input type="checkbox" class="rounded border-slate-300 text-primary focus:ring-primary" />
+                  </label>
+                </div>
+                <div class="flex items-center gap-2 px-6 py-4 border-t border-slate-100">
+                  <button class="h-10 px-5 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90">Save Changes</button>
+                  <button class="h-10 px-5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    document.getElementById('settings-nav').innerHTML = App.ui.settingsNav('notifications');
+    App.ui.icons();
+  </script>
+</body>
+</html>

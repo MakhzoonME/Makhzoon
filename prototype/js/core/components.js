@@ -32,6 +32,22 @@ App.ui = {
     return `<span class="w-7 h-7 rounded-full grid place-items-center text-[11px] font-semibold text-white shrink-0" style="background:${color || '#4F46E5'}">${initials}</span>`;
   },
 
+  /* Makhzoon logo mark — rounded square with the brand "M" glyph. */
+  logoMark(size, fill, glyphFill) {
+    const s = size || 32;
+    const fillColor = fill || '#4F46E5';
+    const glyph = glyphFill || '#FFFFFF';
+    const rx = Math.round(s * 0.22);
+    return `<svg width="${s}" height="${s}" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="Makhzoon" class="shrink-0">
+      <rect x="0" y="0" width="64" height="64" rx="${rx}" ry="${rx}" fill="${fillColor}" />
+      <path d="M14 16 H22 L26 22 L32 16 L38 22 L42 16 H50 V22 H14 Z" fill="${glyph}" opacity="0.92" />
+      <rect x="14" y="27" width="36" height="6" fill="${glyph}" opacity="0.78" rx="1" />
+      <rect x="14" y="38" width="10" height="10" fill="${glyph}" rx="1" />
+      <rect x="28" y="38" width="8" height="10" fill="${glyph}" rx="1" opacity="0.85" />
+      <rect x="40" y="38" width="10" height="10" fill="${glyph}" rx="1" />
+    </svg>`;
+  },
+
   /* Deterministic pseudo-QR as SVG (placeholder only). */
   fakeQR(seed, px) {
     const n = 25;
@@ -61,25 +77,27 @@ App.ui = {
   settingsNav(activeKey) {
     const items = [
       { key: 'org', label: 'Organization', icon: 'building', href: 'settings-org.html' },
-      { key: 'spaces', label: 'Spaces', icon: 'layout-grid', href: '#', soon: true },
-      { key: 'lists', label: 'Managed Lists', icon: 'list', href: '#', soon: true },
-      { key: 'tax', label: 'Tax Rates', icon: 'percent', href: '#', soon: true },
-      { key: 'receipt', label: 'Receipt', icon: 'receipt', href: '#', soon: true },
-      { key: 'notifications', label: 'Notifications', icon: 'bell', href: '#', soon: true },
+      { key: 'spaces', label: 'Spaces', icon: 'layout-grid', href: 'settings-spaces.html' },
+      { key: 'lists', label: 'Managed Lists', icon: 'list', href: 'settings-lists.html' },
+      { key: 'tax', label: 'Tax Rates', icon: 'percent', href: 'settings-tax.html' },
+      { key: 'receipt', label: 'Receipt', icon: 'receipt', href: 'settings-receipt.html' },
+      { key: 'invoices', label: 'Invoices', icon: 'file-text', href: 'settings-invoices.html' },
+      { key: 'warranties', label: 'Warranty Certificates', icon: 'shield-check', href: 'settings-warranties.html' },
+      { key: 'notifications', label: 'Notifications', icon: 'bell', href: 'settings-notifications.html' },
       { key: 'users', label: 'Users', icon: 'users', href: 'settings-users.html' },
-      { key: 'subscription', label: 'Subscription', icon: 'credit-card', href: 'settings-subscription.html' },
+      { key: 'cash-drawer', label: 'Cash Drawer', icon: 'vault', href: 'settings-cash-drawer.html' },
+      { key: 'card-terminal', label: 'Card Terminal', icon: 'credit-card', href: 'settings-card-terminal.html' },
+      { key: 'order-documents', label: 'Order Documents', icon: 'file-text', href: 'settings-order-documents.html' },
+      { key: 'subscription', label: 'Subscription', icon: 'badge-check', href: 'settings-subscription.html' },
     ];
     return items
       .map((i) => {
         const on = i.key === activeKey;
         const base = on
           ? 'bg-primary/10 text-primary font-semibold border-l-2 border-primary'
-          : i.soon
-          ? 'text-slate-400 cursor-default border-l-2 border-transparent'
           : 'text-slate-600 hover:bg-slate-50 border-l-2 border-transparent';
         return `<a href="${i.href}" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm ${base}">
-          <i data-lucide="${i.icon}" class="!w-4 !h-4"></i><span>${i.label}</span>
-          ${i.soon ? '<span class="ml-auto text-[10px] text-slate-300">soon</span>' : ''}</a>`;
+          <i data-lucide="${i.icon}" class="!w-4 !h-4"></i><span>${i.label}</span></a>`;
       })
       .join('');
   },

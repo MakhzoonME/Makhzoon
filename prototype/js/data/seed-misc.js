@@ -7,7 +7,7 @@ App.seed.dashStats = [
   { label: 'Low Stock Items', value: '8', icon: 'package', color: '#E65100', href: 'raseed-list.html' },
   { label: 'Expiring Warranties', value: '3', icon: 'shield-check', color: '#F59E0B', href: 'warranties-list.html' },
   { label: 'Pending Requests', value: '5', icon: 'inbox', color: '#1565C0', href: 'requests-list.html' },
-  { label: 'Open Sessions', value: '1', icon: 'scan-barcode', color: '#C2185B', href: 'haraka-register.html' },
+  { label: 'Open Sessions', value: '1', icon: 'history', color: '#C2185B', href: 'haraka-sessions.html' },
 ];
 
 App.seed.activity = [
@@ -165,6 +165,27 @@ App.seed.websiteMessages = [
   { name: 'Tamer Eid', email: 'tamer@biz.co', subject: 'Migration from spreadsheets', message: 'Can you import our existing asset list from Excel?', date: '2026-06-09' },
   { name: 'Lina Q.', email: 'lina@mail.com', subject: 'Demo request', message: 'Could we schedule a live demo for our operations team next week?', date: '2026-06-08' },
 ];
+
+/* ---- Usool Audits ---- */
+App.seed.usoolAudits = [
+  { id: 'UA-0012', space: 'Main Branch', status: 'completed', by: 'Sara Khalil', started: '2026-06-10', ended: '2026-06-10', total: 54, matched: 52, discrepancies: 2 },
+  { id: 'UA-0011', space: 'Warehouse', status: 'completed', by: 'Omar Nasser', started: '2026-05-28', ended: '2026-05-28', total: 88, matched: 88, discrepancies: 0 },
+  { id: 'UA-0010', space: 'Downtown Store', status: 'completed', by: 'Lina Haddad', started: '2026-05-15', ended: '2026-05-16', total: 31, matched: 30, discrepancies: 1 },
+  { id: 'UA-0009', space: 'Main Branch', status: 'completed', by: 'Sara Khalil', started: '2026-04-30', ended: '2026-04-30', total: 54, matched: 54, discrepancies: 0 },
+];
+App.seed.usoolAuditStatusVariant = { completed: 'green', in_progress: 'amber', draft: 'slate' };
+
+App.seed.usoolAuditDetail = {
+  id: 'UA-0012', space: 'Main Branch', status: 'completed', by: 'Sara Khalil',
+  started: '2026-06-10 09:00', ended: '2026-06-10 11:42', total: 54, matched: 52, discrepancies: 2,
+  items: [
+    { asset: 'MacBook Pro 16"', assetId: 'AS-1042', expected: 1, counted: 1, match: true },
+    { asset: 'Dell UltraSharp 27"', assetId: 'AS-1044', expected: 2, counted: 1, match: false },
+    { asset: 'iPhone 15 Pro', assetId: 'AS-1055', expected: 1, counted: 0, match: false },
+    { asset: 'Wireless Mouse', assetId: 'AS-1049', expected: 4, counted: 4, match: true },
+    { asset: 'USB-C Hub', assetId: 'AS-1051', expected: 3, counted: 3, match: true },
+  ],
+};
 
 /* ---- Banna ---- */
 App.seed.customFieldDefs = [

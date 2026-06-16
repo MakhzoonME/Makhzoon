@@ -22,10 +22,16 @@
         <div class="p-6">
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
-              <span class="w-1.5 h-6 rounded bg-haraka"></span>
-              <div><h1 class="text-xl font-semibold text-slate-900">Reports <span class="text-slate-400 font-normal text-base">· Haraka</span></h1><p class="text-sm text-slate-500">Sales analytics · Jun 1 – Jun 13</p></div>
+              <div><h1 class="text-xl font-semibold text-slate-900">Reports <span class="text-slate-400 font-normal text-base">· Haraka</span></h1></div>
             </div>
-            <button class="h-9 px-3 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1.5"><i data-lucide="download" class="!w-4 !h-4"></i>Export CSV</button>
+            <div class="flex items-center gap-2">
+              <label class="h-9 px-3 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1.5 cursor-pointer">
+                <input type="date" value="2026-06-01" class="border-0 p-0 bg-transparent text-sm focus:outline-none text-slate-600" />
+                <span class="text-slate-400">–</span>
+                <input type="date" value="2026-06-13" class="border-0 p-0 bg-transparent text-sm focus:outline-none text-slate-600" />
+              </label>
+              <button class="h-9 px-3 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1.5"><i data-lucide="download" class="!w-4 !h-4"></i>Export CSV</button>
+            </div>
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">

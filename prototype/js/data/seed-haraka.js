@@ -65,6 +65,69 @@ App.seed.transactions = [
 
 App.seed.txnStatusVariant = { Completed: 'green', Refunded: 'amber', Void: 'red' };
 
+App.seed.posSessions = [
+  { id: 'PS-00045', cashier: 'Nour Saleh', branch: 'Main Branch', openingFloat: 100.0, discrepancy: null, status: 'open', opened: '2026-06-13 08:02', closed: null },
+  { id: 'PS-00044', cashier: 'Sara Khalil', branch: 'Downtown Store', openingFloat: 150.0, discrepancy: -2.5, status: 'closed', opened: '2026-06-12 09:00', closed: '2026-06-12 17:15' },
+  { id: 'PS-00043', cashier: 'Nour Saleh', branch: 'Main Branch', openingFloat: 100.0, discrepancy: 5.0, status: 'closed', opened: '2026-06-11 08:05', closed: '2026-06-11 16:40' },
+  { id: 'PS-00042', cashier: 'Sara Khalil', branch: 'Downtown Store', openingFloat: 150.0, discrepancy: 0, status: 'closed', opened: '2026-06-10 09:00', closed: '2026-06-10 17:05' },
+];
+App.seed.sessionStatusVariant = { open: 'green', closed: 'slate' };
+
+App.seed.deliveryAgents = [
+  { id: 'DA-001', name: 'Rami Haddad', phone: '+962 79 510 0011', status: 'active', orders: 142 },
+  { id: 'DA-002', name: 'Sami Khalil', phone: '+962 78 612 4433', status: 'active', orders: 98 },
+  { id: 'DA-003', name: 'Bilal Nasser', phone: '+962 77 300 7722', status: 'active', orders: 67 },
+  { id: 'DA-004', name: 'Firas Odeh', phone: '+962 79 441 5500', status: 'inactive', orders: 23 },
+];
+App.seed.deliveryAgentStatusVariant = { active: 'green', inactive: 'slate' };
+
+App.seed.retainers = [
+  { id: 'RET-0018', customer: 'Khalid Mansour', name: 'Monthly Maintenance', amount: 120.0, paid: 480.0, status: 'active', started: '2026-01-01' },
+  { id: 'RET-0017', customer: 'Tariq Aziz', name: 'Quarterly Service Plan', amount: 350.0, paid: 700.0, status: 'active', started: '2026-01-15' },
+  { id: 'RET-0016', customer: 'Aisha Rahman', name: 'IT Support Retainer', amount: 200.0, paid: 400.0, status: 'active', started: '2026-02-01' },
+  { id: 'RET-0015', customer: 'Yousef Ali', name: 'Cleaning Contract', amount: 80.0, paid: 160.0, status: 'completed', started: '2025-12-01' },
+];
+App.seed.retainerStatusVariant = { active: 'green', completed: 'teal', cancelled: 'red' };
+
+App.seed.serviceJobs = [
+  { id: 'SVC-0031', customer: 'Lina Haddad', type: 'repair', description: 'AC unit compressor replacement', status: 'in_progress', due: '2026-06-18', assigned: 'Rami Haddad', total: 285.0 },
+  { id: 'SVC-0030', customer: 'Omar Nasser', type: 'installation', description: 'CCTV system setup × 4 cameras', status: 'scheduled', due: '2026-06-20', assigned: 'Sami Khalil', total: 650.0 },
+  { id: 'SVC-0029', customer: 'Maya Hassan', type: 'maintenance', description: 'Quarterly elevator inspection', status: 'completed', due: '2026-06-10', assigned: 'Bilal Nasser', total: 180.0 },
+  { id: 'SVC-0028', customer: 'Khalid Mansour', type: 'repair', description: 'Generator fuel system overhaul', status: 'pending', due: '2026-06-22', assigned: '—', total: 420.0 },
+];
+App.seed.serviceJobStatusVariant = { pending: 'slate', scheduled: 'blue', in_progress: 'amber', completed: 'green', cancelled: 'red' };
+App.seed.serviceJobTypeVariant = { repair: 'orange', installation: 'blue', maintenance: 'teal' };
+
+App.seed.warrantyCerts = [
+  { id: 'WC-2026-000045', customer: 'Khalid Mansour', phone: '+962 79 555 0142', product: 'Wireless Headphones', serial: 'SN-WH-00821', issuedAt: '2026-06-12', expiresAt: '2027-06-12', txn: 'R-000247' },
+  { id: 'WC-2026-000044', customer: 'Aisha Rahman', phone: '+962 78 401 7733', product: 'USB-C Cable (Premium)', serial: 'SN-UC-00103', issuedAt: '2026-06-11', expiresAt: '2027-06-11', txn: 'R-000246' },
+  { id: 'WC-2026-000043', customer: 'Tariq Aziz', phone: '+962 77 220 9001', product: 'Power Bank 10k', serial: 'SN-PB-00744', issuedAt: '2026-06-09', expiresAt: '2028-06-09', txn: 'R-000242' },
+  { id: 'WC-2026-000042', customer: 'Yousef Ali', phone: '+962 78 909 4412', product: 'Wireless Mouse', serial: 'SN-WM-00291', issuedAt: '2026-06-07', expiresAt: '2027-06-07', txn: 'R-000241' },
+];
+
+App.seed.sessionDetail = {
+  id: 'PS-00045', cashier: 'Nour Saleh', branch: 'Main Branch', status: 'open',
+  openingFloat: 100.0, opened: '2026-06-13 08:02',
+  salesTotal: 1284.50, txnCount: 38, expectedCash: 514.25,
+  transactions: [
+    { id: 'R-000248', customer: 'Walk-in', items: 3, total: 18.5, method: 'Cash', time: '14:52', status: 'Completed' },
+    { id: 'R-000247', customer: 'Aisha Rahman', items: 2, total: 32.5, method: 'Card', time: '14:31', status: 'Completed' },
+    { id: 'R-000246', customer: 'Walk-in', items: 1, total: 4.5, method: 'Cash', time: '13:58', status: 'Completed' },
+    { id: 'R-000245', customer: 'Tariq Aziz', items: 5, total: 64.0, method: 'Card', time: '13:20', status: 'Refunded' },
+  ],
+};
+
+App.seed.transactionDetail = {
+  id: 'R-000248', status: 'Completed', method: 'Cash', time: '2026-06-13 14:52',
+  cashier: 'Nour Saleh', session: 'PS-00045', customer: 'Walk-in',
+  items: [
+    { name: 'Cappuccino', qty: 2, price: 4.5 },
+    { name: 'Chicken Shawarma', qty: 1, price: 6.5 },
+    { name: 'Bottled Water', qty: 3, price: 1.0 },
+  ],
+  subtotal: 18.5, tax: 2.96, total: 18.5, tendered: 20.0, change: 1.5,
+};
+
 App.seed.customers = [
   { name: 'Khalid Mansour', phone: '+962 79 555 0142', email: 'khalid@mail.com', tax: 'JO-998211', orders: 14, last: '2026-06-12' },
   { name: 'Aisha Rahman', phone: '+962 78 401 7733', email: 'aisha.r@mail.com', tax: '—', orders: 6, last: '2026-06-11' },

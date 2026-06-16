@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Settings · Cash Drawer — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="settings" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+          <h1 class="text-xl font-semibold text-slate-900 mb-5">Settings</h1>
+          <div class="flex gap-6">
+            <nav id="settings-nav" class="w-56 shrink-0 space-y-1"></nav>
+
+            <div class="flex-1 max-w-2xl">
+              <div class="bg-white rounded-xl border border-slate-200">
+                <div class="px-6 py-4 border-b border-slate-100">
+                  <h2 class="font-semibold text-slate-800">Cash Drawer</h2>
+                  <p class="text-sm text-slate-500">Configure the cash drawer connected to your POS terminal</p>
+                </div>
+                <div class="p-6 space-y-5">
+
+                  <!-- Enable Cash Drawer -->
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm font-medium text-slate-700">Enable Cash Drawer</p>
+                      <p class="text-xs text-slate-400 mt-0.5">Send open signals from POS on applicable actions</p>
+                    </div>
+                    <button class="inline-flex h-5 w-9 items-center rounded-full transition bg-primary" onclick="this.classList.toggle('bg-primary');this.classList.toggle('bg-slate-200');this.firstElementChild.classList.toggle('translate-x-4')"><span class="h-4 w-4 rounded-full bg-white shadow translate-x-4 transition"></span></button>
+                  </div>
+
+                  <!-- Auto-open on cash payment -->
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm font-medium text-slate-700">Auto-open on cash payment</p>
+                      <p class="text-xs text-slate-400 mt-0.5">Automatically open the drawer when a cash sale is completed</p>
+                    </div>
+                    <button class="inline-flex h-5 w-9 items-center rounded-full transition bg-primary" onclick="this.classList.toggle('bg-primary');this.classList.toggle('bg-slate-200');this.firstElementChild.classList.toggle('translate-x-4')"><span class="h-4 w-4 rounded-full bg-white shadow translate-x-4 transition"></span></button>
+                  </div>
+
+                  <!-- Require PIN to open manually -->
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm font-medium text-slate-700">Require PIN to open manually</p>
+                      <p class="text-xs text-slate-400 mt-0.5">Prompt for a PIN when the drawer is opened without a sale</p>
+                    </div>
+                    <button class="inline-flex h-5 w-9 items-center rounded-full transition bg-slate-200" onclick="this.classList.toggle('bg-primary');this.classList.toggle('bg-slate-200');this.firstElementChild.classList.toggle('translate-x-4')"><span class="h-4 w-4 rounded-full bg-white shadow transition"></span></button>
+                  </div>
+
+                  <!-- PIN input -->
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">PIN</label>
+                    <input type="password" placeholder="4-digit PIN" maxlength="4" class="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary" />
+                  </div>
+
+                  <div class="pt-2 border-t border-slate-100"></div>
+
+                  <!-- Drawer Port -->
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">Drawer Port</label>
+                    <select class="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary">
+                      <option>Port 0 (RJ11)</option>
+                      <option>Port 1 (RJ12)</option>
+                    </select>
+                  </div>
+
+                  <!-- On-time -->
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">On-time (ms)</label>
+                    <input type="number" value="100" class="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary" />
+                  </div>
+
+                  <!-- Off-time -->
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">Off-time (ms)</label>
+                    <input type="number" value="100" class="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary" />
+                  </div>
+
+                  <!-- Info box -->
+                  <div class="flex items-start gap-2.5 p-3 rounded-lg bg-slate-50 border border-slate-200 text-sm text-slate-600">
+                    <i data-lucide="info" class="!w-4 !h-4 shrink-0 mt-0.5 text-slate-400"></i>
+                    Cash drawer control requires a compatible receipt printer connected via USB or network.
+                  </div>
+
+                  <!-- Test Open button -->
+                  <div>
+                    <button onclick="alert('Cash drawer signal sent')" class="h-10 px-4 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 inline-flex items-center gap-2">
+                      <i data-lucide="vault" class="!w-4 !h-4 text-slate-400"></i>Test Open
+                    </button>
+                  </div>
+
+                  <!-- Save / Cancel -->
+                  <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+                    <button class="h-10 px-5 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90">Save Changes</button>
+                    <button class="h-10 px-5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    document.getElementById('settings-nav').innerHTML = App.ui.settingsNav('cash-drawer');
+    App.ui.icons();
+  </script>
+</body>
+</html>

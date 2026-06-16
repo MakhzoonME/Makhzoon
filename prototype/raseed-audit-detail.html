@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stock Audit Detail — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="audits" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6 max-w-4xl mx-auto">
+          <a href="raseed-audit.html" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 mb-3"><i data-lucide="arrow-left" class="!w-4 !h-4"></i>Stock Audits</a>
+          <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center gap-3">
+              <span class="w-1.5 h-8 rounded bg-raseed"></span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h1 class="text-xl font-semibold text-slate-900" id="audit-id"></h1>
+                  <span id="audit-badge"></span>
+                </div>
+                <p class="text-sm text-slate-500" id="audit-sub"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary cards -->
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-5">
+            <div class="bg-white rounded-xl border border-slate-200 border-l-4 p-4" style="border-left-color:#E65100">
+              <div class="text-[13px] font-medium text-slate-500 mb-1">Space</div>
+              <div class="text-base font-semibold text-slate-900" id="s-space"></div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 border-l-4 p-4" style="border-left-color:#E65100">
+              <div class="text-[13px] font-medium text-slate-500 mb-1">Audited By</div>
+              <div class="text-base font-semibold text-slate-900" id="s-by"></div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 border-l-4 p-4" style="border-left-color:#E65100">
+              <div class="text-[13px] font-medium text-slate-500 mb-1">Date</div>
+              <div class="text-base font-semibold text-slate-900" id="s-date"></div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 border-l-4 p-4" style="border-left-color:#E65100">
+              <div class="text-[13px] font-medium text-slate-500 mb-1">Matched / Total</div>
+              <div class="text-base font-semibold text-slate-900" id="s-matched"></div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 border-l-4 p-4" style="border-left-color:#E65100">
+              <div class="text-[13px] font-medium text-slate-500 mb-1">Discrepancies</div>
+              <div class="text-base font-semibold text-slate-900" id="s-disc"></div>
+            </div>
+          </div>
+
+          <!-- Items table -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100">
+              <h2 class="text-sm font-semibold text-slate-700">Audit Items</h2>
+            </div>
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+                <tr>
+                  <th class="px-4 py-3 text-left font-semibold">Item Name</th>
+                  <th class="px-4 py-3 text-left font-semibold">SKU</th>
+                  <th class="px-4 py-3 text-right font-semibold">Expected Qty</th>
+                  <th class="px-4 py-3 text-right font-semibold">Counted Qty</th>
+                  <th class="px-4 py-3 text-right font-semibold">Variance</th>
+                  <th class="px-4 py-3 text-center font-semibold">Match</th>
+                </tr>
+              </thead>
+              <tbody id="rows" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-raseed.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    // Use auditDetail if available, otherwise build from first audit + inventory
+    const audit = App.seed.auditDetail || (() => {
+      const a = App.seed.audits[0];
+      return {
+        id: a.id, space: a.space, status: a.status, by: 'Omar Nasser',
+        started: a.started, completed: a.completed,
+        items: App.seed.inventory.slice(0, 5).map((inv) => {
+          const expected = inv.qty + Math.round(Math.random() * 4 - 2);
+          const counted = inv.qty;
+          return { name: inv.name, sku: inv.sku, expected, counted, variance: counted - expected, match: counted === expected };
+        }),
+      };
+    })();
+
+    const V = App.seed.auditStatusVariant;
+    document.getElementById('audit-id').textContent = audit.id;
+    document.getElementById('audit-badge').innerHTML = App.ui.badge(audit.status.replace('_', ' '), V[audit.status]);
+    document.getElementById('audit-sub').textContent = `${audit.space} · Started ${audit.started}`;
+    document.getElementById('s-space').textContent = audit.space;
+    document.getElementById('s-by').textContent = audit.by || '—';
+    document.getElementById('s-date').textContent = audit.started;
+    const total = audit.items.length;
+    const matched = audit.items.filter((i) => i.match).length;
+    const discs = total - matched;
+    document.getElementById('s-matched').textContent = `${matched} / ${total}`;
+    document.getElementById('s-disc').textContent = discs;
+
+    document.getElementById('rows').innerHTML = audit.items.map((i) => {
+      const v = (i.variance !== undefined) ? i.variance : (i.counted - i.expected);
+      const vText = v === 0 ? '0' : (v > 0 ? '+' + v : v);
+      const vClass = v < 0 ? 'text-red-600 font-semibold' : v > 0 ? 'text-green-600 font-semibold' : 'text-slate-400';
+      const matchIcon = i.match
+        ? `<i data-lucide="circle-check" class="!w-5 !h-5 text-green-500"></i>`
+        : `<i data-lucide="circle-x" class="!w-5 !h-5 text-red-400"></i>`;
+      return `<tr class="hover:bg-slate-50">
+        <td class="px-4 py-3 font-medium text-slate-800">${i.name}</td>
+        <td class="px-4 py-3 font-mono text-xs text-slate-500">${i.sku || '—'}</td>
+        <td class="px-4 py-3 text-right text-slate-600">${i.expected}</td>
+        <td class="px-4 py-3 text-right text-slate-700 font-medium">${i.counted}</td>
+        <td class="px-4 py-3 text-right ${vClass}">${vText}</td>
+        <td class="px-4 py-3 text-center">${matchIcon}</td>
+      </tr>`;
+    }).join('');
+    App.ui.icons();
+  </script>
+</body>
+</html>

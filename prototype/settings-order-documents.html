@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Settings · Order Documents — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="settings" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+          <h1 class="text-xl font-semibold text-slate-900 mb-5">Settings</h1>
+          <div class="flex gap-6">
+            <nav id="settings-nav" class="w-56 shrink-0 space-y-1"></nav>
+
+            <!-- Two-column layout: form + preview -->
+            <div class="flex gap-6 flex-1 min-w-0">
+
+              <!-- Form -->
+              <div class="flex-1 min-w-0">
+                <div class="bg-white rounded-xl border border-slate-200">
+                  <div class="px-6 py-4 border-b border-slate-100">
+                    <h2 class="font-semibold text-slate-800">Order Documents</h2>
+                    <p class="text-sm text-slate-500">Customize what appears on printed order slips and delivery documents</p>
+                  </div>
+                  <div class="p-6 space-y-5">
+
+                    <!-- Show order number -->
+                    <div class="flex items-center justify-between">
+                      <p class="text-sm font-medium text-slate-700">Show order number</p>
+                      <button class="inline-flex h-5 w-9 items-center rounded-full transition bg-primary" onclick="this.classList.toggle('bg-primary');this.classList.toggle('bg-slate-200');this.firstElementChild.classList.toggle('translate-x-4')"><span class="h-4 w-4 rounded-full bg-white shadow translate-x-4 transition"></span></button>
+                    </div>
+
+                    <!-- Show customer phone -->
+                    <div class="flex items-center justify-between">
+                      <p class="text-sm font-medium text-slate-700">Show customer phone</p>
+                      <button class="inline-flex h-5 w-9 items-center rounded-full transition bg-primary" onclick="this.classList.toggle('bg-primary');this.classList.toggle('bg-slate-200');this.firstElementChild.classList.toggle('translate-x-4')"><span class="h-4 w-4 rounded-full bg-white shadow translate-x-4 transition"></span></button>
+                    </div>
+
+                    <!-- Show delivery address -->
+                    <div class="flex items-center justify-between">
+                      <p class="text-sm font-medium text-slate-700">Show delivery address</p>
+                      <button class="inline-flex h-5 w-9 items-center rounded-full transition bg-primary" onclick="this.classList.toggle('bg-primary');this.classList.toggle('bg-slate-200');this.firstElementChild.classList.toggle('translate-x-4')"><span class="h-4 w-4 rounded-full bg-white shadow translate-x-4 transition"></span></button>
+                    </div>
+
+                    <!-- Show items table -->
+                    <div class="flex items-center justify-between">
+                      <p class="text-sm font-medium text-slate-700">Show items table</p>
+                      <button class="inline-flex h-5 w-9 items-center rounded-full transition bg-primary" onclick="this.classList.toggle('bg-primary');this.classList.toggle('bg-slate-200');this.firstElementChild.classList.toggle('translate-x-4')"><span class="h-4 w-4 rounded-full bg-white shadow translate-x-4 transition"></span></button>
+                    </div>
+
+                    <!-- Show payment summary -->
+                    <div class="flex items-center justify-between">
+                      <p class="text-sm font-medium text-slate-700">Show payment summary</p>
+                      <button class="inline-flex h-5 w-9 items-center rounded-full transition bg-primary" onclick="this.classList.toggle('bg-primary');this.classList.toggle('bg-slate-200');this.firstElementChild.classList.toggle('translate-x-4')"><span class="h-4 w-4 rounded-full bg-white shadow translate-x-4 transition"></span></button>
+                    </div>
+
+                    <!-- Show delivery agent name -->
+                    <div class="flex items-center justify-between">
+                      <p class="text-sm font-medium text-slate-700">Show delivery agent name</p>
+                      <button class="inline-flex h-5 w-9 items-center rounded-full transition bg-primary" onclick="this.classList.toggle('bg-primary');this.classList.toggle('bg-slate-200');this.firstElementChild.classList.toggle('translate-x-4')"><span class="h-4 w-4 rounded-full bg-white shadow translate-x-4 transition"></span></button>
+                    </div>
+
+                    <!-- Show notes -->
+                    <div class="flex items-center justify-between">
+                      <p class="text-sm font-medium text-slate-700">Show notes</p>
+                      <button class="inline-flex h-5 w-9 items-center rounded-full transition bg-primary" onclick="this.classList.toggle('bg-primary');this.classList.toggle('bg-slate-200');this.firstElementChild.classList.toggle('translate-x-4')"><span class="h-4 w-4 rounded-full bg-white shadow translate-x-4 transition"></span></button>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-100"></div>
+
+                    <!-- Footer message -->
+                    <div>
+                      <label class="block text-sm font-medium text-slate-600 mb-1.5">Footer message</label>
+                      <textarea rows="2" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary resize-none">Thank you for your order! For support call: +962 6 xxx xxxx</textarea>
+                    </div>
+
+                    <!-- Paper size -->
+                    <div>
+                      <label class="block text-sm font-medium text-slate-600 mb-1.5">Paper size</label>
+                      <select class="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary">
+                        <option>A4</option>
+                        <option>80mm thermal</option>
+                        <option>58mm thermal</option>
+                      </select>
+                    </div>
+
+                    <!-- Save / Cancel -->
+                    <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+                      <button class="h-10 px-5 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90">Save Changes</button>
+                      <button class="h-10 px-5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+              <!-- Preview panel -->
+              <div class="w-[360px] shrink-0">
+                <div class="sticky top-6 bg-white rounded-xl border border-slate-200 p-4">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-3">Preview</p>
+                  <div class="border border-slate-200 rounded-lg p-4 text-xs text-slate-700 space-y-3 font-mono">
+
+                    <!-- Doc title -->
+                    <div class="text-center font-bold text-sm tracking-widest uppercase text-slate-800 border-b border-dashed border-slate-300 pb-2">Order Slip</div>
+
+                    <!-- Order meta -->
+                    <div class="space-y-1">
+                      <div class="flex justify-between"><span class="text-slate-400">Order No</span><span class="font-semibold">ORD-000012</span></div>
+                      <div class="flex justify-between"><span class="text-slate-400">Customer</span><span>Khalid Mansour</span></div>
+                      <div class="flex justify-between"><span class="text-slate-400">Phone</span><span>+962 79 555 0142</span></div>
+                      <div class="flex justify-between gap-2"><span class="text-slate-400 shrink-0">Address</span><span class="text-right">23 Rainbow St, Jabal Amman, Amman</span></div>
+                    </div>
+
+                    <!-- Items table -->
+                    <div class="border-t border-dashed border-slate-300 pt-2">
+                      <table class="w-full text-xs">
+                        <thead><tr class="text-slate-400"><th class="text-left pb-1">Item</th><th class="text-center pb-1">Qty</th><th class="text-right pb-1">Total</th></tr></thead>
+                        <tbody class="divide-y divide-dashed divide-slate-200">
+                          <tr><td class="py-1">Beef Burger</td><td class="text-center py-1">×2</td><td class="text-right py-1">$16.00</td></tr>
+                          <tr><td class="py-1">Margherita Pizza</td><td class="text-center py-1">×1</td><td class="text-right py-1">$11.00</td></tr>
+                          <tr><td class="py-1">Iced Latte</td><td class="text-center py-1">×3</td><td class="text-right py-1">$15.00</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <!-- Totals -->
+                    <div class="border-t border-dashed border-slate-300 pt-2 space-y-1">
+                      <div class="flex justify-between text-slate-500"><span>Subtotal</span><span>$42.00</span></div>
+                      <div class="flex justify-between font-bold text-slate-800"><span>Total</span><span>$42.00</span></div>
+                    </div>
+
+                    <!-- Agent -->
+                    <div class="border-t border-dashed border-slate-300 pt-2 flex justify-between">
+                      <span class="text-slate-400">Delivery Agent</span><span>Rami Haddad</span>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="border-t border-dashed border-slate-300 pt-2 text-center text-slate-500 leading-relaxed">
+                      Thank you for your order!<br>For support call: +962 6 xxx xxxx
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    document.getElementById('settings-nav').innerHTML = App.ui.settingsNav('order-documents');
+    App.ui.icons();
+  </script>
+</body>
+</html>

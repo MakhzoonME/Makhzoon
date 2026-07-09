@@ -9,6 +9,15 @@ import { inviteEmail } from '@/lib/email/templates';
 import { generateInviteQRDataUrl } from '@/lib/qr';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { UserPermissions, InviteRole } from '@/types';
+import { z } from 'zod';
+
+const inviteBodySchema = z.object({
+  orgId: z.string().min(1),
+  email: z.string().regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Valid email is required').max(254),
+  displayName: z.string().trim().min(2).max(120),
+  role: z.string().min(1),
+  permissions: z.record(z.string(), z.unknown()).optional(),
+});
 
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
@@ -38,8 +47,10 @@ export async function POST(req: NextRequest) {
     const rateLimitResult = await checkRateLimit(`invite:${clientIp}`, 20, 60 * 60 * 1000, { action: 'send invites' });
     if (rateLimitResult) return rateLimitResult;
 
-    const body = await req.json().catch(() => null);
-    if (!body || typeof body !== 'object') return NextResponse.json({ error: 'Invalid request' }, { status: 422 });
+    const rawBody = await req.json().catch(() => null);
+    const parsedInvite = inviteBodySchema.safeParse(rawBody);
+    if (!parsedInvite.success) return NextResponse.json({ error: 'Invalid request', details: parsedInvite.error.flatten() }, { status: 422 });
+    const body = rawBody as Record<string, unknown>;
 
     const { orgId, email, displayName, role, permissions } = body as {
       orgId?: string;

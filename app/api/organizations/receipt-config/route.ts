@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { queueAuditLog } from '@/lib/audit/logger';
+import { z } from 'zod';
+
+const configObjectSchema = z.record(z.string(), z.unknown());
 
 const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin']);
 
@@ -36,10 +39,11 @@ export async function PATCH(req: NextRequest) {
     const orgId = user.organizationId;
     if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
 
-    const body = await req.json();
-    if (typeof body !== 'object' || body === null) {
+    const parsedBody = configObjectSchema.safeParse(await req.json().catch(() => null));
+    if (!parsedBody.success) {
       return NextResponse.json({ error: 'Invalid body' }, { status: 422 });
     }
+    const body = parsedBody.data;
 
     // Load existing config so we can merge instead of replace — this lets
     // the org-info branding section and the receipt settings page each save

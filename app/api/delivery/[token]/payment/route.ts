@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { z } from 'zod'
+
+const paymentSchema = z.object({
+  amount: z.number().positive().finite(),
+  paymentMethod: z.string().max(50).optional(),
+  note: z.string().max(500).optional(),
+})
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 /** POST — public (no auth). Driver records a payment collected on delivery. */
@@ -12,11 +19,11 @@ export async function POST(
     if (limited) return limited
 
     const { token } = await params
-    const body = await req.json() as { amount: number; paymentMethod?: string; note?: string }
-
-    if (!body.amount || body.amount <= 0) {
+    const parsed = paymentSchema.safeParse(await req.json().catch(() => null))
+    if (!parsed.success) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 422 })
     }
+    const body = parsed.data
 
     const { data: order } = await supabaseAdmin
       .from('haraka_orders')

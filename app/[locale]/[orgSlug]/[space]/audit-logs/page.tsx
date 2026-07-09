@@ -33,7 +33,6 @@ export default function OrgAuditLogsPage() {
   const { isAllowed } = useAdminGuard('auditLogs.view');
   const { t } = useT();
   const orgSlug = useOrgSlug();
-  if (!isAllowed) return null;
   const space   = useSpace();
   const { data: orgInfo } = useOrgInfo();
   const { user } = useAuth();
@@ -49,6 +48,8 @@ export default function OrgAuditLogsPage() {
   const logs = data?.logs ?? [];
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 1;
+
+  if (!isAllowed) return null;
 
   function handleFilterChange(key: string, value: string) {
     setFilters((f) => ({ ...f, [key]: value }));

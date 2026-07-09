@@ -15,25 +15,6 @@ import { sendWebPush } from '@/lib/webpush'
 import { getCatalogEntry } from './catalog'
 import type { NotificationEnqueueInput, NotificationRow } from './types'
 
-type Row = Record<string, unknown>
-
-function toRow(r: Row): NotificationRow {
-  return {
-    id:             r.id as string,
-    organizationId: r.organization_id as string,
-    spaceId:        (r.space_id as string) ?? null,
-    recipientId:    r.recipient_id as string,
-    eventType:      r.event_type as NotificationRow['eventType'],
-    title:          r.title as string,
-    body:           (r.body as string) ?? null,
-    data:           (r.data as Record<string, unknown>) ?? {},
-    link:           (r.link as string) ?? null,
-    isRead:         (r.is_read as boolean) ?? false,
-    readAt:         r.read_at ? new Date(r.read_at as string) : null,
-    createdAt:      r.created_at ? new Date(r.created_at as string) : new Date(),
-  }
-}
-
 /**
  * Resolve which org user IDs should receive a notification for this event type.
  * Checks notification_org_defaults first; falls back to catalog defaults.

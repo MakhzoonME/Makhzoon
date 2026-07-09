@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { Printer, Lock, Receipt, ShoppingCart, PauseCircle, RotateCcw, Trash2, Banknote, CreditCard } from 'lucide-react';
 import { BarcodeInput, SubscriptionGate } from '@/components/shared';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ProductGrid } from '@/components/haraka/ProductGrid';
 import { Cart } from '@/components/haraka/Cart';
 import { CustomerPicker } from '@/components/haraka/CustomerPicker';

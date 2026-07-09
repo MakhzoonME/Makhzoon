@@ -21,7 +21,6 @@ export default function RetainersListPage() {
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { data: orgInfo } = useOrgInfo();
   const { t } = useT();
-  if (!featureAllowed || !isAllowed) return null;
 
   const [status, setStatus] = useState('all');
   const [page,   setPage]   = useState(1);
@@ -31,6 +30,8 @@ export default function RetainersListPage() {
     page,
     pageSize: 25,
   });
+
+  if (!featureAllowed || !isAllowed) return null;
 
   const base     = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
   const currency = orgInfo?.currency ?? 'USD';

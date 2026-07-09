@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
-import { rateLimitTenant } from '@/lib/rate-limit'
 import { CardTerminalService } from '@/lib/modules/haraka/card-terminal/card-terminal.service'
 import { cardTerminalConfigSchema } from '@/lib/modules/haraka/card-terminal/schemas'
 

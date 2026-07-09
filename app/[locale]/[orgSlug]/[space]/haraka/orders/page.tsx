@@ -21,7 +21,6 @@ export default function OrdersListPage() {
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { data: orgInfo } = useOrgInfo();
-  if (!featureAllowed || !isAllowed) return null;
 
   const [status, setStatus]   = useState('all');
   const [channel, setChannel] = useState('all');
@@ -33,6 +32,8 @@ export default function OrdersListPage() {
     page,
     pageSize: 25,
   });
+
+  if (!featureAllowed || !isAllowed) return null;
 
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
   const currency = orgInfo?.currency ?? 'USD';

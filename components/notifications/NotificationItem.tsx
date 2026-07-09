@@ -14,8 +14,8 @@ const MODULE_COLORS: Record<string, string> = {
 }
 
 function getModuleColor(eventType: string): string {
-  const module = eventType.split('.')[0]
-  return MODULE_COLORS[module] ?? '#9ca3af'
+  const moduleKey = eventType.split('.')[0]
+  return MODULE_COLORS[moduleKey] ?? '#9ca3af'
 }
 
 interface Props {

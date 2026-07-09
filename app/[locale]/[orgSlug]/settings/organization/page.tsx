@@ -329,7 +329,7 @@ export default function OrganizationInfoPage() {
                 onChange={(e) => setOrgName(e.target.value)}
                 maxLength={80}
               />
-              <p className="text-[11px] text-gray-400">Leave blank to use "{org?.name ?? '—'}".</p>
+              <p className="text-[11px] text-gray-400">Leave blank to use &ldquo;{org?.name ?? '—'}&rdquo;.</p>
             </div>
             <div className="space-y-1.5">
               <Label>Business name (Arabic)</Label>

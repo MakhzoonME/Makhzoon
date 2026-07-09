@@ -10,7 +10,7 @@ import {
   useOrgNotificationDefaults,
 } from '@/hooks/notifications';
 import { NOTIFICATION_CATALOG, getCatalogByModule } from '@/lib/notifications/catalog';
-import { useAdminGuard, toast } from '@/hooks/ui';
+import { toast } from '@/hooks/ui';
 import type { NotificationEventType } from '@/lib/notifications/catalog';
 
 interface PrefState {

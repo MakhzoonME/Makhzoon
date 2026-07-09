@@ -16,7 +16,6 @@ export default function SessionsListPage() {
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
-  if (!isAllowed) return null;
   const { data: orgInfo } = useOrgInfo();
   const [status, setStatus] = useState<'open' | 'closed' | 'all'>('all');
   const [page, setPage] = useState(1);
@@ -26,6 +25,8 @@ export default function SessionsListPage() {
     page,
     pageSize: 20,
   });
+
+  if (!isAllowed) return null;
 
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
 

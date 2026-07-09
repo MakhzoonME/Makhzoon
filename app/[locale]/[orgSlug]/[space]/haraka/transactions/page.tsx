@@ -22,7 +22,6 @@ export default function TransactionsListPage() {
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
   const { data: orgInfo } = useOrgInfo();
-  if (!featureAllowed || !isAllowed) return null;
   const [status, setStatus] = useState<StatusFilter>('all');
   const [page, setPage] = useState(1);
   const { data, isLoading } = useTransactions({
@@ -48,7 +47,7 @@ export default function TransactionsListPage() {
   const cardTotal = payReport?.buckets.find((b) => b.key === 'card')?.total ?? 0;
   const cardShare = todaySales > 0 ? Math.round((cardTotal / todaySales) * 100) : 0;
 
-  if (!isAllowed) {
+  if (!featureAllowed || !isAllowed) {
     return (
       <div className="flex items-center justify-center h-48">
         <div className="h-7 w-7 rounded-full border-2 border-primary-600 border-t-transparent animate-spin" />

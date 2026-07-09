@@ -27,11 +27,18 @@ export async function POST(
 
     const { data: order } = await supabaseAdmin
       .from('haraka_orders')
-      .select('id, organization_id, total')
+      .select('id, organization_id, total, delivery_token_expires_at, delivery_token_revoked_at')
       .eq('delivery_token', token)
       .maybeSingle()
 
     if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (order.delivery_token_revoked_at) {
+      return NextResponse.json({ error: 'This delivery link has been revoked' }, { status: 410 })
+    }
+    const expiresAt = order.delivery_token_expires_at as string | null
+    if (!expiresAt || new Date(expiresAt).getTime() <= Date.now()) {
+      return NextResponse.json({ error: 'This delivery link has expired' }, { status: 410 })
+    }
 
     // Insert payment entry
     await supabaseAdmin

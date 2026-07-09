@@ -163,7 +163,13 @@ export default function DeliveryPage() {
   const load = useCallback(async () => {
     try {
       const res = await fetch(`/api/delivery/${token}`);
-      if (!res.ok) { setError('Order not found'); return; }
+      if (!res.ok) {
+        const msg = res.status === 410
+          ? ((await res.json().catch(() => ({}))).error ?? 'This delivery link is no longer valid')
+          : 'Order not found';
+        setError(msg);
+        return;
+      }
       const data = await res.json();
       setOrder(data.order);
       setPayments(data.payments ?? []);

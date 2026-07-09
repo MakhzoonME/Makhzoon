@@ -81,6 +81,19 @@ export function OrderShareDialog({ open, onOpenChange, order, currency = 'JOD' }
     } finally { setFetching(false); }
   }
 
+  async function handleRevoke() {
+    if (!token) return;
+    setFetching(true);
+    try {
+      const res = await fetch(`/api/haraka/orders/${order.id}/delivery-token`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error);
+      setToken(null);
+      toast.success('Delivery link revoked');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to revoke link');
+    } finally { setFetching(false); }
+  }
+
   async function handleCopyLink() {
     const t = await ensureToken();
     if (!t) return;
@@ -203,6 +216,11 @@ export function OrderShareDialog({ open, onOpenChange, order, currency = 'JOD' }
         </DialogBody>
 
         <DialogFooter>
+          {token && (
+            <Button variant="outline" onClick={handleRevoke} disabled={fetching} className="text-red-600 hover:text-red-700 me-auto">
+              Revoke link
+            </Button>
+          )}
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>

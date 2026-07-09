@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "NODE_OPTIONS=--max-old-space-size=4096 eslint app components lib hooks store proxy.ts",
+    "lint": "NODE_OPTIONS=--max-old-space-size=4096 eslint app components lib hooks store middleware.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
@@ -49,7 +49,6 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
-    "esbuild": "^0.25.0",
     "framer-motion": "^11.18.2",
     "html-to-image": "^1.11.13",
     "jose": "^6.2.3",
@@ -68,7 +67,6 @@
     "tailwind-merge": "^2.6.1",
     "tailwindcss-animate": "^1.0.7",
     "web-push": "^3.6.7",
-    "wrangler": "^4.20.0",
     "zod": "^3.25.76",
     "zustand": "^4.5.7"
   },
@@ -85,6 +83,7 @@
     "@vitejs/plugin-react": "^4.7.0",
     "@vitest/coverage-v8": "^4.1.5",
     "cross-env": "^10.1.0",
+    "esbuild": "^0.25.0",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.6",
     "postcss": "^8",
@@ -93,6 +92,7 @@
     "tailwindcss": "^3.4.1",
     "ts-node": "^10.9.2",
     "typescript": "5.9.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.5",
+    "wrangler": "^4.20.0"
   }
 }

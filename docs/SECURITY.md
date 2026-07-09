@@ -91,7 +91,8 @@ nonce). Master key from `FAWTARA_SECRET_ENC_KEY`. No secrets committed;
 
 HSTS (preload), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
 `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`
-denying camera/mic/geo, CSP restricting to `'self'` + required externals
+allowing `camera=(self)` (POS barcode scanner, same-origin only) and denying
+mic/geo, CSP restricting to `'self'` + required externals
 (no `'unsafe-inline'` scripts in prod).
 
 ## Middleware posture

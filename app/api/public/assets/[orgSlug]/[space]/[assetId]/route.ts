@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 /**
  * Public, unauthenticated read-only lookup for the QR "guest view".
@@ -11,6 +12,9 @@ export async function GET(
   { params }: { params: Promise<{ orgSlug: string; space: string; assetId: string }> }
 ) {
   try {
+    const limited = await checkRateLimit(`public-asset:ip:${getClientIp(_req)}`, 60, 60_000);
+    if (limited) return limited;
+
     const { orgSlug, space, assetId } = await params;
 
     const { data: org } = await supabaseAdmin

@@ -10,7 +10,7 @@ const service = new TransactionsService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    const limited = rateLimitTenant(tenant, 'haraka-transactions', 120, 60_000)
+    const limited = await rateLimitTenant(tenant, 'haraka-transactions', 120, 60_000)
     if (limited) return limited
     const { searchParams } = new URL(req.url)
     const result = await service.list(tenant, {

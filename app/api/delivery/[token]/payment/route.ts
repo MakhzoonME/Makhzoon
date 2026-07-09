@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 /** POST — public (no auth). Driver records a payment collected on delivery. */
 export async function POST(
@@ -7,6 +8,9 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> },
 ) {
   try {
+    const limited = await checkRateLimit(`delivery-payment:ip:${getClientIp(req)}`, 30, 60_000)
+    if (limited) return limited
+
     const { token } = await params
     const body = await req.json() as { amount: number; paymentMethod?: string; note?: string }
 

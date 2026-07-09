@@ -31,7 +31,7 @@ export async function GET(_req: NextRequest) {
 export async function POST(req: NextRequest) {
   // SECURITY: Rate limit invite sending (10 per IP per hour)
   const clientIp = getClientIp(req);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `invite:${clientIp}`,
     10,
     60 * 60 * 1000,

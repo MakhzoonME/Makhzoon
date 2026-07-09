@@ -9,7 +9,7 @@ const service = new CardTerminalService()
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    const limited = rateLimitTenant(tenant, 'card-charges', 60, 60_000)
+    const limited = await rateLimitTenant(tenant, 'card-charges', 60, 60_000)
     if (limited) return limited
     const body = await req.json()
     const parsed = initiateChargeSchema.safeParse(body)

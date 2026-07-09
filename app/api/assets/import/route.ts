@@ -16,7 +16,7 @@ type RowError = { row: number; errors: string[] };
 export async function POST(req: NextRequest) {
   // SECURITY: Rate limit bulk imports (3 per IP per hour)
   const clientIp = getClientIp(req);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `import:${clientIp}`,
     3,
     60 * 60 * 1000,

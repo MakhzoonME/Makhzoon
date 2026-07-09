@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
     // 10 attempts per minute — prevents brute force on the 4–6 digit PIN
-    const limited = rateLimitTenant(tenant, 'cash-drawer-pin', 10, 60_000)
+    const limited = await rateLimitTenant(tenant, 'cash-drawer-pin', 10, 60_000)
     if (limited) return limited
     const body = await req.json()
     const parsed = verifyPinSchema.safeParse(body)

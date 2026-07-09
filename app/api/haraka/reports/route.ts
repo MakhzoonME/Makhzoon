@@ -58,7 +58,7 @@ function toCsv(result: AggregateResult): string {
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    const limited = rateLimitTenant(tenant, 'haraka-reports', 30, 60_000)
+    const limited = await rateLimitTenant(tenant, 'haraka-reports', 30, 60_000)
     if (limited) return limited
     const { searchParams } = new URL(req.url)
     const parsed = querySchema.safeParse({

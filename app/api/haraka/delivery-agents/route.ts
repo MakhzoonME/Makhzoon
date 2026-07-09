@@ -9,7 +9,7 @@ const service = new DeliveryAgentsService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    const limited = rateLimitTenant(tenant, 'haraka-delivery-agents', 60, 60_000)
+    const limited = await rateLimitTenant(tenant, 'haraka-delivery-agents', 60, 60_000)
     if (limited) return limited
     const onlyActive = new URL(req.url).searchParams.get('active') === 'true'
     const items = await service.list(tenant, onlyActive)

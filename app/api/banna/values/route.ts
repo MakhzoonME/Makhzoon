@@ -11,7 +11,7 @@ const VALID_RECORD_TYPES = new Set<CustomFieldRecordType>(['assets', 'inventory'
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
-    const limited = rateLimitTenant(tenant, 'banna', 60, 60_000);
+    const limited = await rateLimitTenant(tenant, 'banna', 60, 60_000);
     if (limited) return limited;
 
     const { searchParams } = new URL(req.url);
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
-    const limited = rateLimitTenant(tenant, 'banna', 30, 60_000);
+    const limited = await rateLimitTenant(tenant, 'banna', 30, 60_000);
     if (limited) return limited;
 
     const body = await req.json() as {

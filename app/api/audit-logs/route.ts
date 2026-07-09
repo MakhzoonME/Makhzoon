@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
+import { requireFeatureForOrg } from '@/lib/permissions/require-feature';
 import { getAuditLogs } from '@/lib/db/audit-logs';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { hasPermission } from '@/lib/permissions';
@@ -119,6 +120,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!isSuperadmin && !isOrgAdmin)
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (isOrgAdmin && user.organizationId)
+      await requireFeatureForOrg(user.organizationId, 'auditLogs');
 
     const { searchParams } = new URL(req.url);
     const orgId =

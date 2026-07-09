@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { rateLimitTenant } from '@/lib/rate-limit';
 import { requirePermission } from '@/lib/permissions/require';
 import * as reportsService from '@/lib/modules/reports/services/reports.service';
@@ -7,6 +8,7 @@ import * as reportsService from '@/lib/modules/reports/services/reports.service'
 export async function GET() {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'reports');
     requirePermission(tenant.user, 'reports', 'view');
     const limited = await rateLimitTenant(tenant, 'reports', 30, 60_000);
     if (limited) return limited;

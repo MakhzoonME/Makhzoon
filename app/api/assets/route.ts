@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { requirePermission } from '@/lib/permissions/require'
 import { AssetsService } from '@/lib/modules/assets/services/assets.service'
@@ -10,6 +11,7 @@ const service = new AssetsService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'assets')
     requirePermission(tenant.user, 'assets', 'view')
     const limited = await rateLimitTenant(tenant, 'assets', 60, 60_000)
     if (limited) return limited
@@ -38,6 +40,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'assets')
     requirePermission(tenant.user, 'assets', 'create')
     const parsed = createAssetSchema.safeParse(await req.json())
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { CardTerminalService } from '@/lib/modules/haraka/card-terminal/card-terminal.service'
 
 const service = new CardTerminalService()
 
 export async function POST(req: NextRequest) {
   try {
-    await resolveTenant()
+    requireFeature(await resolveTenant(), 'pos')
     const body = await req.json().catch(() => ({}))
     const bridgeUrl = typeof body.bridgeUrl === 'string' ? body.bridgeUrl : null
     if (!bridgeUrl) {

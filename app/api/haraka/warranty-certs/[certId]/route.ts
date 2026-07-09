@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { WarrantyCertsService } from '@/lib/modules/haraka/warranty-certs/warranty-certs.service'
 
 const service = new WarrantyCertsService()
@@ -10,6 +11,7 @@ export async function GET(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { certId } = await params
     const cert = await service.getById(tenant.organizationId, certId)
     return NextResponse.json({ cert })
@@ -26,6 +28,7 @@ export async function DELETE(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { certId } = await params
     await service.delete(tenant, certId)
     return NextResponse.json({ ok: true })

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { hasPermission } from '@/lib/permissions';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { createAsset } from '@/lib/db/assets';
@@ -25,6 +26,7 @@ export async function POST(req: NextRequest) {
   if (rateLimitResult) return rateLimitResult;
 
   const tenant = await resolveTenant();
+    requireFeature(tenant, 'assets');
   const user = tenant.user;
   if (!hasPermission(user, 'assets', 'import')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

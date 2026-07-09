@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { requirePermission } from '@/lib/permissions/require';
 import { getInventoryAuditById, updateAuditItem } from '@/lib/db/inventory-audits';
 
@@ -9,6 +10,7 @@ export async function POST(req: NextRequest, props: Params) {
   const params = await props.params;
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'inventory');
     requirePermission(tenant.user, 'inventory', 'audits');
 
     const audit = await getInventoryAuditById(params.auditId);

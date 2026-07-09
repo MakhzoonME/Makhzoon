@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { randomBytes } from 'crypto'
 
@@ -10,6 +11,7 @@ export async function POST(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { orderId } = await params
 
     const { data: order } = await supabaseAdmin

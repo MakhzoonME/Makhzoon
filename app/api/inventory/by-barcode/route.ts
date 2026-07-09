@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { InventoryService } from '@/lib/modules/inventory/services/inventory.service'
 
 const service = new InventoryService()
@@ -17,6 +18,7 @@ const service = new InventoryService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'inventory')
     const { searchParams } = new URL(req.url)
     const code = (searchParams.get('code') ?? '').trim()
     if (!code) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { requirePermission } from '@/lib/permissions/require';
 import { getAssetById } from '@/lib/db/assets';
 import { getInventoryItemById } from '@/lib/db/inventory';
@@ -9,6 +10,7 @@ import * as warrantiesService from '@/lib/modules/warranties/services/warranties
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'warranties');
     requirePermission(tenant.user, 'warranties', 'view');
 
     const { searchParams } = new URL(req.url);
@@ -41,6 +43,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'warranties');
     requirePermission(tenant.user, 'warranties', 'create');
     const orgId = tenant.organizationId;
 

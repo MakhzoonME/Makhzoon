@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { requirePermission } from '@/lib/permissions/require';
 import { getInventoryAudits, createInventoryAudit } from '@/lib/db/inventory-audits';
 import { getAssets } from '@/lib/db/assets';
@@ -9,6 +10,7 @@ import { inventoryAuditSchema } from '@/lib/validations/inventory.schema';
 export async function GET() {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'inventory');
     const audits = await getInventoryAudits(tenant.organizationId, tenant.spaceId);
     return NextResponse.json({ audits });
   } catch (err) {
@@ -21,6 +23,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'inventory');
     requirePermission(tenant.user, 'inventory', 'audits');
 
     const body = await req.json();

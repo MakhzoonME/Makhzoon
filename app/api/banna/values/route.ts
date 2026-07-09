@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { rateLimitTenant } from '@/lib/rate-limit';
 import { BannaValuesService } from '@/lib/modules/banna/services/banna-values.service';
 import type { CustomFieldRecordType, UpsertCustomFieldValueInput } from '@/types/banna.types';
@@ -11,6 +12,7 @@ const VALID_RECORD_TYPES = new Set<CustomFieldRecordType>(['assets', 'inventory'
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'banna');
     const limited = await rateLimitTenant(tenant, 'banna', 60, 60_000);
     if (limited) return limited;
 
@@ -33,6 +35,7 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'banna');
     const limited = await rateLimitTenant(tenant, 'banna', 30, 60_000);
     if (limited) return limited;
 

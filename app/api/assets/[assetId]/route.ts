@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { requirePermission } from '@/lib/permissions/require';
 import { assetSchema } from '@/lib/validations/asset.schema';
 import * as assetsService from '@/lib/services/assets.service';
@@ -7,6 +8,7 @@ import * as assetsService from '@/lib/services/assets.service';
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'assets');
     const user = tenant.user;
 
     const { assetId } = await params;
@@ -27,6 +29,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ass
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'assets');
     const user = tenant.user;
     requirePermission(user, 'assets', 'update');
 
@@ -56,6 +59,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ asse
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'assets');
     const user = tenant.user;
     requirePermission(user, 'assets', 'delete');
 

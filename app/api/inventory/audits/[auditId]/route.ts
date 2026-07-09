@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { requirePermission } from '@/lib/permissions/require';
 import { getInventoryAuditById, getAuditItems, completeAudit } from '@/lib/db/inventory-audits';
 import { auditLog } from '@/lib/platform/audit';
@@ -10,6 +11,7 @@ export async function GET(_req: NextRequest, props: Params) {
   const params = await props.params;
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'inventory');
 
     const audit = await getInventoryAuditById(params.auditId);
     if (!audit || audit.organizationId !== tenant.organizationId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -27,6 +29,7 @@ export async function PATCH(req: NextRequest, props: Params) {
   const params = await props.params;
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'inventory');
     requirePermission(tenant.user, 'inventory', 'audits');
 
     const audit = await getInventoryAuditById(params.auditId);

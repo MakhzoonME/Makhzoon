@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { requirePermission } from '@/lib/permissions/require'
 import { InventoryService } from '@/lib/modules/inventory/services/inventory.service'
@@ -10,6 +11,7 @@ const service = new InventoryService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'inventory')
     requirePermission(tenant.user, 'inventory', 'view')
     const limited = await rateLimitTenant(tenant, 'inventory', 60, 60_000)
     if (limited) return limited
@@ -45,6 +47,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'inventory')
     requirePermission(tenant.user, 'inventory', 'create')
     const body = await req.json()
     const parsed = createInventoryItemSchema.safeParse(body)

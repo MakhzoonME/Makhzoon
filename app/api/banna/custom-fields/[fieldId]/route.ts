@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { BannaService } from '@/lib/modules/banna/services/banna.service';
 import { updateCustomFieldSchema } from '@/lib/modules/banna/validators/schemas';
 
@@ -8,6 +9,7 @@ const service = new BannaService();
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ fieldId: string }> }) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'banna');
     const { fieldId } = await params;
     const field = await service.getCustomField(tenant, fieldId);
     return NextResponse.json(field);
@@ -21,6 +23,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ fie
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ fieldId: string }> }) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'banna');
     const { fieldId } = await params;
     const parsed = updateCustomFieldSchema.safeParse(await req.json());
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
@@ -35,6 +38,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ fi
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ fieldId: string }> }) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'banna');
     const { fieldId } = await params;
     await service.deleteCustomField(tenant, fieldId);
     return NextResponse.json({ success: true });

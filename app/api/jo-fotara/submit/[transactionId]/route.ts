@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { requirePermission } from '@/lib/permissions/require'
 import { FawtaraService } from '@/lib/modules/haraka/fawtara/service'
 
@@ -11,6 +12,7 @@ export async function POST(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     requirePermission(tenant.user, 'pos', 'fawtara_submit')
     const { transactionId } = await params
     const submission = await service.resubmit(tenant, transactionId)

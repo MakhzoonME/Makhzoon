@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { StockAuditService } from '@/lib/modules/inventory/services/stock-audit.service'
 import { submitStockAuditItemSchema } from '@/lib/modules/inventory/validators/stock-audit.schemas'
 
@@ -13,6 +14,7 @@ export async function POST(req: NextRequest, props: Params) {
   const params = await props.params
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'inventory')
     const body = await req.json()
     const parsed = submitStockAuditItemSchema.safeParse(body)
     if (!parsed.success) {

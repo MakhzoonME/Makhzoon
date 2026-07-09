@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { CardTerminalService } from '@/lib/modules/haraka/card-terminal/card-terminal.service'
 
 const service = new CardTerminalService()
@@ -10,6 +11,7 @@ export async function GET(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { ref } = await params
     const charge = await service.getChargeStatus(tenant, ref)
     return NextResponse.json({ charge })
@@ -27,6 +29,7 @@ export async function POST(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { ref } = await params
     const body = await req.json()
     const status = body.status

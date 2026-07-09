@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { requirePermission } from '@/lib/permissions/require'
 import { TransactionsService } from '@/lib/modules/haraka/transactions/transactions.service'
 
@@ -11,6 +12,7 @@ export async function POST(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     requirePermission(tenant.user, 'pos', 'void_transaction')
     const { transactionId } = await params
     await service.voidSale(tenant, transactionId)

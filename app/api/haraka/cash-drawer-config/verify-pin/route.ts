@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { CashDrawerService } from '@/lib/modules/haraka/cash-drawer/cash-drawer.service'
 import { verifyPinSchema } from '@/lib/modules/haraka/cash-drawer/schemas'
@@ -9,6 +10,7 @@ const service = new CashDrawerService()
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     // 10 attempts per minute — prevents brute force on the 4–6 digit PIN
     const limited = await rateLimitTenant(tenant, 'cash-drawer-pin', 10, 60_000)
     if (limited) return limited

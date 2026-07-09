@@ -37,6 +37,8 @@
   ],
   "exclude": [
     "node_modules",
-    "functions"
+    "functions",
+    "**/* 2.ts",
+    "**/* 2.tsx"
   ]
 }

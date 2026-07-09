@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { requirePermission } from '@/lib/permissions/require'
 import { PurchasesService } from '@/lib/modules/inventory/purchases/purchases.service'
 import { updatePurchaseSchema } from '@/lib/modules/inventory/purchases/schemas'
@@ -12,6 +13,7 @@ export async function GET(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'inventory')
     const { purchaseId } = await params
     const purchase = await service.getById(tenant, purchaseId)
     return NextResponse.json({ purchase })
@@ -28,6 +30,7 @@ export async function PATCH(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'inventory')
     requirePermission(tenant.user, 'purchases', 'update')
     const { purchaseId } = await params
     const body = await req.json()
@@ -72,6 +75,7 @@ export async function DELETE(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'inventory')
     requirePermission(tenant.user, 'purchases', 'delete')
     const { purchaseId } = await params
     await service.delete(tenant, purchaseId)

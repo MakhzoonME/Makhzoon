@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { CardTerminalService } from '@/lib/modules/haraka/card-terminal/card-terminal.service'
 import { cardTerminalConfigSchema } from '@/lib/modules/haraka/card-terminal/schemas'
 
@@ -8,6 +9,7 @@ const service = new CardTerminalService()
 export async function GET() {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const config = await service.getConfig(tenant)
     return NextResponse.json({ config })
   } catch (err) {
@@ -20,6 +22,7 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const body = await req.json()
     const parsed = cardTerminalConfigSchema.safeParse(body)
     if (!parsed.success) {

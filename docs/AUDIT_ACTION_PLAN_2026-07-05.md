@@ -203,14 +203,14 @@ The standalone design prototype in `prototype/` (HTML/CSS/JS, commits `d8f180e` 
 |-------|------|-------|------|--------|
 | 1 | T0.1 prototype commit | Haiku | XS | ✅ done |
 | 2 | T0.2 dep hygiene + lint script fix | Haiku | XS | ✅ done 2026-07-09 |
-| 3 | T0.3 fix 146 latent lint errors (100 hook violations) | Sonnet | M | |
-| 4 | T1.1 durable rate limiting | Opus | M | |
-| 5 | T1.2 staging/prod split (human-gated) | Opus | M | |
-| 6 | T1.3 server-side feature flags | Opus | M | |
-| 7 | T1.4 zod on 38 routes | Sonnet | M (batched) | |
-| 8 | T1.5 delivery-token lifecycle | Sonnet | S | |
-| 9 | T1.6 CSRF + cron hardening | Haiku | XS | |
-| 10 | T1.7 security docs rewrite | Sonnet | S | |
+| 3 | T0.3 fix 146 latent lint errors (100 hook violations) | Sonnet | M | ✅ done 2026-07-09 |
+| 4 | T1.1 durable rate limiting | Opus | M | ✅ done 2026-07-09 (needs db push) |
+| 5 | T1.2 staging/prod split (human-gated) | Opus | M | ⏸ runbook ready — operator action |
+| 6 | T1.3 server-side feature flags | Opus | M | ✅ done 2026-07-09 |
+| 7 | T1.4 zod on 38 routes | Sonnet | M (batched) | ✅ done 2026-07-09 (22 body routes) |
+| 8 | T1.5 delivery-token lifecycle | Sonnet | S | ✅ done 2026-07-09 (needs db push) |
+| 9 | T1.6 CSRF + cron hardening | Haiku | XS | ✅ done 2026-07-09 |
+| 10 | T1.7 security docs rewrite | Sonnet | S | ✅ done 2026-07-09 |
 | 11 | T2.1 test foundation | Opus | L | |
 | 12 | T2.2 generated DB types | Haiku | S | |
 | 13 | T2.3 file splits | Sonnet | M (batched) | |

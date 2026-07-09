@@ -145,13 +145,25 @@ Build in this order (each its own commit, vitest, mock Supabase at the repositor
 - Target: ~200 focused tests. Use `TEST_CASES.md` and `tests/2026-06-06_makhzoon_test_cases.csv` as the scenario source.
 - **Verify**: `npm run test:cov` — cover `lib/permissions` and the touched services ≥80%.
 
-#### T2.2 Commit generated Supabase types — **Haiku** *(C2)*
-- Run `npm run supabase:types` (needs local supabase CLI; if unavailable, generate from the hosted project with `--project-id`), commit `lib/db/supabase-types.ts`, and switch `lib/supabase/admin.ts` + `server.ts` to `SupabaseClient<Database>`. Fix resulting type errors (expect a wave — do it right after T2.1 lands so tests catch regressions).
-- **Verify**: `npx tsc --noEmit` clean; the `AnyClient` alias and its comment in `admin.ts` are gone.
+#### T2.2 Commit generated Supabase types — **Haiku** *(C2)* — ⏸ OPERATOR-GATED (2026-07-09)
+- Blocked in the working environment: no Docker (can't `supabase start` locally) and no `SUPABASE_ACCESS_TOKEN` / healthy hosted project to gen against.
+- **To complete** (operator runs one of):
+  ```bash
+  # A) against the hosted project (needs `supabase login` first):
+  npx supabase login
+  npx supabase gen types typescript --project-id ncjzozvzjtyycdlwohtr > lib/db/supabase-types.ts
+  # B) against a local stack (needs Docker):
+  npx supabase start && npm run supabase:types
+  ```
+  Then switch `lib/supabase/admin.ts` (and `server.ts`) from `SupabaseClient<any,any,any>` to `SupabaseClient<Database>`, and fix the resulting type errors (do this right after T2.1 so tests catch regressions).
+- **Verify**: `npx tsc --noEmit` clean; the `AnyClient` alias/comment in `admin.ts` are gone.
 
-#### T2.3 Split the 13 oversized files — **Sonnet** *(C3)*
-- Priority order: `dashboard/page.tsx` (966) → extract stat-card/section components; `login/page.tsx` (755) → extract form components; `AppSidebar.tsx` (745) → extract nav-section renderers. Pure mechanical extraction, no behavior change; one file per commit.
-- **Verify**: `find app components lib -name '*.ts*' | xargs wc -l | awk '$1>500'` shrinks each commit; UI unchanged (spot-check with `npm run dev`).
+#### T2.3 Split the 13 oversized files — **Sonnet** *(C3)* — 🔶 PARTIAL 2026-07-09/10
+Scoped pragmatically to avoid churn and money-code risk:
+- ✅ **Done now:** `move.service.ts` (613→349) split into `move.service.ts` + `move.helpers.ts` (55) + `transfer-quantity.service.ts` (223); the 4th duplicate of the stock-status rule removed in favor of the shared `lib/modules/inventory/stock-status.ts`.
+- 🔁 **Folded into T3.0:** the 8 UI pages (`dashboard` 967, `login` 755, `AppSidebar` 747, marketing `page.tsx` 709, `superadmin/team` 699, `users` 680, `superadmin/.../lists` 674, `raseed/list` 620, `usool/[assetId]` 617, `raseed/[itemId]` 613) — the prototype port rewrites these; extract components there rather than splitting twice.
+- ⏸ **Deferred (documented follow-up):** `transactions.repository.ts` (607) and `inventory.repository.ts` (515) are class-based POS/stock money code; method extraction risks more than the soft 500-line rule gains. Split only alongside a behavior change with integration coverage.
+- **Verify:** move.service under 500; `npx tsc --noEmit`, `npm test`, `npm run build` all clean.
 
 #### T2.4 CI gate — **Sonnet** *(C5)*
 - Ensure the GitHub Actions workflow (repo: `MakhzoonME/Makhzoon`) runs `lint` + `tsc --noEmit` + `vitest run` + `npm run audit:security` **before** the Cloudflare deploy step on all three branches; fail the deploy on any failure. Add a migration-sequence check (no duplicate/descending numbers).

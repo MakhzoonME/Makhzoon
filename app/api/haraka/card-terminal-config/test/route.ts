@@ -6,7 +6,7 @@ const service = new CardTerminalService()
 
 export async function POST(req: NextRequest) {
   try {
-    const tenant = await resolveTenant()
+    await resolveTenant()
     const body = await req.json().catch(() => ({}))
     const bridgeUrl = typeof body.bridgeUrl === 'string' ? body.bridgeUrl : null
     if (!bridgeUrl) {

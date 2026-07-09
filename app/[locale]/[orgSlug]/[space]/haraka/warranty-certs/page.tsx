@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { ShieldCheck } from 'lucide-react';
 import { PageHeader, DataTable } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
 import { WarrantyCertShareDialog } from '@/components/haraka/WarrantyCertShareDialog';

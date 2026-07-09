@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { OrderDocumentPreview, type DocumentType } from '@/components/haraka/OrderDocumentPreview';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import type { OrderDocumentConfig } from '@/lib/modules/haraka/orders/order-document-config';

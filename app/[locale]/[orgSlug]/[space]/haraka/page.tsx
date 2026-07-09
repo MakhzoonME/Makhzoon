@@ -74,7 +74,6 @@ export default function HarakaOverviewPage() {
   const orgSlug = useOrgSlug();
   const space = useSpace();
   const { t, locale } = useT();
-  if (!isAllowed) return null;
   const base = `/${locale}/${orgSlug}/${space}/haraka`;
 
   const [range] = useState(() => {
@@ -92,6 +91,8 @@ export default function HarakaOverviewPage() {
   const openCount = openSessions?.total ?? 0;
   const customerCount = customers?.total ?? 0;
   const recent = txns?.items ?? [];
+
+  if (!isAllowed) return null;
 
   const recentColumns: ColumnDef<PosTransaction>[] = [
     {

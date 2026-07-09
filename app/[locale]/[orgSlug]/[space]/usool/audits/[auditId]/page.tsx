@@ -80,7 +80,7 @@ function ItemRow({ item, auditId, space, completed }: { item: InventoryAuditItem
   }
 
   const isPending = item.status === 'pending';
-  const busy = markMutation.isPending || submitting.current;
+  const busy = markMutation.isPending || pendingAction !== null;
 
   return (
     <div className={cn(

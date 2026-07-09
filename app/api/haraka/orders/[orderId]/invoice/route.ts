@@ -3,7 +3,6 @@ import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { allocateHarakaInvoiceNumber } from '@/lib/modules/haraka/orders/invoice-numbering'
 import { loadOrderDocument } from '@/lib/modules/haraka/orders/order-document-loader'
-import { getOrganizationBySubdomain } from '@/lib/db/organizations'
 
 /** POST — allocate (or return existing) invoice number for an order. */
 export async function POST(

@@ -21,7 +21,6 @@ export default function CustomersListPage() {
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
-  if (!isAllowed) return null;
   const { data: orgInfo } = useOrgInfo();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -40,6 +39,8 @@ export default function CustomersListPage() {
   const showSelection = canBulkDelete || canBulkMove || canBulkDuplicate;
   const { data: spaceList } = useAccessibleSpaces();
   const hasMultipleSpaces = (spaceList?.items?.length ?? 0) > 1;
+
+  if (!isAllowed) return null;
 
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka/customers`;
 

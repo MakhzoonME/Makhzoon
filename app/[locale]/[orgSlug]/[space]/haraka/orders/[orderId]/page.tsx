@@ -1,14 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { Truck, Users, MapPin, CalendarClock, StickyNote, Share2, FileText, Receipt, ShieldCheck } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { OrderStatusBadge } from '@/components/haraka/OrderStatusBadge';
 import { DeliveryAgentPicker } from '@/components/haraka/DeliveryAgentPicker';
 import type { DeliveryAgentValue } from '@/components/haraka/DeliveryAgentPicker';
-import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { OrderShareDialog } from '@/components/haraka/OrderShareDialog';
 import { OrderPaymentsPanel } from '@/components/haraka/OrderPaymentsPanel';
 import { OrderDocumentDialog } from '@/components/haraka/OrderDocumentDialog';
@@ -30,7 +29,6 @@ const STATUS_SEQUENCE_PICKUP: OrderStatus[] = [
 
 export default function OrderDetailPage() {
   const params = useParams<{ locale: string; orgSlug: string; space: string; orderId: string }>();
-  const router = useRouter();
   const { data: orgInfo } = useOrgInfo();
   const { data, isLoading, refetch } = useOrder(params.orderId);
   const updateStatusMut = useUpdateOrderStatus();

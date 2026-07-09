@@ -17,7 +17,6 @@ function WarrantySVG() { return <svg width="22" height="22" viewBox="0 0 18 18" 
 function MenuSVG() { return <svg width="22" height="22" viewBox="0 0 18 18" fill="none" aria-hidden><path d="M2.5 5h13M2.5 9h13M2.5 13h13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>; }
 function BannaSVG() { return <svg width="22" height="22" viewBox="0 0 18 18" fill="none" aria-hidden><path d="M2.5 3h13v12H2.5V3z" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M5.5 7h7M5.5 10h5M5.5 13h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /><circle cx="14" cy="5" r="1.5" fill="currentColor" opacity="0.6" /></svg>; }
 
-const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
 interface PrimaryNavItem {
   href: string;
@@ -46,7 +45,6 @@ export function BottomNav() {
   const { user } = useAuthStore();
   const features = useSubscriptionFeatures();
 
-  const isAdmin = !!user && ADMIN_ROLES.has(user.role);
   const isStaff = user?.role === 'staff';
 
   const visibleNav = PRIMARY_NAV.filter(({ featureKey, moduleKey }) => {

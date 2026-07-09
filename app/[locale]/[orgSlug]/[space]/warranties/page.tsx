@@ -40,7 +40,6 @@ function DaysLeftBadge({ endDate }: { endDate: string | Date }) {
 export default function WarrantiesPage() {
   const { isAllowed } = useModuleGuard({ featureKey: 'warranties', moduleKey: 'warranties' });
   const { t, locale } = useT();
-  if (!isAllowed) return null;
   const router       = useRouter();
   const pathname     = usePathname();
   const searchParams = useSearchParams();
@@ -70,6 +69,8 @@ export default function WarrantiesPage() {
   const updateUrl = useCallback((params: Record<string, string>) => {
     router.replace(syncFiltersToUrl(pathname, params), { scroll: false });
   }, [pathname, router]);
+
+  if (!isAllowed) return null;
 
   function syncAllToUrl(next: Partial<Record<'status' | 'page' | 'pageSize' | 'sortBy' | 'sortDir', string>>) {
     updateUrl({

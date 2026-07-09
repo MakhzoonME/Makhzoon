@@ -642,7 +642,6 @@ export default function DashboardPage() {
   const { isAllowed } = useModuleGuard({ featureKey: 'dashboard', moduleKey: 'dashboard' });
   const router  = useRouter();
   const orgSlug = useOrgSlug();
-  if (!isAllowed) return null;
   const space   = useSpace();
   const { user } = useAuthStore();
   const { t, locale } = useT();
@@ -671,6 +670,8 @@ export default function DashboardPage() {
     return `${t('dashboard.synced')} ${Math.round(diffMin / 60)}h ago`;
   }, [dataUpdatedAt, t]);
   const isAdmin     = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
+
+  if (!isAllowed) return null;
 
   const activeAssets       = data?.assets.filter((a) => a.status === 'Active')  ?? [];
   const totalAssets        = data?.assets ?? [];

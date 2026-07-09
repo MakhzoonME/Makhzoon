@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { uploadToStorage, type UploadKind } from '@/lib/storage/upload';
+import { z } from 'zod';
+
+const uploadTypeSchema = z.enum(['avatar', 'logo', 'asset-receipt', 'inventory-receipt', 'warranty-document', 'purchase-invoice']);
 
 const IMG = ['image/jpeg', 'image/png', 'image/webp'];
 const DOC = [...IMG, 'application/pdf'];
@@ -26,7 +29,7 @@ const MAX_SIZES: Record<UploadKind, number> = {
 };
 
 function isUploadKind(v: unknown): v is UploadKind {
-  return typeof v === 'string' && v in ALLOWED_TYPES;
+  return uploadTypeSchema.safeParse(v).success;
 }
 
 export async function POST(req: NextRequest) {

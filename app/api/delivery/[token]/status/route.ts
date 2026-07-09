@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { z } from 'zod'
+
+const statusSchema = z.object({
+  status: z.enum(['in_transit', 'delivered', 'ready_for_pickup', 'picked_up']),
+})
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
@@ -19,7 +24,11 @@ export async function POST(
     if (limited) return limited
 
     const { token } = await params
-    const { status } = await req.json() as { status: string }
+    const parsedBody = statusSchema.safeParse(await req.json().catch(() => null))
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: 'Invalid status' }, { status: 422 })
+    }
+    const { status } = parsedBody.data
 
     const { data: order } = await supabaseAdmin
       .from('haraka_orders')

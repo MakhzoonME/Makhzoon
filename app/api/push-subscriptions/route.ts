@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { z } from 'zod';
+
+const subscribeSchema = z.object({
+  endpoint: z.string().url().max(1000),
+  keys: z.object({ p256dh: z.string().min(1).max(300), auth: z.string().min(1).max(300) }),
+  userAgent: z.string().max(500).optional(),
+});
 
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
-    const body = await req.json() as {
-      endpoint?: string;
-      keys?: { p256dh?: string; auth?: string };
-      userAgent?: string;
-    };
-
-    const { endpoint, keys } = body;
-    if (!endpoint || !keys?.p256dh || !keys?.auth) {
+    const parsed = subscribeSchema.safeParse(await req.json().catch(() => null));
+    if (!parsed.success) {
       return NextResponse.json({ error: 'Invalid subscription' }, { status: 422 });
     }
+    const body = parsed.data;
+    const { endpoint, keys } = body;
 
     await supabaseAdmin
       .from('web_push_subscriptions')

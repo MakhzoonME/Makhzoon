@@ -3,6 +3,13 @@ import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { requireFeature } from '@/lib/permissions/require-feature';
 import { requirePermission } from '@/lib/permissions/require';
 import { getInventoryAuditById, updateAuditItem } from '@/lib/db/inventory-audits';
+import { z } from 'zod';
+
+const auditItemSchema = z.object({
+  auditItemId: z.string().min(1),
+  status: z.enum(['found', 'missing']),
+  note: z.string().max(1000).optional(),
+});
 
 interface Params { params: Promise<{ auditId: string }> }
 
@@ -17,12 +24,11 @@ export async function POST(req: NextRequest, props: Params) {
     if (!audit || audit.organizationId !== tenant.organizationId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     if (audit.status === 'completed') return NextResponse.json({ error: 'Audit already completed' }, { status: 409 });
 
-    const body = await req.json();
-    const { auditItemId, status, note } = body as { auditItemId: string; status: 'found' | 'missing'; note?: string };
-
-    if (!auditItemId || !['found', 'missing'].includes(status)) {
+    const parsed = auditItemSchema.safeParse(await req.json().catch(() => null));
+    if (!parsed.success) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 422 });
     }
+    const { auditItemId, status, note } = parsed.data;
 
     await updateAuditItem(
       auditItemId,

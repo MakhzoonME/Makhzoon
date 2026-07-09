@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import * as spacesService from '@/lib/modules/spaces/services/spaces.service';
+import { z } from 'zod';
+
+const addMemberSchema = z.object({ userId: z.string().min(1) });
 
 /** GET /api/spaces/[spaceId]/members — list members (admin/owner). */
 export async function GET(
@@ -27,11 +30,11 @@ export async function POST(
   try {
     const tenant = await resolveTenant();
     const { spaceId } = await params;
-    const body = await req.json().catch(() => ({}));
-    if (typeof body.userId !== 'string') {
+    const parsed = addMemberSchema.safeParse(await req.json().catch(() => ({})));
+    if (!parsed.success) {
       return NextResponse.json({ error: 'userId required' }, { status: 422 });
     }
-    await spacesService.addMember(tenant, spaceId, body.userId);
+    await spacesService.addMember(tenant, spaceId, parsed.data.userId);
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (err) {
     if (err instanceof NextResponse) return err;

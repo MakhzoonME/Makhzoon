@@ -253,7 +253,7 @@ export default function RegisterPage() {
 
         {/* LEFT — product catalog */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden p-4 gap-3">
-          <BarcodeInput onResolve={handleScan} placeholder={t('register.scanPlaceholder')} autoFocus />
+          <BarcodeInput onResolve={handleScan} placeholder={t('register.scanPlaceholder')} autoFocus enableCamera />
           <ProductGrid onPick={pickItem} />
         </div>
 

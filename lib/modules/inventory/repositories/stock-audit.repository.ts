@@ -6,6 +6,7 @@ import type {
   StockAuditAdjustment,
   StockAuditItem,
 } from '@/types/stock-audit.types'
+import { stockStatus } from '../stock-status'
 
 type Row = Record<string, unknown>
 
@@ -314,7 +315,7 @@ export class StockAuditRepository {
       if (txErr) throw txErr
 
       const threshold = (itemRow.minimum_threshold as number) ?? 0
-      const status = target === 0 ? 'out' : target < threshold ? 'low' : 'ok'
+      const status = stockStatus(target, threshold)
       await supabaseAdmin
         .from('inventory_items')
         .update({

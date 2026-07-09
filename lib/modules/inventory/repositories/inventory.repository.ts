@@ -1,15 +1,10 @@
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
-import type { InventoryItem, InventoryTransaction, InventoryUnit, StockStatus, TransactionType } from '../types'
+import type { InventoryItem, InventoryTransaction, InventoryUnit, TransactionType } from '../types'
+import { stockStatus } from '../stock-status'
 
 type Row = Record<string, unknown>
-
-function stockStatus(qty: number, threshold: number): StockStatus {
-  if (qty === 0) return 'out'
-  if (qty < threshold) return 'low'
-  return 'ok'
-}
 
 function toItem(r: Row, computedQty?: number): InventoryItem {
   const qty = computedQty ?? (r.quantity_on_hand as number) ?? 0

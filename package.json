@@ -24,7 +24,9 @@
     "supabase:types": "supabase gen types typescript --local > lib/db/supabase-types.ts",
     "audit:security": "node scripts/security-audit.mjs",
     "audit:perf": "node scripts/performance-audit.mjs",
-    "audit": "npm run audit:security && npm run audit:perf"
+    "audit": "npm run audit:security && npm run audit:perf",
+    "check:migrations": "node scripts/check-migrations.mjs",
+    "verify": "npm run lint && npx tsc --noEmit && npm test && npm run check:migrations && npm run audit:security"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

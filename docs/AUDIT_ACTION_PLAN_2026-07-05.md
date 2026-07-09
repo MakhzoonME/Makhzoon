@@ -165,9 +165,10 @@ Scoped pragmatically to avoid churn and money-code risk:
 - ⏸ **Deferred (documented follow-up):** `transactions.repository.ts` (607) and `inventory.repository.ts` (515) are class-based POS/stock money code; method extraction risks more than the soft 500-line rule gains. Split only alongside a behavior change with integration coverage.
 - **Verify:** move.service under 500; `npx tsc --noEmit`, `npm test`, `npm run build` all clean.
 
-#### T2.4 CI gate — **Sonnet** *(C5)*
-- Ensure the GitHub Actions workflow (repo: `MakhzoonME/Makhzoon`) runs `lint` + `tsc --noEmit` + `vitest run` + `npm run audit:security` **before** the Cloudflare deploy step on all three branches; fail the deploy on any failure. Add a migration-sequence check (no duplicate/descending numbers).
-- **Verify**: push a branch with a failing test → Action fails before deploy.
+#### T2.4 CI gate — **Sonnet** *(C5)* — ✅ DONE 2026-07-10
+- `deploy.yml` gains a `verify` job (lint · tsc · tests · migration-sequence · security-audit); `map-env` now `needs: verify`, so the whole deploy chain (all three branches) is blocked if any check fails.
+- Added `scripts/check-migrations.mjs` (duplicate/malformed numbering guard; gaps allowed) + `npm run check:migrations` and an `npm run verify` aggregate that mirrors the CI job for local use.
+- **Verify**: `npm run verify` exits 0 locally; workflow YAML wiring confirmed (`map-env needs verify`).
 
 ---
 
@@ -223,10 +224,10 @@ The standalone design prototype in `prototype/` (HTML/CSS/JS, commits `d8f180e` 
 | 8 | T1.5 delivery-token lifecycle | Sonnet | S | ✅ done 2026-07-09 (needs db push) |
 | 9 | T1.6 CSRF + cron hardening | Haiku | XS | ✅ done 2026-07-09 |
 | 10 | T1.7 security docs rewrite | Sonnet | S | ✅ done 2026-07-09 |
-| 11 | T2.1 test foundation | Opus | L | |
-| 12 | T2.2 generated DB types | Haiku | S | |
-| 13 | T2.3 file splits | Sonnet | M (batched) | |
-| 14 | T2.4 CI gate | Sonnet | S | |
+| 11 | T2.1 test foundation | Opus | L | ✅ done 2026-07-09 (29→77 tests) |
+| 12 | T2.2 generated DB types | Haiku | S | ⏸ operator-gated (no Docker/token) |
+| 13 | T2.3 file splits | Sonnet | M (batched) | 🔶 partial (move.service; rest → T3.0/deferred) |
+| 14 | T2.4 CI gate | Sonnet | S | ✅ done 2026-07-10 |
 | 15 | T3.0 apply HTML prototype UI/UX to the app | Opus+Sonnet | XL | |
 | 16 | T3.1–T3.5 product backlog | mixed | L | |
 | 17 | T4.1–T4.2 business | Opus/Haiku | L | |

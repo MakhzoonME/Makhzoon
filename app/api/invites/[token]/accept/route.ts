@@ -12,7 +12,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
   try {
     // SECURITY: Rate limit invite acceptance (5 per IP per hour)
     const clientIp = getClientIp(req);
-    const rateLimitResult = checkRateLimit(
+    const rateLimitResult = await checkRateLimit(
       `invite-accept:${clientIp}`,
       5,
       60 * 60 * 1000,

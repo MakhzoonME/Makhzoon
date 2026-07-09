@@ -7,7 +7,7 @@ import { updateUser } from '@/lib/db/users';
 export async function PATCH(req: NextRequest) {
   // SECURITY: Rate limit profile updates (20 per IP per hour)
   const clientIp = getClientIp(req);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `profile:${clientIp}`,
     20,
     60 * 60 * 1000,

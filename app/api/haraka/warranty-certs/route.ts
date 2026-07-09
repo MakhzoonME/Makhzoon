@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    const limited = rateLimitTenant(tenant, 'warranty-certs', 30, 60_000)
+    const limited = await rateLimitTenant(tenant, 'warranty-certs', 30, 60_000)
     if (limited) return limited
     const body = await req.json()
     const parsed = createWarrantyCertSchema.safeParse(body)

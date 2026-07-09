@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const tenant = await resolveTenant();
     requirePermission(tenant.user, 'reports', 'view');
-    const limited = rateLimitTenant(tenant, 'reports', 30, 60_000);
+    const limited = await rateLimitTenant(tenant, 'reports', 30, 60_000);
     if (limited) return limited;
     const data = await reportsService.getAll(tenant);
     return NextResponse.json(data);

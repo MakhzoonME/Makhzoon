@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   confirmed:        ['in_transit'],
@@ -14,6 +15,9 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> },
 ) {
   try {
+    const limited = await checkRateLimit(`delivery-status:ip:${getClientIp(req)}`, 30, 60_000)
+    if (limited) return limited
+
     const { token } = await params
     const { status } = await req.json() as { status: string }
 

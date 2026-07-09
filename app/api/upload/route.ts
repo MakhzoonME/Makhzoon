@@ -31,7 +31,7 @@ function isUploadKind(v: unknown): v is UploadKind {
 
 export async function POST(req: NextRequest) {
   const clientIp = getClientIp(req);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `upload:${clientIp}`,
     20,
     60 * 60 * 1000,

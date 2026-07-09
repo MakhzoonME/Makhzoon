@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     if (!SUPERADMIN_ROLES.has(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const clientIp = getClientIp(req);
-    const rateLimitResult = checkRateLimit(`invite:${clientIp}`, 20, 60 * 60 * 1000, { action: 'send invites' });
+    const rateLimitResult = await checkRateLimit(`invite:${clientIp}`, 20, 60 * 60 * 1000, { action: 'send invites' });
     if (rateLimitResult) return rateLimitResult;
 
     const body = await req.json().catch(() => null);

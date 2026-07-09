@@ -57,7 +57,7 @@ const confirmHtml = (email: string, firstName?: string) => `
 export async function POST(req: NextRequest) {
   // SECURITY: Rate limit early access (5 per IP per day, 1 per email per week)
   const clientIp = getClientIp(req);
-  const rateLimitIp = checkRateLimit(
+  const rateLimitIp = await checkRateLimit(
     `early-access:ip:${clientIp}`,
     5,
     24 * 60 * 60 * 1000,
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Rate limit by email as well (in-memory fallback — real gate is the DB check below)
-  const rateLimitEmail = checkRateLimit(
+  const rateLimitEmail = await checkRateLimit(
     `early-access:email:${email}`,
     1,
     7 * 24 * 60 * 60 * 1000,

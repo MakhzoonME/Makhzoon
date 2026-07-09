@@ -11,7 +11,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   const clientIp = getClientIp(req);
-  const limited = checkRateLimit(`send-password-reset:ip:${clientIp}`, 5, 15 * 60 * 1000, { action: 'send password reset' });
+  const limited = await checkRateLimit(`send-password-reset:ip:${clientIp}`, 5, 15 * 60 * 1000, { action: 'send password reset' });
   if (limited) return limited;
 
   const body = await req.json().catch(() => ({}));

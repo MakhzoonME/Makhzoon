@@ -9,7 +9,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   const clientIp = getClientIp(req);
-  const limited = checkRateLimit(`check-email:ip:${clientIp}`, 10, 60 * 1000, { action: 'check email' });
+  const limited = await checkRateLimit(`check-email:ip:${clientIp}`, 10, 60 * 1000, { action: 'check email' });
   if (limited) return limited;
 
   const body = await req.json().catch(() => ({}));

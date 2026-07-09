@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 type Row = Record<string, unknown>
 
@@ -9,6 +10,9 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> },
 ) {
   try {
+    const limited = await checkRateLimit(`delivery:ip:${getClientIp(_req)}`, 60, 60_000)
+    if (limited) return limited
+
     const { token } = await params
 
     const orderRes = await supabaseAdmin

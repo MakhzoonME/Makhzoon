@@ -42,8 +42,8 @@ const CONFIG_DEFAULTS: Omit<HarakaWarrantyConfig, 'organizationId'> = {
 async function loadCert(orgSlug: string, certId: string) {
   const { data: org } = await supabaseAdmin
     .from('organizations')
-    .select('id, name, name_ar')
-    .eq('slug', orgSlug)
+    .select('id, name')
+    .eq('subdomain', orgSlug)
     .maybeSingle()
   if (!org) return null
 
@@ -82,7 +82,7 @@ async function loadCert(orgSlug: string, certId: string) {
     cert:      toCert(certRow),
     config,
     orgName:   org.name as string,
-    orgNameAr: (org.name_ar as string) ?? undefined,
+    orgNameAr: undefined, // organizations has no Arabic-name column
   }
 }
 

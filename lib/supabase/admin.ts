@@ -4,10 +4,12 @@ import {
   type SupabaseClient,
 } from '@supabase/supabase-js';
 
-// No generated DB types available in this environment, so use a permissive
-// schema: this keeps .from(t).insert/update/upsert payloads typed as `any`
-// instead of `never`. Swap for `SupabaseClient<Database>` once
-// `supabase gen types` output is committed.
+// Permissive schema: keeps .from(t).insert/update/upsert payloads typed as
+// `any` instead of `never`. Generated types now exist at
+// `@/lib/db/supabase-types` (Database); switching this to
+// `SupabaseClient<Database>` surfaces ~102 strict-typing fixes (mostly JSONB
+// column casts + null-handling) — tracked as the remaining half of T2.2 in
+// docs/AUDIT_ACTION_PLAN_2026-07-05.md.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyClient = SupabaseClient<any, any, any>;
 

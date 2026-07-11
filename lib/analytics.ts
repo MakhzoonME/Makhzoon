@@ -49,14 +49,20 @@ export const analytics = {
       });
     }).catch(() => {});
 
-    const h = heap();
-    if (h) {
-      h.identify?.(user.uid);
-      h.addUserProperties?.(traits);
-    }
+    // Heap / Clarity are synchronous globals — a throw here (e.g. Heap's
+    // "environment id is missing") must not bubble into the caller (login).
+    try {
+      const h = heap();
+      if (h) {
+        h.identify?.(user.uid);
+        h.addUserProperties?.(traits);
+      }
 
-    // Microsoft Clarity custom user ID
-    clarity()?.('identify', user.uid, undefined, undefined, user.email ?? '');
+      // Microsoft Clarity custom user ID
+      clarity()?.('identify', user.uid, undefined, undefined, user.email ?? '');
+    } catch (err) {
+      console.warn('[analytics] identify failed (non-fatal):', err);
+    }
   },
 
   track(event: string, properties?: Properties): void {
@@ -66,8 +72,12 @@ export const analytics = {
       posthog.capture(event, properties);
     }).catch(() => {});
 
-    const h = heap();
-    h?.track?.(event, properties as never);
+    try {
+      const h = heap();
+      h?.track?.(event, properties as never);
+    } catch (err) {
+      console.warn('[analytics] track failed (non-fatal):', err);
+    }
   },
 
   reset(): void {
@@ -77,6 +87,10 @@ export const analytics = {
       posthog.reset();
     }).catch(() => {});
 
-    heap()?.resetIdentity?.();
+    try {
+      heap()?.resetIdentity?.();
+    } catch (err) {
+      console.warn('[analytics] reset failed (non-fatal):', err);
+    }
   },
 };

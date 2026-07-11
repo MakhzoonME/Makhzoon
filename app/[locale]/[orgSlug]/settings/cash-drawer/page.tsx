@@ -83,7 +83,7 @@ export default function CashDrawerSettingsPage() {
       <div>
         <h1 className="text-lg font-semibold text-gray-900">Cash Drawer</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          Configure the cash drawer connected to your receipt printer's RJ11 port.
+          Configure the cash drawer connected to your receipt printer&rsquo;s RJ11 port.
         </p>
       </div>
 
@@ -147,7 +147,7 @@ export default function CashDrawerSettingsPage() {
 
           <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
             <Info className="h-3.5 w-3.5 flex-shrink-0" />
-            The drawer must be connected to your printer's RJ11/RJ12 port. It is opened via the same USB connection as receipts.
+            The drawer must be connected to your printer&rsquo;s RJ11/RJ12 port. It is opened via the same USB connection as receipts.
           </div>
 
           <div className="grid grid-cols-3 gap-4">

@@ -78,3 +78,7 @@ x.collectionGroup
 # Design canvas files (handoff reference — not production code)
 *Journeys.html
 
+# Database backups / exports — contain real production data, never commit
+db-backups/
+*_rows.csv
+

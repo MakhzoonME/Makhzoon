@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { RetainersService } from '@/lib/modules/haraka/retainers/retainers.service'
 import { updateRetainerStatusSchema } from '@/lib/modules/haraka/retainers/schemas'
 
@@ -11,6 +12,7 @@ export async function POST(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { retainerId } = await params
     const body = await req.json()
     const parsed = updateRetainerStatusSchema.safeParse(body)

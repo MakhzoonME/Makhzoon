@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Orders — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <style>.pipe.active{color:#4F46E5;border-color:#4F46E5;}</style>
+</head>
+<body data-page="orders" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <div><h1 class="text-xl font-semibold text-slate-900">Orders <span class="text-slate-400 font-normal text-base">· Haraka</span></h1></div>
+            </div>
+            <button class="h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5"><i data-lucide="plus" class="!w-4 !h-4"></i>New Order</button>
+          </div>
+
+          <!-- Tab bar -->
+          <div class="flex gap-1 border-b border-slate-200 mb-4">
+            <button class="tab-btn active px-4 py-2.5 text-sm font-medium border-b-2 -mb-px text-primary border-primary whitespace-nowrap" onclick="switchTab('orders')">Orders</button>
+            <button class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 -mb-px text-slate-500 border-transparent whitespace-nowrap" onclick="switchTab('service-jobs')">Service Jobs</button>
+            <button class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 -mb-px text-slate-500 border-transparent whitespace-nowrap" onclick="switchTab('retainers')">Retainers</button>
+          </div>
+
+          <!-- Tab: Orders -->
+          <div id="tab-orders">
+            <div id="pipe" class="flex gap-1 border-b border-slate-200 mb-4 overflow-x-auto"></div>
+
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide"><tr>
+                  <th class="px-4 py-3 text-left font-semibold">Order No</th><th class="px-4 py-3 text-left font-semibold">Customer</th>
+                  <th class="px-4 py-3 text-left font-semibold">Channel</th><th class="px-4 py-3 text-right font-semibold">Items</th>
+                  <th class="px-4 py-3 text-right font-semibold">Total</th><th class="px-4 py-3 text-left font-semibold">Payment</th>
+                  <th class="px-4 py-3 text-left font-semibold">Fulfillment</th><th class="px-4 py-3 text-left font-semibold">Agent</th><th class="w-10 px-4 py-3"></th>
+                </tr></thead>
+                <tbody id="rows" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab: Service Jobs -->
+          <div id="tab-service-jobs" class="hidden">
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide"><tr>
+                  <th class="px-4 py-3 text-left font-semibold">Job #</th>
+                  <th class="px-4 py-3 text-left font-semibold">Customer</th>
+                  <th class="px-4 py-3 text-left font-semibold">Type</th>
+                  <th class="px-4 py-3 text-left font-semibold">Description</th>
+                  <th class="px-4 py-3 text-left font-semibold">Assigned</th>
+                  <th class="px-4 py-3 text-left font-semibold">Due Date</th>
+                  <th class="px-4 py-3 text-right font-semibold">Total</th>
+                  <th class="px-4 py-3 text-left font-semibold">Status</th>
+                </tr></thead>
+                <tbody id="svc-rows" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab: Retainers -->
+          <div id="tab-retainers" class="hidden">
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide"><tr>
+                  <th class="px-4 py-3 text-left font-semibold">Retainer #</th>
+                  <th class="px-4 py-3 text-left font-semibold">Customer</th>
+                  <th class="px-4 py-3 text-left font-semibold">Name</th>
+                  <th class="px-4 py-3 text-right font-semibold">Monthly Amount</th>
+                  <th class="px-4 py-3 text-right font-semibold">Total Paid</th>
+                  <th class="px-4 py-3 text-left font-semibold">Status</th>
+                  <th class="px-4 py-3 text-left font-semibold">Started</th>
+                </tr></thead>
+                <tbody id="ret-rows" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-haraka.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const stages = [['All', null], ['New', 'new'], ['Confirmed', 'confirmed'], ['Assigned', 'assigned'], ['In Transit', 'in_transit'], ['Delivered', 'delivered']];
+    let active = 'All';
+    const PV = App.seed.paymentVariant, CV = App.seed.channelVariant, OV = App.seed.orderStatusVariant;
+    const SV = App.seed.serviceJobStatusVariant, TV = App.seed.serviceJobTypeVariant, RV = App.seed.retainerStatusVariant;
+
+    function renderPipe() {
+      document.getElementById('pipe').innerHTML = stages.map(([label, key]) => {
+        const n = key ? App.seed.orders.filter((o) => o.status === key).length : App.seed.orders.length;
+        return `<button onclick="active='${label}';renderPipe();renderRows()" class="pipe ${label === active ? 'active' : ''} px-4 py-2.5 text-sm font-medium border-b-2 -mb-px text-slate-500 border-transparent whitespace-nowrap">${label} <span class="ml-1 text-xs text-slate-400">${n}</span></button>`;
+      }).join('');
+    }
+
+    function renderRows() {
+      const stage = stages.find(([l]) => l === active)[1];
+      const rows = App.seed.orders.filter((o) => !stage || o.status === stage);
+      document.getElementById('rows').innerHTML = rows.map((o) => `<tr class="hover:bg-slate-50 cursor-pointer" onclick="location.href='haraka-order-detail.html'">
+        <td class="px-4 py-3 font-medium text-slate-800">${o.id}</td>
+        <td class="px-4 py-3 text-slate-600">${o.customer}</td>
+        <td class="px-4 py-3">${App.ui.badge(o.channel, CV[o.channel])}</td>
+        <td class="px-4 py-3 text-right text-slate-600">${o.items}</td>
+        <td class="px-4 py-3 text-right font-medium text-slate-800">${App.ui.money(o.total)}</td>
+        <td class="px-4 py-3">${App.ui.badge(o.payment, PV[o.payment])}</td>
+        <td class="px-4 py-3"><span class="inline-flex items-center gap-1.5 text-slate-600"><i data-lucide="${o.fulfillment === 'Delivery' ? 'truck' : 'store'}" class="!w-4 !h-4 text-slate-400"></i>${o.fulfillment}</span></td>
+        <td class="px-4 py-3 text-slate-600">${o.agent}</td>
+        <td class="px-4 py-3 text-slate-300"><i data-lucide="chevron-right" class="!w-4 !h-4"></i></td></tr>`).join('');
+      App.ui.icons();
+    }
+
+    function renderServiceJobs() {
+      document.getElementById('svc-rows').innerHTML = App.seed.serviceJobs.map((j) => `<tr class="hover:bg-slate-50">
+        <td class="px-4 py-3 font-medium text-slate-800">${j.id}</td>
+        <td class="px-4 py-3 text-slate-600">${j.customer}</td>
+        <td class="px-4 py-3">${App.ui.badge(j.type, TV[j.type])}</td>
+        <td class="px-4 py-3 text-slate-600 max-w-xs truncate">${j.description}</td>
+        <td class="px-4 py-3 text-slate-600">${j.assigned}</td>
+        <td class="px-4 py-3 text-slate-600">${j.due}</td>
+        <td class="px-4 py-3 text-right font-medium text-slate-800">${App.ui.money(j.total)}</td>
+        <td class="px-4 py-3">${App.ui.badge(j.status.replace('_', ' '), SV[j.status])}</td>
+      </tr>`).join('');
+      App.ui.icons();
+    }
+
+    function renderRetainers() {
+      document.getElementById('ret-rows').innerHTML = App.seed.retainers.map((r) => `<tr class="hover:bg-slate-50">
+        <td class="px-4 py-3 font-medium text-slate-800">${r.id}</td>
+        <td class="px-4 py-3 text-slate-600">${r.customer}</td>
+        <td class="px-4 py-3 text-slate-700">${r.name}</td>
+        <td class="px-4 py-3 text-right font-medium text-slate-800">${App.ui.money(r.amount)}</td>
+        <td class="px-4 py-3 text-right text-slate-600">${App.ui.money(r.paid)}</td>
+        <td class="px-4 py-3">${App.ui.badge(r.status, RV[r.status])}</td>
+        <td class="px-4 py-3 text-slate-500">${r.started}</td>
+      </tr>`).join('');
+      App.ui.icons();
+    }
+
+    function switchTab(tab) {
+      const tabs = { orders: 'tab-orders', 'service-jobs': 'tab-service-jobs', retainers: 'tab-retainers' };
+      const labels = { orders: 'Orders', 'service-jobs': 'Service Jobs', retainers: 'Retainers' };
+      Object.values(tabs).forEach((id) => document.getElementById(id).classList.add('hidden'));
+      document.getElementById(tabs[tab]).classList.remove('hidden');
+      document.querySelectorAll('.tab-btn').forEach((btn) => {
+        const isActive = btn.textContent.trim() === labels[tab];
+        btn.classList.toggle('active', isActive);
+        btn.classList.toggle('text-primary', isActive);
+        btn.classList.toggle('border-primary', isActive);
+        btn.classList.toggle('text-slate-500', !isActive);
+        btn.classList.toggle('border-transparent', !isActive);
+      });
+    }
+
+    renderPipe(); renderRows(); renderServiceJobs(); renderRetainers(); App.ui.icons();
+  </script>
+</body>
+</html>

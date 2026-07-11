@@ -127,7 +127,6 @@ export default function DeliveryAgentsPage() {
   const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { data: orgInfo } = useOrgInfo();
-  if (!isAllowed) return null;
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
 
   const { data, isLoading } = useDeliveryAgents();
@@ -140,6 +139,8 @@ export default function DeliveryAgentsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<HarakaDeliveryAgent | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<HarakaDeliveryAgent | null>(null);
+
+  if (!isAllowed) return null;
 
   async function handleCreate(values: DeliveryAgentFormData) {
     try {

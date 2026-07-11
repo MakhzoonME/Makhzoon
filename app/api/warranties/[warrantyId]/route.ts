@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { requirePermission } from '@/lib/permissions/require';
 import { warrantySchema } from '@/lib/validations/warranty.schema';
 import * as warrantiesService from '@/lib/modules/warranties/services/warranties.service';
@@ -7,6 +8,7 @@ import * as warrantiesService from '@/lib/modules/warranties/services/warranties
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ warrantyId: string }> }) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'warranties');
     const { warrantyId } = await params;
     const warranty = await warrantiesService.getById(tenant, warrantyId);
     return NextResponse.json(warranty);
@@ -20,6 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ war
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ warrantyId: string }> }) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'warranties');
     requirePermission(tenant.user, 'warranties', 'update');
     const { warrantyId } = await params;
 
@@ -48,6 +51,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ warr
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ warrantyId: string }> }) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'warranties');
     requirePermission(tenant.user, 'warranties', 'delete');
     const { warrantyId } = await params;
     await warrantiesService.del(tenant, warrantyId);

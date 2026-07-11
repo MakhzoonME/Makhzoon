@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { DeliveryAgentsService } from '@/lib/modules/haraka/delivery-agents/delivery-agents.service'
 import { deliveryAgentUpdateSchema } from '@/lib/modules/haraka/delivery-agents/schemas'
 
@@ -11,6 +12,7 @@ export async function GET(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { agentId } = await params
     const agent = await service.getById(tenant, agentId)
     return NextResponse.json({ agent })
@@ -27,6 +29,7 @@ export async function PATCH(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { agentId } = await params
     const body = await req.json()
     const parsed = deliveryAgentUpdateSchema.safeParse(body)
@@ -49,6 +52,7 @@ export async function DELETE(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { agentId } = await params
     await service.delete(tenant, agentId)
     return NextResponse.json({ ok: true })

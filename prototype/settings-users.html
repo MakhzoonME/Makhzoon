@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Settings · Users — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="settings" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+          <h1 class="text-xl font-semibold text-slate-900 mb-5">Settings</h1>
+          <div class="flex gap-6">
+            <nav id="settings-nav" class="w-56 shrink-0 space-y-1"></nav>
+            <div class="flex-1">
+              <div class="flex items-center justify-between mb-3">
+                <div><h2 class="font-semibold text-slate-800">Users</h2><p class="text-sm text-slate-500">6 members · manage roles and permissions</p></div>
+                <button class="h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5"><i data-lucide="user-plus" class="!w-4 !h-4"></i>Invite User</button>
+              </div>
+              <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <table class="w-full text-sm">
+                  <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide"><tr>
+                    <th class="px-4 py-3 text-left font-semibold">Name</th><th class="px-4 py-3 text-left font-semibold">Role</th>
+                    <th class="px-4 py-3 text-left font-semibold">Status</th><th class="px-4 py-3 text-left font-semibold">Spaces</th>
+                    <th class="px-4 py-3 text-right font-semibold">Actions</th>
+                  </tr></thead>
+                  <tbody id="rows" class="divide-y divide-slate-100"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-misc.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    document.getElementById('settings-nav').innerHTML = App.ui.settingsNav('users');
+    const RV = App.seed.roleVariant, UV = App.seed.userStatusVariant;
+    const mods = App.seed.permModules, ops = App.seed.permOps;
+
+    function permGrid() {
+      const head = '<th class="text-left font-medium py-1.5 pr-4 text-slate-400">Module</th>' + ops.map((o) => `<th class="text-center font-medium py-1.5 px-2 text-slate-400">${o}</th>`).join('');
+      const body = mods.map((m) => `<tr><td class="py-1.5 pr-4 text-slate-600">${m}</td>${ops.map((o) => {
+        const checked = !(m === 'Settings' && o !== 'View');
+        return `<td class="text-center px-2"><input type="checkbox" ${checked ? 'checked' : ''} class="rounded border-slate-300 text-primary focus:ring-primary" /></td>`;
+      }).join('')}</tr>`).join('');
+      return `<table class="text-xs w-full max-w-xl"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+    }
+
+    document.getElementById('rows').innerHTML = App.seed.users.map((u, idx) => `
+      <tr class="hover:bg-slate-50">
+        <td class="px-4 py-3"><div class="flex items-center gap-2.5">${App.ui.avatar(u.init, '#4F46E5')}<div><div class="font-medium text-slate-800">${u.name}</div><div class="text-xs text-slate-400">${u.email}</div></div></div></td>
+        <td class="px-4 py-3">${App.ui.badge(u.role, RV[u.role])}</td>
+        <td class="px-4 py-3">${App.ui.badge(u.status, UV[u.status])}</td>
+        <td class="px-4 py-3 text-slate-600">${u.spaces}</td>
+        <td class="px-4 py-3 text-right whitespace-nowrap">
+          <button onclick="document.getElementById('perm-${idx}').classList.toggle('hidden')" class="text-sm font-medium text-primary hover:underline mr-3">Edit Permissions</button>
+          <button class="text-sm font-medium text-red-600 hover:underline">Deactivate</button>
+        </td>
+      </tr>
+      <tr id="perm-${idx}" class="hidden bg-slate-50/60"><td colspan="5" class="px-6 py-4">
+        <div class="text-xs uppercase tracking-wide text-slate-400 mb-2">Permission Overrides — ${u.name}</div>
+        ${permGrid()}
+      </td></tr>`).join('');
+    App.ui.icons();
+  </script>
+</body>
+</html>

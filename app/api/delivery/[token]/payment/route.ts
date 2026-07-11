@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { z } from 'zod'
+
+const paymentSchema = z.object({
+  amount: z.number().positive().finite(),
+  paymentMethod: z.string().max(50).optional(),
+  note: z.string().max(500).optional(),
+})
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 /** POST — public (no auth). Driver records a payment collected on delivery. */
 export async function POST(
@@ -7,20 +15,30 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> },
 ) {
   try {
-    const { token } = await params
-    const body = await req.json() as { amount: number; paymentMethod?: string; note?: string }
+    const limited = await checkRateLimit(`delivery-payment:ip:${getClientIp(req)}`, 30, 60_000)
+    if (limited) return limited
 
-    if (!body.amount || body.amount <= 0) {
+    const { token } = await params
+    const parsed = paymentSchema.safeParse(await req.json().catch(() => null))
+    if (!parsed.success) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 422 })
     }
+    const body = parsed.data
 
     const { data: order } = await supabaseAdmin
       .from('haraka_orders')
-      .select('id, organization_id, total')
+      .select('id, organization_id, total, delivery_token_expires_at, delivery_token_revoked_at')
       .eq('delivery_token', token)
       .maybeSingle()
 
     if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (order.delivery_token_revoked_at) {
+      return NextResponse.json({ error: 'This delivery link has been revoked' }, { status: 410 })
+    }
+    const expiresAt = order.delivery_token_expires_at as string | null
+    if (!expiresAt || new Date(expiresAt).getTime() <= Date.now()) {
+      return NextResponse.json({ error: 'This delivery link has expired' }, { status: 410 })
+    }
 
     // Insert payment entry
     await supabaseAdmin

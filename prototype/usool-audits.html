@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Asset Audits — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="usool-audits" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-5">
+            <h1 class="text-xl font-semibold text-slate-900">Audits <span class="text-slate-400 font-normal text-base">· Usool</span></h1>
+            <button class="h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5"><i data-lucide="plus" class="!w-4 !h-4"></i>New Audit</button>
+          </div>
+
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+                <tr>
+                  <th class="px-4 py-3 text-left font-semibold">Audit ID</th>
+                  <th class="px-4 py-3 text-left font-semibold">Space</th>
+                  <th class="px-4 py-3 text-left font-semibold">Status</th>
+                  <th class="px-4 py-3 text-left font-semibold">Audited By</th>
+                  <th class="px-4 py-3 text-left font-semibold">Started</th>
+                  <th class="px-4 py-3 text-left font-semibold">Ended</th>
+                  <th class="px-4 py-3 text-right font-semibold">Assets Total</th>
+                  <th class="px-4 py-3 text-right font-semibold">Matched</th>
+                  <th class="px-4 py-3 text-right font-semibold">Discrepancies</th>
+                  <th class="w-10 px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody id="rows" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-misc.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const V = App.seed.usoolAuditStatusVariant;
+    document.getElementById('rows').innerHTML = App.seed.usoolAudits.map((a) => {
+      const discClass = a.discrepancies > 0 ? 'text-red-600 font-semibold' : 'text-slate-400';
+      return `<tr class="hover:bg-slate-50 cursor-pointer" onclick="location.href='usool-audit-detail.html'">
+        <td class="px-4 py-3 font-medium text-slate-800">${a.id}</td>
+        <td class="px-4 py-3 text-slate-600">${a.space}</td>
+        <td class="px-4 py-3">${App.ui.badge(a.status.replace('_', ' '), V[a.status])}</td>
+        <td class="px-4 py-3 text-slate-600">${a.by}</td>
+        <td class="px-4 py-3 text-slate-500">${a.started}</td>
+        <td class="px-4 py-3 text-slate-500">${a.ended}</td>
+        <td class="px-4 py-3 text-right text-slate-600">${a.total}</td>
+        <td class="px-4 py-3 text-right text-slate-600">${a.matched}</td>
+        <td class="px-4 py-3 text-right ${discClass}">${a.discrepancies}</td>
+        <td class="px-4 py-3 text-slate-300"><i data-lucide="more-horizontal" class="!w-4 !h-4"></i></td>
+      </tr>`;
+    }).join('');
+    App.ui.icons();
+  </script>
+</body>
+</html>

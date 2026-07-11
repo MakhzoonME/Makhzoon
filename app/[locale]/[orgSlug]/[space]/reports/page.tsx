@@ -61,7 +61,6 @@ function SkeletonCard() {
 export default function ReportsPage() {
   const { isAllowed } = useModuleGuard({ featureKey: 'reports', moduleKey: 'reports' });
   const { t } = useT();
-  if (!isAllowed) return null;
   const orgSlug = useOrgSlug();
   const space   = useSpace();
   const { user } = useAuthStore();
@@ -78,6 +77,8 @@ export default function ReportsPage() {
     { label: space },
     { label: t('nav.reports') },
   ];
+
+  if (!isAllowed) return null;
 
   if (isLoading) {
     return (

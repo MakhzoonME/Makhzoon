@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { StockAuditService } from '@/lib/modules/inventory/services/stock-audit.service'
 import { completeStockAuditSchema } from '@/lib/modules/inventory/validators/stock-audit.schemas'
 
@@ -13,6 +14,7 @@ export async function GET(_req: NextRequest, props: Params) {
   const params = await props.params
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'inventory')
     const data = await service.getDetail(tenant, params.auditId)
     return NextResponse.json(data)
   } catch (err) {
@@ -26,6 +28,7 @@ export async function PATCH(req: NextRequest, props: Params) {
   const params = await props.params
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'inventory')
     const body = await req.json()
     const parsed = completeStockAuditSchema.safeParse(body)
     if (!parsed.success) {

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MacBook Pro 16" — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <style>
+    .tab-btn.active { color: #4F46E5; border-color: #4F46E5; }
+    .field-row { display: grid; grid-template-columns: 160px 1fr; padding: 0.625rem 0; border-bottom: 1px solid #f1f5f9; }
+    .field-row dt { color: #64748b; font-size: 0.8125rem; }
+    .field-row dd { color: #1e293b; font-weight: 500; font-size: 0.875rem; }
+  </style>
+</head>
+<body data-page="assets" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6 max-w-[1100px] mx-auto">
+          <!-- Breadcrumb + title -->
+          <a href="usool-list.html" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 mb-3"><i data-lucide="arrow-left" class="!w-4 !h-4"></i>Back to Assets</a>
+          <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center gap-3">
+              <span class="w-1.5 h-8 rounded bg-usool"></span>
+              <div>
+                <h1 class="text-xl font-semibold text-slate-900">MacBook Pro 16"</h1>
+                <p class="text-sm text-slate-500">AS-1042 · Laptop</p>
+              </div>
+              <span id="status-pill"></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="h-9 px-3 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1.5"><i data-lucide="pencil" class="!w-4 !h-4"></i>Edit</button>
+              <button class="h-9 px-3 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1.5"><i data-lucide="wrench" class="!w-4 !h-4"></i>Maintenance</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left: fields + tabs -->
+            <div class="lg:col-span-2 space-y-6">
+              <!-- Tabs -->
+              <div class="bg-white rounded-xl border border-slate-200">
+                <div class="border-b border-slate-100 px-2 flex gap-1">
+                  <button data-tab="overview" class="tab-btn active px-3 py-3 text-sm font-medium border-b-2 -mb-px text-slate-500 border-transparent">Overview</button>
+                  <button data-tab="maint" class="tab-btn px-3 py-3 text-sm font-medium border-b-2 -mb-px text-slate-500 border-transparent">Maintenance Records</button>
+                  <button data-tab="notes" class="tab-btn px-3 py-3 text-sm font-medium border-b-2 -mb-px text-slate-500 border-transparent">Notes</button>
+                </div>
+                <div class="p-5">
+                  <div data-panel="overview">
+                    <dl id="overview-fields"></dl>
+                  </div>
+                  <div data-panel="maint" class="hidden">
+                    <table class="w-full text-sm">
+                      <thead class="text-xs uppercase text-slate-400"><tr>
+                        <th class="text-left font-semibold pb-2">Date</th><th class="text-left font-semibold pb-2">Type</th>
+                        <th class="text-left font-semibold pb-2">Performed By</th><th class="text-right font-semibold pb-2">Cost</th>
+                        <th class="text-left font-semibold pb-2 pl-4">Notes</th>
+                      </tr></thead>
+                      <tbody id="maint-rows" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                  </div>
+                  <div data-panel="notes" class="hidden">
+                    <div class="space-y-3">
+                      <div class="flex gap-3"><span class="w-7 h-7 rounded-full bg-primary text-white grid place-items-center text-[11px] font-semibold shrink-0">SK</span>
+                        <div class="bg-slate-50 rounded-lg px-3 py-2 text-sm flex-1"><div class="text-slate-700">Reassigned from the design team. Screen has a minor scratch top-left.</div><div class="text-xs text-slate-400 mt-1">Sara Khalil · 3 days ago</div></div></div>
+                      <div class="flex gap-3"><span class="w-7 h-7 rounded-full bg-primary text-white grid place-items-center text-[11px] font-semibold shrink-0">ON</span>
+                        <div class="bg-slate-50 rounded-lg px-3 py-2 text-sm flex-1"><div class="text-slate-700">Charger replaced, original was frayed.</div><div class="text-xs text-slate-400 mt-1">Omar Nasser · 2 weeks ago</div></div></div>
+                      <div class="pt-2"><input type="text" placeholder="Add a note…" class="w-full h-9 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary" /></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: QR + checkout + actions -->
+            <div class="space-y-4">
+              <div class="bg-white rounded-xl border border-slate-200 p-5 text-center">
+                <div class="text-xs uppercase tracking-wide text-slate-400 mb-3">Asset QR Code</div>
+                <div id="qr" class="inline-block p-3 bg-white border border-slate-200 rounded-lg"></div>
+                <div class="mt-3 font-mono text-xs text-slate-500">AS-1042</div>
+                <button class="mt-3 w-full h-9 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 inline-flex items-center justify-center gap-1.5"><i data-lucide="printer" class="!w-4 !h-4"></i>Print Label</button>
+              </div>
+
+              <div class="bg-white rounded-xl border border-slate-200 p-5">
+                <div class="text-xs uppercase tracking-wide text-slate-400 mb-3">Checkout Status</div>
+                <div class="flex items-center gap-3 mb-3">
+                  <span class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 grid place-items-center"><i data-lucide="user-check" class="!w-[18px] !h-[18px]"></i></span>
+                  <div><div class="text-sm font-medium text-slate-800">Checked out to Sara Khalil</div><div class="text-xs text-slate-400">Since June 9, 2026</div></div>
+                </div>
+                <button class="w-full h-9 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 inline-flex items-center justify-center gap-1.5"><i data-lucide="corner-down-left" class="!w-4 !h-4"></i>Check In</button>
+              </div>
+
+              <div class="bg-white rounded-xl border border-slate-200 p-3 grid gap-2">
+                <button class="h-9 rounded-lg hover:bg-slate-50 text-sm font-medium text-slate-600 inline-flex items-center gap-2 px-3"><i data-lucide="qr-code" class="!w-4 !h-4 text-slate-400"></i>Regenerate QR</button>
+                <button class="h-9 rounded-lg hover:bg-slate-50 text-sm font-medium text-slate-600 inline-flex items-center gap-2 px-3"><i data-lucide="archive" class="!w-4 !h-4 text-slate-400"></i>Retire Asset</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-usool.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const a = App.seed.assets[0];
+    document.getElementById('status-pill').innerHTML = App.ui.badge(a.status, App.seed.assetStatusVariant[a.status]);
+
+    document.getElementById('overview-fields').innerHTML = [
+      ['Name', a.name], ['Category', a.category], ['Serial Number', a.serial],
+      ['Status', a.status], ['Assigned To', a.assignedTo], ['Location', a.location],
+      ['Purchase Cost', App.ui.money(a.cost)], ['Purchase Date', '2025-09-01'],
+    ].map(([k, v]) => `<div class="field-row"><dt>${k}</dt><dd>${v}</dd></div>`).join('');
+
+    document.getElementById('maint-rows').innerHTML = App.seed.assetMaintenance
+      .map((m) => `<tr>
+        <td class="py-2.5 text-slate-600">${m.date}</td>
+        <td class="py-2.5">${App.ui.badge(m.type, m.type === 'Repair' ? 'amber' : m.type === 'Inspection' ? 'blue' : 'primary')}</td>
+        <td class="py-2.5 text-slate-600">${m.performedBy}</td>
+        <td class="py-2.5 text-right font-medium text-slate-700">${App.ui.money(m.cost)}</td>
+        <td class="py-2.5 pl-4 text-slate-500">${m.notes}</td></tr>`)
+      .join('');
+
+    document.getElementById('qr').innerHTML = App.ui.fakeQR('AS-1042', 150);
+
+    // Tabs
+    document.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const t = btn.dataset.tab;
+        document.querySelectorAll('[data-panel]').forEach((p) => p.classList.toggle('hidden', p.dataset.panel !== t));
+      });
+    });
+
+    App.ui.icons();
+  </script>
+</body>
+</html>

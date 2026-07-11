@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Support · Superadmin — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="sa-support" data-portal="superadmin" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-hidden">
+        <div class="h-full flex flex-col p-6">
+          <div class="mb-4 shrink-0"><h1 class="text-xl font-semibold text-slate-900">Support — All Organizations</h1><p class="text-sm text-slate-500">Cross-org ticket queue</p></div>
+
+          <div class="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 flex overflow-hidden">
+            <!-- List pane -->
+            <div class="w-[360px] shrink-0 border-r border-slate-200 flex flex-col">
+              <div class="px-3 py-2.5 border-b border-slate-100 shrink-0">
+                <div class="relative">
+                  <i data-lucide="search" class="!w-4 !h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                  <input type="text" placeholder="Search tickets…" class="w-full h-9 pl-9 pr-3 rounded-lg bg-slate-100 border border-transparent focus:bg-white focus:border-slate-300 focus:outline-none text-sm" />
+                </div>
+              </div>
+              <ul id="list" class="flex-1 overflow-y-auto divide-y divide-slate-100"></ul>
+            </div>
+            <!-- Thread pane -->
+            <div id="thread" class="flex-1 flex flex-col min-w-0"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-misc.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const SV = App.seed.ticketStatusVariant, PV = App.seed.priorityVariant;
+    const orgNames = ['Acme Corp', 'Bluewave Retail', 'Cedar Pharmacy', 'Falcon Electronics', 'Gulf Traders', 'Emerald Cafe'];
+    const orgOf = (idx) => orgNames[idx % orgNames.length];
+    let activeId = null;
+
+    function threadFor(t) {
+      if (t.id === 'TKT-0061') return App.seed.ticketThread.messages;
+      return [
+        { from: 'staff', who: t.by, time: '2026-06-12 09:10', body: `Hi team — I need help with: ${t.subject}. Could you advise?` },
+        { from: 'team', who: 'Makhzoon Support', time: '2026-06-12 10:30', body: 'Thanks for reaching out — we are looking into this and will get back to you shortly.' },
+      ];
+    }
+
+    function renderList() {
+      document.getElementById('list').innerHTML = App.seed.tickets.map((t, idx) => {
+        const on = t.id === activeId;
+        return `<li onclick="select('${t.id}')" class="px-4 py-3 cursor-pointer hover:bg-slate-50 border-l-2 ${on ? 'bg-primary/5 border-primary' : 'border-transparent'}">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[11px] font-medium text-slate-500">${orgOf(idx)}</span>
+            ${App.ui.badge(t.priority, PV[t.priority])}
+          </div>
+          <div class="text-sm font-medium text-slate-800 truncate mt-0.5">${t.subject}</div>
+          <div class="flex items-center justify-between mt-1.5">
+            ${App.ui.badge(t.status.replace('_', ' '), SV[t.status])}
+            <span class="text-[11px] text-slate-400">${t.id} · ${t.last}</span>
+          </div>
+        </li>`;
+      }).join('');
+    }
+
+    function renderThread(t, idx) {
+      const msgs = threadFor(t);
+      document.getElementById('thread').innerHTML = `
+        <div class="px-5 py-4 border-b border-slate-100 shrink-0">
+          <div class="flex items-center gap-2 mb-1">
+            <h2 class="text-base font-semibold text-slate-900">${t.id}</h2>
+            ${App.ui.badge(t.status.replace('_', ' '), SV[t.status])}${App.ui.badge(t.priority, PV[t.priority])}
+          </div>
+          <div class="text-sm text-slate-700">${t.subject}</div>
+          <div class="text-xs text-slate-400 mt-1">${orgOf(idx)} · Opened by ${t.by} · Assigned to ${t.assigned}</div>
+        </div>
+        <div class="flex-1 overflow-y-auto p-5 space-y-4">
+          ${msgs.map((m) => {
+            const team = m.from === 'team';
+            return `<div class="flex ${team ? 'justify-end' : 'justify-start'}">
+              <div class="max-w-[78%]">
+                <div class="rounded-2xl px-4 py-2.5 text-sm ${team ? 'bg-navy text-white rounded-br-sm' : 'bg-slate-100 text-slate-700 rounded-bl-sm'}">${m.body}</div>
+                <div class="text-[11px] text-slate-400 mt-1 ${team ? 'text-right' : ''}">${m.who} · ${m.time}</div>
+              </div></div>`;
+          }).join('')}
+        </div>
+        <div class="px-5 py-4 border-t border-slate-100 shrink-0">
+          <div class="flex items-end gap-2">
+            <textarea rows="2" placeholder="Reply as Makhzoon Support…" class="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm resize-none focus:outline-none focus:border-navy"></textarea>
+            <button class="h-10 px-4 rounded-lg bg-navy text-white text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5"><i data-lucide="send" class="!w-4 !h-4"></i>Reply</button>
+          </div>
+        </div>`;
+      App.ui.icons();
+    }
+
+    function select(id) {
+      activeId = id;
+      renderList();
+      const idx = App.seed.tickets.findIndex((t) => t.id === id);
+      renderThread(App.seed.tickets[idx], idx);
+    }
+
+    renderList();
+    select(App.seed.tickets[0].id);
+  </script>
+</body>
+</html>

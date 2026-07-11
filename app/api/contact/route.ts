@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   try {
     // SECURITY: Rate limit contact form (5 per IP per hour, 1 per email per day)
     const clientIp = getClientIp(req);
-    const rateLimitIp = checkRateLimit(
+    const rateLimitIp = await checkRateLimit(
       `contact:ip:${clientIp}`,
       5,
       60 * 60 * 1000,
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     const name = `${firstName} ${lastName}`.trim();
 
     // Rate limit by email as well
-    const rateLimitEmail = checkRateLimit(
+    const rateLimitEmail = await checkRateLimit(
       `contact:email:${email}`,
       1,
       24 * 60 * 60 * 1000,

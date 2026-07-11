@@ -6,6 +6,8 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { ClipboardCheck } from 'lucide-react';
@@ -18,17 +20,22 @@ export default function NewAuditPage() {
   const qc = useQueryClient();
   const [title, setTitle] = useState(`Audit ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`);
   const [notes, setNotes] = useState('');
+  const [scope, setScope] = useState<'all' | 'category' | 'location'>('all');
+  const [category, setCategory] = useState('');
+  const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const scopeIncomplete = (scope === 'category' && !category) || (scope === 'location' && !location);
 
   async function handleStart(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || scopeIncomplete) return;
     setLoading(true);
     try {
       const res = await fetch('/api/inventory/audits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, notes }),
+        body: JSON.stringify({ title, notes, scope, category: scope === 'category' ? category : undefined, location: scope === 'location' ? location : undefined }),
       });
       if (!res.ok) throw new Error();
       const { id } = await res.json();
@@ -61,11 +68,36 @@ export default function NewAuditPage() {
             <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
           </div>
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Scope</label>
+            <Select value={scope} onValueChange={(v) => setScope(v as 'all' | 'category' | 'location')}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All active assets</SelectItem>
+                <SelectItem value="category">By category</SelectItem>
+                <SelectItem value="location">By location</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {scope === 'category' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+              <ConfigSelect listKey="asset_category" value={category} onValueChange={setCategory} placeholder="Select a category" />
+            </div>
+          )}
+          {scope === 'location' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
+              <ConfigSelect listKey="location" value={location} onValueChange={setLocation} placeholder="Select a location" />
+            </div>
+          )}
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Any notes about this audit..." />
           </div>
           <div className="flex gap-2">
-            <Button type="submit" disabled={loading}>{loading ? 'Starting...' : 'Start Audit'}</Button>
+            <Button type="submit" disabled={loading || scopeIncomplete}>{loading ? 'Starting...' : 'Start Audit'}</Button>
             <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
           </div>
         </form>

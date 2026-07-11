@@ -22,7 +22,6 @@ export default function ServiceJobsListPage() {
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { data: orgInfo } = useOrgInfo();
   const { t } = useT();
-  if (!featureAllowed || !isAllowed) return null;
 
   const [status,      setStatus]      = useState('all');
   const [serviceType, setServiceType] = useState('all');
@@ -34,6 +33,8 @@ export default function ServiceJobsListPage() {
     page,
     pageSize: 25,
   });
+
+  if (!featureAllowed || !isAllowed) return null;
 
   const base     = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
   const currency = orgInfo?.currency ?? 'USD';

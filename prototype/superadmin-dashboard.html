@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard · Superadmin — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="sa-dashboard" data-portal="superadmin" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6 max-w-[1200px] mx-auto">
+          <div class="mb-5"><h1 class="text-xl font-semibold text-slate-900">Platform Overview</h1><p class="text-sm text-slate-500">All organizations and platform health</p></div>
+          <div id="stats" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6"></div>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200">
+              <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between"><h2 class="font-semibold text-slate-800">Recent Organizations</h2><a href="superadmin-orgs.html" class="text-xs font-medium text-primary hover:underline">View all</a></div>
+              <table class="w-full text-sm"><tbody id="orgs" class="divide-y divide-slate-100"></tbody></table>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 h-fit">
+              <div class="px-5 py-4 border-b border-slate-100"><h2 class="font-semibold text-slate-800">Open Support Tickets</h2></div>
+              <ul id="tickets" class="divide-y divide-slate-50"></ul>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-misc.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const stats = [
+      { label: 'Total Orgs', value: '8', icon: 'building-2' },
+      { label: 'Active', value: '6', icon: 'circle-check' },
+      { label: 'Suspended', value: '2', icon: 'circle-pause' },
+      { label: 'Total Users', value: '62', icon: 'users' },
+      { label: 'MRR', value: '$4.9K', icon: 'dollar-sign' },
+      { label: 'Open Tickets', value: '2', icon: 'life-buoy' },
+    ];
+    document.getElementById('stats').innerHTML = stats.map((s) => `<div class="bg-white rounded-xl border border-slate-200 border-l-4 border-l-primary p-4">
+      <div class="flex items-center justify-between"><span class="text-[13px] font-medium text-slate-500">${s.label}</span><span class="grid place-items-center w-8 h-8 rounded-lg bg-primary/10 text-primary"><i data-lucide="${s.icon}" class="!w-4 !h-4"></i></span></div>
+      <div class="mt-2 text-2xl font-bold text-slate-900">${s.value}</div></div>`).join('');
+
+    const SV = App.seed.orgStatusVariant, PV = App.seed.pkgVariant;
+    document.getElementById('orgs').innerHTML = App.seed.orgs.slice(0, 6).map((o) => `<tr class="hover:bg-slate-50 cursor-pointer" onclick="location.href='superadmin-orgs.html'">
+      <td class="px-5 py-3"><div class="font-medium text-slate-800">${o.name}</div><div class="text-xs text-slate-400">${o.slug} · ${o.members} members</div></td>
+      <td class="px-5 py-3">${App.ui.badge(o.pkg, PV[o.pkg])}</td>
+      <td class="px-5 py-3">${App.ui.badge(o.status, SV[o.status])}</td>
+      <td class="px-5 py-3 text-slate-500">${o.created}</td></tr>`).join('');
+
+    const TPV = App.seed.priorityVariant;
+    document.getElementById('tickets').innerHTML = App.seed.tickets.filter((t) => t.status === 'OPEN' || t.status === 'IN_PROGRESS').map((t) => `<li class="px-5 py-3"><a href="superadmin-support.html" class="block hover:opacity-80">
+      <div class="flex items-center gap-2 mb-0.5">${App.ui.badge(t.priority, TPV[t.priority])}<span class="text-xs text-slate-400">${t.id}</span></div>
+      <div class="text-sm font-medium text-slate-700 truncate">${t.subject}</div></a></li>`).join('');
+    App.ui.icons();
+  </script>
+</body>
+</html>

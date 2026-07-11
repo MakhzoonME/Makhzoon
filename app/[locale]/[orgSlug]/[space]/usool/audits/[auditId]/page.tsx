@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useInventoryAudit } from '@/hooks/inventory';
 import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
@@ -16,11 +16,12 @@ import { cn } from '@/lib/utils/cn';
 
 type AuditCache = { audit: InventoryAudit; items: InventoryAuditItem[] };
 
-function ItemRow({ item, auditId, completed }: { item: InventoryAuditItem; auditId: string; completed: boolean }) {
+function ItemRow({ item, auditId, space, completed }: { item: InventoryAuditItem; auditId: string; space: string; completed: boolean }) {
   const qc = useQueryClient();
   const [note, setNote] = useState('');
   const [pendingAction, setPendingAction] = useState<'found' | 'missing' | null>(null);
-  const queryKey = ['inventory-audits', auditId];
+  const submitting = useRef(false);
+  const queryKey = ['inventory-audits', space, auditId];
 
   const markMutation = useMutation({
     mutationFn: async ({ status, note: n }: { status: 'found' | 'missing'; note: string }) => {
@@ -67,17 +68,19 @@ function ItemRow({ item, auditId, completed }: { item: InventoryAuditItem; audit
     onSettled: () => {
       qc.invalidateQueries({ queryKey });
       setPendingAction(null);
+      submitting.current = false;
     },
   });
 
   function mark(status: 'found' | 'missing') {
-    if (markMutation.isPending) return;
+    if (submitting.current) return;
+    submitting.current = true;
     setPendingAction(status);
     markMutation.mutate({ status, note });
   }
 
   const isPending = item.status === 'pending';
-  const busy = markMutation.isPending;
+  const busy = markMutation.isPending || pendingAction !== null;
 
   return (
     <div className={cn(
@@ -166,7 +169,13 @@ export default function AuditDetailPage() {
 
   const { audit, items } = data;
   const completed = audit.status === 'completed';
-  const pct = audit.totalAssets ? Math.round(((audit.foundCount + audit.missingCount) / audit.totalAssets) * 100) : 0;
+
+  // Derive counts from actual item statuses so stale audit counters don't mislead.
+  const actualFound = items.filter((i) => i.status === 'found').length;
+  const actualMissing = items.filter((i) => i.status === 'missing').length;
+  const actualPending = items.filter((i) => i.status === 'pending').length;
+  const total = items.length;
+  const pct = total ? Math.round(((actualFound + actualMissing) / total) * 100) : 0;
 
   const filtered = search
     ? items.filter((i) =>
@@ -189,7 +198,7 @@ export default function AuditDetailPage() {
       });
       if (!res.ok) throw new Error();
       toast.success('Audit completed');
-      qc.invalidateQueries({ queryKey: ['inventory-audits', auditId] });
+      qc.invalidateQueries({ queryKey: ['inventory-audits', space, auditId] });
       qc.invalidateQueries({ queryKey: ['inventory-audits'] });
     } catch {
       toast.error('Failed to complete audit');
@@ -209,7 +218,7 @@ export default function AuditDetailPage() {
               <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
               <span className="ms-1">Back to Audits</span>
             </Button>
-          ) : audit.pendingCount === 0 ? (
+          ) : actualPending === 0 ? (
             <Button size="sm" onClick={handleComplete} disabled={completing}>
               <CheckCheck className="h-4 w-4" strokeWidth={1.75} />
               <span className="ms-1">{completing ? 'Completing...' : 'Complete Audit'}</span>
@@ -222,16 +231,16 @@ export default function AuditDetailPage() {
       <div className="bg-surface-card rounded-lg border border-border p-5 mb-6">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-6 text-sm">
-            <span><strong className="text-gray-900">{audit.totalAssets}</strong> <span className="text-gray-400">total</span></span>
-            <span><strong className="text-emerald-600">{audit.foundCount}</strong> <span className="text-gray-400">found</span></span>
-            <span><strong className="text-red-500">{audit.missingCount}</strong> <span className="text-gray-400">missing</span></span>
-            <span><strong className="text-gray-400">{audit.pendingCount}</strong> <span className="text-gray-400">pending</span></span>
+            <span><strong className="text-gray-900">{total}</strong> <span className="text-gray-400">total</span></span>
+            <span><strong className="text-emerald-600">{actualFound}</strong> <span className="text-gray-400">found</span></span>
+            <span><strong className="text-red-500">{actualMissing}</strong> <span className="text-gray-400">missing</span></span>
+            <span><strong className="text-gray-400">{actualPending}</strong> <span className="text-gray-400">pending</span></span>
           </div>
           <span className="text-sm font-semibold text-gray-700">{pct}% checked</span>
         </div>
         <div className="h-2 bg-surface-page rounded-full overflow-hidden flex border border-border">
-          <div className="h-2 bg-emerald-500 transition-all" style={{ width: `${audit.totalAssets ? (audit.foundCount / audit.totalAssets) * 100 : 0}%` }} />
-          <div className="h-2 bg-red-400 transition-all" style={{ width: `${audit.totalAssets ? (audit.missingCount / audit.totalAssets) * 100 : 0}%` }} />
+          <div className="h-2 bg-emerald-500 transition-all" style={{ width: `${total ? (actualFound / total) * 100 : 0}%` }} />
+          <div className="h-2 bg-red-400 transition-all" style={{ width: `${total ? (actualMissing / total) * 100 : 0}%` }} />
         </div>
         {completed && (
           <div className="mt-3 flex items-center justify-between gap-2 text-sm">
@@ -258,7 +267,7 @@ export default function AuditDetailPage() {
             Pending ({pending.length})
           </div>
           {pending.map((item) => (
-            <ItemRow key={item.id} item={item} auditId={auditId} completed={completed} />
+            <ItemRow key={item.id} item={item} auditId={auditId} space={space} completed={completed} />
           ))}
         </div>
       )}
@@ -270,7 +279,7 @@ export default function AuditDetailPage() {
             Checked ({checked.length})
           </div>
           {checked.map((item) => (
-            <ItemRow key={item.id} item={item} auditId={auditId} completed={completed} />
+            <ItemRow key={item.id} item={item} auditId={auditId} space={space} completed={completed} />
           ))}
         </div>
       )}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { queueAuditLog } from '@/lib/audit/logger';
+import { checkCronSecret } from '@/lib/cron-auth';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -8,7 +9,7 @@ export const maxDuration = 60;
 export async function GET(req: NextRequest) {
   try {
     const secret = req.headers.get('authorization')?.replace('Bearer ', '');
-    if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+    if (!checkCronSecret(secret)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

@@ -92,9 +92,10 @@ export default function RequestsOverviewPage() {
   const orgSlug = useOrgSlug();
   const space = useSpace();
   const { t, locale } = useT();
-  if (!isAllowed) return null;
   const { data: orgInfo } = useOrgInfo();
   const { data, isLoading } = useRequestsOverview(space);
+
+  if (!isAllowed) return null;
 
   const total = data?.total ?? 0;
   const pending = data?.pending ?? 0;

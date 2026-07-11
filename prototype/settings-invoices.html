@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Settings · Invoices — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="settings" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+          <h1 class="text-xl font-semibold text-slate-900 mb-5">Settings</h1>
+          <div class="flex gap-6">
+            <nav id="settings-nav" class="w-56 shrink-0 space-y-1"></nav>
+
+            <div class="flex-1 flex gap-6 items-start min-w-0">
+              <!-- Form -->
+              <div class="flex-1 max-w-xl bg-white rounded-xl border border-slate-200">
+                <div class="px-6 py-4 border-b border-slate-100"><h2 class="font-semibold text-slate-800">Invoices</h2><p class="text-sm text-slate-500">Customize how generated invoices look and what they include</p></div>
+                <div class="p-6 space-y-5">
+                  <div><label class="block text-sm font-medium text-slate-600 mb-1.5">Header Text</label><input id="inv-header" type="text" value="Acme Corp" class="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary" /></div>
+                  <div><label class="block text-sm font-medium text-slate-600 mb-1.5">Invoice Number Prefix</label><input id="inv-prefix" type="text" value="INV-2026-" class="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary" /></div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">Default Payment Terms</label>
+                    <select id="inv-terms" class="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm"><option>Due on receipt</option><option>Net 7</option><option>Net 15</option><option>Net 30</option></select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">Accent Color</label>
+                    <div class="flex items-center gap-2">
+                      <input id="inv-color" type="color" value="#4F46E5" class="h-10 w-14 rounded-lg border border-slate-200 p-1" />
+                      <span class="text-sm text-slate-500">Used for the invoice title and totals</span>
+                    </div>
+                  </div>
+                  <div><label class="block text-sm font-medium text-slate-600 mb-1.5">Notes / Terms &amp; Conditions</label><textarea id="inv-footer" rows="3" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary">Payment is due within the agreed terms. Late payments may incur additional fees.</textarea></div>
+                  <div class="space-y-3 pt-2">
+                    <label class="flex items-center gap-2.5 text-sm text-slate-700"><input id="inv-logo" type="checkbox" checked class="rounded border-slate-300 text-primary focus:ring-primary" />Show organization logo</label>
+                    <label class="flex items-center gap-2.5 text-sm text-slate-700"><input id="inv-tax" type="checkbox" checked class="rounded border-slate-300 text-primary focus:ring-primary" />Show tax breakdown</label>
+                    <label class="flex items-center gap-2.5 text-sm text-slate-700"><input id="inv-qr" type="checkbox" class="rounded border-slate-300 text-primary focus:ring-primary" />Show QR code for online payment</label>
+                  </div>
+                  <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+                    <button class="h-10 px-5 rounded-lg bg-primary text-white text-sm font-semibold hover:opacity-90">Save Changes</button>
+                    <button class="h-10 px-5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Preview -->
+              <div class="w-[380px] shrink-0 sticky top-0">
+                <div class="bg-white rounded-xl border border-slate-200 p-4">
+                  <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Preview</div>
+                  <div id="preview" class="border border-slate-200 rounded-lg p-5 bg-white text-[13px] text-slate-700"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    document.getElementById('settings-nav').innerHTML = App.ui.settingsNav('invoices');
+
+    const items = [
+      { name: 'Beef Burger', qty: 2, price: 8.0 },
+      { name: 'Margherita Pizza', qty: 1, price: 11.0 },
+      { name: 'Iced Latte', qty: 3, price: 5.0 },
+    ];
+
+    function renderPreview() {
+      const header = document.getElementById('inv-header').value || 'Acme Corp';
+      const prefix = document.getElementById('inv-prefix').value || 'INV-';
+      const terms = document.getElementById('inv-terms').value;
+      const color = document.getElementById('inv-color').value;
+      const footer = document.getElementById('inv-footer').value;
+      const showLogo = document.getElementById('inv-logo').checked;
+      const showTax = document.getElementById('inv-tax').checked;
+      const showQr = document.getElementById('inv-qr').checked;
+
+      const subtotal = items.reduce((s, i) => s + i.qty * i.price, 0);
+      const tax = subtotal * 0.16;
+      const total = subtotal + (showTax ? tax : 0);
+
+      document.getElementById('preview').innerHTML = `
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            ${showLogo ? App.ui.logoMark(28) : ''}
+            <span class="font-semibold text-slate-800">${header}</span>
+          </div>
+          <div class="text-right">
+            <div class="text-lg font-bold" style="color:${color}">INVOICE</div>
+            <div class="text-[11px] text-slate-400 font-mono">${prefix}000123</div>
+          </div>
+        </div>
+        <div class="flex justify-between text-[11px] text-slate-500 mb-4">
+          <div><div class="text-slate-400">Billed To</div><div class="text-slate-700 font-medium">Khalid Mansour</div></div>
+          <div class="text-right"><div class="text-slate-400">Terms</div><div class="text-slate-700 font-medium">${terms}</div></div>
+        </div>
+        <table class="w-full text-[12px] mb-3">
+          <thead><tr class="text-slate-400 border-b border-slate-100"><th class="text-left font-medium pb-1.5">Item</th><th class="text-center font-medium pb-1.5">Qty</th><th class="text-right font-medium pb-1.5">Amount</th></tr></thead>
+          <tbody>
+            ${items.map((i) => `<tr class="border-b border-slate-50"><td class="py-1.5">${i.name}</td><td class="py-1.5 text-center">${i.qty}</td><td class="py-1.5 text-right">${App.ui.money(i.qty * i.price)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+        <div class="space-y-1 text-[12px] mb-4">
+          <div class="flex justify-between text-slate-500"><span>Subtotal</span><span>${App.ui.money(subtotal)}</span></div>
+          ${showTax ? `<div class="flex justify-between text-slate-500"><span>Tax (16%)</span><span>${App.ui.money(tax)}</span></div>` : ''}
+          <div class="flex justify-between text-base font-bold pt-1 border-t border-slate-100" style="color:${color}"><span>Total</span><span>${App.ui.money(total)}</span></div>
+        </div>
+        ${showQr ? `<div class="flex justify-center mb-4">${App.ui.fakeQR('invoice', 88)}</div>` : ''}
+        <div class="text-[11px] text-slate-400 border-t border-slate-100 pt-3">${footer}</div>
+      `;
+    }
+
+    ['inv-header', 'inv-prefix', 'inv-terms', 'inv-color', 'inv-footer', 'inv-logo', 'inv-tax', 'inv-qr'].forEach((id) => {
+      document.getElementById(id).addEventListener('input', renderPreview);
+    });
+
+    renderPreview();
+    App.ui.icons();
+  </script>
+</body>
+</html>

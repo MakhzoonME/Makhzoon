@@ -17,7 +17,6 @@ export default function NewRetainerPage() {
   const params    = useParams<{ locale: string; orgSlug: string; space: string }>();
   const createMut = useCreateRetainer();
   const { t }     = useT();
-  if (!featureAllowed || !isAllowed) return null;
 
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
 
@@ -31,6 +30,8 @@ export default function NewRetainerPage() {
   const [startDate,      setStartDate]      = useState(new Date().toISOString().slice(0, 10));
   const [endDate,        setEndDate]        = useState('');
   const [notes,          setNotes]          = useState('');
+
+  if (!featureAllowed || !isAllowed) return null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

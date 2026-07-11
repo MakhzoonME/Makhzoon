@@ -102,6 +102,9 @@ const publicRoutes = new Set([
   'invites/',
   'haraka/card-payment-result',   // webhook — HMAC signature verification
   'organizations/check-subdomain', // pre-signup — rate-limited
+  'auth/send-password-reset',      // pre-auth by design — rate-limited per IP
+  'public/assets',                 // QR guest view — minimal fields, rate-limited per IP
+  'push-subscriptions/vapid-key',  // VAPID public key is public by definition
 ]);
 let uncheckedCount = 0;
 
@@ -137,6 +140,11 @@ for (const file of apiRoutes) {
   const rel = relative(ROOT, file);
   const hasMutation = mutatingHandlers.some(m => content.includes(`export async function ${m}(`));
   if (!hasMutation) continue;
+
+  // Routes that never read a request body (id-in-URL triggers like
+  // approve/reject/read/revoke) have no input to schema-validate.
+  const readsBody = content.includes('.json()') || content.includes('.formData()') || content.includes('.text()');
+  if (!readsBody) continue;
 
   const hasValidation = content.includes('safeParse') || content.includes('.parse(') ||
     content.includes('z.object') || content.includes("from 'zod'") || content.includes('from "zod"');

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { requirePermission } from '@/lib/permissions/require';
 import { assetSchema } from '@/lib/validations/asset.schema';
 import * as assetsService from '@/lib/services/assets.service';
@@ -7,6 +8,7 @@ import * as assetsService from '@/lib/services/assets.service';
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'assets');
     const user = tenant.user;
 
     const { assetId } = await params;
@@ -27,6 +29,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ass
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'assets');
     const user = tenant.user;
     requirePermission(user, 'assets', 'update');
 
@@ -41,7 +44,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ asse
       purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : undefined,
       purchaseCost: data.purchaseCost ? Number(data.purchaseCost) : undefined,
     };
-    await assetsService.updateAssetWithAudit(user, assetId, transformedData);
+    await assetsService.updateAssetWithAudit(user, assetId, transformedData, tenant.spaceId);
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof NextResponse) return err;
@@ -56,11 +59,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ asse
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ assetId: string }> }) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'assets');
     const user = tenant.user;
     requirePermission(user, 'assets', 'delete');
 
     const { assetId } = await params;
-    await assetsService.deleteAssetWithAudit(user, assetId);
+    await assetsService.deleteAssetWithAudit(user, assetId, tenant.spaceId);
     return NextResponse.json({ success: true });
   } catch (err) {
     if (err instanceof NextResponse) return err;

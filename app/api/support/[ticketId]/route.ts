@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import {
   getSupportTicketById,
   getSupportTicketByIdAny,
@@ -80,6 +81,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
     if (!user.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'support');
     const parsed = supportTicketOrgUpdateSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 

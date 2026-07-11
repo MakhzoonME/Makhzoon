@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { hasPermission } from '@/lib/permissions';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { createAsset } from '@/lib/db/assets';
@@ -16,7 +17,7 @@ type RowError = { row: number; errors: string[] };
 export async function POST(req: NextRequest) {
   // SECURITY: Rate limit bulk imports (3 per IP per hour)
   const clientIp = getClientIp(req);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `import:${clientIp}`,
     3,
     60 * 60 * 1000,
@@ -25,6 +26,7 @@ export async function POST(req: NextRequest) {
   if (rateLimitResult) return rateLimitResult;
 
   const tenant = await resolveTenant();
+    requireFeature(tenant, 'assets');
   const user = tenant.user;
   if (!hasPermission(user, 'assets', 'import')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -87,7 +89,17 @@ export async function POST(req: NextRequest) {
       });
       imported++;
     } catch (e) {
-      errors.push({ row: i + 2, errors: [e instanceof Error ? e.message : 'Write failed'] });
+      // Supabase throws plain PostgrestError objects (not Error instances), so
+      // `e instanceof Error` misses their `.message` and we'd otherwise show a
+      // useless generic "Write failed" for constraint violations etc.
+      const message =
+        e instanceof Error
+          ? e.message
+          : (e && typeof e === 'object' && 'message' in e ? String((e as { message: unknown }).message) : 'Write failed');
+      const friendly = message.includes('duplicate key') || message.includes('already exists')
+        ? 'Serial number already exists in this space'
+        : message;
+      errors.push({ row: i + 2, errors: [friendly] });
     }
   }
 

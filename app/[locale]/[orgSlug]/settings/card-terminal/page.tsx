@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CreditCard, Info, CheckCircle2, XCircle, Copy, Check } from 'lucide-react';
+import { Info, CheckCircle2, XCircle, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -228,7 +228,7 @@ export default function CardTerminalSettingsPage() {
               value={timeoutSecs}
               onChange={(e) => setTimeoutSecs(Number(e.target.value))}
             />
-            <p className="text-xs text-gray-400">After this time the cashier sees a "check terminal manually" message.</p>
+            <p className="text-xs text-gray-400">After this time the cashier sees a &ldquo;check terminal manually&rdquo; message.</p>
           </div>
         </div>
       )}

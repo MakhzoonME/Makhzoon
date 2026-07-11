@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { z } from 'zod'
+
+const statusSchema = z.object({
+  status: z.enum(['in_transit', 'delivered', 'ready_for_pickup', 'picked_up']),
+})
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   confirmed:        ['in_transit'],
@@ -14,16 +20,30 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> },
 ) {
   try {
+    const limited = await checkRateLimit(`delivery-status:ip:${getClientIp(req)}`, 30, 60_000)
+    if (limited) return limited
+
     const { token } = await params
-    const { status } = await req.json() as { status: string }
+    const parsedBody = statusSchema.safeParse(await req.json().catch(() => null))
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: 'Invalid status' }, { status: 422 })
+    }
+    const { status } = parsedBody.data
 
     const { data: order } = await supabaseAdmin
       .from('haraka_orders')
-      .select('id, status, organization_id')
+      .select('id, status, organization_id, delivery_token_expires_at, delivery_token_revoked_at')
       .eq('delivery_token', token)
       .maybeSingle()
 
     if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (order.delivery_token_revoked_at) {
+      return NextResponse.json({ error: 'This delivery link has been revoked' }, { status: 410 })
+    }
+    const expiresAt = order.delivery_token_expires_at as string | null
+    if (!expiresAt || new Date(expiresAt).getTime() <= Date.now()) {
+      return NextResponse.json({ error: 'This delivery link has expired' }, { status: 410 })
+    }
 
     const allowed = ALLOWED_TRANSITIONS[order.status] ?? []
     if (!allowed.includes(status)) {

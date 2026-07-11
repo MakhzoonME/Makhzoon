@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { CardTerminalService } from '@/lib/modules/haraka/card-terminal/card-terminal.service'
 import { initiateChargeSchema } from '@/lib/modules/haraka/card-terminal/schemas'
@@ -9,7 +10,8 @@ const service = new CardTerminalService()
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    const limited = rateLimitTenant(tenant, 'card-charges', 60, 60_000)
+    requireFeature(tenant, 'pos')
+    const limited = await rateLimitTenant(tenant, 'card-charges', 60, 60_000)
     if (limited) return limited
     const body = await req.json()
     const parsed = initiateChargeSchema.safeParse(body)

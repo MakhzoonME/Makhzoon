@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
@@ -47,6 +48,7 @@ export async function GET(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { orderId } = await params
     const { data, error } = await supabaseAdmin
       .from('haraka_order_payments')
@@ -69,6 +71,7 @@ export async function POST(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { orderId } = await params
 
     // Verify order belongs to this org

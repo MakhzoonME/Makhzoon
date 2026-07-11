@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Warranties — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="warranties" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <div><h1 class="text-xl font-semibold text-slate-900">Warranties</h1></div>
+            </div>
+            <button class="h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5"><i data-lucide="plus" class="!w-4 !h-4"></i>Add Warranty</button>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide"><tr>
+                <th class="px-4 py-3 text-left font-semibold">Asset Name</th><th class="px-4 py-3 text-left font-semibold">Vendor</th>
+                <th class="px-4 py-3 text-left font-semibold">Start Date</th><th class="px-4 py-3 text-left font-semibold">End Date</th>
+                <th class="px-4 py-3 text-left font-semibold">Status</th><th class="px-4 py-3 text-center font-semibold">Reminder</th>
+              </tr></thead>
+              <tbody id="rows" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-misc.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const V = App.seed.warrantyVariant;
+    document.getElementById('rows').innerHTML = App.seed.warranties.map((w) => `<tr class="hover:bg-slate-50">
+      <td class="px-4 py-3 font-medium text-slate-800">${w.asset}</td>
+      <td class="px-4 py-3 text-slate-600">${w.vendor}</td>
+      <td class="px-4 py-3 text-slate-500">${w.start}</td>
+      <td class="px-4 py-3 text-slate-500">${w.end}</td>
+      <td class="px-4 py-3">${App.ui.badge(w.status, V[w.status])}</td>
+      <td class="px-4 py-3 text-center">
+        <button class="inline-flex h-5 w-9 items-center rounded-full transition ${w.reminder ? 'bg-primary' : 'bg-slate-200'}" onclick="this.classList.toggle('bg-primary');this.classList.toggle('bg-slate-200');this.firstElementChild.classList.toggle('translate-x-4')">
+          <span class="h-4 w-4 rounded-full bg-white shadow translate-x-0.5 ${w.reminder ? 'translate-x-4' : ''} transition"></span></button>
+      </td></tr>`).join('');
+    App.ui.icons();
+  </script>
+</body>
+</html>

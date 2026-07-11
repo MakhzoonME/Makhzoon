@@ -1753,6 +1753,16 @@ const en = {
   'register.closeSession':       'Close session',
   'register.scanPlaceholder':    'Scan barcode to add to cart, or pick a product below',
   'register.cart':               'Cart',
+
+  // ── Camera barcode scanner ──────────────────────────────────────
+  'scanner.title':               'Scan barcode',
+  'scanner.hint':                'Point the camera at a barcode to add the item.',
+  'scanner.retry':               'Try again',
+  'scanner.errUnsupported':      'Camera scanning is not supported on this device. Use a barcode scanner or type the code.',
+  'scanner.errPermission':       'Camera access was denied. Allow camera permission in your browser settings and try again.',
+  'scanner.errNoCamera':         'No camera was found on this device.',
+  'scanner.errTimeout':          'No barcode detected. Try again with better lighting and a steady frame.',
+  'scanner.errGeneric':          'Could not start the camera. Try again.',
 } as const;
 
 const ar: Record<keyof typeof en, string> = {
@@ -3503,6 +3513,16 @@ const ar: Record<keyof typeof en, string> = {
   'register.closeSession':       'إغلاق الجلسة',
   'register.scanPlaceholder':    'امسح الباركود لإضافة المنتج إلى السلة، أو اختر منتجاً أدناه',
   'register.cart':               'السلة',
+
+  // ── Camera barcode scanner ──────────────────────────────────────
+  'scanner.title':               'مسح الباركود',
+  'scanner.hint':                'وجّه الكاميرا نحو الباركود لإضافة المنتج.',
+  'scanner.retry':               'حاول مرة أخرى',
+  'scanner.errUnsupported':      'مسح الباركود بالكاميرا غير مدعوم على هذا الجهاز. استخدم ماسح باركود أو أدخل الرمز يدوياً.',
+  'scanner.errPermission':       'تم رفض الوصول إلى الكاميرا. اسمح بإذن الكاميرا في إعدادات المتصفح وحاول مجدداً.',
+  'scanner.errNoCamera':         'لم يتم العثور على كاميرا في هذا الجهاز.',
+  'scanner.errTimeout':          'لم يتم اكتشاف أي باركود. حاول مجدداً مع إضاءة أفضل وثبات الكاميرا.',
+  'scanner.errGeneric':          'تعذّر تشغيل الكاميرا. حاول مرة أخرى.',
 };
 
 export const messages: Record<Locale, Record<keyof typeof en, string>> = { en, ar };

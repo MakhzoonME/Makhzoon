@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Edit Inventory Item — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="inventory" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6 max-w-2xl mx-auto">
+          <a href="raseed-list.html" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 mb-3"><i data-lucide="arrow-left" class="!w-4 !h-4"></i>Inventory</a>
+          <div class="flex items-center justify-between mb-5">
+            <h1 class="text-xl font-semibold text-slate-900">Edit Item</h1>
+            <button onclick="history.back()" class="h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5"><i data-lucide="save" class="!w-4 !h-4"></i>Save Changes</button>
+          </div>
+
+          <div class="bg-white rounded-xl border border-slate-200">
+            <div class="px-6 py-4 border-b border-slate-100">
+              <h2 class="text-sm font-semibold text-slate-700">Item Details</h2>
+            </div>
+            <div class="p-6 space-y-5">
+              <div class="grid grid-cols-2 gap-5">
+                <!-- Left column -->
+                <div class="space-y-5">
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">Item Name</label>
+                    <input id="f-name" type="text" class="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">SKU</label>
+                    <input id="f-sku" type="text" class="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary font-mono" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">Category</label>
+                    <select id="f-category" class="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary">
+                      <option>Beverages</option>
+                      <option>Electronics</option>
+                      <option>Supplies</option>
+                      <option>Stationery</option>
+                      <option>Food</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">Unit</label>
+                    <select id="f-unit" class="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary">
+                      <option>each</option>
+                      <option>kg</option>
+                      <option>L</option>
+                      <option>box</option>
+                      <option>pack</option>
+                      <option>roll</option>
+                      <option>pcs</option>
+                      <option>bottle</option>
+                      <option>bag</option>
+                      <option>can</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">Min Threshold</label>
+                    <input id="f-min" type="number" min="0" class="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary" />
+                  </div>
+                </div>
+                <!-- Right column -->
+                <div class="space-y-5">
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">Unit Cost</label>
+                    <div class="relative">
+                      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
+                      <input id="f-cost" type="number" step="0.01" min="0" class="w-full h-10 pl-7 pr-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary" />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">Selling Price</label>
+                    <div class="relative">
+                      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
+                      <input id="f-price" type="number" step="0.01" min="0" class="w-full h-10 pl-7 pr-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary" />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">Stock On Hand</label>
+                    <input id="f-qty" type="number" readonly class="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm bg-slate-50 text-slate-400 cursor-not-allowed" />
+                    <p class="mt-1 text-xs text-slate-400">Adjust quantity via stock audit</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">POS Enabled</label>
+                    <div class="flex items-center gap-3 h-10">
+                      <button id="toggle-pos" onclick="this.classList.toggle('bg-primary');this.classList.toggle('bg-slate-200');this.firstElementChild.classList.toggle('translate-x-4')" class="inline-flex h-5 w-9 items-center rounded-full transition bg-slate-200">
+                        <span class="h-4 w-4 rounded-full bg-white shadow translate-x-0.5 transition"></span>
+                      </button>
+                      <span id="pos-label" class="text-sm text-slate-500">Disabled</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 flex justify-end gap-2">
+            <a href="raseed-list.html" class="h-9 px-3 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1.5">Cancel</a>
+            <button onclick="history.back()" class="h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5"><i data-lucide="save" class="!w-4 !h-4"></i>Save Changes</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-raseed.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const item = App.seed.inventory[0];
+    document.getElementById('f-name').value = item.name;
+    document.getElementById('f-sku').value = item.sku;
+    document.getElementById('f-min').value = item.min;
+    document.getElementById('f-cost').value = item.cost;
+    document.getElementById('f-price').value = item.posPrice || '';
+    document.getElementById('f-qty').value = item.qty;
+    const catSel = document.getElementById('f-category');
+    [...catSel.options].forEach((o) => { if (o.value === item.category) o.selected = true; });
+    const unitSel = document.getElementById('f-unit');
+    [...unitSel.options].forEach((o) => { if (o.value === item.unit) o.selected = true; });
+    if (item.posEnabled) {
+      const btn = document.getElementById('toggle-pos');
+      btn.classList.remove('bg-slate-200'); btn.classList.add('bg-primary');
+      btn.firstElementChild.classList.add('translate-x-4');
+      document.getElementById('pos-label').textContent = 'Enabled';
+    }
+    document.getElementById('toggle-pos').addEventListener('click', () => {
+      const enabled = document.getElementById('toggle-pos').classList.contains('bg-primary');
+      document.getElementById('pos-label').textContent = enabled ? 'Enabled' : 'Disabled';
+    });
+    App.ui.icons();
+  </script>
+</body>
+</html>

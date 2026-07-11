@@ -13,7 +13,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   const clientIp = getClientIp(req);
-  const limited = checkRateLimit(
+  const limited = await checkRateLimit(
     `check-subdomain:ip:${clientIp}`,
     20,
     60 * 1000,

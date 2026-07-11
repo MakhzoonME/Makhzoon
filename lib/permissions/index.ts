@@ -20,8 +20,15 @@ export function hasPermission(
   // Stored permissions always take precedence — enables restriction of any role
   if (user.permissions) {
     const mod = user.permissions[module] as unknown as Record<string, boolean> | undefined;
-    if (!mod) return false;
-    return mod[operation] === true;
+    if (!mod) {
+      // Module block absent entirely — fall back to role default
+      return ADMIN_ROLES.has(user.role);
+    }
+    const val = mod[operation];
+    // Key missing (new field added after permissions were saved) — admin roles
+    // should not lose access to new operations they never explicitly restricted.
+    if (val === undefined) return ADMIN_ROLES.has(user.role);
+    return val === true;
   }
   // No stored permissions: admin/owner get full access, staff get view-only fallback
   if (ADMIN_ROLES.has(user.role)) return true;

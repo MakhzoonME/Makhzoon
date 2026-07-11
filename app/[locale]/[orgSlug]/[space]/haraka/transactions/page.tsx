@@ -7,7 +7,7 @@ import { PageHeader, DataTable, FilterBar, StatusBadge, StatCard } from '@/compo
 import type { ColumnDef } from '@/components/shared';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { useTransactions, useHarakaReport } from '@/hooks/haraka';
-import { useAdminGuard, useT } from '@/hooks/ui';
+import { useAdminGuard, useT, useModuleGuard } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { formatCurrency } from '@/lib/utils/format';
 import { startOfDay, endOfDay } from 'date-fns';
@@ -16,11 +16,12 @@ import type { PosTransaction } from '@/types';
 type StatusFilter = 'all' | 'completed' | 'refunded' | 'voided';
 
 export default function TransactionsListPage() {
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
+  const { isAllowed } = useAdminGuard('pos.view_orders');
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
   const { data: orgInfo } = useOrgInfo();
-  const { isAllowed } = useAdminGuard('pos.view_reports');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [page, setPage] = useState(1);
   const { data, isLoading } = useTransactions({
@@ -46,7 +47,7 @@ export default function TransactionsListPage() {
   const cardTotal = payReport?.buckets.find((b) => b.key === 'card')?.total ?? 0;
   const cardShare = todaySales > 0 ? Math.round((cardTotal / todaySales) * 100) : 0;
 
-  if (!isAllowed) {
+  if (!featureAllowed || !isAllowed) {
     return (
       <div className="flex items-center justify-center h-48">
         <div className="h-7 w-7 rounded-full border-2 border-primary-600 border-t-transparent animate-spin" />

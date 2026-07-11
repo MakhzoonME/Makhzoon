@@ -22,7 +22,7 @@ import {
   createAssetNote as dbCreateAssetNote,
   deleteAssetNote as dbDeleteAssetNote,
 } from '@/lib/db/asset-notes';
-import { queueAuditLog } from '@/lib/audit/logger';
+import { writeAuditLog } from '@/lib/audit/logger';
 import { requirePermission, requireActiveSubscription, getUserContext } from './base.service';
 
 export interface CreateAssetInput {
@@ -112,7 +112,7 @@ export async function createAssetWithAudit(
     } as any
   );
 
-  queueAuditLog({
+  await writeAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -131,7 +131,8 @@ export async function createAssetWithAudit(
 export async function updateAssetWithAudit(
   user: AuthUser,
   assetId: string,
-  data: UpdateAssetInput
+  data: UpdateAssetInput,
+  spaceId?: string,
 ) {
   await requirePermission(user, 'assets', 'update');
   await requireActiveSubscription(user.organizationId!, user);
@@ -158,15 +159,28 @@ export async function updateAssetWithAudit(
   const isRetirement = data.status === 'Retired' && asset.status !== 'Retired';
   const action = isRetirement ? 'ASSET_RETIRED' : 'ASSET_UPDATED';
 
-  queueAuditLog({
+  // Record only the fields that actually changed, so the audit trail shows what was edited.
+  const oldValue: Record<string, unknown> = {};
+  const newValue: Record<string, unknown> = {};
+  for (const key of Object.keys(data) as (keyof UpdateAssetInput)[]) {
+    const before = asset[key as keyof typeof asset];
+    const after = data[key];
+    if (JSON.stringify(before) !== JSON.stringify(after)) {
+      oldValue[key] = before;
+      newValue[key] = after;
+    }
+  }
+
+  await writeAuditLog({
     organizationId: user.organizationId!,
+    spaceId: asset.spaceId ?? spaceId,
     userId: userContext.uid,
     role: userContext.role,
     action,
     module: 'assets',
     recordId: assetId,
-    oldValue: { status: asset.status, name: asset.name },
-    newValue: { status: data.status, name: data.name },
+    oldValue,
+    newValue,
   });
 }
 
@@ -174,7 +188,7 @@ export async function updateAssetWithAudit(
  * Delete asset with audit logging.
  * If asset is retired, hard-delete it. Otherwise, retire it.
  */
-export async function deleteAssetWithAudit(user: AuthUser, assetId: string) {
+export async function deleteAssetWithAudit(user: AuthUser, assetId: string, spaceId?: string) {
   await requirePermission(user, 'assets', 'delete');
   await requireActiveSubscription(user.organizationId!, user);
 
@@ -189,8 +203,9 @@ export async function deleteAssetWithAudit(user: AuthUser, assetId: string) {
   if (asset.status === 'Retired') {
     // Hard-delete already-retired assets
     await dbDeleteAsset(assetId);
-    queueAuditLog({
+    await writeAuditLog({
       organizationId: asset.organizationId,
+      spaceId: asset.spaceId ?? spaceId,
       userId: userContext.uid,
       role: userContext.role,
       action: 'ASSET_DELETED',
@@ -208,8 +223,9 @@ export async function deleteAssetWithAudit(user: AuthUser, assetId: string) {
       updatedByName: userContext.displayName,
       updatedByRole: userContext.role,
     });
-    queueAuditLog({
+    await writeAuditLog({
       organizationId: asset.organizationId,
+      spaceId: asset.spaceId ?? spaceId,
       userId: userContext.uid,
       role: userContext.role,
       action: 'ASSET_RETIRED',
@@ -285,7 +301,7 @@ export async function createAssetCheckout(
     updatedByRole: userContext.role,
   });
 
-  queueAuditLog({
+  await writeAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -327,7 +343,7 @@ export async function returnAssetCheckout(
     updatedByRole: userContext.role,
   });
 
-  queueAuditLog({
+  await writeAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -384,7 +400,7 @@ export async function createAssetMaintenance(
     } as any
   );
 
-  queueAuditLog({
+  await writeAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -435,7 +451,7 @@ export async function createAssetNoteWithAudit(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any);
 
-  queueAuditLog({
+  await writeAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,
@@ -463,7 +479,7 @@ export async function deleteAssetNoteWithAudit(user: AuthUser, assetId: string, 
   const userContext = getUserContext(user);
   await dbDeleteAssetNote(noteId);
 
-  queueAuditLog({
+  await writeAuditLog({
     organizationId: user.organizationId!,
     userId: userContext.uid,
     role: userContext.role,

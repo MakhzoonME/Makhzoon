@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { PageHeader, ExportButton, LoadingSkeleton } from '@/components/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { useAdminGuard, useT } from '@/hooks/ui';
+import { useAdminGuard, useT, useModuleGuard } from '@/hooks/ui';
 import { useHarakaReport, buildReportExportUrl, type AggregateGroupBy, type AggregateBucket } from '@/hooks/haraka';
 import { useOrgInfo } from '@/hooks/org';
 
@@ -32,6 +32,7 @@ function toInput(d: Date): string {
 }
 
 export default function HarakaReportsPage() {
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
   const { isAllowed } = useAdminGuard('pos.view_reports');
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
@@ -43,7 +44,7 @@ export default function HarakaReportsPage() {
     return { from: startOfDay(from), to: endOfDay(to) };
   });
 
-  if (!isAllowed) {
+  if (!featureAllowed || !isAllowed) {
     return (
       <div className="flex items-center justify-center h-48">
         <div className="h-7 w-7 rounded-full border-2 border-primary-600 border-t-transparent animate-spin" />

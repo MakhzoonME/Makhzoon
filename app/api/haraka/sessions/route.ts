@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { requirePermission } from '@/lib/permissions/require'
 import { SessionsService } from '@/lib/modules/haraka/sessions/sessions.service'
 import { openSessionSchema } from '@/lib/modules/haraka/sessions/schemas'
@@ -15,6 +16,7 @@ const service = new SessionsService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { searchParams } = new URL(req.url)
 
     if (searchParams.get('mine') === 'current') {
@@ -40,6 +42,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     requirePermission(tenant.user, 'pos', 'open_session')
     const body = await req.json()
     const parsed = openSessionSchema.safeParse(body)

@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { BackendLogEntry, LogLevel } from '@/lib/logging/backend-logger';
 

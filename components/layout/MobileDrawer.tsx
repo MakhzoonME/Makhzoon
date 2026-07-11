@@ -5,6 +5,8 @@ import { usePathname, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
+import { hasModuleAccess } from '@/lib/permissions';
+import type { UserPermissions } from '@/types/user-permissions.types';
 import { useUiStore } from '@/store/ui.store';
 import { useTransferStore } from '@/store/transfer.store';
 import { useSubscriptionFeatures } from '@/hooks/org';
@@ -33,7 +35,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard',    labelKey: 'nav.dashboard',    Icon: DashboardSVG,    featureKey: 'dashboard' },
   { href: '/usool/list',   labelKey: 'nav.assets',       Icon: AssetsSVG,       featureKey: 'assets' },
   { href: '/raseed/list',  labelKey: 'nav.inventory',    Icon: InventorySVG,    featureKey: 'inventory' },
-  { href: '/haraka/register', labelKey: 'nav.pos',       Icon: AuditSVG,        featureKey: 'pos' },
+  { href: '/haraka',          labelKey: 'nav.pos',       Icon: AuditSVG,        featureKey: 'pos' },
   { href: '/warranties',   labelKey: 'nav.warranties',   Icon: WarrantySVG,     featureKey: 'warranties' },
   { href: '/requests',     labelKey: 'nav.requests',     Icon: RequestsSVG,     featureKey: 'requests' },
   { href: '/reports',      labelKey: 'nav.reports',      Icon: ReportsSVG,      adminOnly: true, featureKey: 'reports' },
@@ -58,11 +60,18 @@ export function MobileDrawer() {
   const offscreen = dir === 'rtl' ? '100%' : '-100%';
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   const visibleItems = navItems.filter((item) => {
     if (item.adminOnly && !canSeeAdmin) return false;
     if (item.featureKey && !features[item.featureKey]) return false;
+    if (user?.role === 'staff' && item.featureKey && user) {
+      if (!hasModuleAccess(
+        { ...user, organizationId: user.organizationId ?? null },
+        item.featureKey as keyof UserPermissions,
+      )) return false;
+    }
     return true;
   });
 
@@ -120,10 +129,9 @@ export function MobileDrawer() {
             {user && (
               <div className="px-4 py-3 border-b border-gray-100">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-semibold text-indigo-700 flex-shrink-0 overflow-hidden">
-                    {user.avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                  <div className="relative h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-semibold text-indigo-700 flex-shrink-0 overflow-hidden">
+                    {user.avatarUrl && !avatarError ? (
+                      <img src={user.avatarUrl} alt="" className="object-cover w-full h-full" onError={() => setAvatarError(true)} />
                     ) : (
                       user.displayName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase()
                     )}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import {
   getTicketMessages,
   getTicketMessagesAny,
@@ -101,6 +102,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tic
 
     if (!user.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'support');
 
     const message = await addTicketMessage(
       ticketId,

@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // Image/document uploads live in dedicated Supabase Storage buckets — one per

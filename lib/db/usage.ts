@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { OrgUsage, OrgWithUsage } from '@/types';
 import { getOrganizationsWithSearch } from './organizations';

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Team · Superadmin — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="sa-team" data-portal="superadmin" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div><h1 class="text-xl font-semibold text-slate-900">Platform Team</h1><p class="text-sm text-slate-500">4 Makhzoon staff members</p></div>
+            <button class="h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5"><i data-lucide="user-plus" class="!w-4 !h-4"></i>Invite Member</button>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide"><tr>
+                <th class="px-4 py-3 text-left font-semibold">Name</th><th class="px-4 py-3 text-left font-semibold">Email</th>
+                <th class="px-4 py-3 text-left font-semibold">Platform Role</th><th class="px-4 py-3 text-left font-semibold">Status</th>
+                <th class="px-4 py-3 text-left font-semibold">Last Active</th><th class="px-4 py-3 text-right font-semibold">Actions</th>
+              </tr></thead>
+              <tbody id="rows" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-misc.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const RV = App.seed.platformRoleVariant, UV = App.seed.userStatusVariant;
+    document.getElementById('rows').innerHTML = App.seed.team.map((t) => `<tr class="hover:bg-slate-50">
+      <td class="px-4 py-3"><div class="flex items-center gap-2.5">${App.ui.avatar(t.init, '#4F46E5')}<span class="font-medium text-slate-800">${t.name}</span></div></td>
+      <td class="px-4 py-3 text-slate-600">${t.email}</td>
+      <td class="px-4 py-3">${App.ui.badge(t.role, RV[t.role])}</td>
+      <td class="px-4 py-3">${App.ui.badge(t.status, UV[t.status])}</td>
+      <td class="px-4 py-3 text-slate-500">${t.last}</td>
+      <td class="px-4 py-3 text-right">
+        <button title="Edit" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10"><i data-lucide="square-pen" class="!w-4 !h-4"></i></button>
+        <button title="Remove" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50"><i data-lucide="trash-2" class="!w-4 !h-4"></i></button>
+      </td></tr>`).join('');
+    App.ui.icons();
+  </script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { requirePermission } from '@/lib/permissions/require';
 import { requestSchema } from '@/lib/validations/request.schema';
 import * as requestsService from '@/lib/modules/requests/services/requests.service';
@@ -7,6 +8,8 @@ import * as requestsService from '@/lib/modules/requests/services/requests.servi
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'requests');
+    requirePermission(tenant.user, 'requests', 'view');
     const user = tenant.user;
 
     const { searchParams } = new URL(req.url);
@@ -32,6 +35,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'requests');
     requirePermission(tenant.user, 'requests', 'create');
 
     const body = await req.json();

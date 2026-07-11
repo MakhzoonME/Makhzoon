@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import * as spacesService from '@/lib/modules/spaces/services/spaces.service';
+import { z } from 'zod';
+
+const createSpaceSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  slug: z.string().trim().min(1).max(120).optional(),
+});
 
 /**
  * GET /api/spaces
@@ -26,11 +32,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
-    const body = await req.json().catch(() => ({}));
-    const space = await spacesService.create(tenant, {
-      name: typeof body.name === 'string' ? body.name : '',
-      slug: typeof body.slug === 'string' ? body.slug : undefined,
-    });
+    const parsed = createSpaceSchema.safeParse(await req.json().catch(() => ({})));
+    if (!parsed.success) return NextResponse.json({ error: 'Invalid body', details: parsed.error.flatten() }, { status: 422 });
+    const space = await spacesService.create(tenant, parsed.data);
     return NextResponse.json({ space }, { status: 201 });
   } catch (err) {
     if (err instanceof NextResponse) return err;

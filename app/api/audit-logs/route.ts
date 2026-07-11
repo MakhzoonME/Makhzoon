@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
+import { requireFeatureForOrg } from '@/lib/permissions/require-feature';
 import { getAuditLogs } from '@/lib/db/audit-logs';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { hasPermission } from '@/lib/permissions';
+import { hasSuperAdminPermission } from '@/lib/permissions/superadmin';
 import { AuditLog } from '@/types';
 
 async function batchGetNames(
@@ -87,13 +90,18 @@ async function enrichLogs(logs: AuditLog[]): Promise<AuditLog[]> {
   userNamesOrg.forEach((v, k) => userNames.set(k, v));
   userNamesSuperAdmin.forEach((v, k) => { if (!userNames.has(k)) userNames.set(k, v); });
 
-  return logs.map((l) => ({
-    ...l,
-    userDisplayName: userNames.get(l.userId) as string | undefined,
-    orgName: orgNames.get(l.organizationId),
-    spaceName: l.spaceId ? spaceNames.get(l.spaceId) : undefined,
-    recordName: recordNameByModuleAndId.get(`${l.module?.toLowerCase() ?? ''}:${l.recordId}`),
-  }));
+  return logs.map((l) => {
+    // Records that were later deleted/renamed no longer resolve via a live lookup —
+    // fall back to the name captured in the log's own diff snapshot.
+    const snapshotName = (l.newValue?.name ?? l.oldValue?.name) as string | undefined;
+    return {
+      ...l,
+      userDisplayName: userNames.get(l.userId) as string | undefined,
+      orgName: orgNames.get(l.organizationId),
+      spaceName: l.spaceId ? spaceNames.get(l.spaceId) : undefined,
+      recordName: recordNameByModuleAndId.get(`${l.module?.toLowerCase() ?? ''}:${l.recordId}`) ?? snapshotName,
+    };
+  });
 }
 
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
@@ -102,9 +110,18 @@ export async function GET(req: NextRequest) {
   try {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!SUPERADMIN_ROLES.has(user.role) && user.role !== 'admin' && user.role !== 'org_owner') {
+
+    const isSuperadmin = SUPERADMIN_ROLES.has(user.role);
+    const isOrgAdmin = user.role === 'admin' || user.role === 'org_owner';
+
+    if (isSuperadmin && !hasSuperAdminPermission(user, 'auditLogs', 'view'))
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    if (isOrgAdmin && !hasPermission(user, 'auditLogs', 'view'))
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!isSuperadmin && !isOrgAdmin)
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (isOrgAdmin && user.organizationId)
+      await requireFeatureForOrg(user.organizationId, 'auditLogs');
 
     const { searchParams } = new URL(req.url);
     const orgId =
@@ -112,6 +129,7 @@ export async function GET(req: NextRequest) {
         ? (user.organizationId ?? undefined)
         : (searchParams.get('orgId') ?? undefined);
     const userId = searchParams.get('userId') ?? undefined;
+    const recordId = searchParams.get('recordId') ?? undefined;
     const action = searchParams.get('action') ?? undefined;
     const dateFrom = searchParams.get('dateFrom') ?? undefined;
     const dateTo = searchParams.get('dateTo') ?? undefined;
@@ -136,7 +154,7 @@ export async function GET(req: NextRequest) {
         .maybeSingle();
       if (s) spaceId = s.id as string;
     }
-    const result = await getAuditLogs({ orgId, spaceId, userId, action, dateFrom, dateTo, page, pageSize, excludeSuperadminActions: isOrgUser });
+    const result = await getAuditLogs({ orgId, spaceId, userId, recordId, action, dateFrom, dateTo, page, pageSize, excludeSuperadminActions: isOrgUser });
     const enriched = await enrichLogs(result.logs);
     return NextResponse.json({ ...result, logs: enriched });
   } catch (err) {

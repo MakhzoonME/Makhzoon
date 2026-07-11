@@ -241,5 +241,86 @@
       "createdAt": "2026-05-20T00:00:00Z",
       "completedAt": "2026-05-20T00:00:00Z"
     }
+    {
+      "id": "MZ-017",
+      "title": "Replace hardcoded English strings with useT() i18n calls across 8 superadmin page files",
+      "description": "Replaced all hardcoded English strings with useT() i18n calls across 8 superadmin page files under app/[locale]/superadmin/. Added ~90 new keys to locales/messages.ts (both en and ar objects) across namespaces: common.*, profile.*, ticket.*, support.*, superadminLists.*, sync.*. Files: organizations/new/page.tsx, organizations/[orgId]/edit/page.tsx, organizations/[orgId]/subscription/page.tsx, organizations/[orgId]/lists/page.tsx, profile/page.tsx, support/[ticketId]/page.tsx, lists/page.tsx, sync/page.tsx.",
+      "status": "done",
+      "assignee": "frontend",
+      "requestedBy": "user",
+      "files": [
+        "locales/messages.ts",
+        "app/[locale]/superadmin/organizations/new/page.tsx",
+        "app/[locale]/superadmin/organizations/[orgId]/edit/page.tsx",
+        "app/[locale]/superadmin/organizations/[orgId]/subscription/page.tsx",
+        "app/[locale]/superadmin/organizations/[orgId]/lists/page.tsx",
+        "app/[locale]/superadmin/profile/page.tsx",
+        "app/[locale]/superadmin/support/[ticketId]/page.tsx",
+        "app/[locale]/superadmin/lists/page.tsx",
+        "app/[locale]/superadmin/sync/page.tsx"
+      ],
+      "branch": null,
+      "createdAt": "2026-06-05T00:00:00Z",
+      "completedAt": "2026-06-05T00:00:00Z"
+    },
+    {
+      "id": "MZ-018",
+      "title": "Create Banna (بنّا) module frontend — Workspace Builder",
+      "description": "Add locale keys for banna module, nav entries, sidebar/bottom nav icons, two pages (overview + custom fields), a form component, hooks, and types.",
+      "status": "done",
+      "assignee": "frontend",
+      "requestedBy": "user",
+      "files": [
+        "locales/messages.ts",
+        "lib/nav/index.ts",
+        "components/layout/AppSidebar.tsx",
+        "components/layout/BottomNav.tsx",
+        "types/banna.types.ts",
+        "app/[locale]/[orgSlug]/[space]/banna/page.tsx",
+        "app/[locale]/[orgSlug]/[space]/banna/custom-fields/page.tsx",
+        "components/banna/CustomFieldForm.tsx",
+        "hooks/banna/index.ts"
+      ],
+      "branch": null,
+      "createdAt": "2026-06-05T12:00:00Z",
+      "completedAt": "2026-06-05T14:56:00Z"
+    },
+    {
+      "id": "MZ-019",
+      "title": "Create Banna (بنّا) module backend — API, services, validators",
+      "description": "Build the Banna (Workspace Builder) module backend: types, Zod schemas, Supabase repository, service layer with permissions/audit, and API routes (/api/banna/custom-fields). Color: #1565C0.",
+      "status": "done",
+      "assignee": "backend",
+      "requestedBy": "user",
+      "branch": "DevBranch",
+      "createdAt": "2026-06-05T13:00:00Z",
+      "completedAt": "2026-06-05T13:30:00Z",
+      "files": [
+        "types/banna.types.ts",
+        "types/user-permissions.types.ts",
+        "types/index.ts",
+        "lib/modules/banna/types/index.ts",
+        "lib/modules/banna/validators/schemas.ts",
+        "lib/modules/banna/repositories/banna.repository.ts",
+        "lib/modules/banna/services/banna.service.ts",
+        "app/api/banna/custom-fields/route.ts",
+        "app/api/banna/custom-fields/[fieldId]/route.ts"
+      ],
+      "mergeWarning": "MZ-018 also modifies types/banna.types.ts — co-author responsible for merging"
+    },
+    {
+      "id": "MZ-020",
+      "title": "Performance audit — add missing database indexes",
+      "description": "Add missing organization_id indexes and foreign key indexes identified by performance audit. Creates 21 indexes total across 18 organization_id columns and 3 FK columns.",
+      "status": "done",
+      "assignee": "database",
+      "requestedBy": "user",
+      "branch": null,
+      "createdAt": "2026-06-06T00:00:00Z",
+      "completedAt": "2026-06-06T00:00:00Z",
+      "files": [
+        "supabase/migrations/0028_performance_indexes.sql"
+      ]
+    }
   ]
 }

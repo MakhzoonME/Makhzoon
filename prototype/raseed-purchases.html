@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Purchase Orders — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="purchases" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <div><h1 class="text-xl font-semibold text-slate-900">Purchase Orders <span class="text-slate-400 font-normal text-base">· Raseed</span></h1></div>
+            </div>
+            <button class="h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5"><i data-lucide="plus" class="!w-4 !h-4"></i>New Purchase Order</button>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 mb-3">
+            <div class="relative"><i data-lucide="search" class="!w-4 !h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i><input type="text" placeholder="Search PO or vendor…" class="h-9 w-64 pl-9 pr-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary" /></div>
+            <select class="h-9 px-3 rounded-lg border border-slate-200 text-sm text-slate-600"><option>All statuses</option><option>Draft</option><option>Received</option><option>Cancelled</option></select>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide"><tr>
+                <th class="px-4 py-3 text-left font-semibold">PO Number</th><th class="px-4 py-3 text-left font-semibold">Vendor</th>
+                <th class="px-4 py-3 text-left font-semibold">Status</th><th class="px-4 py-3 text-right font-semibold">Items</th>
+                <th class="px-4 py-3 text-right font-semibold">Total Cost</th><th class="px-4 py-3 text-left font-semibold">Created</th><th class="w-10 px-4 py-3"></th>
+              </tr></thead>
+              <tbody id="rows" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-raseed.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const V = App.seed.poStatusVariant;
+    document.getElementById('rows').innerHTML = App.seed.purchases.map((p) => `<tr class="hover:bg-slate-50 cursor-pointer">
+      <td class="px-4 py-3 font-medium text-slate-800">${p.id}</td>
+      <td class="px-4 py-3 text-slate-600">${p.vendor}</td>
+      <td class="px-4 py-3">${App.ui.badge(p.status, V[p.status])}</td>
+      <td class="px-4 py-3 text-right text-slate-600">${p.items}</td>
+      <td class="px-4 py-3 text-right font-medium text-slate-800">${App.ui.money(p.total)}</td>
+      <td class="px-4 py-3 text-slate-500">${p.created}</td>
+      <td class="px-4 py-3 text-slate-300"><i data-lucide="more-horizontal" class="!w-4 !h-4"></i></td></tr>`).join('');
+    App.ui.icons();
+  </script>
+</body>
+</html>

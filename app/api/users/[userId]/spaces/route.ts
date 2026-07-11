@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import * as userSpacesService from '@/lib/modules/spaces/services/user-spaces.service';
+import { z } from 'zod';
+
+const spaceAccessSchema = z.object({
+  allSpaces: z.boolean(),
+  spaceIds: z.array(z.string()),
+});
 
 /** GET /api/users/[userId]/spaces → { allSpaces, spaceIds } (admin only) */
 export async function GET(
@@ -27,12 +33,10 @@ export async function PATCH(
   try {
     const tenant = await resolveTenant();
     const { userId } = await params;
-    const body = await req.json().catch(() => ({}));
-
-    if (typeof body.allSpaces !== 'boolean')
-      return NextResponse.json({ error: 'allSpaces is required' }, { status: 422 });
-    if (!Array.isArray(body.spaceIds))
-      return NextResponse.json({ error: 'spaceIds must be an array' }, { status: 422 });
+    const parsed = spaceAccessSchema.safeParse(await req.json().catch(() => ({})));
+    if (!parsed.success)
+      return NextResponse.json({ error: 'allSpaces is required', details: parsed.error.flatten() }, { status: 422 });
+    const body = parsed.data;
 
     await userSpacesService.setUserSpaceAccess(tenant, userId, {
       allSpaces: body.allSpaces,

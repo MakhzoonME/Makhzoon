@@ -12,7 +12,7 @@ const TRIAL_DAYS = 14;
 export async function POST(req: NextRequest) {
   // SECURITY: Rate limit signup (3 orgs per IP per 24 hours)
   const clientIp = getClientIp(req);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `signup:${clientIp}`,
     3,
     24 * 60 * 60 * 1000,
@@ -79,7 +79,17 @@ export async function POST(req: NextRequest) {
   await createSubscription({
     organizationId,
     packageId: null,
-    features: { pos: false },
+    features: {
+      dashboard: true,
+      assets: true,
+      inventory: true,
+      requests: true,
+      support: true,
+      auditLogs: true,
+      reports: true,
+      pos: false,
+      banna: false,
+    },
     notes: null,
     packageDetails: { tier: 'trial', trialDays: TRIAL_DAYS },
     startDate: now,

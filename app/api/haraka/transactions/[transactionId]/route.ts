@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { TransactionsService } from '@/lib/modules/haraka/transactions/transactions.service'
 
 const service = new TransactionsService()
@@ -10,6 +11,7 @@ export async function GET(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { transactionId } = await params
     const tx = await service.getById(tenant, transactionId)
     return NextResponse.json({ transaction: tx })

@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth.store';
 import { AuthUser, UserRole } from '@/types';
+import { analytics } from '@/lib/analytics';
 
 export function useAuth() {
   const { user, loading, setUser, setLoading } = useAuthStore();
@@ -20,6 +21,7 @@ export function useAuth() {
     ) {
       let features: Record<string, boolean> = {};
       let permissions = null;
+      let saPermissions = null;
       let orgSlug: string | null = null;
       let avatarUrl: string | null = null;
       let displayName: string | null = null;
@@ -34,6 +36,7 @@ export function useAuth() {
           resolvedRole = data.role ?? role;
           features = data.features ?? {};
           permissions = data.permissions ?? null;
+          saPermissions = data.saPermissions ?? null;
           orgSlug = data.orgSlug ?? null;
           avatarUrl = data.avatarUrl ?? null;
           displayName = data.displayName ?? null;
@@ -43,7 +46,7 @@ export function useAuth() {
       }
 
       if (cancelled) return;
-      setUser({
+      const authUser = {
         uid,
         email,
         displayName: displayName ?? '',
@@ -52,9 +55,19 @@ export function useAuth() {
         organizationId,
         orgSlug,
         permissions,
+        saPermissions,
         features,
-      } as AuthUser);
+      } as AuthUser;
+      setUser(authUser);
       setLoading(false);
+      analytics.identify({
+        uid,
+        email,
+        displayName: displayName ?? '',
+        role: resolvedRole,
+        orgSlug: orgSlug ?? undefined,
+        organizationId,
+      });
     }
 
     async function setup() {
@@ -79,6 +92,7 @@ export function useAuth() {
               organizationId: data.organizationId ?? null,
               orgSlug: data.orgSlug ?? null,
               permissions: data.permissions ?? null,
+              saPermissions: data.saPermissions ?? null,
               features: data.features ?? {},
             } as AuthUser);
           } else {

@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import * as moveService from '@/lib/modules/spaces/services/move.service';
+import { z } from 'zod';
+
+const moveSchema = z.object({
+  type: z.enum(['asset', 'inventory', 'request', 'customer']),
+  ids: z.array(z.string()).min(1),
+  targetSpaceId: z.string().min(1),
+  mode: z.enum(['move', 'transfer-qty']).optional(),
+  qty: z.number().optional(),
+});
 
 type MoveType = 'asset' | 'inventory' | 'request' | 'customer';
 type MoveMode = 'move' | 'transfer-qty';
@@ -25,20 +34,20 @@ type MoveMode = 'move' | 'transfer-qty';
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
-    const body = await req.json().catch(() => ({}));
-
-    const type = body.type as MoveType | undefined;
-    const ids = Array.isArray(body.ids) ? body.ids.filter((x: unknown): x is string => typeof x === 'string') : [];
-    const targetSpaceId = typeof body.targetSpaceId === 'string' ? body.targetSpaceId : '';
-    const mode = (body.mode as MoveMode | undefined) ?? 'move';
-    const qty = typeof body.qty === 'number' ? body.qty : undefined;
-
-    if (!type || !['asset', 'inventory', 'request', 'customer'].includes(type))
-      return NextResponse.json({ error: 'Invalid type' }, { status: 422 });
-    if (ids.length === 0)
-      return NextResponse.json({ error: 'No ids provided' }, { status: 422 });
-    if (!targetSpaceId)
-      return NextResponse.json({ error: 'targetSpaceId required' }, { status: 422 });
+    const parsed = moveSchema.safeParse(await req.json().catch(() => ({})));
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const msg = issue?.path[0] === 'type' ? 'Invalid type'
+        : issue?.path[0] === 'ids' ? 'No ids provided'
+        : issue?.path[0] === 'targetSpaceId' ? 'targetSpaceId required'
+        : 'Invalid body';
+      return NextResponse.json({ error: msg }, { status: 422 });
+    }
+    const type: MoveType = parsed.data.type;
+    const ids = parsed.data.ids;
+    const targetSpaceId = parsed.data.targetSpaceId;
+    const mode: MoveMode = parsed.data.mode ?? 'move';
+    const qty = parsed.data.qty;
 
     if (mode === 'transfer-qty') {
       if (type !== 'inventory')

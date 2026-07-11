@@ -1,8 +1,9 @@
 'use client';
 
-import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react';
-import { ScanBarcode } from 'lucide-react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { ScanBarcode, Camera } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { CameraScannerDialog, isCameraScanSupported } from '@/components/haraka/CameraScannerDialog';
 
 /**
  * Shared barcode input used across Raseed (item form, list quick-jump),
@@ -39,6 +40,12 @@ export interface BarcodeInputProps {
   name?: string;
   /** Optional uncontrolled initial value (useful in forms). */
   defaultValue?: string;
+  /**
+   * Show a camera-scan button (mobile/tablet without a physical scanner).
+   * The button only renders when the device supports the Barcode Detection
+   * API. On a successful read the code flows through the same onResolve path.
+   */
+  enableCamera?: boolean;
 }
 
 export const BarcodeInput = forwardRef<BarcodeInputHandle, BarcodeInputProps>(
@@ -53,13 +60,21 @@ export const BarcodeInput = forwardRef<BarcodeInputHandle, BarcodeInputProps>(
       scannerKeyDeltaMs = 30,
       className,
       defaultValue = '',
+      enableCamera = false,
       ...rest
     } = props;
 
     const [value, setValue] = useState<string>(defaultValue);
+    const [cameraOpen, setCameraOpen] = useState(false);
+    const [cameraSupported, setCameraSupported] = useState(false);
     const inputRef = useRef<HTMLInputElement | null>(null);
     const lastKeyAtRef = useRef<number>(0);
     const scannerBurstRef = useRef<boolean>(false);
+
+    // Feature-detect after mount so SSR and the client agree on first render.
+    useEffect(() => {
+      if (enableCamera) setCameraSupported(isCameraScanSupported());
+    }, [enableCamera]);
 
     useImperativeHandle(ref, () => ({
       focus: () => inputRef.current?.focus(),
@@ -115,7 +130,7 @@ export const BarcodeInput = forwardRef<BarcodeInputHandle, BarcodeInputProps>(
         </span>
         <Input
           ref={inputRef}
-          className="ps-8"
+          className={cameraSupported ? 'ps-8 pe-10' : 'ps-8'}
           placeholder={placeholder}
           value={value}
           onChange={(e) => setValue(e.target.value)}
@@ -129,6 +144,24 @@ export const BarcodeInput = forwardRef<BarcodeInputHandle, BarcodeInputProps>(
           spellCheck={false}
           {...rest}
         />
+        {cameraSupported && (
+          <button
+            type="button"
+            onClick={() => setCameraOpen(true)}
+            disabled={disabled}
+            aria-label="Scan with camera"
+            className="absolute end-1.5 top-1/2 -translate-y-1/2 grid place-items-center h-7 w-7 rounded-md text-gray-500 hover:bg-surface-page hover:text-gray-900 transition-colors disabled:opacity-50"
+          >
+            <Camera size={16} aria-hidden />
+          </button>
+        )}
+        {cameraSupported && (
+          <CameraScannerDialog
+            open={cameraOpen}
+            onOpenChange={setCameraOpen}
+            onDetected={submit}
+          />
+        )}
       </div>
     );
   },

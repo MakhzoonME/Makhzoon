@@ -32,6 +32,7 @@ export const inventoryItemSchema = z.object({
   posEnabled: z.coerce.boolean().optional(),
   posPrice: z.coerce.number().min(0).optional().or(z.literal('')),
   taxRateId: z.string().optional().or(z.literal('')),
+  expiryDate: z.string().optional().or(z.literal('')),
   documents: documentsSchema,
 });
 
@@ -45,6 +46,9 @@ export const inventoryTransactionSchema = z.object({
 export const inventoryAuditSchema = z.object({
   title: z.string().min(2).max(100),
   notes: z.string().optional(),
+  scope: z.enum(['all', 'category', 'location']).optional(),
+  category: z.string().optional(),
+  location: z.string().optional(),
 });
 
 export type InventoryItemFormData = z.infer<typeof inventoryItemSchema>;

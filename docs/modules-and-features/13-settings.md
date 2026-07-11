@@ -10,10 +10,14 @@ Settings is a group of org-level configuration pages. Each sub-page is gated by 
 
 The settings section has its own sidebar sub-nav with sections:
 - **Organization** (`settings.orgInfo`)
-- **Spaces** (`settings.users` — admin)
+- **Spaces** (admin)
 - **Managed Lists** (`settings.orgInfo`)
-- **Tax Rates** (`settings.taxRates`)
-- **Jo-Fotara** (`settings.fawtara`)
+- **Subscription** (`settings.subscription`)
+- **Users** (`settings.users`)
+- **Tax Rates** (`settings.taxRates`, requires `pos` feature)
+- **Jo-Fotara** (`settings.fawtara`, requires `pos` feature)
+- **Receipt** (`settings.fawtara`, requires `pos` feature)
+- **Order Documents** (`settings.fawtara`, requires `pos` feature)
 
 ---
 
@@ -132,3 +136,46 @@ Fawtara is Jordan's ISTD electronic invoicing system. When enabled, all Haraka P
 Save changes button. All changes logged in audit trail.
 
 **Fawtara re-submission**: Failed transactions can be manually resubmitted from the Haraka sessions detail page (gated by `pos.fawtara_submit`).
+
+---
+
+## Receipt
+
+**Route**: `/{locale}/{orgSlug}/settings/receipt`
+**Permission**: `settings.fawtara` + `pos` feature key
+
+Configures how POS receipts look when printed or shared.
+
+**Page layout**:
+- **Printer settings** — WebUSB thermal printer: connect/disconnect, paper width (58mm / 80mm), font size, auto-print toggle. State persisted to `localStorage` via `store/printer.store.ts`.
+- **Receipt template** — Template picker: `thermal-58`, `thermal-80`, `a4-modern`, `a4-invoice`.
+- **Language** — EN / AR / Both (bilingual).
+- **Logo** — Toggle show/hide; upload org logo (stored via Supabase Storage).
+- **Header / Footer** — Custom text lines printed above and below items.
+- **Accent color** — Hex color picker (preset swatches: Indigo, Teal, Purple, Red, Black).
+- **Live preview** — `ReceiptPreview` component renders a sample receipt reflecting all settings.
+- Save button — PATCH `/api/organizations/receipt-config`.
+
+Changes logged as `RECEIPT_CONFIG_UPDATED` in the audit trail.
+
+---
+
+## Order Documents
+
+**Route**: `/{locale}/{orgSlug}/settings/order-documents`
+**Permission**: `settings.fawtara` + `pos` feature key
+
+Configures the invoice and receipt generated from Haraka orders (distinct from the POS receipt above).
+
+**Page layout**:
+- **Document titles** — "Invoice title" (default: `TAX INVOICE`) and "Receipt title" (default: `RECEIPT`) — appear as the large heading at the top of each document.
+- **Show / hide fields** — Toggles for:
+  - Delivery address
+  - Order channel (Phone, WhatsApp…)
+  - Sales agent name
+  - Delivery agent name
+- **Footer** — "Thank you message" (short line) and "Terms and conditions" textarea (printed at the bottom of every invoice and receipt).
+- Note: Logo, org name, address, phone, and tax number are shared with Receipt settings.
+- Save button — PATCH `/api/organizations/order-document-config`.
+
+Config stored as `order_document_config` JSONB in `organization_configs`. Changes logged as `ORDER_DOCUMENT_CONFIG_UPDATED`.

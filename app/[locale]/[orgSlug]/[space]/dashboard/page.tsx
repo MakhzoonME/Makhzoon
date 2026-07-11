@@ -2,13 +2,14 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug, useSpace } from '@/hooks/ui';
+import { useOrgSlug, useSpace, useModuleGuard } from '@/hooks/ui';
 import { useAuthStore } from '@/store/auth.store';
 import { useT } from '@/hooks/ui';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { formatDate, daysUntil } from '@/lib/utils/date';
 import { Asset, Warranty, Request } from '@/types';
+import { hasModuleAccess } from '@/lib/permissions';
 import { MessageKey } from '@/locales/messages';
 
 /* ── Inline SVG icons ───────────────────────────────────────────── */
@@ -100,22 +101,24 @@ function getGreetingKey(): 'greeting.morning' | 'greeting.afternoon' | 'greeting
 }
 
 /* ── Data fetcher ────────────────────────────────────────────────── */
-function useDashboard(spaceSlug: string | null) {
+type DashboardFetchOpts = { assets: boolean; warranties: boolean; requests: boolean; auditLogs: boolean };
+
+function useDashboard(spaceSlug: string | null, opts: DashboardFetchOpts) {
   return useQuery({
-    queryKey: ['dashboard', spaceSlug],
+    queryKey: ['dashboard', spaceSlug, opts.assets, opts.warranties, opts.requests, opts.auditLogs],
     enabled: !!spaceSlug,
     queryFn: async () => {
       const headers: HeadersInit = spaceSlug ? { 'x-space-slug': spaceSlug } : {};
       const [assetsRes, warrantiesRes, requestsRes, auditRes] = await Promise.all([
-        fetch('/api/assets', { headers }),
-        fetch('/api/warranties?expiringSoon=true', { headers }),
-        fetch('/api/requests?status=PENDING&limit=5', { headers }),
-        fetch('/api/audit-logs?limit=4', { headers }),
+        opts.assets     ? fetch('/api/assets', { headers })                        : Promise.resolve(null),
+        opts.warranties ? fetch('/api/warranties?expiringSoon=true', { headers })  : Promise.resolve(null),
+        opts.requests   ? fetch('/api/requests?status=PENDING&limit=5', { headers }): Promise.resolve(null),
+        opts.auditLogs  ? fetch('/api/audit-logs?limit=4', { headers })            : Promise.resolve(null),
       ]);
-      const assetsBody     = assetsRes.ok     ? await assetsRes.json()     : { items: [] };
-      const warrantiesBody = warrantiesRes.ok ? await warrantiesRes.json() : [];
-      const requestsBody   = requestsRes.ok   ? await requestsRes.json()   : [];
-      const auditBody      = auditRes.ok      ? await auditRes.json()      : [];
+      const assetsBody     = assetsRes?.ok     ? await assetsRes.json()     : { items: [] };
+      const warrantiesBody = warrantiesRes?.ok ? await warrantiesRes.json() : [];
+      const requestsBody   = requestsRes?.ok   ? await requestsRes.json()   : [];
+      const auditBody      = auditRes?.ok      ? await auditRes.json()      : [];
       const assets: Asset[]         = Array.isArray(assetsBody?.items) ? assetsBody.items : [];
       const warranties: Warranty[]  = Array.isArray(warrantiesBody) ? warrantiesBody : [];
       const requests: Request[]     = Array.isArray(requestsBody) ? requestsBody : (Array.isArray(requestsBody?.items) ? requestsBody.items : []);
@@ -636,15 +639,28 @@ function SectionHeader({ title, count, action, onClick }: { title: string; count
 
 /* ── Page ────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
+  const { isAllowed } = useModuleGuard({ featureKey: 'dashboard', moduleKey: 'dashboard' });
   const router  = useRouter();
   const orgSlug = useOrgSlug();
   const space   = useSpace();
   const { user } = useAuthStore();
-  const { data, isLoading, dataUpdatedAt } = useDashboard(space);
   const { t, locale } = useT();
 
-  const firstName  = (user?.displayName || user?.email?.split('@')[0] || '').split(/\s+/)[0] || t('greeting.there');
-  const features   = user?.features ?? {};
+  const features = user?.features ?? {};
+  const canViewAssets    = !!user && features.assets    !== false && hasModuleAccess(user, 'assets');
+  const canViewInventory = !!user && features.inventory !== false && hasModuleAccess(user, 'inventory');
+  const canViewWarranties= !!user && features.warranties!== false && hasModuleAccess(user, 'warranties');
+  const canViewRequests  = !!user && features.requests  !== false && hasModuleAccess(user, 'requests');
+  const canViewAuditLogs = !!user && features.auditLogs !== false && hasModuleAccess(user, 'auditLogs');
+
+  const { data, isLoading, dataUpdatedAt } = useDashboard(space, {
+    assets: canViewAssets,
+    warranties: canViewWarranties,
+    requests: canViewRequests,
+    auditLogs: canViewAuditLogs,
+  });
+
+  const firstName = (user?.displayName || user?.email?.split('@')[0] || '').split(/\s+/)[0] || t('greeting.there');
   const syncedAgo  = useMemo(() => {
     if (!dataUpdatedAt) return null;
     // eslint-disable-next-line react-hooks/purity
@@ -654,6 +670,8 @@ export default function DashboardPage() {
     return `${t('dashboard.synced')} ${Math.round(diffMin / 60)}h ago`;
   }, [dataUpdatedAt, t]);
   const isAdmin     = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
+
+  if (!isAllowed) return null;
 
   const activeAssets       = data?.assets.filter((a) => a.status === 'Active')  ?? [];
   const totalAssets        = data?.assets ?? [];
@@ -709,9 +727,9 @@ export default function DashboardPage() {
     <div className="space-y-5">
 
       {/* ── Alert banners ────────────────────────────────────────────── */}
-      {!isLoading && (lowStockCount > 0 || expiringWarranties.length > 0) && (
+      {!isLoading && ((canViewInventory && lowStockCount > 0) || (canViewWarranties && expiringWarranties.length > 0)) && (
         <div className="space-y-2">
-          {lowStockCount > 0 && (
+          {canViewInventory && lowStockCount > 0 && (
             <AlertBanner tone="warning" icon={<InboxIcon />}>
               <span>
                 <strong>{lowStockCount} {lowStockCount === 1 ? 'item is' : 'items are'} low or out of stock.</strong>{' '}
@@ -722,7 +740,7 @@ export default function DashboardPage() {
               </span>
             </AlertBanner>
           )}
-          {expiringWarranties.length > 0 && (
+          {canViewWarranties && expiringWarranties.length > 0 && (
             <AlertBanner tone="info" icon={<WarningIcon />}>
               <span>
                 <strong>{expiringWarranties.length} {expiringWarranties.length === 1 ? 'warranty' : 'warranties'} expiring within 30 days.</strong>
@@ -756,147 +774,175 @@ export default function DashboardPage() {
       </div>
 
       {/* ── KPI cards ────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon={<TotalIcon />}
-          iconBg="rgba(0,105,92,0.08)"
-          iconColor="var(--mod-usool)"
-          accent="var(--mod-usool)"
-          label={t('dashboard.totalAssets')}
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{totalAssets.length}</p>}
-          delta={!isLoading && activeAssets.length > 0 ? `${activeAssets.length} active` : undefined}
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
-        />
-        <StatCard
-          icon={<ActiveIcon />}
-          iconBg="rgba(230,81,0,0.08)"
-          iconColor="var(--mod-raseed)"
-          accent="var(--mod-raseed)"
-          label={t('dashboard.inventoryItems')}
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{lowStockCount}</p>}
-          delta={!isLoading && lowStockCount > 0 ? `${lowStockCount} low` : undefined}
-          sub={!isLoading ? t('dashboard.lowStock') : undefined}
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list`)}
-        />
-        <StatCard
-          icon={<WarningIcon />}
-          iconBg="rgba(245,158,11,0.08)"
-          iconColor="#D97706"
-          accent="#F59E0B"
-          label={t('dashboard.warrantiesExpiring')}
-          value={
-            isLoading ? <SkeletonValue /> : (
-              <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">
-                {expiringWarranties.length}
-              </p>
-            )
-          }
-          sub={!isLoading ? t('dashboard.soon') : undefined}
-          delta={!isLoading && criticalWarrantyCount > 0 ? `${criticalWarrantyCount} critical` : undefined}
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/warranties?expiring=30`)}
-        />
-        <StatCard
-          icon={<InboxIcon />}
-          iconBg="rgba(124,58,237,0.08)"
-          iconColor="#7C3AED"
-          accent="#7C3AED"
-          label={t('dashboard.pendingRequests')}
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{pendingRequests.length}</p>}
-          delta={!isLoading && pendingRequests.length > 0 ? t('dashboard.needReview') : undefined}
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list?status=PENDING`)}
-        />
-      </div>
+      {(canViewAssets || canViewInventory || canViewWarranties || canViewRequests) && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {canViewAssets && (
+            <StatCard
+              icon={<TotalIcon />}
+              iconBg="rgba(0,105,92,0.08)"
+              iconColor="var(--mod-usool)"
+              accent="var(--mod-usool)"
+              label={t('dashboard.totalAssets')}
+              value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{totalAssets.length}</p>}
+              delta={!isLoading && activeAssets.length > 0 ? `${activeAssets.length} active` : undefined}
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
+            />
+          )}
+          {canViewInventory && (
+            <StatCard
+              icon={<ActiveIcon />}
+              iconBg="rgba(230,81,0,0.08)"
+              iconColor="var(--mod-raseed)"
+              accent="var(--mod-raseed)"
+              label={t('dashboard.inventoryItems')}
+              value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{lowStockCount}</p>}
+              delta={!isLoading && lowStockCount > 0 ? `${lowStockCount} low` : undefined}
+              sub={!isLoading ? t('dashboard.lowStock') : undefined}
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list`)}
+            />
+          )}
+          {canViewWarranties && (
+            <StatCard
+              icon={<WarningIcon />}
+              iconBg="rgba(245,158,11,0.08)"
+              iconColor="#D97706"
+              accent="#F59E0B"
+              label={t('dashboard.warrantiesExpiring')}
+              value={
+                isLoading ? <SkeletonValue /> : (
+                  <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">
+                    {expiringWarranties.length}
+                  </p>
+                )
+              }
+              sub={!isLoading ? t('dashboard.soon') : undefined}
+              delta={!isLoading && criticalWarrantyCount > 0 ? `${criticalWarrantyCount} critical` : undefined}
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/warranties?expiring=30`)}
+            />
+          )}
+          {canViewRequests && (
+            <StatCard
+              icon={<InboxIcon />}
+              iconBg="rgba(124,58,237,0.08)"
+              iconColor="#7C3AED"
+              accent="#7C3AED"
+              label={t('dashboard.pendingRequests')}
+              value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{pendingRequests.length}</p>}
+              delta={!isLoading && pendingRequests.length > 0 ? t('dashboard.needReview') : undefined}
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list?status=PENDING`)}
+            />
+          )}
+        </div>
+      )}
 
       {/* ── Quick actions ─────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest me-1 hidden sm:block">
-          {t('dashboard.quickActions')}
-        </span>
-        <button
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list?new=true`)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
-        >
-          <PlusIcon aria-hidden /> {t('dashboard.addAsset')}
-        </button>
-        <button
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/purchases/new`)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
-        >
-          <RefreshIcon aria-hidden /> {t('dashboard.recordTransaction')}
-        </button>
-        <button
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list`)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
-        >
-          <InboxIcon aria-hidden /> {t('dashboard.submitRequest')}
-        </button>
-        {features.pos && (
-          <button
-            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/haraka/register`)}
-            className="ms-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors duration-150 cursor-pointer"
-            style={{ color: 'var(--mod-haraka)', borderColor: 'color-mix(in srgb, var(--mod-haraka) 35%, transparent)', background: 'color-mix(in srgb, var(--mod-haraka) 6%, transparent)' }}
-          >
-            <CartIcon aria-hidden /> {t('dashboard.openRegister')}
-          </button>
-        )}
-      </div>
+      {(canViewAssets || canViewInventory || canViewRequests || features.pos) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest me-1 hidden sm:block">
+            {t('dashboard.quickActions')}
+          </span>
+          {canViewAssets && (
+            <button
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list?new=true`)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
+            >
+              <PlusIcon aria-hidden /> {t('dashboard.addAsset')}
+            </button>
+          )}
+          {canViewInventory && (
+            <button
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/purchases/new`)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
+            >
+              <RefreshIcon aria-hidden /> {t('dashboard.recordTransaction')}
+            </button>
+          )}
+          {canViewRequests && (
+            <button
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list`)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
+            >
+              <InboxIcon aria-hidden /> {t('dashboard.submitRequest')}
+            </button>
+          )}
+          {features.pos && (
+            <button
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/haraka/register`)}
+              className="ms-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors duration-150 cursor-pointer"
+              style={{ color: 'var(--mod-haraka)', borderColor: 'color-mix(in srgb, var(--mod-haraka) 35%, transparent)', background: 'color-mix(in srgb, var(--mod-haraka) 6%, transparent)' }}
+            >
+              <CartIcon aria-hidden /> {t('dashboard.openRegister')}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ── Row 1: Recent assets (1.5fr) + Expiring warranties (1fr) ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <Card className="lg:col-span-3 p-0">
-          <SectionHeader
-            title={t('dashboard.recentAssets')}
-            action={t('dashboard.viewAll')}
-            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
-          />
-          <RecentAssetsTable
-            assets={totalAssets}
-            isLoading={isLoading}
-            onViewAll={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
-          />
-        </Card>
-
-        <Card className="lg:col-span-2 p-0">
-          <SectionHeader
-            title={t('dashboard.expiringWarranties')}
-            action={t('dashboard.viewAll')}
-            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/warranties`)}
-          />
-          <ExpiringWarrantiesCard
-            warranties={expiringWarranties}
-            isLoading={isLoading}
-            onViewAll={() => router.push(`/${locale}/${orgSlug}/${space}/warranties`)}
-          />
-        </Card>
-      </div>
+      {(canViewAssets || canViewWarranties) && (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          {canViewAssets && (
+            <Card className={`${canViewWarranties ? 'lg:col-span-3' : 'lg:col-span-5'} p-0`}>
+              <SectionHeader
+                title={t('dashboard.recentAssets')}
+                action={t('dashboard.viewAll')}
+                onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
+              />
+              <RecentAssetsTable
+                assets={totalAssets}
+                isLoading={isLoading}
+                onViewAll={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
+              />
+            </Card>
+          )}
+          {canViewWarranties && (
+            <Card className={`${canViewAssets ? 'lg:col-span-2' : 'lg:col-span-5'} p-0`}>
+              <SectionHeader
+                title={t('dashboard.expiringWarranties')}
+                action={t('dashboard.viewAll')}
+                onClick={() => router.push(`/${locale}/${orgSlug}/${space}/warranties`)}
+              />
+              <ExpiringWarrantiesCard
+                warranties={expiringWarranties}
+                isLoading={isLoading}
+                onViewAll={() => router.push(`/${locale}/${orgSlug}/${space}/warranties`)}
+              />
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* ── Row 2: Asset breakdown (3/5) + Activity feed (2/5) ───────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <Card className="lg:col-span-3 p-0">
-          <SectionHeader
-            title={t('dashboard.assetBreakdown')}
-            action={t('dashboard.viewAll')}
-            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
-          />
-          <div className="p-5">
-            <AssetBreakdownBar assets={totalAssets} isLoading={isLoading} />
-          </div>
-        </Card>
-
-        <Card className="lg:col-span-2 p-0">
-          <SectionHeader
-            title={t('dashboard.recentActivity')}
-            action={t('dashboard.viewAll')}
-            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/audit-logs`)}
-          />
-          <div className="p-5">
-            <ActivityFeed logs={auditLogs} isLoading={isLoading} />
-          </div>
-        </Card>
-      </div>
+      {(canViewAssets || canViewAuditLogs) && (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          {canViewAssets && (
+            <Card className={`${canViewAuditLogs ? 'lg:col-span-3' : 'lg:col-span-5'} p-0`}>
+              <SectionHeader
+                title={t('dashboard.assetBreakdown')}
+                action={t('dashboard.viewAll')}
+                onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
+              />
+              <div className="p-5">
+                <AssetBreakdownBar assets={totalAssets} isLoading={isLoading} />
+              </div>
+            </Card>
+          )}
+          {canViewAuditLogs && (
+            <Card className={`${canViewAssets ? 'lg:col-span-2' : 'lg:col-span-5'} p-0`}>
+              <SectionHeader
+                title={t('dashboard.recentActivity')}
+                action={t('dashboard.viewAll')}
+                onClick={() => router.push(`/${locale}/${orgSlug}/${space}/audit-logs`)}
+              />
+              <div className="p-5">
+                <ActivityFeed logs={auditLogs} isLoading={isLoading} />
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* ── Row 3: Pending requests (admin only) ─────────────────────── */}
-      {isAdmin && (
+      {isAdmin && canViewRequests && (
         <Card className="p-0">
           <SectionHeader
             title={t('dashboard.pendingRequests')}

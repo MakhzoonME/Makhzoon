@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
+import Script from 'next/script';
 import './globals.css';
 import { QueryProvider } from '@/components/shared/QueryProvider';
 import { AppToastProvider } from '@/components/shared/ToastProvider';
@@ -10,6 +11,8 @@ import PostHogInit from '@/components/shared/PostHogInit';
 import ContentsquareInit from '@/components/shared/ContentsquareInit';
 import HeapInit from '@/components/shared/HeapInit';
 import LogRocketInit from '@/components/shared/LogRocketInit';
+import AnalyticsIdentify from '@/components/shared/AnalyticsIdentify';
+import DebugInit from '@/components/shared/DebugInit';
 
 const capriola = localFont({
   src: '../fonts/Capriola/Capriola-Regular.ttf',
@@ -58,9 +61,8 @@ const themeScript = `
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html suppressHydrationWarning>
-      { }
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <Script id="theme-init" strategy="beforeInteractive">{themeScript}</Script>
       </head>
       <body className={`${capriola.variable} ${thmanyah.variable} antialiased bg-surface-page`}>
         <QueryProvider>
@@ -73,6 +75,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <ContentsquareInit />
               <HeapInit />
               <LogRocketInit />
+              <AnalyticsIdentify />
+              <DebugInit />
             </ThemeProvider>
           </AppToastProvider>
         </QueryProvider>

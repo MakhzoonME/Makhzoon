@@ -25,7 +25,6 @@ import {
 import { PermissionsEditor } from '@/components/users/PermissionsEditor';
 import { UserSpaceAccess } from '@/components/users/UserSpaceAccess';
 import { useUserSpaceAccess, useUpdateUserSpaceAccess } from '@/hooks/spaces';
-import { useSubscriptionFeatures } from '@/hooks/org';
 import { UserPermissions, DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from '@/types';
 import { useT } from '@/hooks/ui';
 import type { MessageKey } from '@/locales/messages';
@@ -80,6 +79,12 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function displayIdentifier(email?: string | null, username?: string | null): string {
+  if (email && !email.endsWith('@makhzoon.local')) return email;
+  if (username) return `@${username}`;
+  return '—';
+}
+
 function UserAvatar({ name }: { name: string }) {
   const initials = name.split(' ').map((w) => w[0] ?? '').join('').toUpperCase().slice(0, 2);
   return (
@@ -100,7 +105,7 @@ export default function UsersPage() {
   const { isAllowed } = useAdminGuard('settings.users');
   const { data: users = [], isLoading: usersLoading } = useUsers();
   const { data: invites = [], isLoading: invitesLoading } = useInvites();
-  const { user: currentUser } = useAuthStore();
+  const { user: currentUser, refreshFeatures } = useAuthStore();
 
   const [tab, setTab] = useState<'members' | 'invites'>('members');
   const [search, setSearch] = useState('');
@@ -112,6 +117,7 @@ export default function UsersPage() {
   const [editTarget, setEditTarget] = useState<OrgUser | null>(null);
   const [editRole, setEditRole] = useState<string>('');
   const [editPermissions, setEditPermissions] = useState<UserPermissions>(DEFAULT_STAFF_PERMISSIONS);
+  const [permissionsModified, setPermissionsModified] = useState(false);
   const [showEditPerms, setShowEditPerms] = useState(false);
   const [savingRole, setSavingRole] = useState(false);
   const [editSpaceAccess, setEditSpaceAccess] = useState<{ allSpaces: boolean; spaceIds: string[] }>({ allSpaces: false, spaceIds: [] });
@@ -123,7 +129,7 @@ export default function UsersPage() {
       setEditSpaceAccess(serverSpaceAccess);
     }
   }, [editTarget, serverSpaceAccess]);
-  const features = useSubscriptionFeatures();
+  const features = currentUser?.features ?? {};
   const [deleteTarget, setDeleteTarget] = useState<{ user: OrgUser; permanent: boolean } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [resetTarget, setResetTarget] = useState<OrgUser | null>(null);
@@ -189,7 +195,21 @@ export default function UsersPage() {
   function openEditRole(u: OrgUser) {
     setEditTarget(u);
     setEditRole(u.role);
-    setEditPermissions(u.permissions ?? defaultPermsForRole(u.role));
+    const defaults = defaultPermsForRole(u.role);
+    if (u.permissions) {
+      // Deep-merge: role defaults fill any new fields added after permissions were last saved
+      const merged: Record<string, unknown> = {};
+      for (const key of Object.keys(defaults) as (keyof UserPermissions)[]) {
+        merged[key] = {
+          ...(defaults[key] as unknown as Record<string, boolean>),
+          ...(u.permissions[key] as unknown as Record<string, boolean> ?? {}),
+        };
+      }
+      setEditPermissions(merged as unknown as UserPermissions);
+    } else {
+      setEditPermissions(defaults);
+    }
+    setPermissionsModified(false);
     setShowEditPerms(false);
     setEditSpaceAccess({ allSpaces: u.role === 'org_owner', spaceIds: [] });
   }
@@ -198,10 +218,20 @@ export default function UsersPage() {
     if (!editTarget) return;
     setSavingRole(true);
     try {
+      // Only persist custom permissions when:
+      //  1. The user is staff (always needs explicit permissions), OR
+      //  2. The user already had stored permissions (keep them updated), OR
+      //  3. The admin explicitly opened and changed permissions in this session.
+      const shouldSendPermissions =
+        editRole === 'staff' || !!editTarget.permissions || permissionsModified;
+
       const res = await apiFetch(`/api/users/${editTarget.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: editRole, permissions: editPermissions }),
+        body: JSON.stringify({
+          role: editRole,
+          permissions: shouldSendPermissions ? editPermissions : null,
+        }),
       });
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
@@ -214,6 +244,11 @@ export default function UsersPage() {
       });
       toast.success(t('common.updated'));
       qc.invalidateQueries({ queryKey: ['users'] });
+      // If editing self, refresh auth store so sidebar + features reflect the
+      // new permissions immediately without requiring a logout/login cycle.
+      if (editTarget.id === currentUser?.uid) {
+        await refreshFeatures();
+      }
       setEditTarget(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('common.updateFailed'));
@@ -229,7 +264,7 @@ export default function UsersPage() {
     try {
       const url = permanent ? `/api/users/${target.id}?permanent=true` : `/api/users/${target.id}`;
       const res = await apiFetch(url, { method: 'DELETE' });
-      if (!res.ok) {
+      if (!res.ok && res.status !== 404) {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error ?? (permanent ? 'Failed to delete user' : 'Failed to deactivate user'));
       }
@@ -399,7 +434,7 @@ export default function UsersPage() {
                         <span className="font-medium text-gray-900">{u.displayName || '—'}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500" dir="ltr">{u.email || (u.username ? `@${u.username}` : '—')}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-500" dir="ltr">{displayIdentifier(u.email, u.username)}</td>
                     <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
                     <td className="px-4 py-3">
                       {isCustom ? (
@@ -484,7 +519,7 @@ export default function UsersPage() {
                       <span className="font-medium text-gray-700">{inv.displayName || '—'}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-500" dir="ltr">{inv.email || (inv.username ? `@${inv.username}` : '—')}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-500" dir="ltr">{displayIdentifier(inv.email, inv.username)}</td>
                   <td className="px-4 py-3"><RoleBadge role={inv.role} /></td>
                   <td className="px-4 py-3"><StatusBadge status="pending" /></td>
                   <td className="px-4 py-3 text-end">
@@ -529,6 +564,7 @@ export default function UsersPage() {
                 onValueChange={(v) => {
                   setEditRole(v);
                   setEditPermissions(defaultPermsForRole(v));
+                  setPermissionsModified(false);
                   setShowEditPerms(false);
                 }}
               >
@@ -556,7 +592,7 @@ export default function UsersPage() {
               {showEditPerms && (
                 <PermissionsEditor
                   value={editPermissions}
-                  onChange={setEditPermissions}
+                  onChange={(v) => { setEditPermissions(v); setPermissionsModified(true); }}
                   availableFeatures={features}
                 />
               )}
@@ -601,7 +637,7 @@ export default function UsersPage() {
           <DialogHeader>
             <DialogTitle>Password Reset</DialogTitle>
           </DialogHeader>
-          <div className="px-6 pt-2 pb-4 space-y-3">
+          <div className="px-6 py-5 space-y-3">
             {resetResult?.type === 'email_sent' ? (
               <p className="text-sm text-gray-700">A password reset link has been sent. The link expires in 24 hours.</p>
             ) : (

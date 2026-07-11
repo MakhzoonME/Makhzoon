@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { requirePermission } from '@/lib/permissions/require'
 import { InventoryService } from '@/lib/modules/inventory/services/inventory.service'
@@ -10,7 +11,9 @@ const service = new InventoryService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    const limited = rateLimitTenant(tenant, 'inventory', 60, 60_000)
+    requireFeature(tenant, 'inventory')
+    requirePermission(tenant.user, 'inventory', 'view')
+    const limited = await rateLimitTenant(tenant, 'inventory', 60, 60_000)
     if (limited) return limited
     const { searchParams } = new URL(req.url)
 
@@ -24,6 +27,8 @@ export async function GET(req: NextRequest) {
       stockStatus: searchParams.get('stockStatus') ?? undefined,
       search: searchParams.get('search') ?? undefined,
       posEnabled: searchParams.get('posEnabled') === 'true' ? true : undefined,
+      expiringWithin: searchParams.get('expiringWithin') ? parseInt(searchParams.get('expiringWithin')!, 10) : undefined,
+      expired: searchParams.get('expired') === 'true' ? true : undefined,
       page: searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined,
       pageSize: searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined,
       sortBy: searchParams.get('sortBy') as never ?? undefined,
@@ -42,6 +47,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'inventory')
     requirePermission(tenant.user, 'inventory', 'create')
     const body = await req.json()
     const parsed = createInventoryItemSchema.safeParse(body)
@@ -64,6 +70,7 @@ export async function POST(req: NextRequest) {
       posEnabled: data.posEnabled ?? undefined,
       posPrice: data.posPrice === undefined ? null : Number(data.posPrice),
       taxRateId: data.taxRateId || null,
+      expiryDate: data.expiryDate || null,
       documents: data.documents ?? [],
     })
 

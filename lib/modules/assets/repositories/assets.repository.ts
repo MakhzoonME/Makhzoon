@@ -1,3 +1,5 @@
+import 'server-only';
+import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import type { Asset } from '@/types/asset.types'
@@ -174,7 +176,11 @@ export class AssetsRepository {
       })
       .select('*')
       .single()
-    if (error) throw error
+    if (error) {
+      if ((error as { code?: string }).code === '23505')
+        throw NextResponse.json({ error: 'Serial number already exists in this space' }, { status: 409 })
+      throw error
+    }
     return toAsset(data)
   }
 
@@ -193,7 +199,11 @@ export class AssetsRepository {
         updated_by_role: tenant.user.role,
       })
       .eq('id', id)
-    if (error) throw error
+    if (error) {
+      if ((error as { code?: string }).code === '23505')
+        throw NextResponse.json({ error: 'Serial number already exists in this space' }, { status: 409 })
+      throw error
+    }
     return this.getById(tenant, id) as Promise<Asset>
   }
 

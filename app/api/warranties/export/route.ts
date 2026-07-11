@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { exportWarrantiesToCSV } from '@/lib/export/csv';
 import { format } from 'date-fns';
 import * as warrantiesService from '@/lib/modules/warranties/services/warranties.service';
@@ -7,6 +8,7 @@ import * as warrantiesService from '@/lib/modules/warranties/services/warranties
 export async function GET(_req: NextRequest) {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'warranties');
     const user = tenant.user;
     if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'org_owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 

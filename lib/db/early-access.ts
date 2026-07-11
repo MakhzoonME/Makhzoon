@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export interface EarlyAccessEntry {
@@ -49,4 +50,20 @@ export async function getEarlyAccessEntries(): Promise<EarlyAccessEntry[]> {
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []).map(toEntry);
+}
+
+export async function earlyAccessEmailExists(email: string): Promise<boolean> {
+  const { count } = await supabaseAdmin
+    .from('early_access')
+    .select('id', { count: 'exact', head: true })
+    .eq('email', email.toLowerCase());
+  return (count ?? 0) > 0;
+}
+
+export async function deleteEarlyAccessEntry(id: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('early_access')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
 }

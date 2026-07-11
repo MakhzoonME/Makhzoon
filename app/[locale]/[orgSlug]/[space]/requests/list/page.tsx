@@ -201,6 +201,7 @@ export default function RequestsListPage() {
           isLoading={isLoading}
           emptyMessage={t('requests.noRequests')}
           keyExtractor={(r) => r.id}
+          onRowClick={(r) => router.push(`/${locale}/${orgSlug}/${space}/requests/${r.id}`)}
           selection={hasMultipleSpaces && showSelection ? { selectedIds, onChange: setSelectedIds } : undefined}
           pagination={requestsData ? {
             page: requestsData.page,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { requirePermission } from '@/lib/permissions/require';
 import { getCheckoutById, markReturned } from '@/lib/db/asset-checkouts';
 import { updateAsset } from '@/lib/db/assets';
@@ -9,6 +10,7 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ a
   try {
     const { assetId, checkoutId } = await params;
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'assets');
     const user = tenant.user;
     requirePermission(user, 'assets', 'checkout');
 

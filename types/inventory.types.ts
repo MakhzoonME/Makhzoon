@@ -23,6 +23,7 @@ export interface InventoryItem {
   barcode?: string | null;
   taxRateId?: string | null;
   posPrice?: number | null;
+  expiryDate?: Date | null;
   /** Purchase receipts/invoices (private inventory-receipts bucket). */
   documents?: DocumentRef[];
   createdAt: Date;

@@ -72,8 +72,8 @@ name = "makhzoon"
 routes = ["app.makhzoon.me/*", "makhzoon.me/*", "www.makhzoon.me/*", "rcpt-app.makhzoon.me/*"]
 
 [env.production.vars]
-NEXT_PUBLIC_SUPABASE_URL = "https://ncjzozvzjtyycdlwohtr.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0"
+NEXT_PUBLIC_SUPABASE_URL = "https://ebupajukvyhparjkhlhr.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidXBhanVrdnlocGFyamtobGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MjYyOTAsImV4cCI6MjA5NDUwMjI5MH0.qvo7XgzvfMWzJu0dlTX_TrvY-Us74peqPVcx7ZIexhM"
 NEXT_PUBLIC_APP_URL = "https://app.makhzoon.me"
 NEXT_PUBLIC_RECEIPT_URL = "https://rcpt-app.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "production"

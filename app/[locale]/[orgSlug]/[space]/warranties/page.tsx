@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useOrgSlug, useSpace } from '@/hooks/ui';
+import { useOrgSlug, useSpace, useModuleGuard } from '@/hooks/ui';
 import { useWarranties } from '@/hooks/warranties';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { FilterBar } from '@/components/shared/FilterBar';
@@ -38,6 +38,7 @@ function DaysLeftBadge({ endDate }: { endDate: string | Date }) {
 }
 
 export default function WarrantiesPage() {
+  const { isAllowed } = useModuleGuard({ featureKey: 'warranties', moduleKey: 'warranties' });
   const { t, locale } = useT();
   const router       = useRouter();
   const pathname     = usePathname();
@@ -68,6 +69,8 @@ export default function WarrantiesPage() {
   const updateUrl = useCallback((params: Record<string, string>) => {
     router.replace(syncFiltersToUrl(pathname, params), { scroll: false });
   }, [pathname, router]);
+
+  if (!isAllowed) return null;
 
   function syncAllToUrl(next: Partial<Record<'status' | 'page' | 'pageSize' | 'sortBy' | 'sortDir', string>>) {
     updateUrl({

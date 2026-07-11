@@ -139,3 +139,266 @@ export interface PosReceiptCounter {
   organizationId: string;
   lastReceiptNumber: number;
 }
+
+// ── Haraka Orders ─────────────────────────────────────────────────────────
+
+export type OrderChannel = 'phone' | 'whatsapp' | 'instagram' | 'facebook' | 'other' | string;
+
+export type OrderStatus =
+  | 'new'
+  | 'confirmed'
+  | 'assigned'
+  | 'in_transit'
+  | 'ready_for_pickup'
+  | 'delivered'
+  | 'picked_up'
+  | 'cancelled';
+
+export type OrderFulfillmentType = 'delivery' | 'pickup';
+
+export type OrderPaymentStatus = 'unpaid' | 'partial' | 'paid';
+
+export type OrderPaymentMethod = 'cash_on_delivery' | 'bank_transfer' | 'card' | 'other';
+
+export interface OrderDeliveryAddress {
+  street?: string | null;
+  area?: string | null;
+  city?: string | null;
+  notes?: string | null;
+}
+
+export interface OrderLineItem {
+  inventoryItemId: string;
+  inventoryItemName: string;
+  sku: string | null;
+  quantity: number;
+  unitPrice: number;
+  taxRate: number;
+  taxAmount: number;
+  discountAmount: number;
+  lineTotal: number;
+}
+
+export interface HarakaOrder {
+  id: string;
+  organizationId: string;
+  spaceId: string | null;
+  orderNumber: string;
+  channel: OrderChannel;
+  status: OrderStatus;
+  fulfillmentType: OrderFulfillmentType;
+  customerId: string | null;
+  customerName: string;
+  customerPhone: string | null;
+  deliveryAddress: OrderDeliveryAddress | null;
+  items: OrderLineItem[];
+  subtotal: number;
+  discountAmount: number;
+  taxAmount: number;
+  total: number;
+  paymentStatus: OrderPaymentStatus;
+  amountPaid: number;
+  paymentMethod: OrderPaymentMethod | null;
+  salesAgentId: string;
+  salesAgentName: string;
+  deliveryAgentId: string | null;
+  deliveryAgentMemberId: string | null;
+  deliveryAgentName: string | null;
+  notes: string | null;
+  scheduledAt: Date | null;
+  invoiceNumber: string | null;
+  deliveryToken: string | null;
+  createdAt: Date;
+  createdBy: string | null;
+  updatedAt: Date;
+  updatedBy: string | null;
+}
+
+export interface HarakaDeliveryAgent {
+  id: string;
+  organizationId: string;
+  name: string;
+  phone: string | null;
+  notes: string | null;
+  isActive: boolean;
+  createdAt: Date;
+  createdBy: string | null;
+  updatedAt: Date;
+  updatedBy: string | null;
+}
+
+// ── Haraka Warranty Certificates ─────────────────────────────────────────
+
+export type WarrantyCertSourceType = 'order' | 'pos_transaction';
+
+export interface WarrantyCertItem {
+  inventoryItemId: string;
+  inventoryItemName: string;
+  sku: string | null;
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface HarakaWarrantyCert {
+  id: string;
+  organizationId: string;
+  spaceId: string | null;
+  warrantyNumber: string;
+  sourceType: WarrantyCertSourceType;
+  orderId: string | null;
+  transactionId: string | null;
+  customerName: string;
+  customerPhone: string | null;
+  items: WarrantyCertItem[];
+  warrantyStartDate: string; // ISO date
+  warrantyEndDate: string;   // ISO date
+  notes: string | null;
+  createdAt: Date;
+  createdBy: string | null;
+  updatedAt: Date;
+  updatedBy: string | null;
+}
+
+export interface HarakaWarrantyConfig {
+  organizationId: string;
+  defaultDurationDays: number;
+  termsText: string | null;
+  termsTextAr: string | null;
+  headerText: string | null;
+  headerTextAr: string | null;
+  footerText: string | null;
+  footerTextAr: string | null;
+  showLogo: boolean;
+  showQr: boolean;
+  language: 'en' | 'ar' | 'both';
+  template: string;
+  accentColor: string;
+}
+
+// ── Haraka Card Terminal ──────────────────────────────────────────────────
+
+export type CardTerminalMode = 'display' | 'local_bridge' | 'cloud' | 'webhook';
+export type CardTerminalProvider = 'sumup' | 'square' | 'paymob' | 'custom';
+export type CardChargeStatus = 'pending' | 'approved' | 'declined' | 'timeout' | 'cancelled';
+
+export interface HarakaCardTerminalConfig {
+  organizationId: string;
+  enabled: boolean;
+  mode: CardTerminalMode;
+  bridgeUrl: string | null;
+  provider: CardTerminalProvider | null;
+  /** api_key_enc is never returned to the client — only a boolean `apiKeySet` */
+  apiKeySet: boolean;
+  terminalId: string | null;
+  /** webhook_secret is never returned to the client */
+  webhookSecretSet: boolean;
+  currency: string;
+  timeoutSeconds: number;
+}
+
+export interface HarakaCardCharge {
+  id: string;
+  organizationId: string;
+  reference: string;
+  amount: number;
+  currency: string;
+  status: CardChargeStatus;
+  providerRef: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ── Haraka Service Jobs ───────────────────────────────────────────────────
+
+export type ServiceJobStatus = 'new' | 'confirmed' | 'in_progress' | 'done' | 'cancelled';
+
+export interface ServiceLine {
+  name: string;
+  description: string | null;
+  quantity: number;
+  unitPrice: number;
+  taxRate: number;
+  taxAmount: number;
+  discountAmount: number;
+  lineTotal: number;
+}
+
+export interface HarakaServiceJob {
+  id: string;
+  organizationId: string;
+  spaceId: string | null;
+  jobNumber: string;
+  invoiceNumber: string | null;
+  serviceType: string | null;
+  status: ServiceJobStatus;
+  customerId: string | null;
+  customerName: string;
+  customerPhone: string | null;
+  staffMemberId: string | null;
+  staffMemberName: string | null;
+  items: ServiceLine[];
+  subtotal: number;
+  discountAmount: number;
+  taxAmount: number;
+  total: number;
+  paymentStatus: OrderPaymentStatus;
+  amountPaid: number;
+  paymentMethod: string | null;
+  scheduledAt: Date | null;
+  serviceAddress: OrderDeliveryAddress | null;
+  notes: string | null;
+  createdAt: Date;
+  createdBy: string | null;
+  updatedAt: Date;
+  updatedBy: string | null;
+}
+
+// ── Haraka Retainers ──────────────────────────────────────────────────────
+
+export type RetainerStatus = 'active' | 'paused' | 'cancelled' | 'expired';
+export type BillingCycle = 'monthly' | 'quarterly' | 'annual';
+
+export interface HarakaRetainer {
+  id: string;
+  organizationId: string;
+  spaceId: string | null;
+  retainerNumber: string;
+  name: string;
+  customerId: string | null;
+  customerName: string;
+  customerPhone: string | null;
+  staffMemberId: string | null;
+  staffMemberName: string | null;
+  billingCycle: BillingCycle;
+  amountPerCycle: number;
+  taxRate: number;
+  startDate: string;
+  endDate: string | null;
+  status: RetainerStatus;
+  nextBillingDate: string | null;
+  notes: string | null;
+  createdAt: Date;
+  createdBy: string | null;
+  updatedAt: Date;
+  updatedBy: string | null;
+}
+
+export interface HarakaRetainerInvoice {
+  id: string;
+  retainerId: string;
+  organizationId: string;
+  invoiceNumber: string;
+  billingPeriodStart: string;
+  billingPeriodEnd: string;
+  dueDate: string | null;
+  amount: number;
+  taxAmount: number;
+  total: number;
+  paymentStatus: OrderPaymentStatus;
+  amountPaid: number;
+  paymentMethod: string | null;
+  paidAt: Date | null;
+  notes: string | null;
+  createdAt: Date;
+  createdBy: string | null;
+}

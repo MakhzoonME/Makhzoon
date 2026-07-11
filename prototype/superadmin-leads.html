@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leads &amp; Messages · Superadmin — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <style>.seg.active{background:#4F46E5;color:#fff;border-color:#4F46E5;}</style>
+</head>
+<body data-page="sa-leads" data-portal="superadmin" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+          <div class="mb-4"><h1 class="text-xl font-semibold text-slate-900">Leads &amp; Messages</h1><p class="text-sm text-slate-500">Early-access signups, contact-sales requests, and website messages</p></div>
+
+          <!-- Segmented tabs -->
+          <div id="segs" class="flex gap-2 mb-4"></div>
+
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table class="w-full text-sm">
+              <thead id="thead" class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide"></thead>
+              <tbody id="rows" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-misc.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const tabs = [
+      { key: 'early', label: 'Early Access', icon: 'sparkles', count: App.seed.earlyAccessLeads.length },
+      { key: 'sales', label: 'Contact Sales', icon: 'briefcase', count: App.seed.salesLeads.length },
+      { key: 'messages', label: 'Website Messages', icon: 'mail', count: App.seed.websiteMessages.length },
+    ];
+    let active = 'early';
+
+    function renderSegs() {
+      document.getElementById('segs').innerHTML = tabs.map((t) => `<button onclick="active='${t.key}';renderSegs();renderTable()" class="seg ${t.key === active ? 'active' : ''} h-9 px-4 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 inline-flex items-center gap-2">
+        <i data-lucide="${t.icon}" class="!w-4 !h-4"></i>${t.label}<span class="text-xs ${t.key === active ? 'text-white/80' : 'text-slate-400'}">${t.count}</span></button>`).join('');
+      App.ui.icons();
+    }
+
+    const th = (cols) => `<tr>${cols.map((c) => `<th class="px-4 py-3 text-left font-semibold">${c}</th>`).join('')}<th class="w-10 px-4 py-3"></th></tr>`;
+    const actionCell = `<td class="px-4 py-3"><div class="flex items-center justify-end gap-1">
+      <button title="Email" class="w-8 h-8 grid place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-primary"><i data-lucide="send" class="!w-4 !h-4"></i></button>
+      <button title="Convert to org" class="w-8 h-8 grid place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-primary"><i data-lucide="building-2" class="!w-4 !h-4"></i></button>
+    </div></td>`;
+
+    function renderTable() {
+      const thead = document.getElementById('thead'), rows = document.getElementById('rows');
+      if (active === 'early') {
+        thead.innerHTML = th(['Name', 'Email', 'Company', 'Industry', 'Date']);
+        rows.innerHTML = App.seed.earlyAccessLeads.map((l) => `<tr class="hover:bg-slate-50">
+          <td class="px-4 py-3"><div class="flex items-center gap-2.5">${App.ui.avatar(l.name.split(' ').map((w) => w[0]).join('').slice(0, 2), '#4F46E5')}<span class="font-medium text-slate-800">${l.name}</span></div></td>
+          <td class="px-4 py-3 text-slate-600">${l.email}</td>
+          <td class="px-4 py-3 text-slate-600">${l.company}</td>
+          <td class="px-4 py-3">${App.ui.badge(l.industry, 'blue')}</td>
+          <td class="px-4 py-3 text-slate-500">${l.date}</td>${actionCell}</tr>`).join('');
+      } else if (active === 'sales') {
+        thead.innerHTML = th(['Name', 'Email', 'Company', 'Team Size', 'Interested In', 'Date']);
+        rows.innerHTML = App.seed.salesLeads.map((l) => `<tr class="hover:bg-slate-50">
+          <td class="px-4 py-3"><div class="flex items-center gap-2.5">${App.ui.avatar(l.name.split(' ').map((w) => w[0]).join('').slice(0, 2), '#4F46E5')}<span class="font-medium text-slate-800">${l.name}</span></div></td>
+          <td class="px-4 py-3 text-slate-600">${l.email}</td>
+          <td class="px-4 py-3 text-slate-600">${l.company}</td>
+          <td class="px-4 py-3">${App.ui.badge(l.size, 'teal')}</td>
+          <td class="px-4 py-3 text-slate-600">${l.interest}</td>
+          <td class="px-4 py-3 text-slate-500">${l.date}</td>${actionCell}</tr>`).join('');
+      } else {
+        thead.innerHTML = th(['From', 'Subject', 'Message', 'Date']);
+        rows.innerHTML = App.seed.websiteMessages.map((m) => `<tr class="hover:bg-slate-50">
+          <td class="px-4 py-3"><div class="font-medium text-slate-800">${m.name}</div><div class="text-xs text-slate-400">${m.email}</div></td>
+          <td class="px-4 py-3 font-medium text-slate-700">${m.subject}</td>
+          <td class="px-4 py-3 text-slate-500 max-w-md truncate">${m.message}</td>
+          <td class="px-4 py-3 text-slate-500">${m.date}</td>${actionCell}</tr>`).join('');
+      }
+      App.ui.icons();
+    }
+
+    renderSegs();
+    renderTable();
+  </script>
+</body>
+</html>

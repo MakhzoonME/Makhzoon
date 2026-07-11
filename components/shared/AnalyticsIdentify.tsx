@@ -28,6 +28,10 @@ export default function AnalyticsIdentify() {
   useEffect(() => {
     if (!user || APP_ENV !== 'production') return;
 
+    // Analytics is a best-effort side channel: a throw from any third-party
+    // SDK (e.g. Heap's "environment id is missing") must never propagate to
+    // React's error boundary and crash the page.
+    try {
     const { uid, email, displayName, role, organizationId, orgSlug } = user;
 
     const browserLanguage = navigator.language || 'unknown';
@@ -111,6 +115,9 @@ export default function AnalyticsIdentify() {
       csqVars.forEach(([key, val], i) => {
         uxa.push(['setCustomVariable', i + 1, key, val, 3]);
       });
+    }
+    } catch (err) {
+      console.warn('[analytics] identify failed (non-fatal):', err);
     }
   }, [user]);
 

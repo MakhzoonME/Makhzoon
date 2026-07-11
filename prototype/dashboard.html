@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="dashboard" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6 max-w-[1200px] mx-auto">
+          <div class="mb-5">
+            <h1 class="text-xl font-semibold text-slate-900">Dashboard</h1>
+            <p class="text-sm text-slate-500">Welcome back, Sara — here's what's happening at Acme Corp.</p>
+          </div>
+
+          <!-- Stat cards -->
+          <div id="stat-cards" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6"></div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Recent activity -->
+            <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200">
+              <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="font-semibold text-slate-800">Recent Activity</h2>
+                <a href="audit-logs.html" class="text-xs font-medium text-primary hover:underline">View all logs</a>
+              </div>
+              <ul id="activity-feed" class="divide-y divide-slate-50"></ul>
+            </div>
+
+            <!-- Quick actions -->
+            <div class="bg-white rounded-xl border border-slate-200 h-fit">
+              <div class="px-5 py-4 border-b border-slate-100">
+                <h2 class="font-semibold text-slate-800">Quick Actions</h2>
+              </div>
+              <div class="p-4 grid gap-3" id="quick-actions"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-misc.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    // Stat cards
+    document.getElementById('stat-cards').innerHTML = App.seed.dashStats
+      .map(
+        (s) => `<a href="${s.href}" class="bg-white rounded-xl border border-slate-200 border-l-4 p-4 hover:shadow-sm transition" style="border-left-color:${s.color}">
+          <div class="flex items-center justify-between">
+            <span class="text-[13px] font-medium text-slate-500">${s.label}</span>
+            <span class="grid place-items-center w-8 h-8 rounded-lg" style="background:${s.color}1a;color:${s.color}"><i data-lucide="${s.icon}" class="!w-4 !h-4"></i></span>
+          </div>
+          <div class="mt-2 text-2xl font-bold text-slate-900">${s.value}</div>
+        </a>`
+      )
+      .join('');
+
+    // Activity feed
+    document.getElementById('activity-feed').innerHTML = App.seed.activity
+      .map(
+        (a) => `<li class="px-5 py-3 flex items-center gap-3">
+          ${App.ui.avatar(a.init, '#4F46E5')}
+          <div class="min-w-0 flex-1 text-sm">
+            <span class="font-medium text-slate-800">${a.who}</span>
+            <span class="text-slate-500">${a.action}</span>
+            <span class="font-medium text-slate-700">${a.target}</span>
+          </div>
+          <span class="text-xs text-slate-400 whitespace-nowrap">${a.time}</span>
+        </li>`
+      )
+      .join('');
+
+    // Quick actions
+    const actions = [
+      { label: 'New Asset', icon: 'box', color: '#00695C', href: 'usool-list.html' },
+      { label: 'New Inventory Item', icon: 'package', color: '#E65100', href: 'raseed-list.html' },
+      { label: 'Open POS', icon: 'scan-barcode', color: '#C2185B', href: 'haraka-register.html' },
+      { label: 'New Request', icon: 'inbox', color: '#1565C0', href: 'requests-list.html' },
+    ];
+    document.getElementById('quick-actions').innerHTML = actions
+      .map(
+        (a) => `<a href="${a.href}" class="flex items-center gap-3 px-4 py-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition">
+          <span class="grid place-items-center w-9 h-9 rounded-lg text-white" style="background:${a.color}"><i data-lucide="${a.icon}" class="!w-[18px] !h-[18px]"></i></span>
+          <span class="text-sm font-medium text-slate-700">${a.label}</span>
+          <i data-lucide="chevron-right" class="!w-4 !h-4 text-slate-300 ml-auto"></i>
+        </a>`
+      )
+      .join('');
+
+    App.ui.icons();
+  </script>
+</body>
+</html>

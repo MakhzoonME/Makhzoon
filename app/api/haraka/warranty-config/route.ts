@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { WarrantyCertsService } from '@/lib/modules/haraka/warranty-certs/warranty-certs.service'
 import { warrantyConfigSchema } from '@/lib/modules/haraka/warranty-certs/schemas'
 
@@ -8,6 +9,7 @@ const service = new WarrantyCertsService()
 export async function GET() {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const config = await service.getConfig(tenant.organizationId)
     return NextResponse.json({ config })
   } catch (err) {
@@ -20,6 +22,7 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const body = await req.json()
     const parsed = warrantyConfigSchema.safeParse(body)
     if (!parsed.success) {

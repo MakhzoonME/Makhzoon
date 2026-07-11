@@ -60,7 +60,7 @@ function SessionCard({ base }: { base: string }) {
         <p className="text-sm text-gray-500 mt-0.5">{t('haraka.openSessionDesc')}</p>
       </div>
       <SubscriptionGate>
-        <Button size="sm" style={{ background: 'var(--mod-haraka)' }} onClick={() => router.push(`${base}/sessions/new`)}>
+        <Button size="sm" style={{ background: 'var(--mod-haraka)' }} onClick={() => router.push(`${base}/sessions`)}>
           <Plus className="h-4 w-4 me-1" /> {t('haraka.openNewSession')}
         </Button>
       </SubscriptionGate>
@@ -74,7 +74,6 @@ export default function HarakaOverviewPage() {
   const orgSlug = useOrgSlug();
   const space = useSpace();
   const { t, locale } = useT();
-  if (!isAllowed) return null;
   const base = `/${locale}/${orgSlug}/${space}/haraka`;
 
   const [range] = useState(() => {
@@ -92,6 +91,8 @@ export default function HarakaOverviewPage() {
   const openCount = openSessions?.total ?? 0;
   const customerCount = customers?.total ?? 0;
   const recent = txns?.items ?? [];
+
+  if (!isAllowed) return null;
 
   const recentColumns: ColumnDef<PosTransaction>[] = [
     {

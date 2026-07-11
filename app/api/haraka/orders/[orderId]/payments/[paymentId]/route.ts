@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 
 async function recalcOrder(orgId: string, orderId: string) {
@@ -37,6 +38,7 @@ export async function DELETE(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { orderId, paymentId } = await params
 
     const { error } = await supabaseAdmin

@@ -2,7 +2,6 @@
 
 import { useRouter, useParams } from 'next/navigation';
 import { Bell, CheckCheck } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { NotificationItem } from './NotificationItem';
 import {
   useNotifications,

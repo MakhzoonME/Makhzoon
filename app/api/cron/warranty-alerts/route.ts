@@ -4,6 +4,7 @@ import { getOrganizationById } from '@/lib/db/organizations';
 import { sendEmail } from '@/lib/email/resend';
 import { warrantyAlertEmail } from '@/lib/email/templates';
 import { queueAuditLog } from '@/lib/audit/logger';
+import { checkCronSecret } from '@/lib/cron-auth';
 
 type Row = Record<string, unknown>;
 
@@ -22,7 +23,7 @@ type WarrantyDoc = {
 export async function GET(req: NextRequest) {
   try {
     const secret = req.headers.get('authorization')?.replace('Bearer ', '');
-    if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+    if (!checkCronSecret(secret)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

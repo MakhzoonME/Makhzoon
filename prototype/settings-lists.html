@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Settings · Managed Lists — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="settings" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+          <h1 class="text-xl font-semibold text-slate-900 mb-5">Settings</h1>
+          <div class="flex gap-6">
+            <nav id="settings-nav" class="w-56 shrink-0 space-y-1"></nav>
+
+            <div class="flex-1 max-w-2xl">
+              <div class="mb-3"><h2 class="font-semibold text-slate-800">Managed Lists</h2><p class="text-sm text-slate-500">Custom option sets used across Usool, Raseed and Haraka</p></div>
+              <div class="flex gap-5">
+                <nav id="list-types" class="w-48 shrink-0 space-y-1"></nav>
+                <div class="flex-1 bg-white rounded-xl border border-slate-200 p-5">
+                  <div class="text-sm font-medium text-slate-800 mb-3" id="list-title">Asset Categories</div>
+                  <div id="chips" class="flex flex-wrap gap-2 mb-4"></div>
+                  <div class="flex items-center gap-2">
+                    <input type="text" placeholder="Add an option…" class="flex-1 h-9 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-primary" />
+                    <button class="h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5"><i data-lucide="plus" class="!w-4 !h-4"></i>Add</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    document.getElementById('settings-nav').innerHTML = App.ui.settingsNav('lists');
+
+    const LISTS = [
+      { key: 'categories', label: 'Asset Categories', items: ['Electronics', 'Furniture', 'Vehicles', 'Tools', 'Office Equipment'] },
+      { key: 'brands', label: 'Brands', items: ['Dell', 'HP', 'Samsung', 'Apple', 'Lenovo'] },
+      { key: 'locations', label: 'Storage Locations', items: ['Main Branch', 'Warehouse', 'Downtown Store'] },
+      { key: 'payment', label: 'Payment Methods', items: ['Cash', 'Card', 'Bank Transfer', 'Wallet'] },
+    ];
+
+    function renderList(key) {
+      const list = LISTS.find((l) => l.key === key) || LISTS[0];
+      document.getElementById('list-title').textContent = list.label;
+      document.getElementById('chips').innerHTML = list.items.map((i) => `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm bg-slate-100 text-slate-700">
+          ${i}<button class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="!w-3.5 !h-3.5"></i></button>
+        </span>`).join('');
+      document.getElementById('list-types').innerHTML = LISTS.map((l) => `
+        <button data-key="${l.key}" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm ${l.key === key ? 'bg-primary/10 text-primary font-semibold' : 'text-slate-600 hover:bg-slate-50'}">
+          ${l.label}<span class="text-xs text-slate-400">${l.items.length}</span>
+        </button>`).join('');
+      document.querySelectorAll('#list-types [data-key]').forEach((b) => b.addEventListener('click', () => renderList(b.dataset.key)));
+      App.ui.icons();
+    }
+    renderList('categories');
+  </script>
+</body>
+</html>

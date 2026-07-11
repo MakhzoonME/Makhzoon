@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reports — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="reports-ws" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6 max-w-5xl mx-auto">
+          <div class="mb-6">
+            <h1 class="text-xl font-semibold text-slate-900">Reports</h1>
+            <p class="text-sm text-slate-500 mt-0.5">Workspace-level overview across all modules.</p>
+          </div>
+
+          <!-- Assets -->
+          <div class="mb-6">
+            <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-3">Assets · Usool</h2>
+            <div id="assets-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+          </div>
+
+          <!-- Inventory -->
+          <div class="mb-6">
+            <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-3">Inventory · Raseed</h2>
+            <div id="inventory-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
+          </div>
+
+          <!-- Operations -->
+          <div class="mb-6">
+            <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-3">Operations</h2>
+            <div id="ops-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
+          </div>
+
+          <!-- Haraka POS -->
+          <div class="mb-6">
+            <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-3">POS · Haraka</h2>
+            <div id="haraka-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-misc.js"></script>
+  <script src="js/data/seed-haraka.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    function statCard(label, value, icon, color) {
+      return `<div class="bg-white rounded-xl border border-slate-200 border-l-4 p-4" style="border-left-color:${color}">
+        <div class="flex items-center justify-between">
+          <span class="text-[13px] font-medium text-slate-500">${label}</span>
+          <span class="grid place-items-center w-8 h-8 rounded-lg" style="background:${color}1a;color:${color}">
+            <i data-lucide="${icon}" class="!w-4 !h-4"></i>
+          </span>
+        </div>
+        <div class="mt-2 text-2xl font-bold text-slate-900">${value}</div>
+      </div>`;
+    }
+
+    const CU = '#00695C'; // Usool teal
+    const CR = '#E65100'; // Raseed orange
+    const CO = '#4338CA'; // Operations indigo
+    const CH = '#C2185B'; // Haraka pink
+
+    document.getElementById('assets-grid').innerHTML = [
+      { label: 'Total Assets', value: '142', icon: 'box' },
+      { label: 'Active', value: '118', icon: 'circle-check' },
+      { label: 'Checked Out', value: '16', icon: 'user-check' },
+      { label: 'Total Value', value: '$284K', icon: 'banknote' },
+    ].map((s) => statCard(s.label, s.value, s.icon, CU)).join('');
+
+    document.getElementById('inventory-grid').innerHTML = [
+      { label: 'Total Items', value: '10', icon: 'package' },
+      { label: 'Low Stock', value: '2', icon: 'trending-down' },
+      { label: 'Inventory Value', value: '$3.4K', icon: 'banknote' },
+    ].map((s) => statCard(s.label, s.value, s.icon, CR)).join('');
+
+    document.getElementById('ops-grid').innerHTML = [
+      { label: 'Open Requests', value: '5', icon: 'inbox' },
+      { label: 'Expiring Warranties', value: '3', icon: 'shield-alert' },
+      { label: 'Pending Approvals', value: '2', icon: 'clock' },
+    ].map((s) => statCard(s.label, s.value, s.icon, CO)).join('');
+
+    document.getElementById('haraka-grid').innerHTML = [
+      { label: "Today's Sales", value: '$1,284.50', icon: 'banknote' },
+      { label: 'Open Sessions', value: '1', icon: 'history' },
+      { label: 'Active Orders', value: '8', icon: 'shopping-bag' },
+      { label: 'Customers', value: '6', icon: 'users' },
+    ].map((s) => statCard(s.label, s.value, s.icon, CH)).join('');
+
+    App.ui.icons();
+  </script>
+</body>
+</html>

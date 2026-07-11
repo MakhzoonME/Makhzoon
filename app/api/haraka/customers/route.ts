@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { requirePermission } from '@/lib/permissions/require'
 import { CustomersService } from '@/lib/modules/haraka/customers/customers.service'
 import { customerSchema } from '@/lib/modules/haraka/customers/schemas'
@@ -9,6 +10,7 @@ const service = new CustomersService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { searchParams } = new URL(req.url)
     const result = await service.list(tenant, {
       search: searchParams.get('search') ?? undefined,
@@ -28,6 +30,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     requirePermission(tenant.user, 'pos', 'process_sale')
     const body = await req.json()
     const parsed = customerSchema.safeParse(body)

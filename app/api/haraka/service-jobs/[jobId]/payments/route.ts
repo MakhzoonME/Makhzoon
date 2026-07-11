@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { ServiceJobsService } from '@/lib/modules/haraka/service-jobs/service-jobs.service'
 import { addPaymentEntrySchema } from '@/lib/modules/haraka/service-jobs/schemas'
 
@@ -11,6 +12,7 @@ export async function GET(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { jobId } = await params
     const payments = await service.listPayments(tenant, jobId)
     return NextResponse.json({ payments })
@@ -27,6 +29,7 @@ export async function POST(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { jobId } = await params
     const body = await req.json()
     const parsed = addPaymentEntrySchema.safeParse(body)

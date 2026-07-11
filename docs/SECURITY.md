@@ -1,469 +1,121 @@
-# Security Report - Makhzoon Asset Management Platform
+# Security — Makhzoon
 
-**Generated:** 2026-05-01  
-**Version:** 1.0  
-**Status:** Multiple vulnerabilities identified and partially remediated
+**Stack:** Next.js 16 (App Router) · Supabase (Postgres + Auth + RLS) ·
+Cloudflare Workers (`@opennextjs/cloudflare`).
+**Last updated:** 2026-07-09 (Phase 1 of `AUDIT_ACTION_PLAN_2026-07-05.md`).
 
----
-
-## Executive Summary
-
-Makhzoon is a multi-tenant asset management SaaS platform built with Next.js 14 and Firebase. This report documents security improvements implemented and known vulnerabilities requiring immediate attention.
-
-**Overall Posture:** MEDIUM - Core security measures are in place but several high-priority vulnerabilities require remediation before production deployment.
+> The pre-2026-07 `SECURITY_*.md` reports described the retired
+> **Firebase/Amplify** architecture and are archived under `docs/archive/`.
+> This file is the single current source of truth.
 
 ---
 
-## Vulnerabilities Fixed (This Security Hardening Pass)
+## Authentication
 
-### Critical Severity: 0
-No critical issues resolved in this phase (were already addressed in prior session).
+- Supabase Auth (email/password + magic link + invite). Sessions via
+  `@supabase/ssr` httpOnly cookies with auto-refresh.
+- `verifySessionCookie()` (`lib/supabase/auth-helpers.ts`) is the authoritative
+  resolver: validates the Supabase JWT, rejects revoked sessions, and re-reads
+  `role`/`organization_id`/`permissions` from `public.users` so role and org
+  changes take effect without re-auth.
+- **Session revocation** (`lib/supabase/session-revocation.ts`): Supabase only
+  revokes refresh tokens on sign-out, so a still-valid access token is added to
+  a `revoked_sessions` deny-list (keyed by JWT `session_id`), self-expiring via
+  a pg_cron TTL job (migration `0003_auth.sql`). This preserves
+  "logout invalidates immediately."
+- Short-lived server cache (`session-cache.ts`, 5–10s TTL) keeps auth-server /
+  DB load low without materially delaying permission changes.
+- **Local auth bypass** (`LOCAL_AUTH_BYPASS_USER_ID`) works only under
+  `next dev`; cloud envs run `NODE_ENV=production` so it is inert there.
 
-### High Severity: 7 (Previously addressed)
+## Authorization — three independent layers
 
-1. **Session Token Storage** - ✅ FIXED
-   - Eliminated client-side JWT storage vulnerability
-   - Implemented server-side session cookies with HttpOnly flag
-   - Duration: 24 hours (reduced from 5 days for better security)
+1. **RLS** — every one of the 63 application tables has Row-Level Security
+   enforcing org/space isolation (verified by `npm run audit:security`, check 7).
+2. **Role + permission guards** — `requirePermission()` (org roles) and
+   `hasSuperAdminPermission()` (platform roles). Two permission systems:
+   `UserPermissions` (org members) and `SuperAdminPermissions` (platform team).
+3. **Subscription feature flags** — `requireFeature(tenant, key)` /
+   `requireFeatureForOrg()` (`lib/permissions/require-feature.ts`) enforce the
+   org's subscription server-side; a missing/false key blocks the module for
+   everyone (feature OFF beats role/permission). Wired into all 82 module API
+   routes. Keys: `docs/modules-and-features/12-subscription.md`.
 
-2. **Session Invalidation** - ✅ FIXED
-   - Added server-side session token blacklist (Firestore revokedSessions)
-   - Sessions revoked on logout are checked on next request
-   - TTL auto-cleanup prevents unbounded collection growth
+### The `supabaseAdmin` rule
 
-3. **Password Hashing** - ✅ FIXED
-   - Temporary passwords removed from API responses
-   - Only returned to user via secure email flow
+`lib/supabase/admin.ts` is the service-role client — it **bypasses RLS**. Every
+query made through it MUST manually scope with `.eq('organization_id', …)`
+(and space where applicable). It is guarded by `import 'server-only'`
+(audit-script check 6). This is a one-missed-`.eq()`-from-cross-tenant-leak
+class of code; the T2.1 test foundation adds contract tests asserting the
+scoping. Legitimate cross-tenant uses: superadmin tooling, invite acceptance,
+cron jobs, public-token routes.
 
-4. **Rate Limiting on Public Endpoints** - ✅ FIXED
-   - Sign in: 5/IP/15min
-   - Sign up: 3/IP/24hr
-   - Contact form: 5/IP/hr + 1/email/day
-   - Early access: 5/IP/day + 1/email/week
+## Rate limiting
 
-5. **Audit Logging** - ✅ FIXED
-   - Comprehensive audit trail on all state-changing operations
-   - Safe error logging (sanitized in production)
+Durable, Postgres-backed (`lib/rate-limit.ts` + migration `0036`,
+`increment_rate_limit()`). The previous in-memory `Map` was per-isolate and
+ephemeral on Workers, so production limits were ineffective. A local Map is
+retained only as a fast-path rejection and as a fail-open fallback if the DB is
+unreachable. Applied to auth (login/signup/password-reset), the public delivery
+and asset-QR endpoints, and per-tenant on expensive authenticated routes.
 
-6. **Input Validation** - ✅ FIXED
-   - Zod schema validation on all POST/PUT/PATCH endpoints
-   - HTML sanitization on user inputs in email
+## Public (unauthenticated) endpoints
 
-7. **Authorization** - ✅ FIXED
-   - Role-based access control on sensitive endpoints
-   - Super-admin-only access to org enumeration endpoints
-   - Organization isolation enforced
+| Endpoint | Exposure | Controls |
+|---|---|---|
+| `/r/[orgSlug]/[txId]` (receipt) | receipt view | id in URL, minimal fields |
+| `/w/[orgSlug]/[certId]` (warranty cert) | cert view | id in URL |
+| `/delivery/[token]` + `/api/delivery/[token]/*` | driver view/status/payment | 192-bit token, **14-day expiry + revocation (410 Gone)**, per-IP rate limit, zod on bodies, no `organization_id` in response |
+| `/api/public/assets/[orgSlug]/[space]/[assetId]` | QR guest view | minimal non-sensitive fields, per-IP rate limit |
+| `/api/haraka/card-payment-result` | PSP webhook | HMAC-SHA256 signature verification |
+| `/api/cron/*` | scheduled jobs | `CRON_SECRET` bearer via constant-time compare (`lib/cron-auth.ts`) |
+| `/api/push-subscriptions/vapid-key` | VAPID public key | public by definition |
 
-### Medium Severity: 10
+## CSRF / origin
 
-#### 1. Credentials in Email ⚠️ REQUIRES ACTION
-**Severity:** HIGH (treated as Medium for prioritization)  
-**File:** `app/api/superadmin/team/route.ts:94-95`  
-**Issue:** Temporary password included in plaintext email body
+`lib/csrf.ts` `checkOrigin()` — explicit first-party origin allowlist
+(app/dev/stg + rcpt-* hosts), no wildcard-subdomain trust; requests with no
+`Origin` header (non-browser) pass; localhost allowed only in dev. CORS header
+(`next.config.mjs`) is pinned to `NEXT_PUBLIC_APP_URL`, never `*`.
 
-```typescript
-// CURRENT (VULNERABLE):
-html: `<p>Temporary password: ${password}</p>`,
+## Secrets at rest
 
-// SHOULD BE:
-html: `<p>Click <a href="${resetLink}">here</a> to set your password</p>`,
+Fawtara and card-terminal provider credentials are envelope-encrypted with
+AES-256-GCM (`lib/platform/crypto/secret-cipher.ts`, `enc:v1:` prefix, per-record
+nonce). Master key from `FAWTARA_SECRET_ENC_KEY`. No secrets committed;
+`wrangler secret put` per env. Public config lives in `wrangler.toml`
+`[env.*.vars]` (anon keys only — safe by Supabase design).
+
+## HTTP security headers (`next.config.mjs`)
+
+HSTS (preload), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
+`Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`
+allowing `camera=(self)` (POS barcode scanner, same-origin only) and denying
+mic/geo, CSP restricting to `'self'` + required externals
+(no `'unsafe-inline'` scripts in prod).
+
+## Middleware posture
+
+`middleware.ts` is a **soft gate** — it checks only for the presence of a
+Supabase auth cookie to redirect unauthenticated users, because Edge can't run
+the full session validation. The **hard gate** is every API route and server
+component self-verifying via `verifySessionCookie()`. Invariant: never add a
+page or route that relies on the middleware alone for auth.
+
+## Known open items
+
+- **S2 — staging shares the production Supabase project.** Split runbook in
+  `docs/ENVIRONMENTS.md`; requires operator action (new project + secrets).
+- Production `npm audit`: 2 moderate (postcss transitive under `next`, needs a
+  breaking bump). No high/critical in runtime paths.
+- Migrations `0036`/`0037` must be applied per env (`supabase db push`).
+
+## Verifying
+
+```bash
+npm run audit:security     # 7 automated checks — must be 0 fail
+npm test                   # security unit tests (rate-limit, require-feature,
+                           # csrf-cron, delivery-token, secret-cipher)
+npm run lint && npx tsc --noEmit
 ```
-
-**Remediation:**
-- Remove password from email entirely
-- Generate password reset token stored in DB with 24hr expiry
-- Send reset link instead
-- Estimated effort: 4 hours
-
----
-
-#### 2. User Enumeration via Error Messages ⚠️ REQUIRES ACTION
-**Severity:** MEDIUM  
-**Files:**
-- `app/api/organizations/self-serve/route.ts:31` - "An account already exists for this email"
-- `app/api/superadmin/team/route.ts:72` - Similar
-- `app/api/invites/[token]/accept/route.ts:48` - Specific error on duplicate
-
-**Impact:** Attackers can enumerate valid email addresses in the system.
-
-**Remediation:** Use generic error messages like "This email cannot be used" for auth endpoints.
-**Estimated effort:** 2 hours
-
----
-
-#### 3. Raw Error Messages Exposing Internal Logic ⚠️ REQUIRES ACTION
-**Severity:** MEDIUM  
-**Files:** 8 config/asset endpoints returning raw error messages  
-- `app/api/organizations/[orgId]/config/locations/route.ts:35`
-- `app/api/organizations/[orgId]/config/statuses/route.ts:37, 71`
-- `app/api/organizations/[orgId]/config/categories/route.ts:35`
-- `app/api/assets/[assetId]/checkout/route.ts:38, 40`
-- Similar in location/category ID endpoints
-
-**Example:**
-```typescript
-// VULNERABLE:
-return NextResponse.json({ error: (err as Error).message }, { status: 409 });
-// Returns: "Retired assets cannot be checked out" (reveals business logic)
-
-// SHOULD BE:
-return NextResponse.json({ error: 'This operation is not allowed' }, { status: 409 });
-```
-
-**Remediation:** Implement generic error responses for all config operations.
-**Estimated effort:** 3 hours
-
----
-
-#### 4. Missing Rate Limiting on Mutating Endpoints ⚠️ PARTIALLY ADDRESSED
-**Status:** 4/Many critical endpoints rate-limited. Others missing.
-
-**Protected:**
-- Invites: ✅
-- Early access: ✅
-- Sign up: ✅
-- Sign in: ✅
-- Profile update: ✅
-- Asset import: ✅
-
-**Unprotected (Should add 10-100/hr limits):**
-- Asset CRUD: `app/api/assets/[assetId]/route.ts`
-- Inventory CRUD: `app/api/inventory/[itemId]/route.ts`
-- Warranty CRUD: `app/api/warranties/[warrantyId]/route.ts`
-- Configuration updates: categories, locations, statuses
-- Asset checkout/maintenance operations
-
-**Remediation:** Add rate limiting to all POST/PUT/DELETE endpoints.
-**Estimated effort:** 4 hours
-
----
-
-#### 5. Missing Authorization Checks on Sensitive Reads ✅ FIXED (2026-06-08)
-**Severity:** MEDIUM — RESOLVED  
-**Fixed files:**
-- `app/api/assets/route.ts` — `requirePermission(tenant.user, 'assets', 'view')` added to GET
-- `app/api/inventory/route.ts` — `requirePermission(tenant.user, 'inventory', 'view')` added to GET
-- `app/api/requests/route.ts` — `requirePermission(tenant.user, 'requests', 'view')` added to GET
-- `app/api/reports/route.ts` — `requirePermission(tenant.user, 'reports', 'view')` added to GET
-- `app/api/audit-logs/route.ts` — `hasSuperAdminPermission(user, 'auditLogs', 'view')` + `hasPermission(user, 'auditLogs', 'view')` for org admins
-
-**Additional fixes applied:**
-- All superadmin API routes now use `hasSuperAdminPermission()` instead of role-set checks, enforcing granular `SuperAdminPermissions` including stored custom restrictions
-- `GET /api/organizations/[orgId]` checks `organizations.view`; PUT checks `organizations.update`; DELETE checks `organizations.delete`
-- `GET /api/superadmin/backend-logs` checks `backendLogs.view`
-- `GET /api/superadmin/team` checks `team.view`; POST checks `team.manage`
-- `PATCH /api/superadmin/team/[id]` checks `team.manage`
-
----
-
-#### 6. CRON Endpoint Using Bearer Token Only ⚠️ REQUIRES ACTION
-**Severity:** MEDIUM  
-**File:** `app/api/cron/warranty-alerts/route.ts`
-
-**Issue:** Uses Authorization header check but no rate limiting, IP validation, or TLS enforcement.
-
-**Remediation:**
-- Add IP whitelisting for Vercel Cron IPs
-- Rate limit to 1 request per configured interval
-- Verify request signature if using Vercel Cron
-
-**Estimated effort:** 2 hours
-
----
-
-#### 7. CSP Uses unsafe-inline for Scripts ⚠️ ACCEPTED RISK
-**Severity:** MEDIUM (Mitigated)  
-**Why:** Firebase and Sentry SDKs require inline script execution.
-
-**Current CSP:**
-```
-script-src 'self' 'unsafe-inline' https://*.firebaseapp.com ...
-```
-
-**Status:** This is a necessary trade-off given Firebase dependency. Recommended to migrate to nonce-based CSP in future refactor (requires Next.js middleware enhancement).
-
----
-
-#### 8. Missing Query Parameter Validation ⚠️ REQUIRES ACTION
-**Severity:** MEDIUM  
-**Files:** All GET endpoints with query parameters
-
-**Example:**
-- Filters without validation (status, category, search)
-- No pagination enforcement
-- No size limits on export operations
-
-**Remediation:** Add Zod validation for all query parameters, enforce pagination limits.
-**Estimated effort:** 4 hours
-
----
-
-#### 9. Session Cookie Using SameSite=Strict ✅ FIXED
-**Status:** ADDRESSED in hardening pass
-- Prevents CSRF on all authenticated operations
-- May break legitimate cross-origin scenarios (test thoroughly)
-
----
-
-#### 10. Insufficient Input Validation on Some Endpoints ⚠️ REQUIRES ACTION
-**Severity:** MEDIUM  
-**Files:** Multiple GET endpoints missing param validation
-- Asset IDs, item IDs, category IDs - validated only in service layer
-- No length limits on string fields
-
-**Remediation:** Add explicit Zod validation on all dynamic parameters.
-**Estimated effort:** 3 hours
-
----
-
-## Low Severity Issues
-
-### 1. Placeholder CSP Domains ✅ ACCEPTABLE
-CSP includes `unsafe-inline` which is necessary for Firebase SDK. This is documented and acceptable given technical constraints.
-
-### 2. Temporary Passwords Not in Responses ✅ FIXED
-Correctly NOT returned in API (handled via email flow).
-
-### 3. Safe Error Logging Implemented ✅ FIXED
-Development: Full error details with stack trace  
-Production: Sanitized error ID only
-
----
-
-## Security Measures Now in Place
-
-### Authentication & Sessions
-- ✅ Firebase Admin SDK for user authentication
-- ✅ Server-side session cookies (HttpOnly, Secure, SameSite=Strict)
-- ✅ Session token blacklist with TTL cleanup
-- ✅ 24-hour session expiry
-- ✅ Session revocation on logout
-- ✅ Custom claims for role-based access
-
-### Authorization
-- ✅ Role-based access control (admin, org_owner, staff, super_admin)
-- ✅ Organization isolation via organizationId checks
-- ✅ Permission-based authorization matrix
-- ✅ Super-admin-only endpoints for sensitive operations
-- ⚠️ Permission checks inconsistently applied (see Medium #5)
-
-### Input Validation
-- ✅ Zod schema validation on all state-changing endpoints
-- ✅ Email validation with regex
-- ✅ HTML sanitization on user inputs
-- ⚠️ Missing validation on query parameters
-
-### Rate Limiting
-- ✅ In-memory rate limiting with TTL cleanup
-- ✅ Per-IP rate limits on sign in (5/15min)
-- ✅ Per-IP rate limits on sign up (3/24hr)
-- ✅ Per-email + per-IP rate limits on contact (5/hr, 1/day)
-- ✅ User-friendly error messages with retry-after
-- ⚠️ Not applied to all sensitive endpoints
-
-### CORS & Headers
-- ✅ CORS restricted to `NEXT_PUBLIC_APP_URL`
-- ✅ X-Frame-Options: DENY (clickjacking protection)
-- ✅ X-Content-Type-Options: nosniff (MIME sniffing prevention)
-- ✅ Referrer-Policy: strict-origin-when-cross-origin
-- ✅ Strict-Transport-Security: HSTS enabled (2 years, preload)
-- ✅ Content-Security-Policy with restricted domains
-- ✅ Permissions-Policy denying camera/microphone/geolocation
-
-### CSRF Protection
-- ✅ SameSite=Strict cookies prevent CSRF
-- ✅ Origin validation on public forms (contact, early-access)
-- ✅ Turnstile bot protection configured (but disabled pending setup)
-
-### Logging & Monitoring
-- ✅ Comprehensive audit trail for all state changes
-- ✅ Safe error logging with sanitization
-- ✅ Sentry integration for error tracking
-- ✅ No sensitive data in logs (passwords, tokens, PII)
-
-### Secrets Management
-- ✅ All credentials externalized to environment variables
-- ✅ FIREBASE_PRIVATE_KEY loaded from env, never in code
-- ✅ API keys documented in .env.*.example files
-- ⚠️ `.env.local.example` was committed with real values (REMEDIATED - replaced with placeholders)
-- ⚠️ Credentials were exposed - REQUIRE IMMEDIATE ROTATION
-
-### Database Security
-- ✅ Firebase Admin SDK with least-privilege service account
-- ✅ Firestore security rules enforce organization isolation
-- ✅ TTL indexes on temporary data (revokedSessions)
-
----
-
-## Recommended Next Steps
-
-### CRITICAL (Do Before Production)
-1. **Rotate Compromised Credentials** (2 hours)
-   - Firebase Admin service account key
-   - Twilio API credentials
-   - Reason: Keys were exposed in .env.local.example committed to git
-
-2. **Fix Password Reset Flow** (4 hours)
-   - Remove passwords from email body
-   - Implement password reset token flow
-   - File: `app/api/superadmin/team/route.ts`
-
-3. **Fix User Enumeration** (2 hours)
-   - Generic error messages on all auth endpoints
-   - Files: `self-serve`, `team`, `invites/[token]/accept`
-
-### HIGH PRIORITY (Next 1-2 Weeks)
-4. **Fix Error Message Disclosure** (3 hours)
-   - Generic errors on all config/asset operations
-   - Sanitize error responses
-
-5. **Add Missing Rate Limits** (4 hours)
-   - CRUD operations on assets, inventory, warranties
-   - Configuration updates
-   - Checkout/maintenance operations
-
-6. **Fix Authorization Checks** (3 hours)
-   - Add organization validation on sensitive reads
-   - Enforce permission matrix consistently
-
-7. **Add Query Parameter Validation** (4 hours)
-   - Validate filters, search, pagination
-   - Enforce result size limits
-
-### MEDIUM PRIORITY (Next Month)
-8. **Implement CRON Security** (2 hours)
-   - IP whitelisting
-   - Rate limiting
-   - Request signature verification
-
-9. **Comprehensive Security Testing** (8 hours)
-   - Penetration testing of auth flow
-   - CSRF testing across all forms
-   - Authorization bypass attempts
-   - Data enumeration attacks
-
-10. **Migrate to Nonce-based CSP** (16 hours)
-    - Reduces unsafe-inline dependency
-    - Requires Next.js middleware enhancement
-    - Eliminates XSS via inline script injection
-
-11. **Upgrade Next.js to 15/16** (40 hours)
-    - Fixes 5 high-severity Next.js CVEs
-    - Requires async params migration across 33 files
-    - Recommend as separate project
-
----
-
-## Known Risks & Mitigations
-
-### 1. In-Memory Rate Limiting
-**Risk:** Rate limits lost on server restart; doesn't scale across multiple instances  
-**Mitigation:** Sufficient for single-server deployment; document need to upgrade to Redis/Vercel KV for production scaling  
-**Timeline:** Implement before multi-instance deployment
-
-### 2. Firebase Client-Side SDK
-**Risk:** Requires unsafe-inline in CSP; SDK loads externally  
-**Mitigation:** CSP restricts external scripts to Firebase domains only  
-**Timeline:** Monitor Firebase SDK updates
-
-### 3. Session Token Revocation TTL
-**Risk:** Revoked tokens still valid for up to 24 hours if user logs out  
-**Mitigation:** Session duration is 24 hours; revocation checked on every request  
-**Timeline:** Consider reducing TTL to 1 hour and refreshing tokens for better protection
-
-### 4. Error Messages Leaking Logic
-**Risk:** Business logic exposed in error responses  
-**Mitigation:** Partially addressed; remaining issues listed in Medium #3  
-**Timeline:** Fix by next release
-
-### 5. Missing 2FA
-**Risk:** Account takeover via password compromise  
-**Mitigation:** Firebase provides optional MFA; not configured  
-**Timeline:** Implement for admin accounts in next phase
-
----
-
-## Testing Checklist for Next Release
-
-- [ ] All 10 medium-severity items above are fixed
-- [ ] No error message reveals internal logic or user details
-- [ ] All rate-limited endpoints return proper X-RateLimit headers
-- [ ] Session logout properly revokes tokens (test with expired session)
-- [ ] CORS headers properly restrict cross-origin requests
-- [ ] CSP doesn't block any legitimate Firebase/Sentry requests
-- [ ] SameSite=Strict doesn't break legitimate cross-origin flows
-- [ ] All authenticated endpoints reject unauthenticated requests
-- [ ] Authorization checks prevent privilege escalation
-- [ ] Audit logs capture all important operations
-- [ ] Credentials never appear in responses, logs, or errors
-- [ ] No sensitive data persisted unencrypted
-
----
-
-## Development Security Practices
-
-### For This Codebase
-1. Never commit `.env.local`, `.env.*.local`, or any `.env` file with real values
-2. All API endpoints should validate input with Zod schemas
-3. All state-changing operations should log to audit trail
-4. All authenticated endpoints should check `user.organizationId` matches resource org
-5. Use generic error messages ("Operation not allowed") not specific ones
-6. Never return passwords, tokens, or private keys in API responses
-
-### For Future Work
-1. Implement OWASP Top 10 awareness in team
-2. Add security review to PR process
-3. Run SAST (static analysis) in CI/CD
-4. Quarterly penetration testing
-5. Keep dependencies updated (npm audit monthly)
-6. Document security assumptions in architecture
-
----
-
-## Compliance & Standards
-
-**Standards Addressed:**
-- OWASP Top 10 (2021): 7 of 10 addressed
-- CWE Top 25: 8 of 25 addressed
-- NIST Cybersecurity Framework: Partially (Identify, Protect phases complete)
-
-**Standards Still Required:**
-- OWASP: CSRF, Insufficient Authorization (#2), Security Misconfiguration
-- PCI DSS (if handling payments): Not applicable currently
-- SOC 2: Audit logging in place, security practices documented
-
----
-
-## Conclusion
-
-Makhzoon has implemented solid foundational security practices including:
-- Role-based access control
-- Session management with revocation
-- Input validation and output encoding
-- Audit logging
-- Rate limiting
-- CORS and CSP headers
-- Secure credential management
-
-However, several medium-severity vulnerabilities must be addressed before production:
-- User enumeration via error messages
-- Plaintext credentials in emails
-- Inconsistent authorization checks
-- Insufficient rate limiting coverage
-
-**Estimated effort to address all medium-severity issues: 20-25 hours**
-
-**Recommended timeline:** Complete before first production deployment
-
----
-
-## Document History
-
-| Date | Version | Changes |
-|------|---------|---------|
-| 2026-05-01 | 1.0 | Initial security hardening report |
-
----
-
-**Report Generated By:** Security Hardening Audit
-**Next Review:** 2026-06-01 (or after Critical/High items fixed)

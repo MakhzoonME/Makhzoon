@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { OrdersService } from '@/lib/modules/haraka/orders/orders.service'
 import { recordPaymentSchema } from '@/lib/modules/haraka/orders/schemas'
 
@@ -11,6 +12,7 @@ export async function POST(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { orderId } = await params
     const body = await req.json()
     const parsed = recordPaymentSchema.safeParse(body)

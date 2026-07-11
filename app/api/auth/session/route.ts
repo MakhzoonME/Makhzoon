@@ -35,7 +35,7 @@ function decodeJwt(token: string): Record<string, unknown> {
 export async function POST(req: NextRequest) {
   try {
     const clientIp = getClientIp(req);
-    const rl = checkRateLimit(`session:${clientIp}`, 5, 15 * 60 * 1000, {
+    const rl = await checkRateLimit(`session:${clientIp}`, 5, 15 * 60 * 1000, {
       action: 'sign in',
     });
     if (rl) return rl;

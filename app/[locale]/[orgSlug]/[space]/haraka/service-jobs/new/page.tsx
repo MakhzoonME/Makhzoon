@@ -21,7 +21,6 @@ export default function NewServiceJobPage() {
   const { data: orgInfo } = useOrgInfo();
   const createMut = useCreateServiceJob();
   const { t } = useT();
-  if (!featureAllowed || !isAllowed) return null;
 
   const currency = orgInfo?.currency ?? 'USD';
   const base     = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
@@ -30,12 +29,14 @@ export default function NewServiceJobPage() {
   const [customerPhone,   setCustomerPhone]   = useState('');
   const [customerId,      setCustomerId]      = useState<string | null>(null);
   const [serviceType,     setServiceType]     = useState('');
-  const [staffMemberName, setStaffMemberName] = useState('');
+  const [staffMemberName] = useState('');
   const [scheduledAt,     setScheduledAt]     = useState('');
   const [notes,           setNotes]           = useState('');
   const [lines, setLines] = useState<ServiceLineItem[]>([
     { name: '', description: '', quantity: 1, unitPrice: 0, taxRate: 0, discountAmount: 0 },
   ]);
+
+  if (!featureAllowed || !isAllowed) return null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

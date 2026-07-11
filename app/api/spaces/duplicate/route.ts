@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import * as duplicateService from '@/lib/modules/spaces/services/duplicate.service';
+import { z } from 'zod';
+
+const duplicateSchema = z.object({
+  type: z.enum(['asset', 'inventory', 'request', 'customer']),
+  ids: z.array(z.string()).min(1),
+  targetSpaceId: z.string().min(1),
+});
 
 type DupeType = 'asset' | 'inventory' | 'request' | 'customer';
 
@@ -22,18 +29,18 @@ type DupeType = 'asset' | 'inventory' | 'request' | 'customer';
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
-    const body = await req.json().catch(() => ({}));
-
-    const type = body.type as DupeType | undefined;
-    const ids = Array.isArray(body.ids) ? body.ids.filter((x: unknown): x is string => typeof x === 'string') : [];
-    const targetSpaceId = typeof body.targetSpaceId === 'string' ? body.targetSpaceId : '';
-
-    if (!type || !['asset', 'inventory', 'request', 'customer'].includes(type))
-      return NextResponse.json({ error: 'Invalid type' }, { status: 422 });
-    if (ids.length === 0)
-      return NextResponse.json({ error: 'No ids provided' }, { status: 422 });
-    if (!targetSpaceId)
-      return NextResponse.json({ error: 'targetSpaceId required' }, { status: 422 });
+    const parsed = duplicateSchema.safeParse(await req.json().catch(() => ({})));
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const msg = issue?.path[0] === 'type' ? 'Invalid type'
+        : issue?.path[0] === 'ids' ? 'No ids provided'
+        : issue?.path[0] === 'targetSpaceId' ? 'targetSpaceId required'
+        : 'Invalid body';
+      return NextResponse.json({ error: msg }, { status: 422 });
+    }
+    const type: DupeType = parsed.data.type;
+    const ids = parsed.data.ids;
+    const targetSpaceId = parsed.data.targetSpaceId;
 
     let result;
     switch (type) {

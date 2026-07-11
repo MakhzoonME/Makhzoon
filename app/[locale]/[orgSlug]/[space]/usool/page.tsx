@@ -92,13 +92,14 @@ export default function UsoolOverviewPage() {
   const space = useSpace();
   const { user } = useAuthStore();
   const { t, locale } = useT();
-  if (!isAllowed) return null;
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
   const canViewWarranties = !!user && hasPermission(user, 'warranties', 'view');
   const canCreateAsset = !!user && hasPermission(user, 'assets', 'create');
 
   const { data, isLoading } = useUsoolOverview(space, canViewWarranties);
+
+  if (!isAllowed) return null;
 
   const total = data?.total ?? 0;
   const active = data?.active ?? 0;

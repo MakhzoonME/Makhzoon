@@ -84,9 +84,6 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
     featureKey: 'pos', moduleColor: '#C2185B', moduleName: 'حركة',
     items: [
       { type: 'section-header', label: 'Operations', labelKey: 'nav.sectionOperations' },
-      { href: '/haraka/register', label: 'Register', labelKey: 'nav.register',
-        featureKey: 'pos', permissionKey: 'pos.process_sale',
-        moduleColor: '#AD1457', moduleName: 'نقطة بيع' },
       { href: '/haraka/sessions', label: 'Sessions', labelKey: 'nav.sessions',
         featureKey: 'pos', permissionKey: 'pos.open_session',
         moduleColor: '#AD1457', moduleName: 'جلسات' },

@@ -3,6 +3,13 @@ import { sendEmail } from '@/lib/email/resend';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { checkOrigin } from '@/lib/csrf';
 import { createEarlyAccessEntry, earlyAccessEmailExists } from '@/lib/db/early-access';
+import { z } from 'zod';
+
+const earlyAccessSchema = z.object({
+  email: z.string().trim().toLowerCase().regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email').max(254),
+  firstName: z.string().trim().max(100).optional(),
+  lastName: z.string().trim().max(100).optional(),
+});
 
 const notifyHtml = (email: string, firstName?: string) => `
 <!DOCTYPE html>
@@ -57,7 +64,7 @@ const confirmHtml = (email: string, firstName?: string) => `
 export async function POST(req: NextRequest) {
   // SECURITY: Rate limit early access (5 per IP per day, 1 per email per week)
   const clientIp = getClientIp(req);
-  const rateLimitIp = checkRateLimit(
+  const rateLimitIp = await checkRateLimit(
     `early-access:ip:${clientIp}`,
     5,
     24 * 60 * 60 * 1000,
@@ -69,17 +76,14 @@ export async function POST(req: NextRequest) {
   const originCheck = checkOrigin(req);
   if (originCheck) return originCheck;
 
-  const body = await req.json().catch(() => null);
-  const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
-  const firstName = typeof body?.firstName === 'string' ? body.firstName.trim() : undefined;
-  const lastName = typeof body?.lastName === 'string' ? body.lastName.trim() : undefined;
-
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  const parsed = earlyAccessSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid email' }, { status: 422 });
   }
+  const { email, firstName, lastName } = parsed.data;
 
   // Rate limit by email as well (in-memory fallback — real gate is the DB check below)
-  const rateLimitEmail = checkRateLimit(
+  const rateLimitEmail = await checkRateLimit(
     `early-access:email:${email}`,
     1,
     7 * 24 * 60 * 60 * 1000,

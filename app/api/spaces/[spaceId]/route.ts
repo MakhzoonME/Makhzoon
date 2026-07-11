@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import * as spacesService from '@/lib/modules/spaces/services/spaces.service';
+import { z } from 'zod';
+
+const updateSpaceSchema = z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  status: z.enum(['active', 'archived']).optional(),
+});
 
 /** PATCH /api/spaces/[spaceId] — rename or archive (admin/owner). */
 export async function PATCH(
@@ -10,11 +16,9 @@ export async function PATCH(
   try {
     const tenant = await resolveTenant();
     const { spaceId } = await params;
-    const body = await req.json().catch(() => ({}));
-    const space = await spacesService.update(tenant, spaceId, {
-      name: typeof body.name === 'string' ? body.name : undefined,
-      status: body.status === 'active' || body.status === 'archived' ? body.status : undefined,
-    });
+    const parsed = updateSpaceSchema.safeParse(await req.json().catch(() => ({})));
+    if (!parsed.success) return NextResponse.json({ error: 'Invalid body', details: parsed.error.flatten() }, { status: 422 });
+    const space = await spacesService.update(tenant, spaceId, parsed.data);
     return NextResponse.json({ space });
   } catch (err) {
     if (err instanceof NextResponse) return err;

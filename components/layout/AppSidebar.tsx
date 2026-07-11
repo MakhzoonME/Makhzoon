@@ -284,15 +284,17 @@ export function AppSidebar() {
     [],
   );
 
-  // The href of the group that contains the current route (if any)
-  const activeGroupHref = useMemo(() => {
+  // The href of the group that contains the current route (if any).
+  // Plain computation — cheap loop; the React Compiler memoizes it and
+  // couldn't preserve the previous manual useMemo.
+  const activeGroupHref = (() => {
     for (const entry of finalEntries) {
       if (!('type' in entry) || entry.type !== 'group') continue;
       const groupUrl = buildNavUrl({ locale, orgSlug, space, entry });
       if (pathname === groupUrl || pathname.startsWith(groupUrl + '/')) return entry.href;
     }
     return null;
-  }, [pathname, finalEntries, locale, orgSlug, space]);
+  })();
 
   // Accordion: when navigation moves into a group, collapse all others
   useEffect(() => {

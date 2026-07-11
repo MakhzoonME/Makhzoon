@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
-import { Copy, Check, Download, FileImage, Loader2 } from 'lucide-react';
+import { Copy, Check, FileImage, Loader2 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter,
 } from '@/components/ui/dialog';
@@ -54,7 +54,7 @@ function buildShareText(order: HarakaOrder, link: string, currency: string): str
   return lines.join('\n');
 }
 
-export function OrderShareDialog({ open, onOpenChange, order, orgSlug, currency = 'JOD' }: Props) {
+export function OrderShareDialog({ open, onOpenChange, order, currency = 'JOD' }: Props) {
   const [token, setToken] = useState<string | null>(order.deliveryToken ?? null);
   const [fetching, setFetching] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -78,6 +78,19 @@ export function OrderShareDialog({ open, onOpenChange, order, orgSlug, currency 
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to generate link');
       return null;
+    } finally { setFetching(false); }
+  }
+
+  async function handleRevoke() {
+    if (!token) return;
+    setFetching(true);
+    try {
+      const res = await fetch(`/api/haraka/orders/${order.id}/delivery-token`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error);
+      setToken(null);
+      toast.success('Delivery link revoked');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to revoke link');
     } finally { setFetching(false); }
   }
 
@@ -203,6 +216,11 @@ export function OrderShareDialog({ open, onOpenChange, order, orgSlug, currency 
         </DialogBody>
 
         <DialogFooter>
+          {token && (
+            <Button variant="outline" onClick={handleRevoke} disabled={fetching} className="text-red-600 hover:text-red-700 me-auto">
+              Revoke link
+            </Button>
+          )}
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>

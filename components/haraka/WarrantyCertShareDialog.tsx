@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { toPng, toJpeg } from 'html-to-image';
-import { Copy, Check, Mail, Download, Printer, ShieldCheck, FileImage, Loader2 } from 'lucide-react';
+import { Copy, Check, Mail, Download, ShieldCheck, FileImage, Loader2 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogIconHeader, DialogBody, DialogFooter,
 } from '@/components/ui/dialog';

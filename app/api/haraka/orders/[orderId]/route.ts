@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { OrdersService } from '@/lib/modules/haraka/orders/orders.service'
 import { updateOrderSchema } from '@/lib/modules/haraka/orders/schemas'
 
@@ -11,6 +12,7 @@ export async function GET(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { orderId } = await params
     const order = await service.getById(tenant, orderId)
     return NextResponse.json({ order })
@@ -27,6 +29,7 @@ export async function PATCH(
 ) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const { orderId } = await params
     const body = await req.json()
     const parsed = updateOrderSchema.safeParse(body)

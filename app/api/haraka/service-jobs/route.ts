@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { ServiceJobsService } from '@/lib/modules/haraka/service-jobs/service-jobs.service'
 import { createServiceJobSchema } from '@/lib/modules/haraka/service-jobs/schemas'
@@ -9,7 +10,8 @@ const service = new ServiceJobsService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    const limited = rateLimitTenant(tenant, 'haraka-service-jobs', 120, 60_000)
+    requireFeature(tenant, 'pos')
+    const limited = await rateLimitTenant(tenant, 'haraka-service-jobs', 120, 60_000)
     if (limited) return limited
     const { searchParams } = new URL(req.url)
     const result = await service.list(tenant, {
@@ -32,6 +34,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'pos')
     const body = await req.json()
     const parsed = createServiceJobSchema.safeParse(body)
     if (!parsed.success) {

@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { Printer, Lock, Receipt, ShoppingCart, PauseCircle, RotateCcw, Trash2, Banknote, CreditCard } from 'lucide-react';
 import { BarcodeInput, SubscriptionGate } from '@/components/shared';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ProductGrid } from '@/components/haraka/ProductGrid';
 import { Cart } from '@/components/haraka/Cart';
 import { CustomerPicker } from '@/components/haraka/CustomerPicker';
@@ -87,7 +86,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (sessionFetched && !sessionLoading && !sessionData?.session) {
-      router.replace(`/${params.locale}/${params.orgSlug}/${params.space}/haraka`);
+      router.replace(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions`);
     }
   }, [sessionFetched, sessionLoading, sessionData?.session, router, params.locale, params.orgSlug, params.space]);
 
@@ -241,7 +240,7 @@ export default function RegisterPage() {
               variant="outline"
               size="sm"
               className="h-7"
-              onClick={() => router.push(`${base}/sessions/${sessionData.session!.id}`)}
+              onClick={() => router.push(`${base}/sessions`)}
             >
               <Lock size={13} className="me-1" /> {t('register.closeSession')}
             </Button>
@@ -254,7 +253,7 @@ export default function RegisterPage() {
 
         {/* LEFT — product catalog */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden p-4 gap-3">
-          <BarcodeInput onResolve={handleScan} placeholder={t('register.scanPlaceholder')} autoFocus />
+          <BarcodeInput onResolve={handleScan} placeholder={t('register.scanPlaceholder')} autoFocus enableCamera />
           <ProductGrid onPick={pickItem} />
         </div>
 

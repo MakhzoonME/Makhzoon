@@ -16,7 +16,6 @@ import { toast } from '@/hooks/ui';
 import { apiFetch } from '@/lib/utils/api-fetch';
 import type { HarakaOrder, OrderLineItem } from '@/types';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
-import { cn } from '@/lib/utils/cn';
 
 interface Props {
   open: boolean;
@@ -56,8 +55,8 @@ export function OrderWarrantyDialog({ open, onOpenChange, order, orgName, orgSlu
 
   const selectedItems = items.filter((i) => selectedIds.has(i.inventoryItemId));
 
-  // Certificate number: W-{orderNumber}-{timestamp}
-  const certNumber = `W-${order.orderNumber}-${Date.now().toString(36).toUpperCase().slice(-4)}`;
+  // Certificate number: W-{orderNumber}-{timestamp} — generated once per mount
+  const [certNumber] = useState(() => `W-${order.orderNumber}-${Date.now().toString(36).toUpperCase().slice(-4)}`);
 
   const certData: WarrantyCertificateData = {
     certificateNumber: certNumber,

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Import Assets — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="assets" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6 max-w-2xl mx-auto">
+          <a href="usool-list.html" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 mb-3"><i data-lucide="arrow-left" class="!w-4 !h-4"></i>Assets</a>
+          <div class="mb-5">
+            <h1 class="text-xl font-semibold text-slate-900">Import Assets</h1>
+            <p class="text-sm text-slate-500 mt-0.5">Upload a CSV file to bulk-import assets into your account.</p>
+          </div>
+
+          <!-- Dropzone -->
+          <div class="bg-white rounded-xl border border-slate-200 mb-4">
+            <div class="px-6 py-4 border-b border-slate-100">
+              <h2 class="text-sm font-semibold text-slate-700">Upload File</h2>
+            </div>
+            <div class="p-6">
+              <label id="dropzone" class="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-slate-200 rounded-xl p-10 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                <span class="grid place-items-center w-12 h-12 rounded-xl bg-slate-100 text-slate-400">
+                  <i data-lucide="upload-cloud" class="!w-6 !h-6"></i>
+                </span>
+                <div class="text-center">
+                  <p class="text-sm font-medium text-slate-700">Drag &amp; drop your CSV file here, or <span class="text-primary">click to browse</span></p>
+                  <p class="text-xs text-slate-400 mt-1">CSV files only · Max 10 MB</p>
+                </div>
+                <input type="file" accept=".csv" class="sr-only" id="file-input" onchange="handleFile(this)" />
+              </label>
+              <div id="file-chosen" class="hidden mt-3 flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
+                <i data-lucide="file-text" class="!w-4 !h-4 text-slate-400 shrink-0"></i>
+                <span id="file-name" class="text-sm text-slate-700 truncate"></span>
+                <button onclick="clearFile()" class="ml-auto shrink-0 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="!w-4 !h-4"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column mapping -->
+          <div class="bg-white rounded-xl border border-slate-200 mb-5">
+            <button id="mapping-toggle" onclick="toggleMapping()" class="w-full flex items-center justify-between px-6 py-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+              <span>Column Mapping</span>
+              <i data-lucide="chevron-down" id="mapping-chevron" class="!w-4 !h-4 text-slate-400 transition-transform"></i>
+            </button>
+            <div id="mapping-body" class="hidden border-t border-slate-100">
+              <div class="p-6">
+                <p class="text-sm text-slate-500 mb-4">Your CSV must include the following columns (header row required):</p>
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <i data-lucide="columns-2" class="!w-4 !h-4 text-slate-400 shrink-0"></i>
+                    <span class="text-sm text-slate-700 font-medium">Name</span>
+                    <span class="ml-auto text-xs text-red-500 font-medium">Required</span>
+                  </div>
+                  <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <i data-lucide="columns-2" class="!w-4 !h-4 text-slate-400 shrink-0"></i>
+                    <span class="text-sm text-slate-700 font-medium">Category</span>
+                    <span class="ml-auto text-xs text-red-500 font-medium">Required</span>
+                  </div>
+                  <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <i data-lucide="columns-2" class="!w-4 !h-4 text-slate-400 shrink-0"></i>
+                    <span class="text-sm text-slate-700 font-medium">Serial No.</span>
+                    <span class="ml-auto text-xs text-slate-400">Optional</span>
+                  </div>
+                  <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <i data-lucide="columns-2" class="!w-4 !h-4 text-slate-400 shrink-0"></i>
+                    <span class="text-sm text-slate-700 font-medium">Purchase Date</span>
+                    <span class="ml-auto text-xs text-slate-400">Optional</span>
+                  </div>
+                  <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <i data-lucide="columns-2" class="!w-4 !h-4 text-slate-400 shrink-0"></i>
+                    <span class="text-sm text-slate-700 font-medium">Cost</span>
+                    <span class="ml-auto text-xs text-slate-400">Optional</span>
+                  </div>
+                  <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <i data-lucide="columns-2" class="!w-4 !h-4 text-slate-400 shrink-0"></i>
+                    <span class="text-sm text-slate-700 font-medium">Status</span>
+                    <span class="ml-auto text-xs text-slate-400">Optional</span>
+                  </div>
+                  <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <i data-lucide="columns-2" class="!w-4 !h-4 text-slate-400 shrink-0"></i>
+                    <span class="text-sm text-slate-700 font-medium">Location</span>
+                    <span class="ml-auto text-xs text-slate-400">Optional</span>
+                  </div>
+                  <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <i data-lucide="columns-2" class="!w-4 !h-4 text-slate-400 shrink-0"></i>
+                    <span class="text-sm text-slate-700 font-medium">Assigned To</span>
+                    <span class="ml-auto text-xs text-slate-400">Optional</span>
+                  </div>
+                </div>
+                <div class="mt-4">
+                  <a href="#" onclick="event.preventDefault();alert('Template download coming soon')" class="inline-flex items-center gap-1.5 text-sm text-primary font-medium hover:opacity-80">
+                    <i data-lucide="download" class="!w-4 !h-4"></i>Download CSV template
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <a href="usool-list.html" class="h-9 px-3 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1.5">Cancel</a>
+            <button onclick="alert('3 assets imported successfully')" class="h-9 px-3 rounded-lg bg-primary text-white text-sm font-medium hover:opacity-90 inline-flex items-center gap-1.5"><i data-lucide="upload" class="!w-4 !h-4"></i>Import</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-usool.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    function toggleMapping() {
+      const body = document.getElementById('mapping-body');
+      const chevron = document.getElementById('mapping-chevron');
+      body.classList.toggle('hidden');
+      chevron.style.transform = body.classList.contains('hidden') ? '' : 'rotate(180deg)';
+    }
+    function handleFile(input) {
+      if (input.files && input.files[0]) {
+        document.getElementById('file-name').textContent = input.files[0].name;
+        document.getElementById('file-chosen').classList.remove('hidden');
+        App.ui.icons();
+      }
+    }
+    function clearFile() {
+      document.getElementById('file-input').value = '';
+      document.getElementById('file-chosen').classList.add('hidden');
+    }
+    App.ui.icons();
+  </script>
+</body>
+</html>

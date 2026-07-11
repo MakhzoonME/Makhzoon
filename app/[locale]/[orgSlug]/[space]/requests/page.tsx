@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Inbox, Clock, CheckCircle2, XCircle } from 'lucide-react';
-import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
+import { useOrgSlug, useSpace, useT, useModuleGuard } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { PageHeader, StatCard, OverviewSection, DataTable, StatusBadge } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
@@ -87,12 +87,15 @@ function StatusBreakdown({ pending, approved, rejected, total, isLoading }: { pe
 }
 
 export default function RequestsOverviewPage() {
+  const { isAllowed } = useModuleGuard({ featureKey: 'requests', moduleKey: 'requests' });
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const space = useSpace();
   const { t, locale } = useT();
   const { data: orgInfo } = useOrgInfo();
   const { data, isLoading } = useRequestsOverview(space);
+
+  if (!isAllowed) return null;
 
   const total = data?.total ?? 0;
   const pending = data?.pending ?? 0;
@@ -179,6 +182,7 @@ export default function RequestsOverviewPage() {
             isLoading={isLoading}
             emptyMessage={t('requests.noRequests')}
             keyExtractor={(r) => r.id}
+            onRowClick={(r) => router.push(`${base}/${r.id}`)}
           />
         </OverviewSection>
 

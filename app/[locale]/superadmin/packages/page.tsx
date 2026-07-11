@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,7 @@ function LimitsCell({ pkg }: { pkg: Package }) {
 
 export default function PackagesPage() {
   const { t } = useT();
+  const router = useRouter();
   const { data: packages = [], isLoading } = usePackages({ includeInactive: true });
   const deleteMut = useDeletePackage();
   const [confirmDelete, setConfirmDelete] = useState<Package | null>(null);
@@ -62,7 +64,7 @@ export default function PackagesPage() {
         title={t('nav.packages')}
         breadcrumb={[{ label: t('nav.packages') }]}
         actions={
-          <Button size="sm">
+          <Button size="sm" onClick={() => router.push('./configuration?tab=packages')}>
             <Plus size={14} className="me-1" /> Add package
           </Button>
         }
@@ -115,7 +117,7 @@ export default function PackagesPage() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1 justify-end">
-                    <Button size="sm" variant="ghost" aria-label={t('common.edit')}>
+                    <Button size="sm" variant="ghost" aria-label={t('common.edit')} onClick={() => router.push(`./configuration?tab=packages&edit=${pkg.id}`)}>
                       <Pencil size={13} />
                     </Button>
                     <Button

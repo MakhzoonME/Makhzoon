@@ -29,8 +29,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  verify:
+    name: Verify (lint · types · tests · audit)
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --foreground-scripts
+      - name: Lint
+        run: npm run lint
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: Tests
+        run: npm test
+      - name: Migration sequence
+        run: npm run check:migrations
+      - name: Security audit
+        run: npm run audit:security
+
   map-env:
     name: Map branch to environment
+    needs: verify
     runs-on: ubuntu-latest
     outputs:
       env: ${{ steps.map.outputs.env }}
@@ -61,7 +85,7 @@ jobs:
               echo "env=production" >> $GITHUB_OUTPUT
               echo "env_name=production" >> $GITHUB_OUTPUT
               echo "app_url=https://app.makhzoon.me" >> $GITHUB_OUTPUT
-              echo "supabase_url=https://ncjzozvzjtyycdlwohtr.supabase.co" >> $GITHUB_OUTPUT
+              echo "supabase_url=https://ebupajukvyhparjkhlhr.supabase.co" >> $GITHUB_OUTPUT
               ;;
           esac
 
@@ -101,15 +125,14 @@ jobs:
       # Regression history: e00932f (original fix) → 74aedb8 (regression) →
       # e5d1b45 (refix). See also project_gha_jwt_outputs_gotcha memory.
       #
-      # Per-env Supabase branch: DevBranch → ltujtoabnewoypittoku (dev branch
-      # DB), STGBranch/main → ncjzozvzjtyycdlwohtr (main branch DB). One
-      # Supabase project, branched per env: auth.users is shared across
-      # branches, but public.* is per-branch.
+      # Per-env Supabase project: DevBranch → ltujtoabnewoypittoku (dev),
+      # STGBranch → ncjzozvzjtyycdlwohtr (staging), main →
+      # ebupajukvyhparjkhlhr (production). Each env is its own project.
       - name: Deploy main app worker
         run: npm run cf:deploy:${{ needs.map-env.outputs.env }}
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ needs.map-env.outputs.supabase_url }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref == 'refs/heads/DevBranch' && 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dWp0b2FibmV3b3lwaXR0b2t1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODg0MTcsImV4cCI6MjA5NTU2NDQxN30.gZ15djtZQyMAp6Mw_CeYqxQpQjmDty1geHBWLaw2_CY' || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref == 'refs/heads/DevBranch' && 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dWp0b2FibmV3b3lwaXR0b2t1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODg0MTcsImV4cCI6MjA5NTU2NDQxN30.gZ15djtZQyMAp6Mw_CeYqxQpQjmDty1geHBWLaw2_CY' || github.ref == 'refs/heads/main' && 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidXBhanVrdnlocGFyamtobGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MjYyOTAsImV4cCI6MjA5NDUwMjI5MH0.qvo7XgzvfMWzJu0dlTX_TrvY-Us74peqPVcx7ZIexhM' || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0' }}
           NEXT_PUBLIC_APP_URL: ${{ needs.map-env.outputs.app_url }}
           NEXT_PUBLIC_APP_ENV: ${{ needs.map-env.outputs.env }}
           # Analytics IDs — all are public client tokens (shipped in the

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { getAssetById } from '@/lib/db/assets';
 import { generateAssetQRDataUrl, assetUrl } from '@/lib/qr';
 
@@ -7,6 +8,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ assetId: 
   const params = await props.params;
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'assets');
     const user = tenant.user;
 
     const asset = await getAssetById(params.assetId);

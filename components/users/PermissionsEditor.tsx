@@ -44,30 +44,53 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
 
   function setModuleEnabled(moduleKey: keyof UserPermissions, enabled: boolean) {
     const mod = value[moduleKey] as unknown as Record<string, boolean>;
+    const modConfig = MODULE_PERMISSIONS_CONFIG.find((m) => m.key === moduleKey);
     const updated: Record<string, boolean> = {};
-    for (const k of Object.keys(mod)) updated[k] = enabled;
+    for (const k of Object.keys(mod)) {
+      if (enabled) {
+        const opCfg = modConfig?.operations.find((op) => op.key === k);
+        updated[k] = !opCfg?.featureKey || !!availableFeatures[opCfg.featureKey];
+      } else {
+        updated[k] = false;
+      }
+    }
     onChange({ ...value, [moduleKey]: updated as never });
     if (enabled) {
       setExpandedModules((prev) => new Set(Array.from(prev).concat(moduleKey)));
     }
   }
 
-  function setOp(moduleKey: keyof UserPermissions, opKey: string, checked: boolean) {
+  function setOp(moduleKey: keyof UserPermissions, opKey: string, checked: boolean, modConfig?: ModuleConfig) {
     const mod = { ...(value[moduleKey] as unknown as Record<string, boolean>) };
     mod[opKey] = checked;
-    // if turning off view, disable everything else
-    if (opKey === 'view' && !checked) {
-      for (const k of Object.keys(mod)) mod[k] = false;
+
+    if (!checked) {
+      // turning off this op: cascade-disable all ops that require it as their gate key
+      for (const op of (modConfig?.operations ?? [])) {
+        const gateKey = op.requiresKey ?? 'view';
+        if (op.requiresView && gateKey === opKey) {
+          mod[op.key] = false;
+        }
+      }
+      // if turning off the generic 'view' key, disable everything
+      if (opKey === 'view') {
+        for (const k of Object.keys(mod)) mod[k] = false;
+      }
+    } else {
+      // turning on an op: also enable its gate key
+      const opCfg = modConfig?.operations.find((o) => o.key === opKey);
+      const gateKey = opCfg?.requiresKey ?? 'view';
+      if (opCfg?.requiresView) {
+        mod[gateKey] = true;
+      }
     }
-    // if turning on any op, also enable view
-    if (opKey !== 'view' && checked) {
-      mod['view'] = true;
-    }
+
     onChange({ ...value, [moduleKey]: mod as never });
   }
 
   const visibleModules = MODULE_PERMISSIONS_CONFIG.filter((m) => {
-    if (m.featureKey && availableFeatures[m.featureKey] === false) return false;
+    if (m.hideFromEditor) return false;
+    if (m.featureKey && !availableFeatures[m.featureKey]) return false;
     return true;
   });
 
@@ -90,9 +113,10 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
           </div>
           {modules.map((mod) => {
         const modulePerms = value[mod.key] as unknown as Record<string, boolean>;
+        const visibleOps = mod.operations.filter((op) => !op.featureKey || !!availableFeatures[op.featureKey]);
         const isModuleEnabled = modulePerms?.view === true;
         const isExpanded = expandedModules.has(mod.key);
-        const hasAnyOp = Object.values(modulePerms ?? {}).some(Boolean);
+        const hasAnyOp = visibleOps.some((op) => modulePerms?.[op.key] === true);
 
         return (
           <div key={mod.key} className="rounded-lg border border-border overflow-hidden">
@@ -130,7 +154,7 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
               </span>
               {hasAnyOp && (
                 <span className="text-xs text-gray-400">
-                  {Object.values(modulePerms).filter(Boolean).length} of {Object.keys(modulePerms).length}
+                  {visibleOps.filter((op) => modulePerms?.[op.key] === true).length} of {visibleOps.length}
                 </span>
               )}
               <ChevronSVG open={isExpanded} />
@@ -139,9 +163,10 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
             {/* Operations */}
             {isExpanded && (
               <div className="border-t border-border bg-surface-card px-3 py-2 flex flex-col gap-1.5">
-                {mod.operations.map((op) => {
+                {visibleOps.map((op) => {
                   const checked = modulePerms?.[op.key] === true;
-                  const disabled = op.requiresView && modulePerms?.view !== true;
+                  const gateKey = op.requiresKey ?? 'view';
+                  const disabled = op.requiresView && modulePerms?.[gateKey] !== true;
                   return (
                     <label
                       key={op.key}
@@ -154,7 +179,7 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
                         type="checkbox"
                         checked={checked}
                         disabled={disabled}
-                        onChange={(e) => setOp(mod.key, op.key, e.target.checked)}
+                        onChange={(e) => setOp(mod.key, op.key, e.target.checked, mod)}
                         className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:cursor-not-allowed"
                       />
                       <span className={cn('text-gray-600', checked && 'text-gray-900 font-medium')}>{t(op.labelKey)}</span>

@@ -66,10 +66,9 @@ export function AvatarUpload({ value, onChange, fallbackText }: Props) {
   return (
     <div className="flex items-center gap-4">
       <div className="relative">
-        <div className="h-20 w-20 overflow-hidden rounded-full border border-border bg-surface-card">
+        <div className="relative h-20 w-20 overflow-hidden rounded-full border border-border bg-surface-card">
           {value ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={value} alt="Profile picture" className="h-full w-full object-cover" />
+            <img src={value} alt="Profile picture" className="object-cover w-full h-full" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-gray-500">
               {initial}

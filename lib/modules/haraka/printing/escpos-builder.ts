@@ -114,6 +114,21 @@ export class EscPosBuilder {
     return this.push([GS, 0x56, 0x00]).feed(2)
   }
 
+  /**
+   * Kick the cash drawer connected to the printer's RJ11 port.
+   * ESC p m t1 t2 — standard ESC/POS cash drawer command.
+   *
+   * @param port     0 = pin 2 (drawer 1), 1 = pin 5 (drawer 2)
+   * @param onTimeMs solenoid fire duration in ms (converted: t1 = onTimeMs / 2, clamped 1–255)
+   * @param offTimeMs recovery time in ms (converted: t2 = offTimeMs / 2, clamped 1–255)
+   */
+  kickDrawer(port: 0 | 1 = 0, onTimeMs = 100, offTimeMs = 100) {
+    const m  = port & 0x01
+    const t1 = Math.max(1, Math.min(255, Math.round(onTimeMs  / 2)))
+    const t2 = Math.max(1, Math.min(255, Math.round(offTimeMs / 2)))
+    return this.push([ESC, 0x70, m, t1, t2])
+  }
+
   build(): Uint8Array {
     let total = 0
     for (const p of this.parts) total += p.length

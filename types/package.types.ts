@@ -12,7 +12,8 @@ export type FeatureKey =
   | 'maintenance'
   | 'assetCheckouts'
   | 'assetNotes'
-  | 'pos';
+  | 'pos'
+  | 'banna';
 
 // Order here drives the order of checkboxes in the package + org subscription forms.
 export const FEATURE_KEYS: FeatureKey[] = [
@@ -28,6 +29,7 @@ export const FEATURE_KEYS: FeatureKey[] = [
   'assetCheckouts',
   'assetNotes',
   'pos',
+  'banna',
 ];
 
 export const FEATURE_LABELS: Record<FeatureKey, string> = {
@@ -43,6 +45,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   assetCheckouts: 'Asset Checkouts',
   assetNotes: 'Asset Notes',
   pos: 'Point of Sale',
+  banna: 'Banna (Custom Fields)',
 };
 
 export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
@@ -58,6 +61,7 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
   assetCheckouts: 'Loan-out and return tracking for shared inventory.',
   assetNotes: 'Free-form notes attached to individual assets.',
   pos: 'Point of sale terminal for processing sales transactions.',
+  banna: 'Custom fields for assets, inventory, and requests.',
 };
 
 export interface PackageLimits {

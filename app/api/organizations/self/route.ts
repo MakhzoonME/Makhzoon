@@ -5,6 +5,14 @@ import { getSuperAdminUserById } from '@/lib/db/superadmin-users';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { ORG_CATEGORIES } from '@/types';
 import { queueAuditLog } from '@/lib/audit/logger';
+import { z } from 'zod';
+
+const orgSelfPatchSchema = z.object({
+  name: z.string().max(200).optional(),
+  contactEmail: z.string().max(254).optional(),
+  description: z.string().max(2000).optional(),
+  category: z.string().max(100).optional(),
+}).passthrough();
 
 /** Legacy PII-scrub pattern from the Firestore clone scripts. No clone exists
  *  post-migration so this never matches, but the fallback is kept harmless. */
@@ -81,7 +89,9 @@ export async function PATCH(req: NextRequest) {
     const orgId = user.organizationId;
     if (!orgId) return NextResponse.json({ error: 'No organization associated with this account' }, { status: 403 });
 
-    const body = await req.json();
+    const parsedBody = orgSelfPatchSchema.safeParse(await req.json().catch(() => null));
+    if (!parsedBody.success) return NextResponse.json({ error: 'Invalid body', details: parsedBody.error.flatten() }, { status: 422 });
+    const body = parsedBody.data;
     const patch: Partial<{ name: string; contactEmail: string; description: string; category: string | null; updatedBy: string }> = {};
 
     if (typeof body.name === 'string') {

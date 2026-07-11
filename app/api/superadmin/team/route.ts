@@ -9,6 +9,7 @@ import {
 } from '@/lib/db/superadmin-users';
 import { createPasswordResetToken } from '@/lib/db/password-reset-tokens';
 import { sendEmail } from '@/lib/email/resend';
+import { hasSuperAdminPermission } from '@/lib/permissions/superadmin';
 import { z } from 'zod';
 
 const createMemberSchema = z.object({
@@ -18,15 +19,12 @@ const createMemberSchema = z.object({
   permissions: z.record(z.unknown()).optional().nullable(),
 });
 
-const ALLOWED_CALLER_ROLES = new Set(['super_admin', 'makhzoon_admin']);
-
 export async function GET() {
   const caller = await verifySessionCookie();
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!ALLOWED_CALLER_ROLES.has(caller.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!hasSuperAdminPermission(caller, 'team', 'view'))
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  // public.superadmin_users is the single source of truth (greenfield —
-  // there are no Firebase-only "synthetic" members to reconcile).
   const members = await getSuperAdminUsers();
   return NextResponse.json(members);
 }
@@ -34,7 +32,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const caller = await verifySessionCookie();
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!ALLOWED_CALLER_ROLES.has(caller.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!hasSuperAdminPermission(caller, 'team', 'manage'))
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const body = await req.json();
   const parsed = createMemberSchema.safeParse(body);
@@ -71,7 +70,7 @@ export async function POST(req: NextRequest) {
     displayName,
     role: role as MakhzoonRole,
     createdBy: caller.uid,
-    permissions: role === 'makhzoon_support' && permissions ? permissions as never : undefined,
+    permissions: permissions ? permissions as never : undefined,
   });
 
   // Generate password reset token and send email with reset link

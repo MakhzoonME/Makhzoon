@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { Printer, Lock, Receipt, ShoppingCart, PauseCircle, RotateCcw, Trash2, Banknote, CreditCard } from 'lucide-react';
 import { BarcodeInput, SubscriptionGate } from '@/components/shared';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ProductGrid } from '@/components/haraka/ProductGrid';
 import { Cart } from '@/components/haraka/Cart';
 import { CustomerPicker } from '@/components/haraka/CustomerPicker';
@@ -19,8 +18,10 @@ import { useAuthStore } from '@/store/auth.store';
 import { priceCart } from '@/lib/modules/haraka/pricing/calc';
 import { toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
-import { printRaw } from '@/lib/modules/haraka/printing/webusb-transport';
+import { printRaw, openCashDrawer } from '@/lib/modules/haraka/printing/webusb-transport';
 import { buildReceipt } from '@/lib/modules/haraka/printing/receipt-template';
+import { CashDrawerButton } from '@/components/haraka/CashDrawerButton';
+import { useCashDrawerConfig } from '@/hooks/haraka';
 import type { ReceiptPrintText } from '@/lib/modules/haraka/printing/receipt-canvas';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import { DEFAULT_RECEIPT_CONFIG } from '@/lib/receipts/receipt-config';
@@ -39,6 +40,7 @@ export default function RegisterPage() {
   const { data: taxData } = useTaxRates();
   const { data: fawtaraCfg } = useFawtaraConfig();
   const fawtaraEnabled = fawtaraCfg?.config?.enabled === true;
+  const { data: cashDrawerData } = useCashDrawerConfig();
   const { lookup } = useBarcodeLookup();
 
   const lines = usePosCart((s) => s.lines);
@@ -84,7 +86,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (sessionFetched && !sessionLoading && !sessionData?.session) {
-      router.replace(`/${params.locale}/${params.orgSlug}/${params.space}/haraka`);
+      router.replace(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions`);
     }
   }, [sessionFetched, sessionLoading, sessionData?.session, router, params.locale, params.orgSlug, params.space]);
 
@@ -138,6 +140,18 @@ export default function RegisterPage() {
       toast.success(`Sale complete — receipt ${result.transaction.receiptNumber}`);
       setReceiptTx(result.transaction);
       requestPrint(result.transaction);
+      // Auto-open cash drawer on cash payment if configured
+      const drawerCfg = cashDrawerData?.config;
+      if (drawerCfg?.enabled && drawerCfg.autoOpenOnCash) {
+        const hasCash = payments.some((p) => p.method === 'cash' && p.amount > 0);
+        if (hasCash) {
+          openCashDrawer({
+            port: drawerCfg.drawerPort,
+            onTimeMs: drawerCfg.onTimeMs,
+            offTimeMs: drawerCfg.offTimeMs,
+          }).catch(() => undefined); // silent — never block the sale flow
+        }
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Sale failed');
     }
@@ -212,6 +226,7 @@ export default function RegisterPage() {
         )}
 
         <div className="ms-auto flex items-center gap-2">
+          <CashDrawerButton sessionActive={!!sessionData?.session} />
           <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500" onClick={() => setPrinterOpen(true)}>
             <Printer size={14} className="me-1" /> {t('register.printer')}
           </Button>
@@ -225,7 +240,7 @@ export default function RegisterPage() {
               variant="outline"
               size="sm"
               className="h-7"
-              onClick={() => router.push(`${base}/sessions/${sessionData.session!.id}`)}
+              onClick={() => router.push(`${base}/sessions`)}
             >
               <Lock size={13} className="me-1" /> {t('register.closeSession')}
             </Button>
@@ -238,7 +253,7 @@ export default function RegisterPage() {
 
         {/* LEFT — product catalog */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden p-4 gap-3">
-          <BarcodeInput onResolve={handleScan} placeholder={t('register.scanPlaceholder')} autoFocus />
+          <BarcodeInput onResolve={handleScan} placeholder={t('register.scanPlaceholder')} autoFocus enableCamera />
           <ProductGrid onPick={pickItem} />
         </div>
 

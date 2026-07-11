@@ -5,6 +5,7 @@ import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
 import { useAsset } from '@/hooks/assets';
 import { useWarranties } from '@/hooks/warranties';
 import { useAuthStore } from '@/store/auth.store';
+import { hasPermission } from '@/lib/permissions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -14,7 +15,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
-import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
+import { formatDate, formatDateTime, isExpired, getWarrantyStatus } from '@/lib/utils/date';
+import { formatActionLabel } from '@/lib/utils/audit-labels';
+import { DiffCards } from '@/components/shared/AuditDiffCards';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Asset, Warranty } from '@/types';
 import { RequestActionPanel } from '@/components/assets/RequestActionPanel';
 import { Pencil, Archive, Trash2, ArrowRight, Copy } from 'lucide-react';
@@ -33,6 +37,7 @@ import { toast } from '@/hooks/ui';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { UserHoverCard } from '@/components/shared/UserHoverCard';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import { CustomFieldValuesSection } from '@/components/banna/CustomFieldValuesSection';
 
 /* ── Icons ───────────────────────────────────────────────────────── */
 function PlusSVG() {
@@ -68,6 +73,8 @@ type AuditEntry = {
   action: string;
   module?: string;
   createdAt: string | number;
+  oldValue?: Record<string, unknown> | null;
+  newValue?: Record<string, unknown> | null;
 };
 
 const ACTION_COLORS: Record<string, { dot: string; label: string }> = {
@@ -87,17 +94,28 @@ function ActivityTimeline({ assetId, createdBy, createdAt, updatedBy, updatedAt,
   asset: Asset;
 }) {
   const { t } = useT();
-  const { data } = useQuery<{ items: AuditEntry[] }>({
-    queryKey: ['asset-audit', assetId],
+  const space = useSpace();
+  const [selectedEntry, setSelectedEntry] = useState<AuditEntry | null>(null);
+  const { data } = useQuery<AuditEntry[]>({
+    queryKey: ['asset-audit', assetId, space],
     queryFn: async () => {
-      const res = await fetch(`/api/audit-logs?recordId=${assetId}&limit=6`);
-      if (!res.ok) return { items: [] };
-      return res.json();
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/audit-logs?recordId=${assetId}&pageSize=6`, { headers });
+      if (!res.ok) return [];
+      const json: { logs: Array<{ id: string; action: string; userDisplayName?: string; userId: string; timestamp: string; oldValue?: Record<string, unknown> | null; newValue?: Record<string, unknown> | null }> } = await res.json();
+      return (json.logs ?? []).map((l) => ({
+        id: l.id,
+        action: l.action,
+        actorName: l.userDisplayName ?? l.userId,
+        createdAt: l.timestamp,
+        oldValue: l.oldValue,
+        newValue: l.newValue,
+      }));
     },
     staleTime: 60_000,
   });
 
-  const logs = data?.items ?? [];
+  const logs = data ?? [];
 
   const toStr = (d: string | number | Date): string =>
     d instanceof Date ? d.toISOString() : String(d);
@@ -107,13 +125,26 @@ function ActivityTimeline({ assetId, createdBy, createdAt, updatedBy, updatedAt,
     { id: 'cre', action: 'CREATED', actorName: asset.createdByName ?? createdBy, createdAt: toStr(createdAt) },
   ];
 
+  const hasDetails = (entry: AuditEntry) => !!(entry.oldValue || entry.newValue) && (Object.keys(entry.oldValue ?? {}).length || Object.keys(entry.newValue ?? {}).length);
+
+  const detailRows = selectedEntry ? [
+    [t('auditLogs.action'), formatActionLabel(selectedEntry.action)],
+    [t('auditLogs.user'), selectedEntry.actorName ?? selectedEntry.actorEmail ?? t('common.system')],
+    [t('auditLogs.timestamp'), formatDateTime(typeof selectedEntry.createdAt === 'number' ? new Date(selectedEntry.createdAt) : selectedEntry.createdAt)],
+  ] : [];
+
   return (
     <div className="space-y-0">
       {timeline.map((entry, i) => {
         const colors = ACTION_COLORS[entry.action?.toUpperCase()] ?? ACTION_COLORS.UPDATED;
         const isLast = i === timeline.length - 1;
+        const clickable = hasDetails(entry);
         return (
-          <div key={entry.id} className="flex gap-3 relative">
+          <div
+            key={entry.id}
+            className={`flex gap-3 relative ${clickable ? 'cursor-pointer' : ''}`}
+            onClick={() => clickable && setSelectedEntry(entry)}
+          >
             {/* connector line */}
             {!isLast && (
               <div className="absolute start-[11px] top-7 bottom-0 w-px bg-border" />
@@ -129,6 +160,15 @@ function ActivityTimeline({ assetId, createdBy, createdAt, updatedBy, updatedAt,
               <p className={`text-xs mt-0.5 font-medium ${colors.label}`}>
                 {entry.action.charAt(0) + entry.action.slice(1).toLowerCase().replace(/_/g, ' ')}
               </p>
+              {clickable && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setSelectedEntry(entry); }}
+                  className="text-xs mt-0.5 font-medium text-primary-600 underline decoration-dotted underline-offset-2 cursor-pointer"
+                >
+                  {t('auditLogs.detail')}
+                </button>
+              )}
               <p className="text-xs text-gray-400 mt-0.5 tabular-nums font-mono">
                 {formatDate(typeof entry.createdAt === 'number' ? new Date(entry.createdAt) : entry.createdAt)}
               </p>
@@ -136,6 +176,29 @@ function ActivityTimeline({ assetId, createdBy, createdAt, updatedBy, updatedAt,
           </div>
         );
       })}
+
+      <Dialog open={!!selectedEntry} onOpenChange={(o) => !o && setSelectedEntry(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('auditLogs.detail')}</DialogTitle>
+          </DialogHeader>
+          {selectedEntry && (
+            <div className="space-y-4 text-[14px] px-6 py-4">
+              <div className="rounded-lg border border-border overflow-hidden">
+                {detailRows.filter(([, v]) => v).map(([k, v], i) => (
+                  <div key={String(k)} className={`flex text-xs ${i % 2 === 0 ? 'bg-surface-page' : 'bg-surface-card'}`}>
+                    <span className="w-28 flex-shrink-0 px-3 py-2 text-gray-500 font-medium border-r border-border">{k}</span>
+                    <span className="px-3 py-2 text-gray-800">{String(v)}</span>
+                  </div>
+                ))}
+              </div>
+              {(selectedEntry.oldValue || selectedEntry.newValue) && (
+                <DiffCards oldValue={selectedEntry.oldValue} newValue={selectedEntry.newValue} />
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -166,6 +229,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
 
   const isAdmin  = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
   const isStaff  = user?.role === 'staff';
+  const canDeleteAsset = !!user && hasPermission(user, 'assets', 'delete');
   const isRetired = asset?.status === 'Retired';
 
   async function handleRetire() {
@@ -174,12 +238,20 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
       const res = await fetch(`/api/assets/${assetId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed');
       toast.success(isRetired ? 'Asset permanently deleted' : 'Asset retired');
-      qc.setQueriesData<{ items: Asset[]; nextCursor: string | null }>(
-        { queryKey: ['assets'] },
-        (old) => old?.items ? { ...old, items: old.items.filter((a) => a.id !== assetId) } : old,
-      );
-      qc.removeQueries({ queryKey: ['assets', assetId] });
-      router.push(`/${locale}/${orgSlug}/${space}/usool`);
+      if (isRetired) {
+        // Already-retired assets are hard-deleted — nothing left to show, go back to the list.
+        qc.setQueriesData<{ items: Asset[]; nextCursor: string | null }>(
+          { queryKey: ['assets'] },
+          (old) => old?.items ? { ...old, items: old.items.filter((a) => a.id !== assetId) } : old,
+        );
+        qc.removeQueries({ queryKey: ['assets', assetId] });
+        router.push(`/${locale}/${orgSlug}/${space}/usool/list`);
+      } else {
+        // Active assets are retired in place — stay on the page and refresh its details.
+        qc.invalidateQueries({ queryKey: ['assets', space, assetId] });
+        qc.invalidateQueries({ queryKey: ['assets'] });
+        qc.invalidateQueries({ queryKey: ['asset-audit', assetId] });
+      }
     } catch {
       toast.error(isRetired ? 'Failed to delete asset' : 'Failed to retire asset');
     } finally {
@@ -243,12 +315,12 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
             )}
             {asset.status !== 'Retired' && <MoveAssetButton onClick={() => setMoveOpen(true)} />}
             {asset.status !== 'Retired' && <DuplicateAssetButton onClick={() => setDupeOpen(true)} />}
-            {asset.status === 'Active' && (
+            {canDeleteAsset && asset.status === 'Active' && (
               <Button variant="destructive" size="sm" onClick={() => setShowRetire(true)}>
                 <Archive aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ms-1.5">{t('assets.retireBtn')}</span>
               </Button>
             )}
-            {asset.status === 'Retired' && (
+            {canDeleteAsset && asset.status === 'Retired' && (
               <Button variant="destructive" size="sm" onClick={() => setShowRetire(true)}>
                 <Trash2 aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} /><span className="ms-1.5">{t('assets.deleteBtn')}</span>
               </Button>
@@ -333,6 +405,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
                       <DocumentList value={asset.documents} label="Purchase receipts / invoices" />
                     </div>
                   )}
+                  <CustomFieldValuesSection recordType="assets" recordId={assetId} />
                 </CardContent>
               </Card>
 

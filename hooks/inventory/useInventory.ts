@@ -17,6 +17,8 @@ export function useInventoryItems(params?: {
   stockStatus?: string;
   search?: string;
   posEnabled?: boolean;
+  expiringWithin?: number;
+  expired?: boolean;
   page?: number;
   pageSize?: number;
   sortBy?: string;
@@ -28,6 +30,8 @@ export function useInventoryItems(params?: {
   if (params?.stockStatus) query.set('stockStatus', params.stockStatus);
   if (params?.search) query.set('search', params.search);
   if (params?.posEnabled) query.set('posEnabled', 'true');
+  if (params?.expiringWithin != null) query.set('expiringWithin', String(params.expiringWithin));
+  if (params?.expired) query.set('expired', 'true');
   if (params?.page) query.set('page', String(params.page));
   if (params?.pageSize) query.set('pageSize', String(params.pageSize));
   if (params?.sortBy) query.set('sortBy', params.sortBy);

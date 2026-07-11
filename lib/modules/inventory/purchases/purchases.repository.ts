@@ -1,6 +1,8 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import type { Purchase, PurchaseLine, PurchaseStatus, DocumentRef } from '@/types'
+import { stockStatus } from '../stock-status'
 
 type Row = Record<string, unknown>
 
@@ -334,7 +336,7 @@ export class PurchasesRepository {
       const threshold = (itemData.minimum_threshold as number) ?? 0
       const finalQty = running.get(iid) ?? 0
       const statusUpdate: Row = {
-        stock_status: finalQty === 0 ? 'out' : finalQty < threshold ? 'low' : 'ok',
+        stock_status: stockStatus(finalQty, threshold),
         updated_by: tenant.userId,
         updated_by_email: tenant.user.email ?? null,
         updated_by_name: tenant.user.displayName ?? null,

@@ -146,6 +146,25 @@ Bulk actions: delete, move to space, duplicate to space (gated by `pos.customers
 
 - Same form as edit.
 
+### Transactions
+**Route**: `/{locale}/{orgSlug}/{space}/haraka/transactions`
+
+A cross-session view of all POS transactions for this space, gated by `pos.view_reports`.
+
+**Layout**:
+- Summary stat cards for today: Total Revenue, Transaction Count, Average Basket, Top Payment Method.
+- Status filter: All / Completed / Refunded / Voided.
+- `DataTable` with columns: Receipt No., Customer, Items, Total, Payment Method, Status badge, Cashier, Time.
+- Row click → Transaction Detail page.
+
+**Transaction Detail**:
+**Route**: `/{locale}/{orgSlug}/{space}/haraka/transactions/[transactionId]`
+
+- Full transaction breakdown: line items, payments, totals, tax, discount, change.
+- Status badge + refund/void actions if applicable.
+- Fawtara submission status.
+- Receipt share/print buttons.
+
 ### Reports
 **Route**: `/{locale}/{orgSlug}/{space}/haraka/reports`
 
@@ -173,12 +192,14 @@ Fawtara is Jordan's electronic invoicing mandate (ISTD). When enabled in org set
 
 ---
 
-## Printer Settings
+## Printer & Receipt Settings
 
-`components/haraka/PrinterSettingsDialog.tsx` — available from the register toolbar.
+Accessible from the register toolbar (quick printer connect/disconnect) and fully from **Settings → Receipt** (`/{locale}/{orgSlug}/settings/receipt`).
 
-- Configure receipt width, font size, and whether to auto-print after each sale.
-- Settings stored in `store/printer.store.ts` (persisted to `localStorage`).
+- Thermal printer: WebUSB connect/disconnect, paper width (58mm / 80mm), font size, auto-print toggle.
+- Receipt template, language (EN/AR/both), logo, header/footer text, accent color.
+- Live preview via `ReceiptPreview` component.
+- Settings stored in `store/printer.store.ts` (persisted to `localStorage`) for printer hardware; receipt visual settings persisted to `organization_configs` via `/api/organizations/receipt-config`.
 
 ---
 

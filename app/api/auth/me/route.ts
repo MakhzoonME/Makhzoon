@@ -32,6 +32,7 @@ export async function GET() {
         avatarUrl,
         displayName,
         permissions: user.permissions ?? null,
+        saPermissions: user.saPermissions ?? null,
         features,
       },
       { headers: { 'Cache-Control': 'no-store' } },

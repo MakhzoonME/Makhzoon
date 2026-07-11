@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useOrgInfo } from '@/hooks/org';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,14 +13,29 @@ import {
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { useT, useAdminGuard } from '@/hooks/ui';
 import { toast } from '@/hooks/ui';
-import { useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/utils/api-fetch';
 import { ORG_CATEGORIES } from '@/types';
-import { Check } from 'lucide-react';
+import { Check, Upload, X } from 'lucide-react';
+import { cn } from '@/lib/utils/cn';
+import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 
 // Radix Select forbids an empty-string value, so we use a sentinel for "none"
 // and map it back to '' (→ null on save).
 const NONE_CATEGORY = '__none__';
+
+const ACCENT_COLORS = [
+  { value: '#1d4ed8', label: 'Indigo' },
+  { value: '#0f766e', label: 'Teal' },
+  { value: '#7c3aed', label: 'Purple' },
+  { value: '#b91c1c', label: 'Red' },
+  { value: '#000000', label: 'Black' },
+];
+
+const isValidHex = (v: string) => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v);
+function normalizeHex(v: string) {
+  if (/^#[0-9a-f]{3}$/i.test(v)) return `#${v[1]}${v[1]}${v[2]}${v[2]}${v[3]}${v[3]}`;
+  return v;
+}
 
 export default function OrganizationInfoPage() {
   const { t } = useT();
@@ -27,11 +43,36 @@ export default function OrganizationInfoPage() {
   const { data: org, isLoading, isError } = useOrgInfo();
   const qc = useQueryClient();
 
+  // ── Org info fields ──
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // ── Branding fields (stored in receipt_config) ──
+  const [logo, setLogo] = useState<string | null>(null);
+  const [orgName, setOrgName] = useState('');
+  const [orgNameAr, setOrgNameAr] = useState('');
+  const [tagline, setTagline] = useState('');
+  const [taglineAr, setTaglineAr] = useState('');
+  const [phone, setPhone] = useState('');
+  const [taxNumber, setTaxNumber] = useState('');
+  const [address, setAddress] = useState('');
+  const [addressAr, setAddressAr] = useState('');
+  const [website, setWebsite] = useState('');
+  const [accentColor, setAccentColor] = useState('#1d4ed8');
+  const [savingBranding, setSavingBranding] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: receiptSaved } = useQuery<{ tagline?: string; taglineAr?: string; taxNumber?: string; config?: ReceiptConfig }>({
+    queryKey: ['receipt-config'],
+    queryFn: async () => {
+      const res = await fetch('/api/organizations/receipt-config');
+      return res.ok ? res.json() : {};
+    },
+    staleTime: 60_000,
+  });
 
   useEffect(() => {
     if (org) {
@@ -45,6 +86,35 @@ export default function OrganizationInfoPage() {
       setDescription(org.description ?? '');
     }
   }, [org]);
+
+  useEffect(() => {
+    if (!receiptSaved) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (receiptSaved.tagline !== undefined) setTagline(receiptSaved.tagline);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (receiptSaved.taglineAr !== undefined) setTaglineAr(receiptSaved.taglineAr);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (receiptSaved.taxNumber !== undefined) setTaxNumber(receiptSaved.taxNumber);
+    if (receiptSaved.config) {
+      const c = receiptSaved.config;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (c.logo !== undefined) setLogo(c.logo);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (c.orgName !== undefined) setOrgName(c.orgName);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (c.orgNameAr !== undefined) setOrgNameAr(c.orgNameAr);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (c.phone !== undefined) setPhone(c.phone);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (c.address !== undefined) setAddress(c.address);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (c.addressAr !== undefined) setAddressAr(c.addressAr);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (c.website !== undefined) setWebsite(c.website);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (c.accentColor) setAccentColor(c.accentColor);
+    }
+  }, [receiptSaved]);
 
   if (!isAllowed) return null;
   if (isLoading) return <LoadingSkeleton rows={5} columns={1} />;
@@ -80,6 +150,46 @@ export default function OrganizationInfoPage() {
     }
   }
 
+  async function handleSaveBranding() {
+    setSavingBranding(true);
+    try {
+      const res = await fetch('/api/organizations/receipt-config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tagline,
+          taglineAr,
+          taxNumber,
+          config: { logo, orgName, orgNameAr, phone, address, addressAr, website, accentColor },
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'Failed to save');
+      toast.success(t('common.updated'));
+      qc.invalidateQueries({ queryKey: ['receipt-config'] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.updateFailed'));
+    } finally {
+      setSavingBranding(false);
+    }
+  }
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('type', 'logo');
+      const res = await fetch('/api/upload', { method: 'POST', body: form });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'Upload failed');
+      const { url } = (await res.json()) as { url: string };
+      setLogo(url);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.updateFailed'));
+    }
+  }
+
   function handleReset() {
     if (org) {
       setName(org.name ?? '');
@@ -90,8 +200,9 @@ export default function OrganizationInfoPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="max-w-[620px] mx-auto rounded-xl">
+    <div className="space-y-6 max-w-[620px] mx-auto">
+      {/* ── Organization info ── */}
+      <Card className="rounded-xl">
         <CardContent className="p-6">
           <h2 className="text-[17px] font-semibold text-gray-900 mb-5">{t('settings.orgName')}</h2>
           <form onSubmit={handleSave} className="flex flex-col gap-4">
@@ -162,25 +273,171 @@ export default function OrganizationInfoPage() {
             )}
 
             <div className="flex gap-2 pt-1">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleReset}
-                disabled={saving}
-                className="cursor-pointer transition-colors duration-150"
-              >
+              <Button type="button" variant="outline" onClick={handleReset} disabled={saving}>
                 {t('common.cancel')}
               </Button>
-              <Button
-                type="submit"
-                disabled={saving || !name.trim()}
-                className="cursor-pointer transition-colors duration-150"
-              >
+              <Button type="submit" disabled={saving || !name.trim()}>
                 <Check aria-hidden className="h-4 w-4 me-1" strokeWidth={1.75} />
                 {saving ? t('common.saving') : t('settings.saveChanges')}
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* ── Branding (shared across receipt & invoice) ── */}
+      <Card className="rounded-xl">
+        <CardContent className="p-6 space-y-5">
+          <div>
+            <h2 className="text-[17px] font-semibold text-gray-900">Branding</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Shown on receipts and invoices — logo, name, contact details, and colors.
+            </p>
+          </div>
+
+          {/* Logo */}
+          <div className="space-y-1.5">
+            <Label>Logo</Label>
+            <div className="flex items-center gap-3">
+              {logo
+                ? <div className="relative w-12 h-12 border border-border rounded p-1 bg-white">
+                    <img src={logo} alt="logo" className="object-contain w-full h-full" />
+                  </div>
+                : <div className="w-12 h-12 rounded border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-[9px] text-gray-400">LOGO</div>
+              }
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => logoInputRef.current?.click()}>
+                  <Upload size={13} className="me-1" />Upload
+                </Button>
+                {logo && (
+                  <Button variant="outline" size="sm" onClick={() => setLogo(null)}>
+                    <X size={13} />
+                  </Button>
+                )}
+              </div>
+              <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+            </div>
+          </div>
+
+          {/* Business names */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Business name (English)</Label>
+              <Input
+                placeholder={org?.name ?? 'Business name'}
+                value={orgName}
+                onChange={(e) => setOrgName(e.target.value)}
+                maxLength={80}
+              />
+              <p className="text-[11px] text-gray-400">Leave blank to use &ldquo;{org?.name ?? '—'}&rdquo;.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Business name (Arabic)</Label>
+              <Input
+                dir="rtl"
+                placeholder="اسم المتجر"
+                value={orgNameAr}
+                onChange={(e) => setOrgNameAr(e.target.value)}
+                maxLength={80}
+              />
+            </div>
+          </div>
+
+          {/* Taglines */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Tagline (English)</Label>
+              <Input placeholder="e.g. Quality you can trust" value={tagline} onChange={(e) => setTagline(e.target.value)} maxLength={80} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Tagline (Arabic)</Label>
+              <Input dir="rtl" placeholder="جودة تثق بها" value={taglineAr} onChange={(e) => setTaglineAr(e.target.value)} maxLength={80} />
+            </div>
+          </div>
+
+          {/* Phone + Tax number */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Phone</Label>
+              <Input placeholder="+962 6 000 0000" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Tax number</Label>
+              <Input placeholder="123456789" value={taxNumber} onChange={(e) => setTaxNumber(e.target.value)} />
+            </div>
+          </div>
+
+          {/* Addresses */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Address (English)</Label>
+              <Input placeholder="123 Main Street, Amman" value={address} onChange={(e) => setAddress(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Address (Arabic)</Label>
+              <Input dir="rtl" placeholder="١٢٣ الشارع الرئيسي، عمّان" value={addressAr} onChange={(e) => setAddressAr(e.target.value)} />
+            </div>
+          </div>
+
+          {/* Website */}
+          <div className="space-y-1.5">
+            <Label>Website</Label>
+            <Input placeholder="www.example.com" value={website} onChange={(e) => setWebsite(e.target.value)} />
+          </div>
+
+          {/* Accent color */}
+          <div className="space-y-1.5">
+            <Label>Accent color</Label>
+            <div className="flex gap-2 items-center">
+              {ACCENT_COLORS.map((c) => (
+                <button
+                  key={c.value}
+                  title={c.label}
+                  onClick={() => setAccentColor(c.value)}
+                  className={cn(
+                    'w-7 h-7 rounded-full border-2 transition-all',
+                    accentColor.toLowerCase() === c.value.toLowerCase() ? 'border-gray-700 scale-110' : 'border-transparent',
+                  )}
+                  style={{ background: c.value }}
+                />
+              ))}
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <label
+                title="Pick a custom color"
+                className="relative w-7 h-7 rounded-full border-2 border-gray-300 overflow-hidden cursor-pointer shrink-0"
+                style={{ background: isValidHex(accentColor) ? accentColor : '#ffffff' }}
+              >
+                <input
+                  type="color"
+                  value={isValidHex(accentColor) ? normalizeHex(accentColor) : '#000000'}
+                  onChange={(e) => setAccentColor(e.target.value)}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+              </label>
+              <Input
+                value={accentColor}
+                onChange={(e) => {
+                  const v = e.target.value.startsWith('#') || e.target.value === '' ? e.target.value : `#${e.target.value}`;
+                  setAccentColor(v);
+                }}
+                placeholder="#1d4ed8"
+                maxLength={7}
+                spellCheck={false}
+                className={cn('w-28 font-mono', !isValidHex(accentColor) && 'border-red-400 focus-visible:ring-red-400')}
+              />
+              {!isValidHex(accentColor) && (
+                <span className="text-[11px] text-red-500">Invalid hex</span>
+              )}
+            </div>
+          </div>
+
+          <div className="pt-1">
+            <Button onClick={handleSaveBranding} disabled={savingBranding}>
+              <Check aria-hidden className="h-4 w-4 me-1" strokeWidth={1.75} />
+              {savingBranding ? t('common.saving') : t('settings.saveChanges')}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

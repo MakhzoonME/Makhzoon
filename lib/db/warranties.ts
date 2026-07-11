@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { Warranty, DocumentRef } from '@/types';
 
@@ -151,8 +152,8 @@ export async function createWarranty(
     .insert({
       organization_id: data.organizationId,
       space_id: data.spaceId,
-      asset_id: data.assetId ?? null,
-      inventory_item_id: data.inventoryItemId ?? null,
+      asset_id: data.assetId || null,
+      inventory_item_id: data.inventoryItemId || null,
       vendor: data.vendor,
       start_date: new Date(data.startDate).toISOString(),
       end_date: new Date(data.endDate).toISOString(),

@@ -23,6 +23,8 @@ const copy = {
     noSpam:       "We'll reach out when it's time. No noise.",
     successTitle: "You're in.",
     successBody:  "We'll find you when the doors open.",
+    duplicateEmail: "You've already requested early access. Check your inbox for updates.",
+    genericError: 'Something went wrong. Please try again.',
     loginPrompt:  'Have access already?',
     loginLink:    'Sign in',
     trust:        'Organizations across the Arab world are already on the waitlist',
@@ -44,6 +46,8 @@ const copy = {
     noSpam:       'سنتواصل معك في الوقت المناسب. بلا إزعاج.',
     successTitle: 'أنت في القائمة.',
     successBody:  'سنوصلك حين تُفتح الأبواب.',
+    duplicateEmail: 'لقد طلبت الوصول المبكر بالفعل. تحقق من بريدك للحصول على التحديثات.',
+    genericError: 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
     loginPrompt:  'لديك حساب بالفعل؟',
     loginLink:    'سجّل الدخول',
     trust:        'منشآت من أرجاء العالم العربي على قائمة الانتظار',
@@ -101,6 +105,7 @@ export default function ComingSoonPage() {
   const other    = locale === 'en' ? 'ar' : 'en';
 
   const [formState, setFormState] = useState<'idle' | 'loading' | 'done'>('idle');
+  const [formError, setFormError] = useState<string | null>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName,  setLastName]  = useState('');
   const [email,     setEmail]     = useState('');
@@ -131,14 +136,25 @@ export default function ComingSoonPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email) return;
+    setFormError(null);
     setFormState('loading');
     try {
-      await fetch('/api/early-access', {
+      const res = await fetch('/api/early-access', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ firstName, lastName, email }),
       });
-    } catch { /* best-effort */ }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setFormError(data?.error ?? (res.status === 429 ? t.duplicateEmail : t.genericError));
+        setFormState('idle');
+        return;
+      }
+    } catch {
+      setFormError(t.genericError);
+      setFormState('idle');
+      return;
+    }
     setFormState('done');
   }
 
@@ -628,6 +644,9 @@ export default function ComingSoonPage() {
                         )}
                     </motion.button>
                   </div>
+                  {formError && (
+                    <p className="mt-3 text-xs text-center" style={{ color: '#f87171' }}>{formError}</p>
+                  )}
                 </motion.form>
               )}
             </AnimatePresence>

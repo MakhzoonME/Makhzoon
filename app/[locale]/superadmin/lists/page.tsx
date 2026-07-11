@@ -83,10 +83,10 @@ export default function ListsPage() {
           sortOrder: editing.sortOrder,
         });
       }
-      toast.success('Saved');
+      toast.success(t('common.saved'));
       setEditing(null);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Save failed');
+      toast.error(e instanceof Error ? e.message : t('common.saveFailed'));
     }
   }
 
@@ -94,7 +94,7 @@ export default function ListsPage() {
     try {
       await updateMut.mutateAsync({ id: item.id, patch: { enabled: !item.enabled } });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Update failed');
+      toast.error(e instanceof Error ? e.message : t('common.updateFailed'));
     }
   }
 
@@ -102,10 +102,10 @@ export default function ListsPage() {
     if (!deleteTarget) return;
     try {
       await deleteMut.mutateAsync(deleteTarget.id);
-      toast.success('Deleted');
+      toast.success(t('common.deleted'));
       setDeleteTarget(null);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Delete failed');
+      toast.error(e instanceof Error ? e.message : t('common.deleteFailed'));
     }
   }
 
@@ -114,14 +114,14 @@ export default function ListsPage() {
       <PageHeader
         title={t('nav.lists')}
         breadcrumb={[{ label: t('nav.lists') }]}
-        description="Default dropdown options every organization inherits. Free lists are fully editable; system lists allow label/color/visibility only."
+        description={t('superadminLists.description')}
       />
 
       <div className="flex flex-col md:flex-row gap-6 mt-4">
         {/* List selector */}
         <aside className="md:w-56 flex-shrink-0 space-y-4">
-          <ListGroup title="Business lists" keys={FREE_KEYS} selected={selected} onSelect={setSelected} />
-          <ListGroup title="System lists" keys={SYSTEM_KEYS} selected={selected} onSelect={setSelected} locked />
+          <ListGroup title={t('superadminLists.businessLists')} keys={FREE_KEYS} selected={selected} onSelect={setSelected} />
+          <ListGroup title={t('superadminLists.systemLists')} keys={SYSTEM_KEYS} selected={selected} onSelect={setSelected} locked />
         </aside>
 
         {/* Items */}
@@ -132,7 +132,7 @@ export default function ListsPage() {
                 {meta.label}
                 {meta.isSystem && (
                   <span className="inline-flex items-center gap-1 text-xs text-amber-600">
-                    <Lock className="h-3 w-3" /> values locked
+                    <Lock className="h-3 w-3" /> {t('superadminLists.valuesLocked')}
                   </span>
                 )}
               </h2>
@@ -140,15 +140,15 @@ export default function ListsPage() {
             </div>
             {!meta.isSystem && (
               <Button size="sm" onClick={openAdd}>
-                <Plus className="h-4 w-4 me-1" /> Add item
+                <Plus className="h-4 w-4 me-1" /> {t('superadminLists.addItem')}
               </Button>
             )}
           </div>
 
           <div className="rounded-lg border border-border divide-y divide-border">
-            {isLoading && <div className="p-4 text-sm text-gray-500">Loading…</div>}
+            {isLoading && <div className="p-4 text-sm text-gray-500">{t('common.loading')}</div>}
             {!isLoading && items.length === 0 && (
-              <div className="p-4 text-sm text-gray-500">No items yet.</div>
+              <div className="p-4 text-sm text-gray-500">{t('superadminLists.noItemsYet')}</div>
             )}
             {items.map((item) => (
               <div key={item.id} className={cn('flex items-center gap-3 px-3 py-2.5', !item.enabled && 'opacity-50')}>
@@ -160,12 +160,12 @@ export default function ListsPage() {
                   <span className="text-sm text-gray-900">{item.label}</span>
                   <span className="ms-2 text-xs text-gray-400 font-mono">{item.value}</span>
                 </div>
-                <Switch checked={item.enabled} onCheckedChange={() => toggleEnabled(item)} aria-label="Enabled" />
-                <Button variant="ghost" size="icon" onClick={() => openEdit(item)} aria-label="Edit">
+                <Switch checked={item.enabled} onCheckedChange={() => toggleEnabled(item)} aria-label={t('superadminLists.enabled')} />
+                <Button variant="ghost" size="icon" onClick={() => openEdit(item)} aria-label={t('common.edit')}>
                   <Pencil className="h-4 w-4" />
                 </Button>
                 {!item.isSystem && (
-                  <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(item)} aria-label="Delete">
+                  <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(item)} aria-label={t('common.delete')}>
                     <Trash2 className="h-4 w-4 text-red-500" />
                   </Button>
                 )}
@@ -179,33 +179,33 @@ export default function ListsPage() {
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing?.id ? 'Edit item' : 'Add item'}</DialogTitle>
+            <DialogTitle>{editing?.id ? t('superadminLists.editItem') : t('superadminLists.addItem')}</DialogTitle>
             <DialogDescription>{meta.label}</DialogDescription>
           </DialogHeader>
           {editing && (
             <>
               <DialogBody className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label>Value {(!!editing.id || meta.isSystem) && <span className="text-gray-400">(locked)</span>}</Label>
+                  <Label>{t('superadminLists.value')} {(!!editing.id || meta.isSystem) && <span className="text-gray-400">{t('superadminLists.locked')}</span>}</Label>
                   <Input
                     value={editing.value}
                     disabled={!!editing.id || meta.isSystem}
                     onChange={(e) => setEditing({ ...editing, value: e.target.value })}
-                    placeholder="Stored value, e.g. Active"
+                    placeholder={t('superadminLists.storedValue')}
                     className="font-mono"
                   />
                 </div>
                 <div className="flex gap-3">
                   <div className="flex-1 space-y-1.5">
-                    <Label>Label (English)</Label>
+                    <Label>{t('superadminLists.labelEn')}</Label>
                     <Input
                       value={editing.label}
                       onChange={(e) => setEditing({ ...editing, label: e.target.value })}
-                      placeholder="Display label"
+                      placeholder={t('superadminLists.displayLabel')}
                     />
                   </div>
                   <div className="flex-1 space-y-1.5">
-                    <Label>Label (Arabic)</Label>
+                    <Label>{t('superadminLists.labelAr')}</Label>
                     <Input
                       value={editing.labelAr}
                       onChange={(e) => setEditing({ ...editing, labelAr: e.target.value })}
@@ -216,7 +216,7 @@ export default function ListsPage() {
                 </div>
                 <div className="flex gap-3">
                   <div className="flex-1 space-y-1.5">
-                    <Label>Color (hex, optional)</Label>
+                    <Label>{t('superadminLists.colorHex')}</Label>
                     <Input
                       value={editing.color}
                       onChange={(e) => setEditing({ ...editing, color: e.target.value })}
@@ -225,7 +225,7 @@ export default function ListsPage() {
                     />
                   </div>
                   <div className="w-24 space-y-1.5">
-                    <Label>Order</Label>
+                    <Label>{t('superadminLists.order')}</Label>
                     <Input
                       type="number"
                       value={editing.sortOrder}
@@ -235,9 +235,9 @@ export default function ListsPage() {
                 </div>
               </DialogBody>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setEditing(null)}>{t('common.cancel')}</Button>
                 <Button onClick={save} disabled={createMut.isPending || updateMut.isPending || !editing.label.trim() || (!editing.id && !editing.value.trim())}>
-                  Save
+                  {t('common.save')}
                 </Button>
               </DialogFooter>
             </>
@@ -248,9 +248,9 @@ export default function ListsPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
-        title="Delete item"
-        description={`Remove "${deleteTarget?.label}" from ${meta.label}? Organizations will no longer see it.`}
-        confirmLabel="Delete"
+        title={t('superadminLists.deleteItem')}
+        description={t('superadminLists.deleteItemDesc').replace('{label}', deleteTarget?.label ?? '').replace('{list}', meta.label)}
+        confirmLabel={t('common.delete')}
         onConfirm={confirmDelete}
       />
     </div>

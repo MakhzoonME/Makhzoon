@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -38,8 +39,9 @@ export function AssetQRCard({ assetId, assetName, orgSlug, locale, space = 'defa
     queryKey: ['asset-qr', assetId, orgSlug, locale, space],
     queryFn: async () => {
       const origin = window.location.origin;
-      const assetPageUrl = `${origin}/${locale}/${orgSlug}/${space}/usool/${assetId}`;
-      const res = await fetch(`/api/assets/${assetId}/qr?url=${encodeURIComponent(assetPageUrl)}`);
+      // QR opens a public, read-only guest view — no login required.
+      const guestViewUrl = `${origin}/${locale}/asset/${orgSlug}/${space}/${assetId}`;
+      const res = await fetch(`/api/assets/${assetId}/qr?url=${encodeURIComponent(guestViewUrl)}`);
       if (!res.ok) throw new Error('Failed to generate QR');
       return res.json();
     },
@@ -58,30 +60,33 @@ export function AssetQRCard({ assetId, assetName, orgSlug, locale, space = 'defa
     if (!data?.dataUrl) return;
     const win = window.open('', '_blank', 'width=400,height=500');
     if (!win) return;
-    win.document.write(`
-      <html>
-        <head>
-          <title>QR label — ${assetName}</title>
-          <style>
-            body { font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 24px; margin: 0; }
-            .label { border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; text-align: center; max-width: 280px; }
-            img { width: 240px; height: 240px; display: block; margin: 0 auto 12px; }
-            h1 { font-size: 14px; margin: 0 0 4px; color: #111827; }
-            p { font-size: 11px; color: #6b7280; margin: 0; word-break: break-all; }
-            @media print { body { padding: 0; } .label { border: none; } }
-          </style>
-        </head>
-        <body>
-          <div class="label">
-            <img src="${data.dataUrl}" alt="QR" />
-            <h1>${assetName}</h1>
-            <p>${data.url}</p>
-          </div>
-          <script>window.onload = () => window.print();</script>
-        </body>
-      </html>
-    `);
-    win.document.close();
+    const doc = win.document;
+    doc.title = `QR label — ${assetName}`;
+    const style = doc.createElement('style');
+    style.textContent = `body { font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 24px; margin: 0; }
+      .label { border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; text-align: center; max-width: 280px; }
+      img { width: 240px; height: 240px; display: block; margin: 0 auto 12px; }
+      h1 { font-size: 14px; margin: 0 0 4px; color: #111827; }
+      p { font-size: 11px; color: #6b7280; margin: 0; word-break: break-all; }
+      @media print { body { padding: 0; } .label { border: none; } }`;
+    doc.head.appendChild(style);
+    const label = doc.createElement('div');
+    label.className = 'label';
+    const img = doc.createElement('img');
+    img.src = data.dataUrl;
+    img.alt = 'QR';
+    label.appendChild(img);
+    const h1 = doc.createElement('h1');
+    h1.textContent = assetName;
+    label.appendChild(h1);
+    const p = doc.createElement('p');
+    p.textContent = data.url;
+    label.appendChild(p);
+    doc.body.appendChild(label);
+    const script = doc.createElement('script');
+    script.textContent = 'window.onload = () => window.print();';
+    doc.body.appendChild(script);
+    doc.close();
   }
 
   return (

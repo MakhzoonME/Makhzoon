@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Haraka · Transaction Detail — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="transactions" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+
+          <!-- Module header -->
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <a href="haraka-transactions.html" class="text-sm text-slate-500 hover:text-slate-800 inline-flex items-center gap-1">
+                <i data-lucide="arrow-left" class="!w-4 !h-4"></i>Transactions
+              </a>
+              <span class="text-slate-300">/</span>
+              <div class="flex items-center gap-2">
+                <h1 class="text-xl font-semibold text-slate-900">Haraka <span class="text-slate-400 font-normal text-base">· Transaction</span></h1>
+                <span id="txn-id-badge" class="text-haraka font-mono text-xs font-semibold"></span>
+                <span id="status-badge"></span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="h-9 px-3 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1.5">
+                <i data-lucide="printer" class="!w-4 !h-4"></i>Print Receipt
+              </button>
+              <button onclick="if(confirm('Refund this transaction?')){alert('Refund initiated.');}" class="h-9 px-3 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1.5">
+                <i data-lucide="rotate-ccw" class="!w-4 !h-4"></i>Refund
+              </button>
+              <button onclick="if(confirm('Void this transaction? This cannot be undone.')){alert('Transaction voided.');}" class="h-9 px-3 rounded-lg border border-red-200 text-sm font-medium text-red-600 hover:bg-red-50 inline-flex items-center gap-1.5">
+                <i data-lucide="ban" class="!w-4 !h-4"></i>Void
+              </button>
+            </div>
+          </div>
+
+          <!-- Two-column layout -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Left: meta + line items -->
+            <div class="lg:col-span-2 flex flex-col gap-6">
+
+              <!-- Meta row -->
+              <div class="bg-white rounded-xl border border-slate-200 border-l-4 border-l-haraka p-5">
+                <div id="meta-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
+              </div>
+
+              <!-- Line items table -->
+              <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div class="px-4 py-3 border-b border-slate-100">
+                  <h2 class="text-sm font-semibold text-slate-700">Line Items</h2>
+                </div>
+                <table class="w-full text-sm">
+                  <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="px-4 py-3 text-left font-semibold">Item</th>
+                      <th class="px-4 py-3 text-right font-semibold">Qty</th>
+                      <th class="px-4 py-3 text-right font-semibold">Unit Price</th>
+                      <th class="px-4 py-3 text-right font-semibold">Line Total</th>
+                    </tr>
+                  </thead>
+                  <tbody id="item-rows" class="divide-y divide-slate-100"></tbody>
+                </table>
+              </div>
+
+            </div>
+
+            <!-- Right: summary card -->
+            <div class="lg:col-span-1">
+              <div class="bg-white rounded-xl border border-slate-200 overflow-hidden sticky top-6">
+                <div class="px-5 py-4 border-b border-slate-100 bg-slate-50">
+                  <h2 class="text-sm font-semibold text-slate-700">Payment Summary</h2>
+                </div>
+                <div id="summary-card" class="px-5 py-4 flex flex-col gap-3 text-sm"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-haraka.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const td = App.seed.transactionDetail;
+    const TV = App.seed.txnStatusVariant;
+
+    // Header badges
+    document.getElementById('txn-id-badge').textContent = td.id;
+    document.getElementById('status-badge').innerHTML = App.ui.badge(td.status, TV[td.status]);
+
+    // Meta grid
+    const meta = [
+      { label: 'Cashier', value: td.cashier },
+      { label: 'Session', value: `<a href="haraka-session-detail.html" class="text-haraka font-mono text-xs font-semibold hover:underline">${td.session}</a>` },
+      { label: 'Customer', value: td.customer },
+      { label: 'Payment Method', value: td.method },
+      { label: 'Time', value: `<span class="font-mono text-xs text-slate-500">${td.time}</span>` },
+    ];
+    document.getElementById('meta-grid').innerHTML = meta.map((m) => `
+      <div>
+        <div class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold mb-1">${m.label}</div>
+        <div class="text-sm text-slate-800">${m.value}</div>
+      </div>`).join('');
+
+    // Line items
+    document.getElementById('item-rows').innerHTML = td.items.map((item) => `
+      <tr class="hover:bg-slate-50">
+        <td class="px-4 py-3 text-slate-700">${item.name}</td>
+        <td class="px-4 py-3 text-right text-slate-600">${item.qty}</td>
+        <td class="px-4 py-3 text-right font-mono text-slate-600">${App.ui.money(item.price)}</td>
+        <td class="px-4 py-3 text-right font-mono font-medium text-slate-800">${App.ui.money(item.qty * item.price)}</td>
+      </tr>`).join('');
+
+    // Summary card
+    const rows = [
+      { label: 'Subtotal', value: App.ui.money(td.subtotal), muted: true },
+      { label: 'Tax (16%)', value: App.ui.money(td.tax), muted: true },
+      { label: 'Total', value: App.ui.money(td.total), bold: true, divider: true },
+      { label: 'Tendered', value: App.ui.money(td.tendered), muted: true },
+      { label: 'Change Due', value: App.ui.money(td.change), muted: true },
+    ];
+    document.getElementById('summary-card').innerHTML = rows.map((r) => `
+      ${r.divider ? '<div class="border-t border-slate-100 -mx-5"></div>' : ''}
+      <div class="flex items-center justify-between ${r.bold ? 'font-semibold text-slate-900 text-base' : 'text-slate-600'}">
+        <span>${r.label}</span>
+        <span class="font-mono">${r.value}</span>
+      </div>`).join('');
+
+    App.ui.icons();
+  </script>
+</body>
+</html>

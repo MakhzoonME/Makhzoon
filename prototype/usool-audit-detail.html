@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Asset Audit Detail — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="usool-audits" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6 max-w-5xl mx-auto">
+          <a href="usool-audits.html" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 mb-3"><i data-lucide="arrow-left" class="!w-4 !h-4"></i>Audits</a>
+          <div class="flex items-center gap-3 mb-5">
+            <span class="w-1.5 h-8 rounded bg-usool"></span>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-xl font-semibold text-slate-900" id="audit-id"></h1>
+                <span id="audit-badge"></span>
+              </div>
+              <p class="text-sm text-slate-500" id="audit-sub"></p>
+            </div>
+          </div>
+
+          <!-- Summary row -->
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-5">
+            <div class="bg-white rounded-xl border border-slate-200 border-l-4 p-3" style="border-left-color:#00695C">
+              <div class="text-[12px] font-medium text-slate-400 mb-0.5">Space</div>
+              <div class="text-sm font-semibold text-slate-900" id="s-space"></div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 border-l-4 p-3" style="border-left-color:#00695C">
+              <div class="text-[12px] font-medium text-slate-400 mb-0.5">Audited By</div>
+              <div class="text-sm font-semibold text-slate-900" id="s-by"></div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 border-l-4 p-3" style="border-left-color:#00695C">
+              <div class="text-[12px] font-medium text-slate-400 mb-0.5">Started</div>
+              <div class="text-sm font-semibold text-slate-900" id="s-started"></div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 border-l-4 p-3" style="border-left-color:#00695C">
+              <div class="text-[12px] font-medium text-slate-400 mb-0.5">Ended</div>
+              <div class="text-sm font-semibold text-slate-900" id="s-ended"></div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 border-l-4 p-3" style="border-left-color:#00695C">
+              <div class="text-[12px] font-medium text-slate-400 mb-0.5">Total Assets</div>
+              <div class="text-sm font-semibold text-slate-900" id="s-total"></div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 border-l-4 p-3" style="border-left-color:#00695C">
+              <div class="text-[12px] font-medium text-slate-400 mb-0.5">Matched</div>
+              <div class="text-sm font-semibold text-green-700" id="s-matched"></div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 border-l-4 p-3" style="border-left-color:#00695C">
+              <div class="text-[12px] font-medium text-slate-400 mb-0.5">Discrepancies</div>
+              <div class="text-sm font-semibold" id="s-disc"></div>
+            </div>
+          </div>
+
+          <!-- Items table -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100">
+              <h2 class="text-sm font-semibold text-slate-700">Audit Items</h2>
+            </div>
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wide">
+                <tr>
+                  <th class="px-4 py-3 text-left font-semibold">Asset Name</th>
+                  <th class="px-4 py-3 text-left font-semibold">Asset ID</th>
+                  <th class="px-4 py-3 text-right font-semibold">Expected</th>
+                  <th class="px-4 py-3 text-right font-semibold">Counted</th>
+                  <th class="px-4 py-3 text-right font-semibold">Variance</th>
+                  <th class="px-4 py-3 text-center font-semibold">Match</th>
+                </tr>
+              </thead>
+              <tbody id="rows" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/data/seed-misc.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const audit = App.seed.usoolAuditDetail;
+    const V = App.seed.usoolAuditStatusVariant;
+    document.getElementById('audit-id').textContent = audit.id;
+    document.getElementById('audit-badge').innerHTML = App.ui.badge(audit.status.replace('_', ' '), V[audit.status]);
+    document.getElementById('audit-sub').textContent = audit.space + ' · ' + audit.started;
+    document.getElementById('s-space').textContent = audit.space;
+    document.getElementById('s-by').textContent = audit.by;
+    document.getElementById('s-started').textContent = audit.started;
+    document.getElementById('s-ended').textContent = audit.ended;
+    document.getElementById('s-total').textContent = audit.total;
+    document.getElementById('s-matched').textContent = audit.matched;
+    const discEl = document.getElementById('s-disc');
+    discEl.textContent = audit.discrepancies;
+    discEl.className = 'text-sm font-semibold ' + (audit.discrepancies > 0 ? 'text-red-600' : 'text-slate-400');
+
+    document.getElementById('rows').innerHTML = audit.items.map((i) => {
+      const v = i.counted - i.expected;
+      const vText = v === 0 ? '0' : (v > 0 ? '+' + v : v);
+      const vClass = v < 0 ? 'text-red-600 font-semibold' : v > 0 ? 'text-green-600 font-semibold' : 'text-slate-400';
+      const matchIcon = i.match
+        ? `<i data-lucide="circle-check" class="!w-5 !h-5 text-green-500"></i>`
+        : `<i data-lucide="circle-x" class="!w-5 !h-5 text-red-400"></i>`;
+      return `<tr class="hover:bg-slate-50">
+        <td class="px-4 py-3 font-medium text-slate-800">${i.asset}</td>
+        <td class="px-4 py-3 font-mono text-xs text-usool">${i.assetId}</td>
+        <td class="px-4 py-3 text-right text-slate-600">${i.expected}</td>
+        <td class="px-4 py-3 text-right text-slate-700 font-medium">${i.counted}</td>
+        <td class="px-4 py-3 text-right ${vClass}">${vText}</td>
+        <td class="px-4 py-3 text-center">${matchIcon}</td>
+      </tr>`;
+    }).join('');
+    App.ui.icons();
+  </script>
+</body>
+</html>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import { hasPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
+import { notificationQueue } from '@/lib/notifications/notification-queue'
 import { eventBus } from '@/lib/platform/events/event-bus'
 import {
   TransactionsRepository,
@@ -63,6 +64,8 @@ export class TransactionsService {
   async completeSale(tenant: TenantContext, input: CompleteSaleInput) {
     requirePos(tenant, 'process_sale')
     requireActiveSubscription(tenant)
+    const hasDiscount = input.lines.some((l) => l.discount > 0)
+    if (hasDiscount) requirePos(tenant, 'apply_discount')
     const tx = await repo.completeSale(tenant, input)
     auditLog.queue({
       tenant,
@@ -83,6 +86,7 @@ export class TransactionsService {
     requirePos(tenant, 'void_transaction')
     await repo.voidTransaction(tenant, id)
     auditLog.queue({ tenant, module: 'pos', action: 'POS_SALE_VOIDED', recordId: id })
+    notificationQueue.enqueue({ tenant, eventType: 'pos.sale_voided', data: { id }, link: `/haraka/transactions/${id}`, titleOverride: 'Sale voided' })
     await eventBus.emit('pos.transaction.voided', { tenant, id })
   }
 
@@ -105,6 +109,7 @@ export class TransactionsService {
       newValue: { refundTransactionId: result.refundTransactionId, reason: opts.reason ?? null },
     })
     await eventBus.emit('pos.transaction.refunded', { tenant, id, ...result })
+    notificationQueue.enqueue({ tenant, eventType: 'pos.refund_issued', data: { id, reason: opts.reason ?? null }, link: `/haraka/transactions/${id}`, titleOverride: 'Refund issued' })
     // A refund creates a new transaction with parentTransactionId set — submit it
     // as a credit-note to Fawtara (the mapper picks up the parent reference).
     if (result.refundTransactionId) fireAndForgetFawtara(tenant, result.refundTransactionId)

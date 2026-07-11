@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { startOfDay, endOfDay } from 'date-fns';
 import { Banknote, Receipt, Users, Layers, Plus, ListChecks, ArrowRight } from 'lucide-react';
-import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
+import { useOrgSlug, useSpace, useT, useModuleGuard } from '@/hooks/ui';
 import { PageHeader, StatCard, OverviewSection, DataTable, StatusBadge, SubscriptionGate } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
 import { Button } from '@/components/ui/button';
@@ -60,7 +60,7 @@ function SessionCard({ base }: { base: string }) {
         <p className="text-sm text-gray-500 mt-0.5">{t('haraka.openSessionDesc')}</p>
       </div>
       <SubscriptionGate>
-        <Button size="sm" style={{ background: 'var(--mod-haraka)' }} onClick={() => router.push(`${base}/sessions/new`)}>
+        <Button size="sm" style={{ background: 'var(--mod-haraka)' }} onClick={() => router.push(`${base}/sessions`)}>
           <Plus className="h-4 w-4 me-1" /> {t('haraka.openNewSession')}
         </Button>
       </SubscriptionGate>
@@ -69,6 +69,7 @@ function SessionCard({ base }: { base: string }) {
 }
 
 export default function HarakaOverviewPage() {
+  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const space = useSpace();
@@ -90,6 +91,8 @@ export default function HarakaOverviewPage() {
   const openCount = openSessions?.total ?? 0;
   const customerCount = customers?.total ?? 0;
   const recent = txns?.items ?? [];
+
+  if (!isAllowed) return null;
 
   const recentColumns: ColumnDef<PosTransaction>[] = [
     {

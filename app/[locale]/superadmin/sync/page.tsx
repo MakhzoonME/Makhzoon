@@ -77,7 +77,7 @@ export default function SyncPage() {
       return res.json();
     },
     onSuccess: (_data, vars) => {
-      toast.success(`Sync ${vars.source} -> ${vars.target} dispatched. Watch the run list below.`);
+      toast.success(t('sync.dispatchSuccess').replace('{source}', vars.source).replace('{target}', vars.target));
       qc.invalidateQueries({ queryKey: ['superadmin-sync-runs'] });
       setPending(null);
     },
@@ -95,15 +95,12 @@ export default function SyncPage() {
 
       {tokenMissing && (
         <div className="bg-[var(--yellow-100)] border border-[var(--yellow-100)] rounded-lg p-4 text-sm text-[var(--yellow-700)]">
-          <strong>Setup required.</strong> Set <code>GITHUB_DISPATCH_TOKEN</code> (fine-grained PAT with{' '}
-          <code>actions:write</code> on this repo) and optionally <code>GITHUB_REPO</code> / <code>GITHUB_REF_BRANCH</code>{' '}
-          in this environment before the buttons will work.
+          <strong>{t('sync.setupRequired')}</strong> {t('sync.setupBody')}
         </div>
       )}
 
       <div className="bg-[var(--red-100)] border border-[var(--red-100)] rounded-lg p-4 text-sm text-[var(--red-700)]">
-        <strong>Heads up:</strong> these actions overwrite the target environment with no scrubbing. Real customer data
-        will be visible in the target. Confirm twice before clicking on prod-as-source.
+        <strong>{t('sync.headsUp')}</strong> {t('sync.headsUpBody')}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -129,27 +126,27 @@ export default function SyncPage() {
               disabled={dispatchMutation.isPending}
             >
               <RefreshCw className={cn('h-3.5 w-3.5 me-1', dispatchMutation.isPending && 'animate-spin')} />
-              Run sync
+              {t('sync.runSync')}
             </Button>
           </div>
         ))}
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">Recent runs</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('sync.recentRuns')}</h3>
         <div className="bg-surface-card border border-border rounded-lg overflow-hidden">
           {isLoading ? (
-            <div className="p-4 text-sm text-gray-500">Loading…</div>
+            <div className="p-4 text-sm text-gray-500">{t('common.loading')}</div>
           ) : runs.length === 0 ? (
-            <div className="p-4 text-sm text-gray-500">No runs yet.</div>
+            <div className="p-4 text-sm text-gray-500">{t('sync.noRuns')}</div>
           ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-page">
-                  <th className="text-start px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Title</th>
-                  <th className="text-start px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Event</th>
-                  <th className="text-start px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                  <th className="text-start px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Started</th>
+                  <th className="text-start px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{t('sync.tableTitle')}</th>
+                  <th className="text-start px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{t('sync.tableEvent')}</th>
+                  <th className="text-start px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{t('sync.tableStatus')}</th>
+                  <th className="text-start px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{t('sync.tableStarted')}</th>
                   <th className="px-3 py-2" />
                 </tr>
               </thead>
@@ -173,7 +170,7 @@ export default function SyncPage() {
                         rel="noopener noreferrer"
                         className="text-primary-600 hover:text-primary-700 inline-flex items-center text-xs"
                       >
-                        Logs <ExternalLink className="h-3 w-3 ms-1" />
+                        {t('sync.logs')} <ExternalLink className="h-3 w-3 ms-1" />
                       </a>
                     </td>
                   </tr>
@@ -187,13 +184,13 @@ export default function SyncPage() {
       <ConfirmDialog
         open={!!pending}
         onOpenChange={(o) => !o && setPending(null)}
-        title={pending ? `Sync ${pending.source} -> ${pending.target}?` : ''}
+        title={pending ? t('sync.confirmTitle').replace('{source}', pending.source).replace('{target}', pending.target) : ''}
         description={
           pending
-            ? `This will OVERWRITE every matching document in ${PROJECT_LABEL[pending.target]} with data from ${PROJECT_LABEL[pending.source]}. PII is not scrubbed. The sync runs as a GitHub Actions workflow — you can watch it below.`
+            ? t('sync.confirmDesc').replace('{targetProject}', PROJECT_LABEL[pending.target]).replace('{sourceProject}', PROJECT_LABEL[pending.source])
             : ''
         }
-        confirmLabel="Run sync"
+        confirmLabel={t('sync.runSync')}
         variant="destructive"
         onConfirm={() => {
           if (!pending) return;

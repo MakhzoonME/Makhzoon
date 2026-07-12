@@ -353,54 +353,6 @@ export interface HarakaServiceJob {
   updatedBy: string | null;
 }
 
-// ── Haraka Reception Tickets ──────────────────────────────────────────────
-
-export type ReceptionTicketStatus = 'open' | 'paid' | 'cancelled';
-
-/** Summary of the ticket's linked service job, embedded in API responses so
- *  reception staff don't need service-jobs permissions to see their ticket. */
-export interface ReceptionTicketJobSummary {
-  id: string;
-  jobNumber: string;
-  status: ServiceJobStatus;
-  paymentStatus: OrderPaymentStatus;
-  total: number;
-  items: ServiceLine[];
-}
-
-export interface HarakaReceptionTicket {
-  id: string;
-  organizationId: string;
-  spaceId: string | null;
-  ticketNumber: string;
-  status: ReceptionTicketStatus;
-  customerId: string | null;
-  customerName: string;
-  customerPhone: string | null;
-  /** Vehicle plate number — third searchable customer identifier (garages etc.). */
-  carPlate: string | null;
-  /** Product lines (POS-enabled inventory items) — same shape as PosTransaction.items. */
-  items: PosLineItem[];
-  /** Linked service job carrying the ticket's service lines (one job per ticket). */
-  serviceJobId: string | null;
-  /** Populated by the API from the linked job (null when no services). */
-  serviceJob?: ReceptionTicketJobSummary | null;
-  productsSubtotal: number;
-  productsDiscount: number;
-  productsTax: number;
-  productsTotal: number;
-  servicesTotal: number;
-  grandTotal: number;
-  notes: string | null;
-  scheduledAt: Date | null;
-  posTransactionId: string | null;
-  paidAt: Date | null;
-  createdAt: Date;
-  createdBy: string | null;
-  updatedAt: Date;
-  updatedBy: string | null;
-}
-
 // ── Haraka Retainers ──────────────────────────────────────────────────────
 
 export type RetainerStatus = 'active' | 'paused' | 'cancelled' | 'expired';

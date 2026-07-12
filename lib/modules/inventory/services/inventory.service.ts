@@ -19,16 +19,13 @@ function requirePermission(tenant: TenantContext, module: 'inventory', operation
 
 /**
  * Read gate for the POS-scoped catalog (posEnabled items / barcode scan on
- * the register, or product lines on a reception ticket). A user with
- * `pos.add_receipt_items` (register) or `pos.manage_reception` (front-desk
- * ticket editing) but no Inventory-module access still needs to read the
- * posEnabled subset of the catalog — full `inventory.view` is one way in,
- * but not the only one here.
+ * the register). A user with `pos.add_receipt_items` but no Inventory-module
+ * access still needs to read the posEnabled subset of the catalog — full
+ * `inventory.view` is one way in, but not the only one here.
  */
 function requireInventoryReadForPos(tenant: TenantContext): void {
   if (hasPermission(tenant, 'inventory', 'view')) return
   if (hasPermission(tenant, 'pos', 'add_receipt_items')) return
-  if (hasPermission(tenant, 'pos', 'manage_reception')) return
   throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 }
 

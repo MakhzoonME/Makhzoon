@@ -37,8 +37,8 @@ export function hasPermission(
 
 export function hasModuleAccess(user: AuthUser, module: keyof UserPermissions): boolean {
   // The pos module has no 'view' gate — any granted operation implies module
-  // access (a receptionist with only view_reception, a cashier with only
-  // process_sale). Without this, hasPermission('pos','view') hits the
+  // access (a front-desk user with only add_receipt_items, a cashier with
+  // only process_sale). Without this, hasPermission('pos','view') hits the
   // missing-key admin fallback and locks out ALL staff.
   if (module === 'pos' && user.permissions?.pos) {
     return Object.values(user.permissions.pos).some((v) => v === true);

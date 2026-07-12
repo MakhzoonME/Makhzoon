@@ -131,6 +131,7 @@ function CustomerPickerDialog({
       });
       toast.success('Customer created');
       onOpenChange(false);
+      return { id };
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Save failed');
     }

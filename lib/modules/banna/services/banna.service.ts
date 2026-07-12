@@ -8,7 +8,7 @@ import { auditLog } from '@/lib/platform/audit';
 export class BannaService {
   private repo = new BannaRepository();
 
-  async getCustomFields(tenant: TenantContext, opts?: { module?: 'assets' | 'inventory' | 'requests' }) {
+  async getCustomFields(tenant: TenantContext, opts?: { module?: 'assets' | 'inventory' | 'requests' | 'customers' }) {
     if (!hasPermission(tenant, 'banna', 'view'))
       throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     return this.repo.getAll(tenant, opts);

@@ -21,6 +21,7 @@ export default function NewCustomerPage() {
       const { id } = await createMut.mutateAsync(values);
       toast.success(t('customers.addCustomer'));
       router.replace(`${base}/${id}`);
+      return { id };
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('common.saveFailed'));
     }

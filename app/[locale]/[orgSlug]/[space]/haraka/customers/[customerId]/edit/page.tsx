@@ -25,6 +25,7 @@ export default function EditCustomerPage() {
       await updateMut.mutateAsync({ id: params.customerId, patch: values });
       toast.success(t('common.updated'));
       router.replace(`${base}/${params.customerId}`);
+      return { id: params.customerId };
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('common.saveFailed'));
     }
@@ -53,6 +54,7 @@ export default function EditCustomerPage() {
           taxNumber: customer.taxNumber,
           notes: customer.notes,
         }}
+        recordId={customer.id}
         submitLabel={t('common.saveChanges')}
         loading={updateMut.isPending}
         onSubmit={handleSubmit}

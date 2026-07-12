@@ -4,7 +4,7 @@ import type { TenantContext } from '@/lib/platform/tenancy/types';
 import type { CustomField, CreateCustomFieldInput, UpdateCustomFieldInput } from '@/types/banna.types';
 
 export interface GetAllCustomFieldsOpts {
-  module?: 'assets' | 'inventory' | 'requests';
+  module?: 'assets' | 'inventory' | 'requests' | 'customers';
   isActive?: boolean;
 }
 

@@ -27,6 +27,7 @@ import { Pencil, AlertTriangle, TrendingUp, TrendingDown, RefreshCw, ArrowRight,
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
 import { useAccessibleSpaces } from '@/hooks/spaces';
+import { useTaxRates } from '@/hooks/haraka';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
 import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
@@ -108,6 +109,8 @@ export default function InventoryItemDetailPage() {
   const { data: item, isLoading }             = useInventoryItem(itemId);
   const { data: txData,  isLoading: txLoading } = useInventoryTransactions(itemId);
   const { data: warrantiesResponse, isLoading: wLoading } = useWarranties({ inventoryItemId: itemId });
+  const { data: taxRatesData } = useTaxRates();
+  const taxRates = taxRatesData?.taxRates ?? [];
   const transactions = txData?.transactions ?? [];
   const warranties   = warrantiesResponse?.items ?? [];
 
@@ -313,6 +316,9 @@ export default function InventoryItemDetailPage() {
             <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('assetDetail.detailsTitle')}</h3>
             <KVRow label={t('col.category')}>{item.category}</KVRow>
             {item.sku && <KVRow label={t('inventory.sku')}><span className="font-mono text-xs">{item.sku}</span></KVRow>}
+            {!isService && item.barcode && (
+              <KVRow label={t('inventory.barcode')}><span className="font-mono text-xs">{item.barcode}</span></KVRow>
+            )}
             {!isService && (
               <>
                 <KVRow label={t('inventory.onHand')}>
@@ -340,6 +346,24 @@ export default function InventoryItemDetailPage() {
                   </span>
                 </KVRow>
               );
+            })()}
+            <KVRow label={t('inventory.sellInPos')}>
+              <span className={item.posEnabled ? 'text-[var(--green-700)]' : 'text-gray-400'}>
+                {item.posEnabled ? t('common.yes') : t('common.no')}
+              </span>
+            </KVRow>
+            {item.posEnabled && item.posPrice != null && (
+              <KVRow label={t('inventory.posPrice')}>
+                <span className="font-mono tabular-nums">{item.posPrice.toFixed(2)} JOD</span>
+              </KVRow>
+            )}
+            {item.posEnabled && item.taxRateId && (() => {
+              const tr = taxRates.find((r) => r.id === item.taxRateId);
+              return tr ? (
+                <KVRow label={t('inventory.taxRate')}>
+                  {tr.name} ({(tr.rate * 100).toFixed(2)}%)
+                </KVRow>
+              ) : null;
             })()}
             {item.notes && (
               <div className="mt-4 pt-4 border-t border-border">

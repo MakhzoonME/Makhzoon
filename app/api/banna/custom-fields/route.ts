@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     if (limited) return limited;
 
     const { searchParams } = new URL(req.url);
-    const moduleFilter = searchParams.get('module') as 'assets' | 'inventory' | 'requests' | undefined;
+    const moduleFilter = searchParams.get('module') as 'assets' | 'inventory' | 'requests' | 'customers' | undefined;
 
     const fields = await service.getCustomFields(tenant, moduleFilter ? { module: moduleFilter } : undefined);
     return NextResponse.json({ items: fields });

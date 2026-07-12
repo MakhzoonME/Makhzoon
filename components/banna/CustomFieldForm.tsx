@@ -25,6 +25,7 @@ const MODULES = [
   { value: 'assets', label: 'Assets' },
   { value: 'inventory', label: 'Inventory' },
   { value: 'requests', label: 'Requests' },
+  { value: 'customers', label: 'Customers' },
 ];
 
 export interface CustomFieldFormData {
@@ -42,14 +43,18 @@ export interface CustomFieldFormData {
 
 interface CustomFieldFormProps {
   initial?: CustomField;
+  /** When set, locks the module to this value and hides the module picker
+   *  (used when creating a field inline from within another entity's form,
+   *  e.g. the customer-creation modal). */
+  fixedModule?: string;
   onSubmit: (data: CustomFieldFormData) => Promise<void>;
   onCancel: () => void;
   submitting?: boolean;
 }
 
-export function CustomFieldForm({ initial, onSubmit, onCancel, submitting }: CustomFieldFormProps) {
+export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, submitting }: CustomFieldFormProps) {
   const { t } = useT();
-  const [module, setModule] = useState(initial?.module ?? 'assets');
+  const [module, setModule] = useState(initial?.module ?? fixedModule ?? 'assets');
   const [fieldKey, setFieldKey] = useState(initial?.fieldKey ?? '');
   const [type, setType] = useState<CustomFieldType>(initial?.type ?? 'text');
   const [label, setLabel] = useState(initial?.label ?? '');
@@ -75,17 +80,19 @@ export function CustomFieldForm({ initial, onSubmit, onCancel, submitting }: Cus
   return (
     <form onSubmit={handleSubmit} className="space-y-4 px-6 pt-4 pb-2">
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label>{t('banna.fieldModule')}</Label>
-          <Select value={module} onValueChange={setModule} disabled={!!initial}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {MODULES.map((m) => (
-                <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {!fixedModule && (
+          <div className="space-y-1.5">
+            <Label>{t('banna.fieldModule')}</Label>
+            <Select value={module} onValueChange={setModule} disabled={!!initial}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {MODULES.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="space-y-1.5">
           <Label>{t('banna.fieldType')}</Label>
           <Select value={type} onValueChange={(v) => setType(v as CustomFieldType)} disabled={!!initial}>

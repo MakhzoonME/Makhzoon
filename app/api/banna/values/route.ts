@@ -9,14 +9,14 @@ import { z } from 'zod';
 const service = new BannaValuesService();
 
 const saveValuesSchema = z.object({
-  recordType: z.enum(['assets', 'inventory', 'requests']),
+  recordType: z.enum(['assets', 'inventory', 'requests', 'customers']),
   recordId: z.string().min(1).max(128),
   values: z.array(z.object({
     fieldId: z.string().min(1),
     value: z.unknown(),
   }).passthrough()),
 });
-const VALID_RECORD_TYPES = new Set<CustomFieldRecordType>(['assets', 'inventory', 'requests']);
+const VALID_RECORD_TYPES = new Set<CustomFieldRecordType>(['assets', 'inventory', 'requests', 'customers']);
 
 export async function GET(req: NextRequest) {
   try {

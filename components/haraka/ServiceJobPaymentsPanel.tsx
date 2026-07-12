@@ -19,6 +19,7 @@ interface Props {
   job:       HarakaServiceJob;
   currency?: string;
   onUpdated?: () => void;
+  readOnly?: boolean;
 }
 
 const PAY_STATUS_STYLE: Record<string, string> = {
@@ -27,7 +28,7 @@ const PAY_STATUS_STYLE: Record<string, string> = {
   unpaid:  'bg-[var(--red-100)] text-[var(--red-700)]',
 };
 
-export function ServiceJobPaymentsPanel({ job, currency = 'JOD', onUpdated }: Props) {
+export function ServiceJobPaymentsPanel({ job, currency = 'JOD', onUpdated, readOnly }: Props) {
   const { data } = useServiceJobPayments(job.id);
   const addMut    = useAddServiceJobPayment();
   const removeMut = useRemoveServiceJobPayment();
@@ -80,7 +81,7 @@ export function ServiceJobPaymentsPanel({ job, currency = 'JOD', onUpdated }: Pr
                 {p.note && <span className="text-gray-400 text-xs">— {p.note}</span>}
               </div>
               <span className="font-mono font-medium text-gray-800">{formatCurrency(p.amount, currency)}</span>
-              {job.status !== 'cancelled' && (
+              {!readOnly && job.status !== 'cancelled' && (
                 <Button
                   size="sm" variant="ghost"
                   className="text-red-400 hover:text-red-600 hover:bg-red-50 h-6 w-6 p-0"
@@ -117,7 +118,7 @@ export function ServiceJobPaymentsPanel({ job, currency = 'JOD', onUpdated }: Pr
         )}
       </div>
 
-      {job.status !== 'cancelled' && (
+      {!readOnly && job.status !== 'cancelled' && (
         <>
           {!showForm ? (
             <button

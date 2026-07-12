@@ -237,7 +237,10 @@ export function getFirstAccessiblePath(opts: {
       if (permKey) {
         const [modKey, opKey = 'view'] = permKey.split('.');
         const mod = opts.permissions[modKey];
-        if (mod && mod[opKey] === false) continue;
+        // Require an explicit grant when the module block exists — an absent
+        // key (e.g. 'pos.view', which doesn't exist as an op) means no access
+        // for staff, so don't land them on a page their guard will blank out.
+        if (mod && mod[opKey] !== true) continue;
       }
     }
     // If the caller passed orgSlug + space, build a full per-tenant URL.

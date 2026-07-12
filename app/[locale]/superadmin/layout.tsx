@@ -315,6 +315,10 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
             {/* Right: controls */}
             <div className="flex items-center gap-1">
+              {/* PageHeader portals page-level action buttons (e.g. "Create
+                  Organization") into this slot — without it they fall back to
+                  document.body and never appear. */}
+              <div id="header-actions-slot" className="flex items-center gap-2 me-2" />
               <NetworkStatusIndicator variant="ghost-dark" />
               <ThemeToggle variant="ghost-dark" />
               <LanguageToggle variant="ghost-dark" />

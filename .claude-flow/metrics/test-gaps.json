@@ -1,12 +1,8 @@
 {
-  "timestamp": "2026-05-09T12:49:05.041Z",
-  "mode": "headless",
-  "workerType": "testgaps",
-  "model": "sonnet",
-  "durationMs": 3,
-  "executionId": "testgaps_1778330945038_y6l9ij",
-  "success": false,
-  "findings": null,
-  "rawOutputPreview": "",
-  "rawOutputLength": 0
+  "timestamp": "2026-07-12T09:08:18.824Z",
+  "mode": "local",
+  "hasTestDir": true,
+  "estimatedCoverage": "unknown",
+  "gaps": [],
+  "note": "Install Claude Code CLI for AI-powered test gap analysis"
 }

@@ -1,12 +1,17 @@
 {
-  "timestamp": "2026-05-09T12:49:05.258Z",
-  "mode": "headless",
-  "workerType": "optimize",
-  "model": "sonnet",
-  "durationMs": 2,
-  "executionId": "optimize_1778330945256_1y57qe",
-  "success": false,
-  "findings": null,
-  "rawOutputPreview": "",
-  "rawOutputLength": 0
+  "timestamp": "2026-07-12T09:09:18.834Z",
+  "mode": "local",
+  "memoryUsage": {
+    "rss": 26255360,
+    "heapTotal": 30576640,
+    "heapUsed": 27060216,
+    "external": 4001620,
+    "arrayBuffers": 64827
+  },
+  "uptime": 2940.779827,
+  "optimizations": {
+    "cacheHitRate": 0.78,
+    "avgResponseTime": 45
+  },
+  "note": "Install Claude Code CLI for AI-powered optimization suggestions"
 }

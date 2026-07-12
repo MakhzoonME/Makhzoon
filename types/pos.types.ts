@@ -392,6 +392,7 @@ export interface HarakaReceptionTicket {
   servicesTotal: number;
   grandTotal: number;
   notes: string | null;
+  scheduledAt: Date | null;
   posTransactionId: string | null;
   paidAt: Date | null;
   createdAt: Date;

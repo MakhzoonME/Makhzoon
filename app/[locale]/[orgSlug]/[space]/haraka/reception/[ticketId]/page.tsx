@@ -43,6 +43,7 @@ export default function ReceptionTicketPage() {
           customerPhone: values.customerPhone.trim() || null,
           carPlate:      values.carPlate.trim() || null,
           customerId:    values.customerId || null,
+          scheduledAt:   values.scheduledAt || null,
           notes:         values.notes.trim() || null,
           items:         values.items,
           serviceItems:  values.serviceItems.map((l) => ({
@@ -82,6 +83,7 @@ export default function ReceptionTicketPage() {
     customerName:  ticket.customerName,
     customerPhone: ticket.customerPhone ?? '',
     carPlate:      ticket.carPlate ?? '',
+    scheduledAt:   ticket.scheduledAt ? new Date(ticket.scheduledAt).toISOString() : '',
     notes:         ticket.notes ?? '',
     items: ticket.items.map((l) => ({
       itemId:    l.inventoryItemId,

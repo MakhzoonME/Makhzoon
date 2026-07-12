@@ -1,5 +1,16 @@
 import { z } from 'zod'
 
+// datetime-local inputs produce "YYYY-MM-DDTHH:mm" (no seconds, no tz).
+// Zod's .datetime() requires a full ISO string — coerce before validating.
+function coerceLocalDatetime(v: unknown): unknown {
+  if (!v || typeof v !== 'string') return v
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) {
+    const d = new Date(v)
+    return isNaN(d.getTime()) ? v : d.toISOString()
+  }
+  return v
+}
+
 // Product lines mirror the register cart line (transactions/schemas.ts) so a
 // ticket's items can flow into completeSale unchanged at checkout.
 const productLineSchema = z.object({
@@ -31,6 +42,7 @@ const ticketBodySchema = z.object({
   customerId:    z.string().uuid().nullable().optional(),
   items:         z.array(productLineSchema).default([]),
   serviceItems:  z.array(serviceLineSchema).default([]),
+  scheduledAt:   z.preprocess(coerceLocalDatetime, z.string().datetime().nullable().optional()),
   notes:         z.string().trim().max(2000).nullable().optional(),
 })
 

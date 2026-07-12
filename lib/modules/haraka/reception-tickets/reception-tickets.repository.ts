@@ -50,6 +50,7 @@ function toTicket(r: Row): HarakaReceptionTicket {
     servicesTotal:    Number(r.services_total ?? 0),
     grandTotal:       Number(r.grand_total ?? 0),
     notes:            (r.notes as string) ?? null,
+    scheduledAt:      r.scheduled_at ? new Date(r.scheduled_at as string) : null,
     posTransactionId: (r.pos_transaction_id as string) ?? null,
     paidAt:           r.paid_at ? new Date(r.paid_at as string) : null,
     createdAt:        r.created_at ? new Date(r.created_at as string) : new Date(),
@@ -128,6 +129,7 @@ export interface CreateTicketInput {
   productLines:   CartLineInput[]
   serviceJobId?:  string | null
   servicesTotal:  number
+  scheduledAt?:   string | null
   notes?:         string | null
   createdById:    string
 }
@@ -140,6 +142,7 @@ export interface UpdateTicketInput {
   productLines?:  CartLineInput[]
   serviceJobId?:  string | null
   servicesTotal?: number
+  scheduledAt?:   string | null
   notes?:         string | null
 }
 
@@ -216,6 +219,7 @@ export class ReceptionTicketsRepository {
         products_total:    totals.total,
         services_total:    input.servicesTotal,
         grand_total:       grandTotal,
+        scheduled_at:      input.scheduledAt ?? null,
         notes:             input.notes ?? null,
         created_by:        input.createdById,
         updated_by:        input.createdById,
@@ -235,6 +239,7 @@ export class ReceptionTicketsRepository {
     if ('customerPhone' in patch)          update.customer_phone = patch.customerPhone ?? null
     if ('carPlate'      in patch)          update.car_plate      = patch.carPlate ?? null
     if ('customerId'    in patch)          update.customer_id    = patch.customerId ?? null
+    if ('scheduledAt'   in patch)          update.scheduled_at   = patch.scheduledAt ?? null
     if ('notes'         in patch)          update.notes          = patch.notes ?? null
     if ('serviceJobId'  in patch)          update.service_job_id = patch.serviceJobId ?? null
 

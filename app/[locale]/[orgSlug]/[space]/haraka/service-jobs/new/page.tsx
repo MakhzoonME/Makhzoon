@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { CustomerSelect } from '@/components/haraka/CustomerSelect';
 import { ServiceLineEditor, type ServiceLineItem } from '@/components/haraka/ServiceLineEditor';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { useCreateServiceJob } from '@/hooks/haraka';
 import { useAdminGuard, useModuleGuard, toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
@@ -34,7 +35,7 @@ export default function NewServiceJobPage() {
   const [customerId,      setCustomerId]      = useState<string | null>(null);
   const [serviceType,     setServiceType]     = useState('');
   const [staffMemberName] = useState('');
-  const [scheduledAt,     setScheduledAt]     = useState('');
+  const [scheduledAt,     setScheduledAt]     = useState(() => new Date().toISOString());
   const [notes,           setNotes]           = useState('');
   const [lines, setLines] = useState<ServiceLineItem[]>([
     { name: '', description: '', quantity: 1, unitPrice: 0, taxRate: 0, discountAmount: 0 },
@@ -124,11 +125,7 @@ export default function NewServiceJobPage() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-600">{t('serviceJobs.labelScheduled')}</label>
-              <Input
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-              />
+              <DateTimePicker value={scheduledAt} onChange={setScheduledAt} />
             </div>
           </div>
           <div className="space-y-1.5">

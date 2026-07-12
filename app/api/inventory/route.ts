@@ -10,11 +10,10 @@ import { createInventoryItemSchema } from '@/lib/modules/inventory/validators/sc
 const service = new InventoryService()
 
 /**
- * POS product lookup (register cart, reception-ticket product lines): a
- * staff member who can ring up sales OR manage reception tickets, but has
- * no Inventory-module access, should still be able to read the posEnabled
- * catalog. Full inventory browsing (the default, non-POS-scoped call)
- * still requires the Inventory module itself.
+ * POS product lookup (register cart): a staff member who can build a
+ * receipt (add_receipt_items) but has no Inventory-module access should
+ * still be able to read the posEnabled catalog. Full inventory browsing
+ * (the default, non-POS-scoped call) still requires the Inventory module.
  */
 function requireInventoryReadForPosLookup(tenant: Awaited<ReturnType<typeof resolveTenant>>): void {
   if (hasPermission(tenant.user, 'inventory', 'view')) {
@@ -22,9 +21,7 @@ function requireInventoryReadForPosLookup(tenant: Awaited<ReturnType<typeof reso
     return
   }
   requireFeature(tenant, 'pos')
-  if (hasPermission(tenant.user, 'pos', 'add_receipt_items')) return
-  if (hasPermission(tenant.user, 'pos', 'manage_reception')) return
-  requirePermission(tenant.user, 'pos', 'add_receipt_items') // throws 403
+  requirePermission(tenant.user, 'pos', 'add_receipt_items')
 }
 
 export async function GET(req: NextRequest) {

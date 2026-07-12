@@ -22,7 +22,6 @@ import { useOrgInfo } from '@/hooks/org';
 import { printRaw, openCashDrawer } from '@/lib/modules/haraka/printing/webusb-transport';
 import { buildReceipt } from '@/lib/modules/haraka/printing/receipt-template';
 import { CashDrawerButton } from '@/components/haraka/CashDrawerButton';
-import { TicketQueue } from '@/components/haraka/TicketQueue';
 import { useCashDrawerConfig } from '@/hooks/haraka';
 import type { ReceiptPrintText } from '@/lib/modules/haraka/printing/receipt-canvas';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
@@ -240,15 +239,6 @@ export default function RegisterPage() {
         )}
 
         <div className="ms-auto flex items-center gap-2">
-          <TicketQueue
-            sessionId={sessionData?.session?.id ?? null}
-            fawtaraEnabled={fawtaraEnabled}
-            onTransaction={(tx) => {
-              setLastTx(tx);
-              setReceiptTx(tx);
-              requestPrint(tx);
-            }}
-          />
           <CashDrawerButton sessionActive={!!sessionData?.session} />
           <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500" onClick={() => setPrinterOpen(true)}>
             <Printer size={14} className="me-1" /> {t('register.printer')}

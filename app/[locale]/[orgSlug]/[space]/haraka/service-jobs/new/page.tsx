@@ -12,10 +12,14 @@ import { ServiceLineEditor, type ServiceLineItem } from '@/components/haraka/Ser
 import { useCreateServiceJob } from '@/hooks/haraka';
 import { useAdminGuard, useModuleGuard, toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
+import { useAuthStore } from '@/store/auth.store';
+import { hasPermByKey } from '@/lib/permissions';
 
 export default function NewServiceJobPage() {
   const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
-  const { isAllowed } = useAdminGuard('pos.manage_service_jobs');
+  const { isAllowed, isAdmin } = useAdminGuard(['pos.create_service_jobs', 'pos.checkout_service_jobs']);
+  const { user } = useAuthStore();
+  const canSetPricing = isAdmin || (!!user && hasPermByKey(user, 'pos.checkout_service_jobs'));
   const router = useRouter();
   const params  = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { data: orgInfo } = useOrgInfo();
@@ -136,7 +140,7 @@ export default function NewServiceJobPage() {
         {/* Service lines */}
         <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
           <h3 className="text-sm font-semibold text-gray-700">{t('serviceJobs.sectionServices')}</h3>
-          <ServiceLineEditor lines={lines} onChange={setLines} currency={currency} />
+          <ServiceLineEditor lines={lines} onChange={setLines} currency={currency} readOnlyPricing={!canSetPricing} />
         </div>
 
         <div className="flex gap-3">

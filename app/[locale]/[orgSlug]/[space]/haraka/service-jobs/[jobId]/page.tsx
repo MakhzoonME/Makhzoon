@@ -2,15 +2,18 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { ArrowLeft, FileText, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ServiceJobStatusBadge } from '@/components/haraka/ServiceJobStatusBadge';
 import { ServiceJobPaymentsPanel } from '@/components/haraka/ServiceJobPaymentsPanel';
 import { ServiceJobInvoiceDialog } from '@/components/haraka/ServiceJobInvoiceDialog';
-import { useServiceJob, useUpdateServiceJobStatus } from '@/hooks/haraka';
+import { useServiceJob, useUpdateServiceJobStatus, useAddServiceJobItems } from '@/hooks/haraka';
 import { useAdminGuard, useModuleGuard, toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
+import { useAuthStore } from '@/store/auth.store';
+import { hasPermByKey } from '@/lib/permissions';
 import { formatCurrency } from '@/lib/utils/format';
 import { formatDate } from '@/lib/utils/date';
 import type { ServiceJobStatus } from '@/types';
@@ -25,8 +28,16 @@ export default function ServiceJobDetailPage() {
   const { data: orgInfo } = useOrgInfo();
   const { data, isLoading } = useServiceJob(params.jobId);
   const updateStatus = useUpdateServiceJobStatus();
+  const addItems = useAddServiceJobItems();
   const { t } = useT();
+  const { user } = useAuthStore();
+  const isAdmin = !!user && ['admin', 'org_owner', 'super_admin'].includes(user.role);
+  const canCheckout = isAdmin || (!!user && hasPermByKey(user, 'pos.checkout_service_jobs'));
   const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [showAddItem, setShowAddItem] = useState(false);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemQty, setNewItemQty] = useState('1');
+  const [newItemPrice, setNewItemPrice] = useState('0');
   if (!featureAllowed || !isAllowed) return null;
 
   const currency = orgInfo?.currency ?? 'USD';
@@ -61,9 +72,24 @@ export default function ServiceJobDetailPage() {
     } catch (err) { toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong')); }
   }
 
+  async function handleAddItem() {
+    if (!job) return;
+    const qty   = parseFloat(newItemQty) || 1;
+    const price = parseFloat(newItemPrice) || 0;
+    if (!newItemName.trim()) { toast.error(t('serviceJobs.errServiceRequired')); return; }
+    try {
+      await addItems.mutateAsync({
+        id:    job.id,
+        items: [{ name: newItemName.trim(), description: null, quantity: qty, unitPrice: price, taxRate: 0, discountAmount: 0 }],
+      });
+      setNewItemName(''); setNewItemQty('1'); setNewItemPrice('0'); setShowAddItem(false);
+    } catch (err) { toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong')); }
+  }
+
   const currentIdx = STATUS_FLOW.indexOf(job.status as ServiceJobStatus);
-  const canAdvance = currentIdx >= 0 && currentIdx < STATUS_FLOW.length - 1 && job.status !== 'cancelled';
-  const canCancel  = job.status !== 'done' && job.status !== 'cancelled';
+  const canAdvance = canCheckout && currentIdx >= 0 && currentIdx < STATUS_FLOW.length - 1 && job.status !== 'cancelled';
+  const canCancel  = canCheckout && job.status !== 'done' && job.status !== 'cancelled';
+  const canAddItem = canCheckout && job.status !== 'done' && job.status !== 'cancelled';
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -72,7 +98,7 @@ export default function ServiceJobDetailPage() {
         description={`${t('serviceJobs.title')}${job.serviceType ? ` — ${job.serviceType.replace(/_/g, ' ')}` : ''}`}
         actions={
           <div className="flex items-center gap-2">
-            {job.status === 'done' && (
+            {job.status === 'done' && (job.invoiceNumber || canCheckout) && (
               <Button variant="outline" onClick={() => setInvoiceOpen(true)} className="gap-2">
                 <FileText className="h-4 w-4" strokeWidth={1.75} />
                 {job.invoiceNumber ? t('serviceJobs.viewInvoice') : t('serviceJobs.generateInvoice')}
@@ -160,7 +186,7 @@ export default function ServiceJobDetailPage() {
             </div>
           )}
 
-          <ServiceJobPaymentsPanel job={job} currency={currency} />
+          <ServiceJobPaymentsPanel job={job} currency={currency} readOnly={!canCheckout} />
         </div>
 
         <div className="space-y-6">
@@ -202,6 +228,41 @@ export default function ServiceJobDetailPage() {
                 <span className="font-mono">{formatCurrency(job.total, currency)}</span>
               </div>
             </div>
+
+            {canAddItem && (
+              !showAddItem ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAddItem(true)}
+                  className="w-full flex items-center justify-center gap-1.5 text-xs text-primary-600 hover:text-primary-800 py-1 rounded-lg border border-dashed border-primary-200 hover:border-primary-400 transition-colors"
+                >
+                  <Plus className="h-3.5 w-3.5" strokeWidth={1.75} /> {t('serviceLine.addLine')}
+                </button>
+              ) : (
+                <div className="space-y-3 pt-1 border-t border-border">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3">
+                    <div className="space-y-1.5 sm:col-span-1">
+                      <label className="text-xs font-medium text-gray-600">{t('serviceLine.labelService')} *</label>
+                      <Input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} className="text-sm h-8" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-gray-600">{t('serviceLine.labelQty')}</label>
+                      <Input type="number" min="0.001" step="0.001" value={newItemQty} onChange={(e) => setNewItemQty(e.target.value)} className="font-mono text-sm h-8" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-gray-600">{t('serviceLine.labelUnitPrice')}</label>
+                      <Input type="number" min="0" step="0.001" value={newItemPrice} onChange={(e) => setNewItemPrice(e.target.value)} className="font-mono text-sm h-8" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setShowAddItem(false)} className="flex-1">{t('common.cancel')}</Button>
+                    <Button size="sm" onClick={handleAddItem} disabled={addItems.isPending} className="flex-1" style={{ background: 'var(--mod-haraka)' }}>
+                      {addItems.isPending ? t('common.saving') : t('serviceLine.addLine')}
+                    </Button>
+                  </div>
+                </div>
+              )
+            )}
           </div>
 
           {job.notes && (

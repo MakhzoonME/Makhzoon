@@ -55,6 +55,7 @@ export {
   useCreateServiceJob,
   useUpdateServiceJob,
   useUpdateServiceJobStatus,
+  useAddServiceJobItems,
   useGenerateServiceJobInvoice,
   useServiceJobPayments,
   useAddServiceJobPayment,

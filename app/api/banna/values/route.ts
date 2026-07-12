@@ -21,16 +21,17 @@ const VALID_RECORD_TYPES = new Set<CustomFieldRecordType>(['assets', 'inventory'
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
-    requireFeature(tenant, 'banna');
-    const limited = await rateLimitTenant(tenant, 'banna', 60, 60_000);
-    if (limited) return limited;
-
     const { searchParams } = new URL(req.url);
     const recordType = searchParams.get('recordType') as CustomFieldRecordType;
     const recordId   = searchParams.get('recordId') ?? '';
 
     if (!VALID_RECORD_TYPES.has(recordType) || !recordId)
       return NextResponse.json({ error: 'recordType and recordId are required' }, { status: 400 });
+
+    // Customer field values ride on 'pos', not the not-yet-live 'banna' flag.
+    requireFeature(tenant, recordType === 'customers' ? 'pos' : 'banna');
+    const limited = await rateLimitTenant(tenant, 'banna', 60, 60_000);
+    if (limited) return limited;
 
     const fields = await service.getValues(tenant, recordType, recordId);
     return NextResponse.json({ items: fields });
@@ -44,10 +45,6 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
-    requireFeature(tenant, 'banna');
-    const limited = await rateLimitTenant(tenant, 'banna', 30, 60_000);
-    if (limited) return limited;
-
     const parsed = saveValuesSchema.safeParse(await req.json().catch(() => null));
     if (!parsed.success)
       return NextResponse.json({ error: 'recordType and recordId are required', details: parsed.error.flatten() }, { status: 400 });
@@ -58,6 +55,11 @@ export async function PUT(req: NextRequest) {
     };
     if (!Array.isArray(body.values))
       return NextResponse.json({ error: 'values must be an array' }, { status: 400 });
+
+    // Customer field values ride on 'pos', not the not-yet-live 'banna' flag.
+    requireFeature(tenant, body.recordType === 'customers' ? 'pos' : 'banna');
+    const limited = await rateLimitTenant(tenant, 'banna', 30, 60_000);
+    if (limited) return limited;
 
     await service.saveValues(tenant, body.recordType, body.recordId, body.values);
     return NextResponse.json({ ok: true });

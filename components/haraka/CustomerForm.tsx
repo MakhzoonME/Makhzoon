@@ -48,7 +48,9 @@ function CustomerCustomFields({
   onDraftChange: (draft: Record<string, unknown>) => void;
 }) {
   const { user } = useAuthStore();
-  const bannaEnabled = user?.features?.banna === true;
+  // Rides on 'pos', not 'banna' — Banna itself isn't released yet (no org
+  // has that feature flag), but customer custom fields ship ahead of it.
+  const posEnabled = user?.features?.pos === true;
   const canCreateField = !!user && hasPermission(user, 'banna', 'create');
   const qc = useQueryClient();
 
@@ -74,7 +76,7 @@ function CustomerCustomFields({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fields.length, recordId]);
 
-  if (!bannaEnabled) return null;
+  if (!posEnabled) return null;
   if (loading) return null;
 
   function handleChange(fieldId: string, value: unknown) {

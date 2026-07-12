@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, ArrowRight, Copy } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowRight, Copy, Settings2 } from 'lucide-react';
 import { PageHeader, DataTable, FilterBar, ConfirmDialog, BulkActionsBar } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,7 @@ export default function CustomersListPage() {
   const canBulkDelete = !!user && hasPermission(user, 'pos', 'customers_bulk_delete');
   const canBulkMove = !!user && hasPermission(user, 'pos', 'customers_bulk_move');
   const canBulkDuplicate = !!user && hasPermission(user, 'pos', 'customers_bulk_duplicate');
+  const canManageFields = !!user && hasPermission(user, 'banna', 'create');
   const showSelection = canBulkDelete || canBulkMove || canBulkDuplicate;
   const { data: spaceList } = useAccessibleSpaces();
   const hasMultipleSpaces = (spaceList?.items?.length ?? 0) > 1;
@@ -120,9 +121,16 @@ export default function CustomersListPage() {
           { label: t('customers.title') },
         ]}
         actions={
-          <Button size="sm" onClick={() => router.push(`${base}/new`)}>
-            <Plus size={16} className="me-1" /> {t('customers.addCustomer')}
-          </Button>
+          <div className="flex items-center gap-2">
+            {canManageFields && (
+              <Button size="sm" variant="outline" onClick={() => router.push(`${base}/fields`)}>
+                <Settings2 size={16} className="me-1" /> {t('customers.customFields')}
+              </Button>
+            )}
+            <Button size="sm" onClick={() => router.push(`${base}/new`)}>
+              <Plus size={16} className="me-1" /> {t('customers.addCustomer')}
+            </Button>
+          </div>
         }
       />
 

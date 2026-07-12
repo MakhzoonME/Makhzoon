@@ -7,7 +7,7 @@ import { SessionsRepository, type SessionListOpts } from './sessions.repository'
 
 const repo = new SessionsRepository()
 
-function requirePos(tenant: TenantContext, op: 'open_session' | 'close_session' | 'view_reports') {
+function requirePos(tenant: TenantContext, op: 'open_session' | 'close_session' | 'view_all_sessions') {
   if (!hasPermission(tenant, 'pos', op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
@@ -21,18 +21,27 @@ function requireActiveSubscription(tenant: TenantContext) {
 
 export class SessionsService {
   async list(tenant: TenantContext, opts?: SessionListOpts) {
-    requirePos(tenant, 'view_reports')
+    // Anyone with open_session can list their own sessions; view_all_sessions
+    // can list everyone's (mirrors getById's self-vs-any rule below).
+    const canViewAny = hasPermission(tenant, 'pos', 'view_all_sessions')
+    if (!canViewAny) {
+      requirePos(tenant, 'open_session')
+      if (opts?.cashierId && opts.cashierId !== tenant.userId) {
+        throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+      return repo.list(tenant, { ...opts, cashierId: tenant.userId })
+    }
     return repo.list(tenant, opts)
   }
 
   async getById(tenant: TenantContext, id: string) {
-    // Anyone with open_session can view their own; view_reports can view any.
+    // Anyone with open_session can view their own; view_all_sessions can view any.
     const session = await repo.getById(tenant, id)
     if (!session) throw NextResponse.json({ error: 'Not found' }, { status: 404 })
     const isOwn = session.cashierId === tenant.userId
     const canView = isOwn
-      ? hasPermission(tenant, 'pos', 'open_session') || hasPermission(tenant, 'pos', 'view_reports')
-      : hasPermission(tenant, 'pos', 'view_reports')
+      ? hasPermission(tenant, 'pos', 'open_session') || hasPermission(tenant, 'pos', 'view_all_sessions')
+      : hasPermission(tenant, 'pos', 'view_all_sessions')
     if (!canView) throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     const expectedCashDelta = await repo.computeExpectedCash(tenant, id)
     return { session, expectedCashSoFar: session.openingFloat + expectedCashDelta }
@@ -65,7 +74,7 @@ export class SessionsService {
     if (session.cashierId === tenant.userId) {
       requirePos(tenant, 'close_session')
     } else {
-      requirePos(tenant, 'view_reports')
+      requirePos(tenant, 'view_all_sessions')
     }
     const result = await repo.close(tenant, id, input)
     auditLog.queue({

@@ -61,8 +61,12 @@ export interface AuditLogsPermissions {
 export interface PosPermissions {
   open_session: boolean;
   close_session: boolean;
+  view_all_sessions: boolean;
   process_sale: boolean;
+  add_receipt_items: boolean;
+  remove_receipt_items: boolean;
   apply_discount: boolean;
+  hold_receipts: boolean;
   issue_refund: boolean;
   void_transaction: boolean;
   view_reports: boolean;
@@ -141,7 +145,7 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   auditLogs: { view: true  },
   leads:     { view: true  },
   banna:     { view: true,  create: true,  update: true,  delete: true  },
-  pos:       { open_session: true, close_session: true, process_sale: true, apply_discount: true, issue_refund: true, void_transaction: true, view_reports: true, fawtara_submit: true, customers_bulk_delete: true, customers_bulk_move: true, customers_bulk_duplicate: true, view_orders: true, manage_orders: true, assign_delivery: true, manage_delivery_agents: true, view_warranty_certs: true, manage_warranty_certs: true, view_service_jobs: true, create_service_jobs: true, checkout_service_jobs: true, view_retainers: true, manage_retainers: true, view_reception: true, manage_reception: true },
+  pos:       { open_session: true, close_session: true, view_all_sessions: true, process_sale: true, add_receipt_items: true, remove_receipt_items: true, apply_discount: true, hold_receipts: true, issue_refund: true, void_transaction: true, view_reports: true, fawtara_submit: true, customers_bulk_delete: true, customers_bulk_move: true, customers_bulk_duplicate: true, view_orders: true, manage_orders: true, assign_delivery: true, manage_delivery_agents: true, view_warranty_certs: true, manage_warranty_certs: true, view_service_jobs: true, create_service_jobs: true, checkout_service_jobs: true, view_retainers: true, manage_retainers: true, view_reception: true, manage_reception: true },
   settings:  { view: true,  orgInfo: true,  subscription: true,  users: true,  taxRates: true,  fawtara: true  },
 };
 
@@ -157,7 +161,7 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   auditLogs: { view: false },
   leads:     { view: true  },
   banna:     { view: true,  create: false, update: false, delete: false },
-  pos:       { open_session: false, close_session: false, process_sale: false, apply_discount: false, issue_refund: false, void_transaction: false, view_reports: false, fawtara_submit: false, customers_bulk_delete: false, customers_bulk_move: false, customers_bulk_duplicate: false, view_orders: false, manage_orders: false, assign_delivery: false, manage_delivery_agents: false, view_warranty_certs: false, manage_warranty_certs: false, view_service_jobs: false, create_service_jobs: false, checkout_service_jobs: false, view_retainers: false, manage_retainers: false, view_reception: false, manage_reception: false },
+  pos:       { open_session: false, close_session: false, view_all_sessions: false, process_sale: false, add_receipt_items: false, remove_receipt_items: false, apply_discount: false, hold_receipts: false, issue_refund: false, void_transaction: false, view_reports: false, fawtara_submit: false, customers_bulk_delete: false, customers_bulk_move: false, customers_bulk_duplicate: false, view_orders: false, manage_orders: false, assign_delivery: false, manage_delivery_agents: false, view_warranty_certs: false, manage_warranty_certs: false, view_service_jobs: false, create_service_jobs: false, checkout_service_jobs: false, view_retainers: false, manage_retainers: false, view_reception: false, manage_reception: false },
   settings:  { view: false, orgInfo: false, subscription: false, users: false, taxRates: false, fawtara: false },
 };
 
@@ -344,8 +348,12 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     operations: [
       { key: 'open_session',             label: 'Open Session',        labelKey: 'permOp.pos.open_session' },
       { key: 'close_session',            label: 'Close Session',       labelKey: 'permOp.pos.close_session' },
+      { key: 'view_all_sessions',        label: "View Other Cashiers' Sessions", labelKey: 'permOp.pos.view_all_sessions' },
       { key: 'process_sale',             label: 'Process Sales',       labelKey: 'permOp.pos.process_sale' },
+      { key: 'add_receipt_items',        label: 'Add Items to Receipt',    labelKey: 'permOp.pos.add_receipt_items',    requiresView: true, requiresKey: 'process_sale' },
+      { key: 'remove_receipt_items',     label: 'Remove Items from Receipt', labelKey: 'permOp.pos.remove_receipt_items', requiresView: true, requiresKey: 'process_sale' },
       { key: 'apply_discount',           label: 'Apply Discounts',     labelKey: 'permOp.pos.apply_discount' },
+      { key: 'hold_receipts',            label: 'Hold & Recall Receipts',  labelKey: 'permOp.pos.hold_receipts',        requiresView: true, requiresKey: 'process_sale' },
       { key: 'issue_refund',             label: 'Issue Refunds',       labelKey: 'permOp.pos.issue_refund' },
       { key: 'void_transaction',         label: 'Void Transactions',   labelKey: 'permOp.pos.void_transaction' },
       { key: 'view_reports',             label: 'View Reports',        labelKey: 'permOp.pos.view_reports' },

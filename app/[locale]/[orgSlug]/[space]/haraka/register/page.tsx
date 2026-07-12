@@ -15,6 +15,7 @@ import { usePosCart } from '@/store/pos-cart.store';
 import { useBarcodeLookup } from '@/hooks/inventory';
 import { useTaxRates, useCurrentSession, useCompleteSale, useFawtaraConfig } from '@/hooks/haraka';
 import { useAuthStore } from '@/store/auth.store';
+import { hasPermission } from '@/lib/permissions';
 import { priceCart } from '@/lib/modules/haraka/pricing/calc';
 import { toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
@@ -54,6 +55,11 @@ export default function RegisterPage() {
   const discardHeld = usePosCart((s) => s.discardHeld);
   const [heldOpen, setHeldOpen] = useState(false);
   const heldRef = useRef<HTMLDivElement>(null);
+
+  const canAddItems = !!user && hasPermission(user, 'pos', 'add_receipt_items');
+  const canRemoveItems = !!user && hasPermission(user, 'pos', 'remove_receipt_items');
+  const canApplyDiscount = !!user && hasPermission(user, 'pos', 'apply_discount');
+  const canHoldReceipts = !!user && hasPermission(user, 'pos', 'hold_receipts');
 
   // Close held-carts dropdown on outside click
   useEffect(() => {
@@ -101,10 +107,12 @@ export default function RegisterPage() {
   );
 
   function pickItem(item: InventoryItem) {
+    if (!canAddItems) { toast.error("You don't have permission to add items to a receipt"); return; }
     addItem(item, taxRateById(item.taxRateId));
   }
 
   const handleScan = useCallback(async (code: string) => {
+    if (!canAddItems) { toast.error("You don't have permission to add items to a receipt"); return; }
     const result = await lookup(code);
     if (result.found) {
       if (!result.item.posEnabled) { toast.error(`${result.item.name} isn't enabled for POS`); return; }
@@ -113,7 +121,7 @@ export default function RegisterPage() {
     } else {
       toast.error('Item not found');
     }
-  }, [lookup, taxRateById]);
+  }, [lookup, taxRateById, canAddItems]);
 
   async function handleConfirmSale(payments: PaymentLine[], skipFawtara: boolean) {
     if (!sessionData?.session) { toast.error('No open session'); return; }
@@ -263,7 +271,7 @@ export default function RegisterPage() {
 
         {/* LEFT — product catalog */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden p-4 gap-3">
-          <BarcodeInput onResolve={handleScan} placeholder={t('register.scanPlaceholder')} autoFocus enableCamera />
+          <BarcodeInput onResolve={handleScan} placeholder={t('register.scanPlaceholder')} autoFocus enableCamera disabled={!canAddItems} />
           <ProductGrid onPick={pickItem} />
         </div>
 
@@ -281,18 +289,20 @@ export default function RegisterPage() {
             )}
             <div className="ms-auto flex items-center gap-1">
               {/* Hold current cart — always holds, disabled when cart empty */}
-              <button
-                type="button"
-                title="Hold this sale"
-                disabled={lines.length === 0}
-                className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-gray-500 hover:bg-surface-inset disabled:opacity-30 transition-colors"
-                onClick={() => { holdCart(); }}
-              >
-                <PauseCircle size={14} /> Hold
-              </button>
+              {canHoldReceipts && (
+                <button
+                  type="button"
+                  title="Hold this sale"
+                  disabled={lines.length === 0}
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-gray-500 hover:bg-surface-inset disabled:opacity-30 transition-colors"
+                  onClick={() => { holdCart(); }}
+                >
+                  <PauseCircle size={14} /> Hold
+                </button>
+              )}
 
               {/* Held-carts pill — only shown when there are held sales */}
-              {held.length > 0 && (
+              {canHoldReceipts && held.length > 0 && (
                 <div className="relative" ref={heldRef}>
                   <button
                     type="button"
@@ -351,7 +361,7 @@ export default function RegisterPage() {
 
           {/* Cart items */}
           <div className="flex-1 overflow-y-auto px-4 min-h-0">
-            <Cart />
+            <Cart canRemoveItems={canRemoveItems} canApplyDiscount={canApplyDiscount} />
           </div>
 
           {/* Cart footer — totals + charge button */}

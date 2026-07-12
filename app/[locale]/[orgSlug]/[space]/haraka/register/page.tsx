@@ -43,7 +43,7 @@ export default function RegisterPage() {
   const { data: fawtaraCfg } = useFawtaraConfig();
   const fawtaraEnabled = fawtaraCfg?.config?.enabled === true;
   const { data: cashDrawerData } = useCashDrawerConfig();
-  const { lookup } = useBarcodeLookup();
+  const { lookup } = useBarcodeLookup({ posLookup: true });
 
   const lines = usePosCart((s) => s.lines);
   const customer = usePosCart((s) => s.customer);
@@ -60,6 +60,11 @@ export default function RegisterPage() {
   const canRemoveItems = !!user && hasPermission(user, 'pos', 'remove_receipt_items');
   const canApplyDiscount = !!user && hasPermission(user, 'pos', 'apply_discount');
   const canHoldReceipts = !!user && hasPermission(user, 'pos', 'hold_receipts');
+  // A front-desk user who can build/hold a cart but not charge it (no
+  // process_sale) doesn't need — and shouldn't be forced to open — a POS
+  // session just to land on this page. Only checkout-capable users are
+  // redirected away when they have no open session of their own.
+  const canCheckout = !!user && hasPermission(user, 'pos', 'process_sale');
 
   // Close held-carts dropdown on outside click
   useEffect(() => {
@@ -92,10 +97,10 @@ export default function RegisterPage() {
   });
 
   useEffect(() => {
-    if (sessionFetched && !sessionLoading && !sessionData?.session) {
+    if (canCheckout && sessionFetched && !sessionLoading && !sessionData?.session) {
       router.replace(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions`);
     }
-  }, [sessionFetched, sessionLoading, sessionData?.session, router, params.locale, params.orgSlug, params.space]);
+  }, [canCheckout, sessionFetched, sessionLoading, sessionData?.session, router, params.locale, params.orgSlug, params.space]);
 
   const taxRateById = useCallback(
     (id: string | null | undefined): number => {
@@ -116,7 +121,7 @@ export default function RegisterPage() {
     const result = await lookup(code);
     if (result.found) {
       if (!result.item.posEnabled) { toast.error(`${result.item.name} isn't enabled for POS`); return; }
-      if (result.item.quantityOnHand <= 0) { toast.error(`${result.item.name} is out of stock`); return; }
+      if (result.item.itemType !== 'service' && result.item.quantityOnHand <= 0) { toast.error(`${result.item.name} is out of stock`); return; }
       pickItem(result.item);
     } else {
       toast.error('Item not found');
@@ -393,39 +398,47 @@ export default function RegisterPage() {
               </>
             )}
 
-            <SubscriptionGate className="block space-y-2 pt-2">
-              {/* Quick-pay shortcuts */}
-              <div className="grid grid-cols-2 gap-2">
+            {canCheckout ? (
+              <SubscriptionGate className="block space-y-2 pt-2">
+                {/* Quick-pay shortcuts */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={lines.length === 0 || completeMut.isPending}
+                    className="flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-border bg-surface-card text-gray-600 hover:border-gray-400 transition-colors disabled:opacity-30"
+                    onClick={() => { setPayTab('cash'); setPayOpen(true); }}
+                  >
+                    <Banknote size={14} /> Cash
+                  </button>
+                  <button
+                    type="button"
+                    disabled={lines.length === 0 || completeMut.isPending}
+                    className="flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-border bg-surface-card text-gray-600 hover:border-gray-400 transition-colors disabled:opacity-30"
+                    onClick={() => { setPayTab('card'); setPayOpen(true); }}
+                  >
+                    <CreditCard size={14} /> Card
+                  </button>
+                </div>
                 <button
-                  type="button"
+                  className="w-full h-11 rounded-lg text-sm font-bold text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ background: 'var(--mod-haraka)' }}
                   disabled={lines.length === 0 || completeMut.isPending}
-                  className="flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-border bg-surface-card text-gray-600 hover:border-gray-400 transition-colors disabled:opacity-30"
                   onClick={() => { setPayTab('cash'); setPayOpen(true); }}
                 >
-                  <Banknote size={14} /> Cash
+                  {completeMut.isPending
+                    ? 'Processing…'
+                    : lines.length === 0
+                    ? t('register.charge') + ' JOD 0.00'
+                    : `${t('register.charge')} JOD ${totals.total.toFixed(2)}`}
                 </button>
-                <button
-                  type="button"
-                  disabled={lines.length === 0 || completeMut.isPending}
-                  className="flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-border bg-surface-card text-gray-600 hover:border-gray-400 transition-colors disabled:opacity-30"
-                  onClick={() => { setPayTab('card'); setPayOpen(true); }}
-                >
-                  <CreditCard size={14} /> Card
-                </button>
-              </div>
-              <button
-                className="w-full h-11 rounded-lg text-sm font-bold text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ background: 'var(--mod-haraka)' }}
-                disabled={lines.length === 0 || completeMut.isPending}
-                onClick={() => { setPayTab('cash'); setPayOpen(true); }}
-              >
-                {completeMut.isPending
-                  ? 'Processing…'
-                  : lines.length === 0
-                  ? t('register.charge') + ' JOD 0.00'
-                  : `${t('register.charge')} JOD ${totals.total.toFixed(2)}`}
-              </button>
-            </SubscriptionGate>
+              </SubscriptionGate>
+            ) : (
+              canHoldReceipts && lines.length > 0 && (
+                <div className="pt-2 text-center text-xs text-gray-400">
+                  Hold this cart for a cashier to charge — you don&apos;t have permission to take payment.
+                </div>
+              )
+            )}
           </div>
         </div>
       </div>

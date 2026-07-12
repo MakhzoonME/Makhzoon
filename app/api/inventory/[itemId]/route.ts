@@ -37,6 +37,7 @@ export async function PATCH(req: NextRequest, props: Params) {
     await service.update(tenant, params.itemId, {
       name: data.name,
       category: data.category,
+      itemType: data.itemType,
       sku: data.sku || undefined,
       unit: data.unit,
       minimumThreshold: data.minimumThreshold,

@@ -40,6 +40,7 @@ function toTicket(r: Row): HarakaReceptionTicket {
     customerId:       (r.customer_id as string) ?? null,
     customerName:     (r.customer_name as string) ?? '',
     customerPhone:    (r.customer_phone as string) ?? null,
+    carPlate:         (r.car_plate as string) ?? null,
     items:            Array.isArray(r.items) ? (r.items as Row[]).map(toLine) : [],
     serviceJobId:     (r.service_job_id as string) ?? null,
     productsSubtotal: Number(r.products_subtotal ?? 0),
@@ -122,6 +123,7 @@ function priceProducts(lines: CartLineInput[]) {
 export interface CreateTicketInput {
   customerName:   string
   customerPhone?: string | null
+  carPlate?:      string | null
   customerId?:    string | null
   productLines:   CartLineInput[]
   serviceJobId?:  string | null
@@ -133,6 +135,7 @@ export interface CreateTicketInput {
 export interface UpdateTicketInput {
   customerName?:  string
   customerPhone?: string | null
+  carPlate?:      string | null
   customerId?:    string | null
   productLines?:  CartLineInput[]
   serviceJobId?:  string | null
@@ -142,6 +145,8 @@ export interface UpdateTicketInput {
 
 export interface ListTicketsOpts {
   status?:   string
+  /** Matches ticket number, customer name, phone, or car plate. */
+  search?:   string
   page?:     number
   pageSize?: number
 }
@@ -153,6 +158,15 @@ export class ReceptionTicketsRepository {
       .select('*')
       .eq('organization_id', tenant.organizationId)
     if (opts?.status) q = q.eq('status', opts.status)
+    if (opts?.search?.trim()) {
+      // Strip PostgREST or-syntax metacharacters before interpolating.
+      const term = opts.search.trim().replace(/[%,()]/g, '')
+      if (term) {
+        q = q.or(
+          `ticket_number.ilike.%${term}%,customer_name.ilike.%${term}%,customer_phone.ilike.%${term}%,car_plate.ilike.%${term}%`,
+        )
+      }
+    }
 
     const { data, error } = await q.order('created_at', { ascending: false })
     if (error) throw error
@@ -193,6 +207,7 @@ export class ReceptionTicketsRepository {
         customer_id:       input.customerId ?? null,
         customer_name:     input.customerName,
         customer_phone:    input.customerPhone ?? null,
+        car_plate:         input.carPlate ?? null,
         items,
         service_job_id:    input.serviceJobId ?? null,
         products_subtotal: totals.subtotal,
@@ -218,6 +233,7 @@ export class ReceptionTicketsRepository {
     const update: Row = { updated_by: tenant.userId }
     if (patch.customerName  !== undefined) update.customer_name  = patch.customerName
     if ('customerPhone' in patch)          update.customer_phone = patch.customerPhone ?? null
+    if ('carPlate'      in patch)          update.car_plate      = patch.carPlate ?? null
     if ('customerId'    in patch)          update.customer_id    = patch.customerId ?? null
     if ('notes'         in patch)          update.notes          = patch.notes ?? null
     if ('serviceJobId'  in patch)          update.service_job_id = patch.serviceJobId ?? null

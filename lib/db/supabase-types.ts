@@ -1003,6 +1003,7 @@ export type Database = {
       }
       haraka_reception_tickets: {
         Row: {
+          car_plate: string | null
           created_at: string
           created_by: string | null
           customer_id: string | null
@@ -1028,6 +1029,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          car_plate?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
@@ -1053,6 +1055,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          car_plate?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string | null

@@ -377,6 +377,8 @@ export interface HarakaReceptionTicket {
   customerId: string | null;
   customerName: string;
   customerPhone: string | null;
+  /** Vehicle plate number — third searchable customer identifier (garages etc.). */
+  carPlate: string | null;
   /** Product lines (POS-enabled inventory items) — same shape as PosTransaction.items. */
   items: PosLineItem[];
   /** Linked service job carrying the ticket's service lines (one job per ticket). */

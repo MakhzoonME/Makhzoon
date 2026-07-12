@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const result = await service.list(tenant, {
       status:   searchParams.get('status') ?? undefined,
+      search:   searchParams.get('search') ?? undefined,
       page:     searchParams.get('page')     ? parseInt(searchParams.get('page')!, 10)     : undefined,
       pageSize: searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined,
     })

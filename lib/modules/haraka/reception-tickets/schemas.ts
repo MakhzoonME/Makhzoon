@@ -25,26 +25,48 @@ const serviceLineSchema = z.object({
 })
 
 const ticketBodySchema = z.object({
-  customerName:  z.string().trim().min(1).max(120),
+  customerName:  z.string().trim().max(120).nullable().optional(),
   customerPhone: z.string().trim().max(30).nullable().optional(),
+  carPlate:      z.string().trim().max(30).nullable().optional(),
   customerId:    z.string().uuid().nullable().optional(),
   items:         z.array(productLineSchema).default([]),
   serviceItems:  z.array(serviceLineSchema).default([]),
   notes:         z.string().trim().max(2000).nullable().optional(),
 })
 
-export const createTicketSchema = ticketBodySchema.refine(
-  (v) => v.items.length > 0 || v.serviceItems.length > 0,
-  { message: 'Add at least one product or service', path: ['items'] },
-)
+// At least one searchable customer identifier so the ticket can be found later.
+function hasIdentity(v: { customerName?: string | null; customerPhone?: string | null; carPlate?: string | null }) {
+  return !!(v.customerName?.trim() || v.customerPhone?.trim() || v.carPlate?.trim())
+}
 
-export const updateTicketSchema = ticketBodySchema.partial().refine(
-  (v) => {
-    if (v.items === undefined && v.serviceItems === undefined) return true
-    return (v.items?.length ?? 0) > 0 || (v.serviceItems?.length ?? 0) > 0
-  },
-  { message: 'Add at least one product or service', path: ['items'] },
-)
+export const createTicketSchema = ticketBodySchema
+  .refine((v) => v.items.length > 0 || v.serviceItems.length > 0, {
+    message: 'Add at least one product or service', path: ['items'],
+  })
+  .refine(hasIdentity, {
+    message: 'Enter at least one of: customer name, phone number, or car plate',
+    path: ['customerName'],
+  })
+
+export const updateTicketSchema = ticketBodySchema.partial()
+  .refine(
+    (v) => {
+      if (v.items === undefined && v.serviceItems === undefined) return true
+      return (v.items?.length ?? 0) > 0 || (v.serviceItems?.length ?? 0) > 0
+    },
+    { message: 'Add at least one product or service', path: ['items'] },
+  )
+  .refine(
+    (v) => {
+      // Only enforce when the identity fields are part of the patch.
+      if (v.customerName === undefined && v.customerPhone === undefined && v.carPlate === undefined) return true
+      return hasIdentity(v)
+    },
+    {
+      message: 'Enter at least one of: customer name, phone number, or car plate',
+      path: ['customerName'],
+    },
+  )
 
 export const cancelTicketSchema = z.object({
   status: z.literal('cancelled'),

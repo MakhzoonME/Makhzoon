@@ -1020,6 +1020,7 @@ export type Database = {
           products_subtotal: number
           products_tax: number
           products_total: number
+          scheduled_at: string | null
           service_job_id: string | null
           services_total: number
           space_id: string | null
@@ -1046,6 +1047,7 @@ export type Database = {
           products_subtotal?: number
           products_tax?: number
           products_total?: number
+          scheduled_at?: string | null
           service_job_id?: string | null
           services_total?: number
           space_id?: string | null
@@ -1072,6 +1074,7 @@ export type Database = {
           products_subtotal?: number
           products_tax?: number
           products_total?: number
+          scheduled_at?: string | null
           service_job_id?: string | null
           services_total?: number
           space_id?: string | null

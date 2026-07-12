@@ -30,6 +30,7 @@ export default function NewReceptionTicketPage() {
         customerPhone: values.customerPhone.trim() || null,
         carPlate:      values.carPlate.trim() || null,
         customerId:    values.customerId || null,
+        scheduledAt:   values.scheduledAt || null,
         notes:         values.notes.trim() || null,
         items:         values.items,
         serviceItems:  values.serviceItems.map((l) => ({

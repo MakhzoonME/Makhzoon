@@ -125,6 +125,7 @@ export class ReceptionTicketsService {
         customerPhone: input.customerPhone ?? null,
         customerId:    input.customerId ?? null,
         lines:         serviceLines(input.serviceItems),
+        scheduledAt:   input.scheduledAt ?? null,
         notes:         input.notes ?? null,
         createdById:   tenant.userId,
       })
@@ -140,6 +141,7 @@ export class ReceptionTicketsService {
       productLines:  productLines(input.items),
       serviceJobId,
       servicesTotal,
+      scheduledAt:   input.scheduledAt ?? null,
       notes:         input.notes ?? null,
       createdById:   tenant.userId,
     })
@@ -196,6 +198,9 @@ export class ReceptionTicketsService {
           customerPhone: patch.customerPhone !== undefined ? patch.customerPhone : ticket.customerPhone,
           customerId:    patch.customerId !== undefined ? patch.customerId : ticket.customerId,
           lines:         serviceLines(patch.serviceItems),
+          scheduledAt:   patch.scheduledAt !== undefined
+            ? patch.scheduledAt
+            : ticket.scheduledAt?.toISOString() ?? null,
           notes:         patch.notes !== undefined ? patch.notes : ticket.notes,
           createdById:   tenant.userId,
         })
@@ -220,11 +225,17 @@ export class ReceptionTicketsService {
       }
     }
 
+    // Keep the linked job's schedule in step with the ticket's.
+    if ('scheduledAt' in patch && serviceJobId) {
+      await jobsRepo.update(tenant, serviceJobId, { scheduledAt: patch.scheduledAt ?? null })
+    }
+
     const result = await repo.update(tenant, id, {
       ...(identityTouched ? { customerName: name } : {}),
       ...('customerPhone' in patch ? { customerPhone: patch.customerPhone ?? null } : {}),
       ...('carPlate'      in patch ? { carPlate: patch.carPlate ?? null } : {}),
       ...('customerId'    in patch ? { customerId: patch.customerId ?? null } : {}),
+      ...('scheduledAt'   in patch ? { scheduledAt: patch.scheduledAt ?? null } : {}),
       ...('notes'         in patch ? { notes: patch.notes ?? null } : {}),
       ...(patch.items !== undefined ? { productLines: productLines(patch.items) } : {}),
       serviceJobId,

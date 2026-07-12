@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { CustomerSelect } from '@/components/haraka/CustomerSelect';
 import { ServiceLineEditor, type ServiceLineItem } from '@/components/haraka/ServiceLineEditor';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { useInventoryItems } from '@/hooks/inventory/useInventory';
 import { useTaxRates } from '@/hooks/haraka';
 import { toast, useT, useDebounce } from '@/hooks/ui';
@@ -32,6 +33,8 @@ export interface ReceptionTicketFormValues {
   carPlate:      string;
   items:         TicketProductLine[];
   serviceItems:  ServiceLineItem[];
+  /** ISO string, '' = not scheduled. Defaults to "now" on new tickets. */
+  scheduledAt:   string;
   notes:         string;
 }
 
@@ -44,9 +47,12 @@ interface Props {
   onCancel:    () => void;
 }
 
-const EMPTY: ReceptionTicketFormValues = {
-  customerId: null, customerName: '', customerPhone: '', carPlate: '', items: [], serviceItems: [], notes: '',
-};
+function emptyValues(): ReceptionTicketFormValues {
+  return {
+    customerId: null, customerName: '', customerPhone: '', carPlate: '',
+    items: [], serviceItems: [], scheduledAt: new Date().toISOString(), notes: '',
+  };
+}
 
 function serviceLineTotal(l: ServiceLineItem) {
   const net = Math.max(0, l.quantity * l.unitPrice - l.discountAmount);
@@ -55,7 +61,7 @@ function serviceLineTotal(l: ServiceLineItem) {
 
 export function ReceptionTicketForm({ initial, currency, submitting, submitLabel, onSubmit, onCancel }: Props) {
   const { t } = useT();
-  const [values, setValues] = useState<ReceptionTicketFormValues>(initial ?? EMPTY);
+  const [values, setValues] = useState<ReceptionTicketFormValues>(() => initial ?? emptyValues());
   const [itemSearch, setItemSearch] = useState('');
   const [showItemSearch, setShowItemSearch] = useState(false);
   const debouncedSearch = useDebounce(itemSearch, 300);
@@ -253,8 +259,17 @@ export function ReceptionTicketForm({ initial, currency, submitting, submitLabel
         />
       </div>
 
-      {/* Notes + totals */}
+      {/* Schedule + notes + totals */}
       <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-600">{t('serviceJobs.labelScheduled')}</label>
+            <DateTimePicker
+              value={values.scheduledAt}
+              onChange={(scheduledAt) => patch({ scheduledAt })}
+            />
+          </div>
+        </div>
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-gray-600">{t('col.notes')}</label>
           <Textarea value={values.notes} onChange={(e) => patch({ notes: e.target.value })} rows={2} />

@@ -3,19 +3,44 @@ import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { requirePermission } from '@/lib/permissions/require'
+import { hasPermission } from '@/lib/permissions'
 import { InventoryService } from '@/lib/modules/inventory/services/inventory.service'
 import { createInventoryItemSchema } from '@/lib/modules/inventory/validators/schemas'
 
 const service = new InventoryService()
 
+/**
+ * POS product lookup (register cart, reception-ticket product lines): a
+ * staff member who can ring up sales OR manage reception tickets, but has
+ * no Inventory-module access, should still be able to read the posEnabled
+ * catalog. Full inventory browsing (the default, non-POS-scoped call)
+ * still requires the Inventory module itself.
+ */
+function requireInventoryReadForPosLookup(tenant: Awaited<ReturnType<typeof resolveTenant>>): void {
+  if (hasPermission(tenant.user, 'inventory', 'view')) {
+    requireFeature(tenant, 'inventory')
+    return
+  }
+  requireFeature(tenant, 'pos')
+  if (hasPermission(tenant.user, 'pos', 'add_receipt_items')) return
+  if (hasPermission(tenant.user, 'pos', 'manage_reception')) return
+  requirePermission(tenant.user, 'pos', 'add_receipt_items') // throws 403
+}
+
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    requireFeature(tenant, 'inventory')
-    requirePermission(tenant.user, 'inventory', 'view')
+    const { searchParams } = new URL(req.url)
+    const posLookup = searchParams.get('posEnabled') === 'true'
+
+    if (posLookup) {
+      requireInventoryReadForPosLookup(tenant)
+    } else {
+      requireFeature(tenant, 'inventory')
+      requirePermission(tenant.user, 'inventory', 'view')
+    }
     const limited = await rateLimitTenant(tenant, 'inventory', 60, 60_000)
     if (limited) return limited
-    const { searchParams } = new URL(req.url)
 
     if (searchParams.get('categoriesOnly') === 'true') {
       const categories = await service.getCategories(tenant)
@@ -27,6 +52,9 @@ export async function GET(req: NextRequest) {
       stockStatus: searchParams.get('stockStatus') ?? undefined,
       search: searchParams.get('search') ?? undefined,
       posEnabled: searchParams.get('posEnabled') === 'true' ? true : undefined,
+      itemType: searchParams.get('itemType') === 'product' || searchParams.get('itemType') === 'service'
+        ? (searchParams.get('itemType') as 'product' | 'service')
+        : undefined,
       expiringWithin: searchParams.get('expiringWithin') ? parseInt(searchParams.get('expiringWithin')!, 10) : undefined,
       expired: searchParams.get('expired') === 'true' ? true : undefined,
       page: searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined,
@@ -57,6 +85,7 @@ export async function POST(req: NextRequest) {
     const result = await service.create(tenant, {
       name: data.name,
       category: data.category,
+      itemType: data.itemType,
       sku: data.sku || undefined,
       unit: data.unit,
       quantityOnHand: data.quantityOnHand,

@@ -18,6 +18,7 @@ function toItem(r: Row): InventoryItem {
     organizationId: r.organization_id as string,
     name: r.name as string,
     category: r.category as string,
+    itemType: ((r.item_type as string) ?? 'product') as InventoryItem['itemType'],
     sku: r.sku as string,
     unit: r.unit as InventoryUnit,
     quantityOnHand: qty,

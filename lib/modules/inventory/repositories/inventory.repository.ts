@@ -9,11 +9,16 @@ type Row = Record<string, unknown>
 function toItem(r: Row, computedQty?: number): InventoryItem {
   const qty = computedQty ?? (r.quantity_on_hand as number) ?? 0
   const threshold = (r.minimum_threshold as number) ?? 0
+  const itemType = ((r.item_type as string) ?? 'product') as InventoryItem['itemType']
+  // Services aren't stock-tracked — quantity/threshold are meaningless for
+  // them, so never surface a misleading "out of stock" badge.
+  const status = itemType === 'service' ? 'ok' : stockStatus(qty, threshold)
   return {
     id: r.id as string,
     organizationId: r.organization_id as string,
     name: r.name as string,
     category: r.category as string,
+    itemType,
     sku: r.sku as string,
     unit: r.unit as InventoryUnit,
     quantityOnHand: qty,
@@ -24,7 +29,7 @@ function toItem(r: Row, computedQty?: number): InventoryItem {
     unitCost: r.unit_cost as number,
     notes: r.notes as string,
     documents: Array.isArray(r.documents) ? (r.documents as InventoryItem['documents']) : [],
-    stockStatus: stockStatus(qty, threshold),
+    stockStatus: status,
     posEnabled: r.pos_enabled as boolean,
     barcode: (r.barcode as string) ?? null,
     taxRateId: (r.tax_rate_id as string) ?? null,
@@ -142,6 +147,7 @@ export interface GetAllOpts {
   stockStatus?: string
   search?: string
   posEnabled?: boolean
+  itemType?: 'product' | 'service'
   /** Return only items expiring within this many days (expiry_date between today and today+N). */
   expiringWithin?: number
   /** Return only items whose expiry_date is in the past. */
@@ -172,6 +178,7 @@ export class InventoryRepository {
       if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
       if (opts?.category) q = q.eq('category', opts.category)
       if (opts?.posEnabled === true) q = q.eq('pos_enabled', true)
+      if (opts?.itemType) q = q.eq('item_type', opts.itemType)
       if (opts?.expired === true) {
         const today = new Date().toISOString().split('T')[0]
         q = q.not('expiry_date', 'is', null).lt('expiry_date', today)
@@ -260,13 +267,14 @@ export class InventoryRepository {
     return { items: items.slice(start, start + pageSize), total, page: safePage, pageSize, totalPages }
   }
 
-  async findByBarcode(tenant: TenantContext, barcode: string): Promise<InventoryItem | null> {
+  async findByBarcode(tenant: TenantContext, barcode: string, opts?: { posEnabledOnly?: boolean }): Promise<InventoryItem | null> {
     let q = supabaseAdmin
       .from('inventory_items')
       .select('*')
       .eq('organization_id', tenant.organizationId)
       .eq('barcode', barcode)
     if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
+    if (opts?.posEnabledOnly) q = q.eq('pos_enabled', true)
     const { data } = await q.limit(1).maybeSingle()
     if (!data) return null
     const qty = await computeQuantity(data.id as string, (data.quantity_on_hand as number) ?? 0)
@@ -310,7 +318,7 @@ export class InventoryRepository {
   async create(
     tenant: TenantContext,
     input: {
-      name: string; category: string; sku?: string; unit: string
+      name: string; category: string; itemType?: InventoryItem['itemType']; sku?: string; unit: string
       quantityOnHand: number; minimumThreshold: number; reorderQuantity?: number
       location?: string; supplier?: string; unitCost?: number; notes?: string
       barcode?: string | null; posEnabled?: boolean; posPrice?: number | null; taxRateId?: string | null
@@ -326,6 +334,7 @@ export class InventoryRepository {
         space_id: tenant.spaceId,
         name: input.name,
         category: input.category,
+        item_type: input.itemType ?? 'product',
         sku: input.sku ?? null,
         unit: input.unit,
         minimum_threshold: input.minimumThreshold,
@@ -384,7 +393,7 @@ export class InventoryRepository {
     tenant: TenantContext,
     id: string,
     input: {
-      name?: string; category?: string; sku?: string; unit?: string
+      name?: string; category?: string; itemType?: InventoryItem['itemType']; sku?: string; unit?: string
       minimumThreshold?: number; reorderQuantity?: number; location?: string
       supplier?: string; unitCost?: number; notes?: string
       barcode?: string | null; posEnabled?: boolean; posPrice?: number | null; taxRateId?: string | null
@@ -401,7 +410,7 @@ export class InventoryRepository {
       updated_by_name: tenant.user.displayName ?? null,
     }
     const map: Record<string, string> = {
-      name: 'name', category: 'category', sku: 'sku', unit: 'unit',
+      name: 'name', category: 'category', itemType: 'item_type', sku: 'sku', unit: 'unit',
       minimumThreshold: 'minimum_threshold', reorderQuantity: 'reorder_quantity',
       location: 'location', supplier: 'supplier', unitCost: 'unit_cost',
       notes: 'notes', posEnabled: 'pos_enabled', posPrice: 'pos_price',

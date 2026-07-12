@@ -347,7 +347,7 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     group: 'commerce',
     operations: [
       { key: 'open_session',             label: 'Open Session',        labelKey: 'permOp.pos.open_session' },
-      { key: 'close_session',            label: 'Close Session',       labelKey: 'permOp.pos.close_session' },
+      { key: 'close_session',            label: 'Close Session',       labelKey: 'permOp.pos.close_session',        requiresView: true, requiresKey: 'open_session' },
       { key: 'view_all_sessions',        label: "View Other Cashiers' Sessions", labelKey: 'permOp.pos.view_all_sessions' },
       { key: 'process_sale',             label: 'Process Sales',       labelKey: 'permOp.pos.process_sale' },
       { key: 'add_receipt_items',        label: 'Add Items to Receipt',    labelKey: 'permOp.pos.add_receipt_items',    requiresView: true, requiresKey: 'process_sale' },

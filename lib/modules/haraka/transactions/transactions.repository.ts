@@ -320,14 +320,16 @@ export class TransactionsRepository {
     const uniqueItemIds = Array.from(new Set(input.lines.map((l) => l.itemId)))
     const { data: itemRows, error: itemErr } = await supabaseAdmin
       .from('inventory_items')
-      .select('id, organization_id')
+      .select('id, organization_id, item_type')
       .in('id', uniqueItemIds)
     if (itemErr) throw itemErr
+    const serviceItemIds = new Set<string>()
     for (const iid of uniqueItemIds) {
       const r = (itemRows ?? []).find((row) => (row as Row).id === iid) as Row | undefined
       if (!r || r.organization_id !== tenant.organizationId) {
         throw new Error(`Inventory item not found: ${iid}`)
       }
+      if (r.item_type === 'service') serviceItemIds.add(iid)
     }
 
     const receiptNumber = await allocateReceiptNumber(tenant.organizationId, tenant.spaceId)
@@ -389,23 +391,25 @@ export class TransactionsRepository {
     // are serialised by Postgres's row lock (the second caller waits for the
     // first to commit, then reads the already-updated quantity_after).
     const stockResults = await Promise.allSettled(
-      priced.lines.map((line) =>
-        supabaseAdmin.rpc('inventory_apply_stock_out', {
-          p_org:      tenant.organizationId,
-          p_space:    tenant.spaceId ?? null,
-          p_item:     line.itemId,
-          p_qty:      line.quantity,
-          p_item_name: line.itemName,
-          p_reason:   'POS sale',
-          p_note:     `Receipt ${receiptNumber}`,
-          p_source:   'pos',
-          p_pos_tx:   posTxId,
-          p_by:       tenant.userId,
-          p_by_email: tenant.user.email ?? null,
-          p_by_name:  tenant.user.displayName ?? null,
-          p_by_role:  tenant.role ?? null,
-        }),
-      ),
+      priced.lines
+        .filter((line) => !serviceItemIds.has(line.itemId))
+        .map((line) =>
+          supabaseAdmin.rpc('inventory_apply_stock_out', {
+            p_org:      tenant.organizationId,
+            p_space:    tenant.spaceId ?? null,
+            p_item:     line.itemId,
+            p_qty:      line.quantity,
+            p_item_name: line.itemName,
+            p_reason:   'POS sale',
+            p_note:     `Receipt ${receiptNumber}`,
+            p_source:   'pos',
+            p_pos_tx:   posTxId,
+            p_by:       tenant.userId,
+            p_by_email: tenant.user.email ?? null,
+            p_by_name:  tenant.user.displayName ?? null,
+            p_by_role:  tenant.role ?? null,
+          }),
+        ),
     )
     for (const result of stockResults) {
       if (result.status === 'rejected') throw result.reason
@@ -443,10 +447,11 @@ export class TransactionsRepository {
     for (const line of tx.items) {
       const { data: item } = await supabaseAdmin
         .from('inventory_items')
-        .select('id, minimum_threshold')
+        .select('id, minimum_threshold, item_type')
         .eq('id', line.inventoryItemId)
         .maybeSingle()
       if (!item) continue
+      if (item.item_type === 'service') continue // never stock-decremented — nothing to restock
       const before = await currentQty(line.inventoryItemId)
       const after = before + line.quantity
       const threshold = Number(item.minimum_threshold ?? 0)
@@ -567,10 +572,11 @@ export class TransactionsRepository {
     for (const line of refundedLines) {
       const { data: item } = await supabaseAdmin
         .from('inventory_items')
-        .select('id, minimum_threshold')
+        .select('id, minimum_threshold, item_type')
         .eq('id', line.inventoryItemId)
         .maybeSingle()
       if (!item) continue
+      if (item.item_type === 'service') continue // never stock-decremented — nothing to restock
       const before = await currentQty(line.inventoryItemId)
       const after = before + line.quantity
       const threshold = Number(item.minimum_threshold ?? 0)

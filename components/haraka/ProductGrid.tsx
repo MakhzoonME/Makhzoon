@@ -28,7 +28,7 @@ export function ProductGrid({ onPick }: Props) {
           (i.barcode ?? '').toLowerCase().includes(term),
       );
     }
-    return result.filter((i) => i.quantityOnHand > 0);
+    return result.filter((i) => i.itemType === 'service' || i.quantityOnHand > 0);
   }, [data?.items, category, search]);
 
   return (

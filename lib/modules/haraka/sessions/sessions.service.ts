@@ -35,12 +35,17 @@ export class SessionsService {
   }
 
   async getById(tenant: TenantContext, id: string) {
-    // Anyone with open_session can view their own; view_all_sessions can view any.
+    // Cash/discrepancy detail is only for whoever is trusted to reconcile a
+    // session: the cashier who can close their own (close_session), or
+    // anyone with oversight (view_all_sessions). Being able to merely open
+    // a session (e.g. a front-desk profile) is NOT sufficient — that persona
+    // uses the register, not this cash-reconciliation view, even for their
+    // own session.
     const session = await repo.getById(tenant, id)
     if (!session) throw NextResponse.json({ error: 'Not found' }, { status: 404 })
     const isOwn = session.cashierId === tenant.userId
     const canView = isOwn
-      ? hasPermission(tenant, 'pos', 'open_session') || hasPermission(tenant, 'pos', 'view_all_sessions')
+      ? hasPermission(tenant, 'pos', 'close_session') || hasPermission(tenant, 'pos', 'view_all_sessions')
       : hasPermission(tenant, 'pos', 'view_all_sessions')
     if (!canView) throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     const expectedCashDelta = await repo.computeExpectedCash(tenant, id)
@@ -48,7 +53,11 @@ export class SessionsService {
   }
 
   async findOpen(tenant: TenantContext) {
-    requirePos(tenant, 'open_session')
+    // A user who can never open a session (e.g. a front-desk-only staffer)
+    // can never have one — return null rather than 403 so pages that poll
+    // "do I have an open session" (like the register) don't hard-fail for
+    // personas that legitimately use the register without ever opening one.
+    if (!hasPermission(tenant, 'pos', 'open_session')) return null
     return repo.findOpenForCashier(tenant)
   }
 
@@ -72,6 +81,10 @@ export class SessionsService {
     const session = await repo.getById(tenant, id)
     if (!session) throw NextResponse.json({ error: 'Not found' }, { status: 404 })
     if (session.cashierId === tenant.userId) {
+      // close_session is meaningless without open_session — enforce the
+      // dependency server-side too, not just as a UI constraint in the
+      // permissions settings screen.
+      requirePos(tenant, 'open_session')
       requirePos(tenant, 'close_session')
     } else {
       requirePos(tenant, 'view_all_sessions')

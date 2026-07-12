@@ -39,8 +39,9 @@ export default function ReceptionTicketPage() {
       await updateMut.mutateAsync({
         id: params.ticketId,
         body: {
-          customerName:  values.customerName.trim(),
+          customerName:  values.customerName.trim() || null,
           customerPhone: values.customerPhone.trim() || null,
+          carPlate:      values.carPlate.trim() || null,
           customerId:    values.customerId || null,
           notes:         values.notes.trim() || null,
           items:         values.items,
@@ -80,6 +81,7 @@ export default function ReceptionTicketPage() {
     customerId:    ticket.customerId,
     customerName:  ticket.customerName,
     customerPhone: ticket.customerPhone ?? '',
+    carPlate:      ticket.carPlate ?? '',
     notes:         ticket.notes ?? '',
     items: ticket.items.map((l) => ({
       itemId:    l.inventoryItemId,
@@ -141,7 +143,9 @@ export default function ReceptionTicketPage() {
         <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
           <div className="text-sm">
             <div className="font-medium text-gray-800">{ticket.customerName}</div>
-            {ticket.customerPhone && <div className="text-gray-400 text-xs">{ticket.customerPhone}</div>}
+            <div className="text-gray-400 text-xs">
+              {[ticket.customerPhone, ticket.carPlate].filter(Boolean).join(' · ')}
+            </div>
           </div>
           <div className="space-y-1">
             {ticket.items.map((l, i) => (

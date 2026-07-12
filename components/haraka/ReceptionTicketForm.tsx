@@ -29,6 +29,7 @@ export interface ReceptionTicketFormValues {
   customerId:    string | null;
   customerName:  string;
   customerPhone: string;
+  carPlate:      string;
   items:         TicketProductLine[];
   serviceItems:  ServiceLineItem[];
   notes:         string;
@@ -44,7 +45,7 @@ interface Props {
 }
 
 const EMPTY: ReceptionTicketFormValues = {
-  customerId: null, customerName: '', customerPhone: '', items: [], serviceItems: [], notes: '',
+  customerId: null, customerName: '', customerPhone: '', carPlate: '', items: [], serviceItems: [], notes: '',
 };
 
 function serviceLineTotal(l: ServiceLineItem) {
@@ -111,7 +112,9 @@ export function ReceptionTicketForm({ initial, currency, submitting, submitLabel
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!values.customerName.trim()) { toast.error(t('reception.errCustomerRequired')); return; }
+    const hasIdentity =
+      values.customerName.trim() || values.customerPhone.trim() || values.carPlate.trim();
+    if (!hasIdentity) { toast.error(t('reception.errIdentityRequired')); return; }
     if (values.items.length === 0 && validServices.length === 0) {
       toast.error(t('reception.errLinesRequired'));
       return;
@@ -124,9 +127,10 @@ export function ReceptionTicketForm({ initial, currency, submitting, submitLabel
       {/* Customer */}
       <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
         <h3 className="text-sm font-semibold text-gray-700">{t('reception.sectionCustomer')}</h3>
+        <p className="text-xs text-gray-400">{t('reception.identityHint')}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-600">{t('col.customer')} *</label>
+            <label className="text-xs font-medium text-gray-600">{t('col.customer')}</label>
             <CustomerSelect
               value={values.customerId ? { id: values.customerId, name: values.customerName, phone: values.customerPhone || null } : null}
               onChange={(c) => patch({
@@ -136,21 +140,29 @@ export function ReceptionTicketForm({ initial, currency, submitting, submitLabel
               })}
             />
           </div>
+          {!values.customerId && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-600">{t('reception.labelWalkInName')}</label>
+              <Input
+                value={values.customerName}
+                onChange={(e) => patch({ customerName: e.target.value })}
+                placeholder={t('reception.walkInPlaceholder')}
+              />
+            </div>
+          )}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-600">{t('col.phone')}</label>
             <Input value={values.customerPhone} onChange={(e) => patch({ customerPhone: e.target.value })} placeholder="+962 7…" />
           </div>
-        </div>
-        {!values.customerId && (
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-600">{t('reception.labelWalkInName')} *</label>
+            <label className="text-xs font-medium text-gray-600">{t('reception.labelCarPlate')}</label>
             <Input
-              value={values.customerName}
-              onChange={(e) => patch({ customerName: e.target.value })}
-              placeholder={t('reception.walkInPlaceholder')}
+              value={values.carPlate}
+              onChange={(e) => patch({ carPlate: e.target.value })}
+              placeholder={t('reception.carPlatePlaceholder')}
             />
           </div>
-        )}
+        </div>
       </div>
 
       {/* Products */}

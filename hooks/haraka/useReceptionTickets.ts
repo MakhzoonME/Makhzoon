@@ -17,6 +17,8 @@ function spaceHeaders(space?: string): HeadersInit {
 
 export interface UseReceptionTicketsParams {
   status?:   string
+  /** Matches ticket number, customer name, phone, or car plate. */
+  search?:   string
   page?:     number
   pageSize?: number
   /** Poll interval in ms — the register queue uses this to pick up new tickets. */
@@ -36,10 +38,11 @@ export function useReceptionTickets(params?: UseReceptionTicketsParams) {
   const { space } = useParams<{ space?: string }>()
   const query = new URLSearchParams()
   if (params?.status)   query.set('status', params.status)
+  if (params?.search)   query.set('search', params.search)
   if (params?.page)     query.set('page', String(params.page))
   if (params?.pageSize) query.set('pageSize', String(params.pageSize))
   return useQuery<ListResp>({
-    queryKey: [...LIST_KEY, space, { status: params?.status, page: params?.page, pageSize: params?.pageSize }],
+    queryKey: [...LIST_KEY, space, { status: params?.status, search: params?.search, page: params?.page, pageSize: params?.pageSize }],
     enabled:  !!space && (params?.enabled ?? true),
     queryFn:  async () => {
       const res = await fetch(`/api/haraka/reception-tickets?${query.toString()}`, { headers: spaceHeaders(space) })

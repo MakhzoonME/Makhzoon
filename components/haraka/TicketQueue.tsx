@@ -39,7 +39,7 @@ export function TicketQueue({ sessionId, fawtaraEnabled, onTransaction }: Props)
   }, [open]);
 
   const tickets = data?.items ?? [];
-  if (!allowed || tickets.length === 0) return null;
+  if (!allowed) return null;
 
   async function handleConfirm(payments: PaymentLine[], skipFawtara: boolean) {
     if (!activeTicket) return;
@@ -72,7 +72,11 @@ export function TicketQueue({ sessionId, fawtaraEnabled, onTransaction }: Props)
       <button
         type="button"
         className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold transition-colors"
-        style={{ background: 'rgba(194,24,91,0.10)', color: 'var(--mod-haraka)' }}
+        style={
+          tickets.length > 0
+            ? { background: 'rgba(194,24,91,0.10)', color: 'var(--mod-haraka)' }
+            : { color: '#9ca3af' }
+        }
         onClick={() => setOpen((o) => !o)}
       >
         <ClipboardList size={13} /> {tickets.length} {t('reception.queuePill')}
@@ -84,6 +88,11 @@ export function TicketQueue({ sessionId, fawtaraEnabled, onTransaction }: Props)
             <span className="text-xs font-semibold text-gray-700">{t('reception.queueTitle')}</span>
           </div>
           <div className="max-h-96 overflow-y-auto">
+            {tickets.length === 0 && (
+              <div className="px-4 py-6 text-center text-xs text-gray-400">
+                {t('reception.queueEmpty')}
+              </div>
+            )}
             {tickets.map((tk) => (
               <div key={tk.id} className="px-4 py-3 border-b border-border last:border-0 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
@@ -93,7 +102,10 @@ export function TicketQueue({ sessionId, fawtaraEnabled, onTransaction }: Props)
                     </span>
                     {tk.serviceJob && <ServiceJobStatusBadge status={tk.serviceJob.status} />}
                   </div>
-                  <div className="text-xs font-semibold text-gray-800 truncate mt-0.5">{tk.customerName}</div>
+                  <div className="text-xs font-semibold text-gray-800 truncate mt-0.5">
+                    {tk.customerName}
+                    {tk.carPlate && <span className="text-gray-400 font-normal"> · {tk.carPlate}</span>}
+                  </div>
                   <div className="text-xs text-gray-400 mt-0.5 font-mono">
                     JOD {tk.grandTotal.toFixed(2)}
                     {' · '}

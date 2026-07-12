@@ -68,6 +68,16 @@ function serviceLines(items: ServiceItem[]): CartLineInput[] {
 
 const r4 = (n: number) => Math.round(n * 10000) / 10000
 
+/** customer_name is NOT NULL on tickets and jobs — when the receptionist only
+ *  entered a phone or car plate, fall back to those for the display name. */
+function displayName(v: {
+  customerName?: string | null
+  carPlate?: string | null
+  customerPhone?: string | null
+}): string {
+  return v.customerName?.trim() || v.carPlate?.trim() || v.customerPhone?.trim() || 'Walk-in'
+}
+
 /**
  * Take payments (in entry order) until `target` is covered — used to split
  * the cashier's payments between the POS transaction (products) and the
@@ -105,12 +115,13 @@ export class ReceptionTicketsService {
 
   async create(tenant: TenantContext, input: CreateTicketPayload): Promise<HarakaReceptionTicket> {
     requireManage(tenant)
+    const name = displayName(input)
 
     let serviceJobId: string | null = null
     let servicesTotal = 0
     if (input.serviceItems.length > 0) {
       const job = await jobsRepo.create(tenant, {
-        customerName:  input.customerName,
+        customerName:  name,
         customerPhone: input.customerPhone ?? null,
         customerId:    input.customerId ?? null,
         lines:         serviceLines(input.serviceItems),
@@ -122,8 +133,9 @@ export class ReceptionTicketsService {
     }
 
     const ticket = await repo.create(tenant, {
-      customerName:  input.customerName,
+      customerName:  name,
       customerPhone: input.customerPhone ?? null,
+      carPlate:      input.carPlate ?? null,
       customerId:    input.customerId ?? null,
       productLines:  productLines(input.items),
       serviceJobId,
@@ -151,6 +163,17 @@ export class ReceptionTicketsService {
     let serviceJobId = ticket.serviceJobId
     let servicesTotal: number | undefined
 
+    // Recompute the display name when any identity field is part of the patch.
+    const identityTouched =
+      patch.customerName !== undefined || patch.customerPhone !== undefined || patch.carPlate !== undefined
+    const name = identityTouched
+      ? displayName({
+          customerName:  patch.customerName  !== undefined ? patch.customerName  : ticket.customerName,
+          customerPhone: patch.customerPhone !== undefined ? patch.customerPhone : ticket.customerPhone,
+          carPlate:      patch.carPlate      !== undefined ? patch.carPlate      : ticket.carPlate,
+        })
+      : ticket.customerName
+
     if (patch.serviceItems !== undefined) {
       const job = ticket.serviceJobId ? await jobsRepo.getById(tenant, ticket.serviceJobId) : null
 
@@ -169,11 +192,11 @@ export class ReceptionTicketsService {
         servicesTotal = 0
       } else if (!job) {
         const created = await jobsRepo.create(tenant, {
-          customerName:  patch.customerName ?? ticket.customerName,
-          customerPhone: patch.customerPhone ?? ticket.customerPhone,
-          customerId:    patch.customerId ?? ticket.customerId,
+          customerName:  name,
+          customerPhone: patch.customerPhone !== undefined ? patch.customerPhone : ticket.customerPhone,
+          customerId:    patch.customerId !== undefined ? patch.customerId : ticket.customerId,
           lines:         serviceLines(patch.serviceItems),
-          notes:         patch.notes ?? ticket.notes,
+          notes:         patch.notes !== undefined ? patch.notes : ticket.notes,
           createdById:   tenant.userId,
         })
         serviceJobId = created.id
@@ -198,8 +221,9 @@ export class ReceptionTicketsService {
     }
 
     const result = await repo.update(tenant, id, {
-      ...(patch.customerName  !== undefined ? { customerName: patch.customerName } : {}),
+      ...(identityTouched ? { customerName: name } : {}),
       ...('customerPhone' in patch ? { customerPhone: patch.customerPhone ?? null } : {}),
+      ...('carPlate'      in patch ? { carPlate: patch.carPlate ?? null } : {}),
       ...('customerId'    in patch ? { customerId: patch.customerId ?? null } : {}),
       ...('notes'         in patch ? { notes: patch.notes ?? null } : {}),
       ...(patch.items !== undefined ? { productLines: productLines(patch.items) } : {}),

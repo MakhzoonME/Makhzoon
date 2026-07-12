@@ -26,8 +26,9 @@ export default function NewReceptionTicketPage() {
   async function handleSubmit(values: ReceptionTicketFormValues) {
     try {
       const { ticket } = await createMut.mutateAsync({
-        customerName:  values.customerName.trim(),
+        customerName:  values.customerName.trim() || null,
         customerPhone: values.customerPhone.trim() || null,
+        carPlate:      values.carPlate.trim() || null,
         customerId:    values.customerId || null,
         notes:         values.notes.trim() || null,
         items:         values.items,

@@ -972,6 +972,142 @@ export type Database = {
           },
         ]
       }
+      haraka_reception_ticket_counters: {
+        Row: {
+          last_ticket_number: number
+          organization_id: string
+          space_id: string
+          updated_at: string
+        }
+        Insert: {
+          last_ticket_number?: number
+          organization_id: string
+          space_id?: string
+          updated_at?: string
+        }
+        Update: {
+          last_ticket_number?: number
+          organization_id?: string
+          space_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "haraka_reception_ticket_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      haraka_reception_tickets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          customer_name: string
+          customer_phone: string | null
+          grand_total: number
+          id: string
+          items: Json
+          notes: string | null
+          organization_id: string
+          paid_at: string | null
+          pos_transaction_id: string | null
+          products_discount: number
+          products_subtotal: number
+          products_tax: number
+          products_total: number
+          service_job_id: string | null
+          services_total: number
+          space_id: string | null
+          status: string
+          ticket_number: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          grand_total?: number
+          id?: string
+          items?: Json
+          notes?: string | null
+          organization_id: string
+          paid_at?: string | null
+          pos_transaction_id?: string | null
+          products_discount?: number
+          products_subtotal?: number
+          products_tax?: number
+          products_total?: number
+          service_job_id?: string | null
+          services_total?: number
+          space_id?: string | null
+          status?: string
+          ticket_number: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          grand_total?: number
+          id?: string
+          items?: Json
+          notes?: string | null
+          organization_id?: string
+          paid_at?: string | null
+          pos_transaction_id?: string | null
+          products_discount?: number
+          products_subtotal?: number
+          products_tax?: number
+          products_total?: number
+          service_job_id?: string | null
+          services_total?: number
+          space_id?: string | null
+          status?: string
+          ticket_number?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "haraka_reception_tickets_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "pos_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "haraka_reception_tickets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "haraka_reception_tickets_pos_transaction_id_fkey"
+            columns: ["pos_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "pos_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "haraka_reception_tickets_service_job_id_fkey"
+            columns: ["service_job_id"]
+            isOneToOne: false
+            referencedRelation: "haraka_service_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       haraka_retainer_counters: {
         Row: {
           last_retainer_number: number

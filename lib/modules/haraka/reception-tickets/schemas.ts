@@ -1,0 +1,77 @@
+import { z } from 'zod'
+
+// Product lines mirror the register cart line (transactions/schemas.ts) so a
+// ticket's items can flow into completeSale unchanged at checkout.
+const productLineSchema = z.object({
+  itemId:    z.string().min(1),
+  itemName:  z.string().min(1).max(200),
+  sku:       z.string().max(100).nullable().optional(),
+  barcode:   z.string().max(100).nullable().optional(),
+  quantity:  z.coerce.number().positive(),
+  unitPrice: z.coerce.number().min(0),
+  taxRateId: z.string().nullable().optional(),
+  taxRate:   z.coerce.number().min(0).max(1).default(0),
+  discount:  z.coerce.number().min(0).default(0),
+})
+
+// Service lines mirror service-jobs lines (free text, not inventory-linked).
+const serviceLineSchema = z.object({
+  name:           z.string().trim().min(1).max(200),
+  description:    z.string().trim().max(1000).nullable().optional(),
+  quantity:       z.coerce.number().positive(),
+  unitPrice:      z.coerce.number().min(0),
+  taxRate:        z.coerce.number().min(0).max(1).default(0),
+  discountAmount: z.coerce.number().min(0).default(0),
+})
+
+const ticketBodySchema = z.object({
+  customerName:  z.string().trim().min(1).max(120),
+  customerPhone: z.string().trim().max(30).nullable().optional(),
+  customerId:    z.string().uuid().nullable().optional(),
+  items:         z.array(productLineSchema).default([]),
+  serviceItems:  z.array(serviceLineSchema).default([]),
+  notes:         z.string().trim().max(2000).nullable().optional(),
+})
+
+export const createTicketSchema = ticketBodySchema.refine(
+  (v) => v.items.length > 0 || v.serviceItems.length > 0,
+  { message: 'Add at least one product or service', path: ['items'] },
+)
+
+export const updateTicketSchema = ticketBodySchema.partial().refine(
+  (v) => {
+    if (v.items === undefined && v.serviceItems === undefined) return true
+    return (v.items?.length ?? 0) > 0 || (v.serviceItems?.length ?? 0) > 0
+  },
+  { message: 'Add at least one product or service', path: ['items'] },
+)
+
+export const cancelTicketSchema = z.object({
+  status: z.literal('cancelled'),
+})
+
+export const checkoutTicketSchema = z.object({
+  sessionId: z.string().min(1, 'Open a session before collecting payment'),
+  payments: z
+    .array(
+      z.object({
+        method:    z.enum(['cash', 'card', 'other']),
+        amount:    z.coerce.number().min(0),
+        reference: z.string().nullable().optional(),
+        cardLast4: z
+          .string()
+          .regex(/^\d{4}$/, 'Card last4 must be exactly 4 digits')
+          .nullable()
+          .optional()
+          .or(z.literal('')),
+      }),
+    )
+    .min(1, 'At least one payment is required'),
+  /** Client-supplied idempotency key (UUID) so a duplicate Submit doesn't double-charge. */
+  offlineId:   z.string().min(8),
+  skipFawtara: z.boolean().optional(),
+})
+
+export type CreateTicketPayload = z.infer<typeof createTicketSchema>
+export type UpdateTicketPayload = z.infer<typeof updateTicketSchema>
+export type CheckoutTicketPayload = z.infer<typeof checkoutTicketSchema>

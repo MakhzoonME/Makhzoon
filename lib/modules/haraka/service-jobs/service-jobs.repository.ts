@@ -225,6 +225,44 @@ export class ServiceJobsRepository {
     return toJob(data as unknown as Row)
   }
 
+  /**
+   * Replace the job's line items and reprice its totals. Callers are
+   * responsible for checking the job is still editable (not started/paid).
+   */
+  async replaceItems(
+    tenant: TenantContext,
+    id: string,
+    lines: CartLineInput[],
+  ): Promise<HarakaServiceJob> {
+    const priced = priceCart(lines)
+    const items = priced.lines.map((l) => ({
+      name:           l.itemName,
+      description:    null,
+      quantity:       l.quantity,
+      unitPrice:      l.unitPrice,
+      taxRate:        l.taxRate,
+      taxAmount:      l.taxAmount,
+      discountAmount: l.discount,
+      lineTotal:      l.lineTotal,
+    }))
+    const { data, error } = await supabaseAdmin
+      .from('haraka_service_jobs')
+      .update({
+        items,
+        subtotal:        priced.totals.subtotal,
+        discount_amount: priced.totals.discountTotal,
+        tax_amount:      priced.totals.taxTotal,
+        total:           priced.totals.total,
+        updated_by:      tenant.userId,
+      })
+      .eq('id', id)
+      .eq('organization_id', tenant.organizationId)
+      .select('*')
+      .single()
+    if (error) throw error
+    return toJob(data as unknown as Row)
+  }
+
   async updateStatus(
     tenant: TenantContext,
     id: string,

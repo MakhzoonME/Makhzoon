@@ -63,6 +63,7 @@ ruvector.db-*
 functions/ruvector.db
 functions/ruvector.db-*
 .swarm/
+.claude-flow/
 agentdb.rvf
 agentdb.rvf.lock
 
@@ -74,6 +75,9 @@ Makhzoon-handoff.zip
 x.collectionGroup
 *.bak
 *.orig
+/acc
+/PublicCompositeTypeNameOrOptions
+/DefaultSchemaTableNameOrOptions
 
 # Design canvas files (handoff reference — not production code)
 *Journeys.html

@@ -1,15 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useT } from '@/hooks/ui';
 import type { CustomFieldType, CustomField, CustomFieldOption } from '@/types/banna.types';
+
+const MAX_OPTIONS = 50;
 
 const FIELD_TYPES: { value: CustomFieldType; label: string }[] = [
   { value: 'text', label: 'Text' },
@@ -62,23 +64,35 @@ export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, subm
   const [label, setLabel] = useState(initial?.label ?? '');
   const [labelAr, setLabelAr] = useState(initial?.labelAr ?? '');
   const [required, setRequired] = useState(initial?.required ?? false);
-  const [options, setOptions] = useState(initial?.options ? JSON.stringify(initial.options) : '');
+  const [options, setOptions] = useState<CustomFieldOption[]>(initial?.options ?? []);
   const [placeholder, setPlaceholder] = useState(initial?.placeholder ?? '');
   const [placeholderAr, setPlaceholderAr] = useState(initial?.placeholderAr ?? '');
   const [sortOrder, setSortOrder] = useState(initial?.sortOrder ?? 0);
+
+  function addOption() {
+    setOptions((prev) => (prev.length >= MAX_OPTIONS ? prev : [...prev, { value: '', label: '', labelAr: '' }]));
+  }
+
+  function updateOption(index: number, patch: Partial<CustomFieldOption>) {
+    setOptions((prev) => prev.map((o, i) => (i === index ? { ...o, ...patch } : o)));
+  }
+
+  function removeOption(index: number) {
+    setOptions((prev) => prev.filter((_, i) => i !== index));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     // Only select/multi_select carry options; every other type (text, number,
     // date, boolean, user) must omit the key entirely — the API schema is
     // z.array(...).optional() and rejects '' or a stringified array.
-    const parsedOptions: CustomFieldOption[] | undefined =
-      (type === 'select' || type === 'multi_select') && options.trim()
-        ? JSON.parse(options.trim())
-        : undefined;
+    const isChoiceType = type === 'select' || type === 'multi_select';
+    const cleanOptions = options
+      .map((o) => ({ value: o.value.trim(), label: o.label.trim(), labelAr: o.labelAr?.trim() || undefined }))
+      .filter((o) => o.value && o.label);
     await onSubmit({
       module, fieldKey, type, label, labelAr, required,
-      options: parsedOptions,
+      options: isChoiceType && cleanOptions.length > 0 ? cleanOptions : undefined,
       placeholder, placeholderAr, sortOrder,
     });
   }
@@ -130,13 +144,45 @@ export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, subm
 
       {(type === 'select' || type === 'multi_select') && (
         <div className="space-y-1.5">
-          <Label>{t('banna.fieldOptions')}</Label>
-          <Textarea
-            value={options}
-            onChange={(e) => setOptions(e.target.value)}
-            placeholder='[{"value": "opt1", "label": "Option 1"}]'
-            rows={3}
-          />
+          <div className="flex items-center justify-between">
+            <Label>{t('banna.fieldOptions')}</Label>
+            <span className="text-xs text-gray-400">{options.length}/{MAX_OPTIONS}</span>
+          </div>
+          <div className="space-y-2">
+            {options.map((opt, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Input
+                  value={opt.value}
+                  onChange={(e) => updateOption(i, { value: e.target.value })}
+                  placeholder="Value"
+                  className="font-mono text-xs"
+                />
+                <Input
+                  value={opt.label}
+                  onChange={(e) => updateOption(i, { label: e.target.value })}
+                  placeholder="Label"
+                />
+                <Input
+                  value={opt.labelAr ?? ''}
+                  onChange={(e) => updateOption(i, { labelAr: e.target.value })}
+                  placeholder="Label (Arabic)"
+                  dir="rtl"
+                />
+                <Button type="button" size="sm" variant="ghost" onClick={() => removeOption(i)} aria-label={t('common.remove')}>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ))}
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={addOption}
+            disabled={options.length >= MAX_OPTIONS}
+          >
+            <Plus className="h-3.5 w-3.5 me-1" /> {t('banna.addOption')}
+          </Button>
         </div>
       )}
 

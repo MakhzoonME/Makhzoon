@@ -7,6 +7,7 @@ import {
 } from '@/lib/db/requests';
 import { hasPermission } from '@/lib/platform/permissions';
 import { auditLog } from '@/lib/platform/audit';
+import { notificationQueue } from '@/lib/notifications/notification-queue';
 import type { TenantContext } from '@/lib/platform/tenancy/types';
 import { checkResourceLimit } from '@/lib/platform/limits/check-limit';
 
@@ -59,6 +60,14 @@ export async function create(tenant: TenantContext, data: CreateRequestInput) {
     newValue: data as unknown as Record<string, unknown>,
   });
 
+  notificationQueue.enqueue({
+    tenant,
+    eventType: 'requests.submitted',
+    data: { type: data.type, description: data.description, requesterName: tenant.user.displayName },
+    link: `/requests/${id}`,
+    titleOverride: `New ${data.type.replace('_', ' ').toLowerCase()} request submitted`,
+  });
+
   return { id };
 }
 
@@ -86,6 +95,15 @@ export async function approve(tenant: TenantContext, requestId: string) {
     newValue: { status: 'APPROVED' },
   });
 
+  notificationQueue.enqueue({
+    tenant,
+    eventType: 'requests.approved',
+    data: { type: request.type, description: request.description },
+    link: `/requests/${requestId}`,
+    titleOverride: `Your ${request.type.replace('_', ' ').toLowerCase()} request was approved`,
+    recipientIds: [request.createdBy],
+  });
+
   return request;
 }
 
@@ -111,5 +129,14 @@ export async function reject(tenant: TenantContext, requestId: string) {
     recordId: requestId,
     oldValue: { status: request.status },
     newValue: { status: 'REJECTED' },
+  });
+
+  notificationQueue.enqueue({
+    tenant,
+    eventType: 'requests.rejected',
+    data: { type: request.type, description: request.description },
+    link: `/requests/${requestId}`,
+    titleOverride: `Your ${request.type.replace('_', ' ').toLowerCase()} request was rejected`,
+    recipientIds: [request.createdBy],
   });
 }

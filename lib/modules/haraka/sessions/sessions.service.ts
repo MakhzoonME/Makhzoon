@@ -3,6 +3,7 @@ import type { TenantContext } from '@/lib/platform/tenancy/types'
 import { hasPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
 import { eventBus } from '@/lib/platform/events/event-bus'
+import { notificationQueue } from '@/lib/notifications/notification-queue'
 import { SessionsRepository, type SessionListOpts } from './sessions.repository'
 
 const repo = new SessionsRepository()
@@ -102,6 +103,13 @@ export class SessionsService {
       },
     })
     await eventBus.emit('pos.session.closed', { tenant, sessionId: id, result })
+    notificationQueue.enqueue({
+      tenant,
+      eventType: 'pos.session_closed',
+      data: { closingFloat: input.closingFloat, expectedFloat: result.expectedFloat, discrepancy: result.discrepancy },
+      link: `/haraka/sessions/${id}`,
+      titleOverride: 'POS session closed',
+    })
     return result
   }
 }

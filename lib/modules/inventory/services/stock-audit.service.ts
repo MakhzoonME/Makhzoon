@@ -3,6 +3,7 @@ import type { TenantContext } from '@/lib/platform/tenancy/types'
 import { hasPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
 import { eventBus } from '@/lib/platform/events/event-bus'
+import { notificationQueue } from '@/lib/notifications/notification-queue'
 import {
   StockAuditRepository,
   type CreateStockAuditInput,
@@ -79,6 +80,13 @@ export class StockAuditService {
       newValue: { adjustmentsApplied: result.applied },
     })
     await eventBus.emit('inventory.stock-audit.completed', { tenant, id: auditId, result })
+    notificationQueue.enqueue({
+      tenant,
+      eventType: 'inventory.audit_completed',
+      data: { adjustmentsApplied: result.applied },
+      link: `/raseed/audits/${auditId}`,
+      titleOverride: 'Stock audit completed',
+    })
     return result
   }
 }

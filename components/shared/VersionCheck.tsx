@@ -49,7 +49,7 @@ export function VersionCheck() {
 
   return (
     <div
-      className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full border border-border bg-surface-card shadow-lg px-4 py-2 text-sm"
+      className="fixed top-3 right-3 z-50 flex items-center gap-3 rounded-full border border-border bg-surface-card shadow-lg px-4 py-2 text-sm"
       role="status"
     >
       <span className="text-gray-700">{t('update.available')}</span>

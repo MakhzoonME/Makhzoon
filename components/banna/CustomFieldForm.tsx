@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useT } from '@/hooks/ui';
+import { slugifyKey, dedupeKey } from '@/lib/utils/format';
 import type { CustomFieldType, CustomField, CustomFieldOption } from '@/types/banna.types';
 
 const MAX_OPTIONS = 50;
@@ -59,7 +60,6 @@ interface CustomFieldFormProps {
 export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, submitting }: CustomFieldFormProps) {
   const { t } = useT();
   const [module, setModule] = useState(initial?.module ?? fixedModule ?? 'assets');
-  const [fieldKey, setFieldKey] = useState(initial?.fieldKey ?? '');
   const [type, setType] = useState<CustomFieldType>(initial?.type ?? 'text');
   const [label, setLabel] = useState(initial?.label ?? '');
   const [labelAr, setLabelAr] = useState(initial?.labelAr ?? '');
@@ -87,9 +87,16 @@ export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, subm
     // date, boolean, user) must omit the key entirely — the API schema is
     // z.array(...).optional() and rejects '' or a stringified array.
     const isChoiceType = type === 'select' || type === 'multi_select';
+    const usedOptionKeys = new Set<string>();
     const cleanOptions = options
-      .map((o) => ({ value: o.value.trim(), label: o.label.trim(), labelAr: o.labelAr?.trim() || undefined }))
-      .filter((o) => o.value && o.label);
+      .map((o) => ({ label: o.label.trim(), labelAr: o.labelAr?.trim() || undefined }))
+      .filter((o) => o.label)
+      .map((o) => {
+        const key = dedupeKey(slugifyKey(o.label, 'option'), usedOptionKeys);
+        usedOptionKeys.add(key);
+        return { value: key, ...o };
+      });
+    const fieldKey = initial?.fieldKey ?? slugifyKey(label, 'field');
     await onSubmit({
       module, fieldKey, type, label, labelAr, required,
       options: isChoiceType && cleanOptions.length > 0 ? cleanOptions : undefined,
@@ -126,11 +133,6 @@ export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, subm
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label>{t('banna.fieldKey')}</Label>
-        <Input value={fieldKey} onChange={(e) => setFieldKey(e.target.value)} placeholder="e.g. serial_number" className="font-mono" disabled={!!initial} required />
-      </div>
-
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label>{t('banna.fieldLabel')}</Label>
@@ -151,12 +153,6 @@ export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, subm
           <div className="space-y-2">
             {options.map((opt, i) => (
               <div key={i} className="flex items-center gap-2">
-                <Input
-                  value={opt.value}
-                  onChange={(e) => updateOption(i, { value: e.target.value })}
-                  placeholder="Value"
-                  className="font-mono text-xs"
-                />
                 <Input
                   value={opt.label}
                   onChange={(e) => updateOption(i, { label: e.target.value })}

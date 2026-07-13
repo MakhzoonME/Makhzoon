@@ -26,6 +26,7 @@ import {
 import { toast, useT } from '@/hooks/ui';
 import { LIST_REGISTRY, LIST_KEYS, type ListKey, type PlatformListItem, type OrgListItem } from '@/types';
 import { cn } from '@/lib/utils/cn';
+import { slugifyKey, dedupeKey } from '@/lib/utils/format';
 
 const FREE_KEYS = LIST_KEYS.filter((k) => !LIST_REGISTRY[k].isSystem);
 const SYSTEM_KEYS = LIST_KEYS.filter((k) => LIST_REGISTRY[k].isSystem);
@@ -112,9 +113,10 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
           patch: { label: platformEdit.label.trim(), labelAr, color, sortOrder: platformEdit.sortOrder },
         });
       } else {
+        const value = dedupeKey(slugifyKey(platformEdit.label.trim(), selected), new Set(platformItems.map((i) => i.value)));
         await createPlatformMut.mutateAsync({
           listKey: selected,
-          value: platformEdit.value.trim(),
+          value,
           label: platformEdit.label.trim(),
           labelAr,
           color,
@@ -184,7 +186,6 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
   const [orgEdit, setOrgEdit] = useState<OrgEditState | null>(null);
   const [orgDeleteTarget, setOrgDeleteTarget] = useState<OrgListItem | null>(null);
   const [addingCustom, setAddingCustom] = useState(false);
-  const [customValue, setCustomValue] = useState('');
   const [customLabel, setCustomLabel] = useState('');
   const [customLabelAr, setCustomLabelAr] = useState('');
   const [customColor, setCustomColor] = useState('');
@@ -265,11 +266,12 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
   }
 
   async function addCustom() {
-    if (!customValue.trim() || !customLabel.trim()) return;
+    if (!customLabel.trim()) return;
     try {
+      const value = dedupeKey(slugifyKey(customLabel.trim(), selected), new Set(orgItems.map((i) => i.value)));
       await upsertOrgMut.mutateAsync({
         listKey: selected,
-        value: customValue.trim(),
+        value,
         label: customLabel.trim(),
         labelAr: customLabelAr.trim() || null,
         color: customColor || null,
@@ -277,7 +279,6 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
       });
       toast.success(t('common.added'));
       setAddingCustom(false);
-      setCustomValue('');
       setCustomLabel('');
       setCustomLabelAr('');
       setCustomColor('');
@@ -352,7 +353,6 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
                     />
                     <div className="flex-1 min-w-0">
                       <span className="text-sm text-gray-900">{orgOverride?.label ?? item.label}</span>
-                      <span className="ms-2 text-xs text-gray-400 font-mono">{item.value}</span>
                       {orgOverride && orgOverride.enabled && (
                         <Badge variant="blue" className="ms-2">{t('superadminLists.orgOverride')}</Badge>
                       )}
@@ -420,7 +420,6 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
                     />
                     <div className="flex-1 min-w-0">
                       <span className="text-sm text-gray-900">{item.label ?? item.value}</span>
-                      <span className="ms-2 text-xs text-gray-400 font-mono">{item.value}</span>
                       <Badge variant="blue" className="ms-2">{t('superadminLists.custom')}</Badge>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => openOrgEditCustom(item)} aria-label={t('common.edit')}>
@@ -447,16 +446,6 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
           {platformEdit && (
             <>
               <DialogBody className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label>{t('superadminLists.value')} {(!!platformEdit.id || meta.isSystem) && <span className="text-gray-400">{t('superadminLists.locked')}</span>}</Label>
-                  <Input
-                    value={platformEdit.value}
-                    disabled={!!platformEdit.id || meta.isSystem}
-                    onChange={(e) => setPlatformEdit({ ...platformEdit, value: e.target.value })}
-                    placeholder={t('superadminLists.storedValue')}
-                    className="font-mono"
-                  />
-                </div>
                 <div className="flex gap-3">
                   <div className="flex-1 space-y-1.5">
                     <Label>{t('superadminLists.labelEn')}</Label>
@@ -503,8 +492,7 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
                   disabled={
                     createPlatformMut.isPending ||
                     updatePlatformMut.isPending ||
-                    !platformEdit.label.trim() ||
-                    (!platformEdit.id && !platformEdit.value.trim())
+                    !platformEdit.label.trim()
                   }
                 >
                   {t('common.save')}

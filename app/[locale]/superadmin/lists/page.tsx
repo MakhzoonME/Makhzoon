@@ -26,6 +26,7 @@ import {
 import { toast } from '@/hooks/ui';
 import { LIST_REGISTRY, LIST_KEYS, type ListKey, type PlatformListItem } from '@/types';
 import { cn } from '@/lib/utils/cn';
+import { slugifyKey, dedupeKey } from '@/lib/utils/format';
 
 const FREE_KEYS = LIST_KEYS.filter((k) => !LIST_REGISTRY[k].isSystem);
 const SYSTEM_KEYS = LIST_KEYS.filter((k) => LIST_REGISTRY[k].isSystem);
@@ -74,9 +75,10 @@ export default function ListsPage() {
           patch: { label: editing.label.trim(), labelAr, color, sortOrder: editing.sortOrder },
         });
       } else {
+        const value = dedupeKey(slugifyKey(editing.label.trim(), selected), new Set(all.filter((i) => i.listKey === selected).map((i) => i.value)));
         await createMut.mutateAsync({
           listKey: selected,
-          value: editing.value.trim(),
+          value,
           label: editing.label.trim(),
           labelAr,
           color,
@@ -158,7 +160,6 @@ export default function ListsPage() {
                 />
                 <div className="flex-1 min-w-0">
                   <span className="text-sm text-gray-900">{item.label}</span>
-                  <span className="ms-2 text-xs text-gray-400 font-mono">{item.value}</span>
                 </div>
                 <Switch checked={item.enabled} onCheckedChange={() => toggleEnabled(item)} aria-label={t('superadminLists.enabled')} />
                 <Button variant="ghost" size="icon" onClick={() => openEdit(item)} aria-label={t('common.edit')}>
@@ -185,16 +186,6 @@ export default function ListsPage() {
           {editing && (
             <>
               <DialogBody className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label>{t('superadminLists.value')} {(!!editing.id || meta.isSystem) && <span className="text-gray-400">{t('superadminLists.locked')}</span>}</Label>
-                  <Input
-                    value={editing.value}
-                    disabled={!!editing.id || meta.isSystem}
-                    onChange={(e) => setEditing({ ...editing, value: e.target.value })}
-                    placeholder={t('superadminLists.storedValue')}
-                    className="font-mono"
-                  />
-                </div>
                 <div className="flex gap-3">
                   <div className="flex-1 space-y-1.5">
                     <Label>{t('superadminLists.labelEn')}</Label>
@@ -236,7 +227,7 @@ export default function ListsPage() {
               </DialogBody>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setEditing(null)}>{t('common.cancel')}</Button>
-                <Button onClick={save} disabled={createMut.isPending || updateMut.isPending || !editing.label.trim() || (!editing.id && !editing.value.trim())}>
+                <Button onClick={save} disabled={createMut.isPending || updateMut.isPending || !editing.label.trim()}>
                   {t('common.save')}
                 </Button>
               </DialogFooter>

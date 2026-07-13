@@ -132,7 +132,6 @@ export default function CustomFieldsPage() {
         <table className="w-full text-sm">
           <thead className="bg-surface-page border-b border-border">
             <tr>
-              <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('banna.fieldKey')}</th>
               <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('banna.fieldLabel')}</th>
               <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('banna.fieldType')}</th>
               <th className="text-start px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('banna.fieldModule')}</th>
@@ -143,12 +142,11 @@ export default function CustomFieldsPage() {
           <tbody className="divide-y divide-border">
             {fields.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-sm text-gray-400">{t('banna.noFields')}</td>
+                <td colSpan={5} className="px-4 py-10 text-center text-sm text-gray-400">{t('banna.noFields')}</td>
               </tr>
             )}
             {fields.map((field) => (
               <tr key={field.id} className="hover:bg-surface-page transition-colors">
-                <td className="px-4 py-3 font-mono text-xs text-gray-600">{field.fieldKey}</td>
                 <td className="px-4 py-3 font-medium text-gray-900">{field.label}</td>
                 <td className="px-4 py-3">
                   <Badge variant="default">{field.type}</Badge>

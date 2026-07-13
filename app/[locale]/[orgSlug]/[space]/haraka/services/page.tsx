@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
+import { useList } from '@/hooks/lists';
 import { useServices, useCreateService, useUpdateService, useDeleteService, useTaxRates } from '@/hooks/haraka';
 import { createServiceSchema, type CreateServicePayload } from '@/lib/modules/haraka/services/schemas';
 import { useAdminGuard, useModuleGuard, toast, useT } from '@/hooks/ui';
@@ -23,13 +24,20 @@ import type { HarakaService } from '@/types';
 export default function ServiceCatalogPage() {
   const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
   const { isAllowed } = useAdminGuard('pos.manage_services');
-  const { t } = useT();
+  const { t, locale } = useT();
+  const isAr = locale === 'ar';
   const { data: orgInfo } = useOrgInfo();
-  const currency = orgInfo?.currency ?? 'USD';
+  const currency = orgInfo?.currency ?? 'JOD';
 
   const { data, isLoading } = useServices();
   const { data: taxRatesData } = useTaxRates();
   const taxRates = taxRatesData?.taxRates ?? [];
+  const { data: categoryItems = [] } = useList('service_category');
+  const categoryLabel = (value: string | null) => {
+    if (!value) return null;
+    const item = categoryItems.find((c) => c.value === value);
+    return item ? (isAr ? item.labelAr || item.label : item.label) : value;
+  };
   const createMut = useCreateService();
   const updateMut = useUpdateService();
   const deleteMut = useDeleteService();
@@ -93,7 +101,7 @@ export default function ServiceCatalogPage() {
 
   const columns: ColumnDef<HarakaService>[] = [
     { key: 'name', header: t('col.name'), render: (s) => <span className="text-sm font-medium text-gray-800">{s.name}</span> },
-    { key: 'category', header: t('col.category'), render: (s) => <span className="text-xs text-gray-500">{s.category ?? '—'}</span> },
+    { key: 'category', header: t('col.category'), render: (s) => <span className="text-xs text-gray-500">{categoryLabel(s.category) ?? '—'}</span> },
     {
       key: 'price',
       header: t('col.price'),

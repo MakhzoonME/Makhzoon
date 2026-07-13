@@ -3,7 +3,7 @@ import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getOrganizationById, updateOrganization } from '@/lib/db/organizations';
 import { getSuperAdminUserById } from '@/lib/db/superadmin-users';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { ORG_CATEGORIES } from '@/types';
+import { ORG_CATEGORIES, ORG_CURRENCIES } from '@/types';
 import { queueAuditLog } from '@/lib/audit/logger';
 import { z } from 'zod';
 
@@ -12,6 +12,7 @@ const orgSelfPatchSchema = z.object({
   contactEmail: z.string().max(254).optional(),
   description: z.string().max(2000).optional(),
   category: z.string().max(100).optional(),
+  currency: z.string().max(10).optional(),
 }).passthrough();
 
 /** Legacy PII-scrub pattern from the Firestore clone scripts. No clone exists
@@ -68,6 +69,7 @@ export async function GET() {
       contactEmail,
       description: org.description,
       category: org.category,
+      currency: org.currency ?? 'JOD',
       accountManager,
     });
   } catch (err) {
@@ -92,7 +94,7 @@ export async function PATCH(req: NextRequest) {
     const parsedBody = orgSelfPatchSchema.safeParse(await req.json().catch(() => null));
     if (!parsedBody.success) return NextResponse.json({ error: 'Invalid body', details: parsedBody.error.flatten() }, { status: 422 });
     const body = parsedBody.data;
-    const patch: Partial<{ name: string; contactEmail: string; description: string; category: string | null; updatedBy: string }> = {};
+    const patch: Partial<{ name: string; contactEmail: string; description: string; category: string | null; currency: string; updatedBy: string }> = {};
 
     if (typeof body.name === 'string') {
       const name = body.name.trim();
@@ -106,6 +108,12 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: 'Invalid category' }, { status: 422 });
       }
       patch.category = body.category || null;
+    }
+    if (typeof body.currency === 'string') {
+      if (!(ORG_CURRENCIES as readonly string[]).includes(body.currency)) {
+        return NextResponse.json({ error: 'Invalid currency' }, { status: 422 });
+      }
+      patch.currency = body.currency;
     }
 
     if (!Object.keys(patch).length) return NextResponse.json({ error: 'Nothing to update' }, { status: 422 });

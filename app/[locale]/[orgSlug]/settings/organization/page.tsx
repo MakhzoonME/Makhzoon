@@ -14,7 +14,7 @@ import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { useT, useAdminGuard } from '@/hooks/ui';
 import { toast } from '@/hooks/ui';
 import { apiFetch } from '@/lib/utils/api-fetch';
-import { ORG_CATEGORIES } from '@/types';
+import { ORG_CATEGORIES, ORG_CURRENCIES } from '@/types';
 import { Check, Upload, X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
@@ -46,6 +46,7 @@ export default function OrganizationInfoPage() {
   // ── Org info fields ──
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
+  const [currency, setCurrency] = useState('JOD');
   const [contactEmail, setContactEmail] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
@@ -80,6 +81,8 @@ export default function OrganizationInfoPage() {
       setName(org.name ?? '');
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCategory(org.category ?? '');
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCurrency(org.currency ?? 'JOD');
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setContactEmail(org.contactEmail ?? '');
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -135,7 +138,7 @@ export default function OrganizationInfoPage() {
       const res = await apiFetch('/api/organizations/self', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, category: category || null, contactEmail, description }),
+        body: JSON.stringify({ name, category: category || null, currency, contactEmail, description }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -194,6 +197,7 @@ export default function OrganizationInfoPage() {
     if (org) {
       setName(org.name ?? '');
       setCategory(org.category ?? '');
+      setCurrency(org.currency ?? 'JOD');
       setContactEmail(org.contactEmail ?? '');
       setDescription(org.description ?? '');
     }
@@ -247,6 +251,21 @@ export default function OrganizationInfoPage() {
                   maxLength={200}
                 />
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="org-currency">{t('settings.currency')}</Label>
+              <Select value={currency} onValueChange={setCurrency}>
+                <SelectTrigger id="org-currency">
+                  <SelectValue placeholder={t('settings.selectCurrency')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {ORG_CURRENCIES.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-gray-400">{t('settings.currencyHelp')}</p>
             </div>
 
             <div className="space-y-1.5">

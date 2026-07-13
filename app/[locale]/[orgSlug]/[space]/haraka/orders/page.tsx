@@ -36,7 +36,7 @@ export default function OrdersListPage() {
   if (!featureAllowed || !isAllowed) return null;
 
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
-  const currency = orgInfo?.currency ?? 'USD';
+  const currency = orgInfo?.currency ?? 'JOD';
 
   if (!isAllowed) {
     return (

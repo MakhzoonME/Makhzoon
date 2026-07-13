@@ -27,7 +27,7 @@ export default function NewServiceJobPage() {
   const createMut = useCreateServiceJob();
   const { t } = useT();
 
-  const currency = orgInfo?.currency ?? 'USD';
+  const currency = orgInfo?.currency ?? 'JOD';
   const base     = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
 
   const [customerName,    setCustomerName]    = useState('');

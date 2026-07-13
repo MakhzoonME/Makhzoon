@@ -35,7 +35,9 @@ export interface CustomFieldFormData {
   label: string;
   labelAr: string;
   required: boolean;
-  options: string;
+  /** Array (select/multi_select) or omitted — never a string. The API schema
+   *  is z.array(...).optional() and rejects '' or a JSON-stringified value. */
+  options?: CustomFieldOption[];
   placeholder: string;
   placeholderAr: string;
   sortOrder: number;
@@ -67,12 +69,16 @@ export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, subm
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const parsedOptions: CustomFieldOption[] | undefined = options.trim()
-      ? JSON.parse(options.trim())
-      : undefined;
+    // Only select/multi_select carry options; every other type (text, number,
+    // date, boolean, user) must omit the key entirely — the API schema is
+    // z.array(...).optional() and rejects '' or a stringified array.
+    const parsedOptions: CustomFieldOption[] | undefined =
+      (type === 'select' || type === 'multi_select') && options.trim()
+        ? JSON.parse(options.trim())
+        : undefined;
     await onSubmit({
       module, fieldKey, type, label, labelAr, required,
-      options: parsedOptions ? JSON.stringify(parsedOptions) : '',
+      options: parsedOptions,
       placeholder, placeholderAr, sortOrder,
     });
   }

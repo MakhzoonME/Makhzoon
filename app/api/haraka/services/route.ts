@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       category:    d.category ?? null,
       description: d.description ?? null,
       price:       d.price,
-      taxRateId:   d.taxRateId ?? null,
+      taxRateId:   d.taxRateId || null,
       active:      d.active,
     })
     return NextResponse.json({ service: result }, { status: 201 })

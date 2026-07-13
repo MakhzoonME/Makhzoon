@@ -1382,6 +1382,7 @@ const en = {
   'managedList.service_job_type':     'Service Job Types',
   'managedList.service_job_payment_method': 'Service Job Payment Methods',
   'managedList.retainer_status':      'Retainer Statuses',
+  'managedList.service_category':     'Service Categories',
 
   // ── Subscription inclusions + features ────────────────────────────
   'inclusion.csvExport':            'CSV export',
@@ -3179,6 +3180,7 @@ const ar: Record<keyof typeof en, string> = {
   'managedList.service_job_type':     'أنواع وظائف الخدمة',
   'managedList.service_job_payment_method': 'طرق دفع وظائف الخدمة',
   'managedList.retainer_status':      'حالات العقود الدورية',
+  'managedList.service_category':     'فئات الخدمات',
 
   // ── Subscription inclusions + features ────────────────────────────
   'inclusion.csvExport':            'تصدير CSV',

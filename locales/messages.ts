@@ -35,6 +35,7 @@ const en = {
   'nav.harakaReports':      'POS Reports',
   'nav.harakaServiceJobs':  'Services',
   'nav.harakaRetainers':    'Retainers',
+  'nav.harakaServiceCatalog': 'Service Catalog',
   'nav.register':           'POS Register',
   'nav.sessions':           'Sessions',
   'nav.transactions':       'Transactions',
@@ -263,6 +264,8 @@ const en = {
   'common.profile':      'Profile',
   'common.yes':          'Yes',
   'common.no':           'No',
+  'common.active':       'Active',
+  'common.inactive':     'Inactive',
   'common.confirm':      'Confirm',
   'update.available':    'A new version is available.',
   'update.refresh':      'Refresh',
@@ -547,6 +550,7 @@ const en = {
   'col.name':         'Name',
   'col.category':     'Category',
   'col.status':       'Status',
+  'col.price':        'Price',
   'col.addedBy':      'Added By',
   'col.date':         'Date',
   'col.vendor':       'Vendor',
@@ -1480,6 +1484,8 @@ const en = {
   'permOp.pos.checkout_service_jobs':   'Checkout Service Jobs (items, status, payment)',
   'permOp.pos.view_retainers':          'View Retainers',
   'permOp.pos.manage_retainers':        'Create & Manage Retainers',
+  'permOp.pos.view_services':           'View Service Catalog',
+  'permOp.pos.manage_services':         'Manage Service Catalog',
 
 
   // ── Service Jobs ─────────────────────────────────────────────────────────
@@ -1515,6 +1521,22 @@ const en = {
   'serviceLine.total':              'Total:',
   'serviceLine.placeholder':        'e.g. Website design, AC maintenance…',
   'serviceLine.descPlaceholder':    'Optional details…',
+  'serviceLine.pickFromCatalog':    'Pick from catalog',
+  'serviceLine.searchCatalog':      'Search services…',
+  'serviceLine.noServicesFound':    'No services found',
+
+  // ── POS Services catalog ──────────────────────────────────────────
+  'services.title':          'Service Catalog',
+  'services.subtitle':       'Services sold through the Haraka POS register, independent of Raseed stock items.',
+  'services.addService':     'Add Service',
+  'services.editService':    'Edit Service',
+  'services.noServices':     'No services yet.',
+  'services.labelName':      'Service Name',
+  'services.labelPrice':     'Price',
+  'services.labelActive':    'Active',
+  'services.activeHelp':     'When off, this service is hidden from the POS register.',
+  'services.deleteTitle':    'Delete Service',
+  'services.deleteDesc':     'Delete "{name}"? This cannot be undone.',
   // Service Job Payments Panel
   'paymentPanel.sectionLabel':      'Payment',
   'paymentPanel.jobTotal':          'Job total',
@@ -1809,6 +1831,7 @@ const ar: Record<keyof typeof en, string> = {
   'nav.harakaReports':      'تقارير المبيعات',
   'nav.harakaServiceJobs':  'الخدمات',
   'nav.harakaRetainers':    'العقود',
+  'nav.harakaServiceCatalog': 'كتالوج الخدمات',
   'nav.register':           'نقطة البيع',
   'nav.sessions':           'الجلسات',
   'nav.transactions':       'المعاملات',
@@ -1986,6 +2009,8 @@ const ar: Record<keyof typeof en, string> = {
   'common.profile':      'الملف الشخصي',
   'common.yes':          'نعم',
   'common.no':           'لا',
+  'common.active':       'مفعّل',
+  'common.inactive':     'غير مفعّل',
   'common.confirm':      'تأكيد',
   'update.available':    'يتوفر إصدار جديد.',
   'update.refresh':      'تحديث',
@@ -2320,6 +2345,7 @@ const ar: Record<keyof typeof en, string> = {
   'col.name':         'الاسم',
   'col.category':     'الفئة',
   'col.status':       'الحالة',
+  'col.price':        'السعر',
   'col.addedBy':      'أضيف بواسطة',
   'col.date':         'التاريخ',
   'col.vendor':       'المورد',
@@ -3255,6 +3281,8 @@ const ar: Record<keyof typeof en, string> = {
   'permOp.pos.checkout_service_jobs':   'إتمام طلبات الخدمة (العناصر، الحالة، الدفع)',
   'permOp.pos.view_retainers':          'عرض العقود',
   'permOp.pos.manage_retainers':        'إنشاء العقود وإدارتها',
+  'permOp.pos.view_services':           'عرض كتالوج الخدمات',
+  'permOp.pos.manage_services':         'إدارة كتالوج الخدمات',
 
 
   // ── Service Jobs ─────────────────────────────────────────────────────────
@@ -3290,6 +3318,22 @@ const ar: Record<keyof typeof en, string> = {
   'serviceLine.total':              'الإجمالي:',
   'serviceLine.placeholder':        'مثال: تصميم موقع، صيانة مكيف…',
   'serviceLine.descPlaceholder':    'تفاصيل اختيارية…',
+  'serviceLine.pickFromCatalog':    'اختيار من الكتالوج',
+  'serviceLine.searchCatalog':      'بحث في الخدمات…',
+  'serviceLine.noServicesFound':    'لا توجد خدمات',
+
+  // ── كتالوج خدمات نقاط البيع ──────────────────────────────────────
+  'services.title':          'كتالوج الخدمات',
+  'services.subtitle':       'الخدمات التي تُباع عبر جهاز نقاط البيع في حركة، بشكل مستقل عن أصناف رصيد.',
+  'services.addService':     'إضافة خدمة',
+  'services.editService':    'تعديل الخدمة',
+  'services.noServices':     'لا توجد خدمات بعد.',
+  'services.labelName':      'اسم الخدمة',
+  'services.labelPrice':     'السعر',
+  'services.labelActive':    'مفعّلة',
+  'services.activeHelp':     'عند الإيقاف، تختفي هذه الخدمة من جهاز نقاط البيع.',
+  'services.deleteTitle':    'حذف الخدمة',
+  'services.deleteDesc':     'حذف "{name}"؟ لا يمكن التراجع عن هذا الإجراء.',
   // Service Job Payments Panel
   'paymentPanel.sectionLabel':      'الدفع',
   'paymentPanel.jobTotal':          'إجمالي الطلب',

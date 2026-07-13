@@ -36,7 +36,6 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
     defaultValues: {
       name: item?.name ?? '',
       category: item?.category ?? '',
-      itemType: item?.itemType ?? 'product',
       sku: item?.sku ?? '',
       unit: item?.unit ?? 'each',
       quantityOnHand: item?.quantityOnHand ?? 0,
@@ -56,8 +55,6 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
   });
 
   const posEnabled = form.watch('posEnabled');
-  const itemType = form.watch('itemType');
-  const isService = itemType === 'service';
 
   const { isDirty } = form.formState;
   useEffect(() => { if (onDirtyChange) onDirtyChange(isDirty); }, [isDirty, onDirtyChange]);
@@ -101,32 +98,6 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
-        <FormField control={form.control} name="itemType" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Item Type</FormLabel>
-            <FormControl>
-              <div className="inline-flex rounded-lg border border-border p-0.5">
-                {(['product', 'service'] as const).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => field.onChange(t)}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                      field.value === t ? 'bg-primary text-white' : 'text-gray-500 hover:text-gray-800'
-                    }`}
-                  >
-                    {t === 'product' ? 'Product' : 'Service'}
-                  </button>
-                ))}
-              </div>
-            </FormControl>
-            <p className="text-xs text-gray-500">
-              Services aren&apos;t stock-tracked — no SKU, barcode, quantity, or reorder fields.
-            </p>
-            <FormMessage />
-          </FormItem>
-        )} />
-
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField control={form.control} name="name" render={({ field }) => (
             <FormItem>
@@ -144,129 +115,111 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
             </FormItem>
           )} />
 
-          {!isService && (
-            <FormField control={form.control} name="sku" render={({ field }) => (
-              <FormItem>
-                <FormLabel>SKU / Code</FormLabel>
-                <FormControl><Input {...field} placeholder="STAT-001" className="font-mono" /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          )}
+          <FormField control={form.control} name="sku" render={({ field }) => (
+            <FormItem>
+              <FormLabel>SKU / Code</FormLabel>
+              <FormControl><Input {...field} placeholder="STAT-001" className="font-mono" /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
 
-          {!isService && (
-            <FormField control={form.control} name="unit" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Unit *</FormLabel>
-                <ConfigSelect listKey="inventory_unit" value={field.value} onValueChange={field.onChange} placeholder="Select unit" />
-                <FormMessage />
-              </FormItem>
-            )} />
-          )}
+          <FormField control={form.control} name="unit" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Unit *</FormLabel>
+              <ConfigSelect listKey="inventory_unit" value={field.value} onValueChange={field.onChange} placeholder="Select unit" />
+              <FormMessage />
+            </FormItem>
+          )} />
 
-          {!isService && (
-            <FormField control={form.control} name="quantityOnHand" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Quantity on Hand *</FormLabel>
-                <FormControl><Input type="number" min="0" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          )}
+          <FormField control={form.control} name="quantityOnHand" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Quantity on Hand *</FormLabel>
+              <FormControl><Input type="number" min="0" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
 
-          {!isService && (
-            <FormField control={form.control} name="minimumThreshold" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Minimum Threshold *</FormLabel>
-                <FormControl><Input type="number" min="0" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          )}
+          <FormField control={form.control} name="minimumThreshold" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Minimum Threshold *</FormLabel>
+              <FormControl><Input type="number" min="0" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
 
-          {!isService && (
-            <FormField control={form.control} name="reorderQuantity" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Reorder Quantity</FormLabel>
-                <FormControl><Input type="number" min="0" {...field} placeholder="Suggested reorder amount" /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          )}
+          <FormField control={form.control} name="reorderQuantity" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Reorder Quantity</FormLabel>
+              <FormControl><Input type="number" min="0" {...field} placeholder="Suggested reorder amount" /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
 
           <FormField control={form.control} name="unitCost" render={({ field }) => (
             <FormItem>
-              <FormLabel>{isService ? 'Cost (JOD)' : 'Unit Cost (JOD)'}</FormLabel>
+              <FormLabel>Unit Cost (JOD)</FormLabel>
               <FormControl><Input type="number" step="0.01" min="0" {...field} placeholder="0.00" /></FormControl>
               <FormMessage />
             </FormItem>
           )} />
 
-          {!isService && (
-            <FormField control={form.control} name="location" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Storage Location</FormLabel>
-                <FormControl>
-                  <ConfigSelect
-                    listKey="inventory_storage_location"
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    placeholder="Select storage location"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          )}
+          <FormField control={form.control} name="location" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Storage Location</FormLabel>
+              <FormControl>
+                <ConfigSelect
+                  listKey="inventory_storage_location"
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Select storage location"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
 
-          {!isService && (
-            <FormField control={form.control} name="supplier" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Supplier</FormLabel>
-                <FormControl><Input {...field} placeholder="Supplier name" /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          )}
+          <FormField control={form.control} name="supplier" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Supplier</FormLabel>
+              <FormControl><Input {...field} placeholder="Supplier name" /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
 
-          {!isService && (
-            <FormField control={form.control} name="expiryDate" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Expiry Date</FormLabel>
-                <FormControl>
-                  <DatePicker value={field.value ?? ''} onChange={field.onChange} placeholder="Select expiry date" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          )}
+          <FormField control={form.control} name="expiryDate" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Expiry Date</FormLabel>
+              <FormControl>
+                <DatePicker value={field.value ?? ''} onChange={field.onChange} placeholder="Select expiry date" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
 
           {/* Barcode — supports both manual entry and HID scanners. Enter is swallowed so a scan doesn't submit the form. */}
-          {!isService && (
-            <FormField control={form.control} name="barcode" render={({ field }) => (
-              <FormItem className="sm:col-span-2">
-                <FormLabel>Barcode</FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <span className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                      <ScanBarcode size={16} aria-hidden />
-                    </span>
-                    <Input
-                      {...field}
-                      className="ps-8 font-mono"
-                      placeholder="Scan or type a barcode (EAN, UPC, Code128...)"
-                      autoComplete="off"
-                      spellCheck={false}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') e.preventDefault();
-                      }}
-                    />
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          )}
+          <FormField control={form.control} name="barcode" render={({ field }) => (
+            <FormItem className="sm:col-span-2">
+              <FormLabel>Barcode</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <span className="absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <ScanBarcode size={16} aria-hidden />
+                  </span>
+                  <Input
+                    {...field}
+                    className="ps-8 font-mono"
+                    placeholder="Scan or type a barcode (EAN, UPC, Code128...)"
+                    autoComplete="off"
+                    spellCheck={false}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.preventDefault();
+                    }}
+                  />
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
 
           <FormField control={form.control} name="taxRateId" render={({ field }) => (
             <FormItem>

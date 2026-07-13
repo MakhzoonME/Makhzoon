@@ -211,8 +211,6 @@ export default function InventoryItemDetailPage() {
     />
   );
 
-  const isService = item.itemType === 'service';
-
   const stockColor = item.stockStatus === 'ok'  ? 'text-[var(--green-700)] bg-[var(--green-100)] border-[var(--green-100)]'
     : item.stockStatus === 'low' ? 'text-[var(--yellow-700)] bg-[var(--yellow-100)] border-[var(--yellow-100)]'
     : 'text-[var(--red-700)] bg-[var(--red-100)] border-[var(--red-100)]';
@@ -244,11 +242,9 @@ export default function InventoryItemDetailPage() {
         ]}
         actions={(
           <div className="flex items-center gap-2 flex-wrap">
-            {!isService && (
-              <Button size="sm" variant="outline" onClick={() => setReqOpen(true)} className="cursor-pointer transition-colors duration-150">
-                {t('inventory.requestRefill')}
-              </Button>
-            )}
+            <Button size="sm" variant="outline" onClick={() => setReqOpen(true)} className="cursor-pointer transition-colors duration-150">
+              {t('inventory.requestRefill')}
+            </Button>
             {isAdmin && (
               <>
                 <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/${itemId}/edit`)} className="cursor-pointer transition-colors duration-150">
@@ -277,58 +273,46 @@ export default function InventoryItemDetailPage() {
           <h2 className="text-base font-bold text-gray-900 truncate">{item.name}</h2>
           {item.sku && <p className="text-xs text-gray-400 font-mono mt-0.5">{item.sku}</p>}
         </div>
-        {isService ? (
-          <span className="px-2.5 py-0.5 rounded-full border text-xs font-medium flex-shrink-0 text-primary-700 bg-primary-50 border-primary-100">
-            Service
-          </span>
-        ) : (
-          <span className={cn('px-2.5 py-0.5 rounded-full border text-xs font-medium flex-shrink-0', stockColor)}>
-            {item.stockStatus === 'ok' ? t('inventory.inStock') : item.stockStatus === 'low' ? t('inventory.lowStock') : t('inventory.outOfStock')}
-          </span>
-        )}
+        <span className={cn('px-2.5 py-0.5 rounded-full border text-xs font-medium flex-shrink-0', stockColor)}>
+          {item.stockStatus === 'ok' ? t('inventory.inStock') : item.stockStatus === 'low' ? t('inventory.lowStock') : t('inventory.outOfStock')}
+        </span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── Left: info + movements + warranties ─────────────────── */}
         <div className="lg:col-span-2 space-y-6">
 
-          {/* Stock level card — not applicable to services (not stock-tracked) */}
-          {!isService && (
-            <div className="bg-surface-card rounded-xl border border-border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-gray-700">{t('inventory.stockLevel')}</h3>
-              </div>
-              <div className="flex items-end gap-3 mb-3">
-                <span className={`text-5xl font-bold leading-none tabular-nums ${stockNumColor}`}>
-                  {item.quantityOnHand}
-                </span>
-                <span className="text-base text-gray-400 mb-1">{item.unit}</span>
-              </div>
-              <StockStatusBar qty={item.quantityOnHand} threshold={item.minimumThreshold} />
-              <p className="mt-2 text-xs text-gray-400">
-                {t('inventory.minThresholdHint')}: {item.minimumThreshold} {item.unit}
-              </p>
+          {/* Stock level card */}
+          <div className="bg-surface-card rounded-xl border border-border p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-700">{t('inventory.stockLevel')}</h3>
             </div>
-          )}
+            <div className="flex items-end gap-3 mb-3">
+              <span className={`text-5xl font-bold leading-none tabular-nums ${stockNumColor}`}>
+                {item.quantityOnHand}
+              </span>
+              <span className="text-base text-gray-400 mb-1">{item.unit}</span>
+            </div>
+            <StockStatusBar qty={item.quantityOnHand} threshold={item.minimumThreshold} />
+            <p className="mt-2 text-xs text-gray-400">
+              {t('inventory.minThresholdHint')}: {item.minimumThreshold} {item.unit}
+            </p>
+          </div>
 
           {/* Item details card */}
           <div className="bg-surface-card rounded-xl border border-border p-5">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('assetDetail.detailsTitle')}</h3>
             <KVRow label={t('col.category')}>{item.category}</KVRow>
             {item.sku && <KVRow label={t('inventory.sku')}><span className="font-mono text-xs">{item.sku}</span></KVRow>}
-            {!isService && item.barcode && (
+            {item.barcode && (
               <KVRow label={t('inventory.barcode')}><span className="font-mono text-xs">{item.barcode}</span></KVRow>
             )}
-            {!isService && (
-              <>
-                <KVRow label={t('inventory.onHand')}>
-                  <span className={`font-semibold tabular-nums ${stockNumColor}`}>{item.quantityOnHand} {item.unit}</span>
-                </KVRow>
-                <KVRow label={t('inventory.threshold')}>{item.minimumThreshold} {item.unit}</KVRow>
-                {item.reorderQuantity != null && (
-                  <KVRow label={t('inventory.reorderQty')}>{item.reorderQuantity} {item.unit}</KVRow>
-                )}
-              </>
+            <KVRow label={t('inventory.onHand')}>
+              <span className={`font-semibold tabular-nums ${stockNumColor}`}>{item.quantityOnHand} {item.unit}</span>
+            </KVRow>
+            <KVRow label={t('inventory.threshold')}>{item.minimumThreshold} {item.unit}</KVRow>
+            {item.reorderQuantity != null && (
+              <KVRow label={t('inventory.reorderQty')}>{item.reorderQuantity} {item.unit}</KVRow>
             )}
             {item.unitCost != null && (
               <KVRow label={t('inventory.unitCost')}>
@@ -379,9 +363,8 @@ export default function InventoryItemDetailPage() {
             <CustomFieldValuesSection recordType="inventory" recordId={itemId} />
           </div>
 
-          {/* Transaction history — services have no stock ledger */}
-          {!isService && (
-            <div className="bg-surface-card rounded-xl border border-border">
+          {/* Transaction history */}
+          <div className="bg-surface-card rounded-xl border border-border">
               {/* Header + segment tabs */}
               <div className="px-5 py-3.5 border-b border-border">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('inventory.txHistory')}</h3>
@@ -456,7 +439,6 @@ export default function InventoryItemDetailPage() {
                 </div>
               )}
             </div>
-          )}
 
           {/* Warranties */}
           <Card>
@@ -487,8 +469,8 @@ export default function InventoryItemDetailPage() {
         {/* ── Right: stock alert + adjust form ────────────────────── */}
         {isAdmin && (
           <div className="space-y-5">
-            {/* Stock alert banner — not applicable to services */}
-            {!isService && item.stockStatus !== 'ok' && (
+            {/* Stock alert banner */}
+            {item.stockStatus !== 'ok' && (
               <div className={cn('flex items-start gap-2.5 p-4 rounded-xl border text-sm', stockColor)}>
                 <AlertTriangle aria-hidden className="h-4 w-4 flex-shrink-0 mt-0.5" strokeWidth={1.75} />
                 <span>
@@ -523,9 +505,8 @@ export default function InventoryItemDetailPage() {
               return null;
             })()}
 
-            {/* Adjust stock form — not applicable to services (not stock-tracked) */}
-            {!isService && (
-              <div className="bg-surface-card rounded-xl border border-border p-5">
+            {/* Adjust stock form */}
+            <div className="bg-surface-card rounded-xl border border-border p-5">
                 <h3 className="text-sm font-semibold text-gray-700 mb-4">{t('inventory.adjustStock')}</h3>
                 <form onSubmit={handleTransaction} className="space-y-4">
 
@@ -582,7 +563,6 @@ export default function InventoryItemDetailPage() {
                   </Button>
                 </form>
               </div>
-            )}
           </div>
         )}
       </div>

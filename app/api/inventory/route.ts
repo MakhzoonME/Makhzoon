@@ -49,9 +49,6 @@ export async function GET(req: NextRequest) {
       stockStatus: searchParams.get('stockStatus') ?? undefined,
       search: searchParams.get('search') ?? undefined,
       posEnabled: searchParams.get('posEnabled') === 'true' ? true : undefined,
-      itemType: searchParams.get('itemType') === 'product' || searchParams.get('itemType') === 'service'
-        ? (searchParams.get('itemType') as 'product' | 'service')
-        : undefined,
       expiringWithin: searchParams.get('expiringWithin') ? parseInt(searchParams.get('expiringWithin')!, 10) : undefined,
       expired: searchParams.get('expired') === 'true' ? true : undefined,
       page: searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined,
@@ -82,7 +79,6 @@ export async function POST(req: NextRequest) {
     const result = await service.create(tenant, {
       name: data.name,
       category: data.category,
-      itemType: data.itemType,
       sku: data.sku || undefined,
       unit: data.unit,
       quantityOnHand: data.quantityOnHand,

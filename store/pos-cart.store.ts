@@ -1,13 +1,25 @@
 'use client';
 
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type { CartLineInput } from '@/lib/modules/haraka/pricing/calc';
-import type { InventoryItem, PosCustomer } from '@/types';
+import type { PosCustomer } from '@/types';
+
+/** Normalized shape accepted by addItem — a Raseed InventoryItem (product) or a HarakaService. */
+export interface PosPickableItem {
+  id: string;
+  name: string;
+  sku?: string | null;
+  barcode?: string | null;
+  unitPrice: number;
+  taxRateId?: string | null;
+}
 
 /**
- * Cart state for the Haraka register. Intentionally NOT persisted: closing
- * the tab clears the cart. We don't want a stale cart to ring up a sale
- * tomorrow with yesterday's prices.
+ * Cart state for the Haraka register. Persisted to sessionStorage so a held
+ * or in-progress cart survives navigating away and back within the same
+ * tab — but still cleared when the tab closes, so a stale cart can't ring
+ * up a sale tomorrow with yesterday's prices.
  */
 export interface HeldCart {
   id: string;
@@ -21,7 +33,7 @@ interface PosCartState {
   customer: { id: string; name: string } | null;
   held: HeldCart[];
   /** Add or increment-existing by itemId. Snapshots price/tax at add-time. */
-  addItem: (item: InventoryItem, taxRate: number) => void;
+  addItem: (item: PosPickableItem, taxRate: number) => void;
   /** Set absolute qty for a line. Qty<=0 removes. */
   setQty: (itemId: string, qty: number) => void;
   /** Increment current qty by delta (can be negative). */
@@ -38,7 +50,9 @@ interface PosCartState {
   discardHeld: (id: string) => void;
 }
 
-export const usePosCart = create<PosCartState>((set) => ({
+export const usePosCart = create<PosCartState>()(
+  persist(
+    (set) => ({
   lines: [],
   customer: null,
   held: [],
@@ -50,17 +64,13 @@ export const usePosCart = create<PosCartState>((set) => ({
         next[idx] = { ...next[idx], quantity: next[idx].quantity + 1 };
         return { lines: next };
       }
-      const unitPrice =
-        typeof item.posPrice === 'number' && item.posPrice > 0
-          ? item.posPrice
-          : item.unitCost ?? 0;
       const line: CartLineInput = {
         itemId: item.id,
         itemName: item.name,
         sku: item.sku ?? null,
         barcode: item.barcode ?? null,
         quantity: 1,
-        unitPrice,
+        unitPrice: item.unitPrice,
         taxRate,
         taxRateId: item.taxRateId ?? null,
         discount: 0,
@@ -108,4 +118,13 @@ export const usePosCart = create<PosCartState>((set) => ({
     }),
   discardHeld: (id) =>
     set((state) => ({ held: state.held.filter((h) => h.id !== id) })),
-}));
+    }),
+    {
+      name: 'pos-cart',
+      storage: createJSONStorage(() => sessionStorage, {
+        reviver: (key, value) => (key === 'heldAt' ? new Date(value as string) : value),
+      }),
+      partialize: (state) => ({ lines: state.lines, customer: state.customer, held: state.held }),
+    },
+  ),
+);

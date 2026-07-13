@@ -14,7 +14,6 @@ export const barcodeRegex = /^[A-Za-z0-9]{4,64}$/;
 export const inventoryItemSchema = z.object({
   name: z.string().min(2).max(100),
   category: z.string().min(1, 'Category is required'),
-  itemType: z.enum(['product', 'service']).default('product'),
   sku: z.string().optional(),
   unit: z.string().min(1, 'Unit is required'),
   quantityOnHand: z.coerce.number().min(0, 'Quantity cannot be negative'),

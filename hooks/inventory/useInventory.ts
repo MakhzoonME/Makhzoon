@@ -17,7 +17,6 @@ export function useInventoryItems(params?: {
   stockStatus?: string;
   search?: string;
   posEnabled?: boolean;
-  itemType?: 'product' | 'service';
   expiringWithin?: number;
   expired?: boolean;
   page?: number;
@@ -31,7 +30,6 @@ export function useInventoryItems(params?: {
   if (params?.stockStatus) query.set('stockStatus', params.stockStatus);
   if (params?.search) query.set('search', params.search);
   if (params?.posEnabled) query.set('posEnabled', 'true');
-  if (params?.itemType) query.set('itemType', params.itemType);
   if (params?.expiringWithin != null) query.set('expiringWithin', String(params.expiringWithin));
   if (params?.expired) query.set('expired', 'true');
   if (params?.page) query.set('page', String(params.page));

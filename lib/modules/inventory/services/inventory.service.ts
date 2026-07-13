@@ -103,7 +103,6 @@ export class InventoryService {
     input: {
       name: string
       category: string
-      itemType?: 'product' | 'service'
       sku?: string
       unit: string
       quantityOnHand: number
@@ -147,7 +146,6 @@ export class InventoryService {
     input: {
       name?: string
       category?: string
-      itemType?: 'product' | 'service'
       sku?: string
       unit?: string
       minimumThreshold?: number
@@ -249,10 +247,6 @@ export class InventoryService {
     note?: string
   ) {
     requirePermission(tenant, 'inventory', 'update')
-    const current = await repo.getById(tenant, itemId)
-    if (current?.itemType === 'service') {
-      throw NextResponse.json({ error: 'Service items are not stock-tracked' }, { status: 422 })
-    }
     const result = await repo.applyTransaction(tenant, itemId, type, quantity, reason, note)
 
     auditLog.queue({

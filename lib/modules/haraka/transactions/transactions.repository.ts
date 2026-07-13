@@ -314,22 +314,31 @@ export class TransactionsRepository {
       throw new Error('Session is closed — open a new session before selling')
     }
 
-    // Verify every item belongs to this org before writing anything. The RPC
-    // will also catch this, but an early read-only check surfaces a clear 400
-    // rather than a Postgres exception.
+    // Verify every item belongs to this org before writing anything. Lines
+    // may reference either a Raseed stock item (inventory_items) or a POS
+    // Services catalog entry (haraka_services) — the latter never carries
+    // stock, so it joins serviceItemIds and skips the stock-out RPC below.
+    // The RPC will also catch org mismatches, but this early read-only check
+    // surfaces a clear 400 rather than a Postgres exception.
     const uniqueItemIds = Array.from(new Set(input.lines.map((l) => l.itemId)))
-    const { data: itemRows, error: itemErr } = await supabaseAdmin
-      .from('inventory_items')
-      .select('id, organization_id, item_type')
-      .in('id', uniqueItemIds)
+    const [{ data: itemRows, error: itemErr }, { data: serviceRows, error: serviceErr }] = await Promise.all([
+      supabaseAdmin.from('inventory_items').select('id, organization_id').in('id', uniqueItemIds),
+      supabaseAdmin.from('haraka_services').select('id, organization_id').in('id', uniqueItemIds),
+    ])
     if (itemErr) throw itemErr
+    if (serviceErr) throw serviceErr
     const serviceItemIds = new Set<string>()
     for (const iid of uniqueItemIds) {
-      const r = (itemRows ?? []).find((row) => (row as Row).id === iid) as Row | undefined
-      if (!r || r.organization_id !== tenant.organizationId) {
-        throw new Error(`Inventory item not found: ${iid}`)
+      const item = (itemRows ?? []).find((row) => (row as Row).id === iid) as Row | undefined
+      if (item) {
+        if (item.organization_id !== tenant.organizationId) throw new Error(`Inventory item not found: ${iid}`)
+        continue
       }
-      if (r.item_type === 'service') serviceItemIds.add(iid)
+      const svc = (serviceRows ?? []).find((row) => (row as Row).id === iid) as Row | undefined
+      if (!svc || svc.organization_id !== tenant.organizationId) {
+        throw new Error(`Item not found: ${iid}`)
+      }
+      serviceItemIds.add(iid)
     }
 
     const receiptNumber = await allocateReceiptNumber(tenant.organizationId, tenant.spaceId)
@@ -447,11 +456,12 @@ export class TransactionsRepository {
     for (const line of tx.items) {
       const { data: item } = await supabaseAdmin
         .from('inventory_items')
-        .select('id, minimum_threshold, item_type')
+        .select('id, minimum_threshold')
         .eq('id', line.inventoryItemId)
         .maybeSingle()
+      // Not found here means it's a POS Services catalog line, not a Raseed
+      // stock item — those are never stock-decremented, so there's nothing to restock.
       if (!item) continue
-      if (item.item_type === 'service') continue // never stock-decremented — nothing to restock
       const before = await currentQty(line.inventoryItemId)
       const after = before + line.quantity
       const threshold = Number(item.minimum_threshold ?? 0)
@@ -572,11 +582,12 @@ export class TransactionsRepository {
     for (const line of refundedLines) {
       const { data: item } = await supabaseAdmin
         .from('inventory_items')
-        .select('id, minimum_threshold, item_type')
+        .select('id, minimum_threshold')
         .eq('id', line.inventoryItemId)
         .maybeSingle()
+      // Not found here means it's a POS Services catalog line, not a Raseed
+      // stock item — those are never stock-decremented, so there's nothing to restock.
       if (!item) continue
-      if (item.item_type === 'service') continue // never stock-decremented — nothing to restock
       const before = await currentQty(line.inventoryItemId)
       const after = before + line.quantity
       const threshold = Number(item.minimum_threshold ?? 0)

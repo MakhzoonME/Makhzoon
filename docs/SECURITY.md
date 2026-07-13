@@ -71,6 +71,7 @@ and asset-QR endpoints, and per-tenant on expensive authenticated routes.
 | `/api/haraka/card-payment-result` | PSP webhook | HMAC-SHA256 signature verification |
 | `/api/cron/*` | scheduled jobs | `CRON_SECRET` bearer via constant-time compare (`lib/cron-auth.ts`) |
 | `/api/push-subscriptions/vapid-key` | VAPID public key | public by definition |
+| `/api/version` | deployed build ID | non-sensitive (git SHA), `no-store` — powers the client update-available banner |
 
 ## CSRF / origin
 

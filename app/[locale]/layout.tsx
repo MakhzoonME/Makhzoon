@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { LocaleProvider } from '@/components/shared/LocaleProvider';
 import { LocaleContextProvider } from '@/components/shared/LocaleContext';
+import { VersionCheck } from '@/components/shared/VersionCheck';
 
 const LOCALES = ['en', 'ar'] as const;
 
@@ -41,6 +42,7 @@ export default async function LocaleLayout(
     <LocaleContextProvider locale={params.locale} dir={dir}>
       <LocaleProvider locale={params.locale} dir={dir}>
         {children}
+        <VersionCheck />
       </LocaleProvider>
     </LocaleContextProvider>
   );

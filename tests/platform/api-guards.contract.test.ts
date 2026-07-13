@@ -18,7 +18,7 @@ const AUTH_PATTERNS = [
 // Intentionally public routes (webhooks, pre-auth, public shares).
 const PUBLIC_ROUTES = [
   'auth/check-email', 'auth/password-reset', 'auth/session',
-  'ping', 'contact', 'early-access', 'cron/', 'delivery/', 'packages/public',
+  'ping', 'version', 'contact', 'early-access', 'cron/', 'delivery/', 'packages/public',
   'invites/', 'haraka/card-payment-result', 'organizations/check-subdomain',
   'auth/send-password-reset', 'public/assets', 'push-subscriptions/vapid-key',
 ];

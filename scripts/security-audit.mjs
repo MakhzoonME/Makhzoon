@@ -97,7 +97,7 @@ const authPatterns = ['verifySessionCookie', 'resolveTenant', 'requirePermission
 // Routes that are intentionally public (webhooks, pre-auth, etc.)
 const publicRoutes = new Set([
   'auth/check-email', 'auth/password-reset', 'auth/session',
-  'ping', 'contact', 'early-access',
+  'ping', 'version', 'contact', 'early-access',
   'cron/', 'delivery/', 'packages/public',
   'invites/',
   'haraka/card-payment-result',   // webhook — HMAC signature verification

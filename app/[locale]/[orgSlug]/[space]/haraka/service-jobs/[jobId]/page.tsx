@@ -40,7 +40,7 @@ export default function ServiceJobDetailPage() {
   const [newItemPrice, setNewItemPrice] = useState('0');
   if (!featureAllowed || !isAllowed) return null;
 
-  const currency = orgInfo?.currency ?? 'USD';
+  const currency = orgInfo?.currency ?? 'JOD';
   const base     = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
   const job      = data?.job;
 

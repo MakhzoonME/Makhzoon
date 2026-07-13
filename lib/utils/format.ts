@@ -1,5 +1,9 @@
+/** Currencies conventionally shown with 3 decimal places (JOD, KWD, BHD, OMR). */
+const THREE_DECIMAL_CURRENCIES = new Set(['JOD', 'KWD', 'BHD', 'OMR']);
+
 export function formatCurrency(amount: number, currency = 'JOD'): string {
-  return `${amount.toLocaleString()} ${currency}`;
+  const digits = THREE_DECIMAL_CURRENCIES.has(currency) ? 3 : 2;
+  return `${amount.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })} ${currency}`;
 }
 
 export function truncate(str: string | null | undefined, length: number): string {

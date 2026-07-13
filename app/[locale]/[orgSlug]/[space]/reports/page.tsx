@@ -18,8 +18,8 @@ const Clip  = () => <ClipboardList aria-hidden className="h-4 w-4" strokeWidth={
 const Wrch  = () => <Wrench     aria-hidden className="h-4 w-4" strokeWidth={1.75} />;
 
 
-function formatCurrency(n: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+function formatCurrency(n: number, currency = 'JOD'): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n);
 }
 
 const ACCENTS: Record<string, string> = {
@@ -95,6 +95,7 @@ export default function ReportsPage() {
   const { summary, categories, locations, maintenanceByMonth } = data;
   const maxCatCount = Math.max(1, ...categories.map((c) => c.count));
   const maxMonthCost = Math.max(1, ...maintenanceByMonth.map((m) => m.cost));
+  const currency = orgInfo?.currency ?? 'JOD';
 
   return (
     <div>
@@ -107,7 +108,7 @@ export default function ReportsPage() {
             <Stat label={t('reports.totalAssets')} value={summary.totalAssets} icon={Pkg} tone="indigo" />
             <Stat label={t('reports.active')} value={summary.activeAssets} icon={PkgOk} tone="green" />
             <Stat label={t('reports.retired')} value={summary.retiredAssets} icon={PkgX} />
-            <Stat label={t('reports.totalValue')} value={formatCurrency(summary.totalValue)} icon={Wal} tone="indigo" />
+            <Stat label={t('reports.totalValue')} value={formatCurrency(summary.totalValue, currency)} icon={Wal} tone="indigo" />
           </div>
         </section>
       )}
@@ -128,7 +129,7 @@ export default function ReportsPage() {
         <section className="mb-6">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('reports.maintenance')}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Stat label={t('reports.totalCost')} value={formatCurrency(summary.maintenanceCost)} icon={Wrch} tone="indigo" />
+            <Stat label={t('reports.totalCost')} value={formatCurrency(summary.maintenanceCost, currency)} icon={Wrch} tone="indigo" />
             <Stat label={t('reports.records')} value={summary.maintenanceCount} icon={Wrch} />
           </div>
         </section>
@@ -150,7 +151,7 @@ export default function ReportsPage() {
                       <li key={c.category}>
                         <div className="flex items-center justify-between text-xs mb-1">
                           <span className="font-medium text-gray-700">{c.category}</span>
-                          <span className="text-gray-500 tabular-nums">{c.count} · {formatCurrency(c.value)}</span>
+                          <span className="text-gray-500 tabular-nums">{c.count} · {formatCurrency(c.value, currency)}</span>
                         </div>
                         <div className="h-2 bg-surface-page rounded-full overflow-hidden">
                           <div className="h-full bg-primary-500 rounded-full" style={{ width: `${(c.count / maxCatCount) * 100}%` }} />
@@ -208,7 +209,7 @@ export default function ReportsPage() {
                           />
                         </div>
                         <div className="w-24 text-xs tabular-nums text-right shrink-0">
-                          <span className="font-medium text-gray-900">{formatCurrency(m.cost)}</span>
+                          <span className="font-medium text-gray-900">{formatCurrency(m.cost, currency)}</span>
                           <span className="text-gray-500 ms-1">({m.count})</span>
                         </div>
                       </div>

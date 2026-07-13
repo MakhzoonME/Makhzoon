@@ -1022,6 +1022,9 @@ const en = {
   'settings.selectCategory':   'Select category…',
   'settings.noneSelected':     'None',
   'settings.descriptionPlaceholder': 'What does your organization do?',
+  'settings.currency':         'Currency',
+  'settings.selectCurrency':   'Select currency…',
+  'settings.currencyHelp':     'Used to display prices throughout your organization.',
 
   // ── Users page (extra) ────────────────────────────────────────────
   'users.expires':             'Expires',
@@ -2820,6 +2823,9 @@ const ar: Record<keyof typeof en, string> = {
   'settings.selectCategory':   'اختر الفئة…',
   'settings.noneSelected':     'لا شيء',
   'settings.descriptionPlaceholder': 'ماذا تعمل منشأتك؟',
+  'settings.currency':         'العملة',
+  'settings.selectCurrency':   'اختر العملة…',
+  'settings.currencyHelp':     'تُستخدم لعرض الأسعار في جميع أنحاء منظمتك.',
 
   // ── Users page (extra) ────────────────────────────────────────────
   'users.expires':             'تنتهي',

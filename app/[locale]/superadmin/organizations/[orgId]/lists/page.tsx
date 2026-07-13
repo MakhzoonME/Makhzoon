@@ -517,10 +517,6 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
           {orgEdit && (
             <>
               <DialogBody className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label>{t('superadminLists.value')} <span className="text-gray-400">{t('superadminLists.locked')}</span></Label>
-                  <Input value={orgEdit.value} disabled className="font-mono" />
-                </div>
                 <div className="flex gap-3">
                   <div className="flex-1 space-y-1.5">
                     <Label>{t('superadminLists.labelEn')}</Label>
@@ -569,15 +565,6 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
             <DialogDescription>{meta.label} — {t('superadminLists.orgOnly')}</DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>{t('superadminLists.valueNoSpaces')}</Label>
-              <Input
-                value={customValue}
-                onChange={(e) => setCustomValue(e.target.value)}
-                placeholder="e.g. vehicles"
-                className="font-mono"
-              />
-            </div>
             <div className="flex gap-3">
               <div className="flex-1 space-y-1.5">
                 <Label>{t('superadminLists.labelEn')}</Label>
@@ -595,7 +582,7 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
           </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddingCustom(false)}>{t('common.cancel')}</Button>
-            <Button onClick={addCustom} disabled={upsertOrgMut.isPending || !customValue.trim() || !customLabel.trim()}>
+            <Button onClick={addCustom} disabled={upsertOrgMut.isPending || !customLabel.trim()}>
               {t('common.add')}
             </Button>
           </DialogFooter>

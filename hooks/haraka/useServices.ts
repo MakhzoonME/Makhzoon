@@ -39,7 +39,12 @@ export function useServices(params?: UseServicesParams) {
     queryKey: [...LIST_KEY, space, params],
     enabled:  !!space,
     queryFn:  async () => {
-      const res = await fetch(`/api/haraka/services?${query.toString()}`, { headers: spaceHeaders(space) })
+      // no-store: the API response carries a Cache-Control header for
+      // proxy/CDN caching, but the browser's own HTTP cache would otherwise
+      // serve a stale list to this identical URL after a create/update
+      // mutation invalidates the query — react-query's own staleTime above
+      // already covers client-side caching between renders.
+      const res = await fetch(`/api/haraka/services?${query.toString()}`, { headers: spaceHeaders(space), cache: 'no-store' })
       if (!res.ok) throw new Error('Failed to fetch services')
       return res.json()
     },
@@ -53,7 +58,7 @@ export function useServiceCategories() {
     queryKey: ['haraka', 'service-categories', space],
     enabled:  !!space,
     queryFn:  async () => {
-      const res = await fetch('/api/haraka/services?categoriesOnly=true', { headers: spaceHeaders(space) })
+      const res = await fetch('/api/haraka/services?categoriesOnly=true', { headers: spaceHeaders(space), cache: 'no-store' })
       if (!res.ok) return []
       const data = await res.json()
       return data.categories ?? []

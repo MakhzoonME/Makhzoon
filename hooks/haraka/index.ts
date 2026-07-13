@@ -76,3 +76,12 @@ export {
   useDeleteRetainer,
 } from './useRetainers';
 export type { UseRetainersParams } from './useRetainers';
+export {
+  useServices,
+  useServiceCategories,
+  useService,
+  useCreateService,
+  useUpdateService,
+  useDeleteService,
+} from './useServices';
+export type { UseServicesParams } from './useServices';

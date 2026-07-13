@@ -27,7 +27,6 @@ export function StockItemMultiPicker({ selectedIds, onChange }: Props) {
   const { data, isLoading } = useInventoryItems({
     search: debounced || undefined,
     pageSize: 100,
-    itemType: 'product', // services aren't stock-tracked, nothing to count
   });
   const items: InventoryItem[] = data?.items ?? [];
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);

@@ -28,7 +28,6 @@ export function InventoryItemPicker({ onPick, selectedItemId, label, disabled }:
   const { data, isLoading } = useInventoryItems({
     search: debounced || undefined,
     pageSize: 50,
-    itemType: 'product', // services aren't stock-tracked, nothing to purchase/receive
   });
   const items = data?.items ?? [];
 

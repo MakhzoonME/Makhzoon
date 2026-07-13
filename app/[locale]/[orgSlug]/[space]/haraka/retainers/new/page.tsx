@@ -7,8 +7,10 @@ import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CustomerSelect } from '@/components/haraka/CustomerSelect';
-import { useCreateRetainer } from '@/hooks/haraka';
+import { ServicePicker } from '@/components/haraka/ServicePicker';
+import { useCreateRetainer, useTaxRates } from '@/hooks/haraka';
 import { useAdminGuard, useModuleGuard, toast, useT } from '@/hooks/ui';
+import type { HarakaService } from '@/types';
 
 export default function NewRetainerPage() {
   const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
@@ -17,6 +19,8 @@ export default function NewRetainerPage() {
   const params    = useParams<{ locale: string; orgSlug: string; space: string }>();
   const createMut = useCreateRetainer();
   const { t }     = useT();
+  const { data: taxRatesData } = useTaxRates();
+  const taxRates  = taxRatesData?.taxRates ?? [];
 
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
 
@@ -32,6 +36,14 @@ export default function NewRetainerPage() {
   const [notes,          setNotes]          = useState('');
 
   if (!featureAllowed || !isAllowed) return null;
+
+  function applyServicePick(service: HarakaService) {
+    setAmountPerCycle(String(service.price));
+    if (service.taxRateId) {
+      const rate = taxRates.find((r) => r.id === service.taxRateId)?.rate;
+      if (rate != null) setTaxRate(String(rate * 100));
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -127,11 +139,14 @@ export default function NewRetainerPage() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-600">{t('retainers.labelAmountPerCycle')} *</label>
-              <Input
-                type="number" min="0" step="0.001"
-                value={amountPerCycle} onChange={(e) => setAmountPerCycle(e.target.value)}
-                placeholder="0.000" className="font-mono"
-              />
+              <div className="flex gap-2">
+                <Input
+                  type="number" min="0" step="0.001"
+                  value={amountPerCycle} onChange={(e) => setAmountPerCycle(e.target.value)}
+                  placeholder="0.000" className="font-mono"
+                />
+                <ServicePicker onPick={applyServicePick} label={t('serviceLine.pickFromCatalog')} />
+              </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-600">{t('retainers.labelTaxPercent')}</label>

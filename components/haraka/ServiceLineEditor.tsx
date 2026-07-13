@@ -4,6 +4,9 @@ import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useT } from '@/hooks/ui';
+import { useTaxRates } from '@/hooks/haraka';
+import { ServicePicker } from './ServicePicker';
+import type { HarakaService } from '@/types';
 
 export interface ServiceLineItem {
   name:           string;
@@ -29,6 +32,8 @@ function emptyLine(): ServiceLineItem {
 
 export function ServiceLineEditor({ lines, onChange, currency = 'JOD', disabled, readOnlyPricing }: Props) {
   const { t } = useT();
+  const { data: taxRatesData } = useTaxRates();
+  const taxRates = taxRatesData?.taxRates ?? [];
 
   function update(index: number, patch: Partial<ServiceLineItem>) {
     onChange(lines.map((l, i) => (i === index ? { ...l, ...patch } : l)));
@@ -36,6 +41,18 @@ export function ServiceLineEditor({ lines, onChange, currency = 'JOD', disabled,
 
   function addLine() { onChange([...lines, emptyLine()]); }
   function removeLine(index: number) { onChange(lines.filter((_, i) => i !== index)); }
+
+  function addLineFromCatalog(service: HarakaService) {
+    const taxRate = service.taxRateId ? taxRates.find((r) => r.id === service.taxRateId)?.rate ?? 0 : 0;
+    onChange([...lines, {
+      name: service.name,
+      description: service.description ?? '',
+      quantity: 1,
+      unitPrice: service.price,
+      taxRate,
+      discountAmount: 0,
+    }]);
+  }
 
   const lineTotal = (l: ServiceLineItem) => {
     const gross = l.quantity * l.unitPrice;
@@ -141,14 +158,17 @@ export function ServiceLineEditor({ lines, onChange, currency = 'JOD', disabled,
         </div>
       ))}
 
-      <button
-        type="button"
-        onClick={addLine}
-        disabled={disabled}
-        className="w-full flex items-center justify-center gap-1.5 text-xs text-primary-600 hover:text-primary-800 py-2 rounded-xl border border-dashed border-primary-200 hover:border-primary-400 transition-colors disabled:opacity-50"
-      >
-        <Plus className="h-3.5 w-3.5" strokeWidth={1.75} /> {t('serviceLine.addLine')}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={addLine}
+          disabled={disabled}
+          className="flex-1 flex items-center justify-center gap-1.5 text-xs text-primary-600 hover:text-primary-800 py-2 rounded-xl border border-dashed border-primary-200 hover:border-primary-400 transition-colors disabled:opacity-50"
+        >
+          <Plus className="h-3.5 w-3.5" strokeWidth={1.75} /> {t('serviceLine.addLine')}
+        </button>
+        {!readOnlyPricing && <ServicePicker onPick={addLineFromCatalog} disabled={disabled} />}
+      </div>
 
       {!readOnlyPricing && lines.length > 0 && (
         <div className="flex justify-end text-sm font-semibold text-gray-800 pt-1">

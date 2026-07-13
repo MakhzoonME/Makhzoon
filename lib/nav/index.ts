@@ -114,6 +114,9 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/haraka/retainers', label: 'Retainers', labelKey: 'nav.harakaRetainers',
         featureKey: 'pos', permissionKey: 'pos.view_retainers',
         moduleColor: '#AD1457', moduleName: 'عقود' },
+      { href: '/haraka/services', label: 'Service Catalog', labelKey: 'nav.harakaServiceCatalog',
+        featureKey: 'pos', permissionKey: 'pos.view_services',
+        moduleColor: '#AD1457', moduleName: 'كتالوج الخدمات' },
     ],
   },
   {

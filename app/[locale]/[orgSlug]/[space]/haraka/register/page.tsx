@@ -11,7 +11,7 @@ import { CustomerPicker } from '@/components/haraka/CustomerPicker';
 import { PaymentDialog, type PaymentLine } from '@/components/haraka/PaymentDialog';
 import { PrinterSettingsDialog } from '@/components/haraka/PrinterSettingsDialog';
 import { ReceiptShareDialog } from '@/components/haraka/ReceiptShareDialog';
-import { usePosCart } from '@/store/pos-cart.store';
+import { usePosCart, type PosPickableItem } from '@/store/pos-cart.store';
 import { useBarcodeLookup } from '@/hooks/inventory';
 import { useTaxRates, useCurrentSession, useCompleteSale, useFawtaraConfig } from '@/hooks/haraka';
 import { useAuthStore } from '@/store/auth.store';
@@ -110,9 +110,20 @@ export default function RegisterPage() {
     [taxData],
   );
 
-  function pickItem(item: InventoryItem) {
+  function pickItem(item: PosPickableItem) {
     if (!canAddItems) { toast.error("You don't have permission to add items to a receipt"); return; }
     addItem(item, taxRateById(item.taxRateId));
+  }
+
+  function inventoryItemToPickable(item: InventoryItem): PosPickableItem {
+    return {
+      id: item.id,
+      name: item.name,
+      sku: item.sku ?? null,
+      barcode: item.barcode ?? null,
+      unitPrice: typeof item.posPrice === 'number' && item.posPrice > 0 ? item.posPrice : item.unitCost ?? 0,
+      taxRateId: item.taxRateId ?? null,
+    };
   }
 
   const handleScan = useCallback(async (code: string) => {
@@ -120,8 +131,8 @@ export default function RegisterPage() {
     const result = await lookup(code);
     if (result.found) {
       if (!result.item.posEnabled) { toast.error(`${result.item.name} isn't enabled for POS`); return; }
-      if (result.item.itemType !== 'service' && result.item.quantityOnHand <= 0) { toast.error(`${result.item.name} is out of stock`); return; }
-      pickItem(result.item);
+      if (result.item.quantityOnHand <= 0) { toast.error(`${result.item.name} is out of stock`); return; }
+      pickItem(inventoryItemToPickable(result.item));
     } else {
       toast.error('Item not found');
     }

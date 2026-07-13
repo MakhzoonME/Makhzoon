@@ -1,8 +1,6 @@
 export type StockStatus = 'ok' | 'low' | 'out';
 export type InventoryUnit = 'each' | 'box' | 'pack' | 'pair' | 'roll' | 'liter' | 'kg' | 'meter' | 'sheet' | 'set';
 export type TransactionType = 'in' | 'out' | 'adjustment';
-/** 'service' items skip stock tracking entirely (no quantity/threshold/reorder/SKU/barcode). */
-export type InventoryItemType = 'product' | 'service';
 
 import { DocumentRef } from './document.types';
 
@@ -11,7 +9,6 @@ export interface InventoryItem {
   organizationId: string;
   name: string;
   category: string;
-  itemType: InventoryItemType;
   sku?: string;
   unit: InventoryUnit;
   quantityOnHand: number;

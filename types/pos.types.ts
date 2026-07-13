@@ -402,3 +402,25 @@ export interface HarakaRetainerInvoice {
   createdAt: Date;
   createdBy: string | null;
 }
+
+// ── POS Services (standalone catalog, independent of Raseed stock items) ───
+
+export interface HarakaService {
+  id: string;
+  organizationId: string;
+  spaceId: string | null;
+  name: string;
+  category: string | null;
+  description: string | null;
+  price: number;
+  taxRateId: string | null;
+  active: boolean;
+  createdAt: Date;
+  createdBy: string | null;
+  createdByEmail: string | null;
+  createdByName: string | null;
+  updatedAt: Date;
+  updatedBy: string | null;
+  updatedByEmail: string | null;
+  updatedByName: string | null;
+}

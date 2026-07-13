@@ -19,6 +19,7 @@ import { toast, useAdminGuard, useT, useOrgSlug } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { LIST_REGISTRY, LIST_KEYS, type ListKey } from '@/types';
 import { cn } from '@/lib/utils/cn';
+import { slugifyKey, dedupeKey } from '@/lib/utils/format';
 import type { ResolvedListItem } from '@/types';
 
 // Org-admins customize their org's FREE, org-scoped lists. Platform-scoped
@@ -53,13 +54,14 @@ export default function OrgListsPage() {
   if (!isAllowed) return null;
 
   async function add() {
-    const value = name.trim();
-    if (!value) return;
+    const label = name.trim();
+    if (!label) return;
+    const value = dedupeKey(slugifyKey(label, selected), new Set(items.map((i) => i.value)));
     try {
       await upsertMut.mutateAsync({
         listKey: selected,
         value,
-        label: value,
+        label,
         labelAr: nameAr.trim() || null,
         color: addColor || null,
         isCustom: true,
@@ -160,7 +162,6 @@ export default function OrgListsPage() {
                 />
                 <div className="flex-1 min-w-0">
                   <span className="text-sm text-gray-900">{isAr ? item.labelAr || item.label : item.label}</span>
-                  <span className="ms-2 text-xs text-gray-400 font-mono">{item.value}</span>
                 </div>
                 <Badge variant={item.isCustom ? 'blue' : 'default'}>
                   {item.isCustom ? t('lists.custom') : t('lists.default')}

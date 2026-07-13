@@ -73,6 +73,16 @@ export class OrdersService {
     await this.getById(tenant, id)
     const order = await repo.update(tenant, id, patch)
     auditLog.queue({ tenant, module: 'pos', action: 'ORDER_UPDATED', recordId: id, newValue: patch })
+    if (hasDeliveryChange && patch.deliveryAgentMemberId) {
+      notificationQueue.enqueue({
+        tenant,
+        eventType: 'order.assigned_to_you',
+        data: { orderNumber: order.orderNumber },
+        link: `/haraka/orders/${id}`,
+        titleOverride: `Order ${order.orderNumber} assigned to you`,
+        recipientIds: [patch.deliveryAgentMemberId],
+      })
+    }
     return order
   }
 
@@ -118,6 +128,13 @@ export class OrdersService {
       action: 'ORDER_PAYMENT_RECORDED',
       recordId: id,
       newValue: { amountPaid, paymentMethod, paymentStatus: order.paymentStatus },
+    })
+    notificationQueue.enqueue({
+      tenant,
+      eventType: 'order.payment_recorded',
+      data: { orderNumber: order.orderNumber, amountPaid, paymentMethod },
+      link: `/haraka/orders/${id}`,
+      titleOverride: `Payment recorded on order ${order.orderNumber}`,
     })
     return order
   }

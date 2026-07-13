@@ -6,6 +6,8 @@ import { getInviteByToken, markInviteAccepted } from '@/lib/db/invites';
 import { createUser } from '@/lib/db/users';
 import { acceptInviteSchema } from '@/lib/validations/invite.schema';
 import { queueAuditLog } from '@/lib/audit/logger';
+import { notificationQueue } from '@/lib/notifications/notification-queue';
+import type { TenantContext } from '@/lib/platform/tenancy/types';
 
 export async function POST(req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
@@ -96,6 +98,16 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       module: 'users',
       recordId: invite.id,
       newValue: { email: invite.email, username: invite.username, role: invite.role },
+    });
+
+    // No signed-in session exists at this point — notificationQueue only reads
+    // organizationId/spaceId off the tenant, so a minimal stand-in is safe here.
+    notificationQueue.enqueue({
+      tenant: { organizationId: invite.organizationId } as TenantContext,
+      eventType: 'users.joined',
+      data: { displayName: invite.displayName, role: invite.role },
+      link: '/users',
+      titleOverride: `${invite.displayName || userEmail} joined your org`,
     });
 
     return NextResponse.json({ success: true, email: userEmail });

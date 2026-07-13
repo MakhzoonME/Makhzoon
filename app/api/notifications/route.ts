@@ -22,7 +22,20 @@ export async function GET(req: NextRequest) {
     const { data, error } = await q
     if (error) throw error
 
-    const items     = data ?? []
+    const items = (data ?? []).map((row) => ({
+      id: row.id,
+      organizationId: row.organization_id,
+      spaceId: row.space_id,
+      recipientId: row.recipient_id,
+      eventType: row.event_type,
+      title: row.title,
+      body: row.body,
+      data: row.data,
+      link: row.link,
+      isRead: row.is_read,
+      readAt: row.read_at,
+      createdAt: row.created_at,
+    }))
     const total      = items.length
     const totalPages = Math.max(1, Math.ceil(total / pageSize))
     const safePage   = Math.min(page, totalPages)

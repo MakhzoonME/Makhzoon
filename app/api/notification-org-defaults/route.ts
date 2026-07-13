@@ -19,7 +19,14 @@ export async function GET() {
       .select('organization_id,event_type,in_app_enabled,email_enabled,notify_roles')
       .eq('organization_id', tenant.organizationId)
     if (error) throw error
-    return NextResponse.json({ defaults: data ?? [] })
+    const defaults = (data ?? []).map((row) => ({
+      organizationId: row.organization_id,
+      eventType: row.event_type,
+      inAppEnabled: row.in_app_enabled,
+      emailEnabled: row.email_enabled,
+      notifyRoles: row.notify_roles,
+    }))
+    return NextResponse.json({ defaults })
   } catch (err) {
     if (err instanceof NextResponse) return err
     console.error('[GET /api/notification-org-defaults]', err)

@@ -3,6 +3,7 @@ import type { TenantContext } from '@/lib/platform/tenancy/types'
 import { hasPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
 import { eventBus } from '@/lib/platform/events/event-bus'
+import { notificationQueue } from '@/lib/notifications/notification-queue'
 import {
   PurchasesRepository,
   type ListOpts,
@@ -105,6 +106,13 @@ export class PurchasesService {
       },
     })
     await eventBus.emit('inventory.purchase.received', { tenant, id, results })
+    notificationQueue.enqueue({
+      tenant,
+      eventType: 'inventory.purchase_received',
+      data: { itemCount: results.length },
+      link: `/raseed/purchases/${id}`,
+      titleOverride: 'Purchase received',
+    })
     return { results }
   }
 }

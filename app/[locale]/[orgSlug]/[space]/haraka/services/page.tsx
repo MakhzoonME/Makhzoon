@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { useServices, useCreateService, useUpdateService, useDeleteService, useTaxRates } from '@/hooks/haraka';
 import { createServiceSchema, type CreateServicePayload } from '@/lib/modules/haraka/services/schemas';
 import { useAdminGuard, useModuleGuard, toast, useT } from '@/hooks/ui';
@@ -163,7 +164,7 @@ export default function ServiceCatalogPage() {
             <FormField control={form.control} name="category" render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('col.category')}</FormLabel>
-                <FormControl><Input {...field} value={field.value ?? ''} placeholder="e.g. Delivery" /></FormControl>
+                <ConfigSelect listKey="service_category" value={field.value ?? ''} onValueChange={field.onChange} placeholder="Select category" />
                 <FormMessage />
               </FormItem>
             )} />

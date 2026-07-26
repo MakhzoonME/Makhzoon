@@ -199,6 +199,7 @@ export class AssetsRepository {
         updated_by_role: tenant.user.role,
       })
       .eq('id', id)
+      .eq('organization_id', tenant.organizationId)
     if (error) {
       if ((error as { code?: string }).code === '23505')
         throw NextResponse.json({ error: 'Serial number already exists in this space' }, { status: 409 })
@@ -207,8 +208,8 @@ export class AssetsRepository {
     return this.getById(tenant, id) as Promise<Asset>
   }
 
-  async delete(_tenant: TenantContext, id: string): Promise<void> {
-    const { error } = await supabaseAdmin.from('assets').delete().eq('id', id)
+  async delete(tenant: TenantContext, id: string): Promise<void> {
+    const { error } = await supabaseAdmin.from('assets').delete().eq('id', id).eq('organization_id', tenant.organizationId)
     if (error) throw error
   }
 }

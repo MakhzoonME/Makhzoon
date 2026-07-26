@@ -30,15 +30,23 @@ export async function POST(req: NextRequest) {
     const parsed = inventoryAuditSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
-    // Load all active assets to seed the audit
-    // Load active assets to seed the audit, narrowed by the chosen scope
+    // Load ALL active assets to seed the audit, narrowed by the chosen scope
     const { scope, category, location } = parsed.data;
-    const { items: allAssets } = await getAssets(tenant.organizationId, {
-      spaceId: tenant.spaceId,
-      status: 'Active',
-      category: scope === 'category' ? category : undefined,
-      pageSize: 1000,
-    });
+    const allAssets: Awaited<ReturnType<typeof getAssets>>['items'] = [];
+    let page = 1;
+    const pageSize = 500;
+    while (true) {
+      const { items, totalPages } = await getAssets(tenant.organizationId, {
+        spaceId: tenant.spaceId,
+        status: 'Active',
+        category: scope === 'category' ? category : undefined,
+        page,
+        pageSize,
+      });
+      allAssets.push(...items);
+      if (page >= totalPages) break;
+      page++;
+    }
     const assets = scope === 'location' && location
       ? allAssets.filter((a) => a.location === location)
       : allAssets;

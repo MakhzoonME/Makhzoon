@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAuthUser, authEmailExists } from '@/lib/supabase/auth-admin';
+import { createAuthUser, deleteAuthUser, authEmailExists } from '@/lib/supabase/auth-admin';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { checkOrigin } from '@/lib/csrf';
 import { getInviteByToken, markInviteAccepted } from '@/lib/db/invites';
-import { createUser } from '@/lib/db/users';
+import { createUser, deleteUser } from '@/lib/db/users';
 import { acceptInviteSchema } from '@/lib/validations/invite.schema';
 import { queueAuditLog } from '@/lib/audit/logger';
 import { notificationQueue } from '@/lib/notifications/notification-queue';
@@ -11,6 +11,12 @@ import type { TenantContext } from '@/lib/platform/tenancy/types';
 
 export async function POST(req: NextRequest, props: { params: Promise<{ token: string }> }) {
   const params = await props.params;
+
+  // --- Compensating cleanup state ---
+  // Track which resources were created so we can undo them on failure.
+  let authUserUid: string | null = null;
+  let userCreated = false;
+
   try {
     // SECURITY: Rate limit invite acceptance (5 per IP per hour)
     const clientIp = getClientIp(req);
@@ -42,7 +48,6 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
 
     const { password } = parsed.data;
 
-    let uid: string;
     let userEmail: string;
 
     if (invite.email) {
@@ -56,7 +61,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
         role: invite.role,
         organizationId: invite.organizationId,
       });
-      uid = newUser.uid;
+      authUserUid = newUser.uid;
       userEmail = invite.email;
     } else if (invite.username) {
       const syntheticEmail = `${invite.username}@makhzoon.local`;
@@ -70,13 +75,13 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
         role: invite.role,
         organizationId: invite.organizationId,
       });
-      uid = newUser.uid;
+      authUserUid = newUser.uid;
       userEmail = syntheticEmail;
     } else {
       return NextResponse.json({ error: 'Invite has no email or username' }, { status: 400 });
     }
 
-    await createUser(uid, {
+    await createUser(authUserUid, {
       organizationId: invite.organizationId,
       email: userEmail,
       username: invite.username,
@@ -87,12 +92,13 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
       createdBy: invite.invitedBy,
       updatedBy: invite.invitedBy,
     });
+    userCreated = true;
 
-    await markInviteAccepted(invite.id, uid);
+    await markInviteAccepted(invite.id, authUserUid);
 
     queueAuditLog({
       organizationId: invite.organizationId,
-      userId: uid,
+      userId: authUserUid,
       role: invite.role,
       action: 'INVITE_ACCEPTED',
       module: 'users',
@@ -112,6 +118,19 @@ export async function POST(req: NextRequest, props: { params: Promise<{ token: s
 
     return NextResponse.json({ success: true, email: userEmail });
   } catch (err) {
+    // --- Compensating cleanup: undo resources in reverse order ---
+    // The invite row is intentionally left intact so the invite can be retried.
+    if (userCreated && authUserUid) {
+      await deleteUser(authUserUid).catch((cleanupErr) =>
+        console.error('[invite-accept cleanup] failed to delete user record:', cleanupErr),
+      );
+    }
+    if (authUserUid) {
+      // Always attempt to delete the auth user — it is the most dangerous
+      // orphan because it blocks re-registration with the same email.
+      await deleteAuthUser(authUserUid);
+    }
+
     console.error('[POST /api/invites/[token]/accept]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

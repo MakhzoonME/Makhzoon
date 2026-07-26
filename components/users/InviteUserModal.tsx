@@ -175,6 +175,19 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                   </svg>
                   <p>Invitation sent via email. You can also share the link or QR code below.</p>
                 </div>
+              ) : inviteMode === 'email' ? (
+                <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5" aria-hidden>
+                    <path d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM8 5v3.5M8 10.5v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                  </svg>
+                  <div className="flex-1">
+                    <p>Email could not be delivered. Copy the link below and share it manually.</p>
+                    <Button size="sm" variant="outline" onClick={() => copyLink(inviteLink)} className="mt-2 gap-1.5 border-amber-300 text-amber-800 hover:bg-amber-100">
+                      <CopySVG />
+                      {copied ? 'Copied!' : 'Copy Link'}
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5" aria-hidden>
@@ -182,11 +195,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                     <path d="M8 5v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                   </svg>
                   <div>
-                    {inviteUsername ? (
-                      <p>Username invite created. Share the link or QR code with <strong>{inviteUsername}</strong> so they can set their password.</p>
-                    ) : (
-                      <p>Email delivery is not configured. Share the link or QR code below manually.</p>
-                    )}
+                    <p>Username invite created. Share the link or QR code with <strong>{inviteUsername}</strong> so they can set their password.</p>
                   </div>
                 </div>
               )}
@@ -314,7 +323,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>Cancel</Button>
                 <Button type="submit" disabled={loading || !canSubmit}>
-                  {loading ? 'Inviting...' : 'Send Invite'}
+                  {loading ? 'Inviting...' : 'Invite Team Member'}
                 </Button>
               </DialogFooter>
             </form>

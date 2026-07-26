@@ -93,29 +93,27 @@ export class SessionsRepository {
     tenant: TenantContext,
     input: { openingFloat: number; locationId?: string },
   ): Promise<string> {
-    // Single-open-session invariant: re-check before insert. (Was a Firestore
-    // transaction; read-then-write here — acceptable for internal/staging.)
-    const existing = await this.findOpenForCashier(tenant)
-    if (existing) {
-      throw new Error(
-        'You already have an open session. Close it before opening a new one.',
-      )
+    // Uses the atomic `open_pos_session` RPC (migration 0047) which
+    // advisory-locks per cashier, checks for an existing open session,
+    // and inserts in one DB transaction — preventing TOCTOU races.
+    const { data, error } = await supabaseAdmin.rpc('open_pos_session', {
+      p_org_id:        tenant.organizationId,
+      p_space_id:      tenant.spaceId ?? null,
+      p_cashier_id:    tenant.userId,
+      p_cashier_name:  tenant.user.displayName ?? tenant.user.email ?? '',
+      p_location_id:   input.locationId ?? 'default',
+      p_opening_float: input.openingFloat,
+    })
+    if (error) {
+      const msg = error.message ?? ''
+      if (msg.includes('OPEN_SESSION_EXISTS')) {
+        throw new Error(
+          'You already have an open session. Close it before opening a new one.',
+        )
+      }
+      throw error
     }
-    const { data, error } = await supabaseAdmin
-      .from('pos_sessions')
-      .insert({
-        organization_id: tenant.organizationId,
-        space_id: tenant.spaceId,
-        location_id: input.locationId ?? 'default',
-        cashier_id: tenant.userId,
-        cashier_name: tenant.user.displayName ?? tenant.user.email ?? '',
-        status: 'open',
-        opening_float: input.openingFloat,
-      })
-      .select('id')
-      .single()
-    if (error) throw error
-    return data.id as string
+    return data as string
   }
 
   async computeExpectedCash(
@@ -169,6 +167,7 @@ export class SessionsRepository {
         close_notes: input.notes ?? null,
       })
       .eq('id', id)
+      .eq('organization_id', tenant.organizationId)
     if (error) throw error
 
     return { expectedFloat, discrepancy }

@@ -365,7 +365,7 @@ const en = {
 
   // ── Users page ───────────────────────────────────────────────────
   'users.title':        'Users',
-  'users.inviteUser':   'Create User',
+  'users.inviteUser':   'Invite Team Member',
   'users.name':         'Name',
   'users.emailUsername':'Email / Username',
   'users.role':         'Role',
@@ -2164,7 +2164,7 @@ const ar: Record<keyof typeof en, string> = {
 
   // ── Users page ───────────────────────────────────────────────────
   'users.title':         'المستخدمون',
-  'users.inviteUser':    'إنشاء مستخدم',
+  'users.inviteUser':    'دعوة عضو فريق',
   'users.name':          'الاسم',
   'users.emailUsername': 'البريد / اسم المستخدم',
   'users.role':          'الدور',

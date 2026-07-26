@@ -126,6 +126,7 @@ export class CustomersRepository {
       .from('pos_customers')
       .update(patch)
       .eq('id', id)
+      .eq('organization_id', tenant.organizationId)
     if (error) throw error
   }
 
@@ -136,6 +137,7 @@ export class CustomersRepository {
       .from('pos_customers')
       .delete()
       .eq('id', id)
+      .eq('organization_id', tenant.organizationId)
     if (error) throw error
   }
 }

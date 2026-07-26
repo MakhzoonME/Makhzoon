@@ -109,21 +109,29 @@ function useDashboard(spaceSlug: string | null, opts: DashboardFetchOpts) {
     enabled: !!spaceSlug,
     queryFn: async () => {
       const headers: HeadersInit = spaceSlug ? { 'x-space-slug': spaceSlug } : {};
-      const [assetsRes, warrantiesRes, requestsRes, auditRes] = await Promise.all([
-        opts.assets     ? fetch('/api/assets', { headers })                        : Promise.resolve(null),
-        opts.warranties ? fetch('/api/warranties?expiringSoon=true', { headers })  : Promise.resolve(null),
-        opts.requests   ? fetch('/api/requests?status=PENDING&limit=5', { headers }): Promise.resolve(null),
-        opts.auditLogs  ? fetch('/api/audit-logs?limit=4', { headers })            : Promise.resolve(null),
+      // BUG-12 fix: fetch with pageSize=1 to get accurate total count,
+      // plus a separate items fetch for display components (RecentAssetsTable, AssetBreakdownBar).
+      const [assetsRes, assetsCountRes, activeCountRes, warrantiesRes, requestsRes, auditRes] = await Promise.all([
+        opts.assets     ? fetch('/api/assets', { headers })                          : Promise.resolve(null),
+        opts.assets     ? fetch('/api/assets?pageSize=1', { headers })               : Promise.resolve(null),
+        opts.assets     ? fetch('/api/assets?status=Active&pageSize=1', { headers }) : Promise.resolve(null),
+        opts.warranties ? fetch('/api/warranties?expiringSoon=true', { headers })    : Promise.resolve(null),
+        opts.requests   ? fetch('/api/requests?status=PENDING&limit=5', { headers }) : Promise.resolve(null),
+        opts.auditLogs  ? fetch('/api/audit-logs?limit=4', { headers })              : Promise.resolve(null),
       ]);
-      const assetsBody     = assetsRes?.ok     ? await assetsRes.json()     : { items: [] };
-      const warrantiesBody = warrantiesRes?.ok ? await warrantiesRes.json() : [];
-      const requestsBody   = requestsRes?.ok   ? await requestsRes.json()   : [];
-      const auditBody      = auditRes?.ok      ? await auditRes.json()      : [];
+      const assetsBody       = assetsRes?.ok       ? await assetsRes.json()       : { items: [] };
+      const assetsCountBody  = assetsCountRes?.ok  ? await assetsCountRes.json()  : { total: 0 };
+      const activeCountBody  = activeCountRes?.ok  ? await activeCountRes.json()  : { total: 0 };
+      const warrantiesBody   = warrantiesRes?.ok   ? await warrantiesRes.json()   : [];
+      const requestsBody     = requestsRes?.ok     ? await requestsRes.json()     : [];
+      const auditBody        = auditRes?.ok        ? await auditRes.json()        : [];
       const assets: Asset[]         = Array.isArray(assetsBody?.items) ? assetsBody.items : [];
+      const totalAssetCount: number = typeof assetsCountBody?.total === 'number' ? assetsCountBody.total : assets.length;
+      const activeAssetCount: number = typeof activeCountBody?.total === 'number' ? activeCountBody.total : 0;
       const warranties: Warranty[]  = Array.isArray(warrantiesBody) ? warrantiesBody : [];
       const requests: Request[]     = Array.isArray(requestsBody) ? requestsBody : (Array.isArray(requestsBody?.items) ? requestsBody.items : []);
       const auditLogs: AuditEntry[] = Array.isArray(auditBody) ? auditBody : (Array.isArray(auditBody?.items) ? auditBody.items : []);
-      return { assets, warranties, requests, auditLogs };
+      return { assets, totalAssetCount, activeAssetCount, warranties, requests, auditLogs };
     },
     staleTime: 30_000,
     refetchInterval: 60_000,
@@ -675,6 +683,8 @@ export default function DashboardPage() {
 
   const activeAssets       = data?.assets.filter((a) => a.status === 'Active')  ?? [];
   const totalAssets        = data?.assets ?? [];
+  const totalAssetCount    = data?.totalAssetCount ?? totalAssets.length;
+  const activeAssetCount   = data?.activeAssetCount ?? activeAssets.length;
   const expiringWarranties = data?.warranties ?? [];
   const pendingRequests    = data?.requests ?? [];
   const auditLogs          = data?.auditLogs ?? [];
@@ -783,8 +793,8 @@ export default function DashboardPage() {
               iconColor="var(--mod-usool)"
               accent="var(--mod-usool)"
               label={t('dashboard.totalAssets')}
-              value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{totalAssets.length}</p>}
-              delta={!isLoading && activeAssets.length > 0 ? `${activeAssets.length} active` : undefined}
+              value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{totalAssetCount}</p>}
+              delta={!isLoading && activeAssetCount > 0 ? `${activeAssetCount} active` : undefined}
               onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
             />
           )}

@@ -14,8 +14,17 @@ export async function GET(_req: NextRequest) {
 
     const orgId = tenant.organizationId;
 
-    const { items: assets } = await getAssets(orgId, { pageSize: 1000 });
-    const csv = exportAssetsToCSV(assets);
+    // Paginate through ALL assets to avoid the 1000-row cap
+    const allAssets: Awaited<ReturnType<typeof getAssets>>['items'] = [];
+    let page = 1;
+    const pageSize = 500;
+    while (true) {
+      const { items, totalPages } = await getAssets(orgId, { page, pageSize });
+      allAssets.push(...items);
+      if (page >= totalPages) break;
+      page++;
+    }
+    const csv = exportAssetsToCSV(allAssets);
     const filename = `assets-${format(new Date(), 'yyyy-MM-dd')}.csv`;
 
     return new NextResponse(csv, {

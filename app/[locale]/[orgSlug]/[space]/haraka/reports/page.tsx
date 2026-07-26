@@ -170,7 +170,12 @@ function WidgetShell({
             <h3 className="font-medium text-gray-900">{title}</h3>
             <p className="text-xs text-gray-500 mt-0.5">{description}</p>
           </div>
-          <ExportButton exportUrl={exportUrl} filename={filename} />
+          <ExportButton
+            filename={filename.replace(/\.(csv|xlsx)$/i, '')}
+            ext="csv"
+            getUrl={() => exportUrl}
+            showFiltered={false}
+          />
         </div>
         {children}
       </CardContent>

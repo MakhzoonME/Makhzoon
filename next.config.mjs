@@ -9,6 +9,9 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
+  // exceljs is a large CJS package used only in export route handlers —
+  // keep it external so the server bundler doesn't inline/transform it.
+  serverExternalPackages: ['exceljs'],
   // NOTE: no `env` block — Next.js `env` inlines values into the CLIENT
   // bundle. RESEND_API_KEY / CRON_SECRET are server-only secrets read via
   // process.env at runtime (lib/email/resend.ts, app/api/cron/*); Cloudflare

@@ -206,6 +206,11 @@ const en = {
   'common.selectPlaceholder': 'Select…',
   'common.exportCsv':    'Export CSV',
   'common.preparing':    'Preparing…',
+  'common.export':       'Export',
+  'export.currentView':     'Export',
+  'export.currentViewHint': 'Current filters as an Excel file',
+  'export.all':             'Export All',
+  'export.allHint':         'Everything as an Excel file',
 
   // ── Pagination ──────────────────────────────────────────────────
   'pagination.showing':  'Showing',
@@ -2008,6 +2013,11 @@ const ar: Record<keyof typeof en, string> = {
   'common.selectPlaceholder': 'اختر…',
   'common.exportCsv':    'تصدير CSV',
   'common.preparing':    'جاري التحضير…',
+  'common.export':       'تصدير',
+  'export.currentView':     'تصدير',
+  'export.currentViewHint': 'حسب الفلاتر الحالية كملف Excel',
+  'export.all':             'تصدير الكل',
+  'export.allHint':         'كل البيانات كملف Excel',
   'common.delete':       'حذف',
   'common.edit':         'تعديل',
   'common.add':          'إضافة',

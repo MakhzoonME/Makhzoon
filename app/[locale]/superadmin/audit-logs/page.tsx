@@ -143,11 +143,18 @@ export default function AuditLogsPage() {
   function buildExportUrl(scope: 'filtered' | 'all') {
     const p = new URLSearchParams();
     if (scope === 'filtered') {
-      if (orgId) p.set('orgId', orgId);
-      if (userId) p.set('userId', userId);
-      if (action) p.set('action', action);
-      if (dateFrom) p.set('dateFrom', dateFrom);
-      if (dateTo) p.set('dateTo', dateTo);
+      const hasFilters = !!(orgId || userId || action || dateFrom || dateTo);
+      if (hasFilters) {
+        if (orgId) p.set('orgId', orgId);
+        if (userId) p.set('userId', userId);
+        if (action) p.set('action', action);
+        if (dateFrom) p.set('dateFrom', dateFrom);
+        if (dateTo) p.set('dateTo', dateTo);
+      } else {
+        // No filters → export exactly what's visible on this page.
+        p.set('page', String(page));
+        p.set('pageSize', String(pageSize));
+      }
     }
     return `/api/audit-logs/export${p.toString() ? `?${p.toString()}` : ''}`;
   }

@@ -18,22 +18,33 @@ export async function GET(req: NextRequest) {
     const orgId = tenant.organizationId;
     const sp = req.nextUrl.searchParams;
     const fmt = sp.get('format') === 'csv' ? 'csv' : 'xlsx';
-    // "Export" passes the page filters; "Export All" passes none.
+    // "Export" passes the page filters (or, with no filters, the visible
+    // page via page/pageSize); "Export All" passes none of these.
     const filters = {
       status: sp.get('status') ?? undefined,
       category: sp.get('category') ?? undefined,
       search: sp.get('search') ?? undefined,
+      sortBy: (sp.get('sortBy') as never) ?? undefined,
+      sortDir: sp.get('sortDir') === 'asc' ? ('asc' as const) : sp.get('sortDir') === 'desc' ? ('desc' as const) : undefined,
     };
+    const onlyPage = sp.get('page') ? parseInt(sp.get('page')!, 10) : undefined;
+    const onlyPageSize = sp.get('pageSize') ? parseInt(sp.get('pageSize')!, 10) : undefined;
 
-    // Paginate through ALL matching assets (no 1000-row cap).
     const allAssets: Awaited<ReturnType<typeof getAssets>>['items'] = [];
-    let page = 1;
-    const pageSize = 500;
-    while (true) {
-      const { items, totalPages } = await getAssets(orgId, { page, pageSize, ...filters });
+    if (onlyPage) {
+      // Export exactly what's visible on screen (one page).
+      const { items } = await getAssets(orgId, { page: onlyPage, pageSize: onlyPageSize ?? 10, ...filters });
       allAssets.push(...items);
-      if (page >= totalPages || items.length === 0) break;
-      page++;
+    } else {
+      // Paginate through ALL matching assets (no 1000-row cap).
+      let page = 1;
+      const pageSize = 500;
+      while (true) {
+        const { items, totalPages } = await getAssets(orgId, { page, pageSize, ...filters });
+        allAssets.push(...items);
+        if (page >= totalPages || items.length === 0) break;
+        page++;
+      }
     }
 
     const stamp = format(new Date(), 'yyyy-MM-dd');

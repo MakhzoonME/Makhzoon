@@ -19,6 +19,7 @@ function getRoleDefaults(role: string): SuperAdminPermissions {
     auditLogs:     { view: false },
     team:          { view: false, manage: false },
     backendLogs:   { view: false },
+    database:      { view: false, edit: false, delete: false },
   };
 }
 

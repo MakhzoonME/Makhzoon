@@ -49,9 +49,10 @@ export function writeBackendLog(entry: BackendLogEntry): void {
       request_summary: entry.requestSummary ?? null,
       response_summary: entry.responseSummary ?? null,
     })
-    .then(() => {
-      // Logging must never crash the request
-    });
+    .then(
+      () => {},
+      () => {}, // Logging must never crash the request (swallow insert errors)
+    );
 }
 
 /**

@@ -944,7 +944,7 @@ const en = {
 
   // ── Backend logs ──────────────────────────────────────────────────
   'backendLogs.title':         'Backend Logs',
-  'backendLogs.description':   'Monitor API requests, responses, and errors in real time',
+  'backendLogs.description':   'Monitor API requests & responses, server-side events, errors, and warnings in real time',
   'backendLogs.autoRefresh':   'Auto-refresh (10s)',
   'backendLogs.refresh':       'Refresh',
   'backendLogs.level':         'Level',
@@ -2748,7 +2748,7 @@ const ar: Record<keyof typeof en, string> = {
 
   // ── Backend logs ──────────────────────────────────────────────────
   'backendLogs.title':         'سجلات النظام',
-  'backendLogs.description':   'مراقبة طلبات API والاستجابات والأخطاء في الوقت الفعلي',
+  'backendLogs.description':   'مراقبة طلبات واستجابات API وأحداث الخادم والأخطاء والتحذيرات في الوقت الفعلي',
   'backendLogs.autoRefresh':   'تحديث تلقائي (10 ثواني)',
   'backendLogs.refresh':       'تحديث',
   'backendLogs.level':         'المستوى',

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CardTerminalService } from '@/lib/modules/haraka/card-terminal/card-terminal.service'
+import { logServerEvent } from '@/lib/logging/log-server-event'
 import type { CardChargeStatus } from '@/types'
 
 const service = new CardTerminalService()
@@ -39,9 +40,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   } catch (err) {
     if (err instanceof Error && err.message.includes('signature')) {
+      logServerEvent('warning', 'haraka/card-payment-result',
+        'Rejected card webhook: invalid signature', {
+          organizationId: req.headers.get('x-org-id') ?? undefined,
+        })
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     console.error('[POST /api/haraka/card-payment-result]', err)
+    logServerEvent('error', 'haraka/card-payment-result',
+      err instanceof Error ? err.message : 'Webhook processing failed')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

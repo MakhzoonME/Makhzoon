@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { queueAuditLog } from '@/lib/audit/logger';
 import { checkCronSecret } from '@/lib/cron-auth';
+import { logServerEvent } from '@/lib/logging/log-server-event';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -36,6 +37,9 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    logServerEvent('info', 'cron/subscription-status',
+      `Auto-expired ${orgIds.length} subscription(s)`, { detail: { expired: orgIds.length } });
+
     return NextResponse.json({
       ok: true,
       expired: orgIds.length,
@@ -43,6 +47,8 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     console.error('[GET /api/cron/subscription-status]', err);
+    logServerEvent('error', 'cron/subscription-status',
+      err instanceof Error ? err.message : 'Cron failed');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

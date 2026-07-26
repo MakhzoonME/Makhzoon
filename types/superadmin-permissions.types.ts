@@ -29,6 +29,12 @@ export interface BackendLogsPermissions {
   view: boolean;
 }
 
+export interface DatabaseAdminPermissions {
+  view: boolean;
+  edit: boolean;
+  delete: boolean;
+}
+
 export interface SuperAdminPermissions {
   organizations: OrganizationsPermissions;
   support: SupportMgmtPermissions;
@@ -36,6 +42,9 @@ export interface SuperAdminPermissions {
   auditLogs: SAuditLogsPermissions;
   team: TeamMgmtPermissions;
   backendLogs: BackendLogsPermissions;
+  /** Direct DB table admin (view/edit/delete any record). Off by default for
+   *  everyone except super_admin — the super-admin grants it explicitly. */
+  database: DatabaseAdminPermissions;
 }
 
 export const DEFAULT_SUPER_ADMIN_PERMISSIONS: SuperAdminPermissions = {
@@ -45,6 +54,7 @@ export const DEFAULT_SUPER_ADMIN_PERMISSIONS: SuperAdminPermissions = {
   auditLogs:     { view: true  },
   team:          { view: true,  manage: true  },
   backendLogs:   { view: true  },
+  database:      { view: true,  edit: true,  delete: true  },
 };
 
 export const DEFAULT_MAKHZOON_ADMIN_PERMISSIONS: SuperAdminPermissions = {
@@ -54,6 +64,7 @@ export const DEFAULT_MAKHZOON_ADMIN_PERMISSIONS: SuperAdminPermissions = {
   auditLogs:     { view: true  },
   team:          { view: true,  manage: false },
   backendLogs:   { view: true  },
+  database:      { view: false, edit: false, delete: false },
 };
 
 export const DEFAULT_SUPPORT_PERMISSIONS: SuperAdminPermissions = {
@@ -63,6 +74,7 @@ export const DEFAULT_SUPPORT_PERMISSIONS: SuperAdminPermissions = {
   auditLogs:     { view: true },
   team:          { view: false, manage: false },
   backendLogs:   { view: true },
+  database:      { view: false, edit: false, delete: false },
 };
 
 export interface SAModuleOperationConfig {
@@ -125,6 +137,15 @@ export const SUPERADMIN_MODULE_CONFIG: SAModuleConfig[] = [
     label: 'Backend Logs',
     operations: [
       { key: 'view', label: 'View Backend Logs' },
+    ],
+  },
+  {
+    key: 'database',
+    label: 'Database Admin',
+    operations: [
+      { key: 'view',   label: 'View Tables & Records' },
+      { key: 'edit',   label: 'Edit Records', requiresView: true },
+      { key: 'delete', label: 'Delete Records', requiresView: true },
     ],
   },
 ];

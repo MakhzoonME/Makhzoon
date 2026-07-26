@@ -17,7 +17,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo, useEffect } from 'react';
 import { useAssets } from '@/hooks/assets';
 import { useInventoryItems } from '@/hooks/inventory';
-import { useWarranties } from '@/hooks/warranties';
+import { useActiveWarrantyIds } from '@/hooks/warranties';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 function AlertTriangleSVG() {
@@ -47,43 +47,29 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId, defaultInven
   const [loading, setLoading] = useState(false);
   const [itemType, setItemType] = useState<'asset' | 'inventory'>(warranty?.assetId ? 'asset' : warranty?.inventoryItemId ? 'inventory' : defaultAssetId ? 'asset' : defaultInventoryItemId ? 'inventory' : 'asset');
 
-  // Fetch all active assets + inventory items + all org warranties to compute availability
+  // Fetch all active assets + inventory items + active warranty IDs to compute availability
   const { data: assetsData, isLoading: assetsLoading } = useAssets({ status: 'Active' });
   const { data: inventoryData, isLoading: inventoryLoading } = useInventoryItems();
-  const { data: allWarrantiesData, isLoading: warrantiesLoading } = useWarranties({ pageSize: 1000 });
+  const { data: activeWarrantyIds, isLoading: warrantiesLoading } = useActiveWarrantyIds();
 
   // Assets and inventory items eligible for a NEW warranty = those with no non-expired warranty
   const availableAssets = useMemo(() => {
     const allAssets = assetsData?.items ?? [];
     if (warranty) return allAssets;
 
-    const now = new Date();
-    const allWarranties = allWarrantiesData?.items ?? [];
-    const idsWithActiveWarranty = new Set(
-      allWarranties
-        .filter((w) => new Date(w.endDate) >= now)
-        .map((w) => w.assetId)
-        .filter(Boolean)
-    );
+    const idsWithActiveWarranty = new Set(activeWarrantyIds?.assetIds ?? []);
 
     return allAssets.filter((a) => !idsWithActiveWarranty.has(a.id));
-  }, [assetsData, allWarrantiesData, warranty]);
+  }, [assetsData, activeWarrantyIds, warranty]);
 
   const availableInventoryItems = useMemo(() => {
     const allItems = inventoryData?.items ?? [];
     if (warranty) return allItems;
 
-    const now = new Date();
-    const allWarranties = allWarrantiesData?.items ?? [];
-    const idsWithActiveWarranty = new Set(
-      allWarranties
-        .filter((w) => new Date(w.endDate) >= now)
-        .map((w) => w.inventoryItemId)
-        .filter(Boolean)
-    );
+    const idsWithActiveWarranty = new Set(activeWarrantyIds?.inventoryItemIds ?? []);
 
     return allItems.filter((i) => !idsWithActiveWarranty.has(i.id));
-  }, [inventoryData, allWarrantiesData, warranty]);
+  }, [inventoryData, activeWarrantyIds, warranty]);
 
   // When editing, ensure the current asset/item is in the options list even if not yet loaded
   const assetOptions = useMemo(() => {

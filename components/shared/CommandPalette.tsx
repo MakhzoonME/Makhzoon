@@ -61,7 +61,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
   const { user } = useAuthStore();
   const features = useSubscriptionFeatures();
   const [search, setSearch] = useState('');
-  const { data: assetsData } = useAssets({ pageSize: 1000 });
+  const { data: assetsData } = useAssets({ pageSize: 500 });
   const assets = assetsData?.items ?? [];
 
   const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin', 'makhzoon_admin', 'makhzoon_support']);

@@ -13,38 +13,52 @@ export async function GET(req: NextRequest) {
     if (!SUPERADMIN_ROLES.has(user.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { searchParams } = new URL(req.url);
-    // "Export" passes the page filters; "Export All" passes none.
+    // "Export" passes the page filters (or, with no filters, the visible
+    // page via page/pageSize); "Export All" passes none of these.
     const orgId = searchParams.get('orgId') ?? undefined;
     const userId = searchParams.get('userId') ?? undefined;
     const action = searchParams.get('action') ?? undefined;
     const dateFrom = searchParams.get('dateFrom') ?? undefined;
     const dateTo = searchParams.get('dateTo') ?? undefined;
+    const onlyPage = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined;
+    const onlyPageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined;
 
-    const HARD_CAP = 10000;
-    const PAGE_SIZE = 500;
     const rows: Record<string, unknown>[] = [];
-
-    let page = 1;
-    while (rows.length < HARD_CAP) {
-      const { logs, totalPages } = await getAuditLogs({
-        orgId, userId, action, dateFrom, dateTo, page, pageSize: PAGE_SIZE,
+    const pushLog = (l: Awaited<ReturnType<typeof getAuditLogs>>['logs'][number]) => {
+      rows.push({
+        timestamp: l.timestamp.toISOString(),
+        organizationId: l.organizationId,
+        userId: l.userId,
+        role: l.role,
+        action: l.action,
+        module: l.module,
+        recordId: l.recordId ?? '',
+        oldValue: l.oldValue,
+        newValue: l.newValue,
       });
-      for (const l of logs) {
-        rows.push({
-          timestamp: l.timestamp.toISOString(),
-          organizationId: l.organizationId,
-          userId: l.userId,
-          role: l.role,
-          action: l.action,
-          module: l.module,
-          recordId: l.recordId ?? '',
-          oldValue: l.oldValue,
-          newValue: l.newValue,
+    };
+
+    if (onlyPage) {
+      // Export exactly what's visible on screen (one page).
+      const { logs } = await getAuditLogs({
+        orgId, userId, action, dateFrom, dateTo, page: onlyPage, pageSize: onlyPageSize ?? 20,
+      });
+      logs.forEach(pushLog);
+    } else {
+      const HARD_CAP = 10000;
+      const PAGE_SIZE = 500;
+      let page = 1;
+      while (rows.length < HARD_CAP) {
+        const { logs, totalPages } = await getAuditLogs({
+          orgId, userId, action, dateFrom, dateTo, page, pageSize: PAGE_SIZE,
         });
-        if (rows.length >= HARD_CAP) break;
+        for (const l of logs) {
+          pushLog(l);
+          if (rows.length >= HARD_CAP) break;
+        }
+        if (page >= totalPages || logs.length === 0) break;
+        page += 1;
       }
-      if (page >= totalPages || logs.length === 0) break;
-      page += 1;
     }
 
     const stamp = new Date().toISOString().slice(0, 10);

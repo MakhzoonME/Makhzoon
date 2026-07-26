@@ -387,9 +387,17 @@ export default function AssetsListPage() {
               getUrl={(scope) => {
                 const p = new URLSearchParams({ format: 'xlsx' });
                 if (scope === 'filtered') {
-                  if (status) p.set('status', status);
-                  if (category) p.set('category', category);
-                  if (search) p.set('search', search);
+                  if (sortDir !== 'none') { p.set('sortBy', sortBy); p.set('sortDir', sortDir); }
+                  const hasFilters = !!(status || category || search);
+                  if (hasFilters) {
+                    if (status) p.set('status', status);
+                    if (category) p.set('category', category);
+                    if (search) p.set('search', search);
+                  } else {
+                    // No filters → export exactly what's visible on this page.
+                    p.set('page', String(page));
+                    p.set('pageSize', String(pageSize));
+                  }
                 }
                 return `/api/assets/export?${p.toString()}`;
               }}

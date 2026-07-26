@@ -208,7 +208,7 @@ const en = {
   'common.preparing':    'Preparing…',
   'common.export':       'Export',
   'export.currentView':     'Export',
-  'export.currentViewHint': 'Current filters as an Excel file',
+  'export.currentViewHint': 'What you currently see, as an Excel file',
   'export.all':             'Export All',
   'export.allHint':         'Everything as an Excel file',
 
@@ -2015,7 +2015,7 @@ const ar: Record<keyof typeof en, string> = {
   'common.preparing':    'جاري التحضير…',
   'common.export':       'تصدير',
   'export.currentView':     'تصدير',
-  'export.currentViewHint': 'حسب الفلاتر الحالية كملف Excel',
+  'export.currentViewHint': 'ما تراه حالياً كملف Excel',
   'export.all':             'تصدير الكل',
   'export.allHint':         'كل البيانات كملف Excel',
   'common.delete':       'حذف',

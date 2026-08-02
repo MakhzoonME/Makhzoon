@@ -42,6 +42,8 @@ import {
   type Subscription,
   type SubscriptionStatus,
   type PaymentLog,
+  type Invoice,
+  type InvoicePaymentMethod,
 } from '@/types';
 
 type OverrideKey = 'usool' | 'raseed' | 'users' | 'spaces';
@@ -86,6 +88,15 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
   const createPayment = useCreatePaymentLog(orgId);
   const deletePayment = useDeletePaymentLog(orgId);
 
+  const { data: invoices = [] } = useQuery<Invoice[]>({
+    queryKey: ['invoices', orgId],
+    queryFn: async () => {
+      const res = await fetch(`/api/organizations/${orgId}/invoices`);
+      if (!res.ok) throw new Error('Failed to load invoices');
+      return res.json();
+    },
+  });
+
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState<SubscriptionStatus>('ACTIVE');
   const [packageId, setPackageId] = useState<string>('');
@@ -101,6 +112,10 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
   const [savingPlan, setSavingPlan] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState<PaymentLog | null>(null);
+  const [payInvoice, setPayInvoice] = useState<Invoice | null>(null);
+  const [payMethod, setPayMethod] = useState<InvoicePaymentMethod>('CASH');
+  const [payDate, setPayDate] = useState('');
+  const [paying, setPaying] = useState(false);
 
   // Hydrate form fields from the fetched subscription. The form has many
   // intertwined handlers (handleSaveMeta, handlePackageChange,
@@ -316,6 +331,35 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
     }
   }
 
+  function openPay(inv: Invoice) {
+    setPayInvoice(inv);
+    setPayMethod('CASH');
+    setPayDate(new Date().toISOString().slice(0, 10));
+  }
+
+  async function handleMarkPaid() {
+    if (!payInvoice) return;
+    setPaying(true);
+    try {
+      const res = await fetch(`/api/organizations/${orgId}/invoices/${payInvoice.id}/pay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method: payMethod, paidAt: payDate ? new Date(payDate).toISOString() : undefined }),
+      });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        throw new Error(typeof b.error === 'string' ? b.error : 'Failed to mark paid');
+      }
+      toast.success(t('common.updated'));
+      qc.invalidateQueries({ queryKey: ['invoices', orgId] });
+      setPayInvoice(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.saveFailed'));
+    } finally {
+      setPaying(false);
+    }
+  }
+
   const paymentColumns: ColumnDef<PaymentLog>[] = [
     { key: 'paidAt', header: t('col.date'), render: (p) => formatDate(new Date(p.paidAt)) },
     {
@@ -346,6 +390,37 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
           <Trash2 className="h-3.5 w-3.5 text-red-600" />
         </Button>
       ),
+    },
+  ];
+
+  const invoiceColumns: ColumnDef<Invoice>[] = [
+    { key: 'dueDate', header: t('col.date'), render: (i) => formatDate(new Date(i.dueDate)) },
+    {
+      key: 'total',
+      header: t('subscription.price'),
+      render: (i) => (
+        <span>
+          {i.total.toFixed(2)} {i.currency}
+          {i.foundingCohortDiscount > 0 && (
+            <span className="text-xs text-gray-400"> (−{i.foundingCohortDiscount.toFixed(2)})</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: t('subscription.status'),
+      render: (i) => <span className="text-xs font-medium">{i.status.replace(/_/g, ' ')}</span>,
+    },
+    {
+      key: 'actions',
+      header: '',
+      render: (i) =>
+        i.status === 'PAID' ? (
+          <span className="text-xs text-green-600">{i.paymentMethod?.replace('_', ' ')}</span>
+        ) : (
+          <Button size="sm" variant="outline" onClick={() => openPay(i)}>Mark paid</Button>
+        ),
     },
   ];
 
@@ -638,8 +713,61 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
               />
             </CardContent>
           </Card>
+
+          {/* ── Invoices ─────────────────────────────────────────────── */}
+          <Card className="lg:col-span-3">
+            <CardContent className="p-5">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Invoices</h3>
+              <DataTable
+                data={invoices}
+                columns={invoiceColumns}
+                emptyMessage="No invoices generated yet."
+                keyExtractor={(i) => i.id}
+              />
+            </CardContent>
+          </Card>
         </div>
       )}
+
+      {/* Mark invoice paid */}
+      <Dialog open={!!payInvoice} onOpenChange={(o) => !o && setPayInvoice(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Mark invoice paid</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {payInvoice && (
+              <div className="text-sm text-gray-600">
+                {payInvoice.total.toFixed(2)} {payInvoice.currency}
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label>{t('subscription.paymentMethod')}</Label>
+              <select
+                value={payMethod}
+                onChange={(e) => setPayMethod(e.target.value as InvoicePaymentMethod)}
+                className="flex h-9 w-full rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
+              >
+                <option value="CASH">Cash</option>
+                <option value="CHEQUE">Cheque</option>
+                <option value="BANK_TRANSFER">Bank transfer</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t('col.date')}</Label>
+              <DatePicker value={payDate} onChange={(v) => setPayDate(v ?? '')} />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button size="sm" onClick={handleMarkPaid} disabled={paying}>
+                {paying ? t('common.saving') : t('common.saveChanges')}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setPayInvoice(null)}>
+                {t('common.cancel')}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
         <DialogContent className="max-w-md">

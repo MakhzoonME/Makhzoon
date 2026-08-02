@@ -13,6 +13,7 @@ import { formatDate, daysUntil } from '@/lib/utils/date';
 import { useT, useAdminGuard } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { INCLUSION_KEYS, INCLUSION_LABEL_KEYS } from '@/types';
+import { effectiveResourceLimit, type LimitedResource } from '@/lib/platform/limits/effective-limit';
 import { Check, X, Wrench } from 'lucide-react';
 import type { MessageKey } from '@/locales/messages';
 import { useOrgSlug, useSpace } from '@/hooks/ui';
@@ -86,7 +87,10 @@ export default function SubscriptionPage() {
   const pkg = packages.find((p) => p.id === sub?.packageId) ?? null;
   // Fall back to cached packageDetails stored on the subscription record
   const pkgName = pkg?.name ?? (sub?.packageDetails?.name as string | undefined) ?? null;
-  const limits = pkg?.limits;
+  // Effective cap for the org's meters: per-org override ?? plan allowance +
+  // add-ons (same resolver the server enforces). No package = unlimited.
+  const effCap = (r: LimitedResource): number =>
+    pkg ? effectiveResourceLimit(r, pkg, sub ?? null) : -1;
   const priceText = pkg
     ? pkg.pricing.isCustom
       ? pkg.pricing.monthlyPrice != null
@@ -156,24 +160,14 @@ export default function SubscriptionPage() {
               ) : null}
             </div>
 
-            {/* Mini stats */}
+            {/* Mini stats — effective caps: per-org override ?? plan + add-ons */}
             {!usageLoading && usage && (
-              <div className="grid grid-cols-3 gap-4 mt-2">
-                <MiniStat
-                  label={t('subscription.assets')}
-                  current={usage.assets}
-                  max={limits?.maxAssets ?? -1}
-                />
-                <MiniStat
-                  label={t('subscription.users')}
-                  current={usage.users}
-                  max={limits?.maxUsers ?? -1}
-                />
-                <MiniStat
-                  label={t('subscription.warranties')}
-                  current={usage.warranties}
-                  max={limits?.maxWarranties ?? -1}
-                />
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-2">
+                <MiniStat label={t('subscription.assets')} current={usage.assets} max={effCap('assets')} />
+                <MiniStat label={t('subscription.inventoryItems')} current={usage.inventoryItems} max={effCap('inventoryItems')} />
+                <MiniStat label={t('subscription.users')} current={usage.users} max={effCap('users')} />
+                <MiniStat label={t('subscription.spaces')} current={usage.spaces} max={effCap('spaces')} />
+                <MiniStat label={t('subscription.warranties')} current={usage.warranties} max={effCap('warranties')} />
               </div>
             )}
             {usageLoading && <LoadingSkeleton rows={1} columns={3} />}

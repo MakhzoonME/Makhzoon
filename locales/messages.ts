@@ -40,6 +40,7 @@ const en = {
   'nav.sessions':           'Sessions',
   'nav.transactions':       'Transactions',
   'nav.packages':           'Packages',
+  'nav.billing':            'Billing',
   'nav.overview':      'Overview',
   'nav.assetsList':    'Asset Register',
   'nav.assetAudits':   'Audits',
@@ -494,6 +495,7 @@ const en = {
   'common.discardDesc':           'You have unsaved changes. Are you sure you want to discard them?',
   'common.discard':               'Discard',
   'common.keepEditing':           'Keep editing',
+  'common.unsavedChanges':        'Unsaved changes',
 
   // ── Module overviews ──────────────────────────────────────────────
   'overview.recentlyAdded':       'Recently Added',
@@ -1848,6 +1850,7 @@ const ar: Record<keyof typeof en, string> = {
   'nav.sessions':           'الجلسات',
   'nav.transactions':       'المعاملات',
   'nav.packages':           'الباقات',
+  'nav.billing':            'الفوترة',
   'nav.overview':      'نظرة عامة',
   'nav.assetsList':    'سجل الأصول',
   'nav.assetAudits':   'المراجعات',
@@ -2301,6 +2304,7 @@ const ar: Record<keyof typeof en, string> = {
   'common.discardDesc':           'لديك تغييرات غير محفوظة. هل أنت متأكد أنك تريد تجاهلها؟',
   'common.discard':               'تجاهل',
   'common.keepEditing':           'متابعة التعديل',
+  'common.unsavedChanges':        'تغييرات غير محفوظة',
 
   // ── Module overviews ──────────────────────────────────────────────
   'overview.recentlyAdded':       'المضافة حديثاً',

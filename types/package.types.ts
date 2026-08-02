@@ -122,6 +122,44 @@ export interface PackagePricing {
   isCustom: boolean;
 }
 
+// Extra Usool/Raseed capacity is sold in fixed blocks (block model: buy
+// capacity, don't meter). These are the block sizes the prices below apply to.
+export const USOOL_BLOCK_SIZE = 10;
+export const RASEED_BLOCK_SIZE = 20;
+
+// Monthly prices (in the package currency) for capacity bought beyond the
+// plan's included allowances. Absent/0 = not separately priced. Add-ons are
+// plan-agnostic (same price on any tier).
+export interface AddOnPrices {
+  usoolBlock?: number;   // per +USOOL_BLOCK_SIZE assets
+  raseedBlock?: number;  // per +RASEED_BLOCK_SIZE items
+  purchasesRequests?: number;
+  // Per-module monthly price for a Haraka module active beyond the plan's
+  // included slot count.
+  harakaModules?: { pos?: number; services?: number; orders?: number; retainers?: number };
+  deliveryAgents?: number;
+  warrantyCerts?: number;
+  customization?: number;
+  reports?: number;      // not sold until Reports ships
+  extraUser?: number;
+  extraSpace?: number;
+}
+
+// Structured, per-module allowances for the new pricing model. Distinct from
+// the legacy `limits` jsonb (kept for back-compat during the transition).
+export interface PackageAllowances {
+  usoolIncluded: number | null;              // included Usool assets (null = unset)
+  raseedIncluded: number | null;             // included Raseed inventory items
+  purchasesRequestsIncluded: boolean;        // Purchases & Requests bundled in
+  harakaIncludedModuleSlots: number;         // free Haraka modules ("Choose N")
+  deliveryAgentsIncluded: boolean;
+  warrantyCertsIncluded: boolean;
+  customizationIncluded: boolean;
+  spacesIncluded: number | null;
+  usersIncluded: number | null;
+  reportsAvailable: boolean;
+}
+
 export interface Package {
   id: string;
   name: string;
@@ -135,6 +173,10 @@ export interface Package {
   limits: PackageLimits;
   features: Record<FeatureKey, boolean>;
   inclusions: Record<InclusionKey, boolean>;
+  // Pricing-model fields (Phase 1+).
+  allowances: PackageAllowances;
+  addOnPrices: AddOnPrices;
+  isCustom: boolean;
   createdAt: Date;
   createdBy: string;
   updatedAt: Date;

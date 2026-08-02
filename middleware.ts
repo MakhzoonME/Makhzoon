@@ -38,6 +38,16 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const hostname = req.headers.get('host')?.split(':')[0] ?? '';
 
+  // API routes: pass through, but forward the request method as a header so
+  // server code (resolveTenant) can enforce read-only mode on mutations
+  // without threading the method through every handler. `set` overwrites any
+  // client-supplied value, so it can't be spoofed.
+  if (pathname.startsWith('/api/')) {
+    const headers = new Headers(req.headers);
+    headers.set('x-http-method', req.method);
+    return NextResponse.next({ request: { headers } });
+  }
+
   if (SKIP_PREFIXES.some((p) => pathname.startsWith(p)) || pathname === '/favicon.ico') {
     return NextResponse.next();
   }

@@ -21,5 +21,6 @@ create index if not exists web_push_subscriptions_user_id_idx
 -- RLS: users can only manage their own subscriptions
 alter table public.web_push_subscriptions enable row level security;
 
+drop policy if exists "user own subscriptions" on public.web_push_subscriptions;
 create policy "user own subscriptions" on public.web_push_subscriptions
   for all using (user_id = auth.uid());

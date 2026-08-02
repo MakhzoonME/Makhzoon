@@ -112,6 +112,17 @@ export async function listPendingInvoicesPastGrace(now: Date): Promise<Invoice[]
   return (data ?? []).map(toInvoice);
 }
 
+/** All non-PAID invoices (newest first) — for the superadmin billing view. */
+export async function getOpenInvoices(): Promise<Invoice[]> {
+  const { data, error } = await supabaseAdmin
+    .from('invoices')
+    .select('*')
+    .neq('status', 'PAID')
+    .order('due_date', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map(toInvoice);
+}
+
 export async function markInvoiceReadOnlyTriggered(id: string): Promise<void> {
   const { error } = await supabaseAdmin
     .from('invoices')

@@ -29,14 +29,35 @@ import {
 import { useOrgUsage } from '@/hooks/org';
 import { toast } from '@/hooks/ui';
 import { formatDate } from '@/lib/utils/date';
+import { Input } from '@/components/ui/input';
 import {
   FEATURE_KEYS,
   FEATURE_LABELS,
+  HARAKA_MODULES,
+  HARAKA_MODULE_LABELS,
+  EMPTY_ADD_ONS,
   type FeatureKey,
+  type HarakaModule,
+  type SubscriptionAddOns,
   type Subscription,
   type SubscriptionStatus,
   type PaymentLog,
 } from '@/types';
+
+type OverrideKey = 'usool' | 'raseed' | 'users' | 'spaces';
+
+// Parse a limit-override input: blank = null (use plan default), else a
+// non-negative integer.
+function parseOverride(s: string): number | null {
+  const t = s.trim();
+  if (t === '') return null;
+  const n = Math.floor(Number(t));
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+function normalizeAddOns(a: SubscriptionAddOns) {
+  return { ...a, extraHarakaModules: [...a.extraHarakaModules].sort() };
+}
 
 function daysUntil(d: Date | string): number {
   const target = typeof d === 'string' ? new Date(d) : d;
@@ -71,6 +92,11 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
   const [features, setFeatures] = useState<Record<FeatureKey, boolean>>(() =>
     FEATURE_KEYS.reduce((acc, k) => ({ ...acc, [k]: true }), {} as Record<FeatureKey, boolean>),
   );
+  const [harakaModules, setHarakaModules] = useState<HarakaModule[]>([]);
+  const [addOns, setAddOns] = useState<SubscriptionAddOns>(EMPTY_ADD_ONS);
+  const [overrides, setOverrides] = useState<Record<OverrideKey, string>>({
+    usool: '', raseed: '', users: '', spaces: '',
+  });
   const [savingMeta, setSavingMeta] = useState(false);
   const [savingPlan, setSavingPlan] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -94,6 +120,14 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
         {} as Record<FeatureKey, boolean>,
       ),
     );
+    setHarakaModules(sub.activeHarakaModules ?? []);
+    setAddOns({ ...EMPTY_ADD_ONS, ...sub.activeAddOns });
+    setOverrides({
+      usool: sub.limitOverrides.usool != null ? String(sub.limitOverrides.usool) : '',
+      raseed: sub.limitOverrides.raseed != null ? String(sub.limitOverrides.raseed) : '',
+      users: sub.limitOverrides.users != null ? String(sub.limitOverrides.users) : '',
+      spaces: sub.limitOverrides.spaces != null ? String(sub.limitOverrides.spaces) : '',
+    });
   }, [sub]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -151,13 +185,55 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
     setFeatures((f) => ({ ...f, [key]: value }));
   }
 
-  // True when the staged package/features differ from what's persisted.
+  function toggleHarakaModule(m: HarakaModule, on: boolean) {
+    setHarakaModules((prev) => (on ? [...new Set([...prev, m])] : prev.filter((x) => x !== m)));
+  }
+
+  const overridesPayload = useMemo(
+    () => ({
+      usool: parseOverride(overrides.usool),
+      raseed: parseOverride(overrides.raseed),
+      users: parseOverride(overrides.users),
+      spaces: parseOverride(overrides.spaces),
+    }),
+    [overrides],
+  );
+
+  // Effective cap shown in the meters: override ?? (plan allowance + add-ons),
+  // mirroring the server-side effectiveResourceLimit. -1 = unlimited.
+  function effLimit(kind: OverrideKey): number {
+    const ov = overridesPayload[kind];
+    if (ov != null) return ov;
+    const a = selectedPackage?.allowances;
+    const l = selectedPackage?.limits;
+    switch (kind) {
+      case 'usool': return a?.usoolIncluded ?? l?.maxAssets ?? -1;
+      case 'raseed': return a?.raseedIncluded ?? l?.maxInventoryItems ?? -1;
+      case 'users': { const b = a?.usersIncluded ?? l?.maxUsers ?? -1; return b === -1 ? -1 : b + addOns.extraUsers; }
+      case 'spaces': { const b = a?.spacesIncluded ?? l?.maxSpaces ?? -1; return b === -1 ? -1 : b + addOns.extraSpaces; }
+    }
+  }
+
+  // True when any staged plan field differs from what's persisted.
   const planDirty = useMemo(() => {
     if (!sub) return false;
     const pkgChanged = packageId !== (sub.packageId ?? '');
     const featsChanged = FEATURE_KEYS.some((k) => features[k] !== (sub.features?.[k] ?? true));
-    return pkgChanged || featsChanged;
-  }, [sub, packageId, features]);
+    const modulesChanged =
+      JSON.stringify([...harakaModules].sort()) !==
+      JSON.stringify([...(sub.activeHarakaModules ?? [])].sort());
+    const addOnsChanged =
+      JSON.stringify(normalizeAddOns(addOns)) !==
+      JSON.stringify(normalizeAddOns({ ...EMPTY_ADD_ONS, ...sub.activeAddOns }));
+    const savedOverrides = {
+      usool: sub.limitOverrides.usool ?? null,
+      raseed: sub.limitOverrides.raseed ?? null,
+      users: sub.limitOverrides.users ?? null,
+      spaces: sub.limitOverrides.spaces ?? null,
+    };
+    const overridesChanged = JSON.stringify(overridesPayload) !== JSON.stringify(savedOverrides);
+    return pkgChanged || featsChanged || modulesChanged || addOnsChanged || overridesChanged;
+  }, [sub, packageId, features, harakaModules, addOns, overridesPayload]);
 
   function resetPlan() {
     if (!sub) return;
@@ -168,12 +244,26 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
         {} as Record<FeatureKey, boolean>,
       ),
     );
+    setHarakaModules(sub.activeHarakaModules ?? []);
+    setAddOns({ ...EMPTY_ADD_ONS, ...sub.activeAddOns });
+    setOverrides({
+      usool: sub.limitOverrides.usool != null ? String(sub.limitOverrides.usool) : '',
+      raseed: sub.limitOverrides.raseed != null ? String(sub.limitOverrides.raseed) : '',
+      users: sub.limitOverrides.users != null ? String(sub.limitOverrides.users) : '',
+      spaces: sub.limitOverrides.spaces != null ? String(sub.limitOverrides.spaces) : '',
+    });
   }
 
   async function handleSavePlan() {
     setSavingPlan(true);
     try {
-      await patchSubscription({ packageId: packageId || null, features });
+      await patchSubscription({
+        packageId: packageId || null,
+        features,
+        activeHarakaModules: harakaModules,
+        activeAddOns: addOns,
+        limitOverrides: overridesPayload,
+      });
       toast.success(t('common.updated'));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('subscription.packageUpdateFailedMsg'));
@@ -364,22 +454,22 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
               <UsageBar
                 label={t('subscription.assets')}
                 current={usage?.assets ?? 0}
-                max={selectedPackage?.limits.maxAssets ?? -1}
+                max={effLimit('usool')}
               />
               <UsageBar
                 label={t('subscription.users')}
                 current={usage?.users ?? 0}
-                max={selectedPackage?.limits.maxUsers ?? -1}
+                max={effLimit('users')}
               />
               <UsageBar
                 label={t('subscription.spaces')}
                 current={usage?.spaces ?? 0}
-                max={selectedPackage?.limits.maxSpaces ?? -1}
+                max={effLimit('spaces')}
               />
               <UsageBar
                 label={t('subscription.inventoryItems')}
                 current={usage?.inventoryItems ?? 0}
-                max={selectedPackage?.limits.maxInventoryItems ?? -1}
+                max={effLimit('raseed')}
               />
               <UsageBar
                 label={t('subscription.warranties')}
@@ -414,6 +504,119 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                     <span className="text-sm text-gray-700">{FEATURE_LABELS[k]}</span>
                   </label>
                 ))}
+              </div>
+              {planSaveBar}
+            </CardContent>
+          </Card>
+
+          {/* ── Haraka modules ("Choose N") ─────────────────────────── */}
+          <Card className="lg:col-span-3">
+            <CardContent className="p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-gray-900">Haraka modules</h3>
+              <p className="text-xs text-gray-500">
+                Included slots: {selectedPackage?.allowances.harakaIncludedModuleSlots ?? 0}. Modules
+                selected beyond the included slots are billed as add-ons.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                {HARAKA_MODULES.map((m) => (
+                  <label key={m} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={harakaModules.includes(m)}
+                      onChange={(e) => toggleHarakaModule(m, e.target.checked)}
+                    />
+                    <span className="text-sm text-gray-700">{HARAKA_MODULE_LABELS[m]}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500">
+                Selected {harakaModules.length} of {selectedPackage?.allowances.harakaIncludedModuleSlots ?? 0} included slots
+                {harakaModules.length > (selectedPackage?.allowances.harakaIncludedModuleSlots ?? 0)
+                  ? ` · ${harakaModules.length - (selectedPackage?.allowances.harakaIncludedModuleSlots ?? 0)} as add-on`
+                  : ''}
+              </p>
+              {planSaveBar}
+            </CardContent>
+          </Card>
+
+          {/* ── Add-ons ──────────────────────────────────────────────── */}
+          <Card className="lg:col-span-3">
+            <CardContent className="p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-gray-900">Add-ons</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                {(
+                  [
+                    ['deliveryAgents', 'Delivery agents'],
+                    ['warrantyCerts', 'Warranty certificates'],
+                    ['customization', 'Customization'],
+                    ['purchasesRequests', 'Purchases & Requests'],
+                  ] as [
+                    'deliveryAgents' | 'warrantyCerts' | 'customization' | 'purchasesRequests',
+                    string,
+                  ][]
+                ).map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={addOns[key]}
+                      onChange={(e) => setAddOns((a) => ({ ...a, [key]: e.target.checked }))}
+                    />
+                    <span className="text-sm text-gray-700">{label}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-3 max-w-sm">
+                <div className="space-y-1.5">
+                  <Label>Extra users</Label>
+                  <Input
+                    type="number" min={0} inputMode="numeric"
+                    value={String(addOns.extraUsers)}
+                    onChange={(e) => setAddOns((a) => ({ ...a, extraUsers: Math.max(0, Math.floor(Number(e.target.value) || 0)) }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Extra spaces</Label>
+                  <Input
+                    type="number" min={0} inputMode="numeric"
+                    value={String(addOns.extraSpaces)}
+                    onChange={(e) => setAddOns((a) => ({ ...a, extraSpaces: Math.max(0, Math.floor(Number(e.target.value) || 0)) }))}
+                  />
+                </div>
+              </div>
+              {planSaveBar}
+            </CardContent>
+          </Card>
+
+          {/* ── Per-org limit overrides ──────────────────────────────── */}
+          <Card className="lg:col-span-3">
+            <CardContent className="p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-gray-900">Plan limits (this organization)</h3>
+              <p className="text-xs text-gray-500">
+                Leave blank to use the plan&apos;s included allowance. A value here overrides it for
+                this organization only and applies immediately on save.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {(
+                  [
+                    ['usool', t('subscription.assets')],
+                    ['raseed', t('subscription.inventoryItems')],
+                    ['users', t('subscription.users')],
+                    ['spaces', t('subscription.spaces')],
+                  ] as [OverrideKey, string][]
+                ).map(([key, label]) => {
+                  const eff = effLimit(key);
+                  return (
+                    <div key={key} className="space-y-1.5">
+                      <Label>{label}</Label>
+                      <Input
+                        type="number" min={0} inputMode="numeric"
+                        value={overrides[key]}
+                        placeholder={eff === -1 ? 'Unlimited' : `Plan: ${eff}`}
+                        onChange={(e) => setOverrides((o) => ({ ...o, [key]: e.target.value }))}
+                      />
+                    </div>
+                  );
+                })}
               </div>
               {planSaveBar}
             </CardContent>

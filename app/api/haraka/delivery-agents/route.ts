@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireAddOn } from '@/lib/permissions/require-module'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { DeliveryAgentsService } from '@/lib/modules/haraka/delivery-agents/delivery-agents.service'
 import { deliveryAgentSchema } from '@/lib/modules/haraka/delivery-agents/schemas'
@@ -11,6 +12,7 @@ export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
+    await requireAddOn(tenant, 'deliveryAgents')
     const limited = await rateLimitTenant(tenant, 'haraka-delivery-agents', 60, 60_000)
     if (limited) return limited
     const onlyActive = new URL(req.url).searchParams.get('active') === 'true'
@@ -27,6 +29,7 @@ export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
+    await requireAddOn(tenant, 'deliveryAgents')
     const body = await req.json()
     const parsed = deliveryAgentSchema.safeParse(body)
     if (!parsed.success) {

@@ -29,14 +29,37 @@ import {
 import { useOrgUsage } from '@/hooks/org';
 import { toast } from '@/hooks/ui';
 import { formatDate } from '@/lib/utils/date';
+import { Input } from '@/components/ui/input';
 import {
   FEATURE_KEYS,
   FEATURE_LABELS,
+  HARAKA_MODULES,
+  HARAKA_MODULE_LABELS,
+  EMPTY_ADD_ONS,
   type FeatureKey,
+  type HarakaModule,
+  type SubscriptionAddOns,
   type Subscription,
   type SubscriptionStatus,
   type PaymentLog,
+  type Invoice,
+  type InvoicePaymentMethod,
 } from '@/types';
+
+type OverrideKey = 'usool' | 'raseed' | 'users' | 'spaces';
+
+// Parse a limit-override input: blank = null (use plan default), else a
+// non-negative integer.
+function parseOverride(s: string): number | null {
+  const t = s.trim();
+  if (t === '') return null;
+  const n = Math.floor(Number(t));
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+function normalizeAddOns(a: SubscriptionAddOns) {
+  return { ...a, extraHarakaModules: [...a.extraHarakaModules].sort() };
+}
 
 function daysUntil(d: Date | string): number {
   const target = typeof d === 'string' ? new Date(d) : d;
@@ -65,15 +88,34 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
   const createPayment = useCreatePaymentLog(orgId);
   const deletePayment = useDeletePaymentLog(orgId);
 
+  const { data: invoices = [] } = useQuery<Invoice[]>({
+    queryKey: ['invoices', orgId],
+    queryFn: async () => {
+      const res = await fetch(`/api/organizations/${orgId}/invoices`);
+      if (!res.ok) throw new Error('Failed to load invoices');
+      return res.json();
+    },
+  });
+
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState<SubscriptionStatus>('ACTIVE');
   const [packageId, setPackageId] = useState<string>('');
   const [features, setFeatures] = useState<Record<FeatureKey, boolean>>(() =>
     FEATURE_KEYS.reduce((acc, k) => ({ ...acc, [k]: true }), {} as Record<FeatureKey, boolean>),
   );
+  const [harakaModules, setHarakaModules] = useState<HarakaModule[]>([]);
+  const [addOns, setAddOns] = useState<SubscriptionAddOns>(EMPTY_ADD_ONS);
+  const [overrides, setOverrides] = useState<Record<OverrideKey, string>>({
+    usool: '', raseed: '', users: '', spaces: '',
+  });
   const [savingMeta, setSavingMeta] = useState(false);
+  const [savingPlan, setSavingPlan] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState<PaymentLog | null>(null);
+  const [payInvoice, setPayInvoice] = useState<Invoice | null>(null);
+  const [payMethod, setPayMethod] = useState<InvoicePaymentMethod>('CASH');
+  const [payDate, setPayDate] = useState('');
+  const [paying, setPaying] = useState(false);
 
   // Hydrate form fields from the fetched subscription. The form has many
   // intertwined handlers (handleSaveMeta, handlePackageChange,
@@ -93,6 +135,14 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
         {} as Record<FeatureKey, boolean>,
       ),
     );
+    setHarakaModules(sub.activeHarakaModules ?? []);
+    setAddOns({ ...EMPTY_ADD_ONS, ...sub.activeAddOns });
+    setOverrides({
+      usool: sub.limitOverrides.usool != null ? String(sub.limitOverrides.usool) : '',
+      raseed: sub.limitOverrides.raseed != null ? String(sub.limitOverrides.raseed) : '',
+      users: sub.limitOverrides.users != null ? String(sub.limitOverrides.users) : '',
+      spaces: sub.limitOverrides.spaces != null ? String(sub.limitOverrides.spaces) : '',
+    });
   }, [sub]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -122,42 +172,139 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
       toast.success(t('common.updated'));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('subscription.featuresUpdateFailed'));
+    } finally {
+      setSavingMeta(false);
     }
   }
 
-  async function handlePackageChange(value: string) {
-    const newId = value || null;
+  // Package + feature overrides are staged locally and only persisted when the
+  // user clicks "Save Changes" (planSaveBar) — nothing is applied until save.
+  function handlePackageChange(value: string) {
     setPackageId(value);
-    try {
-      const payload: Record<string, unknown> = { packageId: newId };
-      // If a package was just chosen, hydrate features from it as the new defaults.
-      if (newId) {
-        const pkg = packages.find((p) => p.id === newId);
-        if (pkg) {
-          const merged = FEATURE_KEYS.reduce(
+    // Choosing a package hydrates the feature toggles from it as new defaults;
+    // the user can still tweak them before saving.
+    if (value) {
+      const pkg = packages.find((p) => p.id === value);
+      if (pkg) {
+        setFeatures(
+          FEATURE_KEYS.reduce(
             (acc, k) => ({ ...acc, [k]: pkg.features?.[k] ?? false }),
             {} as Record<FeatureKey, boolean>,
-          );
-          setFeatures(merged);
-          payload.features = merged;
-        }
+          ),
+        );
       }
-      await patchSubscription(payload);
-      toast.success(t('config.packageUpdated'));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('subscription.packageUpdateFailedMsg'));
     }
   }
 
-  async function handleFeatureToggle(key: FeatureKey, value: boolean) {
-    const next = { ...features, [key]: value };
-    setFeatures(next);
-    try {
-      await patchSubscription({ features: next });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('subscription.featuresUpdateFailed'));
+  function handleFeatureToggle(key: FeatureKey, value: boolean) {
+    setFeatures((f) => ({ ...f, [key]: value }));
+  }
+
+  function toggleHarakaModule(m: HarakaModule, on: boolean) {
+    setHarakaModules((prev) => (on ? [...new Set([...prev, m])] : prev.filter((x) => x !== m)));
+  }
+
+  const overridesPayload = useMemo(
+    () => ({
+      usool: parseOverride(overrides.usool),
+      raseed: parseOverride(overrides.raseed),
+      users: parseOverride(overrides.users),
+      spaces: parseOverride(overrides.spaces),
+    }),
+    [overrides],
+  );
+
+  // Effective cap shown in the meters: override ?? (plan allowance + add-ons),
+  // mirroring the server-side effectiveResourceLimit. -1 = unlimited.
+  function effLimit(kind: OverrideKey): number {
+    const ov = overridesPayload[kind];
+    if (ov != null) return ov;
+    const a = selectedPackage?.allowances;
+    const l = selectedPackage?.limits;
+    switch (kind) {
+      case 'usool': return a?.usoolIncluded ?? l?.maxAssets ?? -1;
+      case 'raseed': return a?.raseedIncluded ?? l?.maxInventoryItems ?? -1;
+      case 'users': { const b = a?.usersIncluded ?? l?.maxUsers ?? -1; return b === -1 ? -1 : b + addOns.extraUsers; }
+      case 'spaces': { const b = a?.spacesIncluded ?? l?.maxSpaces ?? -1; return b === -1 ? -1 : b + addOns.extraSpaces; }
     }
   }
+
+  // True when any staged plan field differs from what's persisted.
+  const planDirty = useMemo(() => {
+    if (!sub) return false;
+    const pkgChanged = packageId !== (sub.packageId ?? '');
+    const featsChanged = FEATURE_KEYS.some((k) => features[k] !== (sub.features?.[k] ?? true));
+    const modulesChanged =
+      JSON.stringify([...harakaModules].sort()) !==
+      JSON.stringify([...(sub.activeHarakaModules ?? [])].sort());
+    const addOnsChanged =
+      JSON.stringify(normalizeAddOns(addOns)) !==
+      JSON.stringify(normalizeAddOns({ ...EMPTY_ADD_ONS, ...sub.activeAddOns }));
+    const savedOverrides = {
+      usool: sub.limitOverrides.usool ?? null,
+      raseed: sub.limitOverrides.raseed ?? null,
+      users: sub.limitOverrides.users ?? null,
+      spaces: sub.limitOverrides.spaces ?? null,
+    };
+    const overridesChanged = JSON.stringify(overridesPayload) !== JSON.stringify(savedOverrides);
+    return pkgChanged || featsChanged || modulesChanged || addOnsChanged || overridesChanged;
+  }, [sub, packageId, features, harakaModules, addOns, overridesPayload]);
+
+  function resetPlan() {
+    if (!sub) return;
+    setPackageId(sub.packageId ?? '');
+    setFeatures(
+      FEATURE_KEYS.reduce(
+        (acc, k) => ({ ...acc, [k]: sub.features?.[k] ?? true }),
+        {} as Record<FeatureKey, boolean>,
+      ),
+    );
+    setHarakaModules(sub.activeHarakaModules ?? []);
+    setAddOns({ ...EMPTY_ADD_ONS, ...sub.activeAddOns });
+    setOverrides({
+      usool: sub.limitOverrides.usool != null ? String(sub.limitOverrides.usool) : '',
+      raseed: sub.limitOverrides.raseed != null ? String(sub.limitOverrides.raseed) : '',
+      users: sub.limitOverrides.users != null ? String(sub.limitOverrides.users) : '',
+      spaces: sub.limitOverrides.spaces != null ? String(sub.limitOverrides.spaces) : '',
+    });
+  }
+
+  async function handleSavePlan() {
+    setSavingPlan(true);
+    try {
+      await patchSubscription({
+        packageId: packageId || null,
+        features,
+        activeHarakaModules: harakaModules,
+        activeAddOns: addOns,
+        limitOverrides: overridesPayload,
+      });
+      toast.success(t('common.updated'));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('subscription.packageUpdateFailedMsg'));
+    } finally {
+      setSavingPlan(false);
+    }
+  }
+
+  const planSaveBar = (
+    <div className="flex flex-wrap items-center gap-2 pt-2">
+      <Button size="sm" onClick={handleSavePlan} disabled={!planDirty || savingPlan}>
+        {savingPlan ? t('common.saving') : t('common.saveChanges')}
+      </Button>
+      {planDirty && !savingPlan && (
+        <Button size="sm" variant="outline" onClick={resetPlan}>
+          {t('common.discard')}
+        </Button>
+      )}
+      {planDirty && (
+        <span className="inline-flex items-center gap-1 text-xs text-amber-600">
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+          {t('common.unsavedChanges')}
+        </span>
+      )}
+    </div>
+  );
 
   async function handleCreatePayment(data: PaymentLogFormPayload) {
     if (!sub) return;
@@ -181,6 +328,35 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
       setPaymentToDelete(null);
     } catch {
       toast.error(t('common.deleteFailed'));
+    }
+  }
+
+  function openPay(inv: Invoice) {
+    setPayInvoice(inv);
+    setPayMethod('CASH');
+    setPayDate(new Date().toISOString().slice(0, 10));
+  }
+
+  async function handleMarkPaid() {
+    if (!payInvoice) return;
+    setPaying(true);
+    try {
+      const res = await fetch(`/api/organizations/${orgId}/invoices/${payInvoice.id}/pay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method: payMethod, paidAt: payDate ? new Date(payDate).toISOString() : undefined }),
+      });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        throw new Error(typeof b.error === 'string' ? b.error : 'Failed to mark paid');
+      }
+      toast.success(t('common.updated'));
+      qc.invalidateQueries({ queryKey: ['invoices', orgId] });
+      setPayInvoice(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.saveFailed'));
+    } finally {
+      setPaying(false);
     }
   }
 
@@ -214,6 +390,37 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
           <Trash2 className="h-3.5 w-3.5 text-red-600" />
         </Button>
       ),
+    },
+  ];
+
+  const invoiceColumns: ColumnDef<Invoice>[] = [
+    { key: 'dueDate', header: t('col.date'), render: (i) => formatDate(new Date(i.dueDate)) },
+    {
+      key: 'total',
+      header: t('subscription.price'),
+      render: (i) => (
+        <span>
+          {i.total.toFixed(2)} {i.currency}
+          {i.foundingCohortDiscount > 0 && (
+            <span className="text-xs text-gray-400"> (−{i.foundingCohortDiscount.toFixed(2)})</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: t('subscription.status'),
+      render: (i) => <span className="text-xs font-medium">{i.status.replace(/_/g, ' ')}</span>,
+    },
+    {
+      key: 'actions',
+      header: '',
+      render: (i) =>
+        i.status === 'PAID' ? (
+          <span className="text-xs text-green-600">{i.paymentMethod?.replace('_', ' ')}</span>
+        ) : (
+          <Button size="sm" variant="outline" onClick={() => openPay(i)}>Mark paid</Button>
+        ),
     },
   ];
 
@@ -312,6 +519,7 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                   </div>
                 </div>
               )}
+              {planSaveBar}
             </CardContent>
           </Card>
 
@@ -321,22 +529,22 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
               <UsageBar
                 label={t('subscription.assets')}
                 current={usage?.assets ?? 0}
-                max={selectedPackage?.limits.maxAssets ?? -1}
+                max={effLimit('usool')}
               />
               <UsageBar
                 label={t('subscription.users')}
                 current={usage?.users ?? 0}
-                max={selectedPackage?.limits.maxUsers ?? -1}
+                max={effLimit('users')}
               />
               <UsageBar
                 label={t('subscription.spaces')}
                 current={usage?.spaces ?? 0}
-                max={selectedPackage?.limits.maxSpaces ?? -1}
+                max={effLimit('spaces')}
               />
               <UsageBar
                 label={t('subscription.inventoryItems')}
                 current={usage?.inventoryItems ?? 0}
-                max={selectedPackage?.limits.maxInventoryItems ?? -1}
+                max={effLimit('raseed')}
               />
               <UsageBar
                 label={t('subscription.warranties')}
@@ -372,6 +580,120 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                   </label>
                 ))}
               </div>
+              {planSaveBar}
+            </CardContent>
+          </Card>
+
+          {/* ── Haraka modules ("Choose N") ─────────────────────────── */}
+          <Card className="lg:col-span-3">
+            <CardContent className="p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-gray-900">Haraka modules</h3>
+              <p className="text-xs text-gray-500">
+                Included slots: {selectedPackage?.allowances.harakaIncludedModuleSlots ?? 0}. Modules
+                selected beyond the included slots are billed as add-ons.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                {HARAKA_MODULES.map((m) => (
+                  <label key={m} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={harakaModules.includes(m)}
+                      onChange={(e) => toggleHarakaModule(m, e.target.checked)}
+                    />
+                    <span className="text-sm text-gray-700">{HARAKA_MODULE_LABELS[m]}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500">
+                Selected {harakaModules.length} of {selectedPackage?.allowances.harakaIncludedModuleSlots ?? 0} included slots
+                {harakaModules.length > (selectedPackage?.allowances.harakaIncludedModuleSlots ?? 0)
+                  ? ` · ${harakaModules.length - (selectedPackage?.allowances.harakaIncludedModuleSlots ?? 0)} as add-on`
+                  : ''}
+              </p>
+              {planSaveBar}
+            </CardContent>
+          </Card>
+
+          {/* ── Add-ons ──────────────────────────────────────────────── */}
+          <Card className="lg:col-span-3">
+            <CardContent className="p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-gray-900">Add-ons</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                {(
+                  [
+                    ['deliveryAgents', 'Delivery agents'],
+                    ['warrantyCerts', 'Warranty certificates'],
+                    ['customization', 'Customization'],
+                    ['purchasesRequests', 'Purchases & Requests'],
+                  ] as [
+                    'deliveryAgents' | 'warrantyCerts' | 'customization' | 'purchasesRequests',
+                    string,
+                  ][]
+                ).map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={addOns[key]}
+                      onChange={(e) => setAddOns((a) => ({ ...a, [key]: e.target.checked }))}
+                    />
+                    <span className="text-sm text-gray-700">{label}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-3 max-w-sm">
+                <div className="space-y-1.5">
+                  <Label>Extra users</Label>
+                  <Input
+                    type="number" min={0} inputMode="numeric"
+                    value={String(addOns.extraUsers)}
+                    onChange={(e) => setAddOns((a) => ({ ...a, extraUsers: Math.max(0, Math.floor(Number(e.target.value) || 0)) }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Extra spaces</Label>
+                  <Input
+                    type="number" min={0} inputMode="numeric"
+                    value={String(addOns.extraSpaces)}
+                    onChange={(e) => setAddOns((a) => ({ ...a, extraSpaces: Math.max(0, Math.floor(Number(e.target.value) || 0)) }))}
+                  />
+                </div>
+              </div>
+              {planSaveBar}
+            </CardContent>
+          </Card>
+
+          {/* ── Per-org limit overrides ──────────────────────────────── */}
+          <Card className="lg:col-span-3">
+            <CardContent className="p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-gray-900">Plan limits (this organization)</h3>
+              <p className="text-xs text-gray-500">
+                Leave blank to use the plan&apos;s included allowance. A value here overrides it for
+                this organization only and applies immediately on save.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {(
+                  [
+                    ['usool', t('subscription.assets')],
+                    ['raseed', t('subscription.inventoryItems')],
+                    ['users', t('subscription.users')],
+                    ['spaces', t('subscription.spaces')],
+                  ] as [OverrideKey, string][]
+                ).map(([key, label]) => {
+                  const eff = effLimit(key);
+                  return (
+                    <div key={key} className="space-y-1.5">
+                      <Label>{label}</Label>
+                      <Input
+                        type="number" min={0} inputMode="numeric"
+                        value={overrides[key]}
+                        placeholder={eff === -1 ? 'Unlimited' : `Plan: ${eff}`}
+                        onChange={(e) => setOverrides((o) => ({ ...o, [key]: e.target.value }))}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              {planSaveBar}
             </CardContent>
           </Card>
 
@@ -391,8 +713,61 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
               />
             </CardContent>
           </Card>
+
+          {/* ── Invoices ─────────────────────────────────────────────── */}
+          <Card className="lg:col-span-3">
+            <CardContent className="p-5">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Invoices</h3>
+              <DataTable
+                data={invoices}
+                columns={invoiceColumns}
+                emptyMessage="No invoices generated yet."
+                keyExtractor={(i) => i.id}
+              />
+            </CardContent>
+          </Card>
         </div>
       )}
+
+      {/* Mark invoice paid */}
+      <Dialog open={!!payInvoice} onOpenChange={(o) => !o && setPayInvoice(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Mark invoice paid</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {payInvoice && (
+              <div className="text-sm text-gray-600">
+                {payInvoice.total.toFixed(2)} {payInvoice.currency}
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label>{t('subscription.paymentMethod')}</Label>
+              <select
+                value={payMethod}
+                onChange={(e) => setPayMethod(e.target.value as InvoicePaymentMethod)}
+                className="flex h-9 w-full rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
+              >
+                <option value="CASH">Cash</option>
+                <option value="CHEQUE">Cheque</option>
+                <option value="BANK_TRANSFER">Bank transfer</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t('col.date')}</Label>
+              <DatePicker value={payDate} onChange={(v) => setPayDate(v ?? '')} />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button size="sm" onClick={handleMarkPaid} disabled={paying}>
+                {paying ? t('common.saving') : t('common.saveChanges')}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setPayInvoice(null)}>
+                {t('common.cancel')}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
         <DialogContent className="max-w-md">

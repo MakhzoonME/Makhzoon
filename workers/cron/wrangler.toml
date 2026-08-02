@@ -19,11 +19,13 @@ main = "src/index.ts"
 compatibility_date = "2026-05-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Mirrors the old vercel.json schedules exactly:
+# Schedules:
 #   warranty-alerts      → Mondays 09:00 UTC
 #   subscription-status  → daily 01:00 UTC
+#   monthly-billing      → daily 02:00 UTC (bills orgs whose anchor is today)
+#   grace-enforcement    → daily 03:00 UTC
 [triggers]
-crons = ["0 9 * * 1", "0 1 * * *"]
+crons = ["0 9 * * 1", "0 1 * * *", "0 2 * * *", "0 3 * * *"]
 
 [env.dev]
 name = "makhzoon-cron-dev"

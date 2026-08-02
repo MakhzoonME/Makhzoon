@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireHarakaModule } from '@/lib/permissions/require-module'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { requirePermission } from '@/lib/permissions/require'
 import { TransactionsService } from '@/lib/modules/haraka/transactions/transactions.service'
@@ -12,6 +13,7 @@ export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
+    await requireHarakaModule(tenant, 'pos')
     const limited = await rateLimitTenant(tenant, 'haraka-transactions', 120, 60_000)
     if (limited) return limited
     const { searchParams } = new URL(req.url)
@@ -33,6 +35,7 @@ export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
+    await requireHarakaModule(tenant, 'pos')
     requirePermission(tenant.user, 'pos', 'process_sale')
     const body = await req.json()
     const parsed = completeSaleSchema.safeParse(body)

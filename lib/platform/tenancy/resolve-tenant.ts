@@ -114,6 +114,25 @@ export const resolveTenant = cache(async (): Promise<TenantContext> => {
     }
   }
 
+  // Read-only enforcement: an EXPIRED or READ_ONLY subscription blocks mutating
+  // requests (GRACE still allows writes — it's the pre-lock window; reads are
+  // always allowed). Platform admins are exempt so they can still fix things.
+  const method = (headerStore.get('x-http-method') || 'GET').toUpperCase()
+  const isMutation = method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE'
+  if (
+    isMutation &&
+    !isPlatformAdmin &&
+    (subscription?.status === 'EXPIRED' || subscription?.status === 'READ_ONLY')
+  ) {
+    throw NextResponse.json(
+      {
+        error: 'Your subscription is read-only. Renew or contact support to make changes.',
+        code: 'SUBSCRIPTION_READ_ONLY',
+      },
+      { status: 403 },
+    )
+  }
+
   return {
     organizationId,
     userId: user.uid,

@@ -61,20 +61,31 @@ CREATE POLICY haraka_services_staff_read ON haraka_services
   FOR SELECT USING (public.belongs_to_org(organization_id));
 
 -- ── Migrate existing "service" inventory items into the new catalog ───────
-INSERT INTO haraka_services (
-  organization_id, name, category, price, tax_rate_id, active,
-  created_at, created_by, created_by_email, created_by_name,
-  updated_at, updated_by, updated_by_email, updated_by_name
-)
-SELECT
-  organization_id, name, category,
-  COALESCE(pos_price, unit_cost, 0), tax_rate_id, pos_enabled,
-  created_at, created_by, created_by_email, created_by_name,
-  updated_at, updated_by, updated_by_email, updated_by_name
-FROM inventory_items
-WHERE item_type = 'service';
+-- Guarded on the item_type column so this migration is safe to replay: on a
+-- prior successful run the column was dropped below, and referencing it again
+-- would otherwise error with "column item_type does not exist".
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'inventory_items' AND column_name = 'item_type'
+  ) THEN
+    INSERT INTO haraka_services (
+      organization_id, name, category, price, tax_rate_id, active,
+      created_at, created_by, created_by_email, created_by_name,
+      updated_at, updated_by, updated_by_email, updated_by_name
+    )
+    SELECT
+      organization_id, name, category,
+      COALESCE(pos_price, unit_cost, 0), tax_rate_id, pos_enabled,
+      created_at, created_by, created_by_email, created_by_name,
+      updated_at, updated_by, updated_by_email, updated_by_name
+    FROM inventory_items
+    WHERE item_type = 'service';
 
-DELETE FROM inventory_items WHERE item_type = 'service';
+    DELETE FROM inventory_items WHERE item_type = 'service';
+  END IF;
+END $$;
 
 -- ── Raseed inventory is products-only again ────────────────────────────────
 DROP INDEX IF EXISTS idx_inventory_items_item_type;

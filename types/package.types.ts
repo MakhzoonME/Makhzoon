@@ -122,14 +122,25 @@ export interface PackagePricing {
   isCustom: boolean;
 }
 
+// Extra Usool/Raseed capacity is sold in fixed blocks (block model: buy
+// capacity, don't meter). These are the block sizes the prices below apply to.
+export const USOOL_BLOCK_SIZE = 10;
+export const RASEED_BLOCK_SIZE = 20;
+
 // Monthly prices (in the package currency) for capacity bought beyond the
-// plan's included allowances. Absent/0 = not separately priced.
+// plan's included allowances. Absent/0 = not separately priced. Add-ons are
+// plan-agnostic (same price on any tier).
 export interface AddOnPrices {
-  extraHarakaModule?: number;
+  usoolBlock?: number;   // per +USOOL_BLOCK_SIZE assets
+  raseedBlock?: number;  // per +RASEED_BLOCK_SIZE items
+  purchasesRequests?: number;
+  // Per-module monthly price for a Haraka module active beyond the plan's
+  // included slot count.
+  harakaModules?: { pos?: number; services?: number; orders?: number; retainers?: number };
   deliveryAgents?: number;
   warrantyCerts?: number;
   customization?: number;
-  purchasesRequests?: number;
+  reports?: number;      // not sold until Reports ships
   extraUser?: number;
   extraSpace?: number;
 }

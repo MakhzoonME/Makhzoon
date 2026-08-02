@@ -321,6 +321,148 @@
       "files": [
         "supabase/migrations/0028_performance_indexes.sql"
       ]
+    },
+    {
+      "id": "MZ-021",
+      "title": "BUG-02: Fix 1000-row cap on assets export and list",
+      "description": "Replace single-page fetch (pageSize: 1000) in assets export with paginated loop that fetches ALL assets. Fix same cap in inventory audits POST. Reduce CommandPalette pageSize to 500. Replace WarrantyForm's useWarranties({ pageSize: 1000 }) with a new lightweight /api/warranties/active-ids endpoint that returns only IDs of assets/items with active warranties (DB-level query, no in-memory pagination).",
+      "status": "done",
+      "assignee": "backend",
+      "requestedBy": "user",
+      "branch": null,
+      "createdAt": "2026-07-26T00:00:00Z",
+      "completedAt": "2026-07-26T21:25:00Z",
+      "files": [
+        "app/api/assets/export/route.ts",
+        "app/api/inventory/audits/route.ts",
+        "components/shared/CommandPalette.tsx",
+        "components/warranties/WarrantyForm.tsx",
+        "lib/db/warranties.ts",
+        "app/api/warranties/active-ids/route.ts",
+        "hooks/warranties/useActiveWarrantyIds.ts",
+        "hooks/warranties/index.ts"
+      ]
+    },
+    {
+      "id": "MZ-021",
+      "title": "Fix security bugs — organization_id guard in AssetsRepository + verifyIdToken DB re-read",
+      "description": "BUG-03: Add organization_id guard to AssetsRepository update/delete methods to prevent cross-tenant writes. BUG-07: Fix verifyIdToken to re-read role/org from public.users/superadmin_users instead of JWT claims only, matching verifySessionCookie behavior.",
+      "status": "done",
+      "assignee": "backend",
+      "requestedBy": "user",
+      "files": [
+        "lib/modules/assets/repositories/assets.repository.ts",
+        "lib/supabase/auth-helpers.ts"
+      ],
+      "branch": null,
+      "createdAt": "2026-07-26T00:00:00Z",
+      "completedAt": "2026-07-26T00:00:00Z"
+    },
+    {
+      "id": "MZ-024",
+      "title": "BUG-03 (part 2): Fix TOCTOU vulnerability in 5 repository files",
+      "description": "Add .eq('organization_id', tenant.organizationId) to all mutation queries (update/delete/cancel/close) that previously only filtered by .eq('id', id). This provides defense-in-depth alongside the getById pre-check to prevent cross-tenant writes if a row is reassigned between read and write.",
+      "status": "done",
+      "assignee": "backend",
+      "requestedBy": "user",
+      "files": [
+        "lib/modules/inventory/repositories/inventory.repository.ts",
+        "lib/modules/inventory/purchases/purchases.repository.ts",
+        "lib/modules/haraka/customers/customers.repository.ts",
+        "lib/modules/haraka/tax/tax-rates.repository.ts",
+        "lib/modules/haraka/sessions/sessions.repository.ts"
+      ],
+      "branch": null,
+      "createdAt": "2026-07-26T00:00:00Z",
+      "completedAt": "2026-07-26T00:00:00Z"
+    },
+    {
+      "id": "MZ-022",
+      "title": "BUG-13 + BUG-06: Fix invite flow labelling and email failure UI",
+      "description": "BUG-13: Standardize all labels to 'Invite Team Member' throughout the flow (dialog title, button, locale keys). BUG-06: Show amber/warning styled box with 'Copy Link' when email invite fails (messageSent=false), differentiate from username invites. Apply same fix to InviteLeadModal.",
+      "status": "done",
+      "assignee": "frontend",
+      "requestedBy": "user",
+      "files": [
+        "components/users/InviteUserModal.tsx",
+        "components/super-admin/InviteLeadModal.tsx",
+        "locales/messages.ts"
+      ],
+      "branch": null,
+      "createdAt": "2026-07-26T00:00:00Z",
+      "completedAt": "2026-07-26T00:00:00Z"
+    },
+    {
+      "id": "MZ-023",
+      "title": "BUG-12: Fix total assets count inconsistency across Dashboard and Reports",
+      "description": "Dashboard counts items.length instead of API total (default pageSize=10 truncates count). Reports hook missing x-space-slug header causes org-wide counts. Fix: extract total from existing API response in useDashboard + add lightweight total/active count fetches; add x-space-slug header to useReports.",
+      "status": "done",
+      "assignee": "frontend",
+      "requestedBy": "user",
+      "files": [
+        "app/[locale]/[orgSlug]/[space]/dashboard/page.tsx",
+        "hooks/org/useReports.ts"
+      ],
+      "branch": "bugfix/asset-count-inconsistency",
+      "createdAt": "2026-07-26T12:00:00Z",
+      "completedAt": "2026-07-26T12:30:00Z"
+    },
+    {
+      "id": "MZ-024",
+      "title": "BUG-10: Stale .next breaks verify script + dead file cleanup + stale docs",
+      "description": "Three fixes: (1) Add .next clean step before tsc in verify script to fix stale validator.ts references to removed routes. (2) Delete 6 dead/junk files: root-level empty files (acc, finally, PublicCompositeTypeNameOrOptions, DefaultSchemaTableNameOrOptions) and dead Firebase code (functions/src/lib/dev-admin.ts, functions/src/lib/mirror-doc.ts). (3) Add deprecation notice to docs/MAKHZOON_FUTURE_ARCHITECTURE.md.",
+      "status": "done",
+      "assignee": "devops",
+      "requestedBy": "user",
+      "files": [
+        "package.json",
+        "acc",
+        "finally",
+        "PublicCompositeTypeNameOrOptions",
+        "DefaultSchemaTableNameOrOptions",
+        "functions/src/lib/dev-admin.ts",
+        "functions/src/lib/mirror-doc.ts",
+        "docs/MAKHZOON_FUTURE_ARCHITECTURE.md"
+      ],
+      "branch": "DevBranch",
+      "createdAt": "2026-07-26T14:00:00Z",
+      "completedAt": "2026-07-26T14:15:00Z"
+    },
+    {
+      "id": "MZ-025",
+      "title": "BUG-05: Fix non-transactional account creation — orphaned auth user",
+      "description": "Both self-serve signup and invite-accept create multiple records (auth user → public.users → subscription) without compensating cleanup. If any step after auth creation fails, an orphaned auth user exists with no org context. Fix: implement compensating cleanup pattern with try/catch blocks that delete created resources on failure.",
+      "status": "done",
+      "assignee": "backend",
+      "requestedBy": "user",
+      "files": [
+        "lib/db/users.ts",
+        "app/api/organizations/self-serve/route.ts",
+        "app/api/invites/[token]/accept/route.ts"
+      ],
+      "branch": null,
+      "createdAt": "2026-07-26T00:00:00Z",
+      "completedAt": "2026-07-26T00:00:00Z"
+    },
+    {
+      "id": "MZ-026",
+      "title": "BUG-01: Fix non-atomic POS counters & stock ledgers (read-modify-write)",
+      "description": "6 counters use non-transactional read-modify-write that produce duplicates under concurrency. Fix: create atomic Postgres RPC functions (migration 0047) for receipt numbering, invoice numbering, stock-in/adjust, stock-audit submit, and session open. Replace racy TS read-modify-write with RPC calls. Also fix voidTransaction and refundTransaction stock-in loops.",
+      "status": "done",
+      "assignee": "backend",
+      "requestedBy": "user",
+      "branch": "bugfix/atomic-counters",
+      "createdAt": "2026-07-26T00:00:00Z",
+      "completedAt": "2026-07-26T00:00:00Z",
+      "files": [
+        "supabase/migrations/0047_atomic_counters.sql",
+        "lib/modules/haraka/transactions/transactions.repository.ts",
+        "lib/modules/haraka/fawtara/invoice-numbering.ts",
+        "lib/modules/inventory/repositories/inventory.repository.ts",
+        "lib/modules/inventory/purchases/purchases.repository.ts",
+        "lib/modules/inventory/repositories/stock-audit.repository.ts",
+        "lib/modules/haraka/sessions/sessions.repository.ts"
+      ]
     }
   ]
 }

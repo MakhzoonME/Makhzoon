@@ -1,4 +1,11 @@
 /**
+ * Identifies the exact deployed build (CI sets this to the git commit SHA).
+ * Defaults to 'dev' locally, where every load trivially "matches" so the
+ * update-available banner never fires outside a real deployment.
+ */
+export const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID ?? 'dev';
+
+/**
  * Current deployment environment indicator for UI affordances (env badge).
  * Prefers the explicit NEXT_PUBLIC_APP_ENV; falls back to inferring from the
  * Supabase project URL. (Previously lived in lib/firebase/client.ts.)

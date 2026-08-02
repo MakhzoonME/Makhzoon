@@ -9,6 +9,8 @@ import { SessionControls } from '@/components/haraka/SessionControls';
 import { useSessions } from '@/hooks/haraka';
 import { useOrgInfo } from '@/hooks/org';
 import { useT, useModuleGuard } from '@/hooks/ui';
+import { useAuthStore } from '@/store/auth.store';
+import { hasPermission } from '@/lib/permissions';
 import type { PosSession } from '@/types';
 
 export default function SessionsListPage() {
@@ -17,6 +19,13 @@ export default function SessionsListPage() {
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
   const { data: orgInfo } = useOrgInfo();
+  const { user } = useAuthStore();
+  // Someone with no oversight capability (can't see other cashiers' sessions
+  // and can't close one) shouldn't land on the cash/discrepancy detail page
+  // for their own open session — send them to the register to keep working
+  // instead of showing figures they have no reason to see.
+  const canSeeSessionDetail =
+    !!user && (hasPermission(user, 'pos', 'view_all_sessions') || hasPermission(user, 'pos', 'close_session'));
   const [status, setStatus] = useState<'open' | 'closed' | 'all'>('all');
   const [page, setPage] = useState(1);
 
@@ -127,7 +136,13 @@ export default function SessionsListPage() {
         keyExtractor={(s) => s.id}
         isLoading={isLoading}
         emptyMessage={t('haraka.noSessions')}
-        onRowClick={(s) => router.push(`${base}/sessions/${s.id}`)}
+        onRowClick={(s) => {
+          if (!canSeeSessionDetail && s.status === 'open' && s.cashierId === user?.uid) {
+            router.push(`${base}/register`);
+          } else {
+            router.push(`${base}/sessions/${s.id}`);
+          }
+        }}
         pagination={
           data
             ? {

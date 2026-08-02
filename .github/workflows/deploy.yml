@@ -135,6 +135,9 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref == 'refs/heads/DevBranch' && 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dWp0b2FibmV3b3lwaXR0b2t1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODg0MTcsImV4cCI6MjA5NTU2NDQxN30.gZ15djtZQyMAp6Mw_CeYqxQpQjmDty1geHBWLaw2_CY' || github.ref == 'refs/heads/main' && 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidXBhanVrdnlocGFyamtobGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MjYyOTAsImV4cCI6MjA5NDUwMjI5MH0.qvo7XgzvfMWzJu0dlTX_TrvY-Us74peqPVcx7ZIexhM' || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0' }}
           NEXT_PUBLIC_APP_URL: ${{ needs.map-env.outputs.app_url }}
           NEXT_PUBLIC_APP_ENV: ${{ needs.map-env.outputs.env }}
+          # Lets running tabs detect a newer deployment and prompt a refresh
+          # (VersionCheck / GET /api/version) — see lib/app-env.ts BUILD_ID.
+          NEXT_PUBLIC_BUILD_ID: ${{ github.sha }}
           # Analytics IDs — all are public client tokens (shipped in the
           # browser bundle by design), so inline like the anon key above.
           # Inlined at build time; the per-tracker code only fires in the

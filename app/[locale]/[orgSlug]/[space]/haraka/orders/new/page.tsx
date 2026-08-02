@@ -63,7 +63,7 @@ export default function NewOrderPage() {
   const { data: membersData } = useSpaceMembers(params.space);
   const members = membersData?.items ?? [];
 
-  const currency = orgInfo?.currency ?? 'USD';
+  const currency = orgInfo?.currency ?? 'JOD';
 
   type FormData = CreateOrderPayload;
 

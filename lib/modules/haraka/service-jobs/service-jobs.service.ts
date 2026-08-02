@@ -19,8 +19,14 @@ function requireView(tenant: TenantContext) {
   }
 }
 
-function requireManage(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'manage_service_jobs')) {
+function requireCreate(tenant: TenantContext) {
+  if (!hasPermission(tenant, 'pos', 'create_service_jobs') && !hasPermission(tenant, 'pos', 'checkout_service_jobs')) {
+    throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+}
+
+function requireCheckout(tenant: TenantContext) {
+  if (!hasPermission(tenant, 'pos', 'checkout_service_jobs')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -39,7 +45,7 @@ export class ServiceJobsService {
   }
 
   async create(tenant: TenantContext, input: CreateServiceJobInput) {
-    requireManage(tenant)
+    requireCreate(tenant)
     const job = await repo.create(tenant, input)
     auditLog.queue({
       tenant,
@@ -63,15 +69,32 @@ export class ServiceJobsService {
     id: string,
     patch: Parameters<typeof repo.update>[2],
   ) {
-    requireManage(tenant)
+    requireCheckout(tenant)
     await this.getById(tenant, id)
     const job = await repo.update(tenant, id, patch)
     auditLog.queue({ tenant, module: 'pos', action: 'SERVICE_JOB_UPDATED', recordId: id, newValue: patch })
     return job
   }
 
+  async addItems(
+    tenant: TenantContext,
+    id: string,
+    lines: Parameters<typeof repo.addItems>[2],
+  ) {
+    requireCheckout(tenant)
+    const job = await repo.addItems(tenant, id, lines)
+    auditLog.queue({
+      tenant,
+      module:   'pos',
+      action:   'SERVICE_JOB_ITEMS_ADDED',
+      recordId: id,
+      newValue: { addedCount: lines.length, total: job.total },
+    })
+    return job
+  }
+
   async updateStatus(tenant: TenantContext, id: string, newStatus: ServiceJobStatus) {
-    requireManage(tenant)
+    requireCheckout(tenant)
     const job = await this.getById(tenant, id)
     if (!isValidTransition(job.status, newStatus)) {
       throw NextResponse.json(
@@ -103,7 +126,7 @@ export class ServiceJobsService {
     amountPaid: number,
     paymentMethod: string | null,
   ) {
-    requireManage(tenant)
+    requireCheckout(tenant)
     await this.getById(tenant, id)
     const job = await repo.recordPayment(tenant, id, amountPaid, paymentMethod)
     auditLog.queue({
@@ -117,7 +140,7 @@ export class ServiceJobsService {
   }
 
   async generateInvoice(tenant: TenantContext, id: string) {
-    requireManage(tenant)
+    requireCheckout(tenant)
     const job = await this.getById(tenant, id)
     if (job.status !== 'done') {
       throw NextResponse.json(
@@ -145,7 +168,7 @@ export class ServiceJobsService {
     paymentMethod: string | null,
     note: string | null,
   ) {
-    requireManage(tenant)
+    requireCheckout(tenant)
     await this.getById(tenant, jobId)
     await repo.addPayment(tenant, jobId, amount, paymentMethod, note)
     auditLog.queue({
@@ -158,7 +181,7 @@ export class ServiceJobsService {
   }
 
   async removePayment(tenant: TenantContext, jobId: string, paymentId: string) {
-    requireManage(tenant)
+    requireCheckout(tenant)
     await this.getById(tenant, jobId)
     await repo.removePayment(tenant, jobId, paymentId)
     auditLog.queue({
@@ -176,7 +199,7 @@ export class ServiceJobsService {
   }
 
   async delete(tenant: TenantContext, id: string) {
-    requireManage(tenant)
+    requireCheckout(tenant)
     const job = await this.getById(tenant, id)
     if (job.status === 'in_progress' || job.status === 'done') {
       throw NextResponse.json(

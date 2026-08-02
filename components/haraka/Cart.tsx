@@ -6,7 +6,13 @@ import { Input } from '@/components/ui/input';
 import { usePosCart } from '@/store/pos-cart.store';
 import { priceCart } from '@/lib/modules/haraka/pricing/calc';
 
-export function Cart() {
+interface CartProps {
+  /** Defaults to true so existing callers (if any) keep prior behavior. */
+  canRemoveItems?: boolean;
+  canApplyDiscount?: boolean;
+}
+
+export function Cart({ canRemoveItems = true, canApplyDiscount = true }: CartProps = {}) {
   const lines = usePosCart((s) => s.lines);
   const incQty = usePosCart((s) => s.incQty);
   const setQty = usePosCart((s) => s.setQty);
@@ -34,6 +40,8 @@ export function Cart() {
           <CartLine
             key={line.itemId}
             line={line}
+            canRemove={canRemoveItems}
+            canApplyDiscount={canApplyDiscount}
             onInc={() => incQty(line.itemId, 1)}
             onDec={() => incQty(line.itemId, -1)}
             onQty={(v) => setQty(line.itemId, v)}
@@ -48,6 +56,8 @@ export function Cart() {
 
 interface CartLineProps {
   line: { itemId: string; itemName: string; unitPrice: number; taxRate: number; discount: number; quantity: number; lineTotal: number };
+  canRemove: boolean;
+  canApplyDiscount: boolean;
   onInc: () => void;
   onDec: () => void;
   onQty: (v: number) => void;
@@ -55,7 +65,7 @@ interface CartLineProps {
   onRemove: () => void;
 }
 
-function CartLine({ line, onInc, onDec, onQty, onDiscount, onRemove }: CartLineProps) {
+function CartLine({ line, canRemove, canApplyDiscount, onInc, onDec, onQty, onDiscount, onRemove }: CartLineProps) {
   const [discOpen, setDiscOpen] = useState(false);
 
   return (
@@ -66,17 +76,20 @@ function CartLine({ line, onInc, onDec, onQty, onDiscount, onRemove }: CartLineP
           <div className="text-sm font-medium leading-tight truncate">{line.itemName}</div>
           <button
             type="button"
-            className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mt-0.5 transition-colors"
-            onClick={() => setDiscOpen((o) => !o)}
+            disabled={!canApplyDiscount}
+            className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mt-0.5 transition-colors disabled:hover:text-gray-400 disabled:cursor-default"
+            onClick={() => canApplyDiscount && setDiscOpen((o) => !o)}
           >
             <span className="font-mono">JOD {line.unitPrice.toFixed(2)}</span>
             {line.taxRate > 0 && <span className="font-mono">+{(line.taxRate * 100).toFixed(0)}%</span>}
             {line.discount > 0 && (
               <span className="text-amber-600 font-mono">−{line.discount.toFixed(2)}</span>
             )}
-            <ChevronDown size={10} className={`transition-transform ${discOpen ? 'rotate-180' : ''}`} />
+            {canApplyDiscount && (
+              <ChevronDown size={10} className={`transition-transform ${discOpen ? 'rotate-180' : ''}`} />
+            )}
           </button>
-          {discOpen && (
+          {canApplyDiscount && discOpen && (
             <div className="flex items-center gap-1 mt-1">
               <Input
                 type="number" min="0" step="0.01"
@@ -118,13 +131,15 @@ function CartLine({ line, onInc, onDec, onQty, onDiscount, onRemove }: CartLineP
         {/* Line total + remove */}
         <div className="flex items-center gap-1 flex-shrink-0">
           <span className="font-mono text-sm font-semibold w-14 text-end">{line.lineTotal.toFixed(2)}</span>
-          <button
-            type="button"
-            className="h-6 w-6 rounded-md flex items-center justify-center text-gray-300 hover:text-red-500 transition-colors"
-            onClick={onRemove}
-          >
-            <Trash2 size={11} />
-          </button>
+          {canRemove && (
+            <button
+              type="button"
+              className="h-6 w-6 rounded-md flex items-center justify-center text-gray-300 hover:text-red-500 transition-colors"
+              onClick={onRemove}
+            >
+              <Trash2 size={11} />
+            </button>
+          )}
         </div>
       </div>
     </div>

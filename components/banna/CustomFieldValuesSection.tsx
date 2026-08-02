@@ -15,7 +15,7 @@ interface Props {
   recordId: string;
 }
 
-function FieldInput({
+export function FieldInput({
   field,
   value,
   onChange,

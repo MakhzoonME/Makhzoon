@@ -23,7 +23,7 @@ export default function RetainerDetailPage() {
   const { t } = useT();
   if (!featureAllowed || !isAllowed) return null;
 
-  const currency = orgInfo?.currency ?? 'USD';
+  const currency = orgInfo?.currency ?? 'JOD';
   const base     = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
   const retainer = data?.retainer;
 

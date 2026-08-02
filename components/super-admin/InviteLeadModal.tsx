@@ -158,12 +158,17 @@ export function InviteLeadModal({ open, onOpenChange, leadEmail, leadName }: Inv
                 <p>Invitation sent to <strong>{leadEmail}</strong>. You can also share the link or QR code below.</p>
               </div>
             ) : (
-              <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+              <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5" aria-hidden>
-                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.3" fill="none" />
-                  <path d="M8 5v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                  <path d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM8 5v3.5M8 10.5v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
-                <p>Email delivery is not configured. Share the link or QR code manually.</p>
+                <div className="flex-1">
+                  <p>Email could not be delivered. Copy the link below and share it manually.</p>
+                  <Button size="sm" variant="outline" onClick={() => copyLink(result!.acceptUrl)} className="mt-2 gap-1.5 border-amber-300 text-amber-800 hover:bg-amber-100">
+                    <CopySVG />
+                    {copied ? 'Copied!' : 'Copy Link'}
+                  </Button>
+                </div>
               </div>
             )}
 

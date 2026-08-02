@@ -494,6 +494,7 @@ const en = {
   'common.discardDesc':           'You have unsaved changes. Are you sure you want to discard them?',
   'common.discard':               'Discard',
   'common.keepEditing':           'Keep editing',
+  'common.unsavedChanges':        'Unsaved changes',
 
   // ── Module overviews ──────────────────────────────────────────────
   'overview.recentlyAdded':       'Recently Added',
@@ -2301,6 +2302,7 @@ const ar: Record<keyof typeof en, string> = {
   'common.discardDesc':           'لديك تغييرات غير محفوظة. هل أنت متأكد أنك تريد تجاهلها؟',
   'common.discard':               'تجاهل',
   'common.keepEditing':           'متابعة التعديل',
+  'common.unsavedChanges':        'تغييرات غير محفوظة',
 
   // ── Module overviews ──────────────────────────────────────────────
   'overview.recentlyAdded':       'المضافة حديثاً',

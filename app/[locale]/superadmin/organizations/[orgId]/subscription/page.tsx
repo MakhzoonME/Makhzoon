@@ -72,6 +72,7 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
     FEATURE_KEYS.reduce((acc, k) => ({ ...acc, [k]: true }), {} as Record<FeatureKey, boolean>),
   );
   const [savingMeta, setSavingMeta] = useState(false);
+  const [savingPlan, setSavingPlan] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState<PaymentLog | null>(null);
 
@@ -122,42 +123,83 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
       toast.success(t('common.updated'));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('subscription.featuresUpdateFailed'));
+    } finally {
+      setSavingMeta(false);
     }
   }
 
-  async function handlePackageChange(value: string) {
-    const newId = value || null;
+  // Package + feature overrides are staged locally and only persisted when the
+  // user clicks "Save Changes" (planSaveBar) — nothing is applied until save.
+  function handlePackageChange(value: string) {
     setPackageId(value);
-    try {
-      const payload: Record<string, unknown> = { packageId: newId };
-      // If a package was just chosen, hydrate features from it as the new defaults.
-      if (newId) {
-        const pkg = packages.find((p) => p.id === newId);
-        if (pkg) {
-          const merged = FEATURE_KEYS.reduce(
+    // Choosing a package hydrates the feature toggles from it as new defaults;
+    // the user can still tweak them before saving.
+    if (value) {
+      const pkg = packages.find((p) => p.id === value);
+      if (pkg) {
+        setFeatures(
+          FEATURE_KEYS.reduce(
             (acc, k) => ({ ...acc, [k]: pkg.features?.[k] ?? false }),
             {} as Record<FeatureKey, boolean>,
-          );
-          setFeatures(merged);
-          payload.features = merged;
-        }
+          ),
+        );
       }
-      await patchSubscription(payload);
-      toast.success(t('config.packageUpdated'));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('subscription.packageUpdateFailedMsg'));
     }
   }
 
-  async function handleFeatureToggle(key: FeatureKey, value: boolean) {
-    const next = { ...features, [key]: value };
-    setFeatures(next);
+  function handleFeatureToggle(key: FeatureKey, value: boolean) {
+    setFeatures((f) => ({ ...f, [key]: value }));
+  }
+
+  // True when the staged package/features differ from what's persisted.
+  const planDirty = useMemo(() => {
+    if (!sub) return false;
+    const pkgChanged = packageId !== (sub.packageId ?? '');
+    const featsChanged = FEATURE_KEYS.some((k) => features[k] !== (sub.features?.[k] ?? true));
+    return pkgChanged || featsChanged;
+  }, [sub, packageId, features]);
+
+  function resetPlan() {
+    if (!sub) return;
+    setPackageId(sub.packageId ?? '');
+    setFeatures(
+      FEATURE_KEYS.reduce(
+        (acc, k) => ({ ...acc, [k]: sub.features?.[k] ?? true }),
+        {} as Record<FeatureKey, boolean>,
+      ),
+    );
+  }
+
+  async function handleSavePlan() {
+    setSavingPlan(true);
     try {
-      await patchSubscription({ features: next });
+      await patchSubscription({ packageId: packageId || null, features });
+      toast.success(t('common.updated'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('subscription.featuresUpdateFailed'));
+      toast.error(err instanceof Error ? err.message : t('subscription.packageUpdateFailedMsg'));
+    } finally {
+      setSavingPlan(false);
     }
   }
+
+  const planSaveBar = (
+    <div className="flex flex-wrap items-center gap-2 pt-2">
+      <Button size="sm" onClick={handleSavePlan} disabled={!planDirty || savingPlan}>
+        {savingPlan ? t('common.saving') : t('common.saveChanges')}
+      </Button>
+      {planDirty && !savingPlan && (
+        <Button size="sm" variant="outline" onClick={resetPlan}>
+          {t('common.discard')}
+        </Button>
+      )}
+      {planDirty && (
+        <span className="inline-flex items-center gap-1 text-xs text-amber-600">
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+          {t('common.unsavedChanges')}
+        </span>
+      )}
+    </div>
+  );
 
   async function handleCreatePayment(data: PaymentLogFormPayload) {
     if (!sub) return;
@@ -312,6 +354,7 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                   </div>
                 </div>
               )}
+              {planSaveBar}
             </CardContent>
           </Card>
 
@@ -372,6 +415,7 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                   </label>
                 ))}
               </div>
+              {planSaveBar}
             </CardContent>
           </Card>
 

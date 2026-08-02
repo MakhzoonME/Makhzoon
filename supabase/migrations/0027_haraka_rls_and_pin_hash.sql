@@ -152,10 +152,20 @@ ALTER TABLE haraka_cash_drawer_config
 
 -- Migrate existing plaintext PINs to bcrypt hashes via pgcrypto.
 -- The application layer will now write to pin_hash and ignore the pin column.
-UPDATE haraka_cash_drawer_config
-  SET pin_hash = crypt(pin, gen_salt('bf', 8))
-  WHERE pin IS NOT NULL AND pin != ''
-    AND (pin_hash IS NULL OR pin_hash = '');
+-- Guarded by a column-existence check so this migration is safe to replay
+-- against a database where a prior run already dropped "pin".
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'haraka_cash_drawer_config' AND column_name = 'pin'
+  ) THEN
+    UPDATE haraka_cash_drawer_config
+      SET pin_hash = crypt(pin, gen_salt('bf', 8))
+      WHERE pin IS NOT NULL AND pin != ''
+        AND (pin_hash IS NULL OR pin_hash = '');
+  END IF;
+END $$;
 
 -- Drop the old plaintext pin column now that hashes are in place.
 -- If there are existing PINs that couldn't be hashed (should not happen),

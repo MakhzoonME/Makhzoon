@@ -16,6 +16,25 @@ import { formatDate } from '@/lib/utils/date';
 
 const NONE = '__none__';
 
+// Turn an API error (string, or a Zod flatten { fieldErrors, formErrors })
+// into a readable message so the UI never shows a raw "[object Object]".
+function extractErrorMessage(error: unknown): string | null {
+  if (!error) return null;
+  if (typeof error === 'string') return error;
+  if (typeof error === 'object') {
+    const e = error as { formErrors?: string[]; fieldErrors?: Record<string, string[]> };
+    const parts: string[] = [];
+    if (e.fieldErrors) {
+      for (const [field, msgs] of Object.entries(e.fieldErrors)) {
+        if (msgs?.length) parts.push(`${field}: ${msgs.join(', ')}`);
+      }
+    }
+    if (e.formErrors?.length) parts.push(...e.formErrors);
+    if (parts.length) return parts.join(' · ');
+  }
+  return null;
+}
+
 // ─── Delete org ───────────────────────────────────────────────────────────────
 
 function DeleteOrgDialog({
@@ -149,7 +168,7 @@ function EditOrgForm({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || 'Failed to update');
+        throw new Error(extractErrorMessage(body.error) || 'Failed to update');
       }
       toast.success(t('orgs.updated'));
       qc.invalidateQueries({ queryKey: ['org', orgId] });

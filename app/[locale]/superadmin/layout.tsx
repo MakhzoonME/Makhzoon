@@ -3,12 +3,8 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/ui';
 import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity, Mail, RefreshCw, ChevronLeft, ChevronRight, Package, Inbox, Database } from 'lucide-react';
-import {
-  DEFAULT_SUPER_ADMIN_PERMISSIONS,
-  DEFAULT_MAKHZOON_ADMIN_PERMISSIONS,
-  DEFAULT_SUPPORT_PERMISSIONS,
-} from '@/types/superadmin-permissions.types';
 import type { SuperAdminPermissions } from '@/types/superadmin-permissions.types';
+import { resolveSuperAdminPermissions } from '@/lib/permissions/superadmin';
 import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -29,13 +25,6 @@ const SA_COLLAPSED = 68;
 const EASE_SLIDE = [0.4, 0, 0.2, 1] as const;
 
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
-
-function getSaPermissions(user: { role: string; saPermissions?: SuperAdminPermissions | null }): SuperAdminPermissions {
-  if (user.saPermissions) return user.saPermissions;
-  if (user.role === 'super_admin') return DEFAULT_SUPER_ADMIN_PERMISSIONS;
-  if (user.role === 'makhzoon_admin') return DEFAULT_MAKHZOON_ADMIN_PERMISSIONS;
-  return DEFAULT_SUPPORT_PERMISSIONS;
-}
 
 type NavEntry =
   | { separator: true }
@@ -114,7 +103,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
     </div>
   );
 
-  const saPerms = getSaPermissions(user);
+  const saPerms = resolveSuperAdminPermissions(user);
   const navItems = ALL_NAV_ITEMS(locale).filter((item) => {
     if ('separator' in item) return true;
     if (!item.roles.includes(user.role)) return false;

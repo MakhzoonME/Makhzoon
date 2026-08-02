@@ -12,6 +12,7 @@ export const organizationSchema = z
     contactEmail: z.string().email('Invalid email address'),
     description: z.string().max(500).nullable().optional(),
     category: z.enum(ORG_CATEGORIES).nullable().optional(),
+    packageId: z.string().nullable().optional(),
     packageDetails: z.string().optional(),
     subscriptionStartDate: z.string().min(1, 'Start date is required'),
     subscriptionEndDate: z.string().min(1, 'End date is required'),

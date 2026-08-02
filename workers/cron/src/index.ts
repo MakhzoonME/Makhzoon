@@ -19,6 +19,8 @@ interface ScheduledController {
 const SCHEDULE: Record<string, string> = {
   '0 9 * * 1': '/api/cron/warranty-alerts',
   '0 1 * * *': '/api/cron/subscription-status',
+  '0 2 * * *': '/api/cron/monthly-billing',
+  '0 3 * * *': '/api/cron/grace-enforcement',
 };
 
 export default {

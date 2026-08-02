@@ -17,9 +17,10 @@ export type BarcodeLookupResult =
  * react to the result inline (add to cart, fill purchase line, etc.) — not
  * subscribe to a watcher.
  */
-export function useBarcodeLookup() {
+export function useBarcodeLookup(opts?: { posLookup?: boolean }) {
   const qc = useQueryClient();
   const inFlight = useRef<Map<string, Promise<BarcodeLookupResult>>>(new Map());
+  const posLookup = opts?.posLookup === true;
 
   const lookup = useCallback(
     async (rawCode: string): Promise<BarcodeLookupResult> => {
@@ -37,7 +38,9 @@ export function useBarcodeLookup() {
         const state = qc.getQueryState<BarcodeLookupResult>(['inventory', 'by-barcode', code]);
         if (state?.data && !state.isInvalidated) return state.data;
 
-        const res = await fetch(`/api/inventory/by-barcode?code=${encodeURIComponent(code)}`);
+        const qs = new URLSearchParams({ code });
+        if (posLookup) qs.set('posLookup', 'true');
+        const res = await fetch(`/api/inventory/by-barcode?${qs.toString()}`);
         if (res.status === 404) {
           const miss: BarcodeLookupResult = { found: false, code };
           qc.setQueryData(['inventory', 'by-barcode', code], miss, { updatedAt: Date.now() });
@@ -59,7 +62,7 @@ export function useBarcodeLookup() {
         inFlight.current.delete(code);
       }
     },
-    [qc],
+    [qc, posLookup],
   );
 
   return { lookup };

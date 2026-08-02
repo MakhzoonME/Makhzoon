@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "NODE_OPTIONS=--max-old-space-size=4096 eslint app components lib hooks store middleware.ts",
+    "lint": "cross-env NODE_OPTIONS=--max-old-space-size=4096 eslint app components lib hooks store middleware.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
@@ -26,7 +26,7 @@
     "audit:perf": "node scripts/performance-audit.mjs",
     "audit": "npm run audit:security && npm run audit:perf",
     "check:migrations": "node scripts/check-migrations.mjs",
-    "verify": "npm run lint && npx tsc --noEmit && npm test && npm run check:migrations && npm run audit:security"
+    "verify": "node -e \"try{require('fs').rmSync('.next',{recursive:true,force:true})}catch{}\" && npm run lint && npx tsc --noEmit && npm test && npm run check:migrations && npm run audit:security"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -51,6 +51,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
+    "exceljs": "^4.4.0",
     "framer-motion": "^11.18.2",
     "html-to-image": "^1.11.13",
     "jose": "^6.2.3",

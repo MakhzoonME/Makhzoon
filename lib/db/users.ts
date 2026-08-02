@@ -87,3 +87,13 @@ export async function updateUser(
     .eq('id', id);
   if (error) throw error;
 }
+
+/** Delete a user row from public.users. Used for compensating cleanup when a
+ *  multi-step account creation sequence fails partway through. */
+export async function deleteUser(id: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('users')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}

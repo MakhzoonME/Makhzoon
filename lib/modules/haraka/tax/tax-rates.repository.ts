@@ -89,6 +89,7 @@ export class TaxRatesRepository {
       .from('tax_rates')
       .update(patch)
       .eq('id', id)
+      .eq('organization_id', tenant.organizationId)
     if (error) throw error
   }
 
@@ -99,6 +100,7 @@ export class TaxRatesRepository {
       .from('tax_rates')
       .delete()
       .eq('id', id)
+      .eq('organization_id', tenant.organizationId)
     if (error) throw error
   }
 }

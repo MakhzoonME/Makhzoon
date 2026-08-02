@@ -11,10 +11,11 @@ import { CustomerPicker } from '@/components/haraka/CustomerPicker';
 import { PaymentDialog, type PaymentLine } from '@/components/haraka/PaymentDialog';
 import { PrinterSettingsDialog } from '@/components/haraka/PrinterSettingsDialog';
 import { ReceiptShareDialog } from '@/components/haraka/ReceiptShareDialog';
-import { usePosCart } from '@/store/pos-cart.store';
+import { usePosCart, type PosPickableItem } from '@/store/pos-cart.store';
 import { useBarcodeLookup } from '@/hooks/inventory';
 import { useTaxRates, useCurrentSession, useCompleteSale, useFawtaraConfig } from '@/hooks/haraka';
 import { useAuthStore } from '@/store/auth.store';
+import { hasPermission } from '@/lib/permissions';
 import { priceCart } from '@/lib/modules/haraka/pricing/calc';
 import { toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
@@ -41,7 +42,7 @@ export default function RegisterPage() {
   const { data: fawtaraCfg } = useFawtaraConfig();
   const fawtaraEnabled = fawtaraCfg?.config?.enabled === true;
   const { data: cashDrawerData } = useCashDrawerConfig();
-  const { lookup } = useBarcodeLookup();
+  const { lookup } = useBarcodeLookup({ posLookup: true });
 
   const lines = usePosCart((s) => s.lines);
   const customer = usePosCart((s) => s.customer);
@@ -53,6 +54,16 @@ export default function RegisterPage() {
   const discardHeld = usePosCart((s) => s.discardHeld);
   const [heldOpen, setHeldOpen] = useState(false);
   const heldRef = useRef<HTMLDivElement>(null);
+
+  const canAddItems = !!user && hasPermission(user, 'pos', 'add_receipt_items');
+  const canRemoveItems = !!user && hasPermission(user, 'pos', 'remove_receipt_items');
+  const canApplyDiscount = !!user && hasPermission(user, 'pos', 'apply_discount');
+  const canHoldReceipts = !!user && hasPermission(user, 'pos', 'hold_receipts');
+  // A front-desk user who can build/hold a cart but not charge it (no
+  // process_sale) doesn't need — and shouldn't be forced to open — a POS
+  // session just to land on this page. Only checkout-capable users are
+  // redirected away when they have no open session of their own.
+  const canCheckout = !!user && hasPermission(user, 'pos', 'process_sale');
 
   // Close held-carts dropdown on outside click
   useEffect(() => {
@@ -85,10 +96,10 @@ export default function RegisterPage() {
   });
 
   useEffect(() => {
-    if (sessionFetched && !sessionLoading && !sessionData?.session) {
+    if (canCheckout && sessionFetched && !sessionLoading && !sessionData?.session) {
       router.replace(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions`);
     }
-  }, [sessionFetched, sessionLoading, sessionData?.session, router, params.locale, params.orgSlug, params.space]);
+  }, [canCheckout, sessionFetched, sessionLoading, sessionData?.session, router, params.locale, params.orgSlug, params.space]);
 
   const taxRateById = useCallback(
     (id: string | null | undefined): number => {
@@ -99,20 +110,33 @@ export default function RegisterPage() {
     [taxData],
   );
 
-  function pickItem(item: InventoryItem) {
+  function pickItem(item: PosPickableItem) {
+    if (!canAddItems) { toast.error("You don't have permission to add items to a receipt"); return; }
     addItem(item, taxRateById(item.taxRateId));
   }
 
+  function inventoryItemToPickable(item: InventoryItem): PosPickableItem {
+    return {
+      id: item.id,
+      name: item.name,
+      sku: item.sku ?? null,
+      barcode: item.barcode ?? null,
+      unitPrice: typeof item.posPrice === 'number' && item.posPrice > 0 ? item.posPrice : item.unitCost ?? 0,
+      taxRateId: item.taxRateId ?? null,
+    };
+  }
+
   const handleScan = useCallback(async (code: string) => {
+    if (!canAddItems) { toast.error("You don't have permission to add items to a receipt"); return; }
     const result = await lookup(code);
     if (result.found) {
       if (!result.item.posEnabled) { toast.error(`${result.item.name} isn't enabled for POS`); return; }
       if (result.item.quantityOnHand <= 0) { toast.error(`${result.item.name} is out of stock`); return; }
-      pickItem(result.item);
+      pickItem(inventoryItemToPickable(result.item));
     } else {
       toast.error('Item not found');
     }
-  }, [lookup, taxRateById]);
+  }, [lookup, taxRateById, canAddItems]);
 
   async function handleConfirmSale(payments: PaymentLine[], skipFawtara: boolean) {
     if (!sessionData?.session) { toast.error('No open session'); return; }
@@ -253,7 +277,7 @@ export default function RegisterPage() {
 
         {/* LEFT — product catalog */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden p-4 gap-3">
-          <BarcodeInput onResolve={handleScan} placeholder={t('register.scanPlaceholder')} autoFocus enableCamera />
+          <BarcodeInput onResolve={handleScan} placeholder={t('register.scanPlaceholder')} autoFocus enableCamera disabled={!canAddItems} />
           <ProductGrid onPick={pickItem} />
         </div>
 
@@ -271,18 +295,20 @@ export default function RegisterPage() {
             )}
             <div className="ms-auto flex items-center gap-1">
               {/* Hold current cart — always holds, disabled when cart empty */}
-              <button
-                type="button"
-                title="Hold this sale"
-                disabled={lines.length === 0}
-                className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-gray-500 hover:bg-surface-inset disabled:opacity-30 transition-colors"
-                onClick={() => { holdCart(); }}
-              >
-                <PauseCircle size={14} /> Hold
-              </button>
+              {canHoldReceipts && (
+                <button
+                  type="button"
+                  title="Hold this sale"
+                  disabled={lines.length === 0}
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-gray-500 hover:bg-surface-inset disabled:opacity-30 transition-colors"
+                  onClick={() => { holdCart(); }}
+                >
+                  <PauseCircle size={14} /> Hold
+                </button>
+              )}
 
               {/* Held-carts pill — only shown when there are held sales */}
-              {held.length > 0 && (
+              {canHoldReceipts && held.length > 0 && (
                 <div className="relative" ref={heldRef}>
                   <button
                     type="button"
@@ -341,7 +367,7 @@ export default function RegisterPage() {
 
           {/* Cart items */}
           <div className="flex-1 overflow-y-auto px-4 min-h-0">
-            <Cart />
+            <Cart canRemoveItems={canRemoveItems} canApplyDiscount={canApplyDiscount} />
           </div>
 
           {/* Cart footer — totals + charge button */}
@@ -373,39 +399,47 @@ export default function RegisterPage() {
               </>
             )}
 
-            <SubscriptionGate className="block space-y-2 pt-2">
-              {/* Quick-pay shortcuts */}
-              <div className="grid grid-cols-2 gap-2">
+            {canCheckout ? (
+              <SubscriptionGate className="block space-y-2 pt-2">
+                {/* Quick-pay shortcuts */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={lines.length === 0 || completeMut.isPending}
+                    className="flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-border bg-surface-card text-gray-600 hover:border-gray-400 transition-colors disabled:opacity-30"
+                    onClick={() => { setPayTab('cash'); setPayOpen(true); }}
+                  >
+                    <Banknote size={14} /> Cash
+                  </button>
+                  <button
+                    type="button"
+                    disabled={lines.length === 0 || completeMut.isPending}
+                    className="flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-border bg-surface-card text-gray-600 hover:border-gray-400 transition-colors disabled:opacity-30"
+                    onClick={() => { setPayTab('card'); setPayOpen(true); }}
+                  >
+                    <CreditCard size={14} /> Card
+                  </button>
+                </div>
                 <button
-                  type="button"
+                  className="w-full h-11 rounded-lg text-sm font-bold text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ background: 'var(--mod-haraka)' }}
                   disabled={lines.length === 0 || completeMut.isPending}
-                  className="flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-border bg-surface-card text-gray-600 hover:border-gray-400 transition-colors disabled:opacity-30"
                   onClick={() => { setPayTab('cash'); setPayOpen(true); }}
                 >
-                  <Banknote size={14} /> Cash
+                  {completeMut.isPending
+                    ? 'Processing…'
+                    : lines.length === 0
+                    ? t('register.charge') + ' JOD 0.00'
+                    : `${t('register.charge')} JOD ${totals.total.toFixed(2)}`}
                 </button>
-                <button
-                  type="button"
-                  disabled={lines.length === 0 || completeMut.isPending}
-                  className="flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-border bg-surface-card text-gray-600 hover:border-gray-400 transition-colors disabled:opacity-30"
-                  onClick={() => { setPayTab('card'); setPayOpen(true); }}
-                >
-                  <CreditCard size={14} /> Card
-                </button>
-              </div>
-              <button
-                className="w-full h-11 rounded-lg text-sm font-bold text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ background: 'var(--mod-haraka)' }}
-                disabled={lines.length === 0 || completeMut.isPending}
-                onClick={() => { setPayTab('cash'); setPayOpen(true); }}
-              >
-                {completeMut.isPending
-                  ? 'Processing…'
-                  : lines.length === 0
-                  ? t('register.charge') + ' JOD 0.00'
-                  : `${t('register.charge')} JOD ${totals.total.toFixed(2)}`}
-              </button>
-            </SubscriptionGate>
+              </SubscriptionGate>
+            ) : (
+              canHoldReceipts && lines.length > 0 && (
+                <div className="pt-2 text-center text-xs text-gray-400">
+                  Hold this cart for a cashier to charge — you don&apos;t have permission to take payment.
+                </div>
+              )
+            )}
           </div>
         </div>
       </div>

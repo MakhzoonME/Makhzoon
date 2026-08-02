@@ -5,6 +5,7 @@ import { sendEmail } from '@/lib/email/resend';
 import { warrantyAlertEmail } from '@/lib/email/templates';
 import { queueAuditLog } from '@/lib/audit/logger';
 import { checkCronSecret } from '@/lib/cron-auth';
+import { logServerEvent } from '@/lib/logging/log-server-event';
 
 type Row = Record<string, unknown>;
 
@@ -124,9 +125,16 @@ export async function GET(req: NextRequest) {
       results.push({ orgId, admins: admins.length, items: items.length, sent, skipped: false });
     }
 
+    const totalSent = results.reduce((n, r) => n + r.sent, 0);
+    logServerEvent('info', 'cron/warranty-alerts',
+      `Processed ${results.length} org(s), sent ${totalSent} warranty alert email(s)`,
+      { detail: { orgs: results.length, sent: totalSent } });
+
     return NextResponse.json({ ok: true, orgs: results.length, results });
   } catch (err) {
     console.error('[GET /api/cron/warranty-alerts]', err);
+    logServerEvent('error', 'cron/warranty-alerts',
+      err instanceof Error ? err.message : 'Cron failed');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

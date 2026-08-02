@@ -18,7 +18,14 @@ export async function GET() {
       .eq('organization_id', tenant.organizationId)
       .eq('user_id', tenant.userId)
     if (error) throw error
-    return NextResponse.json({ preferences: data ?? [] })
+    const preferences = (data ?? []).map((row) => ({
+      organizationId: row.organization_id,
+      userId: row.user_id,
+      eventType: row.event_type,
+      inApp: row.in_app,
+      email: row.email,
+    }))
+    return NextResponse.json({ preferences })
   } catch (err) {
     if (err instanceof NextResponse) return err
     console.error('[GET /api/notification-preferences]', err)

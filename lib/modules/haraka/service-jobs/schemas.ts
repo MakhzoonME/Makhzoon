@@ -70,6 +70,10 @@ export const recordPaymentSchema = z.object({
   paymentMethod: z.string().max(60).nullable().optional(),
 })
 
+export const addServiceJobItemsSchema = z.object({
+  items: z.array(serviceLineSchema).min(1, 'At least one item is required'),
+})
+
 export const addPaymentEntrySchema = z.object({
   amount:        z.number().positive(),
   paymentMethod: z.string().max(60).nullable().optional(),
@@ -81,3 +85,4 @@ export type UpdateServiceJobPayload = z.infer<typeof updateServiceJobSchema>
 export type UpdateServiceJobStatusPayload = z.infer<typeof updateServiceJobStatusSchema>
 export type RecordPaymentPayload = z.infer<typeof recordPaymentSchema>
 export type AddPaymentEntryPayload = z.infer<typeof addPaymentEntrySchema>
+export type AddServiceJobItemsPayload = z.infer<typeof addServiceJobItemsSchema>

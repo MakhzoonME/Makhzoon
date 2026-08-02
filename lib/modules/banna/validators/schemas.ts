@@ -8,7 +8,7 @@ export const customFieldOptionSchema = z.object({
 });
 
 export const createCustomFieldSchema = z.object({
-  module: z.enum(['assets', 'inventory', 'requests']),
+  module: z.enum(['assets', 'inventory', 'requests', 'customers']),
   fieldKey: z.string().min(1).max(50).regex(/^[a-z_][a-z0-9_]*$/, 'Must be snake_case'),
   type: z.enum(['text', 'number', 'select', 'multi_select', 'date', 'boolean', 'user']),
   label: z.string().min(1).max(100),

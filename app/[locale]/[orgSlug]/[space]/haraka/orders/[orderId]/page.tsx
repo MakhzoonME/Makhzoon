@@ -44,7 +44,7 @@ export default function OrderDetailPage() {
 
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
   const order = data?.order;
-  const currency = orgInfo?.currency ?? 'USD';
+  const currency = orgInfo?.currency ?? 'JOD';
 
   if (isLoading) {
     return (

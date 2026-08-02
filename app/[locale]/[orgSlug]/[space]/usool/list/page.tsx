@@ -26,7 +26,6 @@ import { formatDate } from '@/lib/utils/date';
 import { ConfirmDialog, SubscriptionGate, BulkActionsBar } from '@/components/shared';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
 import { useDebounce } from '@/hooks/ui';
 import { useAssetCategories } from '@/hooks/assets';
 import { useList } from '@/hooks/lists';
@@ -382,7 +381,27 @@ export default function AssetsListPage() {
         }
         actions={isAdmin ? (
           <SubscriptionGate>
-            <ExportButton exportUrl="/api/assets/export" filename={`assets-${format(new Date(), 'yyyy-MM-dd')}.csv`} />
+            <ExportButton
+              filename="assets"
+              label="assets"
+              getUrl={(scope) => {
+                const p = new URLSearchParams({ format: 'xlsx' });
+                if (scope === 'filtered') {
+                  if (sortDir !== 'none') { p.set('sortBy', sortBy); p.set('sortDir', sortDir); }
+                  const hasFilters = !!(status || category || search);
+                  if (hasFilters) {
+                    if (status) p.set('status', status);
+                    if (category) p.set('category', category);
+                    if (search) p.set('search', search);
+                  } else {
+                    // No filters → export exactly what's visible on this page.
+                    p.set('page', String(page));
+                    p.set('pageSize', String(pageSize));
+                  }
+                }
+                return `/api/assets/export?${p.toString()}`;
+              }}
+            />
           </SubscriptionGate>
         ) : undefined}
       />

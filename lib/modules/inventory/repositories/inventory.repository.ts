@@ -9,6 +9,7 @@ type Row = Record<string, unknown>
 function toItem(r: Row, computedQty?: number): InventoryItem {
   const qty = computedQty ?? (r.quantity_on_hand as number) ?? 0
   const threshold = (r.minimum_threshold as number) ?? 0
+  const status = stockStatus(qty, threshold)
   return {
     id: r.id as string,
     organizationId: r.organization_id as string,
@@ -24,7 +25,7 @@ function toItem(r: Row, computedQty?: number): InventoryItem {
     unitCost: r.unit_cost as number,
     notes: r.notes as string,
     documents: Array.isArray(r.documents) ? (r.documents as InventoryItem['documents']) : [],
-    stockStatus: stockStatus(qty, threshold),
+    stockStatus: status,
     posEnabled: r.pos_enabled as boolean,
     barcode: (r.barcode as string) ?? null,
     taxRateId: (r.tax_rate_id as string) ?? null,
@@ -260,13 +261,14 @@ export class InventoryRepository {
     return { items: items.slice(start, start + pageSize), total, page: safePage, pageSize, totalPages }
   }
 
-  async findByBarcode(tenant: TenantContext, barcode: string): Promise<InventoryItem | null> {
+  async findByBarcode(tenant: TenantContext, barcode: string, opts?: { posEnabledOnly?: boolean }): Promise<InventoryItem | null> {
     let q = supabaseAdmin
       .from('inventory_items')
       .select('*')
       .eq('organization_id', tenant.organizationId)
       .eq('barcode', barcode)
     if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
+    if (opts?.posEnabledOnly) q = q.eq('pos_enabled', true)
     const { data } = await q.limit(1).maybeSingle()
     if (!data) return null
     const qty = await computeQuantity(data.id as string, (data.quantity_on_hand as number) ?? 0)
@@ -420,6 +422,7 @@ export class InventoryRepository {
       .from('inventory_items')
       .update(patch)
       .eq('id', id)
+      .eq('organization_id', tenant.organizationId)
     if (error) throw error
   }
 
@@ -430,6 +433,7 @@ export class InventoryRepository {
       .from('inventory_items')
       .delete()
       .eq('id', id)
+      .eq('organization_id', tenant.organizationId)
     if (error) throw error
   }
 
@@ -447,10 +451,13 @@ export class InventoryRepository {
   }
 
   /**
-   * Append a stock movement. Was a Firestore transaction; here it is
-   * read-modify-write (compute current qty from the ledger, insert the row,
-   * refresh cached stock_status). Acceptable for the internal/staging scope;
-   * a SECURITY DEFINER RPC is the hardening path for concurrent stock writes.
+   * Append a stock movement atomically via RPCs (migration 0016 + 0047).
+   * Each RPC row-locks the inventory_items row before reading the current
+   * quantity, preventing concurrent mutations from producing incorrect results.
+   *
+   * - 'out':        uses `inventory_apply_stock_out` (migration 0016)
+   * - 'in':         uses `inventory_apply_stock_in` (migration 0047)
+   * - 'adjustment': uses `inventory_apply_stock_adjust` (migration 0047)
    */
   async applyTransaction(
     tenant: TenantContext,
@@ -460,56 +467,80 @@ export class InventoryRepository {
     reason: string,
     note?: string,
   ): Promise<{ quantityAfter: number }> {
+    // Validate the item exists and belongs to this tenant.
     const { data: itemRow } = await supabaseAdmin
       .from('inventory_items')
-      .select('*')
+      .select('id, organization_id, name')
       .eq('id', itemId)
       .maybeSingle()
     if (!itemRow || itemRow.organization_id !== tenant.organizationId) {
       throw new Error('Inventory item not found')
     }
 
-    const currentQty = await computeQuantity(itemId, (itemRow.quantity_on_hand as number) ?? 0)
-    const minimumThreshold = (itemRow.minimum_threshold as number) ?? 0
+    const itemName = (itemRow.name as string) ?? ''
 
-    if (type === 'out' && quantity > currentQty) {
-      throw new Error('Insufficient stock')
+    if (type === 'out') {
+      const { data, error } = await supabaseAdmin.rpc('inventory_apply_stock_out', {
+        p_org:       tenant.organizationId,
+        p_space:     tenant.spaceId ?? null,
+        p_item:      itemId,
+        p_qty:       quantity,
+        p_item_name: itemName,
+        p_reason:    reason,
+        p_note:      note ?? null,
+        p_source:    null,
+        p_pos_tx:    null,
+        p_by:        tenant.userId,
+        p_by_email:  tenant.user.email ?? null,
+        p_by_name:   tenant.user.displayName ?? null,
+        p_by_role:   tenant.role ?? null,
+      })
+      if (error) {
+        const msg = error.message ?? ''
+        if (msg.includes('INSUFFICIENT_STOCK')) {
+          throw new Error('Insufficient stock')
+        }
+        throw error
+      }
+      return { quantityAfter: Number(data) }
     }
 
-    let newQty: number
-    if (type === 'in') newQty = currentQty + quantity
-    else if (type === 'out') newQty = currentQty - quantity
-    else newQty = quantity
-
-    const { error: txErr } = await supabaseAdmin.from('inventory_transactions').insert({
-      organization_id: tenant.organizationId,
-      space_id: tenant.spaceId,
-      item_id: itemId,
-      item_name: itemRow.name,
-      type,
-      quantity,
-      quantity_before: currentQty,
-      quantity_after: newQty,
-      reason,
-      note: note ?? null,
-      performed_by: tenant.userId,
-      performed_by_email: tenant.user.email ?? null,
-      performed_by_name: tenant.user.displayName ?? null,
-      performed_by_role: tenant.role ?? null,
-    })
-    if (txErr) throw txErr
-
-    const { error: upErr } = await supabaseAdmin
-      .from('inventory_items')
-      .update({
-        stock_status: stockStatus(newQty, minimumThreshold),
-        updated_by: tenant.userId,
-        updated_by_email: tenant.user.email ?? null,
-        updated_by_name: tenant.user.displayName ?? null,
+    if (type === 'in') {
+      const { data, error } = await supabaseAdmin.rpc('inventory_apply_stock_in', {
+        p_org:         tenant.organizationId,
+        p_space:       tenant.spaceId ?? null,
+        p_item:        itemId,
+        p_qty:         quantity,
+        p_item_name:   itemName,
+        p_reason:      reason,
+        p_note:        note ?? null,
+        p_source:      null,
+        p_purchase_id: null,
+        p_pos_tx:      null,
+        p_by:          tenant.userId,
+        p_by_email:    tenant.user.email ?? null,
+        p_by_name:     tenant.user.displayName ?? null,
+        p_by_role:     tenant.role ?? null,
       })
-      .eq('id', itemId)
-    if (upErr) throw upErr
+      if (error) throw error
+      return { quantityAfter: Number(data) }
+    }
 
-    return { quantityAfter: newQty }
+    // adjustment — quantity is the absolute target value
+    const { data, error } = await supabaseAdmin.rpc('inventory_apply_stock_adjust', {
+      p_org:       tenant.organizationId,
+      p_space:     tenant.spaceId ?? null,
+      p_item:      itemId,
+      p_target:    quantity,
+      p_item_name: itemName,
+      p_reason:    reason,
+      p_note:      note ?? null,
+      p_by:        tenant.userId,
+      p_by_email:  tenant.user.email ?? null,
+      p_by_name:   tenant.user.displayName ?? null,
+      p_by_role:   tenant.role ?? null,
+    })
+    if (error) throw error
+    return { quantityAfter: Number(data) }
   }
 }

@@ -17,6 +17,18 @@ function requirePermission(tenant: TenantContext, module: 'inventory', operation
   }
 }
 
+/**
+ * Read gate for the POS-scoped catalog (posEnabled items / barcode scan on
+ * the register). A user with `pos.add_receipt_items` but no Inventory-module
+ * access still needs to read the posEnabled subset of the catalog — full
+ * `inventory.view` is one way in, but not the only one here.
+ */
+function requireInventoryReadForPos(tenant: TenantContext): void {
+  if (hasPermission(tenant, 'inventory', 'view')) return
+  if (hasPermission(tenant, 'pos', 'add_receipt_items')) return
+  throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+}
+
 function requireActiveSubscription(tenant: TenantContext): void {
   if (tenant.subscription && tenant.subscription.status !== 'ACTIVE') {
     throw NextResponse.json({ error: 'Subscription inactive' }, { status: 403 })
@@ -25,7 +37,11 @@ function requireActiveSubscription(tenant: TenantContext): void {
 
 export class InventoryService {
   async getAll(tenant: TenantContext, opts?: GetAllOpts) {
-    requirePermission(tenant, 'inventory', 'view')
+    if (opts?.posEnabled === true) {
+      requireInventoryReadForPos(tenant)
+    } else {
+      requirePermission(tenant, 'inventory', 'view')
+    }
     return repo.getAll(tenant, opts)
   }
 
@@ -46,13 +62,23 @@ export class InventoryService {
   /**
    * Resolve a barcode to an inventory item within the caller's organization.
    * Returns null on miss so the caller (POS register, purchase line editor)
-   * can offer a "create new item" fallback. Requires only `inventory.view`.
+   * can offer a "create new item" fallback.
+   *
+   * `posLookup: true` (register scan-to-cart) relaxes the gate to also accept
+   * `pos.add_receipt_items` instead of full `inventory.view`, but in that mode
+   * only posEnabled items are matched — a POS-only user still can't probe the
+   * full catalog by barcode, only the subset already exposed to the register.
    */
-  async findByBarcode(tenant: TenantContext, barcode: string) {
-    requirePermission(tenant, 'inventory', 'view')
+  async findByBarcode(tenant: TenantContext, barcode: string, opts?: { posLookup?: boolean }) {
+    const posLookup = opts?.posLookup === true
+    if (posLookup) {
+      requireInventoryReadForPos(tenant)
+    } else {
+      requirePermission(tenant, 'inventory', 'view')
+    }
     const code = barcode.trim()
     if (!code) return null
-    return repo.findByBarcode(tenant, code)
+    return repo.findByBarcode(tenant, code, { posEnabledOnly: posLookup && !hasPermission(tenant, 'inventory', 'view') })
   }
 
   private async ensureBarcodeUnique(

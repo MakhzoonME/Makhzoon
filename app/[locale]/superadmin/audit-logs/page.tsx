@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAuditLogs } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { ExportButton } from '@/components/shared/ExportButton';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { AuditLog } from '@/types';
 import { formatDateTime } from '@/lib/utils/date';
@@ -139,14 +140,23 @@ export default function AuditLogsPage() {
     },
   ];
 
-  function buildExportUrl() {
+  function buildExportUrl(scope: 'filtered' | 'all') {
     const p = new URLSearchParams();
-    if (orgId) p.set('orgId', orgId);
-    if (userId) p.set('userId', userId);
-    if (action) p.set('action', action);
-    if (dateFrom) p.set('dateFrom', dateFrom);
-    if (dateTo) p.set('dateTo', dateTo);
-    return `/api/audit-logs/export?${p.toString()}`;
+    if (scope === 'filtered') {
+      const hasFilters = !!(orgId || userId || action || dateFrom || dateTo);
+      if (hasFilters) {
+        if (orgId) p.set('orgId', orgId);
+        if (userId) p.set('userId', userId);
+        if (action) p.set('action', action);
+        if (dateFrom) p.set('dateFrom', dateFrom);
+        if (dateTo) p.set('dateTo', dateTo);
+      } else {
+        // No filters → export exactly what's visible on this page.
+        p.set('page', String(page));
+        p.set('pageSize', String(pageSize));
+      }
+    }
+    return `/api/audit-logs/export${p.toString() ? `?${p.toString()}` : ''}`;
   }
 
   const detailRows = selectedLog ? [
@@ -165,9 +175,7 @@ export default function AuditLogsPage() {
         title={t('nav.auditLogs')}
         breadcrumb={[{ label: t('nav.auditLogs') }]}
         actions={
-          <Button size="sm" variant="outline" asChild>
-            <a href={buildExportUrl()} download>{t('auditLogs.exportCsv')}</a>
-          </Button>
+          <ExportButton filename="audit-logs" label="audit logs" getUrl={buildExportUrl} />
         }
       />
 

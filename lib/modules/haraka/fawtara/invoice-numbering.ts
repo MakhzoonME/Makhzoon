@@ -6,35 +6,21 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
  * Format: `INV-${year}-${seq6}`; the counter resets on a year boundary
  * (matches Jordan ISTD year-scoped numbering).
  *
- * NOTE: the Firestore version used a transaction. This is read-modify-write
- * on the single fawtara_counters row — acceptable for the internal/staging
- * scope. Harden via a Postgres SECURITY DEFINER RPC (atomic upsert returning
- * the incremented sequence) if concurrent invoicing becomes real.
+ * Uses the atomic `next_fawtara_sequence` RPC (migration 0047) which
+ * performs INSERT … ON CONFLICT DO UPDATE in a single statement, preventing
+ * duplicate sequences from concurrent invoicing.
  */
 export async function allocateFawtaraInvoiceNumber(
   orgId: string,
   year: number,
 ): Promise<{ invoiceNumber: string; sequence: number }> {
-  const { data: existing } = await supabaseAdmin
-    .from('fawtara_counters')
-    .select('year, last_sequence')
-    .eq('organization_id', orgId)
-    .maybeSingle()
-
-  const sameYear = existing?.year === year
-  const next = sameYear ? Number(existing?.last_sequence ?? 0) + 1 : 1
-
-  const { error } = await supabaseAdmin.from('fawtara_counters').upsert(
-    {
-      organization_id: orgId,
-      year,
-      last_sequence: next,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'organization_id' },
-  )
+  const { data, error } = await supabaseAdmin.rpc('next_fawtara_sequence', {
+    p_org_id: orgId,
+    p_year: year,
+  })
   if (error) throw error
 
+  const next = Number(data)
   return {
     invoiceNumber: `INV-${year}-${String(next).padStart(6, '0')}`,
     sequence: next,

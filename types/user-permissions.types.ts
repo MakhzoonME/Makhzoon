@@ -61,8 +61,12 @@ export interface AuditLogsPermissions {
 export interface PosPermissions {
   open_session: boolean;
   close_session: boolean;
+  view_all_sessions: boolean;
   process_sale: boolean;
+  add_receipt_items: boolean;
+  remove_receipt_items: boolean;
   apply_discount: boolean;
+  hold_receipts: boolean;
   issue_refund: boolean;
   void_transaction: boolean;
   view_reports: boolean;
@@ -77,9 +81,12 @@ export interface PosPermissions {
   view_warranty_certs: boolean;
   manage_warranty_certs: boolean;
   view_service_jobs: boolean;
-  manage_service_jobs: boolean;
+  create_service_jobs: boolean;
+  checkout_service_jobs: boolean;
   view_retainers: boolean;
   manage_retainers: boolean;
+  view_services: boolean;
+  manage_services: boolean;
 }
 
 export interface PurchasePermissions {
@@ -138,7 +145,7 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   auditLogs: { view: true  },
   leads:     { view: true  },
   banna:     { view: true,  create: true,  update: true,  delete: true  },
-  pos:       { open_session: true, close_session: true, process_sale: true, apply_discount: true, issue_refund: true, void_transaction: true, view_reports: true, fawtara_submit: true, customers_bulk_delete: true, customers_bulk_move: true, customers_bulk_duplicate: true, view_orders: true, manage_orders: true, assign_delivery: true, manage_delivery_agents: true, view_warranty_certs: true, manage_warranty_certs: true, view_service_jobs: true, manage_service_jobs: true, view_retainers: true, manage_retainers: true },
+  pos:       { open_session: true, close_session: true, view_all_sessions: true, process_sale: true, add_receipt_items: true, remove_receipt_items: true, apply_discount: true, hold_receipts: true, issue_refund: true, void_transaction: true, view_reports: true, fawtara_submit: true, customers_bulk_delete: true, customers_bulk_move: true, customers_bulk_duplicate: true, view_orders: true, manage_orders: true, assign_delivery: true, manage_delivery_agents: true, view_warranty_certs: true, manage_warranty_certs: true, view_service_jobs: true, create_service_jobs: true, checkout_service_jobs: true, view_retainers: true, manage_retainers: true, view_services: true, manage_services: true },
   settings:  { view: true,  orgInfo: true,  subscription: true,  users: true,  taxRates: true,  fawtara: true  },
 };
 
@@ -154,7 +161,7 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   auditLogs: { view: false },
   leads:     { view: true  },
   banna:     { view: true,  create: false, update: false, delete: false },
-  pos:       { open_session: false, close_session: false, process_sale: false, apply_discount: false, issue_refund: false, void_transaction: false, view_reports: false, fawtara_submit: false, customers_bulk_delete: false, customers_bulk_move: false, customers_bulk_duplicate: false, view_orders: false, manage_orders: false, assign_delivery: false, manage_delivery_agents: false, view_warranty_certs: false, manage_warranty_certs: false, view_service_jobs: false, manage_service_jobs: false, view_retainers: false, manage_retainers: false },
+  pos:       { open_session: false, close_session: false, view_all_sessions: false, process_sale: false, add_receipt_items: false, remove_receipt_items: false, apply_discount: false, hold_receipts: false, issue_refund: false, void_transaction: false, view_reports: false, fawtara_submit: false, customers_bulk_delete: false, customers_bulk_move: false, customers_bulk_duplicate: false, view_orders: false, manage_orders: false, assign_delivery: false, manage_delivery_agents: false, view_warranty_certs: false, manage_warranty_certs: false, view_service_jobs: false, create_service_jobs: false, checkout_service_jobs: false, view_retainers: false, manage_retainers: false, view_services: false, manage_services: false },
   settings:  { view: false, orgInfo: false, subscription: false, users: false, taxRates: false, fawtara: false },
 };
 
@@ -340,9 +347,13 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     group: 'commerce',
     operations: [
       { key: 'open_session',             label: 'Open Session',        labelKey: 'permOp.pos.open_session' },
-      { key: 'close_session',            label: 'Close Session',       labelKey: 'permOp.pos.close_session' },
+      { key: 'close_session',            label: 'Close Session',       labelKey: 'permOp.pos.close_session',        requiresView: true, requiresKey: 'open_session' },
+      { key: 'view_all_sessions',        label: "View Other Cashiers' Sessions", labelKey: 'permOp.pos.view_all_sessions' },
       { key: 'process_sale',             label: 'Process Sales',       labelKey: 'permOp.pos.process_sale' },
+      { key: 'add_receipt_items',        label: 'Add Items to Receipt',    labelKey: 'permOp.pos.add_receipt_items',    requiresView: true, requiresKey: 'process_sale' },
+      { key: 'remove_receipt_items',     label: 'Remove Items from Receipt', labelKey: 'permOp.pos.remove_receipt_items', requiresView: true, requiresKey: 'process_sale' },
       { key: 'apply_discount',           label: 'Apply Discounts',     labelKey: 'permOp.pos.apply_discount' },
+      { key: 'hold_receipts',            label: 'Hold & Recall Receipts',  labelKey: 'permOp.pos.hold_receipts',        requiresView: true, requiresKey: 'process_sale' },
       { key: 'issue_refund',             label: 'Issue Refunds',       labelKey: 'permOp.pos.issue_refund' },
       { key: 'void_transaction',         label: 'Void Transactions',   labelKey: 'permOp.pos.void_transaction' },
       { key: 'view_reports',             label: 'View Reports',        labelKey: 'permOp.pos.view_reports' },
@@ -357,9 +368,12 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'view_warranty_certs',     label: 'View Warranty Certificates',     labelKey: 'permOp.pos.view_warranty_certs' },
       { key: 'manage_warranty_certs',   label: 'Generate & Delete Warranties',   labelKey: 'permOp.pos.manage_warranty_certs',   requiresView: true, requiresKey: 'view_warranty_certs' },
       { key: 'view_service_jobs',       label: 'View Service Jobs',               labelKey: 'permOp.pos.view_service_jobs' },
-      { key: 'manage_service_jobs',     label: 'Create & Manage Service Jobs',    labelKey: 'permOp.pos.manage_service_jobs',     requiresView: true, requiresKey: 'view_service_jobs' },
+      { key: 'create_service_jobs',     label: 'Create Service Jobs (intake)',    labelKey: 'permOp.pos.create_service_jobs',     requiresView: true, requiresKey: 'view_service_jobs' },
+      { key: 'checkout_service_jobs',   label: 'Checkout Service Jobs (items, status, payment)', labelKey: 'permOp.pos.checkout_service_jobs', requiresView: true, requiresKey: 'view_service_jobs' },
       { key: 'view_retainers',          label: 'View Retainers',                  labelKey: 'permOp.pos.view_retainers' },
       { key: 'manage_retainers',        label: 'Create & Manage Retainers',       labelKey: 'permOp.pos.manage_retainers',        requiresView: true, requiresKey: 'view_retainers' },
+      { key: 'view_services',           label: 'View Service Catalog',            labelKey: 'permOp.pos.view_services' },
+      { key: 'manage_services',         label: 'Manage Service Catalog',          labelKey: 'permOp.pos.manage_services',         requiresView: true, requiresKey: 'view_services' },
     ],
   },
   {

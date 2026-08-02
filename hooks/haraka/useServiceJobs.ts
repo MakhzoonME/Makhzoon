@@ -6,6 +6,7 @@ import type { HarakaServiceJob, ServiceJobStatus } from '@/types'
 import type {
   CreateServiceJobPayload,
   UpdateServiceJobPayload,
+  AddServiceJobItemsPayload,
 } from '@/lib/modules/haraka/service-jobs/schemas'
 
 export interface ServiceJobPaymentEntry {
@@ -129,6 +130,28 @@ export function useUpdateServiceJobStatus() {
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(typeof err.error === 'string' ? err.error : 'Failed to update status')
+      }
+      return res.json() as Promise<{ job: HarakaServiceJob }>
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: LIST_KEY })
+      qc.invalidateQueries({ queryKey: ['haraka', 'service-jobs', undefined, vars.id] })
+    },
+  })
+}
+
+export function useAddServiceJobItems() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (vars: { id: string; items: AddServiceJobItemsPayload['items'] }) => {
+      const res = await fetch(`/api/haraka/service-jobs/${vars.id}/items`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ items: vars.items }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(typeof err.error === 'string' ? err.error : 'Failed to add items')
       }
       return res.json() as Promise<{ job: HarakaServiceJob }>
     },

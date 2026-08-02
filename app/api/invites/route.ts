@@ -16,6 +16,7 @@ import { authEmailExists } from '@/lib/supabase/auth-admin';
 import { sendEmail } from '@/lib/email/resend';
 import { inviteEmail } from '@/lib/email/templates';
 import { auditLog } from '@/lib/platform/audit';
+import { notificationQueue } from '@/lib/notifications/notification-queue';
 import { generateInviteQRDataUrl } from '@/lib/qr';
 
 export async function GET(_req: NextRequest) {
@@ -124,6 +125,14 @@ export async function POST(req: NextRequest) {
     module: 'users',
     recordId: id,
     newValue: { email: normalizedEmail, username: normalizedUsername, role, messageSent },
+  });
+
+  notificationQueue.enqueue({
+    tenant,
+    eventType: 'users.invited',
+    data: { role, invitedName: displayName ?? normalizedEmail ?? normalizedUsername },
+    link: '/users',
+    titleOverride: `${displayName ?? normalizedEmail ?? normalizedUsername} was invited to your org`,
   });
 
   const qrDataUrl = await generateInviteQRDataUrl(acceptUrl);

@@ -1,6 +1,15 @@
 import { z } from 'zod';
 import { ORG_CATEGORIES } from '@/types';
 
+// Category, tolerant of legacy/seed values stored with different casing (e.g.
+// lowercase "technology"). Normalizes case-insensitively to the canonical enum
+// value so existing orgs can be edited without a manual data migration; still
+// rejects values that don't match any category at all.
+const categorySchema = z.preprocess((v) => {
+  if (typeof v !== 'string' || v === '') return v;
+  return ORG_CATEGORIES.find((c) => c.toLowerCase() === v.toLowerCase()) ?? v;
+}, z.enum(ORG_CATEGORIES).nullable().optional());
+
 export const organizationSchema = z
   .object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -11,7 +20,7 @@ export const organizationSchema = z
       .regex(/^[a-z0-9-]+$/, 'Workspace ID can only contain lowercase letters, numbers, and hyphens'),
     contactEmail: z.string().email('Invalid email address'),
     description: z.string().max(500).nullable().optional(),
-    category: z.enum(ORG_CATEGORIES).nullable().optional(),
+    category: categorySchema,
     packageId: z.string().nullable().optional(),
     packageDetails: z.string().optional(),
     subscriptionStartDate: z.string().min(1, 'Start date is required'),

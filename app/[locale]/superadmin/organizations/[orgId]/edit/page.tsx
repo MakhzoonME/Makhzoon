@@ -16,6 +16,25 @@ import { formatDate } from '@/lib/utils/date';
 
 const NONE = '__none__';
 
+// Turn an API error (string, or a Zod flatten { fieldErrors, formErrors })
+// into a readable message so the UI never shows a raw "[object Object]".
+function extractErrorMessage(error: unknown): string | null {
+  if (!error) return null;
+  if (typeof error === 'string') return error;
+  if (typeof error === 'object') {
+    const e = error as { formErrors?: string[]; fieldErrors?: Record<string, string[]> };
+    const parts: string[] = [];
+    if (e.fieldErrors) {
+      for (const [field, msgs] of Object.entries(e.fieldErrors)) {
+        if (msgs?.length) parts.push(`${field}: ${msgs.join(', ')}`);
+      }
+    }
+    if (e.formErrors?.length) parts.push(...e.formErrors);
+    if (parts.length) return parts.join(' · ');
+  }
+  return null;
+}
+
 // ─── Delete org ───────────────────────────────────────────────────────────────
 
 function DeleteOrgDialog({
@@ -131,9 +150,21 @@ function EditOrgForm({
   const [category, setCategory] = useState<OrgCategory | ''>((org.category as OrgCategory | null) ?? '');
   const [assignedMemberId, setAssignedMemberId] = useState<string>(org.assignedMemberId ?? '');
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<{ name?: string; contactEmail?: string }>({});
+
+  function validate() {
+    const next: { name?: string; contactEmail?: string } = {};
+    if (name.trim().length < 2) next.name = 'Name must be at least 2 characters';
+    if (!contactEmail.trim()) next.contactEmail = 'Contact email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) next.contactEmail = 'Invalid email address';
+    return next;
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    const found = validate();
+    setErrors(found);
+    if (Object.keys(found).length > 0) return;
     setSaving(true);
     try {
       const res = await fetch(`/api/organizations/${orgId}`, {
@@ -149,7 +180,7 @@ function EditOrgForm({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || 'Failed to update');
+        throw new Error(extractErrorMessage(body.error) || 'Failed to update');
       }
       toast.success(t('orgs.updated'));
       qc.invalidateQueries({ queryKey: ['org', orgId] });
@@ -167,14 +198,29 @@ function EditOrgForm({
   const activeMembers = teamMembers.filter((m) => m.status === 'active');
 
   return (
-    <form onSubmit={handleSave} className="space-y-4">
+    <form onSubmit={handleSave} className="space-y-4" noValidate>
       <div className="space-y-1.5">
-        <Label htmlFor="name">{t('orgs.name')}</Label>
-        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} />
+        <Label htmlFor="name">{t('orgs.name')} *</Label>
+        <Input
+          id="name"
+          value={name}
+          onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((x) => ({ ...x, name: undefined })); }}
+          aria-invalid={!!errors.name}
+          className={errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : undefined}
+        />
+        {errors.name && <p className="text-xs text-red-600">{errors.name}</p>}
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="email">{t('orgs.contactEmail')}</Label>
-        <Input id="email" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} required />
+        <Label htmlFor="email">{t('orgs.contactEmail')} *</Label>
+        <Input
+          id="email"
+          type="email"
+          value={contactEmail}
+          onChange={(e) => { setContactEmail(e.target.value); if (errors.contactEmail) setErrors((x) => ({ ...x, contactEmail: undefined })); }}
+          aria-invalid={!!errors.contactEmail}
+          className={errors.contactEmail ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : undefined}
+        />
+        {errors.contactEmail && <p className="text-xs text-red-600">{errors.contactEmail}</p>}
       </div>
       <div className="space-y-1.5">
         <Label>{t('orgs.category')}</Label>

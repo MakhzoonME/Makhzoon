@@ -122,6 +122,33 @@ export interface PackagePricing {
   isCustom: boolean;
 }
 
+// Monthly prices (in the package currency) for capacity bought beyond the
+// plan's included allowances. Absent/0 = not separately priced.
+export interface AddOnPrices {
+  extraHarakaModule?: number;
+  deliveryAgents?: number;
+  warrantyCerts?: number;
+  customization?: number;
+  purchasesRequests?: number;
+  extraUser?: number;
+  extraSpace?: number;
+}
+
+// Structured, per-module allowances for the new pricing model. Distinct from
+// the legacy `limits` jsonb (kept for back-compat during the transition).
+export interface PackageAllowances {
+  usoolIncluded: number | null;              // included Usool assets (null = unset)
+  raseedIncluded: number | null;             // included Raseed inventory items
+  purchasesRequestsIncluded: boolean;        // Purchases & Requests bundled in
+  harakaIncludedModuleSlots: number;         // free Haraka modules ("Choose N")
+  deliveryAgentsIncluded: boolean;
+  warrantyCertsIncluded: boolean;
+  customizationIncluded: boolean;
+  spacesIncluded: number | null;
+  usersIncluded: number | null;
+  reportsAvailable: boolean;
+}
+
 export interface Package {
   id: string;
   name: string;
@@ -135,6 +162,10 @@ export interface Package {
   limits: PackageLimits;
   features: Record<FeatureKey, boolean>;
   inclusions: Record<InclusionKey, boolean>;
+  // Pricing-model fields (Phase 1+).
+  allowances: PackageAllowances;
+  addOnPrices: AddOnPrices;
+  isCustom: boolean;
   createdAt: Date;
   createdBy: string;
   updatedAt: Date;

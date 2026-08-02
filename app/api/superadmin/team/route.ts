@@ -16,6 +16,10 @@ const createMemberSchema = z.object({
   email: z.string().email('Invalid email address'),
   displayName: z.string().min(2, 'Name must be at least 2 characters').max(100),
   role: z.enum(['super_admin', 'makhzoon_admin', 'makhzoon_support']),
+  // The admin sets an initial/temporary password in the UI and shares it with
+  // the new member for first sign-in. Optional: falls back to a random one
+  // (member sets their own via the reset link) if none is provided.
+  password: z.string().min(8, 'Password must be at least 8 characters').optional(),
   permissions: z.record(z.unknown()).optional().nullable(),
 });
 
@@ -39,7 +43,7 @@ export async function POST(req: NextRequest) {
   const parsed = createMemberSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
-  const { email, displayName, role, permissions } = parsed.data;
+  const { email, displayName, role, permissions, password } = parsed.data;
 
   // Only super_admin can create super_admin accounts
   if (role === 'super_admin' && caller.role !== 'super_admin') {
@@ -55,12 +59,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
   }
 
-  // Create with a random throwaway password — the member sets their real one
-  // via the password-reset link emailed below.
+  // Use the admin-supplied temporary password so it works for first sign-in
+  // (the UI shows this password to the admin to share). Fall back to a random
+  // one when none is provided — the member then sets theirs via the reset link.
   const newUser = await createAuthUser({
     email,
     displayName,
-    password: randomBytes(24).toString('base64url'),
+    password: password ?? randomBytes(24).toString('base64url'),
     role: role as MakhzoonRole,
     organizationId: null,
   });
@@ -75,7 +80,7 @@ export async function POST(req: NextRequest) {
 
   // Generate password reset token and send email with reset link
   const resetToken = await createPasswordResetToken(newUser.uid);
-  const resetLink = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${encodeURIComponent(resetToken)}`;
+  const resetLink = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${encodeURIComponent(resetToken)}`;
 
   await sendEmail({
     to: email,

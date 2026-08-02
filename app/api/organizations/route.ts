@@ -6,6 +6,8 @@ import {
   subdomainExists,
 } from '@/lib/db/organizations';
 import { createSubscription } from '@/lib/db/subscriptions';
+import { getPackageById } from '@/lib/db/packages';
+import { FEATURE_KEYS, type FeatureKey } from '@/types';
 import { createInvite, generateInviteToken } from '@/lib/db/invites';
 import { queueAuditLog } from '@/lib/audit/logger';
 import { organizationSchema } from '@/lib/validations/organization.schema';
@@ -60,10 +62,28 @@ export async function POST(req: NextRequest) {
       updatedBy: user.uid,
     });
 
+    // When a package is chosen, link it and hydrate the subscription's feature
+    // flags from that package (limits derive from the linked package). Falls
+    // back to no plan / features off when none is selected.
+    let packageId: string | null = null;
+    let features: Record<FeatureKey, boolean> = FEATURE_KEYS.reduce(
+      (acc, k) => ({ ...acc, [k]: false }),
+      {} as Record<FeatureKey, boolean>,
+    );
+    if (data.packageId) {
+      const pkg = await getPackageById(data.packageId);
+      if (!pkg) return NextResponse.json({ error: 'Selected plan not found' }, { status: 422 });
+      packageId = pkg.id;
+      features = FEATURE_KEYS.reduce(
+        (acc, k) => ({ ...acc, [k]: pkg.features?.[k] ?? false }),
+        {} as Record<FeatureKey, boolean>,
+      );
+    }
+
     await createSubscription({
       organizationId: orgId,
-      packageId: null,
-      features: { pos: false },
+      packageId,
+      features,
       notes: data.packageDetails ?? null,
       packageDetails: { notes: data.packageDetails ?? '' },
       startDate: new Date(data.subscriptionStartDate),

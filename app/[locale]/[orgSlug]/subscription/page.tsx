@@ -12,7 +12,8 @@ import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { formatDate, daysUntil } from '@/lib/utils/date';
 import { useT, useAdminGuard } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
-import { INCLUSION_KEYS, INCLUSION_LABEL_KEYS } from '@/types';
+import { useQuery } from '@tanstack/react-query';
+import { INCLUSION_KEYS, INCLUSION_LABEL_KEYS, type Invoice } from '@/types';
 import { effectiveResourceLimit, type LimitedResource } from '@/lib/platform/limits/effective-limit';
 import { Check, X, Wrench } from 'lucide-react';
 import type { MessageKey } from '@/locales/messages';
@@ -80,6 +81,15 @@ export default function SubscriptionPage() {
   const { data: sub, isLoading: subLoading } = useSubscription(orgId);
   const { data: usage, isLoading: usageLoading } = useOrgUsage(orgId);
   const { data: packages = [], isLoading: packagesLoading } = usePackages();
+  const { data: invoices = [] } = useQuery<Invoice[]>({
+    queryKey: ['org-invoices', orgId],
+    queryFn: async () => {
+      const res = await fetch(`/api/organizations/${orgId}/invoices`);
+      if (!res.ok) throw new Error('Failed to load invoices');
+      return res.json();
+    },
+    enabled: !!orgId,
+  });
 
   if (!isAllowed) return <div className="flex items-center justify-center h-48"><div className="h-7 w-7 rounded-full border-2 border-primary-600 border-t-transparent animate-spin" /></div>;
   if (subLoading || packagesLoading) return <LoadingSkeleton rows={4} columns={2} />;
@@ -174,26 +184,45 @@ export default function SubscriptionPage() {
           </CardContent>
         </Card>
 
-        {/* Payment history card */}
+        {/* Invoice history card */}
         <Card className="rounded-xl">
           <CardContent className="p-6">
             <h2 className="text-[15px] font-semibold text-gray-900 mb-4">{t('subscription.paymentHistory')}</h2>
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <p className="text-sm text-gray-400">{t('subscription.paymentHistoryUnavailable')}</p>
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-4 cursor-pointer transition-colors duration-150"
-                onClick={() => {
-                  if (orgSlug && space) {
-                    window.location.href = `/${orgSlug}/${space}/support`;
-                  }
-                }}
-              >
-                <Wrench aria-hidden className="h-3.5 w-3.5 me-1" strokeWidth={1.75} />
-                {t('subscription.contactSupport')}
-              </Button>
-            </div>
+            {invoices.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-sm text-gray-400">{t('subscription.paymentHistoryUnavailable')}</p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-4 cursor-pointer transition-colors duration-150"
+                  onClick={() => {
+                    if (orgSlug && space) {
+                      window.location.href = `/${orgSlug}/${space}/support`;
+                    }
+                  }}
+                >
+                  <Wrench aria-hidden className="h-3.5 w-3.5 me-1" strokeWidth={1.75} />
+                  {t('subscription.contactSupport')}
+                </Button>
+              </div>
+            ) : (
+              <ul className="divide-y divide-border">
+                {invoices.map((inv) => (
+                  <li key={inv.id} className="flex items-center justify-between py-2.5 text-sm">
+                    <span className="text-gray-600">{formatDate(new Date(inv.dueDate))}</span>
+                    <span className="font-medium text-gray-900">{inv.total.toFixed(2)} {inv.currency}</span>
+                    <span className={cn(
+                      'text-xs font-medium rounded-full px-2 py-0.5',
+                      inv.status === 'PAID' ? 'text-green-700 bg-green-50'
+                        : inv.status === 'READ_ONLY_TRIGGERED' || inv.status === 'OVERDUE' ? 'text-red-700 bg-red-50'
+                        : 'text-amber-700 bg-amber-50',
+                    )}>
+                      {inv.status.replace(/_/g, ' ')}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
       </div>

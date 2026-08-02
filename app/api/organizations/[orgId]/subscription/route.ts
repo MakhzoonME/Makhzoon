@@ -52,8 +52,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ orgI
       }
     }
 
+    // The schema accepts a partial add-ons object; merge it over the current
+    // subscription's add-ons so we always persist a complete SubscriptionAddOns.
+    const { activeAddOns, ...rest } = data;
     await updateSubscription(subscription.id, {
-      ...data,
+      ...rest,
+      ...(activeAddOns
+        ? { activeAddOns: { ...subscription.activeAddOns, ...activeAddOns } }
+        : {}),
       updatedBy: user.uid,
     });
 

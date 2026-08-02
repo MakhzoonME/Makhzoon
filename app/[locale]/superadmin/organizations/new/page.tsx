@@ -13,12 +13,14 @@ import { toast, useT } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ORG_CATEGORIES } from '@/types';
+import { usePackages } from '@/hooks/superadmin';
 
 export default function NewOrganizationPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const { t, locale } = useT();
   const [loading, setLoading] = useState(false);
+  const { data: packages = [] } = usePackages();
 
   const form = useForm<OrganizationFormData>({
     resolver: zodResolver(organizationSchema),
@@ -28,6 +30,7 @@ export default function NewOrganizationPage() {
       contactEmail: '',
       description: '',
       category: null,
+      packageId: null,
       packageDetails: '',
       subscriptionStartDate: '',
       subscriptionEndDate: '',
@@ -117,6 +120,38 @@ export default function NewOrganizationPage() {
                 <FormMessage />
               </FormItem>
             )} />
+
+            <FormField control={form.control} name="packageId" render={({ field }) => {
+              const selected = packages.find((p) => p.id === field.value) ?? null;
+              return (
+                <FormItem>
+                  <FormLabel>{t('nav.packages')}</FormLabel>
+                  <FormControl>
+                    <select
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(e.target.value || null)}
+                      className="flex h-9 w-full rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
+                    >
+                      <option value="">— None —</option>
+                      {packages.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </FormControl>
+                  {selected && (
+                    <p className="text-xs text-gray-500">
+                      {selected.pricing.isCustom
+                        ? `Custom${selected.pricing.monthlyPrice != null ? ` (from ${selected.pricing.monthlyPrice} ${selected.pricing.currency})` : ''}`
+                        : selected.pricing.monthlyPrice != null
+                          ? `${selected.pricing.monthlyPrice} ${selected.pricing.currency}/mo`
+                          : '—'}
+                      {' · '}Sets the plan features and limits.
+                    </p>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              );
+            }} />
 
             <FormField control={form.control} name="packageDetails" render={({ field }) => (
               <FormItem>

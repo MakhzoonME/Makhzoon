@@ -145,7 +145,7 @@ export default function NewOrganizationPage() {
                         : selected.pricing.monthlyPrice != null
                           ? `${selected.pricing.monthlyPrice} ${selected.pricing.currency}/mo`
                           : '—'}
-                      {' · '}Sets the plan's features & limits.
+                      {' · '}Sets the plan features and limits.
                     </p>
                   )}
                   <FormMessage />

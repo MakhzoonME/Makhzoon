@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireAddOn } from '@/lib/permissions/require-module'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { WarrantyCertsService } from '@/lib/modules/haraka/warranty-certs/warranty-certs.service'
 import { createWarrantyCertSchema } from '@/lib/modules/haraka/warranty-certs/schemas'
@@ -11,6 +12,7 @@ export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
+    await requireAddOn(tenant, 'warrantyCerts')
     const { searchParams } = new URL(req.url)
     const result = await service.list(tenant, {
       orderId:       searchParams.get('orderId')       ?? undefined,
@@ -32,6 +34,7 @@ export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
+    await requireAddOn(tenant, 'warrantyCerts')
     const limited = await rateLimitTenant(tenant, 'warranty-certs', 30, 60_000)
     if (limited) return limited
     const body = await req.json()

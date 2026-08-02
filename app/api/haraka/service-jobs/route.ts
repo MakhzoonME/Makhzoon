@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireHarakaModule } from '@/lib/permissions/require-module'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { ServiceJobsService } from '@/lib/modules/haraka/service-jobs/service-jobs.service'
 import { createServiceJobSchema } from '@/lib/modules/haraka/service-jobs/schemas'
@@ -11,6 +12,7 @@ export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
+    await requireHarakaModule(tenant, 'services')
     const limited = await rateLimitTenant(tenant, 'haraka-service-jobs', 120, 60_000)
     if (limited) return limited
     const { searchParams } = new URL(req.url)
@@ -35,6 +37,7 @@ export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
+    await requireHarakaModule(tenant, 'services')
     const body = await req.json()
     const parsed = createServiceJobSchema.safeParse(body)
     if (!parsed.success) {

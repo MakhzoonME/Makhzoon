@@ -33,6 +33,7 @@ function ChevronSVG({ open }: { open: boolean }) {
 export function PermissionsEditor({ value, onChange, availableFeatures }: Props) {
   const { t } = useT();
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState('');
 
   function toggleModule(key: string) {
     setExpandedModules((prev) => {
@@ -94,18 +95,41 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
     return true;
   });
 
+  // Search matches a module's own label or any of its operation labels. A
+  // module is kept (and auto-expanded) if either matches, so searching
+  // "warranty" surfaces the Usool module with only its warranty ops visible.
+  const q = search.trim().toLowerCase();
+  const searchedModules = useMemo(() => {
+    if (!q) return visibleModules;
+    return visibleModules.filter((m) => {
+      if (t(m.labelKey).toLowerCase().includes(q)) return true;
+      return m.operations.some((op) => t(op.labelKey).toLowerCase().includes(q));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleModules, q]);
+
   const groupedModules = useMemo(() => {
     const map = new Map<ModuleGroup, ModuleConfig[]>();
-    for (const m of visibleModules) {
+    for (const m of searchedModules) {
       const g: ModuleGroup = m.group ?? 'platform';
       if (!map.has(g)) map.set(g, []);
       map.get(g)!.push(m);
     }
     return MODULE_GROUP_ORDER.filter((g) => map.has(g)).map((g) => ({ group: g, modules: map.get(g)! }));
-  }, [visibleModules]);
+  }, [searchedModules]);
 
   return (
     <div className="space-y-5">
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder={t('common.search')}
+        className="w-full h-9 rounded-md border border-border bg-surface-card px-3 text-sm text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
+      />
+      {groupedModules.length === 0 && (
+        <p className="text-sm text-gray-400 text-center py-4">{t('common.noResults')}</p>
+      )}
       {groupedModules.map(({ group, modules }) => (
         <div key={group} className="space-y-2">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 px-1">
@@ -115,7 +139,7 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
         const modulePerms = value[mod.key] as unknown as Record<string, boolean>;
         const visibleOps = mod.operations.filter((op) => !op.featureKey || !!availableFeatures[op.featureKey]);
         const isModuleEnabled = modulePerms?.view === true;
-        const isExpanded = expandedModules.has(mod.key);
+        const isExpanded = q ? true : expandedModules.has(mod.key);
         const hasAnyOp = visibleOps.some((op) => modulePerms?.[op.key] === true);
 
         return (

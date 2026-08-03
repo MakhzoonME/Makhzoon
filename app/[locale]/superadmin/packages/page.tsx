@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Plus, Pencil, Power, PowerOff, Check, X } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,18 +42,41 @@ function LimitsCell({ pkg }: { pkg: Package }) {
 export default function PackagesPage() {
   const { t } = useT();
   const router = useRouter();
+  // Show inactive too: "delete" is a soft delete (is_active=false) surfaced in
+  // the UI as Deactivate, so deactivated packages stay listed (as Inactive) and
+  // can be reactivated.
   const { data: packages = [], isLoading } = usePackages({ includeInactive: true });
   const deleteMut = useDeletePackage();
-  const [confirmDelete, setConfirmDelete] = useState<Package | null>(null);
+  const qc = useQueryClient();
+  const [confirmDeactivate, setConfirmDeactivate] = useState<Package | null>(null);
+  const [reactivatingId, setReactivatingId] = useState<string | null>(null);
 
-  async function handleDelete() {
-    if (!confirmDelete) return;
+  async function handleDeactivate() {
+    if (!confirmDeactivate) return;
     try {
-      await deleteMut.mutateAsync(confirmDelete.id);
-      toast.success(t('common.deleted'));
-      setConfirmDelete(null);
+      await deleteMut.mutateAsync(confirmDeactivate.id);
+      toast.success('Package deactivated');
+      setConfirmDeactivate(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('common.deleteFailed'));
+    }
+  }
+
+  async function handleReactivate(pkg: Package) {
+    setReactivatingId(pkg.id);
+    try {
+      const res = await fetch(`/api/packages/${pkg.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: true }),
+      });
+      if (!res.ok) throw new Error('Failed to reactivate');
+      toast.success('Package reactivated');
+      qc.invalidateQueries({ queryKey: ['packages'] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to reactivate');
+    } finally {
+      setReactivatingId(null);
     }
   }
 
@@ -120,15 +144,26 @@ export default function PackagesPage() {
                     <Button size="sm" variant="ghost" aria-label={t('common.edit')} onClick={() => router.push(`./configuration?tab=packages&edit=${pkg.id}`)}>
                       <Pencil size={13} />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      aria-label={t('common.delete')}
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                      onClick={() => setConfirmDelete(pkg)}
-                    >
-                      <Trash2 size={13} />
-                    </Button>
+                    {pkg.isActive ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50 gap-1"
+                        onClick={() => setConfirmDeactivate(pkg)}
+                      >
+                        <PowerOff size={13} /> Deactivate
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50 gap-1"
+                        disabled={reactivatingId === pkg.id}
+                        onClick={() => handleReactivate(pkg)}
+                      >
+                        <Power size={13} /> {reactivatingId === pkg.id ? '…' : 'Reactivate'}
+                      </Button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -138,13 +173,13 @@ export default function PackagesPage() {
       </div>
 
       <ConfirmDialog
-        open={!!confirmDelete}
-        onOpenChange={(o) => !o && setConfirmDelete(null)}
-        title="Delete package?"
-        description={`"${confirmDelete?.name}" will be permanently removed. Organizations on this package will not be affected.`}
-        confirmLabel={t('common.delete')}
+        open={!!confirmDeactivate}
+        onOpenChange={(o) => !o && setConfirmDeactivate(null)}
+        title="Deactivate package?"
+        description={`"${confirmDeactivate?.name}" will be hidden from new assignments. Organizations already on it are unaffected, and you can reactivate it anytime.`}
+        confirmLabel="Deactivate"
         variant="destructive"
-        onConfirm={handleDelete}
+        onConfirm={handleDeactivate}
         loading={deleteMut.isPending}
       />
     </div>

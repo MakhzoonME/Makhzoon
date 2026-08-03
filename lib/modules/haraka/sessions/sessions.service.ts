@@ -53,6 +53,25 @@ export class SessionsService {
     return { session, expectedCashSoFar: session.openingFloat + expectedCashDelta }
   }
 
+  /**
+   * Fetch a session for register purposes (viewing/adding items, checking
+   * out) — distinct from getById's cash-reconciliation detail view. The
+   * cashier who owns the session needs registerOpen; anyone entering a
+   * DIFFERENT cashier's open session needs the explicit sessionsEnterOthers
+   * grant (e.g. a supervisor covering a busy till). No cash-reconciliation
+   * figures are returned here — those stay behind getById's stricter gate.
+   */
+  async getForRegister(tenant: TenantContext, id: string) {
+    const session = await repo.getById(tenant, id)
+    if (!session) throw NextResponse.json({ error: 'Not found' }, { status: 404 })
+    const isOwn = session.cashierId === tenant.userId
+    const canEnter = isOwn
+      ? hasPermission(tenant, 'haraka', 'registerOpen')
+      : hasPermission(tenant, 'haraka', 'sessionsEnterOthers')
+    if (!canEnter) throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    return { session }
+  }
+
   async findOpen(tenant: TenantContext) {
     // A user who can never open a session (e.g. a front-desk-only staffer)
     // can never have one — return null rather than 403 so pages that poll

@@ -65,6 +65,27 @@ export function useSession(id: string | undefined) {
   });
 }
 
+/**
+ * A session fetched for register purposes (viewing items, adding to cart,
+ * checking out) — works for the caller's own open session (registerOpen) or
+ * another cashier's, if the caller holds sessionsEnterOthers. Distinct from
+ * useSession(), which is gated for the cash-reconciliation detail view.
+ */
+export function useSessionForRegister(id: string | undefined) {
+  const { space } = useParams<{ space?: string }>();
+  return useQuery<{ session: PosSession }>({
+    queryKey: ['haraka', 'sessions', space, id, 'register'],
+    enabled: !!id && !!space,
+    queryFn: async () => {
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/haraka/sessions/${id}?context=register`, { headers });
+      if (!res.ok) throw new Error('Failed to fetch session');
+      return res.json();
+    },
+    staleTime: 10_000,
+  });
+}
+
 export function useOpenSession() {
   const qc = useQueryClient();
   return useMutation({

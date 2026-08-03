@@ -59,9 +59,10 @@ export default function TransactionDetailPage(props: Props) {
   const isMutable = tx.status === 'completed';
 
   const receiptBase = getReceiptBaseUrl();
-  const canVoid = !!user && hasPermission(user, 'pos', 'void_transaction');
-  const canRefund = !!user && hasPermission(user, 'pos', 'issue_refund');
-  const canResubmitFawtara = !!user && hasPermission(user, 'pos', 'fawtara_submit');
+  const canVoid = !!user && hasPermission(user, 'haraka', 'transactionsVoid');
+  const canRefund = !!user && hasPermission(user, 'haraka', 'transactionsRefund');
+  // No dedicated permission — JoFotara submission is being automated.
+  const canResubmitFawtara = !!user && hasPermission(user, 'haraka', 'transactionsView');
 
   async function doVoid() {
     try {

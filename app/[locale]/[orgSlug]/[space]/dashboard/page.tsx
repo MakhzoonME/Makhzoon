@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ColumnDef } from '@/components/shared/DataTable';
 import { formatDate, daysUntil } from '@/lib/utils/date';
 import { Asset, Warranty } from '@/types';
-import { hasModuleAccess } from '@/lib/permissions';
+import { hasModuleAccess, hasPermission } from '@/lib/permissions';
 
 /* ── Inline SVG icons ───────────────────────────────────────────── */
 function ActiveIcon() {
@@ -561,9 +561,9 @@ export default function DashboardPage() {
   const { t, locale } = useT();
 
   const features = user?.features ?? {};
-  const canViewAssets    = !!user && features.assets    !== false && hasModuleAccess(user, 'assets');
-  const canViewInventory = !!user && features.inventory !== false && hasModuleAccess(user, 'inventory');
-  const canViewWarranties= !!user && features.warranties!== false && hasModuleAccess(user, 'warranties');
+  const canViewAssets    = !!user && features.assets    !== false && hasModuleAccess(user, 'usool');
+  const canViewInventory = !!user && features.inventory !== false && hasModuleAccess(user, 'raseed');
+  const canViewWarranties= !!user && features.warranties!== false && hasPermission(user, 'usool', 'warrantiesView');
   const canViewAuditLogs = !!user && features.auditLogs !== false && hasModuleAccess(user, 'auditLogs');
 
   const { data, isLoading, dataUpdatedAt } = useDashboard(space, {

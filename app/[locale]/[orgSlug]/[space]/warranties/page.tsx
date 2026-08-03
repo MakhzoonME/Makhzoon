@@ -38,7 +38,7 @@ function DaysLeftBadge({ endDate }: { endDate: string | Date }) {
 }
 
 export default function WarrantiesPage() {
-  const { isAllowed } = useModuleGuard({ featureKey: 'warranties', moduleKey: 'warranties' });
+  const { isAllowed } = useModuleGuard({ featureKey: 'warranties', moduleKey: 'usool', permOp: 'warrantiesView' });
   const { t, locale } = useT();
   const router       = useRouter();
   const pathname     = usePathname();

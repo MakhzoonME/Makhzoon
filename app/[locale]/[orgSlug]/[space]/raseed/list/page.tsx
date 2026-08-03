@@ -169,9 +169,11 @@ export default function InventoryListPage() {
   }, [debouncedSearchInput]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
-  const canBulkDelete = !!user && hasPermission(user, 'inventory', 'bulk_delete');
-  const canBulkMove = !!user && hasPermission(user, 'inventory', 'bulk_move');
-  const canBulkDuplicate = !!user && hasPermission(user, 'inventory', 'bulk_duplicate');
+  // Bulk actions are available to anyone who can do the equivalent single-item
+  // action — no separate bulk permission.
+  const canBulkDelete = !!user && hasPermission(user, 'raseed', 'delete');
+  const canBulkMove = !!user && hasPermission(user, 'raseed', 'update');
+  const canBulkDuplicate = !!user && hasPermission(user, 'raseed', 'create');
   const showSelection = canBulkDelete || canBulkMove || canBulkDuplicate;
 
   const stockLabels = { inStock: t('inventory.inStock'), lowStock: t('inventory.lowStock'), outOfStock: t('inventory.outOfStock') };

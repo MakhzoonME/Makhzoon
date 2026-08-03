@@ -3,7 +3,7 @@ import { useReports, useOrgInfo } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { useT, useOrgSlug, useSpace, useModuleGuard } from '@/hooks/ui';
 import { useAuthStore } from '@/store/auth.store';
-import { hasModuleAccess } from '@/lib/permissions';
+import { hasModuleAccess, hasPermission } from '@/lib/permissions';
 import { Package, PackageCheck, PackageX, Wallet, UserCheck, AlertTriangle, ShieldCheck, Wrench } from 'lucide-react';
 
 /* Wrap each Lucide icon to add aria-hidden — used as React.FC in Stat */
@@ -67,8 +67,8 @@ export default function ReportsPage() {
   const { data, isLoading } = useReports();
 
   const features = user?.features ?? {};
-  const canViewAssets    = !!user && features.assets    !== false && hasModuleAccess(user, 'assets');
-  const canViewWarranties= !!user && features.warranties!== false && hasModuleAccess(user, 'warranties');
+  const canViewAssets    = !!user && features.assets    !== false && hasModuleAccess(user, 'usool');
+  const canViewWarranties= !!user && features.warranties!== false && hasPermission(user, 'usool', 'warrantiesView');
 
   const breadcrumb = [
     { label: orgInfo?.name ?? orgSlug },

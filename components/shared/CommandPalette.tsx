@@ -7,7 +7,7 @@ import { useAssets } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
 import { useOrgSlug, useSpace } from '@/hooks/ui';
 import { useSubscriptionFeatures } from '@/hooks/org';
-import { hasModuleAccess } from '@/lib/permissions';
+import { hasPermission } from '@/lib/permissions';
 import type { UserPermissions } from '@/types/user-permissions.types';
 import { Asset } from '@/types';
 import { cn } from '@/lib/utils/cn';
@@ -29,13 +29,15 @@ type PaletteEntry = {
   scope?: 'space' | 'org';
   featureKey?: string;
   moduleKey?: keyof UserPermissions;
+  /** Operation to check within moduleKey. Defaults to 'view'. */
+  permOp?: string;
   adminOnly?: boolean;
 };
 
 const NAV_GROUPS: PaletteEntry[] = [
   { href: '/dashboard',  label: 'Dashboard',  icon: DashboardSVG,    featureKey: 'dashboard',  moduleKey: 'dashboard'  },
-  { href: '/usool',      label: 'Usool',       icon: PackageSVG,      featureKey: 'assets',     moduleKey: 'assets'     },
-  { href: '/warranties', label: 'Warranties',  icon: ShieldCheckSVG,  featureKey: 'warranties', moduleKey: 'warranties' },
+  { href: '/usool',      label: 'Usool',       icon: PackageSVG,      featureKey: 'assets',     moduleKey: 'usool'      },
+  { href: '/warranties', label: 'Warranties',  icon: ShieldCheckSVG,  featureKey: 'warranties', moduleKey: 'usool', permOp: 'warrantiesView' },
 ];
 
 const ADMIN_NAV: PaletteEntry[] = [
@@ -70,9 +72,10 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     if (entry.adminOnly && !isAdmin) return false;
     if (entry.featureKey && !features[entry.featureKey]) return false;
     if (isStaff && entry.moduleKey && user) {
-      return hasModuleAccess(
+      return hasPermission(
         { ...user, organizationId: user.organizationId ?? null },
         entry.moduleKey,
+        entry.permOp ?? 'view',
       );
     }
     return true;

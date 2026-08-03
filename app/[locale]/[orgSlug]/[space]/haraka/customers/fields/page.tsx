@@ -25,7 +25,7 @@ import type { CustomField, CustomFieldType, CustomFieldOption } from '@/types/ba
  * custom fields ship ahead of it and ride on the 'pos' feature instead.
  */
 export default function CustomerFieldsPage() {
-  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
+  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
   const { data: orgInfo } = useOrgInfo();

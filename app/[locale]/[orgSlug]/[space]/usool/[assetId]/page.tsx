@@ -227,7 +227,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
   const [addWarrantyOpen, setAddWarrantyOpen] = useState(false);
 
   const isAdmin  = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
-  const canDeleteAsset = !!user && hasPermission(user, 'assets', 'delete');
+  const canDeleteAsset = !!user && hasPermission(user, 'usool', 'delete');
   const isRetired = asset?.status === 'Retired';
 
   async function handleRetire() {

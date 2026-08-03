@@ -5,7 +5,7 @@ import { useUiStore } from '@/store/ui.store';
 import { useAuthStore } from '@/store/auth.store';
 import { useSpace, useT } from '@/hooks/ui';
 import { useSubscriptionFeatures } from '@/hooks/org';
-import { hasModuleAccess } from '@/lib/permissions';
+import { hasPermission } from '@/lib/permissions';
 import type { UserPermissions } from '@/types/user-permissions.types';
 import type { MessageKey } from '@/locales/messages';
 import { cn } from '@/lib/utils/cn';
@@ -23,13 +23,15 @@ interface PrimaryNavItem {
   Icon: React.FC;
   featureKey?: string;
   moduleKey?: keyof UserPermissions;
+  /** Operation to check within moduleKey. Defaults to 'view'. */
+  permOp?: string;
 }
 
 const PRIMARY_NAV: PrimaryNavItem[] = [
   { href: '/dashboard',  labelKey: 'nav.dashboard',  Icon: DashboardSVG, featureKey: 'dashboard' },
-  { href: '/usool',      labelKey: 'nav.assets',     Icon: AssetsSVG,    featureKey: 'assets',     moduleKey: 'assets' },
+  { href: '/usool',      labelKey: 'nav.assets',     Icon: AssetsSVG,    featureKey: 'assets',     moduleKey: 'usool' },
   { href: '/banna',      labelKey: 'nav.banna',      Icon: BannaSVG,     featureKey: 'banna',      moduleKey: 'banna' },
-  { href: '/warranties', labelKey: 'nav.warranties', Icon: WarrantySVG,  featureKey: 'warranties', moduleKey: 'warranties' },
+  { href: '/warranties', labelKey: 'nav.warranties', Icon: WarrantySVG,  featureKey: 'warranties', moduleKey: 'usool', permOp: 'warrantiesView' },
 ];
 
 export function BottomNav() {
@@ -45,12 +47,13 @@ export function BottomNav() {
 
   const isStaff = user?.role === 'staff';
 
-  const visibleNav = PRIMARY_NAV.filter(({ featureKey, moduleKey }) => {
+  const visibleNav = PRIMARY_NAV.filter(({ featureKey, moduleKey, permOp }) => {
     if (featureKey && !features[featureKey]) return false;
     if (isStaff && moduleKey && user) {
-      return hasModuleAccess(
+      return hasPermission(
         { ...user, organizationId: user.organizationId ?? null },
         moduleKey,
+        permOp ?? 'view',
       );
     }
     return true;

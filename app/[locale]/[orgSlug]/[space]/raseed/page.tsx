@@ -88,7 +88,7 @@ const STOCK_TONE: Record<InventoryItem['stockStatus'], string> = {
 };
 
 export default function RaseedOverviewPage() {
-  const { isAllowed } = useModuleGuard({ featureKey: 'inventory', moduleKey: 'inventory' });
+  const { isAllowed } = useModuleGuard({ featureKey: 'inventory', moduleKey: 'raseed' });
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const space = useSpace();

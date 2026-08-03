@@ -32,7 +32,7 @@ function toInput(d: Date): string {
 }
 
 export default function HarakaReportsPage() {
-  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
   const { isAllowed } = useAdminGuard('pos.view_reports');
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();

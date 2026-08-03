@@ -194,7 +194,7 @@ export default function UsersPage() {
 
   async function handleResetPassword() {
     if (!resetTarget) return;
-    const isUsernameAccount = !!resetTarget.username && !resetTarget.email;
+    const isUsernameAccount = !!resetTarget.username && !!resetTarget.email?.endsWith('@makhzoon.local');
     setResetting(true);
     try {
       const res = await apiFetch(`/api/users/${resetTarget.id}/reset-password`, {

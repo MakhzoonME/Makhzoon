@@ -34,7 +34,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ userId: 
   if (orgId && targetUser.organizationId !== orgId && caller.role !== 'super_admin')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const isUsernameAccount = !!targetUser.username && !targetUser.email;
+  const isUsernameAccount = !!targetUser.username && !!targetUser.email?.endsWith('@makhzoon.local');
 
   if (isUsernameAccount) {
     // Username accounts have no real email — never send a link there.

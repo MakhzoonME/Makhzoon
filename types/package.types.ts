@@ -5,7 +5,6 @@ export type FeatureKey =
   | 'assets'
   | 'inventory'
   | 'warranties'
-  | 'requests'
   | 'reports'
   | 'support'
   | 'auditLogs'
@@ -22,7 +21,6 @@ export const FEATURE_KEYS: FeatureKey[] = [
   'assets',
   'inventory',
   'warranties',
-  'requests',
   'reports',
   'support',
   'auditLogs',
@@ -39,7 +37,6 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   assets: 'Assets',
   inventory: 'Inventory',
   warranties: 'Warranties',
-  requests: 'Requests',
   reports: 'Reports',
   support: 'Support',
   auditLogs: 'Audit Logs',
@@ -56,7 +53,6 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
   assets: 'Asset register: create, edit, retire, and import assets.',
   inventory: 'Track stocked items, reorder thresholds, and stock movements.',
   warranties: 'Track vendor warranties and expiry dates per asset.',
-  requests: 'Allow staff to submit new-asset, retire, or extend requests.',
   reports: 'Visibility into utilisation, depreciation, and cost reports.',
   support: 'In-app ticketing channel to the platform team.',
   auditLogs: 'View and export the immutable audit trail for the organization.',
@@ -65,14 +61,13 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
   assetNotes: 'Free-form notes attached to individual assets.',
   pos: 'Point of sale terminal for processing sales transactions.',
   reception: 'Front-desk intake tickets handed off to the POS register for payment. Requires Point of Sale.',
-  banna: 'Custom fields for assets, inventory, and requests.',
+  banna: 'Custom fields for assets, inventory, and customers.',
 };
 
 export interface PackageLimits {
   maxAssets: number;
   maxUsers: number;
   maxWarranties: number;
-  maxRequests: number;
   maxSpaces: number;
   maxInventoryItems: number;
 }

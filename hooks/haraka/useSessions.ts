@@ -68,7 +68,7 @@ export function useSession(id: string | undefined) {
 export function useOpenSession() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (body: { openingFloat: number; locationId?: string }) => {
+    mutationFn: async (body: { openingFloat: number; locationId?: string; tillName?: string }) => {
       const res = await fetch('/api/haraka/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

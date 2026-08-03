@@ -19,15 +19,44 @@ function WhatsAppIcon({ size = 14 }: { size?: number }) {
   );
 }
 
+/**
+ * 'internal' → interactive delivery link (/delivery/[token]); driver/staff can
+ *   advance status and record payments. Uses the order's delivery_token.
+ * 'customer' → read-only tracking link (/track/[token]); the customer can view
+ *   status/items/payment but take no action. Uses a separate customer_token.
+ */
+type ShareVariant = 'internal' | 'customer';
+
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   order: HarakaOrder;
   orgSlug: string;
   currency?: string;
+  variant?: ShareVariant;
 }
 
-function buildShareText(order: HarakaOrder, link: string, currency: string): string {
+const VARIANT_CONFIG: Record<ShareVariant, {
+  title: string;
+  tokenEndpoint: (orderId: string) => string;
+  linkPath: string;
+  linkLabel: string;
+}> = {
+  internal: {
+    title: 'Share Order (Internal)',
+    tokenEndpoint: (id) => `/api/haraka/orders/${id}/delivery-token`,
+    linkPath: 'delivery',
+    linkLabel: '🔗 View & Update Order:',
+  },
+  customer: {
+    title: 'Share with Customer',
+    tokenEndpoint: (id) => `/api/haraka/orders/${id}/customer-token`,
+    linkPath: 'track',
+    linkLabel: '🔗 Track Your Order:',
+  },
+};
+
+function buildShareText(order: HarakaOrder, link: string, currency: string, linkLabel: string): string {
   const lines: string[] = [
     `📦 *Order ${order.orderNumber}*`,
     `Status: ${order.status.replace(/_/g, ' ')}`,
@@ -50,12 +79,15 @@ function buildShareText(order: HarakaOrder, link: string, currency: string): str
   if (order.paymentMethod) lines.push(`Payment: ${order.paymentMethod.replace(/_/g, ' ')}`);
   if (order.notes) lines.push(`\nNotes: ${order.notes}`);
   lines.push('');
-  lines.push(`🔗 View & Update Order:\n${link}`);
+  lines.push(`${linkLabel}\n${link}`);
   return lines.join('\n');
 }
 
-export function OrderShareDialog({ open, onOpenChange, order, currency = 'JOD' }: Props) {
-  const [token, setToken] = useState<string | null>(order.deliveryToken ?? null);
+export function OrderShareDialog({ open, onOpenChange, order, currency = 'JOD', variant = 'internal' }: Props) {
+  const cfg = VARIANT_CONFIG[variant];
+  const [token, setToken] = useState<string | null>(
+    variant === 'internal' ? (order.deliveryToken ?? null) : null,
+  );
   const [fetching, setFetching] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
@@ -63,14 +95,14 @@ export function OrderShareDialog({ open, onOpenChange, order, currency = 'JOD' }
   const cardRef = useRef<HTMLDivElement>(null);
 
   const deliveryLink = token
-    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/delivery/${token}`
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/${cfg.linkPath}/${token}`
     : null;
 
   async function ensureToken() {
     if (token) return token;
     setFetching(true);
     try {
-      const res = await fetch(`/api/haraka/orders/${order.id}/delivery-token`, { method: 'POST' });
+      const res = await fetch(cfg.tokenEndpoint(order.id), { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setToken(data.token);
@@ -85,10 +117,10 @@ export function OrderShareDialog({ open, onOpenChange, order, currency = 'JOD' }
     if (!token) return;
     setFetching(true);
     try {
-      const res = await fetch(`/api/haraka/orders/${order.id}/delivery-token`, { method: 'DELETE' });
+      const res = await fetch(cfg.tokenEndpoint(order.id), { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error);
       setToken(null);
-      toast.success('Delivery link revoked');
+      toast.success('Link revoked');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to revoke link');
     } finally { setFetching(false); }
@@ -97,7 +129,7 @@ export function OrderShareDialog({ open, onOpenChange, order, currency = 'JOD' }
   async function handleCopyLink() {
     const t = await ensureToken();
     if (!t) return;
-    const link = `${window.location.origin}/delivery/${t}`;
+    const link = `${window.location.origin}/${cfg.linkPath}/${t}`;
     await navigator.clipboard.writeText(link);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
@@ -106,8 +138,8 @@ export function OrderShareDialog({ open, onOpenChange, order, currency = 'JOD' }
   async function handleCopyText() {
     const t = await ensureToken();
     if (!t) return;
-    const link = `${window.location.origin}/delivery/${t}`;
-    await navigator.clipboard.writeText(buildShareText(order, link, currency));
+    const link = `${window.location.origin}/${cfg.linkPath}/${t}`;
+    await navigator.clipboard.writeText(buildShareText(order, link, currency, cfg.linkLabel));
     setCopiedText(true);
     setTimeout(() => setCopiedText(false), 2000);
   }
@@ -115,8 +147,8 @@ export function OrderShareDialog({ open, onOpenChange, order, currency = 'JOD' }
   async function handleWhatsApp() {
     const t = await ensureToken();
     if (!t) return;
-    const link = `${window.location.origin}/delivery/${t}`;
-    const text = encodeURIComponent(buildShareText(order, link, currency));
+    const link = `${window.location.origin}/${cfg.linkPath}/${t}`;
+    const text = encodeURIComponent(buildShareText(order, link, currency, cfg.linkLabel));
     window.open(`https://wa.me/?text=${text}`, '_blank');
   }
 
@@ -139,7 +171,7 @@ export function OrderShareDialog({ open, onOpenChange, order, currency = 'JOD' }
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Share Order</DialogTitle>
+          <DialogTitle>{cfg.title}</DialogTitle>
         </DialogHeader>
 
         <DialogBody className="space-y-4">

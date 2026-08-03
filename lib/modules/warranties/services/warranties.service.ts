@@ -34,13 +34,13 @@ export interface UpdateWarrantyInput {
 }
 
 export async function getAll(tenant: TenantContext, opts?: Parameters<typeof getWarranties>[1]) {
-  if (!hasPermission(tenant, 'warranties', 'view'))
+  if (!hasPermission(tenant, 'usool', 'warrantiesView'))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   return getWarranties(tenant.organizationId, { ...opts, spaceId: tenant.spaceId });
 }
 
 export async function getById(tenant: TenantContext, warrantyId: string) {
-  if (!hasPermission(tenant, 'warranties', 'view'))
+  if (!hasPermission(tenant, 'usool', 'warrantiesView'))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const warranty = await getWarrantyById(warrantyId);
   if (!warranty || warranty.organizationId !== tenant.organizationId)
@@ -49,7 +49,7 @@ export async function getById(tenant: TenantContext, warrantyId: string) {
 }
 
 export async function create(tenant: TenantContext, data: CreateWarrantyInput) {
-  if (!hasPermission(tenant, 'warranties', 'create'))
+  if (!hasPermission(tenant, 'usool', 'warrantiesCreate'))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   if (tenant.subscription?.status && tenant.subscription.status !== 'ACTIVE')
     throw NextResponse.json({ error: 'Subscription expired' }, { status: 403 });
@@ -76,7 +76,7 @@ export async function create(tenant: TenantContext, data: CreateWarrantyInput) {
 }
 
 export async function update(tenant: TenantContext, warrantyId: string, data: UpdateWarrantyInput) {
-  if (!hasPermission(tenant, 'warranties', 'update'))
+  if (!hasPermission(tenant, 'usool', 'warrantiesUpdate'))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const warranty = await getWarrantyById(warrantyId);
@@ -96,7 +96,7 @@ export async function update(tenant: TenantContext, warrantyId: string, data: Up
 }
 
 export async function del(tenant: TenantContext, warrantyId: string) {
-  if (!hasPermission(tenant, 'warranties', 'delete'))
+  if (!hasPermission(tenant, 'usool', 'warrantiesDelete'))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const warranty = await getWarrantyById(warrantyId);
@@ -115,7 +115,7 @@ export async function del(tenant: TenantContext, warrantyId: string) {
 }
 
 export async function getExpiring(tenant: TenantContext, days: number) {
-  if (!hasPermission(tenant, 'warranties', 'view'))
+  if (!hasPermission(tenant, 'usool', 'warrantiesView'))
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   return getExpiringWarranties(tenant.organizationId, days, tenant.spaceId);
 }

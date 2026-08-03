@@ -137,6 +137,46 @@ export class OrdersRepository {
     return { items: items.slice(start, start + pageSize), total, page: safePage, pageSize, totalPages }
   }
 
+  /**
+   * Every order ever placed by a given customer, newest first. Used by the
+   * customer profile's history timeline.
+   *
+   * Primarily matches on `customer_id`. As a fallback it also picks up legacy
+   * orders taken name/phone-only (no linked customer) by matching the
+   * snapshotted `customer_phone` or `customer_name` — but only among rows with
+   * a null customer_id, so an order explicitly attached to a different customer
+   * is never mis-claimed. Phone is the more reliable key; name is a looser net.
+   */
+  async listByCustomer(
+    tenant: TenantContext,
+    match: { id: string; name?: string | null; phone?: string | null },
+  ): Promise<HarakaOrder[]> {
+    const base = () =>
+      supabaseAdmin
+        .from('haraka_orders')
+        .select('*')
+        .eq('organization_id', tenant.organizationId)
+
+    const queries = [base().eq('customer_id', match.id)]
+    const phone = match.phone?.trim()
+    const name = match.name?.trim()
+    if (phone) queries.push(base().is('customer_id', null).eq('customer_phone', phone))
+    if (name) queries.push(base().is('customer_id', null).eq('customer_name', name))
+
+    const results = await Promise.all(queries)
+    const byId = new Map<string, HarakaOrder>()
+    for (const { data, error } of results) {
+      if (error) throw error
+      for (const row of data ?? []) {
+        const order = toOrder(row)
+        byId.set(order.id, order)
+      }
+    }
+    return Array.from(byId.values()).sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    )
+  }
+
   async getById(tenant: TenantContext, id: string): Promise<HarakaOrder | null> {
     const { data } = await supabaseAdmin
       .from('haraka_orders')

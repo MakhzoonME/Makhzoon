@@ -14,7 +14,7 @@ export async function POST(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
-    requirePermission(tenant.user, 'pos', 'issue_refund')
+    requirePermission(tenant.user, 'haraka', 'transactionsRefund')
     const { transactionId } = await params
     const body = await req.json().catch(() => ({}))
     const parsed = refundSchema.safeParse(body)

@@ -37,7 +37,6 @@ function toPackage(r: Row): Package {
       maxAssets: limits.maxAssets ?? -1,
       maxUsers: limits.maxUsers ?? -1,
       maxWarranties: limits.maxWarranties ?? -1,
-      maxRequests: limits.maxRequests ?? -1,
       maxSpaces: limits.maxSpaces ?? -1,
       maxInventoryItems: limits.maxInventoryItems ?? -1,
     },

@@ -61,14 +61,6 @@ function WarrantySVG() {
     </svg>
   );
 }
-function RequestsSVG() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-      <rect x="2" y="2" width="14" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none" />
-      <path d="M5 6h8M5 9h6M5 12h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  );
-}
 function ReportsSVG() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -152,7 +144,6 @@ const NAV_ICONS: Record<string, React.FC> = {
   '/usool':        AssetsSVG,
   '/raseed':       InventorySVG,
   '/warranties':   WarrantySVG,
-  '/requests':     RequestsSVG,
   '/reports':      ReportsSVG,
   '/support':      SupportSVG,
   '/audit-logs':   AuditSVG,
@@ -223,21 +214,27 @@ export function AppSidebar() {
           (sub) => !('type' in sub) && sub.permissionKey && hasPermByKey(user, sub.permissionKey)
         );
       }
-      // Check module access for staff, and for admins with custom restrictions
-      if (entry.featureKey && user) {
-        const moduleKey = entry.featureKey as keyof UserPermissions;
-        if (user.role === 'staff' || adminHasCustomPerms) {
-          return hasModuleAccess({ ...user, organizationId: user.organizationId ?? null }, moduleKey);
-        }
+      // Check permission access for staff, and for admins with custom restrictions.
+      // Prefer the explicit permissionKey (module.operation) — featureKey is a
+      // subscription-feature name and no longer always matches the permission
+      // module name (e.g. featureKey 'assets' -> permission module 'usool').
+      if (user && (user.role === 'staff' || adminHasCustomPerms)) {
+        const u = { ...user, organizationId: user.organizationId ?? null };
+        if (entry.permissionKey) return hasPermByKey(u, entry.permissionKey);
+        if (entry.featureKey) return hasModuleAccess(u, entry.featureKey as keyof UserPermissions);
       }
       return true;
     }
-    const item = entry as { adminOnly?: boolean; featureKey?: string };
+    const item = entry as { adminOnly?: boolean; featureKey?: string; permissionKey?: string };
     if (item.adminOnly && !canSeeAdmin) return false;
     if (item.featureKey && !features[item.featureKey]) return false;
-    if (item.featureKey && user && (user.role === 'staff' || adminHasCustomPerms)) {
-      const moduleKey = item.featureKey as keyof UserPermissions;
-      if (!hasModuleAccess({ ...user, organizationId: user.organizationId ?? null }, moduleKey)) return false;
+    if (user && (user.role === 'staff' || adminHasCustomPerms)) {
+      const u = { ...user, organizationId: user.organizationId ?? null };
+      if (item.permissionKey) {
+        if (!hasPermByKey(u, item.permissionKey)) return false;
+      } else if (item.featureKey) {
+        if (!hasModuleAccess(u, item.featureKey as keyof UserPermissions)) return false;
+      }
     }
     return true;
   });

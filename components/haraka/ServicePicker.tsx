@@ -15,7 +15,7 @@ interface Props {
   disabled?: boolean;
 }
 
-/** Searchable popover for picking an entry from the POS Services catalog —
+/** Searchable popover for picking an entry from the Services catalog —
  *  used to prefill a free-text line (Service Jobs) or an amount (Retainers)
  *  without linking to the catalog by FK. */
 export function ServicePicker({ onPick, label, disabled }: Props) {

@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const tenant = await resolveTenant();
     requireFeature(tenant, 'assets');
   const user = tenant.user;
-  if (!hasPermission(user, 'assets', 'import')) {
+  if (!hasPermission(user, 'usool', 'import')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

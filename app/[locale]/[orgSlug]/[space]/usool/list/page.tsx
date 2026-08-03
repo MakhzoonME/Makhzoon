@@ -150,10 +150,12 @@ export default function AssetsListPage() {
   }, [debouncedSearchInput]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
-  const canCreateAsset = !!user && hasPermission(user, 'assets', 'create');
-  const canBulkDelete = !!user && hasPermission(user, 'assets', 'bulk_delete');
-  const canBulkMove = !!user && hasPermission(user, 'assets', 'bulk_move');
-  const canBulkDuplicate = !!user && hasPermission(user, 'assets', 'bulk_duplicate');
+  const canCreateAsset = !!user && hasPermission(user, 'usool', 'create');
+  // Bulk actions are available to anyone who can do the equivalent single-item
+  // action — no separate bulk permission.
+  const canBulkDelete = !!user && hasPermission(user, 'usool', 'delete');
+  const canBulkMove = !!user && hasPermission(user, 'usool', 'update');
+  const canBulkDuplicate = !!user && hasPermission(user, 'usool', 'create');
   const showSelection = canBulkDelete || canBulkMove || canBulkDuplicate;
 
   const columns: ColumnDef<Asset>[] = [

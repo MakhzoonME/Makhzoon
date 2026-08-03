@@ -551,11 +551,6 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                 current={usage?.warranties ?? 0}
                 max={selectedPackage?.limits.maxWarranties ?? -1}
               />
-              <UsageBar
-                label={t('subscription.requests')}
-                current={usage?.requests ?? 0}
-                max={selectedPackage?.limits.maxRequests ?? -1}
-              />
             </CardContent>
           </Card>
 

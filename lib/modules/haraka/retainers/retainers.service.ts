@@ -15,13 +15,27 @@ import type { UpdateRetainerInvoicePayload } from './schemas'
 const repo = new RetainersRepository()
 
 function requireView(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'view_retainers')) {
+  if (!hasPermission(tenant, 'haraka', 'retainersView')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
 
+// Umbrella for create/update/delete/invoice management — same scope
+// 'manage_retainers' had. Status transitions (pause/cancel/reactivate) use
+// their own dedicated keys instead, checked directly in updateStatus().
 function requireManage(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'manage_retainers')) {
+  if (!hasPermission(tenant, 'haraka', 'retainersCreate')) {
+    throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+}
+
+function requireStatusChange(tenant: TenantContext, toStatus: RetainerStatus) {
+  const op =
+    toStatus === 'paused' ? 'retainersPause'
+    : toStatus === 'cancelled' ? 'retainersCancel'
+    : toStatus === 'active' ? 'retainersReactivate'
+    : null
+  if (!op || !hasPermission(tenant, 'haraka', op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -61,7 +75,7 @@ export class RetainersService {
   }
 
   async updateStatus(tenant: TenantContext, id: string, status: RetainerStatus) {
-    requireManage(tenant)
+    requireStatusChange(tenant, status)
     const retainer = await this.getById(tenant, id)
     if (!isValidRetainerTransition(retainer.status, status)) {
       throw NextResponse.json(
@@ -100,7 +114,9 @@ export class RetainersService {
   }
 
   async createInvoice(tenant: TenantContext, retainerId: string, input: CreateRetainerInvoiceInput) {
-    requireManage(tenant)
+    if (!hasPermission(tenant, 'haraka', 'retainersAddInvoice')) {
+      throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
     const retainer = await this.getById(tenant, retainerId)
     const invoice = await repo.createInvoice(tenant, retainer, input)
     auditLog.queue({

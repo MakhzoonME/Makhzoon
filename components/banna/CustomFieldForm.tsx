@@ -27,7 +27,6 @@ const FIELD_TYPES: { value: CustomFieldType; label: string }[] = [
 const MODULES = [
   { value: 'assets', label: 'Assets' },
   { value: 'inventory', label: 'Inventory' },
-  { value: 'requests', label: 'Requests' },
   { value: 'customers', label: 'Customers' },
 ];
 

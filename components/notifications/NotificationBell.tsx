@@ -7,24 +7,31 @@ import { useUnreadCount } from '@/hooks/notifications';
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const { data } = useUnreadCount();
   const count = data?.count ?? 0;
 
-  // Close on outside click
+  // Close on outside click (button + portaled panel both count as "inside")
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
+      const target = e.target as Node;
+      if (
+        buttonRef.current?.contains(target) ||
+        panelRef.current?.contains(target)
+      ) {
+        return;
       }
+      setOpen(false);
     }
     if (open) document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
+        ref={buttonRef}
         type="button"
         aria-label="Notifications"
         onClick={() => setOpen((o) => !o)}
@@ -41,7 +48,13 @@ export function NotificationBell() {
         )}
       </button>
 
-      {open && <NotificationPanel onClose={() => setOpen(false)} />}
-    </div>
+      {open && (
+        <NotificationPanel
+          ref={panelRef}
+          anchorRef={buttonRef}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
   );
 }

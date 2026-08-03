@@ -37,7 +37,7 @@ export async function GET() {
 
     const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin']);
     const isAdmin = ADMIN_ROLES.has(user.role);
-    const hasOrgInfoPerm = user.role === 'staff' && user.permissions?.settings?.orgInfo === true;
+    const hasOrgInfoPerm = user.role === 'staff' && user.permissions?.settingsOrgInfo?.view === true;
     if (!isAdmin && !hasOrgInfoPerm) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

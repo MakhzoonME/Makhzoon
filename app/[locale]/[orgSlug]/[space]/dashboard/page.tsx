@@ -6,11 +6,10 @@ import { useOrgSlug, useSpace, useModuleGuard } from '@/hooks/ui';
 import { useAuthStore } from '@/store/auth.store';
 import { useT } from '@/hooks/ui';
 import { Card, CardContent } from '@/components/ui/card';
-import { DataTable, ColumnDef } from '@/components/shared/DataTable';
+import { ColumnDef } from '@/components/shared/DataTable';
 import { formatDate, daysUntil } from '@/lib/utils/date';
-import { Asset, Warranty, Request } from '@/types';
-import { hasModuleAccess } from '@/lib/permissions';
-import { MessageKey } from '@/locales/messages';
+import { Asset, Warranty } from '@/types';
+import { hasModuleAccess, hasPermission } from '@/lib/permissions';
 
 /* ── Inline SVG icons ───────────────────────────────────────────── */
 function ActiveIcon() {
@@ -44,20 +43,6 @@ function InboxIcon() {
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
       <path d="M16 9h-4l-1.5 2.5h-3L6 9H2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M4 4.5l-2 4.5v5a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 16 14V9l-2-4.5a1.5 1.5 0 0 0-1.35-.85H5.35A1.5 1.5 0 0 0 4 4.5z" stroke="currentColor" strokeWidth="1.4" fill="none" />
-    </svg>
-  );
-}
-function CheckIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-      <path d="M2.5 7l3 3 6-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function XIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-      <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
@@ -101,37 +86,34 @@ function getGreetingKey(): 'greeting.morning' | 'greeting.afternoon' | 'greeting
 }
 
 /* ── Data fetcher ────────────────────────────────────────────────── */
-type DashboardFetchOpts = { assets: boolean; warranties: boolean; requests: boolean; auditLogs: boolean };
+type DashboardFetchOpts = { assets: boolean; warranties: boolean; auditLogs: boolean };
 
 function useDashboard(spaceSlug: string | null, opts: DashboardFetchOpts) {
   return useQuery({
-    queryKey: ['dashboard', spaceSlug, opts.assets, opts.warranties, opts.requests, opts.auditLogs],
+    queryKey: ['dashboard', spaceSlug, opts.assets, opts.warranties, opts.auditLogs],
     enabled: !!spaceSlug,
     queryFn: async () => {
       const headers: HeadersInit = spaceSlug ? { 'x-space-slug': spaceSlug } : {};
       // BUG-12 fix: fetch with pageSize=1 to get accurate total count,
       // plus a separate items fetch for display components (RecentAssetsTable, AssetBreakdownBar).
-      const [assetsRes, assetsCountRes, activeCountRes, warrantiesRes, requestsRes, auditRes] = await Promise.all([
+      const [assetsRes, assetsCountRes, activeCountRes, warrantiesRes, auditRes] = await Promise.all([
         opts.assets     ? fetch('/api/assets', { headers })                          : Promise.resolve(null),
         opts.assets     ? fetch('/api/assets?pageSize=1', { headers })               : Promise.resolve(null),
         opts.assets     ? fetch('/api/assets?status=Active&pageSize=1', { headers }) : Promise.resolve(null),
         opts.warranties ? fetch('/api/warranties?expiringSoon=true', { headers })    : Promise.resolve(null),
-        opts.requests   ? fetch('/api/requests?status=PENDING&limit=5', { headers }) : Promise.resolve(null),
         opts.auditLogs  ? fetch('/api/audit-logs?limit=4', { headers })              : Promise.resolve(null),
       ]);
       const assetsBody       = assetsRes?.ok       ? await assetsRes.json()       : { items: [] };
       const assetsCountBody  = assetsCountRes?.ok  ? await assetsCountRes.json()  : { total: 0 };
       const activeCountBody  = activeCountRes?.ok  ? await activeCountRes.json()  : { total: 0 };
       const warrantiesBody   = warrantiesRes?.ok   ? await warrantiesRes.json()   : [];
-      const requestsBody     = requestsRes?.ok     ? await requestsRes.json()     : [];
       const auditBody        = auditRes?.ok        ? await auditRes.json()        : [];
       const assets: Asset[]         = Array.isArray(assetsBody?.items) ? assetsBody.items : [];
       const totalAssetCount: number = typeof assetsCountBody?.total === 'number' ? assetsCountBody.total : assets.length;
       const activeAssetCount: number = typeof activeCountBody?.total === 'number' ? activeCountBody.total : 0;
       const warranties: Warranty[]  = Array.isArray(warrantiesBody) ? warrantiesBody : [];
-      const requests: Request[]     = Array.isArray(requestsBody) ? requestsBody : (Array.isArray(requestsBody?.items) ? requestsBody.items : []);
       const auditLogs: AuditEntry[] = Array.isArray(auditBody) ? auditBody : (Array.isArray(auditBody?.items) ? auditBody.items : []);
-      return { assets, totalAssetCount, activeAssetCount, warranties, requests, auditLogs };
+      return { assets, totalAssetCount, activeAssetCount, warranties, auditLogs };
     },
     staleTime: 30_000,
     refetchInterval: 60_000,
@@ -547,82 +529,6 @@ function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: bool
   );
 }
 
-/* ── PendingRequestsTable ────────────────────────────────────────── */
-const typeKeys: Record<string, MessageKey> = {
-  REFILL:           'requestType.REFILL',
-  RETIRE:           'requestType.RETIRE',
-  BUY_NEW:          'requestType.BUY_NEW',
-  EXTEND_WARRANTY:  'requestType.EXTEND_WARRANTY',
-};
-const typeTones: Record<string, string> = {
-  REFILL:          'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300',
-  RETIRE:          'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300',
-  BUY_NEW:         'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
-  EXTEND_WARRANTY: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
-};
-
-function PendingRequestsTable({ requests, isLoading, orgSlug, locale, space, onApprove, onReject }: {
-  requests: Request[];
-  isLoading: boolean;
-  orgSlug: string;
-  locale: string;
-  space: string;
-  onApprove: (id: string) => void;
-  onReject:  (id: string) => void;
-}) {
-  const router = useRouter();
-  const { t }  = useT();
-  const columns: ColumnDef<Request>[] = [
-    {
-      key: 'type',
-      header: t('requests.type'),
-      render: (r) => (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${typeTones[r.type] ?? 'bg-gray-100 text-gray-700'}`}>
-          {typeKeys[r.type] ? t(typeKeys[r.type]) : r.type}
-        </span>
-      ),
-    },
-    {
-      key: 'asset',
-      header: t('col.asset'),
-      render: (r) => <span className="font-medium text-gray-900 text-sm">{r.assetName ?? r.inventoryItemName ?? '—'}</span>,
-    },
-    {
-      key: 'by',
-      header: t('requests.submittedBy'),
-      render: (r) => <span className="text-sm text-gray-600">{r.createdByName ?? r.createdByEmail ?? r.createdBy}</span>,
-    },
-    {
-      key: 'actions',
-      header: '',
-      render: (r) =>
-        r.status === 'PENDING' ? (
-          <div className="flex items-center gap-1 justify-end">
-            <button onClick={(e) => { e.stopPropagation(); onApprove(r.id); }} aria-label={t('common.approve')}
-              className="h-7 w-7 rounded-md flex items-center justify-center text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors duration-150">
-              <CheckIcon />
-            </button>
-            <button onClick={(e) => { e.stopPropagation(); onReject(r.id); }} aria-label={t('common.reject')}
-              className="h-7 w-7 rounded-md flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors duration-150">
-              <XIcon />
-            </button>
-          </div>
-        ) : null,
-    },
-  ];
-
-  return (
-    <DataTable
-      data={requests}
-      columns={columns}
-      isLoading={isLoading}
-      emptyMessage={t('dashboard.noPendingRequests')}
-      onRowClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list`)}
-      keyExtractor={(r) => r.id}
-    />
-  );
-}
-
 /* ── SectionHeader ───────────────────────────────────────────────── */
 function SectionHeader({ title, count, action, onClick }: { title: string; count?: number; action?: string; onClick?: () => void }) {
   return (
@@ -655,16 +561,14 @@ export default function DashboardPage() {
   const { t, locale } = useT();
 
   const features = user?.features ?? {};
-  const canViewAssets    = !!user && features.assets    !== false && hasModuleAccess(user, 'assets');
-  const canViewInventory = !!user && features.inventory !== false && hasModuleAccess(user, 'inventory');
-  const canViewWarranties= !!user && features.warranties!== false && hasModuleAccess(user, 'warranties');
-  const canViewRequests  = !!user && features.requests  !== false && hasModuleAccess(user, 'requests');
+  const canViewAssets    = !!user && features.assets    !== false && hasModuleAccess(user, 'usool');
+  const canViewInventory = !!user && features.inventory !== false && hasModuleAccess(user, 'raseed');
+  const canViewWarranties= !!user && features.warranties!== false && hasPermission(user, 'usool', 'warrantiesView');
   const canViewAuditLogs = !!user && features.auditLogs !== false && hasModuleAccess(user, 'auditLogs');
 
   const { data, isLoading, dataUpdatedAt } = useDashboard(space, {
     assets: canViewAssets,
     warranties: canViewWarranties,
-    requests: canViewRequests,
     auditLogs: canViewAuditLogs,
   });
 
@@ -677,7 +581,6 @@ export default function DashboardPage() {
     if (diffMin < 60) return `${t('dashboard.synced')} ${diffMin}m ago`;
     return `${t('dashboard.synced')} ${Math.round(diffMin / 60)}h ago`;
   }, [dataUpdatedAt, t]);
-  const isAdmin     = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
 
   if (!isAllowed) return null;
 
@@ -686,7 +589,6 @@ export default function DashboardPage() {
   const totalAssetCount    = data?.totalAssetCount ?? totalAssets.length;
   const activeAssetCount   = data?.activeAssetCount ?? activeAssets.length;
   const expiringWarranties = data?.warranties ?? [];
-  const pendingRequests    = data?.requests ?? [];
   const auditLogs          = data?.auditLogs ?? [];
 
   // Low-stock count — assets with status that suggests low inventory
@@ -695,7 +597,6 @@ export default function DashboardPage() {
 
   // Sparkline data — derived from already-fetched arrays (retained for future use)
   const _assetSpark    = weekBuckets(totalAssets);
-  const _pendingSpark  = weekBuckets(pendingRequests);
   // Warranty sparkline: bucket by days-remaining bands (0-7, 7-14, ..., 63-70, 70+)
   const _warrantySpark = (() => {
     const buckets = Array(10).fill(0);
@@ -708,12 +609,6 @@ export default function DashboardPage() {
   })();
   // Inventory sparkline: use same weekly bucketing on all assets (proxy for activity)
   const _inventorySpark = weekBuckets(totalAssets.filter((a) => a.status === 'Pending'));
-
-  async function handleDecision(requestId: string, action: 'approve' | 'reject') {
-    try {
-      await fetch(`/api/requests/${requestId}/${action}`, { method: 'POST' });
-    } catch { /* Silent — full handling in Requests page */ }
-  }
 
   const _warrantyColumns: ColumnDef<Warranty>[] = [
     { key: 'assetId', header: t('col.asset'),     render: (w) => <span className="font-medium text-sm">{w.assetName ?? w.assetId}</span> },
@@ -784,7 +679,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── KPI cards ────────────────────────────────────────────────── */}
-      {(canViewAssets || canViewInventory || canViewWarranties || canViewRequests) && (
+      {(canViewAssets || canViewInventory || canViewWarranties) && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {canViewAssets && (
             <StatCard
@@ -830,23 +725,11 @@ export default function DashboardPage() {
               onClick={() => router.push(`/${locale}/${orgSlug}/${space}/warranties?expiring=30`)}
             />
           )}
-          {canViewRequests && (
-            <StatCard
-              icon={<InboxIcon />}
-              iconBg="rgba(124,58,237,0.08)"
-              iconColor="#7C3AED"
-              accent="#7C3AED"
-              label={t('dashboard.pendingRequests')}
-              value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{pendingRequests.length}</p>}
-              delta={!isLoading && pendingRequests.length > 0 ? t('dashboard.needReview') : undefined}
-              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list?status=PENDING`)}
-            />
-          )}
         </div>
       )}
 
       {/* ── Quick actions ─────────────────────────────────────────────── */}
-      {(canViewAssets || canViewInventory || canViewRequests || features.pos) && (
+      {(canViewAssets || canViewInventory || features.pos) && (
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest me-1 hidden sm:block">
             {t('dashboard.quickActions')}
@@ -865,14 +748,6 @@ export default function DashboardPage() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
             >
               <RefreshIcon aria-hidden /> {t('dashboard.recordTransaction')}
-            </button>
-          )}
-          {canViewRequests && (
-            <button
-              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list`)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
-            >
-              <InboxIcon aria-hidden /> {t('dashboard.submitRequest')}
             </button>
           )}
           {features.pos && (
@@ -949,27 +824,6 @@ export default function DashboardPage() {
             </Card>
           )}
         </div>
-      )}
-
-      {/* ── Row 3: Pending requests (admin only) ─────────────────────── */}
-      {isAdmin && canViewRequests && (
-        <Card className="p-0">
-          <SectionHeader
-            title={t('dashboard.pendingRequests')}
-            count={!isLoading ? pendingRequests.length : undefined}
-            action={t('dashboard.openQueue')}
-            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list?status=PENDING`)}
-          />
-          <PendingRequestsTable
-            requests={pendingRequests}
-            isLoading={isLoading}
-            orgSlug={orgSlug}
-            locale={locale}
-            space={space}
-            onApprove={(id) => handleDecision(id, 'approve')}
-            onReject={(id) => handleDecision(id, 'reject')}
-          />
-        </Card>
       )}
 
     </div>

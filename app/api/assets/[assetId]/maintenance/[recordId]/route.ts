@@ -14,7 +14,7 @@ export async function DELETE(
     const tenant = await resolveTenant();
     requireFeature(tenant, 'assets');
     const user = tenant.user;
-    requirePermission(user, 'assets', 'maintenance');
+    requirePermission(user, 'usool', 'maintenanceDelete');
 
     const record = await getMaintenanceRecordById(params.recordId);
     if (!record || record.organizationId !== tenant.organizationId || record.assetId !== params.assetId) {

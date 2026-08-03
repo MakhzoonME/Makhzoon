@@ -16,9 +16,6 @@ export type NotificationEventType =
   | 'inventory.out_of_stock'
   | 'inventory.purchase_received'
   | 'inventory.audit_completed'
-  | 'requests.submitted'
-  | 'requests.approved'
-  | 'requests.rejected'
   | 'users.invited'
   | 'users.joined'
   | 'warranty.expiring'
@@ -28,7 +25,7 @@ export type NotificationEventType =
   | 'service_job.status_changed'
 
 export type NotificationModule =
-  | 'orders' | 'pos' | 'inventory' | 'requests' | 'users' | 'warranty' | 'system' | 'service_jobs'
+  | 'orders' | 'pos' | 'inventory' | 'users' | 'warranty' | 'system' | 'service_jobs'
 
 export interface NotificationCatalogEntry {
   key: NotificationEventType
@@ -54,10 +51,6 @@ export const NOTIFICATION_CATALOG: NotificationCatalogEntry[] = [
   { key: 'inventory.out_of_stock',      label: 'Item is out of stock',   module: 'inventory', defaultRoles: ['admin', 'org_owner'], defaultInApp: true,  defaultEmail: true  },
   { key: 'inventory.purchase_received', label: 'Purchase received',      module: 'inventory', defaultRoles: ['admin', 'org_owner'], defaultInApp: true,  defaultEmail: false },
   { key: 'inventory.audit_completed',   label: 'Stock audit completed',  module: 'inventory', defaultRoles: ['admin', 'org_owner'], defaultInApp: true,  defaultEmail: false },
-  // ── Requests ───────────────────────────────────────────────────────────
-  { key: 'requests.submitted',    label: 'New request submitted',        module: 'requests',  defaultRoles: ['admin', 'org_owner'], defaultInApp: true,  defaultEmail: true  },
-  { key: 'requests.approved',     label: 'Your request was approved',    module: 'requests',  defaultRoles: ['staff', 'admin'],     defaultInApp: true,  defaultEmail: true  },
-  { key: 'requests.rejected',     label: 'Your request was rejected',    module: 'requests',  defaultRoles: ['staff', 'admin'],     defaultInApp: true,  defaultEmail: true  },
   // ── Users ──────────────────────────────────────────────────────────────
   { key: 'users.invited', label: 'New user invited',                     module: 'users',     defaultRoles: ['admin', 'org_owner'], defaultInApp: true,  defaultEmail: false },
   { key: 'users.joined',  label: 'New user joined org',                  module: 'users',     defaultRoles: ['admin', 'org_owner'], defaultInApp: true,  defaultEmail: false },

@@ -18,7 +18,6 @@ export const inventoryItemSchema = z.object({
   unit: z.string().min(1, 'Unit is required'),
   quantityOnHand: z.coerce.number().min(0, 'Quantity cannot be negative'),
   minimumThreshold: z.coerce.number().min(0, 'Threshold cannot be negative'),
-  reorderQuantity: z.coerce.number().min(0).optional().or(z.literal('')),
   location: z.string().optional(),
   supplier: z.string().optional(),
   unitCost: z.coerce.number().min(0).optional().or(z.literal('')),

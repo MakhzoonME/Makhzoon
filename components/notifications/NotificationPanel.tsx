@@ -1,5 +1,7 @@
 'use client';
 
+import { forwardRef, useLayoutEffect, useState, type RefObject } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter, useParams } from 'next/navigation';
 import { Bell, CheckCheck } from 'lucide-react';
 import { NotificationItem } from './NotificationItem';
@@ -11,9 +13,13 @@ import {
 
 interface Props {
   onClose: () => void;
+  anchorRef: RefObject<HTMLElement | null>;
 }
 
-export function NotificationPanel({ onClose }: Props) {
+export const NotificationPanel = forwardRef<HTMLDivElement, Props>(function NotificationPanel(
+  { onClose, anchorRef },
+  ref,
+) {
   const router = useRouter();
   const { locale, orgSlug } = useParams<{ locale?: string; orgSlug?: string }>();
   const { data, isLoading } = useNotifications({ pageSize: 20 });
@@ -22,6 +28,28 @@ export function NotificationPanel({ onClose }: Props) {
 
   const items = data?.items ?? [];
   const hasUnread = items.some((n) => !n.isRead);
+
+  // Anchor the fixed panel to the bell button, escaping the header's overflow clip.
+  const PANEL_WIDTH = 320; // w-80
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  useLayoutEffect(() => {
+    function place() {
+      const rect = anchorRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const left = Math.max(
+        8,
+        Math.min(rect.right - PANEL_WIDTH, window.innerWidth - PANEL_WIDTH - 8),
+      );
+      setPos({ top: rect.bottom + 8, left });
+    }
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [anchorRef]);
 
   function handleItemClick(notification: { id: string; link: string | null; isRead: boolean }) {
     if (!notification.isRead) {
@@ -38,10 +66,13 @@ export function NotificationPanel({ onClose }: Props) {
     onClose();
   }
 
-  return (
+  if (!pos || typeof document === 'undefined') return null;
+
+  return createPortal(
     <div
-      className="absolute end-0 top-full mt-2 w-80 rounded-xl border border-border bg-surface-card shadow-lg z-50 overflow-hidden"
-      style={{ maxHeight: 480 }}
+      ref={ref}
+      className="fixed w-80 rounded-xl border border-border bg-surface-card shadow-lg overflow-hidden"
+      style={{ top: pos.top, left: pos.left, maxHeight: 480, zIndex: 100 }}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -91,6 +122,7 @@ export function NotificationPanel({ onClose }: Props) {
           View all notifications →
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
-}
+});

@@ -69,7 +69,7 @@ function SessionCard({ base }: { base: string }) {
 }
 
 export default function HarakaOverviewPage() {
-  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
+  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const space = useSpace();

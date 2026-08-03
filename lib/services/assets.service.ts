@@ -66,7 +66,7 @@ export async function getOrgAssets(
     sortDir?: 'asc' | 'desc';
   }
 ) {
-  await requirePermission(user, 'assets', 'view');
+  await requirePermission(user, 'usool', 'view');
   return getAssets(user.organizationId!, {
     ...filters,
     sortBy: filters?.sortBy as never,
@@ -77,7 +77,7 @@ export async function getOrgAssets(
  * Get single asset by ID.
  */
 export async function getOrgAsset(user: AuthUser, assetId: string) {
-  await requirePermission(user, 'assets', 'view');
+  await requirePermission(user, 'usool', 'view');
   const asset = await getAssetById(assetId);
   if (!asset || asset.organizationId !== user.organizationId!) {
     throw new Error('Asset not found');
@@ -92,7 +92,7 @@ export async function createAssetWithAudit(
   user: AuthUser,
   data: CreateAssetInput
 ) {
-  await requirePermission(user, 'assets', 'create');
+  await requirePermission(user, 'usool', 'create');
   await requireActiveSubscription(user.organizationId!, user);
 
   const userContext = getUserContext(user);
@@ -134,7 +134,7 @@ export async function updateAssetWithAudit(
   data: UpdateAssetInput,
   spaceId?: string,
 ) {
-  await requirePermission(user, 'assets', 'update');
+  await requirePermission(user, 'usool', 'update');
   await requireActiveSubscription(user.organizationId!, user);
 
   // Verify asset belongs to user's org
@@ -189,7 +189,7 @@ export async function updateAssetWithAudit(
  * If asset is retired, hard-delete it. Otherwise, retire it.
  */
 export async function deleteAssetWithAudit(user: AuthUser, assetId: string, spaceId?: string) {
-  await requirePermission(user, 'assets', 'delete');
+  await requirePermission(user, 'usool', 'delete');
   await requireActiveSubscription(user.organizationId!, user);
 
   // Verify asset belongs to user's org
@@ -241,7 +241,7 @@ export async function deleteAssetWithAudit(user: AuthUser, assetId: string, spac
  * Get asset categories for organization.
  */
 export async function getOrgAssetCategories(user: AuthUser) {
-  await requirePermission(user, 'assets', 'view');
+  await requirePermission(user, 'usool', 'view');
   return getAssetCategories(user.organizationId!);
 }
 
@@ -265,7 +265,7 @@ export async function createAssetCheckout(
   data: { checkedOutTo: string; dueDate?: string; notes?: string },
   spaceId?: string,
 ) {
-  await requirePermission(user, 'assets', 'update');
+  await requirePermission(user, 'usool', 'update');
   await requireActiveSubscription(user.organizationId!, user);
 
   const asset = await getAssetById(assetId);
@@ -322,7 +322,7 @@ export async function returnAssetCheckout(
   assetId: string,
   checkoutId: string
 ) {
-  await requirePermission(user, 'assets', 'update');
+  await requirePermission(user, 'usool', 'update');
   await requireActiveSubscription(user.organizationId!, user);
 
   const asset = await getAssetById(assetId);
@@ -374,7 +374,7 @@ export async function createAssetMaintenance(
   data: { type: string; description: string; cost?: number; performedBy?: string; date?: string },
   spaceId?: string,
 ) {
-  await requirePermission(user, 'assets', 'update');
+  await requirePermission(user, 'usool', 'update');
   await requireActiveSubscription(user.organizationId!, user);
 
   const asset = await getAssetById(assetId);
@@ -432,7 +432,7 @@ export async function createAssetNoteWithAudit(
   assetId: string,
   data: { note: string }
 ) {
-  await requirePermission(user, 'assets', 'update');
+  await requirePermission(user, 'usool', 'update');
   await requireActiveSubscription(user.organizationId!, user);
 
   const asset = await getAssetById(assetId);
@@ -468,7 +468,7 @@ export async function createAssetNoteWithAudit(
  * Delete asset note with audit logging.
  */
 export async function deleteAssetNoteWithAudit(user: AuthUser, assetId: string, noteId: string) {
-  await requirePermission(user, 'assets', 'update');
+  await requirePermission(user, 'usool', 'update');
   await requireActiveSubscription(user.organizationId!, user);
 
   const asset = await getAssetById(assetId);

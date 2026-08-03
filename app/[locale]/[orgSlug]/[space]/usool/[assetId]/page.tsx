@@ -20,7 +20,6 @@ import { formatActionLabel } from '@/lib/utils/audit-labels';
 import { DiffCards } from '@/components/shared/AuditDiffCards';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Asset, Warranty } from '@/types';
-import { RequestActionPanel } from '@/components/assets/RequestActionPanel';
 import { Pencil, Archive, Trash2, ArrowRight, Copy } from 'lucide-react';
 import { useOrgInfo } from '@/hooks/org';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
@@ -228,8 +227,7 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
   const [addWarrantyOpen, setAddWarrantyOpen] = useState(false);
 
   const isAdmin  = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
-  const isStaff  = user?.role === 'staff';
-  const canDeleteAsset = !!user && hasPermission(user, 'assets', 'delete');
+  const canDeleteAsset = !!user && hasPermission(user, 'usool', 'delete');
   const isRetired = asset?.status === 'Retired';
 
   async function handleRetire() {
@@ -435,9 +433,6 @@ export default function AssetDetailPage(props: { params: Promise<{ assetId: stri
                   </Card>
                 );
               })()}
-
-              {/* Staff quick actions */}
-              {isStaff && <RequestActionPanel assetId={assetId} warranties={warranties} />}
             </div>
 
             {/* Right sidebar: QR + Timeline */}

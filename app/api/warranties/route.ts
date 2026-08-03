@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
     requireFeature(tenant, 'warranties');
-    requirePermission(tenant.user, 'warranties', 'view');
+    requirePermission(tenant.user, 'usool', 'warrantiesView');
 
     const { searchParams } = new URL(req.url);
     const expiringSoon = searchParams.get('expiringSoon') === 'true';
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
     requireFeature(tenant, 'warranties');
-    requirePermission(tenant.user, 'warranties', 'create');
+    requirePermission(tenant.user, 'usool', 'warrantiesCreate');
     const orgId = tenant.organizationId;
 
     const body = await req.json();

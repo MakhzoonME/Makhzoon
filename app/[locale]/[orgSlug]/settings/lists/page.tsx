@@ -29,7 +29,7 @@ const ORG_KEYS = LIST_KEYS.filter(
 );
 
 export default function OrgListsPage() {
-  const { isAllowed } = useAdminGuard('settings.orgInfo');
+  const { isAllowed } = useAdminGuard('settingsLists.view');
   const { t, locale } = useT();
   useOrgSlug();
   useOrgInfo();

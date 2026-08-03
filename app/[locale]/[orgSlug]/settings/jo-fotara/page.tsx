@@ -25,7 +25,7 @@ interface FormShape {
 }
 
 export default function FawtaraSettingsPage() {
-  const { isAllowed } = useAdminGuard('settings.fawtara');
+  const { isAllowed } = useAdminGuard('settingsFawtara.view');
   const { t } = useT();
   useOrgSlug();
   useOrgInfo();

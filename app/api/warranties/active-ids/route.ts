@@ -14,7 +14,7 @@ export async function GET(_req: NextRequest) {
   try {
     const tenant = await resolveTenant();
     requireFeature(tenant, 'warranties');
-    requirePermission(tenant.user, 'warranties', 'view');
+    requirePermission(tenant.user, 'usool', 'warrantiesView');
 
     const ids = await getActiveWarrantyIds(tenant.organizationId, tenant.spaceId);
     return NextResponse.json(ids);

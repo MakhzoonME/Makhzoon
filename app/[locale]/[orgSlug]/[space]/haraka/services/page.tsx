@@ -22,7 +22,7 @@ import { formatCurrency } from '@/lib/utils/format';
 import type { HarakaService } from '@/types';
 
 export default function ServiceCatalogPage() {
-  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
   const { isAllowed } = useAdminGuard('pos.manage_services');
   const { t, locale } = useT();
   const isAr = locale === 'ar';

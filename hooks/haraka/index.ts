@@ -7,11 +7,12 @@ export type { AggregateGroupBy, AggregateBucket, AggregateResult, UseHarakaRepor
 export {
   useCustomers,
   useCustomer,
+  useCustomerHistory,
   useCreateCustomer,
   useUpdateCustomer,
   useDeleteCustomer,
 } from './useCustomers';
-export type { UseCustomersParams } from './useCustomers';
+export type { UseCustomersParams, CustomerHistoryEntry } from './useCustomers';
 export {
   useOrders,
   useOrder,

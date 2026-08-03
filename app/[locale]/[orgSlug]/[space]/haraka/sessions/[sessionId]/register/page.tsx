@@ -97,7 +97,7 @@ export default function RegisterPage() {
   const [approvalOpen, setApprovalOpen] = useState(false);
   const [approvalError, setApprovalError] = useState<string | null>(null);
   const [pendingSale, setPendingSale] = useState<{ payments: PaymentLine[]; skipFawtara: boolean } | null>(null);
-  const [payTab, setPayTab] = useState<'cash' | 'card' | 'other'>('cash');
+  const [payTab, setPayTab] = useState<'cash' | 'card' | 'cliq' | 'other'>('cash');
   const [printerOpen, setPrinterOpen] = useState(false);
   const [lastTx, setLastTx] = useState<PosTransaction | null>(null);
   const [pendingDrawerPayments, setPendingDrawerPayments] = useState<PaymentLine[] | null>(null);

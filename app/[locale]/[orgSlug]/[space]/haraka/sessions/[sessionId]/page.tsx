@@ -22,6 +22,16 @@ interface Props {
   params: Promise<{ locale: string; orgSlug: string; space: string; sessionId: string }>;
 }
 
+const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  cash: 'Cash', card: 'Card', cliq: 'Cliq', other: 'Other',
+};
+const PAYMENT_METHOD_STYLE: Record<string, React.CSSProperties> = {
+  cash:  { background: 'var(--green-100)', color: 'var(--green-700)' },
+  card:  { background: 'var(--blue-100)', color: 'var(--blue-700)' },
+  cliq:  { background: 'var(--purple-100)', color: 'var(--purple-700)' },
+  other: { background: 'var(--surface-inset)', color: 'var(--text-secondary)' },
+};
+
 function fmt(n: number) {
   return n.toFixed(2);
 }
@@ -346,12 +356,10 @@ function SessionTransactions({
                   {tx.payments?.[0] && (
                     <span
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
-                      style={tx.payments[0].method === 'card'
-                        ? { background: 'var(--blue-100)', color: 'var(--blue-700)' }
-                        : { background: 'var(--green-100)', color: 'var(--green-700)' }}
+                      style={PAYMENT_METHOD_STYLE[tx.payments[0].method] ?? PAYMENT_METHOD_STYLE.other}
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                      {tx.payments[0].method === 'card' ? 'Card' : 'Cash'}
+                      {PAYMENT_METHOD_LABEL[tx.payments[0].method] ?? 'Other'}
                     </span>
                   )}
                 </td>

@@ -15,7 +15,7 @@ export interface PosLineItem {
 }
 
 export interface PosPayment {
-  method: 'cash' | 'card' | 'other';
+  method: 'cash' | 'card' | 'cliq' | 'other';
   amount: number;
   reference: string | null;
   /** Last 4 digits of card, when method === 'card'. */

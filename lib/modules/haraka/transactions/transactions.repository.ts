@@ -66,7 +66,7 @@ export interface CompleteSaleInput {
   customerId?: string | null
   customerName?: string | null
   lines: CartLineInput[]
-  payments: Array<{ method: 'cash' | 'card' | 'other'; amount: number; reference?: string | null; cardLast4?: string | null }>
+  payments: Array<{ method: 'cash' | 'card' | 'cliq' | 'other'; amount: number; reference?: string | null; cardLast4?: string | null }>
   offlineId: string
   skipFawtara?: boolean
   discountApprovedBy?: string | null

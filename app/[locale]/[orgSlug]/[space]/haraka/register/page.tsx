@@ -25,7 +25,7 @@ import { CashDrawerButton } from '@/components/haraka/CashDrawerButton';
 import { useCashDrawerConfig } from '@/hooks/haraka';
 import type { ReceiptPrintText } from '@/lib/modules/haraka/printing/receipt-canvas';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
-import { DEFAULT_RECEIPT_CONFIG } from '@/lib/receipts/receipt-config';
+import { DEFAULT_RECEIPT_CONFIG, toPrintText, paperWidthFor } from '@/lib/receipts/receipt-config';
 import type { ReceiptLang } from '@/lib/receipts/labels';
 import { getReceiptBaseUrl } from '@/lib/app-env';
 import { useQuery } from '@tanstack/react-query';
@@ -191,30 +191,19 @@ export default function RegisterPage() {
   }
 
   function buildPrintText(): ReceiptPrintText {
-    const cfg = receiptCfg?.config;
-    return {
-      orgName: cfg?.orgName?.trim() || orgInfo?.name || '',
-      orgNameAr: cfg?.orgNameAr ?? '',
+    return toPrintText(receiptCfg?.config, {
+      orgName: orgInfo?.name ?? '',
       tagline: receiptCfg?.tagline ?? '',
       taglineAr: receiptCfg?.taglineAr ?? '',
-      address: cfg?.address ?? '',
-      addressAr: cfg?.addressAr ?? '',
-      phone: cfg?.phone ?? '',
       taxNumber: receiptCfg?.taxNumber ?? '',
-      footerText: cfg?.footerText ?? '',
-      footerTextAr: cfg?.footerTextAr ?? '',
-      showCashier: cfg?.showCashier ?? true,
-      showTaxNumber: cfg?.showTaxNumber ?? true,
-      showFawtaraQr: cfg?.showFawtaraQr ?? true,
-    };
+    });
   }
 
   async function printReceipt(transaction: PosTransaction, lang: ReceiptLang) {
     try {
-      const { usePrinterStore } = await import('@/store/printer.store');
-      const printer = usePrinterStore.getState();
       const bytes = await buildReceipt(transaction, {
-        paperWidth: printer.paperWidth,
+        // Template drives the dot width, so the auto-print matches the preview.
+        paperWidth: paperWidthFor(receiptCfg?.config?.template ?? DEFAULT_RECEIPT_CONFIG.template),
         organization: { id: user?.organizationId ?? '', name: orgInfo?.name ?? '', contactEmail: user?.email ?? '' },
         text: buildPrintText(),
         lang,

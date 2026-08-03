@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Printer, Plug2, Unplug, TestTube2, Copy, Download, Check, Mail, Save } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,7 +16,10 @@ import { useOrgInfo } from '@/hooks/org';
 import { useAdminGuard } from '@/hooks/ui';
 import { cn } from '@/lib/utils/cn';
 import { ReceiptPreview, type TemplateId, type ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
-import { DEFAULT_RECEIPT_CONFIG } from '@/lib/receipts/receipt-config';
+import { ReceiptRasterPreview, useReceiptRaster } from '@/components/haraka/ReceiptRasterPreview';
+import { buildReceiptFromMatrix } from '@/lib/modules/haraka/printing/receipt-template';
+import { sampleReceiptTransaction } from '@/lib/modules/haraka/printing/receipt-canvas';
+import { DEFAULT_RECEIPT_CONFIG, toPrintText, paperWidthFor } from '@/lib/receipts/receipt-config';
 import type { ReceiptLang } from '@/lib/receipts/labels';
 import { getReceiptBaseUrl } from '@/lib/app-env';
 
@@ -149,6 +152,22 @@ export default function ReceiptSettingsPage() {
   const needEn = settings.language !== 'ar';
   const needAr = settings.language !== 'en';
   const bothLangs = settings.language === 'both';
+  const isThermal = settings.template === 'thermal-58' || settings.template === 'thermal-80';
+
+  // Thermal designs preview as the actual printer bitmap, driven by a stand-in
+  // sale — so tweaking a toggle shows the real paper, not an HTML lookalike.
+  const sampleTx = useMemo(() => sampleReceiptTransaction(), []);
+  const { raster, loading: rasterLoading } = useReceiptRaster({
+    transaction: isThermal ? sampleTx : null,
+    text: toPrintText(previewConfig, {
+      orgName: previewConfig.orgName || orgInfo?.name || '',
+      tagline: saved?.tagline ?? '',
+      taglineAr: saved?.taglineAr ?? '',
+      taxNumber: saved?.taxNumber ?? '',
+    }),
+    paperWidth: paperWidthFor(settings.template),
+    lang: effPreviewLang,
+  });
 
   if (!isAllowed) return null;
 
@@ -189,7 +208,7 @@ export default function ReceiptSettingsPage() {
         .line('PRINTER TEST').size(0).bold(false)
         .line(orgInfo?.name ?? 'Makhzoon').feed(1)
         .align('left').line(`Paper: ${paperWidth} mm`).line(`Copies: ${copies}`)
-        .line(new Date().toLocaleString()).feed(2).cut().build();
+        .line(new Date().toLocaleString()).cut().build();
       const ok = await printRaw(bytes);
       if (ok) toast.success(t('register.reprintLast'));
       else toast.error(t('common.updateFailed'));
@@ -197,8 +216,19 @@ export default function ReceiptSettingsPage() {
     finally { setBusy(false); }
   }
 
+  /** Print the previewed bitmap itself — the design proof, not a text stub. */
+  async function handlePrintPreview() {
+    if (!raster || raster.matrix.length === 0) return;
+    setBusy(true);
+    try {
+      const ok = await printRaw(buildReceiptFromMatrix(raster.matrix));
+      if (ok) toast.success(t('register.reprintLast'));
+      else toast.error(t('common.updateFailed'));
+    } catch (err) { toast.error(err instanceof Error ? err.message : t('common.updateFailed')); }
+    finally { setBusy(false); }
+  }
+
   const shareLink = `${receiptBase}/r/${orgSlug}/preview`;
-  const isThermal = settings.template === 'thermal-58' || settings.template === 'thermal-80';
 
   return (
     <div>
@@ -368,19 +398,24 @@ export default function ReceiptSettingsPage() {
             </div>
           )}
 
+          {/* Thermal previews as the real printer bitmap; A4 stays HTML. */}
           <div
             className="rounded-xl overflow-hidden border border-border p-5"
             style={{ background: 'repeating-linear-gradient(45deg,#f4f4f4,#f4f4f4 6px,#fafafa 6px,#fafafa 12px)' }}
           >
-            <ReceiptPreview
-              orgName={previewConfig.orgName || orgInfo?.name || ''}
-              orgNameAr={previewConfig.orgNameAr}
-              taxNumber={saved?.taxNumber ?? ''}
-              tagline={saved?.tagline ?? ''}
-              taglineAr={saved?.taglineAr ?? ''}
-              lang={effPreviewLang}
-              config={previewConfig}
-            />
+            {isThermal ? (
+              <ReceiptRasterPreview raster={raster} loading={rasterLoading} />
+            ) : (
+              <ReceiptPreview
+                orgName={previewConfig.orgName || orgInfo?.name || ''}
+                orgNameAr={previewConfig.orgNameAr}
+                taxNumber={saved?.taxNumber ?? ''}
+                tagline={saved?.tagline ?? ''}
+                taglineAr={saved?.taglineAr ?? ''}
+                lang={effPreviewLang}
+                config={previewConfig}
+              />
+            )}
           </div>
 
           {/* Deliver card */}
@@ -411,7 +446,8 @@ export default function ReceiptSettingsPage() {
                 </Button>
               </div>
               {isThermal && (
-                <Button className="w-full gap-2" size="sm" onClick={handleTestPrint} disabled={busy || !paired}>
+                <Button className="w-full gap-2" size="sm" onClick={handlePrintPreview}
+                  disabled={busy || !paired || rasterLoading || !raster}>
                   <Printer size={13} />Print receipt
                 </Button>
               )}

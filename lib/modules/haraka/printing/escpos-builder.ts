@@ -109,9 +109,17 @@ export class EscPosBuilder {
     return this.rasterImage(matrix)
   }
 
-  cut() {
-    // GS V 0 = full cut
-    return this.push([GS, 0x56, 0x00]).feed(2)
+  /**
+   * Feed the paper clear of the cutter, then full-cut (GS V 0).
+   *
+   * The feed MUST come before the cut: the cutter blade sits ~12–15 mm past the
+   * print head, so without it the blade slices through the last printed lines.
+   * Feeding *after* the cut instead (as this used to) left the blank paper at
+   * the top of the NEXT receipt — that was the phantom white space above the
+   * header. `feedLines` × 1/6" ≈ 4 lines ≈ 17 mm clears every common cutter.
+   */
+  cut(feedLines = 4) {
+    return this.feed(feedLines).push([GS, 0x56, 0x00])
   }
 
   /**

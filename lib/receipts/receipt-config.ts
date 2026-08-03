@@ -1,4 +1,5 @@
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
+import type { ReceiptPrintText } from '@/lib/modules/haraka/printing/receipt-canvas';
 
 /* Client-safe default receipt config. Kept free of server-only imports so it
    can be used from both client components (register, settings) and the
@@ -25,3 +26,46 @@ export const DEFAULT_RECEIPT_CONFIG: ReceiptConfig = {
   orgNameAr: '',
   language: 'en',
 };
+
+/**
+ * Printable dot width implied by the chosen template. The template — not the
+ * paired device — is the source of truth here, so the preview and the paper
+ * always agree (the settings page shows paper width as a read-only echo of it).
+ */
+export function paperWidthFor(template: ReceiptConfig['template']): 58 | 80 {
+  return template === 'thermal-80' ? 80 : 58;
+}
+
+/**
+ * Flatten the saved receipt config into the text bundle the raster renderer
+ * takes. Shared by the register and the receipt-designer so the preview and
+ * the printed bitmap are built from identical inputs.
+ */
+export function toPrintText(
+  config: ReceiptConfig | undefined,
+  extras: { orgName: string; tagline: string; taglineAr: string; taxNumber: string },
+): ReceiptPrintText {
+  const c = config ?? DEFAULT_RECEIPT_CONFIG;
+  return {
+    orgName: c.orgName?.trim() || extras.orgName,
+    orgNameAr: c.orgNameAr ?? '',
+    tagline: extras.tagline,
+    taglineAr: extras.taglineAr,
+    address: c.address ?? '',
+    addressAr: c.addressAr ?? '',
+    phone: c.phone ?? '',
+    website: c.website ?? '',
+    taxNumber: extras.taxNumber,
+    footerText: c.footerText ?? '',
+    footerTextAr: c.footerTextAr ?? '',
+    logo: c.logo ?? null,
+    showLogo: c.showLogo ?? true,
+    showAddress: c.showAddress ?? true,
+    showPhone: c.showPhone ?? true,
+    showWebsite: c.showWebsite ?? false,
+    showCashier: c.showCashier ?? true,
+    showTaxNumber: c.showTaxNumber ?? true,
+    showFawtaraQr: c.showFawtaraQr ?? true,
+    showItemizedTax: c.showItemizedTax ?? true,
+  };
+}

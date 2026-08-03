@@ -121,7 +121,9 @@ export function ThermalPreview(props: PreviewProps) {
   const orgName = pickText(lang, config.orgName?.trim() || props.orgName, props.orgNameAr) || (lang === 'ar' ? 'اسم المتجر' : 'Business Name');
   const tagline = pickText(lang, props.tagline, props.taglineAr);
   const address = pickText(lang, config.address, config.addressAr);
-  const footer = pickText(lang, config.footerText, config.footerTextAr);
+  // Same fallback the thermal raster uses, so the paper and the public page
+  // never disagree about whether there is a closing line.
+  const footer = pickText(lang, config.footerText, config.footerTextAr) || L.thankYou;
   const statusLabel = d.status && d.status !== 'completed' ? L.status[d.status] : '';
 
   return (
@@ -195,7 +197,9 @@ export function ThermalPreview(props: PreviewProps) {
 
       {footer && (
         <>
-          <div className="border-t border-dashed border-gray-300 mt-2 mb-1" />
+          {/* Equal air above and below the rule; the closing line then sits on
+              the same py-5 margin the receipt opened with. */}
+          <div className="border-t border-dashed border-gray-300 my-2" />
           <div className="text-center text-[9px] text-gray-400">{footer}</div>
         </>
       )}

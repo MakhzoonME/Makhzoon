@@ -17,6 +17,14 @@ const LF = 0x0a
 
 export type Align = 'left' | 'center' | 'right'
 
+/**
+ * Dot rows the last printed line must travel to clear the cutter blade.
+ * Head-to-blade is ~15–25 mm depending on model; 200 dots ≈ 25 mm at 203 dpi
+ * covers the range. Overshooting only adds blank tail to the receipt being
+ * cut — undershooting silently eats the footer, so err long.
+ */
+const BLADE_CLEARANCE_DOTS = 200
+
 export class EscPosBuilder {
   private parts: Uint8Array[] = []
 
@@ -64,6 +72,25 @@ export class EscPosBuilder {
     const bytes: number[] = []
     for (let i = 0; i < n; i++) bytes.push(LF)
     return this.push(bytes)
+  }
+
+  /**
+   * Print and feed an exact number of dot rows (ESC J n).
+   *
+   * Preferred over `feed()` for anything that has to travel a known physical
+   * distance: LF advances by whatever line spacing is currently set, which is
+   * not something we control after a raster bit-image. ESC J is in dots, so
+   * 203 dots ≈ 1 inch regardless of printer state. Split across several
+   * commands because n is a single byte.
+   */
+  feedDots(dots: number) {
+    let left = Math.max(0, Math.round(dots))
+    while (left > 0) {
+      const n = Math.min(255, left)
+      this.push([ESC, 0x4a, n])
+      left -= n
+    }
+    return this
   }
 
   /** Solid divider line of `width` chars. */
@@ -129,18 +156,20 @@ export class EscPosBuilder {
   /**
    * Feed the paper clear of the cutter, then full-cut (GS V 0).
    *
-   * The feed comes BEFORE the cut: the cutter blade sits ~12–15 mm past the
-   * print head, so without it the blade slices through the last printed lines.
-   * Feeding after the cut instead put that blank paper at the top of the NEXT
-   * receipt, which read as phantom white space above the header.
+   * BLADE_CLEARANCE_DOTS is not a preference — the blade sits a fixed distance
+   * past the print head, and the last printed row has to physically travel that
+   * far before the cut or it stays inside the printer. That is what "the footer
+   * is missing" looks like: the cut lands above the footer, and the orphaned
+   * strip is then ejected as the leading blank of the *next* receipt.
    *
-   * `feedLines` stays caller-configurable (org-wide `ReceiptConfig.cutFeed`)
-   * because the head-to-blade distance is printer-specific. Note the units are
-   * the same but the meaning moved: this is now paper fed to clear the blade,
-   * not a gap left after it. 4 lines × 1/6" ≈ 17 mm suits common cutters.
+   * So the clearance is always applied and `extraLines` can only add to it.
+   * Previously this was fully caller-controlled, which let an org-wide
+   * `cutFeed` of 2 (≈ 8 mm) sit below the physical minimum and lose the footer.
    */
-  cut(feedLines = 4) {
-    return this.feed(feedLines).push([GS, 0x56, 0x00])
+  cut(extraLines = 0) {
+    this.feedDots(BLADE_CLEARANCE_DOTS)
+    if (extraLines > 0) this.feed(extraLines)
+    return this.push([GS, 0x56, 0x00])
   }
 
   /**

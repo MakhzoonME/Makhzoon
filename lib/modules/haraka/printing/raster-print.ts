@@ -52,6 +52,7 @@ export async function printPreviewNode(node: HTMLElement, opts: RasterPrintOptio
   // to exceed a printer's raster buffer, which silently truncates/misplaces
   // the tail (e.g. the footer bleeding into the next print job).
   b.rasterImageChunked(matrix);
-  b.feed(1).cut(opts.cutFeed ?? 2);
+  // No feed() here — cut() advances the paper past the blade itself.
+  b.cut(opts.cutFeed ?? 0);
   return printRaw(b.build(), opts.copies ?? 1);
 }

@@ -58,8 +58,10 @@ export function PrinterSettingsDialog({ open, onOpenChange, config }: Props) {
         .line(`Copies: ${config.copies}`)
         .line(`Cut feed: ${config.cutFeed}`)
         .line(new Date().toLocaleString())
-        .feed(1)
-        .cut(config.cutFeed)
+        // Last printed line before the cut, so the gap below it on the paper
+        // shows how much clearance the blade actually needed.
+        .line('--- END OF TEST ---')
+        .cut(config.cutFeed ?? 0)
         .build();
       const ok = await printRaw(bytes, config.copies);
       if (ok) toast.success('Test page sent');

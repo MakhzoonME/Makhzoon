@@ -45,6 +45,13 @@ export default function RegisterPage() {
   const { data: cashDrawerData } = useCashDrawerConfig();
   const { lookup } = useBarcodeLookup({ posLookup: true });
 
+  // Scope the persisted cart (active lines, customer, held receipts) to this
+  // register session before first paint, so switching between sessions never
+  // shows a stale cart carried over from a different one.
+  useLayoutEffect(() => {
+    setActivePosCartSession(params.sessionId);
+  }, [params.sessionId]);
+
   const lines = usePosCart((s) => s.lines);
   const customer = usePosCart((s) => s.customer);
   const held = usePosCart((s) => s.held);

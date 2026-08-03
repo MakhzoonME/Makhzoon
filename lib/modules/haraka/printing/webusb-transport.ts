@@ -17,6 +17,8 @@ interface SavedDevice {
   productId: number;
   paperWidth: 58 | 80;
   copies: number;
+  /** Line-feeds before the cut command — tunes the head-to-blade gap. Defaults to 1. */
+  cutFeed?: number;
 }
 
 interface USBDeviceShape {
@@ -70,7 +72,7 @@ export function clearSavedPrinter() {
  * Prompt the user to pair a printer. Use class code 7 (printer) as a filter
  * so the device picker shows only printers.
  */
-export async function pairPrinter(paperWidth: 58 | 80 = 80, copies = 1): Promise<SavedDevice> {
+export async function pairPrinter(paperWidth: 58 | 80 = 80, copies = 1, cutFeed = 1): Promise<SavedDevice> {
   if (!navigator.usb) throw new Error('WebUSB not supported in this browser');
   const device = await navigator.usb.requestDevice({ filters: [{ classCode: 7 }] });
   const saved: SavedDevice = {
@@ -78,6 +80,7 @@ export async function pairPrinter(paperWidth: 58 | 80 = 80, copies = 1): Promise
     productId: device.productId,
     paperWidth,
     copies,
+    cutFeed,
   };
   savePrinter(saved);
   return saved;
@@ -104,7 +107,20 @@ export async function openCashDrawer(opts: {
   return printRaw(bytes);
 }
 
-export async function printRaw(bytes: Uint8Array): Promise<boolean> {
+// Receipt prints and cash-drawer kicks both go through this device — callers
+// (e.g. handleConfirmSale) fire them back-to-back without awaiting each other,
+// so without serialization their claimInterface/transferOut calls race and one
+// silently clobbers the other. Chain every call onto this queue instead.
+let usbQueue: Promise<unknown> = Promise.resolve();
+
+export function printRaw(bytes: Uint8Array): Promise<boolean> {
+  const run = usbQueue.then(() => printRawImpl(bytes));
+  // Keep the queue alive even if this call fails, so later calls still run.
+  usbQueue = run.catch(() => undefined);
+  return run;
+}
+
+async function printRawImpl(bytes: Uint8Array): Promise<boolean> {
   if (!navigator.usb) return false;
   const saved = readSavedPrinter();
   if (!saved) return false;

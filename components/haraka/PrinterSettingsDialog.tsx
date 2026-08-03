@@ -17,7 +17,7 @@ interface Props {
 }
 
 export function PrinterSettingsDialog({ open, onOpenChange }: Props) {
-  const { paperWidth, copies, paired, hydrate, pair, unpair, setPaperWidth, setCopies } = usePrinterStore();
+  const { paperWidth, copies, cutFeed, paired, hydrate, pair, unpair, setPaperWidth, setCopies, setCutFeed } = usePrinterStore();
   const [busy, setBusy] = useState(false);
   const supported = isWebUsbSupported();
 
@@ -53,8 +53,9 @@ export function PrinterSettingsDialog({ open, onOpenChange }: Props) {
         .align('left')
         .line(`Paper width: ${paperWidth} mm`)
         .line(`Copies: ${copies}`)
+        .line(`Cut feed: ${cutFeed}`)
         .line(new Date().toLocaleString())
-        .feed(2)
+        .feed(cutFeed)
         .cut()
         .build();
       const ok = await printRaw(bytes);
@@ -112,6 +113,21 @@ export function PrinterSettingsDialog({ open, onOpenChange }: Props) {
                     onChange={(e) => setCopies(Number(e.target.value || 1))}
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">Cut feed (lines)</label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="10"
+                  value={cutFeed}
+                  onChange={(e) => setCutFeed(Number(e.target.value || 0))}
+                />
+                <p className="text-xs text-gray-500">
+                  Blank lines fed before the cut. Lower it if there&apos;s too much blank paper before
+                  the next receipt&apos;s header; raise it if the cutter shears into the footer text.
+                </p>
               </div>
 
               <div className="flex gap-2">

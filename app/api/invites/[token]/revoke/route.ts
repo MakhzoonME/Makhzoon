@@ -9,7 +9,7 @@ export async function POST(_req: NextRequest, props: { params: Promise<{ token: 
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;
-    requirePermission(user, 'settings', 'users');
+    requirePermission(user, 'settingsUsers', 'revoke');
 
     const invite = await getInviteByToken(params.token);
     if (!invite || invite.organizationId !== tenant.organizationId) {

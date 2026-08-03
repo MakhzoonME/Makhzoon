@@ -31,7 +31,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ asse
     const tenant = await resolveTenant();
     requireFeature(tenant, 'assets');
     const user = tenant.user;
-    requirePermission(user, 'assets', 'update');
+    requirePermission(user, 'usool', 'update');
 
     const { assetId } = await params;
     const body = await req.json();
@@ -61,7 +61,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     const tenant = await resolveTenant();
     requireFeature(tenant, 'assets');
     const user = tenant.user;
-    requirePermission(user, 'assets', 'delete');
+    requirePermission(user, 'usool', 'delete');
 
     const { assetId } = await params;
     await assetsService.deleteAssetWithAudit(user, assetId, tenant.spaceId);

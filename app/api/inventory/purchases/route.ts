@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'inventory')
     await requireAddOn(tenant, 'purchasesRequests')
-    requirePermission(tenant.user, 'purchases', 'create')
+    requirePermission(tenant.user, 'raseed', 'purchasesCreate')
     const body = await req.json()
     const parsed = createPurchaseSchema.safeParse(body)
     if (!parsed.success) {

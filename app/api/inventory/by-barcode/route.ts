@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const posLookup = searchParams.get('posLookup') === 'true'
 
-    if (posLookup && !hasPermission(tenant.user, 'inventory', 'view')) {
+    if (posLookup && !hasPermission(tenant.user, 'raseed', 'view')) {
       requireFeature(tenant, 'pos')
     } else {
       requireFeature(tenant, 'inventory')

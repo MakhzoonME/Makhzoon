@@ -31,7 +31,7 @@ export async function PATCH(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'inventory')
-    requirePermission(tenant.user, 'purchases', 'update')
+    requirePermission(tenant.user, 'raseed', 'purchasesUpdate')
     const { purchaseId } = await params
     const body = await req.json()
     const parsed = updatePurchaseSchema.safeParse(body)
@@ -76,7 +76,7 @@ export async function DELETE(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'inventory')
-    requirePermission(tenant.user, 'purchases', 'delete')
+    requirePermission(tenant.user, 'raseed', 'purchasesDelete')
     const { purchaseId } = await params
     await service.delete(tenant, purchaseId)
     return NextResponse.json({ ok: true })

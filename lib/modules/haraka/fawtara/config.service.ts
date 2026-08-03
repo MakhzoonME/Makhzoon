@@ -12,8 +12,8 @@ import {
   type FawtaraInvoiceType,
 } from '@/types'
 
-function requireFawtaraSettings(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'settings', 'fawtara')) {
+function requireFawtaraSettings(tenant: TenantContext, op: 'view' | 'update') {
+  if (!hasPermission(tenant, 'settingsFawtara', op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -31,7 +31,7 @@ export interface FawtaraConfigInput {
 
 export class FawtaraConfigService {
   async get(tenant: TenantContext): Promise<FawtaraConfig> {
-    requireFawtaraSettings(tenant)
+    requireFawtaraSettings(tenant, 'view')
     const { data: org } = await supabaseAdmin
       .from('organizations')
       .select('fawtara')
@@ -56,7 +56,7 @@ export class FawtaraConfigService {
     tenant: TenantContext,
     input: FawtaraConfigInput,
   ): Promise<FawtaraConfig> {
-    requireFawtaraSettings(tenant)
+    requireFawtaraSettings(tenant, 'update')
     const { data: org } = await supabaseAdmin
       .from('organizations')
       .select('fawtara')

@@ -9,13 +9,13 @@ import { getProvider } from './providers/registry'
 const repo = new CardTerminalRepository()
 
 function requireCashier(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'open_session')) {
+  if (!hasPermission(tenant, 'haraka', 'sessionsOpen')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
 
 function requireAdmin(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'settings', 'fawtara')) {
+  if (!hasPermission(tenant, 'settingsCardTerminal', 'update')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }

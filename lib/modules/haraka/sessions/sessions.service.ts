@@ -8,8 +8,8 @@ import { SessionsRepository, type SessionListOpts } from './sessions.repository'
 
 const repo = new SessionsRepository()
 
-function requirePos(tenant: TenantContext, op: 'open_session' | 'close_session' | 'view_all_sessions') {
-  if (!hasPermission(tenant, 'pos', op)) {
+function requirePos(tenant: TenantContext, op: 'sessionsOpen' | 'sessionsCloseOwn' | 'sessionsCloseOthers' | 'sessionsViewOthers') {
+  if (!hasPermission(tenant, 'haraka', op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -24,9 +24,9 @@ export class SessionsService {
   async list(tenant: TenantContext, opts?: SessionListOpts) {
     // Anyone with open_session can list their own sessions; view_all_sessions
     // can list everyone's (mirrors getById's self-vs-any rule below).
-    const canViewAny = hasPermission(tenant, 'pos', 'view_all_sessions')
+    const canViewAny = hasPermission(tenant, 'haraka', 'sessionsViewOthers')
     if (!canViewAny) {
-      requirePos(tenant, 'open_session')
+      requirePos(tenant, 'sessionsOpen')
       if (opts?.cashierId && opts.cashierId !== tenant.userId) {
         throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
@@ -46,8 +46,8 @@ export class SessionsService {
     if (!session) throw NextResponse.json({ error: 'Not found' }, { status: 404 })
     const isOwn = session.cashierId === tenant.userId
     const canView = isOwn
-      ? hasPermission(tenant, 'pos', 'close_session') || hasPermission(tenant, 'pos', 'view_all_sessions')
-      : hasPermission(tenant, 'pos', 'view_all_sessions')
+      ? hasPermission(tenant, 'haraka', 'sessionsCloseOwn') || hasPermission(tenant, 'haraka', 'sessionsViewOthers')
+      : hasPermission(tenant, 'haraka', 'sessionsViewOthers')
     if (!canView) throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     const expectedCashDelta = await repo.computeExpectedCash(tenant, id)
     return { session, expectedCashSoFar: session.openingFloat + expectedCashDelta }
@@ -58,12 +58,12 @@ export class SessionsService {
     // can never have one — return null rather than 403 so pages that poll
     // "do I have an open session" (like the register) don't hard-fail for
     // personas that legitimately use the register without ever opening one.
-    if (!hasPermission(tenant, 'pos', 'open_session')) return null
+    if (!hasPermission(tenant, 'haraka', 'sessionsOpen')) return null
     return repo.findOpenForCashier(tenant)
   }
 
   async open(tenant: TenantContext, input: { openingFloat: number; locationId?: string; tillName?: string }) {
-    requirePos(tenant, 'open_session')
+    requirePos(tenant, 'sessionsOpen')
     requireActiveSubscription(tenant)
     const id = await repo.open(tenant, input)
     auditLog.queue({
@@ -82,13 +82,15 @@ export class SessionsService {
     const session = await repo.getById(tenant, id)
     if (!session) throw NextResponse.json({ error: 'Not found' }, { status: 404 })
     if (session.cashierId === tenant.userId) {
-      // close_session is meaningless without open_session — enforce the
+      // sessionsCloseOwn is meaningless without sessionsOpen — enforce the
       // dependency server-side too, not just as a UI constraint in the
       // permissions settings screen.
-      requirePos(tenant, 'open_session')
-      requirePos(tenant, 'close_session')
+      requirePos(tenant, 'sessionsOpen')
+      requirePos(tenant, 'sessionsCloseOwn')
     } else {
-      requirePos(tenant, 'view_all_sessions')
+      // Closing someone ELSE's session requires the distinct close-others
+      // grant, not merely being able to view others' sessions.
+      requirePos(tenant, 'sessionsCloseOthers')
     }
     const result = await repo.close(tenant, id, input)
     auditLog.queue({

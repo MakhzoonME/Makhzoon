@@ -1,40 +1,147 @@
 import type { MessageKey } from '@/locales/messages';
 
-export interface AssetPermissions {
-  view: boolean;
-  create: boolean;
-  update: boolean;
-  delete: boolean;
-  import: boolean;
-  checkout: boolean;
-  maintenance: boolean;
-  notes: boolean;
-  bulk_delete: boolean;
-  bulk_move: boolean;
-  bulk_duplicate: boolean;
-}
-
-export interface InventoryPermissions {
-  view: boolean;
-  create: boolean;
-  update: boolean;
-  delete: boolean;
-  transactions: boolean;
-  audits: boolean;
-  bulk_delete: boolean;
-  bulk_move: boolean;
-  bulk_duplicate: boolean;
-}
-
-export interface WarrantyPermissions {
-  view: boolean;
-  create: boolean;
-  update: boolean;
-  delete: boolean;
-}
+// ─────────────────────────────────────────────────────────────────────────
+// Per-module permission shapes. Modules are organized around the pricing
+// pillars (Usool / Raseed / Haraka) rather than the old per-table split
+// (assets/warranties, inventory/purchases, pos), so the permission editor
+// matches how the product is actually sold and used.
+//
+// Settings is intentionally NOT one nested object — hasPermByKey() resolves
+// a dot-separated key as exactly `module.operation` (2 levels), so each
+// settings page is its own top-level module (settingsSpaces, settingsUsers,
+// …), grouped visually in the editor via ModuleConfig.group = 'settings'.
+// ─────────────────────────────────────────────────────────────────────────
 
 export interface DashboardPermissions {
   view: boolean;
+}
+
+export interface UsoolPermissions {
+  view: boolean;
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+  export: boolean;
+  viewActivity: boolean;
+  qrLabel: boolean;
+  warrantiesView: boolean;
+  warrantiesCreate: boolean;
+  warrantiesUpdate: boolean;
+  warrantiesDelete: boolean;
+  maintenanceView: boolean;
+  maintenanceCreate: boolean;
+  maintenanceUpdate: boolean;
+  maintenanceDelete: boolean;
+  checkoutView: boolean;
+  checkoutCreate: boolean;
+  checkoutUpdate: boolean;
+  notesView: boolean;
+  notesCreate: boolean; // note deletion is owner-only, not permissioned
+  auditTrailView: boolean;
+  retire: boolean;
+  import: boolean;
+  assetAuditsView: boolean;
+  assetAuditStart: boolean;
+}
+
+export interface RaseedPermissions {
+  view: boolean;
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+  export: boolean;
+  requestRefill: boolean;
+  transactionsView: boolean; // stock movements
+  adjustStockView: boolean;
+  adjustStockUpdate: boolean;
+  purchasesView: boolean;
+  purchasesCreate: boolean;
+  purchasesUpdate: boolean;
+  purchasesDelete: boolean;
+  purchasesReceive: boolean;
+  stockAuditView: boolean;
+  stockAuditStart: boolean;
+}
+
+export interface HarakaPermissions {
+  view: boolean; // Haraka dashboard
+  // Sessions
+  sessionsView: boolean;
+  sessionsOpen: boolean;
+  sessionsCloseOwn: boolean;
+  sessionsCloseOthers: boolean;
+  sessionsEnterOthers: boolean;
+  sessionsViewOthers: boolean;
+  // Register
+  registerOpen: boolean;
+  applyDiscount: boolean;
+  removeReceiptItems: boolean;
+  receiptRemoveCustomer: boolean;
+  holdReceipts: boolean;
+  recallReceipts: boolean;
+  removeReceipts: boolean;
+  chargeReceipt: boolean;
+  printerSettings: boolean;
+  // Orders
+  ordersView: boolean;
+  ordersCreate: boolean;
+  ordersRemoveCustomer: boolean;
+  ordersGenerateInvoice: boolean;
+  ordersGenerateWarranty: boolean;
+  ordersShare: boolean;
+  ordersMarkConfirmed: boolean;
+  ordersCancel: boolean;
+  ordersMarkAssigned: boolean;
+  ordersMarkInTransit: boolean;
+  ordersMarkDelivered: boolean;
+  ordersAddPayment: boolean;
+  // Customers
+  customersView: boolean;
+  customersCreate: boolean;
+  customersUpdate: boolean;
+  customersDelete: boolean;
+  customersHistoryView: boolean;
+  customerFieldsView: boolean;
+  customerFieldsCreate: boolean;
+  customerFieldsUpdate: boolean;
+  customerFieldsDelete: boolean;
+  // Delivery agents
+  deliveryAgentsView: boolean;
+  deliveryAgentsCreate: boolean;
+  deliveryAgentsUpdate: boolean;
+  deliveryAgentsDelete: boolean;
+  // Warranty certs
+  warrantyCertsView: boolean;
+  // Transactions
+  transactionsView: boolean;
+  transactionsPrint: boolean;
+  transactionsShare: boolean;
+  transactionsRefund: boolean;
+  transactionsVoid: boolean;
+  // POS report
+  posReportView: boolean;
+  posReportExport: boolean;
+  // Service jobs
+  servicesView: boolean;
+  serviceJobsCreate: boolean;
+  serviceJobsMarkConfirmed: boolean;
+  serviceJobsAddPayment: boolean;
+  serviceJobsMarkInProgress: boolean;
+  serviceJobsMarkDone: boolean;
+  serviceJobsUpdate: boolean;
+  serviceJobsGenerateInvoice: boolean;
+  // Retainers
+  retainersView: boolean;
+  retainersCreate: boolean;
+  retainersPause: boolean;
+  retainersCancel: boolean;
+  retainersAddInvoice: boolean;
+  retainersReactivate: boolean;
+  // Service catalog
+  serviceCatalogView: boolean;
+  serviceCatalogCreate: boolean;
+  serviceCatalogUpdate: boolean;
+  serviceCatalogDelete: boolean;
 }
 
 export interface ReportsPermissions {
@@ -43,59 +150,16 @@ export interface ReportsPermissions {
 
 export interface SupportPermissions {
   view: boolean;
-  create: boolean;
+  viewOthers: boolean;
+  submit: boolean;
+  replyOwn: boolean;
+  replyOthers: boolean;
 }
 
 export interface AuditLogsPermissions {
   view: boolean;
-}
-
-export interface PosPermissions {
-  open_session: boolean;
-  close_session: boolean;
-  view_all_sessions: boolean;
-  process_sale: boolean;
-  add_receipt_items: boolean;
-  remove_receipt_items: boolean;
-  apply_discount: boolean;
-  hold_receipts: boolean;
-  issue_refund: boolean;
-  void_transaction: boolean;
-  view_reports: boolean;
-  fawtara_submit: boolean;
-  customers_bulk_delete: boolean;
-  customers_bulk_move: boolean;
-  customers_bulk_duplicate: boolean;
-  view_orders: boolean;
-  manage_orders: boolean;
-  assign_delivery: boolean;
-  manage_delivery_agents: boolean;
-  view_warranty_certs: boolean;
-  manage_warranty_certs: boolean;
-  view_service_jobs: boolean;
-  create_service_jobs: boolean;
-  checkout_service_jobs: boolean;
-  view_retainers: boolean;
-  manage_retainers: boolean;
-  view_services: boolean;
-  manage_services: boolean;
-}
-
-export interface PurchasePermissions {
-  view: boolean;
-  create: boolean;
-  update: boolean;
-  delete: boolean;
-  receive: boolean;
-}
-
-export interface SettingsPermissions {
-  view: boolean;
-  orgInfo: boolean;
-  subscription: boolean;
-  users: boolean;
-  taxRates: boolean;
-  fawtara: boolean;
+  viewSpace: boolean;
+  viewAllSpaces: boolean;
 }
 
 export interface LeadsPermissions {
@@ -109,49 +173,181 @@ export interface BannaPermissions {
   delete: boolean;
 }
 
+// ── Settings — one module per page ──────────────────────────────────────
+export interface SettingsOrgInfoPermissions {
+  view: boolean;
+  editName: boolean;
+  editBranding: boolean;
+}
+export interface SettingsSpacesPermissions {
+  view: boolean;
+  create: boolean;
+  update: boolean;
+  grantAccess: boolean;
+  archive: boolean;
+  restore: boolean;
+}
+export interface SettingsListsPermissions {
+  view: boolean;
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+}
+export interface SettingsSubscriptionPermissions {
+  view: boolean;
+}
+export interface SettingsUsersPermissions {
+  view: boolean;
+  invite: boolean;
+  update: boolean;
+  revoke: boolean;
+  resetPassword: boolean;
+  delete: boolean;
+}
+export interface SettingsTaxRatesPermissions {
+  view: boolean;
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+}
+export interface SettingsFawtaraPermissions {
+  view: boolean;
+  update: boolean;
+}
+export interface SettingsReceiptPermissions {
+  view: boolean;
+  update: boolean;
+}
+export interface SettingsInvoicePermissions {
+  view: boolean;
+  update: boolean;
+}
+export interface SettingsWarrantyCertPermissions {
+  view: boolean;
+  update: boolean;
+}
+export interface SettingsNotificationsPermissions {
+  view: boolean;
+  update: boolean;
+}
+export interface SettingsCashDrawerPermissions {
+  view: boolean;
+  update: boolean;
+}
+export interface SettingsCardTerminalPermissions {
+  view: boolean;
+  update: boolean;
+}
+
 export interface UserPermissions {
   dashboard: DashboardPermissions;
-  assets: AssetPermissions;
-  inventory: InventoryPermissions;
-  purchases: PurchasePermissions;
-  warranties: WarrantyPermissions;
+  usool: UsoolPermissions;
+  raseed: RaseedPermissions;
+  haraka: HarakaPermissions;
   reports: ReportsPermissions;
   support: SupportPermissions;
   auditLogs: AuditLogsPermissions;
   leads: LeadsPermissions;
   banna: BannaPermissions;
-  pos: PosPermissions;
-  settings: SettingsPermissions;
+  settingsOrgInfo: SettingsOrgInfoPermissions;
+  settingsSpaces: SettingsSpacesPermissions;
+  settingsLists: SettingsListsPermissions;
+  settingsSubscription: SettingsSubscriptionPermissions;
+  settingsUsers: SettingsUsersPermissions;
+  settingsTaxRates: SettingsTaxRatesPermissions;
+  settingsFawtara: SettingsFawtaraPermissions;
+  settingsReceipt: SettingsReceiptPermissions;
+  settingsInvoice: SettingsInvoicePermissions;
+  settingsWarrantyCert: SettingsWarrantyCertPermissions;
+  settingsNotifications: SettingsNotificationsPermissions;
+  settingsCashDrawer: SettingsCashDrawerPermissions;
+  settingsCardTerminal: SettingsCardTerminalPermissions;
 }
 
+function allTrue<T>(keys: (keyof T)[]): T {
+  return Object.fromEntries(keys.map((k) => [k, true])) as T;
+}
+function allFalse<T>(keys: (keyof T)[]): T {
+  return Object.fromEntries(keys.map((k) => [k, false])) as T;
+}
+
+const USOOL_KEYS: (keyof UsoolPermissions)[] = [
+  'view', 'create', 'update', 'delete', 'export', 'viewActivity', 'qrLabel',
+  'warrantiesView', 'warrantiesCreate', 'warrantiesUpdate', 'warrantiesDelete',
+  'maintenanceView', 'maintenanceCreate', 'maintenanceUpdate', 'maintenanceDelete',
+  'checkoutView', 'checkoutCreate', 'checkoutUpdate',
+  'notesView', 'notesCreate', 'auditTrailView', 'retire', 'import',
+  'assetAuditsView', 'assetAuditStart',
+];
+const RASEED_KEYS: (keyof RaseedPermissions)[] = [
+  'view', 'create', 'update', 'delete', 'export', 'requestRefill',
+  'transactionsView', 'adjustStockView', 'adjustStockUpdate',
+  'purchasesView', 'purchasesCreate', 'purchasesUpdate', 'purchasesDelete', 'purchasesReceive',
+  'stockAuditView', 'stockAuditStart',
+];
+const HARAKA_KEYS: (keyof HarakaPermissions)[] = [
+  'view',
+  'sessionsView', 'sessionsOpen', 'sessionsCloseOwn', 'sessionsCloseOthers', 'sessionsEnterOthers', 'sessionsViewOthers',
+  'registerOpen', 'applyDiscount', 'removeReceiptItems', 'receiptRemoveCustomer', 'holdReceipts', 'recallReceipts', 'removeReceipts', 'chargeReceipt', 'printerSettings',
+  'ordersView', 'ordersCreate', 'ordersRemoveCustomer', 'ordersGenerateInvoice', 'ordersGenerateWarranty', 'ordersShare', 'ordersMarkConfirmed', 'ordersCancel', 'ordersMarkAssigned', 'ordersMarkInTransit', 'ordersMarkDelivered', 'ordersAddPayment',
+  'customersView', 'customersCreate', 'customersUpdate', 'customersDelete', 'customersHistoryView', 'customerFieldsView', 'customerFieldsCreate', 'customerFieldsUpdate', 'customerFieldsDelete',
+  'deliveryAgentsView', 'deliveryAgentsCreate', 'deliveryAgentsUpdate', 'deliveryAgentsDelete',
+  'warrantyCertsView',
+  'transactionsView', 'transactionsPrint', 'transactionsShare', 'transactionsRefund', 'transactionsVoid',
+  'posReportView', 'posReportExport',
+  'servicesView', 'serviceJobsCreate', 'serviceJobsMarkConfirmed', 'serviceJobsAddPayment', 'serviceJobsMarkInProgress', 'serviceJobsMarkDone', 'serviceJobsUpdate', 'serviceJobsGenerateInvoice',
+  'retainersView', 'retainersCreate', 'retainersPause', 'retainersCancel', 'retainersAddInvoice', 'retainersReactivate',
+  'serviceCatalogView', 'serviceCatalogCreate', 'serviceCatalogUpdate', 'serviceCatalogDelete',
+];
+
 export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
-  dashboard: { view: true  },
-  assets:    { view: true,  create: true,  update: true,  delete: true,  import: true,  checkout: true,  maintenance: true,  notes: true,  bulk_delete: true,  bulk_move: true,  bulk_duplicate: true  },
-  inventory: { view: true,  create: true,  update: true,  delete: true,  transactions: true,  audits: true,  bulk_delete: true,  bulk_move: true,  bulk_duplicate: true  },
-  purchases: { view: true,  create: true,  update: true,  delete: true,  receive: true },
-  warranties:{ view: true,  create: true,  update: true,  delete: true  },
-  reports:   { view: true  },
-  support:   { view: true,  create: true  },
-  auditLogs: { view: true  },
-  leads:     { view: true  },
-  banna:     { view: true,  create: true,  update: true,  delete: true  },
-  pos:       { open_session: true, close_session: true, view_all_sessions: true, process_sale: true, add_receipt_items: true, remove_receipt_items: true, apply_discount: true, hold_receipts: true, issue_refund: true, void_transaction: true, view_reports: true, fawtara_submit: true, customers_bulk_delete: true, customers_bulk_move: true, customers_bulk_duplicate: true, view_orders: true, manage_orders: true, assign_delivery: true, manage_delivery_agents: true, view_warranty_certs: true, manage_warranty_certs: true, view_service_jobs: true, create_service_jobs: true, checkout_service_jobs: true, view_retainers: true, manage_retainers: true, view_services: true, manage_services: true },
-  settings:  { view: true,  orgInfo: true,  subscription: true,  users: true,  taxRates: true,  fawtara: true  },
+  dashboard: { view: true },
+  usool: allTrue<UsoolPermissions>(USOOL_KEYS),
+  raseed: allTrue<RaseedPermissions>(RASEED_KEYS),
+  haraka: allTrue<HarakaPermissions>(HARAKA_KEYS),
+  reports: { view: true },
+  support: { view: true, viewOthers: true, submit: true, replyOwn: true, replyOthers: true },
+  auditLogs: { view: true, viewSpace: true, viewAllSpaces: true },
+  leads: { view: true },
+  banna: { view: true, create: true, update: true, delete: true },
+  settingsOrgInfo: { view: true, editName: true, editBranding: true },
+  settingsSpaces: { view: true, create: true, update: true, grantAccess: true, archive: true, restore: true },
+  settingsLists: { view: true, create: true, update: true, delete: true },
+  settingsSubscription: { view: true },
+  settingsUsers: { view: true, invite: true, update: true, revoke: true, resetPassword: true, delete: true },
+  settingsTaxRates: { view: true, create: true, update: true, delete: true },
+  settingsFawtara: { view: true, update: true },
+  settingsReceipt: { view: true, update: true },
+  settingsInvoice: { view: true, update: true },
+  settingsWarrantyCert: { view: true, update: true },
+  settingsNotifications: { view: true, update: true },
+  settingsCashDrawer: { view: true, update: true },
+  settingsCardTerminal: { view: true, update: true },
 };
 
 export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
-  dashboard: { view: false  },
-  assets:    { view: true,  create: false, update: false, delete: false, import: false, checkout: false, maintenance: false, notes: false, bulk_delete: false, bulk_move: false, bulk_duplicate: false },
-  inventory: { view: true,  create: false, update: false, delete: false, transactions: false, audits: false, bulk_delete: false, bulk_move: false, bulk_duplicate: false },
-  purchases: { view: false, create: false, update: false, delete: false, receive: false },
-  warranties:{ view: true,  create: false, update: false, delete: false },
-  reports:   { view: false },
-  support:   { view: true,  create: true },
-  auditLogs: { view: false },
-  leads:     { view: true  },
-  banna:     { view: true,  create: false, update: false, delete: false },
-  pos:       { open_session: false, close_session: false, view_all_sessions: false, process_sale: false, add_receipt_items: false, remove_receipt_items: false, apply_discount: false, hold_receipts: false, issue_refund: false, void_transaction: false, view_reports: false, fawtara_submit: false, customers_bulk_delete: false, customers_bulk_move: false, customers_bulk_duplicate: false, view_orders: false, manage_orders: false, assign_delivery: false, manage_delivery_agents: false, view_warranty_certs: false, manage_warranty_certs: false, view_service_jobs: false, create_service_jobs: false, checkout_service_jobs: false, view_retainers: false, manage_retainers: false, view_services: false, manage_services: false },
-  settings:  { view: false, orgInfo: false, subscription: false, users: false, taxRates: false, fawtara: false },
+  dashboard: { view: false },
+  usool: { ...allFalse<UsoolPermissions>(USOOL_KEYS), view: true, warrantiesView: true, maintenanceView: true, checkoutView: true, notesView: true, auditTrailView: true },
+  raseed: { ...allFalse<RaseedPermissions>(RASEED_KEYS), view: true, transactionsView: true },
+  haraka: allFalse<HarakaPermissions>(HARAKA_KEYS),
+  reports: { view: false },
+  support: { view: true, viewOthers: false, submit: true, replyOwn: true, replyOthers: false },
+  auditLogs: { view: false, viewSpace: false, viewAllSpaces: false },
+  leads: { view: true },
+  banna: { view: true, create: false, update: false, delete: false },
+  settingsOrgInfo: { view: false, editName: false, editBranding: false },
+  settingsSpaces: { view: false, create: false, update: false, grantAccess: false, archive: false, restore: false },
+  settingsLists: { view: false, create: false, update: false, delete: false },
+  settingsSubscription: { view: false },
+  settingsUsers: { view: false, invite: false, update: false, revoke: false, resetPassword: false, delete: false },
+  settingsTaxRates: { view: false, create: false, update: false, delete: false },
+  settingsFawtara: { view: false, update: false },
+  settingsReceipt: { view: false, update: false },
+  settingsInvoice: { view: false, update: false },
+  settingsWarrantyCert: { view: false, update: false },
+  settingsNotifications: { view: false, update: false },
+  settingsCashDrawer: { view: false, update: false },
+  settingsCardTerminal: { view: false, update: false },
 };
 
 export interface ModuleOperationConfig {
@@ -167,14 +363,13 @@ export interface ModuleOperationConfig {
   featureKey?: string;
 }
 
-export type ModuleGroup = 'core' | 'commerce' | 'workflow' | 'admin';
+export type ModuleGroup = 'usool' | 'raseed' | 'haraka' | 'platform' | 'settings';
 
 export interface ModuleConfig {
   key: keyof UserPermissions;
   label: string;
   labelKey: MessageKey;
   featureKey?: string;
-  /** Optional visual grouping in the PermissionsEditor. Defaults to 'core' when omitted. */
   group?: ModuleGroup;
   /** When true, this module is hidden from the org-user PermissionsEditor. */
   hideFromEditor?: boolean;
@@ -182,199 +377,315 @@ export interface ModuleConfig {
 }
 
 export const MODULE_GROUP_LABELS: Record<ModuleGroup, string> = {
-  core: 'Core',
-  commerce: 'Commerce',
-  workflow: 'Workflow',
-  admin: 'Admin',
+  usool: 'Usool',
+  raseed: 'Raseed',
+  haraka: 'Haraka',
+  platform: 'Platform',
+  settings: 'Settings',
 };
 
 export const MODULE_GROUP_LABEL_KEYS: Record<ModuleGroup, MessageKey> = {
-  core: 'permGroup.core',
-  commerce: 'permGroup.commerce',
-  workflow: 'permGroup.workflow',
-  admin: 'permGroup.admin',
+  usool: 'permGroup.usool',
+  raseed: 'permGroup.raseed',
+  haraka: 'permGroup.haraka',
+  platform: 'permGroup.platform',
+  settings: 'permGroup.settings',
 };
 
-export const MODULE_GROUP_ORDER: ModuleGroup[] = ['core', 'commerce', 'workflow', 'admin'];
+export const MODULE_GROUP_ORDER: ModuleGroup[] = ['usool', 'raseed', 'haraka', 'platform', 'settings'];
 
 export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
   {
-    key: 'dashboard',
-    label: 'Dashboard',
-    labelKey: 'permModule.dashboard',
-    featureKey: 'dashboard',
-    group: 'core',
+    key: 'dashboard', label: 'Dashboard', labelKey: 'permModule.dashboard',
+    featureKey: 'dashboard', group: 'platform',
     operations: [
       { key: 'view', label: 'View Dashboard', labelKey: 'permOp.dashboard.view' },
     ],
   },
   {
-    key: 'assets',
-    label: 'Assets',
-    labelKey: 'permModule.assets',
-    featureKey: 'assets',
-    group: 'core',
+    key: 'usool', label: 'Usool (Assets)', labelKey: 'permModule.usool',
+    featureKey: 'assets', group: 'usool',
     operations: [
-      { key: 'view',           label: 'View Assets',         labelKey: 'permOp.assets.view' },
-      { key: 'create',         label: 'Add Assets',          labelKey: 'permOp.assets.create',         requiresView: true },
-      { key: 'update',         label: 'Edit Assets',         labelKey: 'permOp.assets.update',         requiresView: true },
-      { key: 'delete',         label: 'Delete Assets',       labelKey: 'permOp.assets.delete',         requiresView: true },
-      { key: 'import',         label: 'Import Assets',       labelKey: 'permOp.assets.import',         requiresView: true },
-      { key: 'checkout',       label: 'Check In / Out',      labelKey: 'permOp.assets.checkout',       requiresView: true, featureKey: 'assetCheckouts' },
-      { key: 'maintenance',    label: 'Maintenance Records', labelKey: 'permOp.assets.maintenance',    requiresView: true, featureKey: 'maintenance' },
-      { key: 'notes',           label: 'Asset Notes',         labelKey: 'permOp.assets.notes',         requiresView: true, featureKey: 'assetNotes' },
-      { key: 'bulk_delete',    label: 'Bulk delete',         labelKey: 'permOp.assets.bulk_delete',    requiresView: true },
-      { key: 'bulk_move',      label: 'Bulk move to space',  labelKey: 'permOp.assets.bulk_move',      requiresView: true },
-      { key: 'bulk_duplicate', label: 'Bulk duplicate to space', labelKey: 'permOp.assets.bulk_duplicate', requiresView: true },
+      { key: 'view', label: 'View Asset Register', labelKey: 'permOp.usool.view' },
+      { key: 'create', label: 'Add Assets', labelKey: 'permOp.usool.create', requiresView: true },
+      { key: 'update', label: 'Edit Assets', labelKey: 'permOp.usool.update', requiresView: true },
+      { key: 'delete', label: 'Delete Assets', labelKey: 'permOp.usool.delete', requiresView: true },
+      { key: 'export', label: 'Export Assets', labelKey: 'permOp.usool.export', requiresView: true },
+      { key: 'viewActivity', label: 'View Activity Timeline', labelKey: 'permOp.usool.viewActivity', requiresView: true },
+      { key: 'qrLabel', label: 'Print QR Labels', labelKey: 'permOp.usool.qrLabel', requiresView: true },
+      { key: 'retire', label: 'Retire Assets', labelKey: 'permOp.usool.retire', requiresView: true },
+      { key: 'import', label: 'Import Assets (CSV)', labelKey: 'permOp.usool.import', requiresView: true },
+      { key: 'warrantiesView', label: 'View Warranties', labelKey: 'permOp.usool.warrantiesView', requiresView: true, featureKey: 'warranties' },
+      { key: 'warrantiesCreate', label: 'Add Warranties', labelKey: 'permOp.usool.warrantiesCreate', requiresKey: 'warrantiesView', featureKey: 'warranties' },
+      { key: 'warrantiesUpdate', label: 'Edit Warranties', labelKey: 'permOp.usool.warrantiesUpdate', requiresKey: 'warrantiesView', featureKey: 'warranties' },
+      { key: 'warrantiesDelete', label: 'Delete Warranties', labelKey: 'permOp.usool.warrantiesDelete', requiresKey: 'warrantiesView', featureKey: 'warranties' },
+      { key: 'maintenanceView', label: 'View Maintenance Records', labelKey: 'permOp.usool.maintenanceView', requiresView: true, featureKey: 'maintenance' },
+      { key: 'maintenanceCreate', label: 'Add Maintenance Records', labelKey: 'permOp.usool.maintenanceCreate', requiresKey: 'maintenanceView', featureKey: 'maintenance' },
+      { key: 'maintenanceUpdate', label: 'Edit Maintenance Records', labelKey: 'permOp.usool.maintenanceUpdate', requiresKey: 'maintenanceView', featureKey: 'maintenance' },
+      { key: 'maintenanceDelete', label: 'Delete Maintenance Records', labelKey: 'permOp.usool.maintenanceDelete', requiresKey: 'maintenanceView', featureKey: 'maintenance' },
+      { key: 'checkoutView', label: 'View Checkouts', labelKey: 'permOp.usool.checkoutView', requiresView: true, featureKey: 'assetCheckouts' },
+      { key: 'checkoutCreate', label: 'Check Out Assets', labelKey: 'permOp.usool.checkoutCreate', requiresKey: 'checkoutView', featureKey: 'assetCheckouts' },
+      { key: 'checkoutUpdate', label: 'Check In / Edit Checkouts', labelKey: 'permOp.usool.checkoutUpdate', requiresKey: 'checkoutView', featureKey: 'assetCheckouts' },
+      { key: 'notesView', label: 'View Notes', labelKey: 'permOp.usool.notesView', requiresView: true, featureKey: 'assetNotes' },
+      { key: 'notesCreate', label: 'Add Notes', labelKey: 'permOp.usool.notesCreate', requiresKey: 'notesView', featureKey: 'assetNotes' },
+      { key: 'auditTrailView', label: 'View Audit Trail', labelKey: 'permOp.usool.auditTrailView', requiresView: true },
+      { key: 'assetAuditsView', label: 'View Asset Audits', labelKey: 'permOp.usool.assetAuditsView', requiresView: true },
+      { key: 'assetAuditStart', label: 'Start Asset Audit', labelKey: 'permOp.usool.assetAuditStart', requiresKey: 'assetAuditsView' },
     ],
   },
   {
-    key: 'inventory',
-    label: 'Inventory',
-    labelKey: 'permModule.inventory',
-    featureKey: 'inventory',
-    group: 'core',
+    key: 'raseed', label: 'Raseed (Inventory)', labelKey: 'permModule.raseed',
+    featureKey: 'inventory', group: 'raseed',
     operations: [
-      { key: 'view',           label: 'View Inventory',      labelKey: 'permOp.inventory.view' },
-      { key: 'create',         label: 'Add Items',           labelKey: 'permOp.inventory.create',         requiresView: true },
-      { key: 'update',         label: 'Edit Items',          labelKey: 'permOp.inventory.update',         requiresView: true },
-      { key: 'delete',         label: 'Delete Items',        labelKey: 'permOp.inventory.delete',         requiresView: true },
-      { key: 'transactions',   label: 'Record Transactions', labelKey: 'permOp.inventory.transactions',   requiresView: true },
-      { key: 'audits',         label: 'Manage Audits',       labelKey: 'permOp.inventory.audits',         requiresView: true },
-      { key: 'bulk_delete',    label: 'Bulk delete',         labelKey: 'permOp.inventory.bulk_delete',    requiresView: true },
-      { key: 'bulk_move',      label: 'Bulk move to space',  labelKey: 'permOp.inventory.bulk_move',      requiresView: true },
-      { key: 'bulk_duplicate', label: 'Bulk duplicate to space', labelKey: 'permOp.inventory.bulk_duplicate', requiresView: true },
+      { key: 'view', label: 'View Stock Items', labelKey: 'permOp.raseed.view' },
+      { key: 'create', label: 'Add Items', labelKey: 'permOp.raseed.create', requiresView: true },
+      { key: 'update', label: 'Edit Items', labelKey: 'permOp.raseed.update', requiresView: true },
+      { key: 'delete', label: 'Delete Items', labelKey: 'permOp.raseed.delete', requiresView: true },
+      { key: 'export', label: 'Export Items', labelKey: 'permOp.raseed.export', requiresView: true },
+      { key: 'requestRefill', label: 'Request Refill', labelKey: 'permOp.raseed.requestRefill', requiresView: true },
+      { key: 'transactionsView', label: 'View Stock Movements', labelKey: 'permOp.raseed.transactionsView', requiresView: true },
+      { key: 'adjustStockView', label: 'View Stock Adjustments', labelKey: 'permOp.raseed.adjustStockView', requiresView: true },
+      { key: 'adjustStockUpdate', label: 'Adjust Stock', labelKey: 'permOp.raseed.adjustStockUpdate', requiresKey: 'adjustStockView' },
+      { key: 'purchasesView', label: 'View Purchases', labelKey: 'permOp.raseed.purchasesView', requiresView: true },
+      { key: 'purchasesCreate', label: 'Create Purchases', labelKey: 'permOp.raseed.purchasesCreate', requiresKey: 'purchasesView' },
+      { key: 'purchasesUpdate', label: 'Edit Purchases', labelKey: 'permOp.raseed.purchasesUpdate', requiresKey: 'purchasesView' },
+      { key: 'purchasesDelete', label: 'Delete Purchases', labelKey: 'permOp.raseed.purchasesDelete', requiresKey: 'purchasesView' },
+      { key: 'purchasesReceive', label: 'Receive Purchases (Stock-In)', labelKey: 'permOp.raseed.purchasesReceive', requiresKey: 'purchasesView' },
+      { key: 'stockAuditView', label: 'View Stock Audits', labelKey: 'permOp.raseed.stockAuditView', requiresView: true },
+      { key: 'stockAuditStart', label: 'Start Stock Audit', labelKey: 'permOp.raseed.stockAuditStart', requiresKey: 'stockAuditView' },
     ],
   },
   {
-    key: 'warranties',
-    label: 'Warranties',
-    labelKey: 'permModule.warranties',
-    featureKey: 'warranties',
-    group: 'core',
+    key: 'haraka', label: 'Haraka', labelKey: 'permModule.haraka',
+    featureKey: 'pos', group: 'haraka',
     operations: [
-      { key: 'view',   label: 'View Warranties',   labelKey: 'permOp.warranties.view' },
-      { key: 'create', label: 'Add Warranties',    labelKey: 'permOp.warranties.create', requiresView: true },
-      { key: 'update', label: 'Edit Warranties',   labelKey: 'permOp.warranties.update', requiresView: true },
-      { key: 'delete', label: 'Delete Warranties', labelKey: 'permOp.warranties.delete', requiresView: true },
+      { key: 'view', label: 'View Haraka Dashboard', labelKey: 'permOp.haraka.view' },
+      { key: 'sessionsView', label: 'View Sessions', labelKey: 'permOp.haraka.sessionsView' },
+      { key: 'sessionsOpen', label: 'Open Session', labelKey: 'permOp.haraka.sessionsOpen', requiresKey: 'sessionsView' },
+      { key: 'sessionsCloseOwn', label: 'Close Own Session', labelKey: 'permOp.haraka.sessionsCloseOwn', requiresKey: 'sessionsView' },
+      { key: 'sessionsCloseOthers', label: "Close Others' Sessions", labelKey: 'permOp.haraka.sessionsCloseOthers', requiresKey: 'sessionsView' },
+      { key: 'sessionsEnterOthers', label: "Enter Others' Sessions", labelKey: 'permOp.haraka.sessionsEnterOthers', requiresKey: 'sessionsView' },
+      { key: 'sessionsViewOthers', label: "View Others' Sessions", labelKey: 'permOp.haraka.sessionsViewOthers', requiresKey: 'sessionsView' },
+      { key: 'registerOpen', label: 'Open Register', labelKey: 'permOp.haraka.registerOpen' },
+      { key: 'applyDiscount', label: 'Apply Discount', labelKey: 'permOp.haraka.applyDiscount', requiresKey: 'registerOpen' },
+      { key: 'removeReceiptItems', label: 'Remove Items from Receipt', labelKey: 'permOp.haraka.removeReceiptItems', requiresKey: 'registerOpen' },
+      { key: 'receiptRemoveCustomer', label: 'Remove Customer from Receipt', labelKey: 'permOp.haraka.receiptRemoveCustomer', requiresKey: 'registerOpen' },
+      { key: 'holdReceipts', label: 'Hold Receipts', labelKey: 'permOp.haraka.holdReceipts', requiresKey: 'registerOpen' },
+      { key: 'recallReceipts', label: 'Recall Receipts', labelKey: 'permOp.haraka.recallReceipts', requiresKey: 'registerOpen' },
+      { key: 'removeReceipts', label: 'Remove Receipts', labelKey: 'permOp.haraka.removeReceipts', requiresKey: 'registerOpen' },
+      { key: 'chargeReceipt', label: 'Charge Receipt', labelKey: 'permOp.haraka.chargeReceipt', requiresKey: 'registerOpen' },
+      { key: 'printerSettings', label: 'Printer Settings', labelKey: 'permOp.haraka.printerSettings' },
+      { key: 'ordersView', label: 'View Orders', labelKey: 'permOp.haraka.ordersView' },
+      { key: 'ordersCreate', label: 'Create Orders', labelKey: 'permOp.haraka.ordersCreate', requiresKey: 'ordersView' },
+      { key: 'ordersRemoveCustomer', label: 'Remove Customer from Order', labelKey: 'permOp.haraka.ordersRemoveCustomer', requiresKey: 'ordersView' },
+      { key: 'ordersGenerateInvoice', label: 'Generate Invoice for Order', labelKey: 'permOp.haraka.ordersGenerateInvoice', requiresKey: 'ordersView' },
+      { key: 'ordersGenerateWarranty', label: 'Generate Warranty for Order', labelKey: 'permOp.haraka.ordersGenerateWarranty', requiresKey: 'ordersView' },
+      { key: 'ordersShare', label: 'Share Order', labelKey: 'permOp.haraka.ordersShare', requiresKey: 'ordersView' },
+      { key: 'ordersMarkConfirmed', label: 'Mark Order Confirmed', labelKey: 'permOp.haraka.ordersMarkConfirmed', requiresKey: 'ordersView' },
+      { key: 'ordersCancel', label: 'Cancel Order', labelKey: 'permOp.haraka.ordersCancel', requiresKey: 'ordersView' },
+      { key: 'ordersMarkAssigned', label: 'Mark Order Assigned', labelKey: 'permOp.haraka.ordersMarkAssigned', requiresKey: 'ordersView' },
+      { key: 'ordersMarkInTransit', label: 'Mark Order In Transit', labelKey: 'permOp.haraka.ordersMarkInTransit', requiresKey: 'ordersView' },
+      { key: 'ordersMarkDelivered', label: 'Mark Order Delivered', labelKey: 'permOp.haraka.ordersMarkDelivered', requiresKey: 'ordersView' },
+      { key: 'ordersAddPayment', label: 'Add Payment Entry (Orders)', labelKey: 'permOp.haraka.ordersAddPayment', requiresKey: 'ordersView' },
+      { key: 'customersView', label: 'View Customers', labelKey: 'permOp.haraka.customersView' },
+      { key: 'customersCreate', label: 'Add Customers', labelKey: 'permOp.haraka.customersCreate', requiresKey: 'customersView' },
+      { key: 'customersUpdate', label: 'Edit Customers', labelKey: 'permOp.haraka.customersUpdate', requiresKey: 'customersView' },
+      { key: 'customersDelete', label: 'Delete Customers', labelKey: 'permOp.haraka.customersDelete', requiresKey: 'customersView' },
+      { key: 'customersHistoryView', label: 'View Customer History', labelKey: 'permOp.haraka.customersHistoryView', requiresKey: 'customersView' },
+      { key: 'customerFieldsView', label: 'View Customer Fields', labelKey: 'permOp.haraka.customerFieldsView', requiresKey: 'customersView' },
+      { key: 'customerFieldsCreate', label: 'Add Customer Fields', labelKey: 'permOp.haraka.customerFieldsCreate', requiresKey: 'customerFieldsView' },
+      { key: 'customerFieldsUpdate', label: 'Edit Customer Fields', labelKey: 'permOp.haraka.customerFieldsUpdate', requiresKey: 'customerFieldsView' },
+      { key: 'customerFieldsDelete', label: 'Delete Customer Fields', labelKey: 'permOp.haraka.customerFieldsDelete', requiresKey: 'customerFieldsView' },
+      { key: 'deliveryAgentsView', label: 'View Delivery Agents', labelKey: 'permOp.haraka.deliveryAgentsView' },
+      { key: 'deliveryAgentsCreate', label: 'Add Delivery Agents', labelKey: 'permOp.haraka.deliveryAgentsCreate', requiresKey: 'deliveryAgentsView' },
+      { key: 'deliveryAgentsUpdate', label: 'Edit Delivery Agents', labelKey: 'permOp.haraka.deliveryAgentsUpdate', requiresKey: 'deliveryAgentsView' },
+      { key: 'deliveryAgentsDelete', label: 'Delete Delivery Agents', labelKey: 'permOp.haraka.deliveryAgentsDelete', requiresKey: 'deliveryAgentsView' },
+      { key: 'warrantyCertsView', label: 'View Warranty Certificates', labelKey: 'permOp.haraka.warrantyCertsView' },
+      { key: 'transactionsView', label: 'View Transactions', labelKey: 'permOp.haraka.transactionsView' },
+      { key: 'transactionsPrint', label: 'Print Transaction', labelKey: 'permOp.haraka.transactionsPrint', requiresKey: 'transactionsView' },
+      { key: 'transactionsShare', label: 'Share Transaction', labelKey: 'permOp.haraka.transactionsShare', requiresKey: 'transactionsView' },
+      { key: 'transactionsRefund', label: 'Refund Transaction', labelKey: 'permOp.haraka.transactionsRefund', requiresKey: 'transactionsView' },
+      { key: 'transactionsVoid', label: 'Void Transaction', labelKey: 'permOp.haraka.transactionsVoid', requiresKey: 'transactionsView' },
+      { key: 'posReportView', label: 'View POS Report', labelKey: 'permOp.haraka.posReportView' },
+      { key: 'posReportExport', label: 'Export POS Report', labelKey: 'permOp.haraka.posReportExport', requiresKey: 'posReportView' },
+      { key: 'servicesView', label: 'View Services', labelKey: 'permOp.haraka.servicesView' },
+      { key: 'serviceJobsCreate', label: 'Create Service Job', labelKey: 'permOp.haraka.serviceJobsCreate', requiresKey: 'servicesView' },
+      { key: 'serviceJobsMarkConfirmed', label: 'Mark Service Job Confirmed', labelKey: 'permOp.haraka.serviceJobsMarkConfirmed', requiresKey: 'servicesView' },
+      { key: 'serviceJobsAddPayment', label: 'Add Payment Entry (Services)', labelKey: 'permOp.haraka.serviceJobsAddPayment', requiresKey: 'servicesView' },
+      { key: 'serviceJobsMarkInProgress', label: 'Mark Service Job In Progress', labelKey: 'permOp.haraka.serviceJobsMarkInProgress', requiresKey: 'servicesView' },
+      { key: 'serviceJobsMarkDone', label: 'Mark Service Job Done', labelKey: 'permOp.haraka.serviceJobsMarkDone', requiresKey: 'servicesView' },
+      { key: 'serviceJobsUpdate', label: 'Edit Service Job', labelKey: 'permOp.haraka.serviceJobsUpdate', requiresKey: 'servicesView' },
+      { key: 'serviceJobsGenerateInvoice', label: 'Generate Invoice for Service Job', labelKey: 'permOp.haraka.serviceJobsGenerateInvoice', requiresKey: 'servicesView' },
+      { key: 'retainersView', label: 'View Retainers', labelKey: 'permOp.haraka.retainersView' },
+      { key: 'retainersCreate', label: 'Create Retainer', labelKey: 'permOp.haraka.retainersCreate', requiresKey: 'retainersView' },
+      { key: 'retainersPause', label: 'Pause Retainer', labelKey: 'permOp.haraka.retainersPause', requiresKey: 'retainersView' },
+      { key: 'retainersCancel', label: 'Cancel Retainer', labelKey: 'permOp.haraka.retainersCancel', requiresKey: 'retainersView' },
+      { key: 'retainersAddInvoice', label: 'Add Retainer Invoice', labelKey: 'permOp.haraka.retainersAddInvoice', requiresKey: 'retainersView' },
+      { key: 'retainersReactivate', label: 'Reactivate Retainer', labelKey: 'permOp.haraka.retainersReactivate', requiresKey: 'retainersView' },
+      { key: 'serviceCatalogView', label: 'View Service Catalog', labelKey: 'permOp.haraka.serviceCatalogView' },
+      { key: 'serviceCatalogCreate', label: 'Add Service', labelKey: 'permOp.haraka.serviceCatalogCreate', requiresKey: 'serviceCatalogView' },
+      { key: 'serviceCatalogUpdate', label: 'Edit Service', labelKey: 'permOp.haraka.serviceCatalogUpdate', requiresKey: 'serviceCatalogView' },
+      { key: 'serviceCatalogDelete', label: 'Delete Service', labelKey: 'permOp.haraka.serviceCatalogDelete', requiresKey: 'serviceCatalogView' },
     ],
   },
   {
-    key: 'reports',
-    label: 'Reports',
-    labelKey: 'permModule.reports',
-    featureKey: 'reports',
-    group: 'workflow',
+    key: 'reports', label: 'Reports', labelKey: 'permModule.reports',
+    featureKey: 'reports', group: 'platform',
     operations: [
       { key: 'view', label: 'View Reports', labelKey: 'permOp.reports.view' },
     ],
   },
   {
-    key: 'support',
-    label: 'Support',
-    labelKey: 'permModule.support',
-    featureKey: 'support',
-    group: 'workflow',
+    key: 'support', label: 'Support', labelKey: 'permModule.support',
+    featureKey: 'support', group: 'platform',
     operations: [
-      { key: 'view',   label: 'View Tickets',   labelKey: 'permOp.support.view' },
-      { key: 'create', label: 'Create Tickets', labelKey: 'permOp.support.create', requiresView: true },
+      { key: 'view', label: 'View Support Page', labelKey: 'permOp.support.view' },
+      { key: 'viewOthers', label: "View Others' Tickets", labelKey: 'permOp.support.viewOthers', requiresView: true },
+      { key: 'submit', label: 'Submit Tickets', labelKey: 'permOp.support.submit', requiresView: true },
+      { key: 'replyOwn', label: 'Reply to Own Tickets', labelKey: 'permOp.support.replyOwn', requiresView: true },
+      { key: 'replyOthers', label: "Reply to Others' Tickets", labelKey: 'permOp.support.replyOthers', requiresKey: 'viewOthers' },
     ],
   },
   {
-    key: 'auditLogs',
-    label: 'Audit Logs',
-    labelKey: 'permModule.auditLogs',
-    featureKey: 'auditLogs',
-    group: 'admin',
+    key: 'auditLogs', label: 'Audit Logs', labelKey: 'permModule.auditLogs',
+    featureKey: 'auditLogs', group: 'platform',
     operations: [
-      { key: 'view', label: 'View Audit Logs', labelKey: 'permOp.auditLogs.view' },
+      { key: 'view', label: 'View Audit Logs Page', labelKey: 'permOp.auditLogs.view' },
+      { key: 'viewSpace', label: 'View Current Space Logs', labelKey: 'permOp.auditLogs.viewSpace', requiresView: true },
+      { key: 'viewAllSpaces', label: 'View All Spaces Logs', labelKey: 'permOp.auditLogs.viewAllSpaces', requiresView: true },
     ],
   },
   {
-    key: 'leads',
-    label: 'Leads',
-    labelKey: 'permModule.leads',
-    group: 'admin',
-    hideFromEditor: true,
+    key: 'leads', label: 'Leads', labelKey: 'permModule.leads',
+    group: 'platform', hideFromEditor: true,
     operations: [
       { key: 'view', label: 'View Leads', labelKey: 'permOp.leads.view' },
     ],
   },
   {
-    key: 'purchases',
-    label: 'Purchases',
-    labelKey: 'permModule.purchases',
-    featureKey: 'inventory',
-    group: 'commerce',
+    key: 'banna', label: 'Customization', labelKey: 'permModule.banna',
+    featureKey: 'banna', group: 'platform',
     operations: [
-      { key: 'view',    label: 'View Purchases',                labelKey: 'permOp.purchases.view' },
-      { key: 'create',  label: 'Create Purchases',              labelKey: 'permOp.purchases.create',  requiresView: true },
-      { key: 'update',  label: 'Edit Purchases',                labelKey: 'permOp.purchases.update',  requiresView: true },
-      { key: 'delete',  label: 'Delete Purchases',              labelKey: 'permOp.purchases.delete',  requiresView: true },
-      { key: 'receive', label: 'Receive Purchases (stock-in)',  labelKey: 'permOp.purchases.receive', requiresView: true },
-    ],
-  },
-  {
-    key: 'pos',
-    label: 'Point of Sale (Haraka)',
-    labelKey: 'permModule.pos',
-    featureKey: 'pos',
-    group: 'commerce',
-    operations: [
-      { key: 'open_session',             label: 'Open Session',        labelKey: 'permOp.pos.open_session' },
-      { key: 'close_session',            label: 'Close Session',       labelKey: 'permOp.pos.close_session',        requiresView: true, requiresKey: 'open_session' },
-      { key: 'view_all_sessions',        label: "View Other Cashiers' Sessions", labelKey: 'permOp.pos.view_all_sessions' },
-      { key: 'process_sale',             label: 'Process Sales',       labelKey: 'permOp.pos.process_sale' },
-      { key: 'add_receipt_items',        label: 'Add Items to Receipt',    labelKey: 'permOp.pos.add_receipt_items',    requiresView: true, requiresKey: 'process_sale' },
-      { key: 'remove_receipt_items',     label: 'Remove Items from Receipt', labelKey: 'permOp.pos.remove_receipt_items', requiresView: true, requiresKey: 'process_sale' },
-      { key: 'apply_discount',           label: 'Apply Discounts',     labelKey: 'permOp.pos.apply_discount' },
-      { key: 'hold_receipts',            label: 'Hold & Recall Receipts',  labelKey: 'permOp.pos.hold_receipts',        requiresView: true, requiresKey: 'process_sale' },
-      { key: 'issue_refund',             label: 'Issue Refunds',       labelKey: 'permOp.pos.issue_refund' },
-      { key: 'void_transaction',         label: 'Void Transactions',   labelKey: 'permOp.pos.void_transaction' },
-      { key: 'view_reports',             label: 'View Reports',        labelKey: 'permOp.pos.view_reports' },
-      { key: 'fawtara_submit',           label: 'Resubmit to Fawtara', labelKey: 'permOp.pos.fawtara_submit' },
-      { key: 'customers_bulk_delete',    label: 'Bulk delete customers',          labelKey: 'permOp.pos.customers_bulk_delete' },
-      { key: 'customers_bulk_move',      label: 'Bulk move customers to space',   labelKey: 'permOp.pos.customers_bulk_move' },
-      { key: 'customers_bulk_duplicate', label: 'Bulk duplicate customers',       labelKey: 'permOp.pos.customers_bulk_duplicate' },
-      { key: 'view_orders',             label: 'View Orders',                    labelKey: 'permOp.pos.view_orders' },
-      { key: 'manage_orders',           label: 'Create & Update Orders',         labelKey: 'permOp.pos.manage_orders',           requiresView: true, requiresKey: 'view_orders' },
-      { key: 'assign_delivery',         label: 'Assign Delivery Agent',          labelKey: 'permOp.pos.assign_delivery',         requiresView: true, requiresKey: 'view_orders' },
-      { key: 'manage_delivery_agents',  label: 'Manage Delivery Agents',         labelKey: 'permOp.pos.manage_delivery_agents',  requiresView: true, requiresKey: 'view_orders' },
-      { key: 'view_warranty_certs',     label: 'View Warranty Certificates',     labelKey: 'permOp.pos.view_warranty_certs' },
-      { key: 'manage_warranty_certs',   label: 'Generate & Delete Warranties',   labelKey: 'permOp.pos.manage_warranty_certs',   requiresView: true, requiresKey: 'view_warranty_certs' },
-      { key: 'view_service_jobs',       label: 'View Service Jobs',               labelKey: 'permOp.pos.view_service_jobs' },
-      { key: 'create_service_jobs',     label: 'Create Service Jobs (intake)',    labelKey: 'permOp.pos.create_service_jobs',     requiresView: true, requiresKey: 'view_service_jobs' },
-      { key: 'checkout_service_jobs',   label: 'Checkout Service Jobs (items, status, payment)', labelKey: 'permOp.pos.checkout_service_jobs', requiresView: true, requiresKey: 'view_service_jobs' },
-      { key: 'view_retainers',          label: 'View Retainers',                  labelKey: 'permOp.pos.view_retainers' },
-      { key: 'manage_retainers',        label: 'Create & Manage Retainers',       labelKey: 'permOp.pos.manage_retainers',        requiresView: true, requiresKey: 'view_retainers' },
-      { key: 'view_services',           label: 'View Service Catalog',            labelKey: 'permOp.pos.view_services' },
-      { key: 'manage_services',         label: 'Manage Service Catalog',          labelKey: 'permOp.pos.manage_services',         requiresView: true, requiresKey: 'view_services' },
-    ],
-  },
-  {
-    key: 'banna',
-    label: 'Workspace Builder',
-    labelKey: 'permModule.banna',
-    featureKey: 'banna',
-    group: 'admin',
-    operations: [
-      { key: 'view',   label: 'View',   labelKey: 'permOp.banna.view' },
+      { key: 'view', label: 'View', labelKey: 'permOp.banna.view' },
       { key: 'create', label: 'Create', labelKey: 'permOp.banna.create', requiresView: true },
       { key: 'update', label: 'Update', labelKey: 'permOp.banna.update', requiresView: true },
       { key: 'delete', label: 'Delete', labelKey: 'permOp.banna.delete', requiresView: true },
     ],
   },
   {
-    key: 'settings',
-    label: 'Settings',
-    labelKey: 'permModule.settings',
-    group: 'admin',
+    key: 'settingsOrgInfo', label: 'Organization Info', labelKey: 'permModule.settingsOrgInfo',
+    group: 'settings',
     operations: [
-      { key: 'orgInfo',      label: 'Organization Info',          labelKey: 'permOp.settings.orgInfo' },
-      { key: 'subscription', label: 'Subscription',               labelKey: 'permOp.settings.subscription' },
-      { key: 'users',        label: 'Users',                      labelKey: 'permOp.settings.users' },
-      { key: 'taxRates',     label: 'Tax Rates',                  labelKey: 'permOp.settings.taxRates' },
-      { key: 'fawtara',      label: 'Fawtara (Jordan e-invoicing)', labelKey: 'permOp.settings.fawtara' },
+      { key: 'view', label: 'View Organization Info', labelKey: 'permOp.settingsOrgInfo.view' },
+      { key: 'editName', label: 'Edit Organization Name', labelKey: 'permOp.settingsOrgInfo.editName', requiresView: true },
+      { key: 'editBranding', label: 'Edit Branding', labelKey: 'permOp.settingsOrgInfo.editBranding', requiresView: true },
+    ],
+  },
+  {
+    key: 'settingsSpaces', label: 'Spaces', labelKey: 'permModule.settingsSpaces',
+    group: 'settings',
+    operations: [
+      { key: 'view', label: 'View Spaces', labelKey: 'permOp.settingsSpaces.view' },
+      { key: 'create', label: 'Create Spaces', labelKey: 'permOp.settingsSpaces.create', requiresView: true },
+      { key: 'update', label: 'Edit Spaces', labelKey: 'permOp.settingsSpaces.update', requiresView: true },
+      { key: 'grantAccess', label: 'Grant User Access', labelKey: 'permOp.settingsSpaces.grantAccess', requiresView: true },
+      { key: 'archive', label: 'Archive Space', labelKey: 'permOp.settingsSpaces.archive', requiresView: true },
+      { key: 'restore', label: 'Restore Archived Space', labelKey: 'permOp.settingsSpaces.restore', requiresView: true },
+    ],
+  },
+  {
+    key: 'settingsLists', label: 'Lists', labelKey: 'permModule.settingsLists',
+    group: 'settings',
+    operations: [
+      { key: 'view', label: 'View Lists', labelKey: 'permOp.settingsLists.view' },
+      { key: 'create', label: 'Add List Items', labelKey: 'permOp.settingsLists.create', requiresView: true },
+      { key: 'update', label: 'Edit List Items', labelKey: 'permOp.settingsLists.update', requiresView: true },
+      { key: 'delete', label: 'Delete List Items', labelKey: 'permOp.settingsLists.delete', requiresView: true },
+    ],
+  },
+  {
+    key: 'settingsSubscription', label: 'Subscription', labelKey: 'permModule.settingsSubscription',
+    group: 'settings',
+    operations: [
+      { key: 'view', label: 'View Subscription', labelKey: 'permOp.settingsSubscription.view' },
+    ],
+  },
+  {
+    key: 'settingsUsers', label: 'Users', labelKey: 'permModule.settingsUsers',
+    group: 'settings',
+    operations: [
+      { key: 'view', label: 'View Users', labelKey: 'permOp.settingsUsers.view' },
+      { key: 'invite', label: 'Invite Users', labelKey: 'permOp.settingsUsers.invite', requiresView: true },
+      { key: 'update', label: 'Edit Users', labelKey: 'permOp.settingsUsers.update', requiresView: true },
+      { key: 'revoke', label: 'Revoke Invites', labelKey: 'permOp.settingsUsers.revoke', requiresView: true },
+      { key: 'resetPassword', label: "Reset Users' Passwords", labelKey: 'permOp.settingsUsers.resetPassword', requiresView: true },
+      { key: 'delete', label: 'Delete Users', labelKey: 'permOp.settingsUsers.delete', requiresView: true },
+    ],
+  },
+  {
+    key: 'settingsTaxRates', label: 'Tax Rates', labelKey: 'permModule.settingsTaxRates',
+    group: 'settings',
+    operations: [
+      { key: 'view', label: 'View Tax Rates', labelKey: 'permOp.settingsTaxRates.view' },
+      { key: 'create', label: 'Add Tax Rates', labelKey: 'permOp.settingsTaxRates.create', requiresView: true },
+      { key: 'update', label: 'Edit Tax Rates', labelKey: 'permOp.settingsTaxRates.update', requiresView: true },
+      { key: 'delete', label: 'Delete Tax Rates', labelKey: 'permOp.settingsTaxRates.delete', requiresView: true },
+    ],
+  },
+  {
+    key: 'settingsFawtara', label: 'JoFotara', labelKey: 'permModule.settingsFawtara',
+    group: 'settings',
+    operations: [
+      { key: 'view', label: 'View JoFotara Settings', labelKey: 'permOp.settingsFawtara.view' },
+      { key: 'update', label: 'Edit JoFotara Settings', labelKey: 'permOp.settingsFawtara.update', requiresView: true },
+    ],
+  },
+  {
+    key: 'settingsReceipt', label: 'Receipt Customization', labelKey: 'permModule.settingsReceipt',
+    group: 'settings',
+    operations: [
+      { key: 'view', label: 'View Receipt Customization', labelKey: 'permOp.settingsReceipt.view' },
+      { key: 'update', label: 'Edit Receipt Customization', labelKey: 'permOp.settingsReceipt.update', requiresView: true },
+    ],
+  },
+  {
+    key: 'settingsInvoice', label: 'Invoice Customization', labelKey: 'permModule.settingsInvoice',
+    group: 'settings',
+    operations: [
+      { key: 'view', label: 'View Invoice Customization', labelKey: 'permOp.settingsInvoice.view' },
+      { key: 'update', label: 'Edit Invoice Customization', labelKey: 'permOp.settingsInvoice.update', requiresView: true },
+    ],
+  },
+  {
+    key: 'settingsWarrantyCert', label: 'Warranty Certificate Customization', labelKey: 'permModule.settingsWarrantyCert',
+    group: 'settings',
+    operations: [
+      { key: 'view', label: 'View Warranty Certificate Customization', labelKey: 'permOp.settingsWarrantyCert.view' },
+      { key: 'update', label: 'Edit Warranty Certificate Customization', labelKey: 'permOp.settingsWarrantyCert.update', requiresView: true },
+    ],
+  },
+  {
+    key: 'settingsNotifications', label: 'Notifications', labelKey: 'permModule.settingsNotifications',
+    group: 'settings',
+    operations: [
+      { key: 'view', label: 'View Notifications Settings', labelKey: 'permOp.settingsNotifications.view' },
+      { key: 'update', label: 'Edit Notifications Settings', labelKey: 'permOp.settingsNotifications.update', requiresView: true },
+    ],
+  },
+  {
+    key: 'settingsCashDrawer', label: 'Cash Drawer', labelKey: 'permModule.settingsCashDrawer',
+    group: 'settings',
+    operations: [
+      { key: 'view', label: 'View Cash Drawer Settings', labelKey: 'permOp.settingsCashDrawer.view' },
+      { key: 'update', label: 'Edit Cash Drawer Settings', labelKey: 'permOp.settingsCashDrawer.update', requiresView: true },
+    ],
+  },
+  {
+    key: 'settingsCardTerminal', label: 'Card Terminal', labelKey: 'permModule.settingsCardTerminal',
+    group: 'settings',
+    operations: [
+      { key: 'view', label: 'View Card Terminal Settings', labelKey: 'permOp.settingsCardTerminal.view' },
+      { key: 'update', label: 'Edit Card Terminal Settings', labelKey: 'permOp.settingsCardTerminal.update', requiresView: true },
     ],
   },
 ];

@@ -22,7 +22,7 @@ import { generateInviteQRDataUrl } from '@/lib/qr';
 export async function GET(_req: NextRequest) {
   const tenant = await resolveTenant();
   const user = tenant.user;
-  if (!hasPermission(user, 'settings', 'users'))
+  if (!hasPermission(user, 'settingsUsers', 'view'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const invites = await getInvites(tenant.organizationId);
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
   const tenant = await resolveTenant();
   const user = tenant.user;
-  if (!hasPermission(user, 'settings', 'users'))
+  if (!hasPermission(user, 'settingsUsers', 'invite'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   if (tenant.subscription?.status && tenant.subscription.status !== 'ACTIVE')

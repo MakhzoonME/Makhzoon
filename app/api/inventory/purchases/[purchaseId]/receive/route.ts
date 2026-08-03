@@ -19,7 +19,7 @@ export async function POST(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'inventory')
-    requirePermission(tenant.user, 'purchases', 'receive')
+    requirePermission(tenant.user, 'raseed', 'purchasesReceive')
     const { purchaseId } = await params
     const result = await service.receive(tenant, purchaseId)
     return NextResponse.json(result)

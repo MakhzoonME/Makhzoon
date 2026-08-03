@@ -11,6 +11,7 @@ export async function GET() {
   try {
     const tenant = await resolveTenant();
     requireFeature(tenant, 'inventory');
+    requirePermission(tenant.user, 'usool', 'assetAuditsView');
     const audits = await getInventoryAudits(tenant.organizationId, tenant.spaceId);
     return NextResponse.json({ audits });
   } catch (err) {
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
     requireFeature(tenant, 'inventory');
-    requirePermission(tenant.user, 'inventory', 'audits');
+    requirePermission(tenant.user, 'usool', 'assetAuditStart');
 
     const body = await req.json();
     const parsed = inventoryAuditSchema.safeParse(body);

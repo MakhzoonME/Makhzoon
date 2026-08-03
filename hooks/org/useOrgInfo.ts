@@ -20,7 +20,7 @@ export function useOrgInfo() {
   const canFetch =
     !!user &&
     (ADMIN_ROLES.has(user.role) ||
-      (user.role === 'staff' && user.permissions?.settings?.orgInfo === true));
+      (user.role === 'staff' && user.permissions?.settingsOrgInfo?.view === true));
 
   return useQuery<OrgInfo | null>({
     queryKey: ['org-info-self'],

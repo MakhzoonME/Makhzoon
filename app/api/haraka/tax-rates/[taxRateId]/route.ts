@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
-import { requirePermission } from '@/lib/permissions/require'
 import { TaxRatesService } from '@/lib/modules/haraka/tax/tax-rates.service'
 import { taxRateUpdateSchema } from '@/lib/modules/haraka/tax/schemas'
 
@@ -14,7 +13,7 @@ export async function PATCH(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
-    requirePermission(tenant.user, 'settings', 'taxRates')
+    // TaxRatesService.update() enforces settingsTaxRates.update.
     const { taxRateId } = await params
     const body = await req.json()
     const parsed = taxRateUpdateSchema.safeParse(body)
@@ -37,7 +36,7 @@ export async function DELETE(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
-    requirePermission(tenant.user, 'settings', 'taxRates')
+    // TaxRatesService.delete() enforces settingsTaxRates.delete.
     const { taxRateId } = await params
     await service.delete(tenant, taxRateId)
     return NextResponse.json({ ok: true })

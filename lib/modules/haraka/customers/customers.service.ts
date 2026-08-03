@@ -43,20 +43,23 @@ export interface CustomerHistoryEntry {
   isRefund: boolean
 }
 
-function requirePosSale(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'process_sale')) {
+function requireCustomers(
+  tenant: TenantContext,
+  op: 'customersView' | 'customersCreate' | 'customersUpdate' | 'customersDelete',
+) {
+  if (!hasPermission(tenant, 'haraka', op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
 
 export class CustomersService {
   async list(tenant: TenantContext, opts?: CustomerListOpts) {
-    requirePosSale(tenant)
+    requireCustomers(tenant, 'customersView')
     return repo.list(tenant, opts)
   }
 
   async getById(tenant: TenantContext, id: string) {
-    requirePosSale(tenant)
+    requireCustomers(tenant, 'customersView')
     const customer = await repo.getById(tenant, id)
     if (!customer) throw NextResponse.json({ error: 'Not found' }, { status: 404 })
     return customer
@@ -118,7 +121,7 @@ export class CustomersService {
   }
 
   async create(tenant: TenantContext, input: CustomerInput) {
-    requirePosSale(tenant)
+    requireCustomers(tenant, 'customersCreate')
     const id = await repo.create(tenant, input)
     auditLog.queue({
       tenant,
@@ -132,7 +135,7 @@ export class CustomersService {
   }
 
   async update(tenant: TenantContext, id: string, input: Partial<CustomerInput>) {
-    requirePosSale(tenant)
+    requireCustomers(tenant, 'customersUpdate')
     await repo.update(tenant, id, input)
     auditLog.queue({
       tenant,
@@ -145,7 +148,7 @@ export class CustomersService {
   }
 
   async delete(tenant: TenantContext, id: string) {
-    requirePosSale(tenant)
+    requireCustomers(tenant, 'customersDelete')
     await repo.delete(tenant, id)
     auditLog.queue({ tenant, module: 'pos', action: 'POS_CUSTOMER_DELETED', recordId: id })
     await eventBus.emit('pos.customer.deleted', { tenant, id })

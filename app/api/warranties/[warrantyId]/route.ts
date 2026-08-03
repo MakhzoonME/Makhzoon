@@ -23,7 +23,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ warr
   try {
     const tenant = await resolveTenant();
     requireFeature(tenant, 'warranties');
-    requirePermission(tenant.user, 'warranties', 'update');
+    requirePermission(tenant.user, 'usool', 'warrantiesUpdate');
     const { warrantyId } = await params;
 
     const body = await req.json();
@@ -52,7 +52,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   try {
     const tenant = await resolveTenant();
     requireFeature(tenant, 'warranties');
-    requirePermission(tenant.user, 'warranties', 'delete');
+    requirePermission(tenant.user, 'usool', 'warrantiesDelete');
     const { warrantyId } = await params;
     await warrantiesService.del(tenant, warrantyId);
     return NextResponse.json({ success: true });

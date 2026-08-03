@@ -14,6 +14,7 @@ export async function GET(_req: NextRequest, props: Params) {
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'inventory')
+    requirePermission(tenant.user, 'raseed', 'transactionsView')
     const transactions = await service.getTransactions(tenant, params.itemId)
     return NextResponse.json({ transactions })
   } catch (err) {
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest, props: Params) {
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'inventory')
-    requirePermission(tenant.user, 'inventory', 'transactions')
+    requirePermission(tenant.user, 'raseed', 'adjustStockUpdate')
     const body = await req.json()
     const parsed = inventoryTransactionSchema.safeParse(body)
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })

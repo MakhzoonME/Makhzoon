@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'assets')
-    requirePermission(tenant.user, 'assets', 'view')
+    requirePermission(tenant.user, 'usool', 'view')
     const limited = await rateLimitTenant(tenant, 'assets', 60, 60_000)
     if (limited) return limited
     const { searchParams } = new URL(req.url)
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'assets')
-    requirePermission(tenant.user, 'assets', 'create')
+    requirePermission(tenant.user, 'usool', 'create')
     const parsed = createAssetSchema.safeParse(await req.json())
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

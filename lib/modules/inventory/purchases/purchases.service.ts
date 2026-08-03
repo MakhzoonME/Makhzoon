@@ -12,8 +12,16 @@ import {
 
 const repo = new PurchasesRepository()
 
+const PURCHASE_OP = {
+  view: 'purchasesView',
+  create: 'purchasesCreate',
+  update: 'purchasesUpdate',
+  delete: 'purchasesDelete',
+  receive: 'purchasesReceive',
+} as const
+
 function require(tenant: TenantContext, op: 'view' | 'create' | 'update' | 'delete' | 'receive') {
-  if (!hasPermission(tenant, 'purchases', op)) {
+  if (!hasPermission(tenant, 'raseed', PURCHASE_OP[op])) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }

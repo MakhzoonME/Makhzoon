@@ -246,7 +246,7 @@ export class FawtaraService {
     tenant: TenantContext,
     transactionId: string,
   ): Promise<FawtaraSubmission> {
-    if (!hasPermission(tenant, 'pos', 'fawtara_submit')) {
+    if (!hasPermission(tenant, 'haraka', 'transactionsView')) {
       throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
     return this.submitTransaction(tenant, transactionId)

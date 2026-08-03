@@ -18,7 +18,7 @@ export class BannaService {
    */
   private assertCanManage(tenant: TenantContext, module: string, op: 'view' | 'create' | 'update' | 'delete') {
     const allowed = module === 'customers'
-      ? hasModuleAccess(tenant.user, 'pos')
+      ? hasModuleAccess(tenant.user, 'haraka')
       : hasPermission(tenant, 'banna', op);
     if (!allowed) throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

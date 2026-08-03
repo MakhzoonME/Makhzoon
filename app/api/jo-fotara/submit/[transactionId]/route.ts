@@ -13,7 +13,9 @@ export async function POST(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
-    requirePermission(tenant.user, 'pos', 'fawtara_submit')
+    // No dedicated permission — JoFotara submission is being automated, so a
+    // manual resubmit only requires the baseline ability to view transactions.
+    requirePermission(tenant.user, 'haraka', 'transactionsView')
     const { transactionId } = await params
     const submission = await service.resubmit(tenant, transactionId)
     return NextResponse.json({ submission })

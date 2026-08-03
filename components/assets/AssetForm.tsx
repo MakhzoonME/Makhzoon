@@ -56,7 +56,7 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
   function canAccessAssets(u: OrgUser) {
     const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin', 'makhzoon_admin', 'makhzoon_support']);
     if (ADMIN_ROLES.has(u.role)) return true;
-    return u.permissions?.assets?.view === true;
+    return u.permissions?.usool?.view === true;
   }
   const assignableUsers = allUsers.filter(canAccessAssets);
 

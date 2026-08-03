@@ -107,7 +107,6 @@ export class InventoryService {
       unit: string
       quantityOnHand: number
       minimumThreshold: number
-      reorderQuantity?: number
       location?: string
       supplier?: string
       unitCost?: number
@@ -149,7 +148,6 @@ export class InventoryService {
       sku?: string
       unit?: string
       minimumThreshold?: number
-      reorderQuantity?: number
       location?: string
       supplier?: string
       unitCost?: number

@@ -7,9 +7,6 @@ export * from './inventory';
 // Warranties domain
 export * from './warranties';
 
-// Requests domain
-export * from './requests';
-
 // Support domain
 export * from './support';
 

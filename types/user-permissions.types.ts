@@ -33,14 +33,6 @@ export interface WarrantyPermissions {
   delete: boolean;
 }
 
-export interface RequestPermissions {
-  view: boolean;
-  create: boolean;
-  approve: boolean;
-  bulk_move: boolean;
-  bulk_duplicate: boolean;
-}
-
 export interface DashboardPermissions {
   view: boolean;
 }
@@ -123,7 +115,6 @@ export interface UserPermissions {
   inventory: InventoryPermissions;
   purchases: PurchasePermissions;
   warranties: WarrantyPermissions;
-  requests: RequestPermissions;
   reports: ReportsPermissions;
   support: SupportPermissions;
   auditLogs: AuditLogsPermissions;
@@ -139,7 +130,6 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   inventory: { view: true,  create: true,  update: true,  delete: true,  transactions: true,  audits: true,  bulk_delete: true,  bulk_move: true,  bulk_duplicate: true  },
   purchases: { view: true,  create: true,  update: true,  delete: true,  receive: true },
   warranties:{ view: true,  create: true,  update: true,  delete: true  },
-  requests:  { view: true,  create: true,  approve: true,  bulk_move: true,  bulk_duplicate: true  },
   reports:   { view: true  },
   support:   { view: true,  create: true  },
   auditLogs: { view: true  },
@@ -155,7 +145,6 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   inventory: { view: true,  create: false, update: false, delete: false, transactions: false, audits: false, bulk_delete: false, bulk_move: false, bulk_duplicate: false },
   purchases: { view: false, create: false, update: false, delete: false, receive: false },
   warranties:{ view: true,  create: false, update: false, delete: false },
-  requests:  { view: true,  create: true,  approve: false, bulk_move: false, bulk_duplicate: false },
   reports:   { view: false },
   support:   { view: true,  create: true },
   auditLogs: { view: false },
@@ -268,20 +257,6 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'create', label: 'Add Warranties',    labelKey: 'permOp.warranties.create', requiresView: true },
       { key: 'update', label: 'Edit Warranties',   labelKey: 'permOp.warranties.update', requiresView: true },
       { key: 'delete', label: 'Delete Warranties', labelKey: 'permOp.warranties.delete', requiresView: true },
-    ],
-  },
-  {
-    key: 'requests',
-    label: 'Requests',
-    labelKey: 'permModule.requests',
-    featureKey: 'requests',
-    group: 'workflow',
-    operations: [
-      { key: 'view',           label: 'View Requests',    labelKey: 'permOp.requests.view' },
-      { key: 'create',         label: 'Submit Requests',  labelKey: 'permOp.requests.create',          requiresView: true },
-      { key: 'approve',        label: 'Approve / Reject', labelKey: 'permOp.requests.approve',         requiresView: true },
-      { key: 'bulk_move',      label: 'Bulk move to space',  labelKey: 'permOp.requests.bulk_move',      requiresView: true },
-      { key: 'bulk_duplicate', label: 'Bulk duplicate to space', labelKey: 'permOp.requests.bulk_duplicate', requiresView: true },
     ],
   },
   {

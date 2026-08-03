@@ -18,7 +18,6 @@ export interface CreateInventoryItemInput {
   unit: string;
   quantityOnHand: number;
   minimumThreshold: number;
-  reorderQuantity?: number;
   location?: string;
   supplier?: string;
   unitCost?: number;
@@ -32,7 +31,6 @@ export interface UpdateInventoryItemInput {
   unit?: string;
   quantityOnHand?: number;
   minimumThreshold?: number;
-  reorderQuantity?: number;
   location?: string;
   supplier?: string;
   unitCost?: number;

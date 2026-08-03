@@ -16,9 +16,8 @@ import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/ui';
 import { InventoryItem } from '@/types';
-import { RequestInventoryModal } from '@/components/inventory/RequestInventoryModal';
 import { useT } from '@/hooks/ui';
-import { Plus, Pencil, Trash2, AlertTriangle, FileText, X, ArrowRight, Copy, Clock } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, X, ArrowRight, Copy, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
@@ -118,7 +117,6 @@ export default function InventoryListPage() {
   const [searchInput, setSearchInput] = useState(search);
   const [deleteTarget, setDeleteTarget] = useState<InventoryItem | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [reqTarget, setReqTarget] = useState<InventoryItem | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [moveOpen, setMoveOpen] = useState(false);
   const [dupeOpen, setDupeOpen] = useState(false);
@@ -240,11 +238,6 @@ export default function InventoryListPage() {
               </SubscriptionGate>
             </>
           )}
-          <Button size="sm" variant="ghost" aria-label={t('inventory.request')}
-            className="text-primary-500 hover:text-primary-600 hover:bg-primary-50 transition-colors duration-150"
-            onClick={(e) => { e.stopPropagation(); setReqTarget(i); }}>
-            <FileText aria-hidden className="h-4 w-4" strokeWidth={1.75} />
-          </Button>
         </div>
       ),
     },
@@ -589,13 +582,6 @@ export default function InventoryListPage() {
         confirmLabel={t('common.delete')}
         onConfirm={handleDelete}
         loading={deleting}
-      />
-
-      <RequestInventoryModal
-        open={!!reqTarget}
-        onOpenChange={(o) => !o && setReqTarget(null)}
-        itemId={reqTarget?.id ?? ''}
-        itemName={reqTarget?.name ?? ''}
       />
 
       <MoveResourceDialog

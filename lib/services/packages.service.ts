@@ -15,7 +15,6 @@ interface LimitsInput {
   maxAssets?: number;
   maxUsers?: number;
   maxWarranties?: number;
-  maxRequests?: number;
   maxSpaces?: number;
   maxInventoryItems?: number;
 }
@@ -48,7 +47,6 @@ function normalizeLimits(limits?: LimitsInput): PackageLimits {
     maxAssets: limits?.maxAssets ?? -1,
     maxUsers: limits?.maxUsers ?? -1,
     maxWarranties: limits?.maxWarranties ?? -1,
-    maxRequests: limits?.maxRequests ?? -1,
     maxSpaces: limits?.maxSpaces ?? -1,
     maxInventoryItems: limits?.maxInventoryItems ?? -1,
   };

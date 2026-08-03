@@ -31,12 +31,11 @@ async function countSpaces(orgId: string): Promise<number> {
 }
 
 export async function getOrgUsage(orgId: string): Promise<OrgUsage> {
-  const [assets, users, warranties, requests, inventoryItems, spaces] =
+  const [assets, users, warranties, inventoryItems, spaces] =
     await Promise.all([
       countFor('assets', orgId),
       countFor('users', orgId),
       countFor('warranties', orgId),
-      countFor('requests', orgId),
       countFor('inventory_items', orgId),
       countSpaces(orgId),
     ]);
@@ -45,7 +44,6 @@ export async function getOrgUsage(orgId: string): Promise<OrgUsage> {
     assets,
     users,
     warranties,
-    requests,
     inventoryItems,
     spaces,
   };
@@ -90,7 +88,6 @@ export async function getAllOrgsWithUsage(filters?: {
         assets: 0,
         users: 0,
         warranties: 0,
-        requests: 0,
         spaces: 0,
         inventoryItems: 0,
       },

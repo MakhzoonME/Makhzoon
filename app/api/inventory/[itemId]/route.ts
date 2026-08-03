@@ -40,7 +40,6 @@ export async function PATCH(req: NextRequest, props: Params) {
       sku: data.sku || undefined,
       unit: data.unit,
       minimumThreshold: data.minimumThreshold,
-      reorderQuantity: data.reorderQuantity === undefined ? undefined : Number(data.reorderQuantity),
       location: data.location || undefined,
       supplier: data.supplier || undefined,
       unitCost: data.unitCost === undefined ? undefined : Number(data.unitCost),

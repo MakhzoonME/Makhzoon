@@ -22,7 +22,6 @@ const MODULE_LABELS: Record<string, string> = {
   orders:    'Orders (Haraka)',
   pos:       'Point of Sale (Haraka)',
   inventory: 'Inventory (Raseed)',
-  requests:  'Requests',
   users:     'Users',
   warranty:  'Warranties',
   system:    'System',

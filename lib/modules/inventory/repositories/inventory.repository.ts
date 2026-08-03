@@ -19,7 +19,6 @@ function toItem(r: Row, computedQty?: number): InventoryItem {
     unit: r.unit as InventoryUnit,
     quantityOnHand: qty,
     minimumThreshold: threshold,
-    reorderQuantity: r.reorder_quantity as number,
     location: r.location as string,
     supplier: r.supplier as string,
     unitCost: r.unit_cost as number,
@@ -313,7 +312,7 @@ export class InventoryRepository {
     tenant: TenantContext,
     input: {
       name: string; category: string; sku?: string; unit: string
-      quantityOnHand: number; minimumThreshold: number; reorderQuantity?: number
+      quantityOnHand: number; minimumThreshold: number
       location?: string; supplier?: string; unitCost?: number; notes?: string
       barcode?: string | null; posEnabled?: boolean; posPrice?: number | null; taxRateId?: string | null
       expiryDate?: string | null
@@ -331,7 +330,6 @@ export class InventoryRepository {
         sku: input.sku ?? null,
         unit: input.unit,
         minimum_threshold: input.minimumThreshold,
-        reorder_quantity: input.reorderQuantity ?? null,
         location: input.location ?? null,
         supplier: input.supplier ?? null,
         unit_cost: input.unitCost ?? null,
@@ -387,7 +385,7 @@ export class InventoryRepository {
     id: string,
     input: {
       name?: string; category?: string; sku?: string; unit?: string
-      minimumThreshold?: number; reorderQuantity?: number; location?: string
+      minimumThreshold?: number; location?: string
       supplier?: string; unitCost?: number; notes?: string
       barcode?: string | null; posEnabled?: boolean; posPrice?: number | null; taxRateId?: string | null
       expiryDate?: string | null
@@ -404,7 +402,7 @@ export class InventoryRepository {
     }
     const map: Record<string, string> = {
       name: 'name', category: 'category', sku: 'sku', unit: 'unit',
-      minimumThreshold: 'minimum_threshold', reorderQuantity: 'reorder_quantity',
+      minimumThreshold: 'minimum_threshold',
       location: 'location', supplier: 'supplier', unitCost: 'unit_cost',
       notes: 'notes', posEnabled: 'pos_enabled', posPrice: 'pos_price',
       taxRateId: 'tax_rate_id', expiryDate: 'expiry_date',

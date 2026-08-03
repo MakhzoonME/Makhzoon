@@ -6,7 +6,6 @@ export interface ReportsSummary {
   activeCheckouts: number;
   overdueCheckouts: number;
   warrantiesExpiringSoon: number;
-  openRequests: number;
   maintenanceCost: number;
   maintenanceCount: number;
 }

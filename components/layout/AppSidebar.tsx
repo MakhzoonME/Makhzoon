@@ -214,21 +214,27 @@ export function AppSidebar() {
           (sub) => !('type' in sub) && sub.permissionKey && hasPermByKey(user, sub.permissionKey)
         );
       }
-      // Check module access for staff, and for admins with custom restrictions
-      if (entry.featureKey && user) {
-        const moduleKey = entry.featureKey as keyof UserPermissions;
-        if (user.role === 'staff' || adminHasCustomPerms) {
-          return hasModuleAccess({ ...user, organizationId: user.organizationId ?? null }, moduleKey);
-        }
+      // Check permission access for staff, and for admins with custom restrictions.
+      // Prefer the explicit permissionKey (module.operation) — featureKey is a
+      // subscription-feature name and no longer always matches the permission
+      // module name (e.g. featureKey 'assets' -> permission module 'usool').
+      if (user && (user.role === 'staff' || adminHasCustomPerms)) {
+        const u = { ...user, organizationId: user.organizationId ?? null };
+        if (entry.permissionKey) return hasPermByKey(u, entry.permissionKey);
+        if (entry.featureKey) return hasModuleAccess(u, entry.featureKey as keyof UserPermissions);
       }
       return true;
     }
-    const item = entry as { adminOnly?: boolean; featureKey?: string };
+    const item = entry as { adminOnly?: boolean; featureKey?: string; permissionKey?: string };
     if (item.adminOnly && !canSeeAdmin) return false;
     if (item.featureKey && !features[item.featureKey]) return false;
-    if (item.featureKey && user && (user.role === 'staff' || adminHasCustomPerms)) {
-      const moduleKey = item.featureKey as keyof UserPermissions;
-      if (!hasModuleAccess({ ...user, organizationId: user.organizationId ?? null }, moduleKey)) return false;
+    if (user && (user.role === 'staff' || adminHasCustomPerms)) {
+      const u = { ...user, organizationId: user.organizationId ?? null };
+      if (item.permissionKey) {
+        if (!hasPermByKey(u, item.permissionKey)) return false;
+      } else if (item.featureKey) {
+        if (!hasModuleAccess(u, item.featureKey as keyof UserPermissions)) return false;
+      }
     }
     return true;
   });

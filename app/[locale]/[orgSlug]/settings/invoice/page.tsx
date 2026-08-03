@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from '@/hooks/ui';
+import { toast, useAdminGuard } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { apiFetch } from '@/lib/utils/api-fetch';
 import { DEFAULT_ORDER_DOCUMENT_CONFIG, type OrderDocumentConfig } from '@/lib/modules/haraka/orders/order-document-config';
@@ -50,6 +50,7 @@ const MOCK_PAYMENTS = [
 ];
 
 export default function InvoiceSettingsPage() {
+  const { isAllowed } = useAdminGuard('settingsInvoice.view');
   const { data: orgInfo } = useOrgInfo();
   const [config, setConfig] = useState<OrderDocumentConfig>(DEFAULT_ORDER_DOCUMENT_CONFIG);
   const [loading, setLoading] = useState(true);
@@ -101,7 +102,7 @@ export default function InvoiceSettingsPage() {
     }
   }
 
-  if (loading) {
+  if (!isAllowed || loading) {
     return (
       <div className="flex items-center justify-center h-48">
         <div className="h-7 w-7 rounded-full border-2 border-primary-600 border-t-transparent animate-spin" />

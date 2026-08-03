@@ -18,7 +18,7 @@ export default function SpacesSettingsPage() {
   const router = useRouter();
   useOrgSlug();
   useOrgInfo();
-  const { isAllowed } = useAdminGuard('settings.orgInfo');
+  const { isAllowed } = useAdminGuard('settingsSpaces.view');
   const { data, isLoading } = useAllSpaces();
   const updateMut = useUpdateSpace();
 

@@ -27,7 +27,7 @@ export default function EditSpacePage() {
   const router = useRouter();
   const { t } = useT();
   const { data: orgInfo } = useOrgInfo();
-  const { isAllowed } = useAdminGuard('settings.orgInfo');
+  const { isAllowed } = useAdminGuard('settingsSpaces.update');
   const { space, isLoading } = useSpace(params.spaceId);
   const updateMut = useUpdateSpace();
 

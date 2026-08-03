@@ -17,7 +17,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { hasPermByKey } from '@/lib/permissions';
 
 export default function NewServiceJobPage() {
-  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
   const { isAllowed, isAdmin } = useAdminGuard(['pos.create_service_jobs', 'pos.checkout_service_jobs']);
   const { user } = useAuthStore();
   const canSetPricing = isAdmin || (!!user && hasPermByKey(user, 'pos.checkout_service_jobs'));

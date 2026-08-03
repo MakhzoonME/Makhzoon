@@ -86,7 +86,7 @@ function StatusBreakdown({ active, retired, total, isLoading }: { active: number
 }
 
 export default function UsoolOverviewPage() {
-  const { isAllowed } = useModuleGuard({ featureKey: 'assets', moduleKey: 'assets' });
+  const { isAllowed } = useModuleGuard({ featureKey: 'assets', moduleKey: 'usool' });
   const router = useRouter();
   const orgSlug = useOrgSlug();
   const space = useSpace();
@@ -94,8 +94,8 @@ export default function UsoolOverviewPage() {
   const { t, locale } = useT();
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
-  const canViewWarranties = !!user && hasPermission(user, 'warranties', 'view');
-  const canCreateAsset = !!user && hasPermission(user, 'assets', 'create');
+  const canViewWarranties = !!user && hasPermission(user, 'usool', 'warrantiesView');
+  const canCreateAsset = !!user && hasPermission(user, 'usool', 'create');
 
   const { data, isLoading } = useUsoolOverview(space, canViewWarranties);
 

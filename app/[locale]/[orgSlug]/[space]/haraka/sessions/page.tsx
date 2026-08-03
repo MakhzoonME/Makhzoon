@@ -14,7 +14,7 @@ import { hasPermission } from '@/lib/permissions';
 import type { PosSession } from '@/types';
 
 export default function SessionsListPage() {
-  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
+  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
@@ -25,7 +25,7 @@ export default function SessionsListPage() {
   // for their own open session — send them to the register to keep working
   // instead of showing figures they have no reason to see.
   const canSeeSessionDetail =
-    !!user && (hasPermission(user, 'pos', 'view_all_sessions') || hasPermission(user, 'pos', 'close_session'));
+    !!user && (hasPermission(user, 'haraka', 'sessionsViewOthers') || hasPermission(user, 'haraka', 'sessionsCloseOwn'));
   const [status, setStatus] = useState<'open' | 'closed' | 'all'>('all');
   const [page, setPage] = useState(1);
 

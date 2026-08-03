@@ -4,7 +4,7 @@ import { useRouter, useParams, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 import { useOrgSlug } from '@/hooks/ui/useOrgSlug';
 import { useSpace } from '@/hooks/ui/useSpace';
-import { hasModuleAccess } from '@/lib/permissions';
+import { hasModuleAccess, hasPermission } from '@/lib/permissions';
 import { getFirstAccessiblePath } from '@/lib/nav';
 import type { UserPermissions } from '@/types/user-permissions.types';
 
@@ -13,9 +13,11 @@ const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin', 'makhzoon_admi
 export function useModuleGuard(opts: {
   featureKey?: string;
   moduleKey?: keyof UserPermissions;
+  /** Operation to check within moduleKey instead of the module's 'view' gate. */
+  permOp?: string;
   adminOnly?: boolean;
 }) {
-  const { featureKey, moduleKey, adminOnly } = opts;
+  const { featureKey, moduleKey, permOp, adminOnly } = opts;
   const { user, loading } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
@@ -33,10 +35,8 @@ export function useModuleGuard(opts: {
     // Check module permissions for staff always, and for admins when they have
     // stored custom permissions (which may restrict their access).
     if (moduleKey && (user.role === 'staff' || (isAdmin && user.permissions))) {
-      return hasModuleAccess(
-        { ...user, organizationId: user.organizationId ?? null },
-        moduleKey,
-      );
+      const u = { ...user, organizationId: user.organizationId ?? null };
+      return permOp ? hasPermission(u, moduleKey, permOp) : hasModuleAccess(u, moduleKey);
     }
     return true;
   })();

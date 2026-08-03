@@ -16,7 +16,7 @@ import type { PosTransaction } from '@/types';
 type StatusFilter = 'all' | 'completed' | 'refunded' | 'voided';
 
 export default function TransactionsListPage() {
-  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
   const { isAllowed } = useAdminGuard('pos.view_orders');
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();

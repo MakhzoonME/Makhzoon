@@ -55,15 +55,15 @@ export default function RegisterPage() {
   const [heldOpen, setHeldOpen] = useState(false);
   const heldRef = useRef<HTMLDivElement>(null);
 
-  const canAddItems = !!user && hasPermission(user, 'pos', 'add_receipt_items');
-  const canRemoveItems = !!user && hasPermission(user, 'pos', 'remove_receipt_items');
-  const canApplyDiscount = !!user && hasPermission(user, 'pos', 'apply_discount');
-  const canHoldReceipts = !!user && hasPermission(user, 'pos', 'hold_receipts');
+  const canAddItems = !!user && hasPermission(user, 'haraka', 'registerOpen');
+  const canRemoveItems = !!user && hasPermission(user, 'haraka', 'removeReceiptItems');
+  const canApplyDiscount = !!user && hasPermission(user, 'haraka', 'applyDiscount');
+  const canHoldReceipts = !!user && hasPermission(user, 'haraka', 'holdReceipts');
   // A front-desk user who can build/hold a cart but not charge it (no
-  // process_sale) doesn't need — and shouldn't be forced to open — a POS
+  // registerOpen) doesn't need — and shouldn't be forced to open — a POS
   // session just to land on this page. Only checkout-capable users are
   // redirected away when they have no open session of their own.
-  const canCheckout = !!user && hasPermission(user, 'pos', 'process_sale');
+  const canCheckout = !!user && hasPermission(user, 'haraka', 'registerOpen');
 
   // Close held-carts dropdown on outside click
   useEffect(() => {

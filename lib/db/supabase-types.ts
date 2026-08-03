@@ -3834,6 +3834,10 @@ export type Database = {
       }
       belongs_to_org: { Args: { org: string }; Returns: boolean }
       can_access_space: { Args: { s: string }; Returns: boolean }
+      haraka_complete_sale: {
+        Args: { p_tx: Json; p_stock_lines: Json; p_actor: Json }
+        Returns: Database["public"]["Tables"]["pos_transactions"]["Row"]
+      }
       increment_rate_limit: {
         Args: { p_key: string; p_limit: number; p_window_ms: number }
         Returns: {

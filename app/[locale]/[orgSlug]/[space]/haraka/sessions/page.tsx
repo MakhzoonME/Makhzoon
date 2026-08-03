@@ -26,6 +26,10 @@ export default function SessionsListPage() {
   // instead of showing figures they have no reason to see.
   const canSeeSessionDetail =
     !!user && (hasPermission(user, 'haraka', 'sessionsViewOthers') || hasPermission(user, 'haraka', 'sessionsCloseOwn'));
+  // Lets someone enter and operate a DIFFERENT cashier's open register
+  // (e.g. a supervisor covering a busy till), independent of whether they
+  // also hold oversight (sessionsViewOthers) into the cash/discrepancy detail.
+  const canEnterOthers = !!user && hasPermission(user, 'haraka', 'sessionsEnterOthers');
   const [status, setStatus] = useState<'open' | 'closed' | 'all'>('all');
   const [page, setPage] = useState(1);
 
@@ -144,7 +148,11 @@ export default function SessionsListPage() {
         isLoading={isLoading}
         emptyMessage={t('haraka.noSessions')}
         onRowClick={(s) => {
-          if (!canSeeSessionDetail && s.status === 'open' && s.cashierId === user?.uid) {
+          const isOwn = s.cashierId === user?.uid;
+          const goToRegister = isOwn
+            ? s.status === 'open' && !canSeeSessionDetail
+            : s.status === 'open' && canEnterOthers;
+          if (goToRegister) {
             router.push(`${base}/sessions/${s.id}/register`);
           } else {
             router.push(`${base}/sessions/${s.id}`);

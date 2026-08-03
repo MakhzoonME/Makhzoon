@@ -14,7 +14,7 @@ import { PrinterSettingsDialog } from '@/components/haraka/PrinterSettingsDialog
 import { ReceiptShareDialog } from '@/components/haraka/ReceiptShareDialog';
 import { usePosCart, setActivePosCartSession, type PosPickableItem } from '@/store/pos-cart.store';
 import { useBarcodeLookup } from '@/hooks/inventory';
-import { useTaxRates, useCurrentSession, useCompleteSale, useFawtaraConfig, CompleteSaleError } from '@/hooks/haraka';
+import { useTaxRates, useCurrentSession, useSessionForRegister, useCompleteSale, useFawtaraConfig, CompleteSaleError } from '@/hooks/haraka';
 import { useAuthStore } from '@/store/auth.store';
 import { hasPermission } from '@/lib/permissions';
 import { priceCart } from '@/lib/modules/haraka/pricing/calc';
@@ -39,6 +39,16 @@ export default function RegisterPage() {
   const { data: orgInfo } = useOrgInfo();
   const { user } = useAuthStore();
   const { data: sessionData, isLoading: sessionLoading, isFetched: sessionFetched } = useCurrentSession();
+  const ownSession = sessionData?.session ?? null;
+  const isOwnSessionUrl = !!ownSession && ownSession.id === params.sessionId;
+  // The URL's sessionId may be someone ELSE's open session (a supervisor
+  // entering it via sessionsEnterOthers) — only fetched when it isn't our
+  // own current session, since useCurrentSession already covers that case.
+  const {
+    data: otherSessionData,
+    isFetched: otherSessionFetched,
+    isError: otherSessionError,
+  } = useSessionForRegister(isOwnSessionUrl ? undefined : params.sessionId);
   const { data: taxData } = useTaxRates();
   const { data: fawtaraCfg } = useFawtaraConfig();
   const fawtaraEnabled = fawtaraCfg?.config?.enabled === true;
@@ -107,21 +117,27 @@ export default function RegisterPage() {
   });
 
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
-  const currentSession = sessionData?.session ?? null;
+  const currentSession = isOwnSessionUrl ? ownSession : (otherSessionData?.session ?? null);
 
   // Keep the URL honest about which session this register is operating.
-  //   • no open session (and this user checks out) → back to the sessions list
-  //   • an open session whose id ≠ the URL's sessionId → forward to its register
+  //   • viewing my own session at the right URL → nothing to do
+  //   • URL points at another session I can't access (wrong org, no
+  //     sessionsEnterOthers, etc.) → fall back to my own open session, or
+  //     the sessions list if I don't have one
+  //   • no own session and no access to the URL's session, but I'm
+  //     checkout-capable → back to the sessions list
   useEffect(() => {
     if (!sessionFetched || sessionLoading) return;
-    if (canCheckout && !currentSession) {
-      router.replace(`${base}/sessions`);
+    if (isOwnSessionUrl) return;
+    if (!otherSessionFetched) return;
+    if (otherSessionError) {
+      router.replace(ownSession ? `${base}/sessions/${ownSession.id}/register` : `${base}/sessions`);
       return;
     }
-    if (currentSession && currentSession.id !== params.sessionId) {
-      router.replace(`${base}/sessions/${currentSession.id}/register`);
+    if (canCheckout && !ownSession && !otherSessionData?.session) {
+      router.replace(`${base}/sessions`);
     }
-  }, [canCheckout, sessionFetched, sessionLoading, currentSession, params.sessionId, router, base]);
+  }, [sessionFetched, sessionLoading, isOwnSessionUrl, otherSessionFetched, otherSessionError, otherSessionData, ownSession, canCheckout, router, base]);
 
   const taxRateById = useCallback(
     (id: string | null | undefined): number => {

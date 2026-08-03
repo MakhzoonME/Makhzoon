@@ -1,5 +1,5 @@
 export { useTaxRates, useCreateTaxRate, useUpdateTaxRate, useDeleteTaxRate } from './useTaxRates';
-export { useSessions, useCurrentSession, useSession, useOpenSession, useCloseSession } from './useSessions';
+export { useSessions, useCurrentSession, useSession, useSessionForRegister, useOpenSession, useCloseSession } from './useSessions';
 export { useTransactions, useTransaction, useCompleteSale, useVoidSale, useRefundSale, CompleteSaleError } from './useTransactions';
 export { useFawtaraConfig, useUpdateFawtaraConfig, useResubmitFawtara } from './useFawtara';
 export { useHarakaReport, buildReportExportUrl } from './useReports';

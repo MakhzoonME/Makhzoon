@@ -34,6 +34,8 @@ export const completeSaleSchema = z.object({
   offlineId: z.string().min(8),
   /** When true the cashier has chosen to bypass Fawtara for this sale. */
   skipFawtara: z.boolean().optional(),
+  /** Required when the sale has a discount and the charging user cannot self-approve. */
+  approverPin: z.string().regex(/^\d{4}$/, 'PIN must be exactly 4 digits').optional(),
 })
 
 export const refundSchema = z.object({

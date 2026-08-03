@@ -10,10 +10,13 @@ import {
 } from './customers.repository'
 import { TransactionsRepository } from '@/lib/modules/haraka/transactions/transactions.repository'
 import { OrdersRepository } from '@/lib/modules/haraka/orders/orders.repository'
+import { BannaRepository } from '@/lib/modules/banna/repositories/banna.repository'
+import { findMissingRequiredFields } from './required-fields'
 
 const repo = new CustomersRepository()
 const txRepo = new TransactionsRepository()
 const ordersRepo = new OrdersRepository()
+const bannaRepo = new BannaRepository()
 
 /**
  * A single entry in a customer's activity timeline — either a POS sale/refund
@@ -53,6 +56,32 @@ function requireCustomers(
 }
 
 export class CustomersService {
+  /**
+   * Enforces the org's configured required/hidden state for the five default
+   * customer fields (Name/Phone/Email/Tax number/Notes) — hidden always wins
+   * over required. `input` may be a partial patch (PATCH), in which case only
+   * the fields actually present are checked.
+   */
+  private async assertRequiredFields(tenant: TenantContext, input: Partial<CustomerInput>) {
+    await bannaRepo.ensureDefaultCustomerFields(tenant)
+    const allFields = await bannaRepo.getAll(tenant, { module: 'customers' })
+    const defaults = (allFields as unknown as Record<string, unknown>[])
+      .filter((f) => f.is_default === true)
+      .map((f) => ({
+        fieldKey: f.field_key as string,
+        required: f.required as boolean,
+        active: f.is_active as boolean,
+      }))
+
+    const missing = findMissingRequiredFields(defaults, input)
+    if (missing.length > 0) {
+      throw NextResponse.json(
+        { error: { fieldErrors: Object.fromEntries(missing.map((key) => [key, ['This field is required']])) } },
+        { status: 422 },
+      )
+    }
+  }
+
   async list(tenant: TenantContext, opts?: CustomerListOpts) {
     requireCustomers(tenant, 'customersView')
     return repo.list(tenant, opts)
@@ -122,6 +151,7 @@ export class CustomersService {
 
   async create(tenant: TenantContext, input: CustomerInput) {
     requireCustomers(tenant, 'customersCreate')
+    await this.assertRequiredFields(tenant, input)
     const id = await repo.create(tenant, input)
     auditLog.queue({
       tenant,
@@ -136,6 +166,7 @@ export class CustomersService {
 
   async update(tenant: TenantContext, id: string, input: Partial<CustomerInput>) {
     requireCustomers(tenant, 'customersUpdate')
+    await this.assertRequiredFields(tenant, input)
     await repo.update(tenant, id, input)
     auditLog.queue({
       tenant,

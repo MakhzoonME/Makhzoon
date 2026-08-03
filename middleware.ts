@@ -91,7 +91,7 @@ export async function middleware(req: NextRequest) {
   }
 
   const session = req.cookies.getAll().some(
-    (c) => c.name.startsWith('sb-') && c.name.endsWith('-auth-token') && c.value
+    (c) => c.name.startsWith('sb-') && /-auth-token(\.\d+)?$/.test(c.name) && c.value
   );
 
   // Auth pages are always accessible

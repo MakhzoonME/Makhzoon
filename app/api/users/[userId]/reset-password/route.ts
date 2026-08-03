@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { hasPermission } from '@/lib/permissions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getUserById } from '@/lib/db/users';
 import { createPasswordResetToken } from '@/lib/db/password-reset-tokens';
 import { sendEmail } from '@/lib/email/resend';
+
+const resetPasswordSchema = z.object({
+  mode: z.enum(['link', 'temp_password']).optional(),
+});
+
 function generateTempPassword(): string {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
   let p = '';
@@ -34,10 +40,21 @@ export async function POST(req: NextRequest, props: { params: Promise<{ userId: 
   if (orgId && targetUser.organizationId !== orgId && caller.role !== 'super_admin')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const isUsernameAccount = !!targetUser.username && !targetUser.email;
+  const isUsernameAccount = !!targetUser.username && !!targetUser.email?.endsWith('@makhzoon.local');
 
   if (isUsernameAccount) {
-    // Username accounts have no real email — set a temp password directly.
+    // Username accounts have no real email — never send a link there.
+    // Admin picks either an immediate temp password, or a link they copy and share manually.
+    const parsed = resetPasswordSchema.safeParse(await req.json().catch(() => ({})));
+    const mode = parsed.success && parsed.data.mode === 'link' ? 'link' : 'temp_password';
+
+    if (mode === 'link') {
+      const resetToken = await createPasswordResetToken(userId);
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
+      const resetLink = `${appUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
+      return NextResponse.json({ type: 'reset_link', link: resetLink });
+    }
+
     // userId is the auth.users UUID so we can update directly.
     const tempPassword = generateTempPassword();
     const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { password: tempPassword });

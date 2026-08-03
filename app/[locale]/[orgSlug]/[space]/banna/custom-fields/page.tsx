@@ -89,6 +89,7 @@ export default function CustomFieldsPage() {
       placeholderAr: raw.placeholder_ar as string | undefined,
       sortOrder: raw.sort_order as number,
       active: raw.is_active as boolean,
+      isDefault: raw.is_default as boolean,
       createdAt: raw.created_at as string,
       updatedAt: raw.updated_at as string,
       spaceId: raw.space_id as string | undefined,

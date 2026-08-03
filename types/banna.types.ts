@@ -28,6 +28,10 @@ export interface CustomField {
   placeholderAr?: string;
   sortOrder: number;
   active: boolean;
+  /** True for the built-in Name/Phone/Email/Tax number/Notes rows — real
+   *  pos_customers columns, not user-created fields. Not deletable; only
+   *  required/active/sortOrder can be changed. */
+  isDefault: boolean;
   createdAt: string;
   updatedAt: string;
 }

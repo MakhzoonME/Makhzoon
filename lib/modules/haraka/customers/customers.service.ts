@@ -69,11 +69,17 @@ export class CustomersService {
    */
   async history(tenant: TenantContext, customerId: string): Promise<CustomerHistoryEntry[]> {
     // getById enforces the permission check and 404s on a foreign/unknown id.
-    await this.getById(tenant, customerId)
+    const customer = await this.getById(tenant, customerId)
 
+    // Match by id, plus a fallback on the snapshotted name/phone so legacy
+    // sales/orders taken before this customer was linked still surface.
     const [txs, orders] = await Promise.all([
-      txRepo.listByCustomer(tenant, customerId),
-      ordersRepo.listByCustomer(tenant, customerId),
+      txRepo.listByCustomer(tenant, { id: customerId, name: customer.name }),
+      ordersRepo.listByCustomer(tenant, {
+        id: customerId,
+        name: customer.name,
+        phone: customer.phone,
+      }),
     ])
 
     const entries: CustomerHistoryEntry[] = [

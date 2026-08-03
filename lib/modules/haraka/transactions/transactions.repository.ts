@@ -234,16 +234,39 @@ export class TransactionsRepository {
   /**
    * Every POS transaction ever recorded for a given customer (sales, refunds
    * and voids), newest first. Used by the customer profile's history timeline.
+   *
+   * Primarily matches on `customer_id`. As a fallback it also picks up legacy
+   * rows that were rung up name-only (no linked customer) by matching the
+   * snapshotted `customer_name` — but only among rows with a null customer_id,
+   * so a sale explicitly attached to a different customer is never mis-claimed.
+   * (pos_transactions has no phone snapshot, so name is the only fallback key.)
    */
-  async listByCustomer(tenant: TenantContext, customerId: string): Promise<PosTransaction[]> {
-    const { data, error } = await supabaseAdmin
-      .from('pos_transactions')
-      .select('*')
-      .eq('organization_id', tenant.organizationId)
-      .eq('customer_id', customerId)
-      .order('created_at', { ascending: false })
-    if (error) throw error
-    return (data ?? []).map(toTransaction)
+  async listByCustomer(
+    tenant: TenantContext,
+    match: { id: string; name?: string | null },
+  ): Promise<PosTransaction[]> {
+    const base = () =>
+      supabaseAdmin
+        .from('pos_transactions')
+        .select('*')
+        .eq('organization_id', tenant.organizationId)
+
+    const queries = [base().eq('customer_id', match.id)]
+    const name = match.name?.trim()
+    if (name) queries.push(base().is('customer_id', null).eq('customer_name', name))
+
+    const results = await Promise.all(queries)
+    const byId = new Map<string, PosTransaction>()
+    for (const { data, error } of results) {
+      if (error) throw error
+      for (const row of data ?? []) {
+        const tx = toTransaction(row)
+        byId.set(tx.id, tx)
+      }
+    }
+    return Array.from(byId.values()).sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    )
   }
 
   async getById(tenant: TenantContext, id: string): Promise<PosTransaction | null> {

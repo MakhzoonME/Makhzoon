@@ -6,6 +6,7 @@ import { readSavedPrinter, clearSavedPrinter, savePrinter, pairPrinter as transp
 interface PrinterState {
   paperWidth: 58 | 80;
   copies: number;
+  cutFeed: number;
   paired: boolean;
   vendorId: number | null;
   productId: number | null;
@@ -14,11 +15,13 @@ interface PrinterState {
   unpair: () => void;
   setPaperWidth: (w: 58 | 80) => void;
   setCopies: (c: number) => void;
+  setCutFeed: (n: number) => void;
 }
 
 export const usePrinterStore = create<PrinterState>((set, get) => ({
   paperWidth: 80,
   copies: 1,
+  cutFeed: 1,
   paired: false,
   vendorId: null,
   productId: null,
@@ -31,6 +34,7 @@ export const usePrinterStore = create<PrinterState>((set, get) => ({
         productId: saved.productId,
         paperWidth: saved.paperWidth,
         copies: saved.copies,
+        cutFeed: saved.cutFeed ?? 1,
       });
     } else {
       set({ paired: false, vendorId: null, productId: null });
@@ -38,7 +42,7 @@ export const usePrinterStore = create<PrinterState>((set, get) => ({
   },
   pair: async () => {
     const s = get();
-    const saved = await transportPair(s.paperWidth, s.copies);
+    const saved = await transportPair(s.paperWidth, s.copies, s.cutFeed);
     set({ paired: true, vendorId: saved.vendorId, productId: saved.productId });
   },
   unpair: () => {
@@ -48,7 +52,7 @@ export const usePrinterStore = create<PrinterState>((set, get) => ({
   setPaperWidth: (w) => {
     const s = get();
     if (s.paired && s.vendorId && s.productId) {
-      savePrinter({ vendorId: s.vendorId, productId: s.productId, paperWidth: w, copies: s.copies });
+      savePrinter({ vendorId: s.vendorId, productId: s.productId, paperWidth: w, copies: s.copies, cutFeed: s.cutFeed });
     }
     set({ paperWidth: w });
   },
@@ -56,8 +60,16 @@ export const usePrinterStore = create<PrinterState>((set, get) => ({
     const s = get();
     const copies = Math.max(1, c);
     if (s.paired && s.vendorId && s.productId) {
-      savePrinter({ vendorId: s.vendorId, productId: s.productId, paperWidth: s.paperWidth, copies });
+      savePrinter({ vendorId: s.vendorId, productId: s.productId, paperWidth: s.paperWidth, copies, cutFeed: s.cutFeed });
     }
     set({ copies });
+  },
+  setCutFeed: (n) => {
+    const s = get();
+    const cutFeed = Math.max(0, n);
+    if (s.paired && s.vendorId && s.productId) {
+      savePrinter({ vendorId: s.vendorId, productId: s.productId, paperWidth: s.paperWidth, copies: s.copies, cutFeed });
+    }
+    set({ cutFeed });
   },
 }));

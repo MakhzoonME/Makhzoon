@@ -27,6 +27,14 @@ export interface ReceiptOptions {
   text?: ReceiptPrintText;
   /** Concrete language to print in. Defaults to English. */
   lang?: ReceiptLang;
+  /**
+   * Line-feeds sent before the cut command. Tunes the blank gap between the
+   * printed content and the cut point — too little and the cutter can shear
+   * into the footer text (or the next receipt's header inherits the leftover
+   * feed as blank space at its top). Varies by printer's head-to-blade
+   * offset, so it's user-configurable in Printer Settings. Defaults to 1.
+   */
+  cutFeed?: number;
 }
 
 function colsFor(width: 58 | 80): number {
@@ -67,13 +75,14 @@ export async function buildReceipt(
   opts: ReceiptOptions,
 ): Promise<Uint8Array> {
   const lang: ReceiptLang = opts.lang === 'ar' ? 'ar' : 'en';
+  const cutFeed = Math.max(0, opts.cutFeed ?? 1);
 
   // Arabic cannot be printed as text — render the whole receipt to a raster.
   if (lang === 'ar' && opts.text) {
     const matrix = await renderReceiptCanvas(transaction, { paperWidth: opts.paperWidth, text: opts.text }, 'ar');
     const rb = new EscPosBuilder().init();
     rb.rasterImage(matrix);
-    rb.feed(1).cut();
+    rb.feed(cutFeed).cut();
     return rb.build();
   }
 
@@ -142,6 +151,6 @@ export async function buildReceipt(
 
   // Footer
   b.feed(2).align('center').line((txt?.footerText || '').trim() || L.thankYou);
-  b.feed(1).cut();
+  b.feed(cutFeed).cut();
   return b.build();
 }

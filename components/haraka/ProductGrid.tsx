@@ -5,7 +5,10 @@ import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useInventoryItems, useInventoryCategories } from '@/hooks/inventory';
 import { useServices, useServiceCategories } from '@/hooks/haraka';
+import { useList } from '@/hooks/lists';
+import { useT } from '@/hooks/ui';
 import type { PosPickableItem } from '@/store/pos-cart.store';
+import type { ResolvedListItem } from '@/types';
 
 interface Props {
   onPick: (item: PosPickableItem) => void;
@@ -14,6 +17,8 @@ interface Props {
 type Tab = 'products' | 'services';
 
 export function ProductGrid({ onPick }: Props) {
+  const { locale } = useT();
+  const isAr = locale === 'ar';
   const [tab, setTab] = useState<Tab>('products');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>('all');
@@ -23,8 +28,21 @@ export function ProductGrid({ onPick }: Props) {
   const { data: servicesData, isLoading: servicesLoading } = useServices({ active: true, pageSize: 200 });
   const { data: serviceCategories = [] } = useServiceCategories();
 
+  // Category values are stored as opaque codes (e.g. "car_washing"); resolve
+  // each to its managed-list label in the current locale for display, falling
+  // back to the raw value for custom/legacy categories not in the list.
+  const { data: inventoryCategoryList = [] } = useList('inventory_category');
+  const { data: serviceCategoryList = [] } = useList('service_category');
+
   const isLoading = tab === 'products' ? productsLoading : servicesLoading;
   const categories = tab === 'products' ? productCategories : serviceCategories;
+  const categoryList = tab === 'products' ? inventoryCategoryList : serviceCategoryList;
+
+  function categoryLabel(value: string): string {
+    const item = categoryList.find((i: ResolvedListItem) => i.value === value);
+    if (!item) return value;
+    return isAr ? item.labelAr || item.label : item.label;
+  }
 
   const products = useMemo(() => {
     let result = productsData?.items ?? [];
@@ -106,7 +124,7 @@ export function ProductGrid({ onPick }: Props) {
                   : { background: 'var(--surface-card)', color: 'var(--text-secondary)', borderColor: 'var(--border-default)' }
               }
             >
-              {c === 'all' ? 'All' : c}
+              {c === 'all' ? 'All' : categoryLabel(c)}
             </button>
           );
         })}
@@ -154,7 +172,7 @@ export function ProductGrid({ onPick }: Props) {
                   >
                     <div className="text-sm font-semibold leading-tight line-clamp-2">{item.name}</div>
                     <div className="text-xs text-gray-400 truncate">
-                      {item.sku ? `SKU ${item.sku}` : item.barcode ? item.barcode : item.category ?? ''}
+                      {item.sku ? `SKU ${item.sku}` : item.barcode ? item.barcode : item.category ? categoryLabel(item.category) : ''}
                     </div>
                     <div className="mt-auto flex items-center justify-between">
                       <span className="text-xs text-gray-400">{item.quantityOnHand} {item.unit}</span>
@@ -197,7 +215,7 @@ export function ProductGrid({ onPick }: Props) {
                 }}
               >
                 <div className="text-sm font-semibold leading-tight line-clamp-2">{svc.name}</div>
-                <div className="text-xs text-gray-400 truncate">{svc.category ?? ''}</div>
+                <div className="text-xs text-gray-400 truncate">{svc.category ? categoryLabel(svc.category) : ''}</div>
                 <div className="mt-auto flex items-center justify-end">
                   <span className="text-sm font-bold font-mono" style={{ color: 'var(--mod-haraka)' }}>
                     {svc.price.toFixed(2)}

@@ -10,7 +10,7 @@ import { useTransferStore } from '@/store/transfer.store';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, NavSectionHeader, buildNavUrl } from '@/lib/nav';
 import { SpaceSwitcher } from '@/components/layout/SpaceSwitcher';
-import { useOrgInfo } from '@/hooks/org';
+import { useOrgInfo, useSubscriptionFeatures } from '@/hooks/org';
 import { useSpace } from '@/hooks/ui';
 import { hasModuleAccess, hasPermByKey } from '@/lib/permissions';
 import { UserPermissions } from '@/types';
@@ -199,7 +199,11 @@ export function AppSidebar() {
     window.location.href = `/${locale}/login`;
   }
 
-  const features    = user?.features ?? {};
+  // Fresh, auto-refetching org subscription flags — not the auth store's
+  // user.features snapshot, which is only refreshed on rare auth events and
+  // can keep showing a module (e.g. Banna) long after it's been disabled for
+  // the org. Matches the pattern already used by MobileDrawer/BottomNav.
+  const features    = useSubscriptionFeatures();
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
   // Admins with stored custom permissions may have module restrictions.
   const adminHasCustomPerms = canSeeAdmin && !!user?.permissions;

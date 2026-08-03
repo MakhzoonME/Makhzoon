@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { useT, useOrgSlug, useSpace, useModuleGuard } from '@/hooks/ui';
 import { useAuthStore } from '@/store/auth.store';
 import { hasModuleAccess } from '@/lib/permissions';
-import { Package, PackageCheck, PackageX, Wallet, UserCheck, AlertTriangle, ShieldCheck, ClipboardList, Wrench } from 'lucide-react';
+import { Package, PackageCheck, PackageX, Wallet, UserCheck, AlertTriangle, ShieldCheck, Wrench } from 'lucide-react';
 
 /* Wrap each Lucide icon to add aria-hidden — used as React.FC in Stat */
 const Pkg   = () => <Package    aria-hidden className="h-4 w-4" strokeWidth={1.75} />;
@@ -14,7 +14,6 @@ const Wal   = () => <Wallet     aria-hidden className="h-4 w-4" strokeWidth={1.7
 const UsrCk = () => <UserCheck  aria-hidden className="h-4 w-4" strokeWidth={1.75} />;
 const Alert = () => <AlertTriangle aria-hidden className="h-4 w-4" strokeWidth={1.75} />;
 const Shld  = () => <ShieldCheck aria-hidden className="h-4 w-4" strokeWidth={1.75} />;
-const Clip  = () => <ClipboardList aria-hidden className="h-4 w-4" strokeWidth={1.75} />;
 const Wrch  = () => <Wrench     aria-hidden className="h-4 w-4" strokeWidth={1.75} />;
 
 
@@ -70,7 +69,6 @@ export default function ReportsPage() {
   const features = user?.features ?? {};
   const canViewAssets    = !!user && features.assets    !== false && hasModuleAccess(user, 'assets');
   const canViewWarranties= !!user && features.warranties!== false && hasModuleAccess(user, 'warranties');
-  const canViewRequests  = !!user && features.requests  !== false && hasModuleAccess(user, 'requests');
 
   const breadcrumb = [
     { label: orgInfo?.name ?? orgSlug },
@@ -113,14 +111,13 @@ export default function ReportsPage() {
         </section>
       )}
 
-      {(canViewAssets || canViewWarranties || canViewRequests) && (
+      {(canViewAssets || canViewWarranties) && (
         <section className="mb-6">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('reports.activity')}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {canViewAssets && <Stat label={t('reports.checkedOut')} value={summary.activeCheckouts} icon={UsrCk} tone="amber" />}
             {canViewAssets && <Stat label={t('reports.overdue')} value={summary.overdueCheckouts} icon={Alert} tone="red" />}
             {canViewWarranties && <Stat label={t('reports.expiringWarranties')} value={summary.warrantiesExpiringSoon} icon={Shld} tone="amber" />}
-            {canViewRequests && <Stat label={t('reports.openRequests')} value={summary.openRequests} icon={Clip} />}
           </div>
         </section>
       )}

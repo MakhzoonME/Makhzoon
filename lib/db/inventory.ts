@@ -22,7 +22,6 @@ function toItem(r: Row): InventoryItem {
     unit: r.unit as InventoryUnit,
     quantityOnHand: qty,
     minimumThreshold: min,
-    reorderQuantity: r.reorder_quantity as number,
     location: r.location as string,
     supplier: r.supplier as string,
     unitCost: r.unit_cost as number,
@@ -152,7 +151,6 @@ export async function createInventoryItem(
       unit: data.unit,
       quantity_on_hand: data.quantityOnHand,
       minimum_threshold: data.minimumThreshold,
-      reorder_quantity: data.reorderQuantity,
       location: data.location,
       supplier: data.supplier,
       unit_cost: data.unitCost,
@@ -179,7 +177,7 @@ export async function updateInventoryItem(
   const patch: Row = {};
   const map: Record<string, string> = {
     name: 'name', category: 'category', sku: 'sku', unit: 'unit',
-    reorderQuantity: 'reorder_quantity', location: 'location',
+    location: 'location',
     supplier: 'supplier', unitCost: 'unit_cost', notes: 'notes',
     updatedBy: 'updated_by', updatedByEmail: 'updated_by_email',
     updatedByName: 'updated_by_name',

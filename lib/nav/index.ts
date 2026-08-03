@@ -120,13 +120,6 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
     ],
   },
   {
-    type: 'group', href: '/requests', label: 'Requests', labelKey: 'nav.requests',
-    featureKey: 'requests',
-    items: [
-      { href: '/requests/list', label: 'All Requests', labelKey: 'nav.requestsList', featureKey: 'requests' },
-    ],
-  },
-  {
     type: 'group', href: '/banna', label: 'Banna', labelKey: 'nav.banna',
     featureKey: 'banna', moduleColor: '#1565C0', moduleName: 'بنّا',
     items: [

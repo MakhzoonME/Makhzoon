@@ -83,7 +83,6 @@ export async function POST(req: NextRequest) {
       unit: data.unit,
       quantityOnHand: data.quantityOnHand,
       minimumThreshold: data.minimumThreshold,
-      reorderQuantity: data.reorderQuantity === undefined ? undefined : Number(data.reorderQuantity),
       location: data.location || undefined,
       supplier: data.supplier || undefined,
       unitCost: data.unitCost === undefined ? undefined : Number(data.unitCost),

@@ -25,7 +25,7 @@ export async function requireAuth(): Promise<AuthUser> {
  */
 export async function requirePermission(
   user: AuthUser,
-  module: 'assets' | 'inventory' | 'warranties' | 'requests' | 'support' | 'reports' | 'audit-logs' | 'users',
+  module: 'assets' | 'inventory' | 'warranties' | 'support' | 'reports' | 'audit-logs' | 'users',
   action: 'view' | 'create' | 'update' | 'delete'
 ): Promise<void> {
   // Convert kebab-case to camelCase for auditLogs

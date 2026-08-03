@@ -40,7 +40,6 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
       unit: item?.unit ?? 'each',
       quantityOnHand: item?.quantityOnHand ?? 0,
       minimumThreshold: item?.minimumThreshold ?? 5,
-      reorderQuantity: item?.reorderQuantity ?? '',
       location: item?.location ?? '',
       supplier: item?.supplier ?? '',
       unitCost: item?.unitCost ?? '',
@@ -143,14 +142,6 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
             <FormItem>
               <FormLabel>Minimum Threshold *</FormLabel>
               <FormControl><Input type="number" min="0" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-
-          <FormField control={form.control} name="reorderQuantity" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Reorder Quantity</FormLabel>
-              <FormControl><Input type="number" min="0" {...field} placeholder="Suggested reorder amount" /></FormControl>
               <FormMessage />
             </FormItem>
           )} />

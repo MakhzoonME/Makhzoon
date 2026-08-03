@@ -7,7 +7,6 @@ export interface OrgUsage {
   assets: number;
   users: number;
   warranties: number;
-  requests: number;
   spaces: number;
   inventoryItems: number;
 }

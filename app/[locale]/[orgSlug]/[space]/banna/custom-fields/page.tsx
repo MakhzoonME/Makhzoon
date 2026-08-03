@@ -20,7 +20,6 @@ import type { CustomField, CustomFieldType, CustomFieldOption } from '@/types/ba
 const MODULES = [
   { value: 'assets', label: 'Usool (Assets)' },
   { value: 'inventory', label: 'Raseed (Inventory)' },
-  { value: 'requests', label: 'Requests' },
   { value: 'customers', label: 'Haraka (Customers)' },
 ];
 

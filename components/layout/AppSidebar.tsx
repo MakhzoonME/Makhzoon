@@ -61,14 +61,6 @@ function WarrantySVG() {
     </svg>
   );
 }
-function RequestsSVG() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-      <rect x="2" y="2" width="14" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none" />
-      <path d="M5 6h8M5 9h6M5 12h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  );
-}
 function ReportsSVG() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -152,7 +144,6 @@ const NAV_ICONS: Record<string, React.FC> = {
   '/usool':        AssetsSVG,
   '/raseed':       InventorySVG,
   '/warranties':   WarrantySVG,
-  '/requests':     RequestsSVG,
   '/reports':      ReportsSVG,
   '/support':      SupportSVG,
   '/audit-logs':   AuditSVG,

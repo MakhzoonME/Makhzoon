@@ -11,9 +11,11 @@ import {
   type CompleteSaleInput,
 } from './transactions.repository'
 import { FawtaraService } from '@/lib/modules/haraka/fawtara/service'
+import { DiscountApprovalService } from '@/lib/modules/haraka/discount-approval/discount-approval.service'
 
 const repo = new TransactionsRepository()
 const fawtara = new FawtaraService()
+const discountApproval = new DiscountApprovalService()
 
 /**
  * Submit a transaction to Fawtara asynchronously without blocking the caller.
@@ -61,12 +63,27 @@ export class TransactionsService {
     return tx
   }
 
-  async completeSale(tenant: TenantContext, input: CompleteSaleInput) {
+  async completeSale(tenant: TenantContext, input: CompleteSaleInput & { approverPin?: string }) {
     requirePos(tenant, 'registerOpen')
     requireActiveSubscription(tenant)
     const hasDiscount = input.lines.some((l) => l.discount > 0)
-    if (hasDiscount) requirePos(tenant, 'applyDiscount')
-    const tx = await repo.completeSale(tenant, input)
+    let discountApprovedBy: string | null = null
+    let discountApprovedByName: string | null = null
+    if (hasDiscount) {
+      requirePos(tenant, 'applyDiscount')
+      if (hasPermission(tenant, 'haraka', 'approveDiscount')) {
+        discountApprovedBy = tenant.userId
+        discountApprovedByName = tenant.user.displayName ?? tenant.user.email ?? ''
+      } else {
+        const match = input.approverPin ? await discountApproval.verifyPin(tenant, input.approverPin) : null
+        if (!match) {
+          throw NextResponse.json({ error: 'Discount approval required', code: 'DISCOUNT_APPROVAL_REQUIRED' }, { status: 403 })
+        }
+        discountApprovedBy = match.userId
+        discountApprovedByName = match.displayName
+      }
+    }
+    const tx = await repo.completeSale(tenant, { ...input, discountApprovedBy, discountApprovedByName })
     auditLog.queue({
       tenant,
       module: 'pos',

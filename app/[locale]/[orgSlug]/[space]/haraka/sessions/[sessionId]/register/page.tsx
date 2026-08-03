@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Printer, Lock, Receipt, ShoppingCart, PauseCircle, RotateCcw, Trash2, Banknote, CreditCard } from 'lucide-react';
 import { BarcodeInput, SubscriptionGate } from '@/components/shared';
@@ -9,11 +9,12 @@ import { ProductGrid } from '@/components/haraka/ProductGrid';
 import { Cart } from '@/components/haraka/Cart';
 import { CustomerPicker } from '@/components/haraka/CustomerPicker';
 import { PaymentDialog, type PaymentLine } from '@/components/haraka/PaymentDialog';
+import { DiscountApprovalPinDialog } from '@/components/haraka/DiscountApprovalPinDialog';
 import { PrinterSettingsDialog } from '@/components/haraka/PrinterSettingsDialog';
 import { ReceiptShareDialog } from '@/components/haraka/ReceiptShareDialog';
-import { usePosCart, type PosPickableItem } from '@/store/pos-cart.store';
+import { usePosCart, setActivePosCartSession, type PosPickableItem } from '@/store/pos-cart.store';
 import { useBarcodeLookup } from '@/hooks/inventory';
-import { useTaxRates, useCurrentSession, useCompleteSale, useFawtaraConfig } from '@/hooks/haraka';
+import { useTaxRates, useCurrentSession, useCompleteSale, useFawtaraConfig, CompleteSaleError } from '@/hooks/haraka';
 import { useAuthStore } from '@/store/auth.store';
 import { hasPermission } from '@/lib/permissions';
 import { priceCart } from '@/lib/modules/haraka/pricing/calc';
@@ -79,6 +80,9 @@ export default function RegisterPage() {
   const completeMut = useCompleteSale();
 
   const [payOpen, setPayOpen] = useState(false);
+  const [approvalOpen, setApprovalOpen] = useState(false);
+  const [approvalError, setApprovalError] = useState<string | null>(null);
+  const [pendingSale, setPendingSale] = useState<{ payments: PaymentLine[]; skipFawtara: boolean } | null>(null);
   const [payTab, setPayTab] = useState<'cash' | 'card' | 'other'>('cash');
   const [printerOpen, setPrinterOpen] = useState(false);
   const [lastTx, setLastTx] = useState<PosTransaction | null>(null);
@@ -149,7 +153,7 @@ export default function RegisterPage() {
     }
   }, [lookup, taxRateById, canAddItems]);
 
-  async function handleConfirmSale(payments: PaymentLine[], skipFawtara: boolean) {
+  async function handleConfirmSale(payments: PaymentLine[], skipFawtara: boolean, approverPin?: string) {
     if (!currentSession) { toast.error('No open session'); return; }
     const offlineId = crypto.randomUUID();
     try {
@@ -168,9 +172,12 @@ export default function RegisterPage() {
           reference: p.reference ?? null, cardLast4: p.cardLast4 || null,
         })),
         skipFawtara,
+        approverPin,
       });
       setLastTx(result.transaction);
       setPayOpen(false);
+      setApprovalOpen(false);
+      setPendingSale(null);
       clearCart();
       toast.success(`Sale complete — receipt ${result.transaction.receiptNumber}`);
       setReceiptTx(result.transaction);
@@ -188,8 +195,19 @@ export default function RegisterPage() {
         }
       }
     } catch (err) {
+      if (err instanceof CompleteSaleError && err.code === 'DISCOUNT_APPROVAL_REQUIRED') {
+        setPendingSale({ payments, skipFawtara });
+        setApprovalError(approverPin ? 'Incorrect PIN' : null);
+        setApprovalOpen(true);
+        return;
+      }
       toast.error(err instanceof Error ? err.message : 'Sale failed');
     }
+  }
+
+  function handleApprovalPinSubmit(pin: string) {
+    if (!pendingSale) return;
+    handleConfirmSale(pendingSale.payments, pendingSale.skipFawtara, pin);
   }
 
   function requestPrint(transaction: PosTransaction) {
@@ -465,6 +483,13 @@ export default function RegisterPage() {
         loading={completeMut.isPending}
         initialTab={payTab}
         fawtaraEnabled={fawtaraEnabled}
+      />
+      <DiscountApprovalPinDialog
+        open={approvalOpen}
+        onOpenChange={(o) => { setApprovalOpen(o); if (!o) { setPendingSale(null); setApprovalError(null); } }}
+        onSubmit={handleApprovalPinSubmit}
+        loading={completeMut.isPending}
+        error={approvalError}
       />
       <PrinterSettingsDialog open={printerOpen} onOpenChange={setPrinterOpen} />
 

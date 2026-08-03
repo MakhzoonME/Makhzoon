@@ -54,6 +54,8 @@ export interface PosTransaction {
   payments: PosPayment[];
   /** Total cash given by customer minus total due (positive = cash change to return). */
   change: number;
+  discountApprovedBy: string | null;
+  discountApprovedByName: string | null;
   status: 'completed' | 'refunded' | 'voided';
   receiptNumber: string;
   offlineId: string;

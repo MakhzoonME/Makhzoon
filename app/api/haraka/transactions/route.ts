@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
         cardLast4: p.cardLast4 || null,
       })),
       skipFawtara: d.skipFawtara ?? false,
+      approverPin: d.approverPin,
     })
     return NextResponse.json({ transaction: tx }, { status: 201 })
   } catch (err) {

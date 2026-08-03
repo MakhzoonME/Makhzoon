@@ -15,6 +15,7 @@ export async function GET(_req: NextRequest, props: Params) {
   try {
     const tenant = await resolveTenant();
     requireFeature(tenant, 'inventory');
+    requirePermission(tenant.user, 'usool', 'assetAuditsView');
 
     const audit = await getInventoryAuditById(params.auditId);
     if (!audit || audit.organizationId !== tenant.organizationId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -33,7 +34,7 @@ export async function PATCH(req: NextRequest, props: Params) {
   try {
     const tenant = await resolveTenant();
     requireFeature(tenant, 'inventory');
-    requirePermission(tenant.user, 'inventory', 'audits');
+    requirePermission(tenant.user, 'usool', 'assetAuditStart');
 
     const audit = await getInventoryAuditById(params.auditId);
     if (!audit || audit.organizationId !== tenant.organizationId) return NextResponse.json({ error: 'Not found' }, { status: 404 });

@@ -9,14 +9,17 @@ import {
 
 const repo = new DeliveryAgentsRepository()
 
-function requireManage(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'manage_delivery_agents')) {
+function requireOp(
+  tenant: TenantContext,
+  op: 'deliveryAgentsCreate' | 'deliveryAgentsUpdate' | 'deliveryAgentsDelete',
+) {
+  if (!hasPermission(tenant, 'haraka', op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
 
 function requireView(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'view_orders')) {
+  if (!hasPermission(tenant, 'haraka', 'deliveryAgentsView')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -35,7 +38,7 @@ export class DeliveryAgentsService {
   }
 
   async create(tenant: TenantContext, input: CreateDeliveryAgentInput) {
-    requireManage(tenant)
+    requireOp(tenant, 'deliveryAgentsCreate')
     const agent = await repo.create(tenant, input)
     auditLog.queue({
       tenant,
@@ -48,7 +51,7 @@ export class DeliveryAgentsService {
   }
 
   async update(tenant: TenantContext, id: string, patch: Partial<CreateDeliveryAgentInput>) {
-    requireManage(tenant)
+    requireOp(tenant, 'deliveryAgentsUpdate')
     await this.getById(tenant, id)
     const agent = await repo.update(tenant, id, patch)
     auditLog.queue({
@@ -62,7 +65,7 @@ export class DeliveryAgentsService {
   }
 
   async delete(tenant: TenantContext, id: string) {
-    requireManage(tenant)
+    requireOp(tenant, 'deliveryAgentsDelete')
     await this.getById(tenant, id)
     await repo.delete(tenant, id)
     auditLog.queue({ tenant, module: 'pos', action: 'DELIVERY_AGENT_DELETED', recordId: id })

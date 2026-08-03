@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useUsers } from '@/hooks/users';
 import { useInvites } from '@/hooks/users';
 import { useAuthStore } from '@/store/auth.store';
@@ -9,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { SubscriptionGate } from '@/components/shared';
 import { OrgUser, Invite } from '@/types';
 import { formatDate } from '@/lib/utils/date';
-import { InviteUserModal } from '@/components/users/InviteUserModal';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { toast, useAdminGuard, useOrgSlug } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
@@ -19,13 +19,7 @@ import { apiFetch } from '@/lib/utils/api-fetch';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import { PermissionsEditor } from '@/components/users/PermissionsEditor';
-import { UserSpaceAccess } from '@/components/users/UserSpaceAccess';
-import { useUserSpaceAccess, useUpdateUserSpaceAccess } from '@/hooks/spaces';
-import { UserPermissions, DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from '@/types';
+import { DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS, type UserPermissions } from '@/types';
 import { useT } from '@/hooks/ui';
 import type { MessageKey } from '@/locales/messages';
 import { Plus, Pencil, Trash2, MailX, KeyRound, Copy, Check, Search } from 'lucide-react';
@@ -99,37 +93,21 @@ function UserAvatar({ name }: { name: string }) {
 }
 
 export default function UsersPage() {
-  const { t } = useT();
+  const { t, locale } = useT();
   const orgSlug = useOrgSlug();
+  const router = useRouter();
   const { data: orgInfo } = useOrgInfo();
-  const { isAllowed } = useAdminGuard('settings.users');
+  const { isAllowed } = useAdminGuard('settingsUsers.view');
   const { data: users = [], isLoading: usersLoading } = useUsers();
   const { data: invites = [], isLoading: invitesLoading } = useInvites();
-  const { user: currentUser, refreshFeatures } = useAuthStore();
+  const { user: currentUser } = useAuthStore();
 
   const [tab, setTab] = useState<'members' | 'invites'>('members');
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  const [showInvite, setShowInvite] = useState(false);
   const [revoking, setRevoking] = useState<string | null>(null);
-  const [editTarget, setEditTarget] = useState<OrgUser | null>(null);
-  const [editRole, setEditRole] = useState<string>('');
-  const [editPermissions, setEditPermissions] = useState<UserPermissions>(DEFAULT_STAFF_PERMISSIONS);
-  const [permissionsModified, setPermissionsModified] = useState(false);
-  const [showEditPerms, setShowEditPerms] = useState(false);
-  const [savingRole, setSavingRole] = useState(false);
-  const [editSpaceAccess, setEditSpaceAccess] = useState<{ allSpaces: boolean; spaceIds: string[] }>({ allSpaces: false, spaceIds: [] });
-  const { data: serverSpaceAccess } = useUserSpaceAccess(editTarget?.id);
-  const updateSpaceAccessMut = useUpdateUserSpaceAccess();
-  useEffect(() => {
-    if (editTarget && serverSpaceAccess) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setEditSpaceAccess(serverSpaceAccess);
-    }
-  }, [editTarget, serverSpaceAccess]);
-  const features = currentUser?.features ?? {};
   const [deleteTarget, setDeleteTarget] = useState<{ user: OrgUser; permanent: boolean } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [resetTarget, setResetTarget] = useState<OrgUser | null>(null);
@@ -190,71 +168,6 @@ export default function UsersPage() {
 
   function defaultPermsForRole(role: string): UserPermissions {
     return role === 'staff' ? DEFAULT_STAFF_PERMISSIONS : DEFAULT_ADMIN_PERMISSIONS;
-  }
-
-  function openEditRole(u: OrgUser) {
-    setEditTarget(u);
-    setEditRole(u.role);
-    const defaults = defaultPermsForRole(u.role);
-    if (u.permissions) {
-      // Deep-merge: role defaults fill any new fields added after permissions were last saved
-      const merged: Record<string, unknown> = {};
-      for (const key of Object.keys(defaults) as (keyof UserPermissions)[]) {
-        merged[key] = {
-          ...(defaults[key] as unknown as Record<string, boolean>),
-          ...(u.permissions[key] as unknown as Record<string, boolean> ?? {}),
-        };
-      }
-      setEditPermissions(merged as unknown as UserPermissions);
-    } else {
-      setEditPermissions(defaults);
-    }
-    setPermissionsModified(false);
-    setShowEditPerms(false);
-    setEditSpaceAccess({ allSpaces: u.role === 'org_owner', spaceIds: [] });
-  }
-
-  async function handleSaveRole() {
-    if (!editTarget) return;
-    setSavingRole(true);
-    try {
-      // Only persist custom permissions when:
-      //  1. The user is staff (always needs explicit permissions), OR
-      //  2. The user already had stored permissions (keep them updated), OR
-      //  3. The admin explicitly opened and changed permissions in this session.
-      const shouldSendPermissions =
-        editRole === 'staff' || !!editTarget.permissions || permissionsModified;
-
-      const res = await apiFetch(`/api/users/${editTarget.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          role: editRole,
-          permissions: shouldSendPermissions ? editPermissions : null,
-        }),
-      });
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        throw new Error(e.error ?? 'Failed to update role');
-      }
-      await updateSpaceAccessMut.mutateAsync({
-        userId: editTarget.id,
-        allSpaces: editSpaceAccess.allSpaces,
-        spaceIds: editSpaceAccess.spaceIds,
-      });
-      toast.success(t('common.updated'));
-      qc.invalidateQueries({ queryKey: ['users'] });
-      // If editing self, refresh auth store so sidebar + features reflect the
-      // new permissions immediately without requiring a logout/login cycle.
-      if (editTarget.id === currentUser?.uid) {
-        await refreshFeatures();
-      }
-      setEditTarget(null);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('common.updateFailed'));
-    } finally {
-      setSavingRole(false);
-    }
   }
 
   async function handleDelete() {
@@ -318,7 +231,7 @@ export default function UsersPage() {
         actions={
           canInvite ? (
             <SubscriptionGate>
-              <Button size="sm" onClick={() => setShowInvite(true)} className="cursor-pointer transition-colors duration-150">
+              <Button size="sm" onClick={() => router.push(`/${locale}/${orgSlug}/users/invite`)} className="cursor-pointer transition-colors duration-150">
                 <Plus aria-hidden className="h-4 w-4" strokeWidth={1.75} />
                 <span className="ms-1">{t('users.inviteUser')}</span>
               </Button>
@@ -458,7 +371,7 @@ export default function UsersPage() {
                                   variant="ghost"
                                   aria-label={t('users.editUser')}
                                   className="text-gray-500 hover:text-primary-600 hover:bg-primary-50 cursor-pointer transition-colors duration-150"
-                                  onClick={() => openEditRole(u)}
+                                  onClick={() => router.push(`/${locale}/${orgSlug}/users/${u.id}/edit`)}
                                 >
                                   <Pencil aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
                                 </Button>
@@ -512,7 +425,7 @@ export default function UsersPage() {
                   <td colSpan={4} className="px-4 py-12 text-center text-sm text-gray-400">{t('users.noPendingInvites')}</td>
                 </tr>
               ) : filteredInvites.map((inv) => (
-                <tr key={`invite-${inv.id}`} className="hover:bg-surface-page transition-colors bg-amber-50/30">
+                <tr key={`invite-${inv.id}`} className="hover:bg-surface-page transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <UserAvatar name={inv.displayName || inv.email || '?'} />
@@ -544,77 +457,6 @@ export default function UsersPage() {
           </tbody>
         </table>
       </div>
-
-      {canInvite && <InviteUserModal open={showInvite} onOpenChange={setShowInvite} />}
-
-      {/* Edit user dialog */}
-      <Dialog open={!!editTarget} onOpenChange={(o) => !o && setEditTarget(null)}>
-        <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t('users.editUser')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 px-6 pt-4 pb-2">
-            <p className="text-xs text-gray-500">
-              {t('users.editing')} <span className="font-medium text-gray-900">{editTarget?.displayName || editTarget?.email}</span>
-            </p>
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-gray-700">{t('users.role')}</label>
-              <Select
-                value={editRole}
-                onValueChange={(v) => {
-                  setEditRole(v);
-                  setEditPermissions(defaultPermsForRole(v));
-                  setPermissionsModified(false);
-                  setShowEditPerms(false);
-                }}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {isOwnerOrSuperAdmin && <SelectItem value="org_owner">{t('role.orgOwner')}</SelectItem>}
-                  <SelectItem value="admin">{t('role.admin')}</SelectItem>
-                  <SelectItem value="staff">{t('role.staff')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => setShowEditPerms((v) => !v)}
-                className="flex items-center gap-2 text-sm font-medium text-primary-700 hover:text-primary-800 cursor-pointer"
-              >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-                  <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none" />
-                  <path d="M4 7h6M7 4v6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-                </svg>
-                {showEditPerms ? t('permissions.hideAccess') : t('permissions.editAccess')}
-              </button>
-              {showEditPerms && (
-                <PermissionsEditor
-                  value={editPermissions}
-                  onChange={(v) => { setEditPermissions(v); setPermissionsModified(true); }}
-                  availableFeatures={features}
-                />
-              )}
-            </div>
-
-            <div className="space-y-2 pt-1">
-              <p className="text-sm font-medium text-gray-900">{t('userSpaces.title')}</p>
-              <UserSpaceAccess
-                value={editSpaceAccess}
-                onChange={setEditSpaceAccess}
-                role={editRole}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditTarget(null)} disabled={savingRole} className="cursor-pointer">{t('common.cancel')}</Button>
-            <Button onClick={handleSaveRole} disabled={savingRole} className="cursor-pointer">
-              {savingRole ? t('users.saving') : t('users.saveChanges')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Reset password confirm dialog */}
       <ConfirmDialog

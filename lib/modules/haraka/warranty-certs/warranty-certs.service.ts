@@ -11,13 +11,15 @@ import {
 const repo = new WarrantyCertsRepository()
 
 function requireView(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'view_warranty_certs')) {
+  if (!hasPermission(tenant, 'haraka', 'warrantyCertsView')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
 
+// No dedicated "manage certs" key — generating/removing a cert is the same
+// capability as generating one from an order.
 function requireManage(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'manage_warranty_certs')) {
+  if (!hasPermission(tenant, 'haraka', 'ordersGenerateWarranty')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -29,7 +31,7 @@ export class WarrantyCertsService {
   }
 
   async updateConfig(tenant: TenantContext, patch: Parameters<typeof repo.upsertConfig>[1]) {
-    if (!hasPermission(tenant, 'settings', 'orgInfo')) {
+    if (!hasPermission(tenant, 'settingsWarrantyCert', 'update')) {
       throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
     const config = await repo.upsertConfig(tenant, patch)

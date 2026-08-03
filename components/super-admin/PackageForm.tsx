@@ -29,7 +29,6 @@ const LIMIT_KEYS = [
   'maxAssets',
   'maxInventoryItems',
   'maxWarranties',
-  'maxRequests',
 ] as const;
 const LIMIT_LABELS: Record<(typeof LIMIT_KEYS)[number], string> = {
   maxUsers: 'Max Users',
@@ -37,7 +36,6 @@ const LIMIT_LABELS: Record<(typeof LIMIT_KEYS)[number], string> = {
   maxAssets: 'Max Assets',
   maxInventoryItems: 'Max Inventory Items',
   maxWarranties: 'Max Warranties',
-  maxRequests: 'Max Requests',
 };
 
 const CURRENCIES = ['USD', 'JOD', 'SAR', 'AED', 'EUR'] as const;
@@ -69,7 +67,6 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
     maxAssets: initial?.limits.maxAssets ?? 100,
     maxInventoryItems: initial?.limits.maxInventoryItems ?? 100,
     maxWarranties: initial?.limits.maxWarranties ?? 100,
-    maxRequests: initial?.limits.maxRequests ?? 50,
   });
   const [unlimited, setUnlimited] = useState({
     maxUsers: (initial?.limits.maxUsers ?? 10) === -1,
@@ -77,7 +74,6 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
     maxAssets: (initial?.limits.maxAssets ?? 100) === -1,
     maxInventoryItems: (initial?.limits.maxInventoryItems ?? 100) === -1,
     maxWarranties: (initial?.limits.maxWarranties ?? 100) === -1,
-    maxRequests: (initial?.limits.maxRequests ?? 50) === -1,
   });
 
   const [features, setFeatures] = useState<Record<FeatureKey, boolean>>(() =>

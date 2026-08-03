@@ -12,9 +12,15 @@ import type { StockAuditAdjustment } from '@/types/stock-audit.types'
 
 const repo = new StockAuditRepository()
 
+// Distinct from asset audits (usool.assetAudits*) — this is the Raseed
+// stock-take feature (stock_audits table).
+const STOCK_AUDIT_OP: Record<string, string> = {
+  view: 'stockAuditView',
+  audits: 'stockAuditStart',
+}
+
 function require_(tenant: TenantContext, op: string): void {
-  // Stock audits live under the 'inventory' module, same as asset audits.
-  if (!hasPermission(tenant, 'inventory', op)) {
+  if (!hasPermission(tenant, 'raseed', STOCK_AUDIT_OP[op] ?? op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
-import { requirePermission } from '@/lib/permissions/require'
 import { FawtaraConfigService } from '@/lib/modules/haraka/fawtara/config.service'
 
 const service = new FawtaraConfigService()
@@ -35,7 +34,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
-    requirePermission(tenant.user, 'settings', 'fawtara')
+    // FawtaraConfigService.update() enforces settingsFawtara.update.
     const body = await req.json()
     const parsed = updateSchema.safeParse(body)
     if (!parsed.success) {

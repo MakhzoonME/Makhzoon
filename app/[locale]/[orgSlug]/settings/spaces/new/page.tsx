@@ -22,7 +22,7 @@ export default function NewSpacePage() {
   const router = useRouter();
   const { t } = useT();
   const { data: orgInfo } = useOrgInfo();
-  const { isAllowed } = useAdminGuard('settings.orgInfo');
+  const { isAllowed } = useAdminGuard('settingsSpaces.create');
 
   const createMut = useCreateSpace();
   const addMemberMut = useAddSpaceMember();

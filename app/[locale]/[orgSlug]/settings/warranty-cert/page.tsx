@@ -14,7 +14,7 @@ import { useOrgInfo } from '@/hooks/org';
 import type { HarakaWarrantyConfig } from '@/types';
 
 export default function WarrantyCertSettingsPage() {
-  const { isAllowed } = useAdminGuard('settings.orgInfo');
+  const { isAllowed } = useAdminGuard('settingsWarrantyCert.view');
   const { data, isLoading } = useWarrantyConfig();
   const updateMut = useUpdateWarrantyConfig();
   const { data: orgInfo } = useOrgInfo();

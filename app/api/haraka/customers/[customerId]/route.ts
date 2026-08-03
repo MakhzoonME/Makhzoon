@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
-import { requirePermission } from '@/lib/permissions/require'
 import { CustomersService } from '@/lib/modules/haraka/customers/customers.service'
 import { customerUpdateSchema } from '@/lib/modules/haraka/customers/schemas'
 
@@ -31,7 +30,6 @@ export async function PATCH(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
-    requirePermission(tenant.user, 'pos', 'process_sale')
     const { customerId } = await params
     const body = await req.json()
     const parsed = customerUpdateSchema.safeParse(body)
@@ -57,7 +55,6 @@ export async function DELETE(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
-    requirePermission(tenant.user, 'pos', 'process_sale')
     const { customerId } = await params
     await service.delete(tenant, customerId)
     return NextResponse.json({ ok: true })

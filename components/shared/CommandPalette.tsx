@@ -7,7 +7,7 @@ import { useAssets } from '@/hooks/assets';
 import { useAuthStore } from '@/store/auth.store';
 import { useOrgSlug, useSpace } from '@/hooks/ui';
 import { useSubscriptionFeatures } from '@/hooks/org';
-import { hasModuleAccess } from '@/lib/permissions';
+import { hasPermission } from '@/lib/permissions';
 import type { UserPermissions } from '@/types/user-permissions.types';
 import { Asset } from '@/types';
 import { cn } from '@/lib/utils/cn';
@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils/cn';
 function DashboardSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><rect x="1.5" y="1.5" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="9.5" y="1.5" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="1.5" y="9.5" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><rect x="9.5" y="9.5" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.3" fill="none" /></svg>; }
 function PackageSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M13 4.5L8 2 3 4.5v7L8 14l5-2.5v-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" /><path d="M8 2v12M3 4.5l5 2.5 5-2.5" stroke="currentColor" strokeWidth="1.3" /></svg>; }
 function ShieldCheckSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 1.5L2 4v5.5C2 12.5 4.7 15 8 15.5c3.3-.5 6-3 6-6V4L8 1.5z" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M5.5 8l2 2 3-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
-function ClipboardListSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><rect x="3" y="2" width="10" height="12" rx="1" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M6 2v1.5h4V2M5.5 7h5M5.5 9.5h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
 function UsersSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><circle cx="6" cy="5.5" r="2.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M1 14c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /><path d="M11.5 4a2.5 2.5 0 0 1 0 4.5M13.5 14c0-1.7-1-3-2.5-3.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
 function CreditCardSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><rect x="1.5" y="3.5" width="13" height="9" rx="1" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M1.5 6.5h13M4.5 10h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
 function FileTextSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M4 1.5h6l3.5 3.5v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1z" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M10 1.5v4h3.5M5.5 8h5M5.5 10.5h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
@@ -30,14 +29,15 @@ type PaletteEntry = {
   scope?: 'space' | 'org';
   featureKey?: string;
   moduleKey?: keyof UserPermissions;
+  /** Operation to check within moduleKey. Defaults to 'view'. */
+  permOp?: string;
   adminOnly?: boolean;
 };
 
 const NAV_GROUPS: PaletteEntry[] = [
   { href: '/dashboard',  label: 'Dashboard',  icon: DashboardSVG,    featureKey: 'dashboard',  moduleKey: 'dashboard'  },
-  { href: '/usool',      label: 'Usool',       icon: PackageSVG,      featureKey: 'assets',     moduleKey: 'assets'     },
-  { href: '/warranties', label: 'Warranties',  icon: ShieldCheckSVG,  featureKey: 'warranties', moduleKey: 'warranties' },
-  { href: '/requests',   label: 'Requests',    icon: ClipboardListSVG, featureKey: 'requests',  moduleKey: 'requests'   },
+  { href: '/usool',      label: 'Usool',       icon: PackageSVG,      featureKey: 'assets',     moduleKey: 'usool'      },
+  { href: '/warranties', label: 'Warranties',  icon: ShieldCheckSVG,  featureKey: 'warranties', moduleKey: 'usool', permOp: 'warrantiesView' },
 ];
 
 const ADMIN_NAV: PaletteEntry[] = [
@@ -72,9 +72,10 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     if (entry.adminOnly && !isAdmin) return false;
     if (entry.featureKey && !features[entry.featureKey]) return false;
     if (isStaff && entry.moduleKey && user) {
-      return hasModuleAccess(
+      return hasPermission(
         { ...user, organizationId: user.organizationId ?? null },
         entry.moduleKey,
+        entry.permOp ?? 'view',
       );
     }
     return true;

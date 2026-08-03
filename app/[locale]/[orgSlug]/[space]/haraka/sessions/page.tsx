@@ -14,7 +14,7 @@ import { hasPermission } from '@/lib/permissions';
 import type { PosSession } from '@/types';
 
 export default function SessionsListPage() {
-  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
+  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
@@ -25,7 +25,7 @@ export default function SessionsListPage() {
   // for their own open session — send them to the register to keep working
   // instead of showing figures they have no reason to see.
   const canSeeSessionDetail =
-    !!user && (hasPermission(user, 'pos', 'view_all_sessions') || hasPermission(user, 'pos', 'close_session'));
+    !!user && (hasPermission(user, 'haraka', 'sessionsViewOthers') || hasPermission(user, 'haraka', 'sessionsCloseOwn'));
   const [status, setStatus] = useState<'open' | 'closed' | 'all'>('all');
   const [page, setPage] = useState(1);
 
@@ -47,6 +47,13 @@ export default function SessionsListPage() {
         <span className="font-mono text-xs font-semibold" style={{ color: 'var(--mod-haraka)' }}>
           #{s.id.slice(0, 8)}
         </span>
+      ),
+    },
+    {
+      key: 'tillName',
+      header: t('haraka.register'),
+      render: (s) => (
+        <span className="text-sm text-gray-700">{s.tillName || <span className="text-gray-400">—</span>}</span>
       ),
     },
     {
@@ -138,7 +145,7 @@ export default function SessionsListPage() {
         emptyMessage={t('haraka.noSessions')}
         onRowClick={(s) => {
           if (!canSeeSessionDetail && s.status === 'open' && s.cashierId === user?.uid) {
-            router.push(`${base}/register`);
+            router.push(`${base}/sessions/${s.id}/register`);
           } else {
             router.push(`${base}/sessions/${s.id}`);
           }

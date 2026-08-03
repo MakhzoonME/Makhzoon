@@ -14,7 +14,7 @@ export async function POST(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
-    requirePermission(tenant.user, 'pos', 'close_session')
+    requirePermission(tenant.user, 'haraka', 'sessionsCloseOwn')
     const { sessionId } = await params
     const body = await req.json()
     const parsed = closeSessionSchema.safeParse(body)

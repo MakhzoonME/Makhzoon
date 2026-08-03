@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { requireFeature } from '@/lib/permissions/require-feature';
 import { rateLimitTenant } from '@/lib/rate-limit';
-import { requirePermission } from '@/lib/permissions/require';
 import { BannaService } from '@/lib/modules/banna/services/banna.service';
 import { createCustomFieldSchema } from '@/lib/modules/banna/validators/schemas';
 
@@ -12,7 +11,7 @@ export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
     const { searchParams } = new URL(req.url);
-    const moduleFilter = searchParams.get('module') as 'assets' | 'inventory' | 'requests' | 'customers' | undefined;
+    const moduleFilter = searchParams.get('module') as 'assets' | 'inventory' | 'customers' | undefined;
 
     // Customer custom fields ship ahead of the rest of Banna (which isn't
     // released — no org has the 'banna' feature flag yet) and ride on the
@@ -37,9 +36,9 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
     // See GET: customer fields aren't gated behind the (not-yet-live) 'banna'
-    // feature — they ride on 'pos' instead.
+    // feature — they ride on 'pos' instead. The permission check (pos module
+    // access for customers, 'banna' create otherwise) lives in the service.
     requireFeature(tenant, parsed.data.module === 'customers' ? 'pos' : 'banna');
-    requirePermission(tenant.user, 'banna', 'create');
     return NextResponse.json(await service.createCustomField(tenant, parsed.data), { status: 201 });
   } catch (err) {
     if (err instanceof NextResponse) return err;

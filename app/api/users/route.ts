@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     }
 
     const isAdmin = user.role === 'admin' || user.role === 'super_admin' || user.role === 'org_owner';
-    const canViewUsers = isAdmin || hasPermission(tenant, 'settings', 'users');
+    const canViewUsers = isAdmin || hasPermission(tenant, 'settingsUsers', 'view');
     if (!canViewUsers) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const users = await getUsers(tenant.organizationId);
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
     const user = tenant.user;
-    requirePermission(user, 'settings', 'users');
+    requirePermission(user, 'settingsUsers', 'invite');
 
     if (tenant.subscription?.status && tenant.subscription.status !== 'ACTIVE')
       return NextResponse.json({ error: 'Subscription expired' }, { status: 403 });

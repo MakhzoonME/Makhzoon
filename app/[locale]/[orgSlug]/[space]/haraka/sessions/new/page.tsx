@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { openSessionSchema, type OpenSessionFormData } from '@/lib/modules/haraka/sessions/schemas';
 import { useOpenSession } from '@/hooks/haraka';
+import { useAuthStore } from '@/store/auth.store';
 import { toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 
@@ -17,19 +19,28 @@ export default function NewSessionPage() {
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
   const { data: orgInfo } = useOrgInfo();
+  const { user } = useAuthStore();
   const openMut = useOpenSession();
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
+  const defaultTill = user?.displayName ? `${user.displayName} till` : '';
 
   const form = useForm<OpenSessionFormData>({
     resolver: zodResolver(openSessionSchema),
-    defaultValues: { openingFloat: '' as unknown as number },
+    defaultValues: { openingFloat: '' as unknown as number, tillName: defaultTill },
   });
+
+  // Seed the till name once the user's display name resolves.
+  useEffect(() => {
+    if (defaultTill && !form.getValues('tillName')) {
+      form.setValue('tillName', defaultTill);
+    }
+  }, [defaultTill, form]);
 
   async function onSubmit(values: OpenSessionFormData) {
     try {
-      await openMut.mutateAsync(values);
+      const created = await openMut.mutateAsync(values);
       toast.success(t('haraka.openNewSession'));
-      router.push(`${base}/register`);
+      router.push(`${base}/sessions/${created.id}/register`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to open session');
     }
@@ -50,16 +61,23 @@ export default function NewSessionPage() {
       />
 
       <div className="rounded-xl border border-border bg-surface-page p-6 space-y-5">
-        {/* Register / till — read-only for now; multi-till support is a future feature */}
-        <div className="space-y-1.5">
-          <div className="text-sm font-medium text-gray-700">{t('haraka.register')}</div>
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-sidebar px-3 py-2 text-sm text-gray-500">
-            <span className="text-base">🏪</span> {t('haraka.mainTill')}
-          </div>
-        </div>
-
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Register / till — cashier-named, defaults to "{name} till" */}
+            <FormField
+              control={form.control}
+              name="tillName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('haraka.register')} *</FormLabel>
+                  <FormControl>
+                    <Input placeholder={t('haraka.mainTill')} {...field} value={field.value ?? ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="openingFloat"

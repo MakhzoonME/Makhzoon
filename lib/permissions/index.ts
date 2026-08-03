@@ -36,17 +36,17 @@ export function hasPermission(
 }
 
 export function hasModuleAccess(user: AuthUser, module: keyof UserPermissions): boolean {
-  // The pos module has no 'view' gate — any granted operation implies module
-  // access (a front-desk user with only add_receipt_items, a cashier with
-  // only process_sale). Without this, hasPermission('pos','view') hits the
-  // missing-key admin fallback and locks out ALL staff.
-  if (module === 'pos' && user.permissions?.pos) {
-    return Object.values(user.permissions.pos).some((v) => v === true);
+  // Haraka has a real 'view' gate (dashboard) now, but keep the "any granted
+  // operation implies module access" fallback for users whose stored
+  // permissions grant e.g. only chargeReceipt without view — same rationale
+  // as the old pos-module behavior this replaces.
+  if (module === 'haraka' && user.permissions?.haraka) {
+    return Object.values(user.permissions.haraka).some((v) => v === true);
   }
   return hasPermission(user, module, 'view');
 }
 
-/** Resolve a dot-separated key like 'settings.orgInfo' against user.permissions */
+/** Resolve a dot-separated key like 'settingsOrgInfo.view' against user.permissions */
 export function hasPermByKey(user: AuthUser, permissionKey: string): boolean {
   const [module, operation] = permissionKey.split('.');
   if (!module || !operation) return false;

@@ -13,7 +13,7 @@ import { useOrgInfo } from '@/hooks/org';
 import type { RetainerStatus } from '@/types';
 
 export default function RetainerDetailPage() {
-  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
   const { isAllowed } = useAdminGuard('pos.view_retainers');
   const params  = useParams<{ locale: string; orgSlug: string; space: string; retainerId: string }>();
   const router  = useRouter();

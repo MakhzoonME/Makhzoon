@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ userId: 
   const tenant = await resolveTenant().catch(() => null);
   const caller = tenant?.user;
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!hasPermission(caller, 'settings', 'users'))
+  if (!hasPermission(caller, 'settingsUsers', 'resetPassword'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const allowedRoles = new Set(['super_admin', 'org_owner', 'admin']);

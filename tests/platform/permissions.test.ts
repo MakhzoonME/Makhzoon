@@ -24,46 +24,46 @@ function user(
 describe('hasPermission — role defaults (no stored permissions)', () => {
   it('org_owner and admin get full access to any operation', () => {
     for (const role of ['org_owner', 'admin', 'super_admin'] as UserRole[]) {
-      expect(hasPermission(user(role), 'assets', 'create')).toBe(true);
-      expect(hasPermission(user(role), 'assets', 'delete')).toBe(true);
+      expect(hasPermission(user(role), 'usool', 'create')).toBe(true);
+      expect(hasPermission(user(role), 'usool', 'delete')).toBe(true);
     }
   });
 
   it('staff get view-only by default', () => {
-    expect(hasPermission(user('staff'), 'assets', 'view')).toBe(true);
-    expect(hasPermission(user('staff'), 'assets', 'create')).toBe(false);
-    expect(hasPermission(user('staff'), 'assets', 'delete')).toBe(false);
+    expect(hasPermission(user('staff'), 'usool', 'view')).toBe(true);
+    expect(hasPermission(user('staff'), 'usool', 'create')).toBe(false);
+    expect(hasPermission(user('staff'), 'usool', 'delete')).toBe(false);
   });
 });
 
 describe('hasPermission — stored permissions override role defaults', () => {
   it('restricts an admin who has an explicit false', () => {
-    const u = user('admin', { assets: { view: true, create: false } } as Partial<UserPermissions>);
-    expect(hasPermission(u, 'assets', 'view')).toBe(true);
-    expect(hasPermission(u, 'assets', 'create')).toBe(false);
+    const u = user('admin', { usool: { view: true, create: false } } as Partial<UserPermissions>);
+    expect(hasPermission(u, 'usool', 'view')).toBe(true);
+    expect(hasPermission(u, 'usool', 'create')).toBe(false);
   });
 
   it('grants a staff member an explicitly enabled operation', () => {
-    const u = user('staff', { assets: { view: true, create: true } } as Partial<UserPermissions>);
-    expect(hasPermission(u, 'assets', 'create')).toBe(true);
+    const u = user('staff', { usool: { view: true, create: true } } as Partial<UserPermissions>);
+    expect(hasPermission(u, 'usool', 'create')).toBe(true);
   });
 
   it('falls back to role default when the whole module block is absent', () => {
     // admin with stored perms for inventory only — assets block missing entirely
-    const u = user('admin', { inventory: { view: true } } as Partial<UserPermissions>);
-    expect(hasPermission(u, 'assets', 'create')).toBe(true); // admin default
-    const s = user('staff', { inventory: { view: true } } as Partial<UserPermissions>);
-    expect(hasPermission(s, 'assets', 'create')).toBe(false); // staff default (non-view)
-    expect(hasPermission(s, 'assets', 'view')).toBe(false); // module block absent → role default, staff has no admin role
+    const u = user('admin', { raseed: { view: true } } as Partial<UserPermissions>);
+    expect(hasPermission(u, 'usool', 'create')).toBe(true); // admin default
+    const s = user('staff', { raseed: { view: true } } as Partial<UserPermissions>);
+    expect(hasPermission(s, 'usool', 'create')).toBe(false); // staff default (non-view)
+    expect(hasPermission(s, 'usool', 'view')).toBe(false); // module block absent → role default, staff has no admin role
   });
 
   it('falls back to role default when a specific operation key is missing (new field)', () => {
     // admin stored perms predate a new "archive" operation — must not lose access
-    const u = user('admin', { assets: { view: true, create: true } } as Partial<UserPermissions>);
-    expect(hasPermission(u, 'assets', 'archive')).toBe(true);
+    const u = user('admin', { usool: { view: true, create: true } } as Partial<UserPermissions>);
+    expect(hasPermission(u, 'usool', 'archive')).toBe(true);
     // staff in the same situation stays denied for the new non-view op
-    const s = user('staff', { assets: { view: true } } as Partial<UserPermissions>);
-    expect(hasPermission(s, 'assets', 'archive')).toBe(false);
+    const s = user('staff', { usool: { view: true } } as Partial<UserPermissions>);
+    expect(hasPermission(s, 'usool', 'archive')).toBe(false);
   });
 });
 
@@ -75,8 +75,8 @@ describe('hasModuleAccess / hasPermByKey', () => {
   });
 
   it('hasPermByKey resolves dotted keys', () => {
-    expect(hasPermByKey(user('admin'), 'assets.create')).toBe(true);
-    expect(hasPermByKey(user('staff'), 'assets.create')).toBe(false);
+    expect(hasPermByKey(user('admin'), 'usool.create')).toBe(true);
+    expect(hasPermByKey(user('staff'), 'usool.create')).toBe(false);
     expect(hasPermByKey(user('admin'), 'malformed')).toBe(false);
   });
 });

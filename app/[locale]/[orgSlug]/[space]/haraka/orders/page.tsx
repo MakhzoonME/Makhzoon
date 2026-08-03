@@ -16,7 +16,7 @@ import { useOrgInfo } from '@/hooks/org';
 import type { HarakaOrder } from '@/types';
 
 export default function OrdersListPage() {
-  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
   const { isAllowed } = useAdminGuard('pos.view_orders');
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();

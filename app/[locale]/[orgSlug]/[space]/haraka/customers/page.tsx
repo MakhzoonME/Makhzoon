@@ -17,7 +17,7 @@ import type { PosCustomer } from '@/types';
 import { useOrgInfo } from '@/hooks/org';
 
 export default function CustomersListPage() {
-  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
+  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
@@ -33,9 +33,11 @@ export default function CustomersListPage() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const { user } = useAuthStore();
-  const canBulkDelete = !!user && hasPermission(user, 'pos', 'customers_bulk_delete');
-  const canBulkMove = !!user && hasPermission(user, 'pos', 'customers_bulk_move');
-  const canBulkDuplicate = !!user && hasPermission(user, 'pos', 'customers_bulk_duplicate');
+  // Bulk actions are available to anyone who can do the equivalent single-item
+  // action — no separate bulk permission.
+  const canBulkDelete = !!user && hasPermission(user, 'haraka', 'customersDelete');
+  const canBulkMove = !!user && hasPermission(user, 'haraka', 'customersUpdate');
+  const canBulkDuplicate = !!user && hasPermission(user, 'haraka', 'customersCreate');
   const canManageFields = !!user && hasPermission(user, 'banna', 'create');
   const showSelection = canBulkDelete || canBulkMove || canBulkDuplicate;
   const { data: spaceList } = useAccessibleSpaces();

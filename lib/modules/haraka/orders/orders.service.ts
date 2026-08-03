@@ -10,19 +10,38 @@ import { OrdersRepository, type CreateOrderInput, type ListOrdersOpts } from './
 const repo = new OrdersRepository()
 
 function requireView(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'view_orders')) {
+  if (!hasPermission(tenant, 'haraka', 'ordersView')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
 
+// Umbrella for create + non-status field edits — same scope 'manage_orders' had.
 function requireManage(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'manage_orders')) {
+  if (!hasPermission(tenant, 'haraka', 'ordersCreate')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
 
 function requireAssign(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'assign_delivery')) {
+  if (!hasPermission(tenant, 'haraka', 'ordersMarkAssigned')) {
+    throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+}
+
+const STATUS_OP: Partial<Record<OrderStatus, string>> = {
+  confirmed: 'ordersMarkConfirmed',
+  assigned: 'ordersMarkAssigned',
+  in_transit: 'ordersMarkInTransit',
+  delivered: 'ordersMarkDelivered',
+  picked_up: 'ordersMarkDelivered',
+  cancelled: 'ordersCancel',
+}
+
+function requireStatusChange(tenant: TenantContext, toStatus: OrderStatus) {
+  // Statuses without a dedicated key (new, ready_for_pickup) fall back to the
+  // general manage capability.
+  const op = STATUS_OP[toStatus] ?? 'ordersCreate'
+  if (!hasPermission(tenant, 'haraka', op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -87,7 +106,7 @@ export class OrdersService {
   }
 
   async updateStatus(tenant: TenantContext, id: string, newStatus: OrderStatus) {
-    requireManage(tenant)
+    requireStatusChange(tenant, newStatus)
     const order = await this.getById(tenant, id)
     if (!isValidTransition(order.status, newStatus)) {
       throw NextResponse.json(
@@ -119,7 +138,9 @@ export class OrdersService {
     amountPaid: number,
     paymentMethod: string | null,
   ) {
-    requireManage(tenant)
+    if (!hasPermission(tenant, 'haraka', 'ordersAddPayment')) {
+      throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
     await this.getById(tenant, id)
     const order = await repo.recordPayment(tenant, id, amountPaid, paymentMethod)
     auditLog.queue({

@@ -10,7 +10,7 @@ const repo = new CashDrawerRepository()
 export class CashDrawerService {
   /** Any cashier who can run a session may read the config (needed to show/hide the button). */
   async getConfig(tenant: TenantContext): Promise<CashDrawerConfig> {
-    if (!hasPermission(tenant, 'pos', 'open_session')) {
+    if (!hasPermission(tenant, 'haraka', 'sessionsOpen')) {
       throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
     return repo.getConfig(tenant)
@@ -21,7 +21,7 @@ export class CashDrawerService {
     patch: Partial<Omit<CashDrawerConfig, 'organizationId'>>,
     pin?: string | null,
   ): Promise<CashDrawerConfig> {
-    if (!hasPermission(tenant, 'settings', 'fawtara')) {
+    if (!hasPermission(tenant, 'settingsCashDrawer', 'update')) {
       throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
     const config = await repo.upsertConfig(tenant, patch, pin)
@@ -36,7 +36,7 @@ export class CashDrawerService {
   }
 
   async verifyPin(tenant: TenantContext, pin: string): Promise<boolean> {
-    if (!hasPermission(tenant, 'pos', 'open_session')) {
+    if (!hasPermission(tenant, 'haraka', 'sessionsOpen')) {
       throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
     return repo.verifyPin(tenant, pin)

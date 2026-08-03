@@ -21,12 +21,11 @@ export async function getReportsForOrg(
 ): Promise<ReportsResponse> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sp = (q: any) => (spaceId ? q.eq('space_id', spaceId) : q);
-  const [assets, checkouts, warranties, pendingReqs, maintenance] =
+  const [assets, checkouts, warranties, maintenance] =
     await Promise.all([
       sp(supabaseAdmin.from('assets').select('*').eq('organization_id', orgId)),
       sp(supabaseAdmin.from('asset_checkouts').select('*').eq('organization_id', orgId)),
       sp(supabaseAdmin.from('warranties').select('end_date').eq('organization_id', orgId)),
-      sp(supabaseAdmin.from('requests').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'PENDING')),
       sp(supabaseAdmin.from('maintenance_records').select('*').eq('organization_id', orgId)),
     ]);
 
@@ -120,7 +119,6 @@ export async function getReportsForOrg(
       activeCheckouts,
       overdueCheckouts,
       warrantiesExpiringSoon,
-      openRequests: pendingReqs.count ?? 0,
       maintenanceCost,
       maintenanceCount,
     },

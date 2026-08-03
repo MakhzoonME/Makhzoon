@@ -4,7 +4,6 @@ export type LimitedResource =
   | 'assets'
   | 'users'
   | 'warranties'
-  | 'requests'
   | 'spaces'
   | 'inventoryItems'
 
@@ -54,7 +53,5 @@ export function effectiveResourceLimit(
     }
     case 'warranties':
       return l.maxWarranties
-    case 'requests':
-      return l.maxRequests
   }
 }

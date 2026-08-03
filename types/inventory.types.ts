@@ -13,7 +13,6 @@ export interface InventoryItem {
   unit: InventoryUnit;
   quantityOnHand: number;
   minimumThreshold: number;
-  reorderQuantity?: number;
   location?: string;
   supplier?: string;
   unitCost?: number;

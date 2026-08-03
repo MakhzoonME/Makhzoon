@@ -11,6 +11,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ass
     const tenant = await resolveTenant();
     requireFeature(tenant, 'assets');
     const user = tenant.user;
+    requirePermission(user, 'usool', 'checkoutView');
 
     const checkouts = await assetsService.getAssetCheckouts(user, assetId);
     return NextResponse.json(checkouts);
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ass
     const tenant = await resolveTenant();
     requireFeature(tenant, 'assets');
     const user = tenant.user;
-    requirePermission(user, 'assets', 'checkout');
+    requirePermission(user, 'usool', 'checkoutCreate');
 
     const body = await req.json();
     const parsed = checkoutSchema.safeParse(body);

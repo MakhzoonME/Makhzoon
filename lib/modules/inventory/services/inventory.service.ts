@@ -11,7 +11,7 @@ import type { TransactionType } from '../types'
 
 const repo = new InventoryRepository()
 
-function requirePermission(tenant: TenantContext, module: 'inventory', operation: string): void {
+function requirePermission(tenant: TenantContext, module: 'raseed', operation: string): void {
   if (!hasPermission(tenant, module, operation)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
@@ -24,8 +24,8 @@ function requirePermission(tenant: TenantContext, module: 'inventory', operation
  * `inventory.view` is one way in, but not the only one here.
  */
 function requireInventoryReadForPos(tenant: TenantContext): void {
-  if (hasPermission(tenant, 'inventory', 'view')) return
-  if (hasPermission(tenant, 'pos', 'add_receipt_items')) return
+  if (hasPermission(tenant, 'raseed', 'view')) return
+  if (hasPermission(tenant, 'haraka', 'registerOpen')) return
   throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 }
 
@@ -40,18 +40,18 @@ export class InventoryService {
     if (opts?.posEnabled === true) {
       requireInventoryReadForPos(tenant)
     } else {
-      requirePermission(tenant, 'inventory', 'view')
+      requirePermission(tenant, 'raseed', 'view')
     }
     return repo.getAll(tenant, opts)
   }
 
   async getCategories(tenant: TenantContext) {
-    requirePermission(tenant, 'inventory', 'view')
+    requirePermission(tenant, 'raseed', 'view')
     return repo.getCategories(tenant)
   }
 
   async getById(tenant: TenantContext, id: string) {
-    requirePermission(tenant, 'inventory', 'view')
+    requirePermission(tenant, 'raseed', 'view')
     const item = await repo.getById(tenant, id)
     if (!item) {
       throw NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -74,11 +74,11 @@ export class InventoryService {
     if (posLookup) {
       requireInventoryReadForPos(tenant)
     } else {
-      requirePermission(tenant, 'inventory', 'view')
+      requirePermission(tenant, 'raseed', 'view')
     }
     const code = barcode.trim()
     if (!code) return null
-    return repo.findByBarcode(tenant, code, { posEnabledOnly: posLookup && !hasPermission(tenant, 'inventory', 'view') })
+    return repo.findByBarcode(tenant, code, { posEnabledOnly: posLookup && !hasPermission(tenant, 'raseed', 'view') })
   }
 
   private async ensureBarcodeUnique(
@@ -107,7 +107,6 @@ export class InventoryService {
       unit: string
       quantityOnHand: number
       minimumThreshold: number
-      reorderQuantity?: number
       location?: string
       supplier?: string
       unitCost?: number
@@ -120,7 +119,7 @@ export class InventoryService {
       documents?: import('@/types').DocumentRef[]
     }
   ) {
-    requirePermission(tenant, 'inventory', 'create')
+    requirePermission(tenant, 'raseed', 'create')
     requireActiveSubscription(tenant)
 
     await this.ensureBarcodeUnique(tenant, input.barcode)
@@ -149,7 +148,6 @@ export class InventoryService {
       sku?: string
       unit?: string
       minimumThreshold?: number
-      reorderQuantity?: number
       location?: string
       supplier?: string
       unitCost?: number
@@ -162,7 +160,7 @@ export class InventoryService {
       documents?: import('@/types').DocumentRef[]
     }
   ) {
-    requirePermission(tenant, 'inventory', 'update')
+    requirePermission(tenant, 'raseed', 'update')
     if (input.barcode !== undefined) {
       await this.ensureBarcodeUnique(tenant, input.barcode, id)
     }
@@ -180,7 +178,7 @@ export class InventoryService {
   }
 
   async delete(tenant: TenantContext, id: string) {
-    requirePermission(tenant, 'inventory', 'delete')
+    requirePermission(tenant, 'raseed', 'delete')
 
     // Cross-module reference integrity — block deletion while live references exist.
     const now = new Date().toISOString()
@@ -234,7 +232,7 @@ export class InventoryService {
   }
 
   async getTransactions(tenant: TenantContext, itemId: string) {
-    requirePermission(tenant, 'inventory', 'view')
+    requirePermission(tenant, 'raseed', 'view')
     return repo.getTransactions(tenant, itemId)
   }
 
@@ -246,7 +244,7 @@ export class InventoryService {
     reason: string,
     note?: string
   ) {
-    requirePermission(tenant, 'inventory', 'update')
+    requirePermission(tenant, 'raseed', 'update')
     const result = await repo.applyTransaction(tenant, itemId, type, quantity, reason, note)
 
     auditLog.queue({

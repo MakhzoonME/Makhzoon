@@ -5,7 +5,6 @@ export const packageLimitsSchema = z.object({
   maxAssets: z.number().int().min(-1),
   maxUsers: z.number().int().min(-1),
   maxWarranties: z.number().int().min(-1),
-  maxRequests: z.number().int().min(-1),
   maxSpaces: z.number().int().min(-1),
   maxInventoryItems: z.number().int().min(-1),
 });

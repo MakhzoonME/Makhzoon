@@ -26,8 +26,8 @@ function fireAndForgetFawtara(tenant: TenantContext, transactionId: string) {
     .catch((err) => console.error('[Fawtara] async submit failed', err))
 }
 
-function requirePos(tenant: TenantContext, op: keyof Required<NonNullable<TenantContext['user']['permissions']>>['pos']) {
-  if (!hasPermission(tenant, 'pos', op as string)) {
+function requirePos(tenant: TenantContext, op: keyof Required<NonNullable<TenantContext['user']['permissions']>>['haraka']) {
+  if (!hasPermission(tenant, 'haraka', op as string)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -42,11 +42,11 @@ export class TransactionsService {
   async list(tenant: TenantContext, opts?: { sessionId?: string; status?: 'completed' | 'refunded' | 'voided'; page?: number; pageSize?: number }) {
     // Cashiers can list their own session; managers can list any.
     if (opts?.sessionId) {
-      if (!hasPermission(tenant, 'pos', 'open_session') && !hasPermission(tenant, 'pos', 'view_reports')) {
+      if (!hasPermission(tenant, 'haraka', 'sessionsOpen') && !hasPermission(tenant, 'haraka', 'posReportView')) {
         throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
     } else {
-      requirePos(tenant, 'view_reports')
+      requirePos(tenant, 'posReportView')
     }
     return repo.list(tenant, opts)
   }
@@ -55,17 +55,17 @@ export class TransactionsService {
     const tx = await repo.getById(tenant, id)
     if (!tx) throw NextResponse.json({ error: 'Not found' }, { status: 404 })
     const isOwn = tx.cashierId === tenant.userId
-    if (!isOwn && !hasPermission(tenant, 'pos', 'view_reports')) {
+    if (!isOwn && !hasPermission(tenant, 'haraka', 'posReportView')) {
       throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
     return tx
   }
 
   async completeSale(tenant: TenantContext, input: CompleteSaleInput) {
-    requirePos(tenant, 'process_sale')
+    requirePos(tenant, 'registerOpen')
     requireActiveSubscription(tenant)
     const hasDiscount = input.lines.some((l) => l.discount > 0)
-    if (hasDiscount) requirePos(tenant, 'apply_discount')
+    if (hasDiscount) requirePos(tenant, 'applyDiscount')
     const tx = await repo.completeSale(tenant, input)
     auditLog.queue({
       tenant,
@@ -83,7 +83,7 @@ export class TransactionsService {
   }
 
   async voidSale(tenant: TenantContext, id: string) {
-    requirePos(tenant, 'void_transaction')
+    requirePos(tenant, 'transactionsVoid')
     await repo.voidTransaction(tenant, id)
     auditLog.queue({ tenant, module: 'pos', action: 'POS_SALE_VOIDED', recordId: id })
     notificationQueue.enqueue({ tenant, eventType: 'pos.sale_voided', data: { id }, link: `/haraka/transactions/${id}`, titleOverride: 'Sale voided' })
@@ -94,12 +94,12 @@ export class TransactionsService {
     tenant: TenantContext,
     opts: { from?: Date; to?: Date; groupBy: AggregateGroupBy; topN?: number },
   ): Promise<AggregateResult> {
-    requirePos(tenant, 'view_reports')
+    requirePos(tenant, 'posReportView')
     return repo.aggregate(tenant, opts)
   }
 
   async refundSale(tenant: TenantContext, id: string, opts: { lineIndexes?: number[]; reason?: string }) {
-    requirePos(tenant, 'issue_refund')
+    requirePos(tenant, 'transactionsRefund')
     const result = await repo.refundTransaction(tenant, id, opts)
     auditLog.queue({
       tenant,

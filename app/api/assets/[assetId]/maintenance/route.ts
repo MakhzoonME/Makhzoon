@@ -13,6 +13,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ assetId:
     const tenant = await resolveTenant();
     requireFeature(tenant, 'assets');
     const user = tenant.user;
+    requirePermission(user, 'usool', 'maintenanceView');
 
     const asset = await getAssetById(params.assetId);
     if (!asset || asset.organizationId !== user.organizationId) {
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ assetId:
     const tenant = await resolveTenant();
     requireFeature(tenant, 'assets');
     const user = tenant.user;
-    requirePermission(user, 'assets', 'maintenance');
+    requirePermission(user, 'usool', 'maintenanceCreate');
 
     const asset = await getAssetById(params.assetId);
     if (!asset || asset.organizationId !== user.organizationId) {

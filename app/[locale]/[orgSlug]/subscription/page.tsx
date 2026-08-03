@@ -65,7 +65,7 @@ function MiniStat({ label, current, max }: { label: string; current: number; max
 export default function SubscriptionPage() {
   const { t } = useT();
   const { data: orgInfo } = useOrgInfo();
-  const { isAllowed } = useAdminGuard('settings.subscription');
+  const { isAllowed } = useAdminGuard('settingsSubscription.view');
   const { user } = useAuthStore();
   const { active, orgId: transferOrgId } = useTransferStore();
   const orgSlug = useOrgSlug();

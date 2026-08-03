@@ -93,7 +93,7 @@ export default function ReceiptSettingsPage() {
   const { t, locale } = useT();
   const orgSlug = useOrgSlug();
   const { data: orgInfo } = useOrgInfo();
-  const { isAllowed } = useAdminGuard('settings.fawtara');
+  const { isAllowed } = useAdminGuard('settingsReceipt.view');
   const { paperWidth, copies, paired, hydrate, pair, unpair, setCopies } = usePrinterStore();
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);

@@ -18,7 +18,6 @@ import { FormDrawer } from '@/components/shared/FormDrawer';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { DocumentList } from '@/components/shared';
 import { useOrgInfo } from '@/hooks/org';
-import { RequestInventoryModal } from '@/components/inventory/RequestInventoryModal';
 import { WarrantyForm } from '@/components/warranties/WarrantyForm';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
@@ -122,7 +121,6 @@ export default function InventoryItemDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [moveOpen, setMoveOpen]   = useState(false);
   const [dupeOpen, setDupeOpen]   = useState(false);
-  const [reqOpen, setReqOpen]     = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting]   = useState(false);
   const [editWarrantyTarget, setEditWarrantyTarget] = useState<Warranty | null>(null);
@@ -242,9 +240,6 @@ export default function InventoryItemDetailPage() {
         ]}
         actions={(
           <div className="flex items-center gap-2 flex-wrap">
-            <Button size="sm" variant="outline" onClick={() => setReqOpen(true)} className="cursor-pointer transition-colors duration-150">
-              {t('inventory.requestRefill')}
-            </Button>
             {isAdmin && (
               <>
                 <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/${itemId}/edit`)} className="cursor-pointer transition-colors duration-150">
@@ -311,9 +306,6 @@ export default function InventoryItemDetailPage() {
               <span className={`font-semibold tabular-nums ${stockNumColor}`}>{item.quantityOnHand} {item.unit}</span>
             </KVRow>
             <KVRow label={t('inventory.threshold')}>{item.minimumThreshold} {item.unit}</KVRow>
-            {item.reorderQuantity != null && (
-              <KVRow label={t('inventory.reorderQty')}>{item.reorderQuantity} {item.unit}</KVRow>
-            )}
             {item.unitCost != null && (
               <KVRow label={t('inventory.unitCost')}>
                 <span className="font-mono tabular-nums">{item.unitCost.toFixed(3)} JOD</span>
@@ -576,13 +568,6 @@ export default function InventoryItemDetailPage() {
         confirmLabel={t('common.delete')}
         onConfirm={handleDelete}
         loading={deleting}
-      />
-
-      <RequestInventoryModal
-        open={reqOpen}
-        onOpenChange={setReqOpen}
-        itemId={item.id}
-        itemName={item.name}
       />
 
       <FormDrawer open={!!editWarrantyTarget} onOpenChange={(o) => { if (!o) setEditWarrantyTarget(null); }} title={t('warranties.editWarranty')}>

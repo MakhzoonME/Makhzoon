@@ -124,7 +124,7 @@ function AgentFormDialog({
 }
 
 export default function DeliveryAgentsPage() {
-  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
+  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { data: orgInfo } = useOrgInfo();
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;

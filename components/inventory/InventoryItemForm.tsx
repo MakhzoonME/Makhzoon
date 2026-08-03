@@ -40,7 +40,6 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
       unit: item?.unit ?? 'each',
       quantityOnHand: item?.quantityOnHand ?? 0,
       minimumThreshold: item?.minimumThreshold ?? 5,
-      reorderQuantity: item?.reorderQuantity ?? '',
       location: item?.location ?? '',
       supplier: item?.supplier ?? '',
       unitCost: item?.unitCost ?? '',
@@ -147,14 +146,6 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
             </FormItem>
           )} />
 
-          <FormField control={form.control} name="reorderQuantity" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Reorder Quantity</FormLabel>
-              <FormControl><Input type="number" min="0" {...field} placeholder="Suggested reorder amount" /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-
           <FormField control={form.control} name="unitCost" render={({ field }) => (
             <FormItem>
               <FormLabel>Unit Cost (JOD)</FormLabel>
@@ -249,7 +240,7 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
           <FormField control={form.control} name="posEnabled" render={({ field }) => (
             <FormItem className="flex items-end gap-3">
               <div className="flex-1">
-                <FormLabel>Sell in Haraka (POS)</FormLabel>
+                <FormLabel>Sell in Haraka</FormLabel>
                 <p className="text-xs text-gray-500">When on, this item appears in the POS register and can be sold.</p>
               </div>
               <FormControl>

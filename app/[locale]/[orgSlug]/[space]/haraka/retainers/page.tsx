@@ -15,7 +15,7 @@ import { useOrgInfo } from '@/hooks/org';
 import type { HarakaRetainer } from '@/types';
 
 export default function RetainersListPage() {
-  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'pos' });
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
   const { isAllowed } = useAdminGuard('pos.view_retainers');
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();

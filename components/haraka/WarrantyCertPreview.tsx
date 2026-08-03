@@ -43,13 +43,13 @@ const LABELS = {
   },
 }
 
-function fmtDate(iso: string, lang: CertLang): string {
+function fmtDate(value: string | Date, lang: CertLang): string {
   try {
-    return new Date(iso).toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-GB', {
+    return new Date(value).toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-GB', {
       day: '2-digit', month: 'long', year: 'numeric',
     })
   } catch {
-    return iso
+    return String(value)
   }
 }
 
@@ -119,7 +119,7 @@ export function WarrantyCertPreview({ cert, config, orgName, orgNameAr, lang, qr
           {L.heading}
         </div>
         <div>{L.certNo}: <strong>{data.warrantyNumber}</strong></div>
-        <div>{L.issued}: {fmtDate(data.createdAt.toISOString().slice(0, 10), lang)}</div>
+        <div>{L.issued}: {fmtDate(data.createdAt, lang)}</div>
         <div style={{ marginTop: 4 }}>{L.customer}: {data.customerName}</div>
         {data.customerPhone && <div>{L.phone}: {data.customerPhone}</div>}
         <div style={{ borderTop: '1px dashed #888', margin: '6px 0', paddingTop: 4, fontWeight: 600 }}>{L.items}:</div>
@@ -183,7 +183,7 @@ export function WarrantyCertPreview({ cert, config, orgName, orgNameAr, lang, qr
       {/* Meta row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20, fontSize: 13 }}>
         <div><span style={{ color: '#888' }}>{L.certNo}: </span><strong>{data.warrantyNumber}</strong></div>
-        <div><span style={{ color: '#888' }}>{L.issued}: </span>{fmtDate(data.createdAt.toISOString().slice(0, 10), lang)}</div>
+        <div><span style={{ color: '#888' }}>{L.issued}: </span>{fmtDate(data.createdAt, lang)}</div>
       </div>
 
       {/* Customer */}

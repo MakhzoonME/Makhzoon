@@ -137,6 +137,21 @@ export class OrdersRepository {
     return { items: items.slice(start, start + pageSize), total, page: safePage, pageSize, totalPages }
   }
 
+  /**
+   * Every order ever placed by a given customer, newest first. Used by the
+   * customer profile's history timeline.
+   */
+  async listByCustomer(tenant: TenantContext, customerId: string): Promise<HarakaOrder[]> {
+    const { data, error } = await supabaseAdmin
+      .from('haraka_orders')
+      .select('*')
+      .eq('organization_id', tenant.organizationId)
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return (data ?? []).map(toOrder)
+  }
+
   async getById(tenant: TenantContext, id: string): Promise<HarakaOrder | null> {
     const { data } = await supabaseAdmin
       .from('haraka_orders')

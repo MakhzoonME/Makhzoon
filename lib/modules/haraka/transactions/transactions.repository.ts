@@ -231,6 +231,21 @@ export class TransactionsRepository {
     return { items: items.slice(start, start + pageSize), total, page: safePage, pageSize, totalPages }
   }
 
+  /**
+   * Every POS transaction ever recorded for a given customer (sales, refunds
+   * and voids), newest first. Used by the customer profile's history timeline.
+   */
+  async listByCustomer(tenant: TenantContext, customerId: string): Promise<PosTransaction[]> {
+    const { data, error } = await supabaseAdmin
+      .from('pos_transactions')
+      .select('*')
+      .eq('organization_id', tenant.organizationId)
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return (data ?? []).map(toTransaction)
+  }
+
   async getById(tenant: TenantContext, id: string): Promise<PosTransaction | null> {
     const { data } = await supabaseAdmin
       .from('pos_transactions')

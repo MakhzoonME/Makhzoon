@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
 import { Printer, Lock, Receipt, ShoppingCart, PauseCircle, RotateCcw, Trash2, Banknote, CreditCard } from 'lucide-react';
 import { BarcodeInput, SubscriptionGate } from '@/components/shared';
@@ -21,14 +20,11 @@ import { hasPermission } from '@/lib/permissions';
 import { priceCart } from '@/lib/modules/haraka/pricing/calc';
 import { toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
-import { printRaw, openCashDrawer } from '@/lib/modules/haraka/printing/webusb-transport';
-import { buildReceipt } from '@/lib/modules/haraka/printing/receipt-template';
+import { openCashDrawer } from '@/lib/modules/haraka/printing/webusb-transport';
 import { CashDrawerButton } from '@/components/haraka/CashDrawerButton';
 import { useCashDrawerConfig } from '@/hooks/haraka';
-import type { ReceiptPrintText } from '@/lib/modules/haraka/printing/receipt-canvas';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import { DEFAULT_RECEIPT_CONFIG } from '@/lib/receipts/receipt-config';
-import type { ReceiptLang } from '@/lib/receipts/labels';
 import { getReceiptBaseUrl } from '@/lib/app-env';
 import { useQuery } from '@tanstack/react-query';
 import type { InventoryItem, PosTransaction } from '@/types';
@@ -104,7 +100,6 @@ export default function RegisterPage() {
   const [payTab, setPayTab] = useState<'cash' | 'card' | 'other'>('cash');
   const [printerOpen, setPrinterOpen] = useState(false);
   const [lastTx, setLastTx] = useState<PosTransaction | null>(null);
-  const [langPickTx, setLangPickTx] = useState<PosTransaction | null>(null);
   const [pendingDrawerPayments, setPendingDrawerPayments] = useState<PaymentLine[] | null>(null);
   const [receiptTx, setReceiptTx] = useState<PosTransaction | null>(null);
   const [receiptBase] = useState(() => getReceiptBaseUrl());
@@ -224,15 +219,11 @@ export default function RegisterPage() {
       clearCart();
       toast.success(`Sale complete — receipt ${result.transaction.receiptNumber}`);
       setReceiptTx(result.transaction);
-      requestPrint(result.transaction);
-      // Bilingual orgs pick a language before anything prints — defer the drawer
-      // kick until that choice is made so it opens together with the receipt
-      // instead of before the user has even picked a language.
-      if ((receiptCfg?.config?.language ?? 'en') === 'both') {
-        setPendingDrawerPayments(payments);
-      } else {
-        maybeOpenCashDrawer(payments);
-      }
+      // The drawer opens once printing actually happens — ReceiptShareDialog
+      // auto-prints immediately for single-language orgs, or waits for the
+      // cashier to pick a language and print manually for bilingual ones
+      // (see its onPrinted callback below).
+      setPendingDrawerPayments(payments);
     } catch (err) {
       if (err instanceof CompleteSaleError && err.code === 'DISCOUNT_APPROVAL_REQUIRED') {
         setPendingSale({ payments, skipFawtara });
@@ -247,53 +238,6 @@ export default function RegisterPage() {
   function handleApprovalPinSubmit(pin: string) {
     if (!pendingSale) return;
     handleConfirmSale(pendingSale.payments, pendingSale.skipFawtara, pin);
-  }
-
-  function requestPrint(transaction: PosTransaction) {
-    if ((receiptCfg?.config?.language ?? 'en') === 'both') {
-      setReceiptTx(null);
-      setLangPickTx(transaction);
-    } else {
-      const lang: ReceiptLang = receiptCfg?.config?.language === 'ar' ? 'ar' : 'en';
-      printReceipt(transaction, lang).catch(() => undefined);
-    }
-  }
-
-  function buildPrintText(): ReceiptPrintText {
-    const cfg = receiptCfg?.config;
-    return {
-      orgName: cfg?.orgName?.trim() || orgInfo?.name || '',
-      orgNameAr: cfg?.orgNameAr ?? '',
-      tagline: receiptCfg?.tagline ?? '',
-      taglineAr: receiptCfg?.taglineAr ?? '',
-      address: cfg?.address ?? '',
-      addressAr: cfg?.addressAr ?? '',
-      phone: cfg?.phone ?? '',
-      taxNumber: receiptCfg?.taxNumber ?? '',
-      footerText: cfg?.footerText ?? '',
-      footerTextAr: cfg?.footerTextAr ?? '',
-      showCashier: cfg?.showCashier ?? true,
-      showTaxNumber: cfg?.showTaxNumber ?? true,
-      showFawtaraQr: cfg?.showFawtaraQr ?? true,
-    };
-  }
-
-  async function printReceipt(transaction: PosTransaction, lang: ReceiptLang) {
-    try {
-      const { usePrinterStore } = await import('@/store/printer.store');
-      const printer = usePrinterStore.getState();
-      const bytes = await buildReceipt(transaction, {
-        paperWidth: printer.paperWidth,
-        organization: { id: user?.organizationId ?? '', name: orgInfo?.name ?? '', contactEmail: user?.email ?? '' },
-        text: buildPrintText(),
-        lang,
-        cutFeed: printer.cutFeed,
-      });
-      const ok = await printRaw(bytes);
-      if (!ok) toast.info('No printer paired — receipt not printed');
-    } catch (err) {
-      console.error('[print receipt]', err);
-    }
   }
 
   const totals = priceCart(lines).totals;
@@ -326,7 +270,7 @@ export default function RegisterPage() {
             <Printer size={14} className="me-1" /> {t('register.printer')}
           </Button>
           {lastTx && (
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500" onClick={() => requestPrint(lastTx)}>
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500" onClick={() => setReceiptTx(lastTx)}>
               <Receipt size={14} className="me-1" /> {t('register.reprintLast')}
             </Button>
           )}
@@ -532,8 +476,16 @@ export default function RegisterPage() {
         loading={completeMut.isPending}
         error={approvalError}
       />
-      <PrinterSettingsDialog open={printerOpen} onOpenChange={setPrinterOpen} />
+      <PrinterSettingsDialog
+        open={printerOpen}
+        onOpenChange={setPrinterOpen}
+        config={receiptCfg?.config ?? DEFAULT_RECEIPT_CONFIG}
+      />
 
+      {/* Always shown right after checkout — auto-prints immediately for
+          single-language orgs; bilingual orgs pick a language via the toggle
+          inside and print manually. Printing rasterizes this exact preview
+          (logo included) so what's on screen is what comes out of the printer. */}
       <ReceiptShareDialog
         open={!!receiptTx}
         onOpenChange={(o) => { if (!o) setReceiptTx(null); }}
@@ -545,31 +497,9 @@ export default function RegisterPage() {
         tagline={receiptCfg?.tagline ?? ''}
         taglineAr={receiptCfg?.taglineAr ?? ''}
         taxNumber={receiptCfg?.taxNumber ?? ''}
-        onPrint={(tx) => requestPrint(tx)}
+        autoPrint
+        onPrinted={resolvePendingDrawer}
       />
-
-      {/* Language pick for bilingual orgs — portaled to <body> with a z-index above
-          the receipt preview dialog's Radix portal so it can never render behind it. */}
-      {langPickTx && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-xs rounded-xl bg-white p-6 shadow-xl space-y-4">
-            <div className="text-sm font-semibold">Print language</div>
-            <p className="text-xs text-gray-500">Choose the language for this receipt.</p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" onClick={() => { const tx = langPickTx; setLangPickTx(null); printReceipt(tx, 'en').catch(() => undefined); resolvePendingDrawer(); }}>
-                English
-              </Button>
-              <Button variant="outline" onClick={() => { const tx = langPickTx; setLangPickTx(null); printReceipt(tx, 'ar').catch(() => undefined); resolvePendingDrawer(); }}>
-                العربية
-              </Button>
-            </div>
-            <button onClick={() => { setLangPickTx(null); resolvePendingDrawer(); }} className="w-full text-center text-xs text-gray-400 hover:text-gray-600">
-              Skip printing
-            </button>
-          </div>
-        </div>,
-        document.body
-      )}
     </div>
   );
 }

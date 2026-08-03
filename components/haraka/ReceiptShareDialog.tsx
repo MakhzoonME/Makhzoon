@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toPng, toJpeg } from 'html-to-image';
+import QRCode from 'qrcode';
 import { Copy, Check, Mail, Download, Printer, Receipt, FileImage, Loader2 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogIconHeader, DialogBody, DialogFooter,
@@ -11,6 +12,8 @@ import { ReceiptPreview, type ReceiptConfig, type ReceiptData } from '@/componen
 import type { ReceiptLang } from '@/lib/receipts/labels';
 import { cn } from '@/lib/utils/cn';
 import { toast } from '@/hooks/ui';
+import { usePrinterStore } from '@/store/printer.store';
+import { printPreviewNode } from '@/lib/modules/haraka/printing/raster-print';
 import type { PosTransaction } from '@/types';
 
 /** WhatsApp brand glyph (lucide ships no brand icons). */
@@ -43,8 +46,12 @@ interface Props {
   tagline: string;
   taglineAr: string;
   taxNumber: string;
-  /** Reprint to the paired thermal printer, if available. */
-  onPrint?: (transaction: PosTransaction) => void;
+  /** Print automatically once, right after opening (skipped for bilingual
+   *  orgs — they pick a language via the toggle below, then print manually). */
+  autoPrint?: boolean;
+  /** Called right after a print is sent (auto or manual) — e.g. to fire the
+   *  cash drawer once, in sync with the receipt actually printing. */
+  onPrinted?: () => void;
 }
 
 /**
@@ -57,17 +64,37 @@ interface Props {
  */
 export function ReceiptShareDialog({
   open, onOpenChange, transaction, orgSlug, orgName, receiptBase,
-  config, tagline, taglineAr, taxNumber, onPrint,
+  config, tagline, taglineAr, taxNumber, autoPrint, onPrinted,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [capturing, setCapturing] = useState<'png' | 'jpg' | null>(null);
+  const [printing, setPrinting] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const captureRef = useRef<HTMLDivElement>(null);
+  const autoPrintedFor = useRef<string | null>(null);
+  const { hydrate } = usePrinterStore();
+  useEffect(() => { hydrate(); }, [hydrate]);
+  // Paper size, copies, and cut feed are org-wide (ReceiptConfig), not local
+  // browser state — every register should print the same way.
+  const paperWidth: 58 | 80 = config.template === 'thermal-80' ? 80 : 58;
+  const cutFeed = config.cutFeed;
+  const copies = config.copies;
   const bothLangs = config.language === 'both';
   const fixedLang: ReceiptLang = config.language === 'ar' ? 'ar' : 'en';
   const [previewLang, setPreviewLang] = useState<ReceiptLang>(fixedLang);
   const lang = bothLangs ? previewLang : fixedLang;
 
   const shareLink = transaction ? `${receiptBase}/r/${orgSlug}/${transaction.id}` : '';
+
+  // Render the real Fawtara QR (not a placeholder) so the preview — and the
+  // print, which rasterizes this same DOM — both show a working code.
+  useEffect(() => {
+    const payload = transaction?.fawtara?.status === 'submitted' ? transaction.fawtara.qrPayload : null;
+    if (!payload) { setQrDataUrl(null); return; }
+    let cancelled = false;
+    QRCode.toDataURL(payload, { margin: 0 }).then((url) => { if (!cancelled) setQrDataUrl(url); }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [transaction?.fawtara?.status, transaction?.fawtara?.qrPayload]);
 
   const data: ReceiptData | undefined = useMemo(() => {
     if (!transaction) return undefined;
@@ -87,8 +114,34 @@ export function ReceiptShareDialog({
       total: transaction.total,
       currency: CURRENCY,
       status: transaction.status,
+      qrCodeDataUrl: qrDataUrl,
     };
-  }, [transaction]);
+  }, [transaction, qrDataUrl]);
+
+  async function handlePrint() {
+    const node = captureRef.current;
+    if (!node || printing) return;
+    setPrinting(true);
+    try {
+      const ok = await printPreviewNode(node, { paperWidth, cutFeed, copies });
+      if (!ok) toast.info('No printer paired — receipt not printed');
+    } catch {
+      toast.error('Print failed');
+    } finally {
+      setPrinting(false);
+      onPrinted?.();
+    }
+  }
+
+  // Auto-print once per transaction, but only once the receipt (and its QR,
+  // if any) has actually finished rendering into captureRef.
+  useEffect(() => {
+    if (!open || !autoPrint || bothLangs || !transaction || !data) return;
+    if (autoPrintedFor.current === transaction.id) return;
+    autoPrintedFor.current = transaction.id;
+    handlePrint();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, autoPrint, bothLangs, transaction, data]);
 
   function copyLink() {
     navigator.clipboard.writeText(shareLink).then(() => {
@@ -218,9 +271,10 @@ export function ReceiptShareDialog({
         </DialogBody>
 
         <DialogFooter>
-          {onPrint && transaction && (
-            <Button variant="outline" onClick={() => onPrint(transaction)} className="gap-2">
-              <Printer size={14} />Print
+          {transaction && (
+            <Button variant="outline" onClick={handlePrint} disabled={printing} className="gap-2">
+              {printing ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
+              {printing ? 'Printing…' : 'Print'}
             </Button>
           )}
           <Button onClick={() => onOpenChange(false)}>Done</Button>

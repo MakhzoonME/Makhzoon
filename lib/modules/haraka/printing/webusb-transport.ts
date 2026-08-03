@@ -5,6 +5,11 @@
  * a device once; we remember the device descriptor in localStorage so future
  * sessions reconnect silently. Works with any ESC/POS-speaking USB printer.
  *
+ * Device pairing is necessarily per-browser/per-computer — WebUSB has no
+ * concept of a shared device across machines. Everything else about how a
+ * receipt looks and prints (paper size, copies, cut feed) is org-wide
+ * configuration, not stored here — see ReceiptConfig / receipt settings.
+ *
  * Network printers (Ethernet) are NOT supported in v1: browsers can't open
  * raw TCP sockets. The print-bridge approach (a tiny local daemon) is
  * intentionally left out of scope.
@@ -15,10 +20,6 @@ const STORAGE_KEY = 'makhzoon:posPrinter';
 interface SavedDevice {
   vendorId: number;
   productId: number;
-  paperWidth: 58 | 80;
-  copies: number;
-  /** Line-feeds before the cut command — tunes the head-to-blade gap. Defaults to 1. */
-  cutFeed?: number;
 }
 
 interface USBDeviceShape {
@@ -72,25 +73,14 @@ export function clearSavedPrinter() {
  * Prompt the user to pair a printer. Use class code 7 (printer) as a filter
  * so the device picker shows only printers.
  */
-export async function pairPrinter(paperWidth: 58 | 80 = 80, copies = 1, cutFeed = 2): Promise<SavedDevice> {
+export async function pairPrinter(): Promise<SavedDevice> {
   if (!navigator.usb) throw new Error('WebUSB not supported in this browser');
   const device = await navigator.usb.requestDevice({ filters: [{ classCode: 7 }] });
-  const saved: SavedDevice = {
-    vendorId: device.vendorId,
-    productId: device.productId,
-    paperWidth,
-    copies,
-    cutFeed,
-  };
+  const saved: SavedDevice = { vendorId: device.vendorId, productId: device.productId };
   savePrinter(saved);
   return saved;
 }
 
-/**
- * Find the paired device (if connected) and send the byte stream.
- * Returns false silently if no printer is paired — callers should fall back
- * to a PDF or on-screen receipt preview in that case.
- */
 /**
  * Send the ESC/POS cash drawer kick command through the paired USB printer.
  * Returns false silently if no printer is paired — callers show a toast in that case.
@@ -113,14 +103,22 @@ export async function openCashDrawer(opts: {
 // silently clobbers the other. Chain every call onto this queue instead.
 let usbQueue: Promise<unknown> = Promise.resolve();
 
-export function printRaw(bytes: Uint8Array): Promise<boolean> {
-  const run = usbQueue.then(() => printRawImpl(bytes));
+/**
+ * Find the paired device (if connected) and send the byte stream.
+ * `copies` defaults to 1 — callers printing an actual receipt should pass the
+ * org's configured copy count explicitly; a bare drawer-kick command should
+ * never be repeated just because receipts print multiple copies.
+ * Returns false silently if no printer is paired — callers should fall back
+ * to a PDF or on-screen receipt preview in that case.
+ */
+export function printRaw(bytes: Uint8Array, copies = 1): Promise<boolean> {
+  const run = usbQueue.then(() => printRawImpl(bytes, copies));
   // Keep the queue alive even if this call fails, so later calls still run.
   usbQueue = run.catch(() => undefined);
   return run;
 }
 
-async function printRawImpl(bytes: Uint8Array): Promise<boolean> {
+async function printRawImpl(bytes: Uint8Array, copies: number): Promise<boolean> {
   if (!navigator.usb) return false;
   const saved = readSavedPrinter();
   if (!saved) return false;
@@ -135,12 +133,12 @@ async function printRawImpl(bytes: Uint8Array): Promise<boolean> {
   await device.claimInterface(iface.interfaceNumber);
   const outEndpoint = iface.alternates[0].endpoints.find((e) => e.direction === 'out');
   if (!outEndpoint) throw new Error('No outbound endpoint found');
-  const copies = Math.max(1, saved.copies ?? 1);
   // Copy into a fresh ArrayBuffer so the type is BufferSource-compatible (avoids
   // the SharedArrayBuffer union issue in some TS DOM lib versions).
   const buffer = new ArrayBuffer(bytes.byteLength);
   new Uint8Array(buffer).set(bytes);
-  for (let i = 0; i < copies; i++) {
+  const n = Math.max(1, copies);
+  for (let i = 0; i < n; i++) {
     await device.transferOut(outEndpoint.endpointNumber, buffer);
   }
   return true;

@@ -71,7 +71,7 @@ type ReceiptSettings = Pick<ReceiptConfig,
   'template' | 'language' |
   'showLogo' | 'showTaxNumber' | 'showCashier' | 'showFawtaraQr' |
   'showItemizedTax' | 'showAddress' | 'showPhone' | 'showWebsite' |
-  'footerText' | 'footerTextAr'
+  'footerText' | 'footerTextAr' | 'copies' | 'cutFeed'
 >;
 
 const DEFAULT_SETTINGS: ReceiptSettings = {
@@ -87,6 +87,8 @@ const DEFAULT_SETTINGS: ReceiptSettings = {
   showWebsite:     DEFAULT_RECEIPT_CONFIG.showWebsite,
   footerText:      DEFAULT_RECEIPT_CONFIG.footerText,
   footerTextAr:    DEFAULT_RECEIPT_CONFIG.footerTextAr,
+  copies:          DEFAULT_RECEIPT_CONFIG.copies,
+  cutFeed:         DEFAULT_RECEIPT_CONFIG.cutFeed,
 };
 
 export default function ReceiptSettingsPage() {
@@ -94,7 +96,7 @@ export default function ReceiptSettingsPage() {
   const orgSlug = useOrgSlug();
   const { data: orgInfo } = useOrgInfo();
   const { isAllowed } = useAdminGuard('settingsReceipt.view');
-  const { paperWidth, copies, paired, hydrate, pair, unpair, setCopies } = usePrinterStore();
+  const { paired, hydrate, pair, unpair } = usePrinterStore();
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const supported = isWebUsbSupported();
@@ -132,6 +134,8 @@ export default function ReceiptSettingsPage() {
       showWebsite:     c.showWebsite     ?? s.showWebsite,
       footerText:      c.footerText      ?? s.footerText,
       footerTextAr:    c.footerTextAr    ?? s.footerTextAr,
+      copies:          c.copies          ?? s.copies,
+      cutFeed:         c.cutFeed         ?? s.cutFeed,
     }));
   }, [saved]);
 
@@ -184,13 +188,15 @@ export default function ReceiptSettingsPage() {
   async function handleTestPrint() {
     setBusy(true);
     try {
+      const paperWidth = settings.template === 'thermal-80' ? 80 : 58;
       const bytes = new EscPosBuilder()
         .init().align('center').bold(true).size(17)
         .line('PRINTER TEST').size(0).bold(false)
         .line(orgInfo?.name ?? 'Makhzoon').feed(1)
-        .align('left').line(`Paper: ${paperWidth} mm`).line(`Copies: ${copies}`)
-        .line(new Date().toLocaleString()).feed(2).cut().build();
-      const ok = await printRaw(bytes);
+        .align('left').line(`Paper: ${paperWidth} mm`).line(`Copies: ${settings.copies}`)
+        .line(`Cut feed: ${settings.cutFeed}`)
+        .line(new Date().toLocaleString()).feed(1).cut(settings.cutFeed).build();
+      const ok = await printRaw(bytes, settings.copies);
       if (ok) toast.success(t('register.reprintLast'));
       else toast.error(t('common.updateFailed'));
     } catch (err) { toast.error(err instanceof Error ? err.message : t('common.updateFailed')); }
@@ -257,9 +263,18 @@ export default function ReceiptSettingsPage() {
                     </div>
                     <div className="space-y-1.5">
                       <Label>Copies per sale</Label>
-                      <Input type="number" min="1" max="5" value={copies}
-                        onChange={(e) => setCopies(Number(e.target.value || 1))} />
+                      <Input type="number" min="1" max="5" value={settings.copies}
+                        onChange={(e) => set('copies', Number(e.target.value || 1))} />
                     </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Cut feed (lines)</Label>
+                    <Input type="number" min="0" max="10" value={settings.cutFeed}
+                      onChange={(e) => set('cutFeed', Number(e.target.value || 0))} />
+                    <p className="text-xs text-gray-500">
+                      Blank lines fed after the cut. Lower it if there&apos;s too much blank paper before
+                      the next receipt&apos;s header.
+                    </p>
                   </div>
                   <div className="flex items-center gap-2 pt-1 border-t border-border">
                     {paired

@@ -4,22 +4,25 @@ import { useEffect, useState } from 'react';
 import { Printer, Plug2, Unplug, TestTube2, Check } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePrinterStore } from '@/store/printer.store';
 import { isWebUsbSupported, printRaw } from '@/lib/modules/haraka/printing/webusb-transport';
 import { EscPosBuilder } from '@/lib/modules/haraka/printing/escpos-builder';
+import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import { toast } from '@/hooks/ui';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Org-wide receipt/print config — paper size, copies, cut feed are set once
+   *  in Settings > Receipt and apply to every register, not per-browser. */
+  config: ReceiptConfig;
 }
 
-export function PrinterSettingsDialog({ open, onOpenChange }: Props) {
-  const { paperWidth, copies, cutFeed, paired, hydrate, pair, unpair, setPaperWidth, setCopies, setCutFeed } = usePrinterStore();
+export function PrinterSettingsDialog({ open, onOpenChange, config }: Props) {
+  const { paired, hydrate, pair, unpair } = usePrinterStore();
   const [busy, setBusy] = useState(false);
   const supported = isWebUsbSupported();
+  const paperWidth = config.template === 'thermal-80' ? 80 : 58;
 
   useEffect(() => {
     if (open) hydrate();
@@ -52,13 +55,13 @@ export function PrinterSettingsDialog({ open, onOpenChange }: Props) {
         .feed(1)
         .align('left')
         .line(`Paper width: ${paperWidth} mm`)
-        .line(`Copies: ${copies}`)
-        .line(`Cut feed: ${cutFeed}`)
+        .line(`Copies: ${config.copies}`)
+        .line(`Cut feed: ${config.cutFeed}`)
         .line(new Date().toLocaleString())
         .feed(1)
-        .cut(cutFeed)
+        .cut(config.cutFeed)
         .build();
-      const ok = await printRaw(bytes);
+      const ok = await printRaw(bytes, config.copies);
       if (ok) toast.success('Test page sent');
       else toast.error('No paired printer found');
     } catch (err) {
@@ -92,41 +95,21 @@ export function PrinterSettingsDialog({ open, onOpenChange }: Props) {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-gray-700">Paper width</label>
-                  <Select value={String(paperWidth)} onValueChange={(v) => setPaperWidth(Number(v) as 58 | 80)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="58">58 mm</SelectItem>
-                      <SelectItem value="80">80 mm</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="rounded-lg border border-border bg-surface-page px-4 py-3 text-sm space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Paper width</span>
+                  <span className="font-medium text-gray-700">{paperWidth} mm</span>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-gray-700">Copies per sale</label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="5"
-                    value={copies}
-                    onChange={(e) => setCopies(Number(e.target.value || 1))}
-                  />
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Copies per sale</span>
+                  <span className="font-medium text-gray-700">{config.copies}</span>
                 </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">Cut feed (lines)</label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="10"
-                  value={cutFeed}
-                  onChange={(e) => setCutFeed(Number(e.target.value || 0))}
-                />
-                <p className="text-xs text-gray-500">
-                  Blank lines fed after the cut. Lower it if there&apos;s too much blank paper before
-                  the next receipt&apos;s header.
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Cut feed</span>
+                  <span className="font-medium text-gray-700">{config.cutFeed} lines</span>
+                </div>
+                <p className="text-xs text-gray-400 pt-1">
+                  Set for the whole business in Settings → Receipt, not per computer.
                 </p>
               </div>
 

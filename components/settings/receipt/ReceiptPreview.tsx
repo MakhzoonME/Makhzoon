@@ -31,6 +31,15 @@ export interface ReceiptConfig {
   orgNameAr: string;
   /** Which language(s) the business issues receipts in. */
   language: ReceiptLanguage;
+  /**
+   * Printer output settings. Org-wide (not per-browser/per-user) — every
+   * cashier's register should print the same way regardless of which
+   * computer they're on. WebUSB pairing itself (which physical device a
+   * given computer talks to) stays local, since that's a hard per-browser
+   * constraint, but paper size/copies/cut-feed are business decisions.
+   */
+  copies: number;
+  cutFeed: number;
 }
 
 /* Real receipt content. When omitted, the templates render SAMPLE_DATA so the

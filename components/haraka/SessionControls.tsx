@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,6 +18,7 @@ import {
   type CloseSessionFormData,
 } from '@/lib/modules/haraka/sessions/schemas';
 import { useCurrentSession, useSession, useOpenSession, useCloseSession } from '@/hooks/haraka';
+import { useAuthStore } from '@/store/auth.store';
 import { toast, useT } from '@/hooks/ui';
 import { formatCurrency } from '@/lib/utils/format';
 import { formatDate } from '@/lib/utils/date';
@@ -111,17 +112,26 @@ export function SessionControls({ base }: { base: string }) {
 /* ── Open session dialog ───────────────────────────────────────────────── */
 function OpenSessionDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const { t } = useT();
+  const { user } = useAuthStore();
   const openMut = useOpenSession();
+  const defaultTill = user?.displayName ? `${user.displayName} till` : '';
   const form = useForm<OpenSessionFormData>({
     resolver: zodResolver(openSessionSchema),
-    defaultValues: { openingFloat: '' as unknown as number },
+    defaultValues: { openingFloat: '' as unknown as number, tillName: defaultTill },
   });
+
+  // Seed the till name once the user's display name is available.
+  useEffect(() => {
+    if (defaultTill && !form.getValues('tillName')) {
+      form.setValue('tillName', defaultTill);
+    }
+  }, [defaultTill, form]);
 
   async function onSubmit(values: OpenSessionFormData) {
     try {
       await openMut.mutateAsync(values);
       toast.success(t('haraka.openNewSession'));
-      form.reset({ openingFloat: '' as unknown as number });
+      form.reset({ openingFloat: '' as unknown as number, tillName: defaultTill });
       onOpenChange(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to open session');
@@ -129,7 +139,7 @@ function OpenSessionDialog({ open, onOpenChange }: { open: boolean; onOpenChange
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) form.reset({ openingFloat: '' as unknown as number }); onOpenChange(v); }}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) form.reset({ openingFloat: '' as unknown as number, tillName: defaultTill }); onOpenChange(v); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -141,13 +151,20 @@ function OpenSessionDialog({ open, onOpenChange }: { open: boolean; onOpenChange
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <DialogBody className="space-y-4">
-              {/* Register / till — read-only; multi-till support is a future feature */}
-              <div className="space-y-1.5">
-                <div className="text-sm font-medium text-gray-700">{t('haraka.register')}</div>
-                <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-sidebar px-3 py-2 text-sm text-gray-500">
-                  <span className="text-base">🏪</span> {t('haraka.mainTill')}
-                </div>
-              </div>
+              {/* Register / till — cashier-named, defaults to "{name} till" */}
+              <FormField
+                control={form.control}
+                name="tillName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('haraka.register')} *</FormLabel>
+                    <FormControl>
+                      <Input placeholder={t('haraka.mainTill')} {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}

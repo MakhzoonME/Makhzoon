@@ -12,6 +12,7 @@ function toSession(r: Row): PosSession {
     locationId: (r.location_id as string) ?? 'default',
     cashierId: r.cashier_id as string,
     cashierName: (r.cashier_name as string) ?? '',
+    tillName: (r.till_name as string) ?? null,
     openedAt: r.opened_at ? new Date(r.opened_at as string) : new Date(),
     closedAt: r.closed_at ? new Date(r.closed_at as string) : null,
     status: ((r.status as string) ?? 'open') as 'open' | 'closed',
@@ -91,18 +92,20 @@ export class SessionsRepository {
 
   async open(
     tenant: TenantContext,
-    input: { openingFloat: number; locationId?: string },
+    input: { openingFloat: number; locationId?: string; tillName?: string },
   ): Promise<string> {
-    // Uses the atomic `open_pos_session` RPC (migration 0047) which
+    // Uses the atomic `open_pos_session` RPC (migrations 0047/0053) which
     // advisory-locks per cashier, checks for an existing open session,
     // and inserts in one DB transaction — preventing TOCTOU races.
+    const cashierName = tenant.user.displayName ?? tenant.user.email ?? ''
     const { data, error } = await supabaseAdmin.rpc('open_pos_session', {
       p_org_id:        tenant.organizationId,
       p_space_id:      tenant.spaceId ?? null,
       p_cashier_id:    tenant.userId,
-      p_cashier_name:  tenant.user.displayName ?? tenant.user.email ?? '',
+      p_cashier_name:  cashierName,
       p_location_id:   input.locationId ?? 'default',
       p_opening_float: input.openingFloat,
+      p_till_name:     input.tillName?.trim() || `${cashierName} till`,
     })
     if (error) {
       const msg = error.message ?? ''

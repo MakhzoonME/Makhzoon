@@ -2781,6 +2781,7 @@ export type Database = {
           organization_id: string
           space_id: string
           status: string
+          till_name: string | null
           updated_at: string
         }
         Insert: {
@@ -2799,6 +2800,7 @@ export type Database = {
           organization_id: string
           space_id: string
           status?: string
+          till_name?: string | null
           updated_at?: string
         }
         Update: {
@@ -2817,6 +2819,7 @@ export type Database = {
           organization_id?: string
           space_id?: string
           status?: string
+          till_name?: string | null
           updated_at?: string
         }
         Relationships: [

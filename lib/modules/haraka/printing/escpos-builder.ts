@@ -72,10 +72,12 @@ export class EscPosBuilder {
   }
 
   /**
-   * Print a 1-bit raster bitmap (`true` = black dot) as a GS v 0 bit-image.
-   * Used for QR codes and — crucially — for Arabic receipts, which the printer
-   * cannot render as text (no Arabic font / shaping / RTL), so we rasterize the
-   * whole receipt to a canvas bitmap and send it here.
+   * Print a 1-bit raster bitmap (`true` = black dot) as a single GS v 0
+   * bit-image command. Fine for small images (QR codes), but many thermal
+   * printers cap how much data a single GS v 0 command can hold in its print
+   * buffer — a full receipt rendered as one tall image can exceed that and
+   * get silently truncated or spill into the next job. Use
+   * `rasterImageChunked` for anything that could be tall (a whole receipt).
    */
   rasterImage(matrix: boolean[][]) {
     if (matrix.length === 0 || matrix[0].length === 0) return this
@@ -102,6 +104,21 @@ export class EscPosBuilder {
       }
     }
     return this.push([...header, ...data])
+  }
+
+  /**
+   * Same as `rasterImage`, but splits tall images into multiple GS v 0
+   * commands of at most `maxRows` rows each, sent back to back with no feed
+   * in between — visually one continuous image, but each command stays
+   * small enough to fit typical printer raster buffers. Use this for a
+   * whole rendered receipt; use plain `rasterImage`/`qrRaster` for small
+   * one-off images like a QR code.
+   */
+  rasterImageChunked(matrix: boolean[][], maxRows = 200) {
+    for (let start = 0; start < matrix.length; start += maxRows) {
+      this.rasterImage(matrix.slice(start, start + maxRows))
+    }
+    return this
   }
 
   /** Print a QR image as raw GS v 0 raster bit-image. */

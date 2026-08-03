@@ -105,6 +105,7 @@ export default function RegisterPage() {
   const [printerOpen, setPrinterOpen] = useState(false);
   const [lastTx, setLastTx] = useState<PosTransaction | null>(null);
   const [langPickTx, setLangPickTx] = useState<PosTransaction | null>(null);
+  const [pendingDrawerPayments, setPendingDrawerPayments] = useState<PaymentLine[] | null>(null);
   const [receiptTx, setReceiptTx] = useState<PosTransaction | null>(null);
   const [receiptBase] = useState(() => getReceiptBaseUrl());
 
@@ -177,6 +178,24 @@ export default function RegisterPage() {
     }
   }, [lookup, taxRateById, canAddItems]);
 
+  function resolvePendingDrawer() {
+    if (!pendingDrawerPayments) return;
+    maybeOpenCashDrawer(pendingDrawerPayments);
+    setPendingDrawerPayments(null);
+  }
+
+  function maybeOpenCashDrawer(payments: PaymentLine[]) {
+    const drawerCfg = cashDrawerData?.config;
+    if (!drawerCfg?.enabled || !drawerCfg.autoOpenOnCash) return;
+    const hasCash = payments.some((p) => p.method === 'cash' && p.amount > 0);
+    if (!hasCash) return;
+    openCashDrawer({
+      port: drawerCfg.drawerPort,
+      onTimeMs: drawerCfg.onTimeMs,
+      offTimeMs: drawerCfg.offTimeMs,
+    }).catch(() => undefined); // silent — never block the sale flow
+  }
+
   async function handleConfirmSale(payments: PaymentLine[], skipFawtara: boolean, approverPin?: string) {
     if (!currentSession) { toast.error('No open session'); return; }
     const offlineId = crypto.randomUUID();
@@ -206,17 +225,13 @@ export default function RegisterPage() {
       toast.success(`Sale complete — receipt ${result.transaction.receiptNumber}`);
       setReceiptTx(result.transaction);
       requestPrint(result.transaction);
-      // Auto-open cash drawer on cash payment if configured
-      const drawerCfg = cashDrawerData?.config;
-      if (drawerCfg?.enabled && drawerCfg.autoOpenOnCash) {
-        const hasCash = payments.some((p) => p.method === 'cash' && p.amount > 0);
-        if (hasCash) {
-          openCashDrawer({
-            port: drawerCfg.drawerPort,
-            onTimeMs: drawerCfg.onTimeMs,
-            offTimeMs: drawerCfg.offTimeMs,
-          }).catch(() => undefined); // silent — never block the sale flow
-        }
+      // Bilingual orgs pick a language before anything prints — defer the drawer
+      // kick until that choice is made so it opens together with the receipt
+      // instead of before the user has even picked a language.
+      if ((receiptCfg?.config?.language ?? 'en') === 'both') {
+        setPendingDrawerPayments(payments);
+      } else {
+        maybeOpenCashDrawer(payments);
       }
     } catch (err) {
       if (err instanceof CompleteSaleError && err.code === 'DISCOUNT_APPROVAL_REQUIRED') {
@@ -541,14 +556,14 @@ export default function RegisterPage() {
             <div className="text-sm font-semibold">Print language</div>
             <p className="text-xs text-gray-500">Choose the language for this receipt.</p>
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" onClick={() => { const tx = langPickTx; setLangPickTx(null); printReceipt(tx, 'en').catch(() => undefined); }}>
+              <Button variant="outline" onClick={() => { const tx = langPickTx; setLangPickTx(null); printReceipt(tx, 'en').catch(() => undefined); resolvePendingDrawer(); }}>
                 English
               </Button>
-              <Button variant="outline" onClick={() => { const tx = langPickTx; setLangPickTx(null); printReceipt(tx, 'ar').catch(() => undefined); }}>
+              <Button variant="outline" onClick={() => { const tx = langPickTx; setLangPickTx(null); printReceipt(tx, 'ar').catch(() => undefined); resolvePendingDrawer(); }}>
                 العربية
               </Button>
             </div>
-            <button onClick={() => setLangPickTx(null)} className="w-full text-center text-xs text-gray-400 hover:text-gray-600">
+            <button onClick={() => { setLangPickTx(null); resolvePendingDrawer(); }} className="w-full text-center text-xs text-gray-400 hover:text-gray-600">
               Skip printing
             </button>
           </div>

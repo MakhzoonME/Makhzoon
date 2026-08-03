@@ -36,12 +36,14 @@ export function hasPermission(
 }
 
 export function hasModuleAccess(user: AuthUser, module: keyof UserPermissions): boolean {
-  // Haraka has a real 'view' gate (dashboard) now, but keep the "any granted
-  // operation implies module access" fallback for users whose stored
-  // permissions grant e.g. only chargeReceipt without view — same rationale
-  // as the old pos-module behavior this replaces.
-  if (module === 'haraka' && user.permissions?.haraka) {
-    return Object.values(user.permissions.haraka).some((v) => v === true);
+  // A module is reachable as soon as the user holds ANY granted operation
+  // within it — 'view' is just one specific permission among many (e.g.
+  // 'haraka.view' gates only the Haraka dashboard sub-page), not a master
+  // switch. A user with only e.g. haraka.sessionsView should still be able
+  // to reach the Haraka section.
+  const mod = user.permissions?.[module] as unknown as Record<string, boolean> | undefined;
+  if (mod) {
+    return Object.values(mod).some((v) => v === true);
   }
   return hasPermission(user, module, 'view');
 }

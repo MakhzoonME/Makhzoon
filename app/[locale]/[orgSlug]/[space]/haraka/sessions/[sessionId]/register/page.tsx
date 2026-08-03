@@ -220,9 +220,7 @@ export default function RegisterPage() {
       toast.success(`Sale complete — receipt ${result.transaction.receiptNumber}`);
       setReceiptTx(result.transaction);
       // The drawer opens once printing actually happens — ReceiptShareDialog
-      // auto-prints immediately for single-language orgs, or waits for the
-      // cashier to pick a language and print manually for bilingual ones
-      // (see its onPrinted callback below).
+      // auto-prints immediately (see its onPrinted callback below).
       setPendingDrawerPayments(payments);
     } catch (err) {
       if (err instanceof CompleteSaleError && err.code === 'DISCOUNT_APPROVAL_REQUIRED') {
@@ -482,10 +480,11 @@ export default function RegisterPage() {
         config={receiptCfg?.config ?? DEFAULT_RECEIPT_CONFIG}
       />
 
-      {/* Always shown right after checkout — auto-prints immediately for
-          single-language orgs; bilingual orgs pick a language via the toggle
-          inside and print manually. Printing rasterizes this exact preview
-          (logo included) so what's on screen is what comes out of the printer. */}
+      {/* Always shown right after checkout and auto-prints immediately
+          (bilingual orgs print in the default language shown, then can
+          reprint in the other via the toggle). Printing rasterizes this
+          exact preview (logo included) so what's on screen is what comes
+          out of the printer. */}
       <ReceiptShareDialog
         open={!!receiptTx}
         onOpenChange={(o) => { if (!o) setReceiptTx(null); }}

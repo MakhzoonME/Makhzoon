@@ -46,8 +46,9 @@ interface Props {
   tagline: string;
   taglineAr: string;
   taxNumber: string;
-  /** Print automatically once, right after opening (skipped for bilingual
-   *  orgs — they pick a language via the toggle below, then print manually). */
+  /** Print automatically once, right after opening, in whichever language is
+   *  currently selected (defaults to English for bilingual orgs — the toggle
+   *  below still lets the cashier manually reprint in the other language). */
   autoPrint?: boolean;
   /** Called right after a print is sent (auto or manual) — e.g. to fire the
    *  cash drawer once, in sync with the receipt actually printing. */
@@ -133,15 +134,18 @@ export function ReceiptShareDialog({
     }
   }
 
-  // Auto-print once per transaction, but only once the receipt (and its QR,
-  // if any) has actually finished rendering into captureRef.
+  // Auto-print once per transaction — including bilingual orgs, in whichever
+  // language is currently selected (defaults to English) — but only once the
+  // receipt (and its QR, if any) has actually finished rendering into
+  // captureRef. The language toggle above still lets the cashier reprint in
+  // the other language manually afterward.
   useEffect(() => {
-    if (!open || !autoPrint || bothLangs || !transaction || !data) return;
+    if (!open || !autoPrint || !transaction || !data) return;
     if (autoPrintedFor.current === transaction.id) return;
     autoPrintedFor.current = transaction.id;
     handlePrint();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, autoPrint, bothLangs, transaction, data]);
+  }, [open, autoPrint, transaction, data]);
 
   function copyLink() {
     navigator.clipboard.writeText(shareLink).then(() => {

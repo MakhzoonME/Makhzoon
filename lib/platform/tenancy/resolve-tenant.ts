@@ -58,6 +58,29 @@ async function listAccessibleSpaces(
 }
 
 /**
+ * Resolve a space slug to its id within an org, without an access check.
+ *
+ * Used for the platform-admin family: they have no space_members rows, so
+ * listAccessibleSpaces would return nothing — but when they act inside a space
+ * context (x-space-slug header present), writes must still be scoped to that
+ * space, otherwise the row is orphaned with space_id=null and disappears from
+ * the space-filtered UI.
+ */
+async function resolveSpaceIdBySlug(
+  organizationId: string,
+  slug: string,
+): Promise<string | undefined> {
+  const { data } = await supabaseAdmin
+    .from('spaces')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .eq('slug', slug)
+    .eq('status', 'active')
+    .maybeSingle()
+  return (data?.id as string) ?? undefined
+}
+
+/**
  * Resolve the tenant context for the current request.
  *
  * Wrapped in React `cache()` so multiple calls within a single request
@@ -88,17 +111,27 @@ export const resolveTenant = cache(async (): Promise<TenantContext> => {
   const allSpaces = user.allSpaces ?? isPlatformAdmin
 
   // Subscription and space access don't depend on each other — fetch together.
-  const [subscription, accessible] = await Promise.all([
+  // Platform admins skip the space_members lookup (they have none) but still
+  // resolve the requested slug to a space id so their writes are scoped to the
+  // space they're acting in, rather than orphaned with space_id=null.
+  const [subscription, accessible, adminSpaceId] = await Promise.all([
     getSubscriptionByOrg(organizationId),
     isPlatformAdmin
       ? Promise.resolve([] as Array<{ id: string; slug: string; isDefault: boolean }>)
       : listAccessibleSpaces(organizationId, user.uid, allSpaces),
+    isPlatformAdmin && requestedSlug
+      ? resolveSpaceIdBySlug(organizationId, requestedSlug)
+      : Promise.resolve(undefined),
   ])
 
   let spaceId: string | undefined
   let accessibleSpaceIds: string[] | undefined
 
-  if (!isPlatformAdmin) {
+  if (isPlatformAdmin) {
+    // Reads stay unrestricted (accessibleSpaceIds undefined → cross-tenant),
+    // but when a space context is present the write lands in that space.
+    spaceId = adminSpaceId
+  } else {
     accessibleSpaceIds = accessible.map((s) => s.id)
 
     if (requestedSlug) {

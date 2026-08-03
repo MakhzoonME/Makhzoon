@@ -27,9 +27,9 @@ export default function NewSessionPage() {
 
   async function onSubmit(values: OpenSessionFormData) {
     try {
-      await openMut.mutateAsync(values);
+      const created = await openMut.mutateAsync(values);
       toast.success(t('haraka.openNewSession'));
-      router.push(`${base}/register`);
+      router.push(`${base}/sessions/${created.id}/register`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to open session');
     }

@@ -83,7 +83,7 @@ export default function SessionDetailPage(props: Props) {
             <StatusBadge status={session.status} />
             {isOpen && (
               <Button
-                onClick={() => router.push(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/register`)}
+                onClick={() => router.push(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions/${session.id}/register`)}
               >
                 <ShoppingCart size={14} className="me-1" /> Open register
               </Button>

@@ -137,12 +137,19 @@ export default function InventoryItemDetailPage() {
         const key =
           body.code === 'INVENTORY_DELETE_OPEN_REQUESTS'   ? 'inventory.deleteBlockedOpenRequests'
           : body.code === 'INVENTORY_DELETE_ACTIVE_WARRANTY' ? 'inventory.deleteBlockedActiveWarranty'
+          : body.code === 'INVENTORY_NOT_FOUND'              ? 'inventory.itemNotFound'
           : null;
         toast.error(key ? t(key) : (body.error || t('inventory.itemDeleteFailed')));
+        // Already gone server-side — bounce back to the list instead of
+        // leaving the cashier stuck on a detail page for a deleted item.
+        if (body.code === 'INVENTORY_NOT_FOUND') {
+          qc.invalidateQueries({ queryKey: ['inventory'] });
+          router.push(`/${locale}/${orgSlug}/${space}/raseed`);
+        }
         return;
       }
       toast.success(t('inventory.itemDeleted'));
-      qc.invalidateQueries({ queryKey: ['inventory'] });
+      await qc.invalidateQueries({ queryKey: ['inventory'] });
       router.push(`/${locale}/${orgSlug}/${space}/raseed`);
     } catch {
       toast.error(t('inventory.itemDeleteFailed'));

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Banknote, CreditCard, MoreHorizontal, FileCheck, AlertCircle, Trash2, ArrowLeft } from 'lucide-react';
+import { Banknote, CreditCard, Smartphone, MoreHorizontal, FileCheck, AlertCircle, Trash2, ArrowLeft } from 'lucide-react';
 import { CardTerminalPayment } from './CardTerminalPayment';
 import { useCardTerminalConfig } from '@/hooks/haraka';
 import {
@@ -13,13 +13,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { computeChange } from '@/lib/modules/haraka/pricing/calc';
 
 export interface PaymentLine {
-  method: 'cash' | 'card' | 'other';
+  method: 'cash' | 'card' | 'cliq' | 'other';
   amount: number;
   cardLast4?: string;
   reference?: string;
 }
 
-type TabMethod = 'cash' | 'card' | 'other';
+type TabMethod = 'cash' | 'card' | 'cliq' | 'other';
 
 interface Props {
   open: boolean;
@@ -40,6 +40,7 @@ export function PaymentDialog({
   const [tab, setTab] = useState<TabMethod>(initialTab ?? 'cash');
   const [amount, setAmount] = useState('');
   const [cardLast4, setCardLast4] = useState('');
+  const [cliqRef, setCliqRef] = useState('');
   const [otherRef, setOtherRef] = useState('');
   const [splitMode, setSplitMode] = useState(false);
   const [splitRows, setSplitRows] = useState<PaymentLine[]>([]);
@@ -58,6 +59,7 @@ export function PaymentDialog({
       setTab(startTab);
       setAmount(total.toFixed(2));
       setCardLast4('');
+      setCliqRef('');
       setOtherRef('');
       setSplitMode(false);
       setSplitRows([
@@ -73,7 +75,7 @@ export function PaymentDialog({
   const numAmount = Number(amount) || 0;
   const cashChange = tab === 'cash' ? Math.max(0, numAmount - total) : 0;
   const cashOwed   = tab === 'cash' ? Math.max(0, total - numAmount) : 0;
-  const simpleCanSubmit = tab === 'other'
+  const simpleCanSubmit = tab === 'other' || tab === 'cliq'
     ? true
     : tab === 'card' && terminalEnabled
     ? !!terminalPayment                    // must wait for terminal confirmation
@@ -113,6 +115,7 @@ export function PaymentDialog({
         amount: +numAmount.toFixed(4),
       };
       if (tab === 'card') payment.cardLast4 = cardLast4 || undefined;
+      if (tab === 'cliq') payment.reference = cliqRef || undefined;
       if (tab === 'other') payment.reference = otherRef || undefined;
       onConfirm([payment], skipFawtara);
     }
@@ -121,6 +124,7 @@ export function PaymentDialog({
   const tabs: { key: TabMethod; label: string; icon: React.ReactNode }[] = [
     { key: 'cash',  label: 'Cash',  icon: <Banknote size={14} /> },
     { key: 'card',  label: 'Card',  icon: <CreditCard size={14} /> },
+    { key: 'cliq',  label: 'Cliq',  icon: <Smartphone size={14} /> },
     { key: 'other', label: 'Other', icon: <MoreHorizontal size={14} /> },
   ];
 
@@ -157,7 +161,7 @@ export function PaymentDialog({
                     type="button"
                     onClick={() => {
                       setTab(key);
-                      if (key !== 'other') setAmount(total.toFixed(2));
+                      if (key !== 'other' && key !== 'cliq') setAmount(total.toFixed(2));
                     }}
                     className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-sm font-semibold transition-colors"
                     style={
@@ -265,6 +269,32 @@ export function PaymentDialog({
                 )
               )}
 
+              {/* Cliq — instant bank transfer, no terminal integration */}
+              {tab === 'cliq' && (
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-border bg-surface-inset px-4 py-3 text-sm text-gray-600">
+                    <p className="font-medium text-gray-800 mb-0.5">Cliq</p>
+                    <p className="text-xs text-gray-500">Confirm the transfer landed before completing the sale.</p>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-semibold bg-surface-inset border border-border">
+                    <span className="text-gray-500">Amount due</span>
+                    <span className="font-mono font-bold">JOD {total.toFixed(2)}</span>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 mb-1.5 block">
+                      Reference <span className="font-normal text-gray-400">(optional)</span>
+                    </label>
+                    <Input
+                      autoFocus
+                      placeholder="e.g. Cliq alias or transfer ref"
+                      value={cliqRef}
+                      onChange={(e) => setCliqRef(e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Other */}
               {tab === 'other' && (
                 <div className="space-y-3">
@@ -358,6 +388,7 @@ export function PaymentDialog({
                       >
                         <option value="cash">Cash</option>
                         <option value="card">Card</option>
+                        <option value="cliq">Cliq</option>
                         <option value="other">Other</option>
                       </select>
                       <Input
@@ -400,6 +431,10 @@ export function PaymentDialog({
                 <Button size="sm" variant="outline" type="button"
                   onClick={() => setSplitRows((p) => [...p, { method: 'card', amount: Math.max(0, splitRemaining) }])}>
                   <CreditCard size={13} className="me-1" /> + Card
+                </Button>
+                <Button size="sm" variant="outline" type="button"
+                  onClick={() => setSplitRows((p) => [...p, { method: 'cliq', amount: Math.max(0, splitRemaining) }])}>
+                  <Smartphone size={13} className="me-1" /> + Cliq
                 </Button>
               </div>
 

@@ -100,6 +100,7 @@ const publicRoutes = new Set([
   'ping', 'version', 'contact', 'early-access',
   'cron/', 'delivery/', 'packages/public',
   'invites/',
+  'track/',                        // public read-only order tracking — token-gated, rate-limited
   'haraka/card-payment-result',   // webhook — HMAC signature verification
   'organizations/check-subdomain', // pre-signup — rate-limited
   'auth/send-password-reset',      // pre-auth by design — rate-limited per IP

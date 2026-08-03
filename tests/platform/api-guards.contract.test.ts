@@ -21,6 +21,7 @@ const PUBLIC_ROUTES = [
   'ping', 'version', 'contact', 'early-access', 'cron/', 'delivery/', 'packages/public',
   'invites/', 'haraka/card-payment-result', 'organizations/check-subdomain',
   'auth/send-password-reset', 'public/assets', 'push-subscriptions/vapid-key',
+  'track/', // public read-only order tracking — token-gated, rate-limited
 ];
 
 const MUTATING = ['POST', 'PUT', 'PATCH'];

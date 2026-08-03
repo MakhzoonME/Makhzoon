@@ -48,6 +48,8 @@ function toTransaction(r: Row): PosTransaction {
     total: Number(r.total ?? 0),
     payments: Array.isArray(r.payments) ? (r.payments as Row[]).map(toPayment) : [],
     change: Number(r.change ?? 0),
+    discountApprovedBy: (r.discount_approved_by as string) ?? null,
+    discountApprovedByName: (r.discount_approved_by_name as string) ?? null,
     status: (r.status as PosTransaction['status']) ?? 'completed',
     receiptNumber: (r.receipt_number as string) ?? '',
     offlineId: (r.offline_id as string) ?? '',
@@ -67,6 +69,8 @@ export interface CompleteSaleInput {
   payments: Array<{ method: 'cash' | 'card' | 'other'; amount: number; reference?: string | null; cardLast4?: string | null }>
   offlineId: string
   skipFawtara?: boolean
+  discountApprovedBy?: string | null
+  discountApprovedByName?: string | null
 }
 
 interface ListOpts {
@@ -405,6 +409,8 @@ export class TransactionsRepository {
         synced_at: now,
         parent_transaction_id: null,
         fawtara: null,
+        discount_approved_by: input.discountApprovedBy ?? null,
+        discount_approved_by_name: input.discountApprovedByName ?? null,
       },
       p_stock_lines: stockLines,
       p_actor: {

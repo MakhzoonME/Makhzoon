@@ -75,6 +75,9 @@ export interface HarakaPermissions {
   // Register
   registerOpen: boolean;
   applyDiscount: boolean;
+  // Holder can approve a discount with their own PIN at checkout, and their
+  // own discounts self-approve with no PIN prompt.
+  approveDiscount: boolean;
   removeReceiptItems: boolean;
   receiptRemoveCustomer: boolean;
   holdReceipts: boolean;
@@ -288,7 +291,7 @@ const RASEED_KEYS: (keyof RaseedPermissions)[] = [
 const HARAKA_KEYS: (keyof HarakaPermissions)[] = [
   'view',
   'sessionsView', 'sessionsOpen', 'sessionsCloseOwn', 'sessionsCloseOthers', 'sessionsEnterOthers', 'sessionsViewOthers',
-  'registerOpen', 'applyDiscount', 'removeReceiptItems', 'receiptRemoveCustomer', 'holdReceipts', 'recallReceipts', 'removeReceipts', 'chargeReceipt', 'printerSettings',
+  'registerOpen', 'applyDiscount', 'approveDiscount', 'removeReceiptItems', 'receiptRemoveCustomer', 'holdReceipts', 'recallReceipts', 'removeReceipts', 'chargeReceipt', 'printerSettings',
   'ordersView', 'ordersCreate', 'ordersRemoveCustomer', 'ordersGenerateInvoice', 'ordersGenerateWarranty', 'ordersShare', 'ordersMarkConfirmed', 'ordersCancel', 'ordersMarkAssigned', 'ordersMarkInTransit', 'ordersMarkDelivered', 'ordersAddPayment',
   'customersView', 'customersCreate', 'customersUpdate', 'customersDelete', 'customersHistoryView', 'customerFieldsView', 'customerFieldsCreate', 'customerFieldsUpdate', 'customerFieldsDelete',
   'deliveryAgentsView', 'deliveryAgentsCreate', 'deliveryAgentsUpdate', 'deliveryAgentsDelete',
@@ -467,7 +470,8 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'sessionsEnterOthers', label: "Enter Others' Sessions", labelKey: 'permOp.haraka.sessionsEnterOthers', requiresKey: 'sessionsView' },
       { key: 'sessionsViewOthers', label: "View Others' Sessions", labelKey: 'permOp.haraka.sessionsViewOthers', requiresKey: 'sessionsView' },
       { key: 'registerOpen', label: 'Open Register', labelKey: 'permOp.haraka.registerOpen' },
-      { key: 'applyDiscount', label: 'Apply Discount', labelKey: 'permOp.haraka.applyDiscount', requiresKey: 'registerOpen' },
+      { key: 'applyDiscount', label: 'Apply Discount', labelKey: 'permOp.haraka.applyDiscount', requiresKey: 'chargeReceipt' },
+      { key: 'approveDiscount', label: 'Approve Discount (own PIN)', labelKey: 'permOp.haraka.approveDiscount', requiresKey: 'chargeReceipt' },
       { key: 'removeReceiptItems', label: 'Remove Items from Receipt', labelKey: 'permOp.haraka.removeReceiptItems', requiresKey: 'registerOpen' },
       { key: 'receiptRemoveCustomer', label: 'Remove Customer from Receipt', labelKey: 'permOp.haraka.receiptRemoveCustomer', requiresKey: 'registerOpen' },
       { key: 'holdReceipts', label: 'Hold Receipts', labelKey: 'permOp.haraka.holdReceipts', requiresKey: 'registerOpen' },

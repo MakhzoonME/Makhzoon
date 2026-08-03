@@ -223,6 +223,9 @@ export default function TransactionDetailPage(props: Props) {
           <CardContent className="p-4 space-y-1.5 text-sm">
             <Row label="Subtotal" value={fmt(tx.subtotal)} />
             <Row label="Discount" value={fmt(tx.discountAmount)} />
+            {tx.discountAmount > 0 && (
+              <Row label="Approved by" value={tx.discountApprovedByName || '—'} />
+            )}
             <Row label="Tax" value={fmt(tx.taxAmount)} />
             <div className="border-t border-border my-2" />
             <div className="flex justify-between font-semibold">

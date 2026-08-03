@@ -8,7 +8,7 @@ import { createPasswordResetToken } from '@/lib/db/password-reset-tokens';
 import { sendEmail } from '@/lib/email/resend';
 
 const resetPasswordSchema = z.object({
-  mode: z.enum(['link', 'temp_password']).optional(),
+  mode: z.enum(['email', 'link', 'temp_password']).optional(),
 });
 
 function generateTempPassword(): string {
@@ -40,39 +40,40 @@ export async function POST(req: NextRequest, props: { params: Promise<{ userId: 
   if (orgId && targetUser.organizationId !== orgId && caller.role !== 'super_admin')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+  // Username accounts have no real email — 'email' mode is not available to them.
   const isUsernameAccount = !!targetUser.username && !!targetUser.email?.endsWith('@makhzoon.local');
 
-  if (isUsernameAccount) {
-    // Username accounts have no real email — never send a link there.
-    // Admin picks either an immediate temp password, or a link they copy and share manually.
-    const parsed = resetPasswordSchema.safeParse(await req.json().catch(() => ({})));
-    const mode = parsed.success && parsed.data.mode === 'link' ? 'link' : 'temp_password';
+  const parsed = resetPasswordSchema.safeParse(await req.json().catch(() => ({})));
+  const requestedMode = parsed.success ? parsed.data.mode : undefined;
+  const mode = requestedMode ?? (isUsernameAccount ? 'temp_password' : 'email');
 
-    if (mode === 'link') {
-      const resetToken = await createPasswordResetToken(userId);
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
-      const resetLink = `${appUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
-      return NextResponse.json({ type: 'reset_link', link: resetLink });
-    }
+  if (mode === 'email') {
+    if (isUsernameAccount) return NextResponse.json({ error: 'This user has no email on file' }, { status: 400 });
 
-    // userId is the auth.users UUID so we can update directly.
-    const tempPassword = generateTempPassword();
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { password: tempPassword });
-    if (error) return NextResponse.json({ error: 'Failed to reset password' }, { status: 500 });
-    return NextResponse.json({ type: 'temp_password', password: tempPassword });
+    const resetToken = await createPasswordResetToken(userId);
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
+    const resetLink = `${appUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
+
+    await sendEmail({
+      to: targetUser.email!,
+      subject: 'Reset your Makhzoon password',
+      html: `<p>Hi ${targetUser.displayName},</p><p>An administrator has requested a password reset for your account. Click the link below to set a new password.</p><p><a href="${resetLink}">Reset Password</a></p><p>This link expires in 24 hours. If you did not expect this, contact your organization administrator.</p>`,
+      text: `Hi ${targetUser.displayName},\n\nAn administrator has requested a password reset for your account. Visit the link below to set a new password:\n\n${resetLink}\n\nThis link expires in 24 hours.`,
+    });
+
+    return NextResponse.json({ type: 'email_sent' });
   }
 
-  // Email account — send a reset link via email.
-  const resetToken = await createPasswordResetToken(userId);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
-  const resetLink = `${appUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
+  if (mode === 'link') {
+    const resetToken = await createPasswordResetToken(userId);
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
+    const resetLink = `${appUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
+    return NextResponse.json({ type: 'reset_link', link: resetLink });
+  }
 
-  await sendEmail({
-    to: targetUser.email!,
-    subject: 'Reset your Makhzoon password',
-    html: `<p>Hi ${targetUser.displayName},</p><p>An administrator has requested a password reset for your account. Click the link below to set a new password.</p><p><a href="${resetLink}">Reset Password</a></p><p>This link expires in 24 hours. If you did not expect this, contact your organization administrator.</p>`,
-    text: `Hi ${targetUser.displayName},\n\nAn administrator has requested a password reset for your account. Visit the link below to set a new password:\n\n${resetLink}\n\nThis link expires in 24 hours.`,
-  });
-
-  return NextResponse.json({ type: 'email_sent' });
+  // temp_password — userId is the auth.users UUID so we can update directly.
+  const tempPassword = generateTempPassword();
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { password: tempPassword });
+  if (error) return NextResponse.json({ error: 'Failed to reset password' }, { status: 500 });
+  return NextResponse.json({ type: 'temp_password', password: tempPassword });
 }

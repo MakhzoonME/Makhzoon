@@ -291,10 +291,12 @@ export class TransactionsRepository {
   }
 
   /**
-   * Complete a sale. Idempotent on offlineId. Was one Firestore transaction;
-   * here: validate → write the pos_transactions row → per-line stock-OUT
-   * ledger rows → refresh item stock_status. Read-modify-write (race caveat
-   * the original flagged as acceptable for v1).
+   * Complete a sale. Idempotent on offlineId. Pricing, session/item validation
+   * and receipt-number allocation happen here; the actual write (insert the
+   * pos_transactions row + per-line stock-OUT + stock_status refresh) is done
+   * atomically in the `haraka_complete_sale` RPC (migration 0055), so a line
+   * with insufficient stock rolls the whole sale back instead of leaving an
+   * orphaned 'completed' transaction behind.
    */
   async completeSale(tenant: TenantContext, input: CompleteSaleInput): Promise<PosTransaction> {
     const existing = await this.findByOfflineId(tenant, input.offlineId)
@@ -363,9 +365,20 @@ export class TransactionsRepository {
       lineTotal: l.lineTotal,
     }))
 
-    const { data: tx, error: txErr } = await supabaseAdmin
-      .from('pos_transactions')
-      .insert({
+    // The pos_transactions insert and every per-line stock-OUT run inside a
+    // single Postgres transaction via the `haraka_complete_sale` RPC (migration
+    // 0055). If any line has insufficient stock the RPC raises and the whole
+    // transaction — including the inserted 'completed' row — is rolled back, so
+    // a failed charge can never leave an orphaned completed transaction behind.
+    // Service catalog lines carry no stock and are excluded from the stock-out
+    // list. `inventory_apply_stock_out` still row-locks each item, so concurrent
+    // sales of the same item cannot oversell.
+    const stockLines = priced.lines
+      .filter((line) => !serviceItemIds.has(line.itemId))
+      .map((line) => ({ item_id: line.itemId, qty: line.quantity, item_name: line.itemName }))
+
+    const { data: tx, error: saleErr } = await supabaseAdmin.rpc('haraka_complete_sale', {
+      p_tx: {
         organization_id: tenant.organizationId,
         space_id: tenant.spaceId,
         session_id: input.sessionId,
@@ -392,54 +405,30 @@ export class TransactionsRepository {
         synced_at: now,
         parent_transaction_id: null,
         fawtara: null,
-      })
-      .select('*')
-      .single()
-    if (txErr) throw txErr
-    const posTxId = tx.id as string
-
-    // Each line decrements stock atomically via the `inventory_apply_stock_out`
-    // RPC (migration 0016). The function row-locks the item before reading the
-    // current quantity, then inserts the ledger row and updates stock_status in
-    // one transaction — preventing oversell from concurrent sales of the same
-    // item. Lines for different items run in parallel; lines sharing an item
-    // are serialised by Postgres's row lock (the second caller waits for the
-    // first to commit, then reads the already-updated quantity_after).
-    const stockResults = await Promise.allSettled(
-      priced.lines
-        .filter((line) => !serviceItemIds.has(line.itemId))
-        .map((line) =>
-          supabaseAdmin.rpc('inventory_apply_stock_out', {
-            p_org:      tenant.organizationId,
-            p_space:    tenant.spaceId ?? null,
-            p_item:     line.itemId,
-            p_qty:      line.quantity,
-            p_item_name: line.itemName,
-            p_reason:   'POS sale',
-            p_note:     `Receipt ${receiptNumber}`,
-            p_source:   'pos',
-            p_pos_tx:   posTxId,
-            p_by:       tenant.userId,
-            p_by_email: tenant.user.email ?? null,
-            p_by_name:  tenant.user.displayName ?? null,
-            p_by_role:  tenant.role ?? null,
-          }),
-        ),
-    )
-    for (const result of stockResults) {
-      if (result.status === 'rejected') throw result.reason
-      if (result.value.error) {
-        const msg = result.value.error.message ?? ''
-        if (msg.includes('INSUFFICIENT_STOCK')) {
-          const itemId = msg.split(':')[1]?.trim() ?? ''
-          const name = priced.lines.find((l) => l.itemId === itemId)?.itemName ?? itemId
-          throw new Error(`Insufficient stock for ${name}`)
-        }
-        throw result.value.error
+      },
+      p_stock_lines: stockLines,
+      p_actor: {
+        by: tenant.userId,
+        by_email: tenant.user.email ?? null,
+        by_name: tenant.user.displayName ?? null,
+        by_role: tenant.role ?? null,
+      },
+    })
+    if (saleErr) {
+      const msg = saleErr.message ?? ''
+      if (msg.includes('INSUFFICIENT_STOCK')) {
+        const itemId = msg.split('INSUFFICIENT_STOCK:')[1]?.split(/[\s"]/)[0]?.trim() ?? ''
+        const name = priced.lines.find((l) => l.itemId === itemId)?.itemName ?? itemId
+        throw new Error(`Insufficient stock for ${name}`)
       }
+      if (msg.includes('INVENTORY_ITEM_NOT_FOUND')) {
+        const itemId = msg.split('INVENTORY_ITEM_NOT_FOUND:')[1]?.split(/[\s"]/)[0]?.trim() ?? ''
+        throw new Error(`Item not found: ${itemId}`)
+      }
+      throw saleErr
     }
 
-    return toTransaction(tx)
+    return toTransaction(tx as Row)
   }
 
   /**

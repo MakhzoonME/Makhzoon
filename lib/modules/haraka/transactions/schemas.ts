@@ -13,7 +13,7 @@ export const cartLineSchema = z.object({
 })
 
 export const paymentSchema = z.object({
-  method: z.enum(['cash', 'card', 'other']),
+  method: z.enum(['cash', 'card', 'cliq', 'other']),
   amount: z.coerce.number().min(0),
   reference: z.string().nullable().optional(),
   cardLast4: z

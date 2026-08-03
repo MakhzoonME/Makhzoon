@@ -215,12 +215,18 @@ export function AppSidebar() {
         );
       }
       // Check permission access for staff, and for admins with custom restrictions.
-      // Prefer the explicit permissionKey (module.operation) — featureKey is a
-      // subscription-feature name and no longer always matches the permission
-      // module name (e.g. featureKey 'assets' -> permission module 'usool').
+      // A module GROUP is reachable if the user holds any granted operation
+      // anywhere in that module — not just its 'view' key, which is only one
+      // specific sub-permission (e.g. 'haraka.view' gates just the Haraka
+      // dashboard). Prefer the module parsed from permissionKey — featureKey
+      // is a subscription-feature name and no longer always matches the
+      // permission module name (e.g. featureKey 'assets' -> module 'usool').
       if (user && (user.role === 'staff' || adminHasCustomPerms)) {
         const u = { ...user, organizationId: user.organizationId ?? null };
-        if (entry.permissionKey) return hasPermByKey(u, entry.permissionKey);
+        if (entry.permissionKey) {
+          const [permModule] = entry.permissionKey.split('.');
+          return hasModuleAccess(u, permModule as keyof UserPermissions);
+        }
         if (entry.featureKey) return hasModuleAccess(u, entry.featureKey as keyof UserPermissions);
       }
       return true;

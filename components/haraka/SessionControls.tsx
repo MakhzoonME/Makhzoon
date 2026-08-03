@@ -19,6 +19,7 @@ import {
 } from '@/lib/modules/haraka/sessions/schemas';
 import { useCurrentSession, useSession, useOpenSession, useCloseSession } from '@/hooks/haraka';
 import { useAuthStore } from '@/store/auth.store';
+import { hasPermission } from '@/lib/permissions';
 import { toast, useT } from '@/hooks/ui';
 import { formatCurrency } from '@/lib/utils/format';
 import { formatDate } from '@/lib/utils/date';
@@ -36,8 +37,13 @@ function fmt(n: number) {
 export function SessionControls({ base }: { base: string }) {
   const router = useRouter();
   const { t } = useT();
+  const { user } = useAuthStore();
   const { data, isLoading } = useCurrentSession();
   const session = data?.session ?? null;
+
+  const canOpenSession = !!user && hasPermission(user, 'haraka', 'sessionsOpen');
+  const canCloseSession = !!user && hasPermission(user, 'haraka', 'sessionsCloseOwn');
+  const canOpenRegister = !!user && hasPermission(user, 'haraka', 'registerOpen');
 
   const [openDialog, setOpenDialog] = useState(false);
   const [closeDialog, setCloseDialog] = useState(false);
@@ -68,18 +74,22 @@ export function SessionControls({ base }: { base: string }) {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <SubscriptionGate>
-              <Button variant="outline" size="sm" onClick={() => setCloseDialog(true)}>
-                <Lock size={14} className="me-1" /> {t('register.closeSession')}
+            {canCloseSession && (
+              <SubscriptionGate>
+                <Button variant="outline" size="sm" onClick={() => setCloseDialog(true)}>
+                  <Lock size={14} className="me-1" /> {t('register.closeSession')}
+                </Button>
+              </SubscriptionGate>
+            )}
+            {canOpenRegister && (
+              <Button
+                size="sm"
+                style={{ background: 'var(--mod-haraka)' }}
+                onClick={() => router.push(`${base}/sessions/${session.id}/register`)}
+              >
+                {t('haraka.openRegister')} <ArrowRight className="h-4 w-4 ms-1" />
               </Button>
-            </SubscriptionGate>
-            <Button
-              size="sm"
-              style={{ background: 'var(--mod-haraka)' }}
-              onClick={() => router.push(`${base}/sessions/${session.id}/register`)}
-            >
-              {t('haraka.openRegister')} <ArrowRight className="h-4 w-4 ms-1" />
-            </Button>
+            )}
           </div>
         </div>
       ) : (
@@ -89,11 +99,13 @@ export function SessionControls({ base }: { base: string }) {
             <h2 className="text-sm font-semibold text-gray-900">{t('haraka.noOpenSession')}</h2>
             <p className="text-sm text-gray-500 mt-0.5">{t('haraka.openSessionDesc')}</p>
           </div>
-          <SubscriptionGate>
-            <Button size="sm" style={{ background: 'var(--mod-haraka)' }} onClick={() => setOpenDialog(true)}>
-              <Plus className="h-4 w-4 me-1" /> {t('haraka.openNewSession')}
-            </Button>
-          </SubscriptionGate>
+          {canOpenSession && (
+            <SubscriptionGate>
+              <Button size="sm" style={{ background: 'var(--mod-haraka)' }} onClick={() => setOpenDialog(true)}>
+                <Plus className="h-4 w-4 me-1" /> {t('haraka.openNewSession')}
+              </Button>
+            </SubscriptionGate>
+          )}
         </div>
       )}
 

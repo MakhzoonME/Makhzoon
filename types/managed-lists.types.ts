@@ -81,7 +81,7 @@ export const LIST_REGISTRY: Record<ListKey, ListMeta> = {
   service_job_type:           { key: 'service_job_type',           label: 'Service Job Types',           labelKey: 'managedList.service_job_type',           scope: 'org', isSystem: false, description: 'Categories of service work (repair, consultation, etc.).' },
   service_job_payment_method: { key: 'service_job_payment_method', label: 'Service Job Payment Methods', labelKey: 'managedList.service_job_payment_method', scope: 'org', isSystem: true,  description: 'Payment method types for service jobs — values locked.' },
   retainer_status:            { key: 'retainer_status',            label: 'Retainer Statuses',           labelKey: 'managedList.retainer_status',            scope: 'org', isSystem: true,  description: 'Retainer lifecycle — values locked.' },
-  service_category:           { key: 'service_category',           label: 'Service Categories',          labelKey: 'managedList.service_category',           scope: 'org', isSystem: false, description: 'Categories for the POS Services catalog. Orgs can add custom categories.' },
+  service_category:           { key: 'service_category',           label: 'Service Categories',          labelKey: 'managedList.service_category',           scope: 'org', isSystem: false, description: 'Categories for the Services catalog. Orgs can add custom categories.' },
 };
 
 export const LIST_KEYS = Object.keys(LIST_REGISTRY) as ListKey[];

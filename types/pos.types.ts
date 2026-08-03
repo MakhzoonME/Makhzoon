@@ -403,7 +403,7 @@ export interface HarakaRetainerInvoice {
   createdBy: string | null;
 }
 
-// ── POS Services (standalone catalog, independent of Raseed stock items) ───
+// ── Services (standalone catalog, independent of Raseed stock items) ───
 
 export interface HarakaService {
   id: string;

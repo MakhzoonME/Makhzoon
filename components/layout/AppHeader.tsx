@@ -1,6 +1,5 @@
 'use client';
 import { useSyncExternalStore } from 'react';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { CommandPalette, useCommandPalette } from '@/components/shared/CommandPalette';
 import { useUiStore } from '@/store/ui.store';
 import { useT } from '@/hooks/ui';
@@ -36,15 +35,6 @@ function _ChevronRightSVG() {
   return (
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
       <path d="M4 2.5l3.5 3.5L4 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function BellSVG() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-      <path d="M9 2a5 5 0 0 1 5 5v2.5l1.5 2H2.5L4 9.5V7a5 5 0 0 1 5-5z"
-        stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinejoin="round" />
-      <path d="M7 14.5a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
     </svg>
   );
 }
@@ -153,26 +143,6 @@ export function AppHeader() {
             <NetworkStatusIndicator variant="ghost-light" />
             <ThemeToggle />
             <LanguageToggle />
-
-            {/* Notification bell */}
-            <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label={t('common.notifications')}
-                    className="relative p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-150 dark:hover:bg-gray-700/40"
-                  >
-                    <BellSVG />
-                    <span
-                      aria-hidden
-                      className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-red-500 ring-2 ring-surface-card"
-                    />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">{t('common.notifications')}</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
 
             {/* Per-page action buttons — portaled in from PageHeader */}
             <div id="header-actions-slot" className="flex items-center gap-2 ms-1" />

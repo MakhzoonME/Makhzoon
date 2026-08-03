@@ -249,7 +249,7 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
           <FormField control={form.control} name="posEnabled" render={({ field }) => (
             <FormItem className="flex items-end gap-3">
               <div className="flex-1">
-                <FormLabel>Sell in Haraka (POS)</FormLabel>
+                <FormLabel>Sell in Haraka</FormLabel>
                 <p className="text-xs text-gray-500">When on, this item appears in the POS register and can be sold.</p>
               </div>
               <FormControl>

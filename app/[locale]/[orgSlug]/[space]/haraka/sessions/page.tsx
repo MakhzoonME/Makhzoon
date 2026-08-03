@@ -138,7 +138,7 @@ export default function SessionsListPage() {
         emptyMessage={t('haraka.noSessions')}
         onRowClick={(s) => {
           if (!canSeeSessionDetail && s.status === 'open' && s.cashierId === user?.uid) {
-            router.push(`${base}/register`);
+            router.push(`${base}/sessions/${s.id}/register`);
           } else {
             router.push(`${base}/sessions/${s.id}`);
           }

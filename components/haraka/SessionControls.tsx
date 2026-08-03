@@ -75,7 +75,7 @@ export function SessionControls({ base }: { base: string }) {
             <Button
               size="sm"
               style={{ background: 'var(--mod-haraka)' }}
-              onClick={() => router.push(`${base}/register`)}
+              onClick={() => router.push(`${base}/sessions/${session.id}/register`)}
             >
               {t('haraka.openRegister')} <ArrowRight className="h-4 w-4 ms-1" />
             </Button>

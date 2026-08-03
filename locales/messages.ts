@@ -12,7 +12,7 @@ const en = {
   'nav.assets':        'Usool',
   'nav.inventory':     'Raseed',
   'nav.purchases':     'Purchases',
-  'nav.pos':           'Haraka (POS)',
+  'nav.pos':           'Haraka',
   'nav.warranties':    'Warranties',
   'nav.requests':      'Requests',
   'nav.reports':       'Reports',
@@ -1539,7 +1539,7 @@ const en = {
   'serviceLine.searchCatalog':      'Search services…',
   'serviceLine.noServicesFound':    'No services found',
 
-  // ── POS Services catalog ──────────────────────────────────────────
+  // ── Services catalog ──────────────────────────────────────────
   'services.title':          'Service Catalog',
   'services.subtitle':       'Services sold through the Haraka POS register, independent of Raseed stock items.',
   'services.addService':     'Add Service',
@@ -1822,7 +1822,7 @@ const ar: Record<keyof typeof en, string> = {
   'nav.assets':        'أصول',
   'nav.inventory':     'رصيد',
   'nav.purchases':     'مشتريات',
-  'nav.pos':           'حركة (نقطة البيع)',
+  'nav.pos':           'حركة',
   'nav.warranties':    'الضمانات',
   'nav.requests':      'الطلبات',
   'nav.reports':       'التقارير',
@@ -3350,7 +3350,7 @@ const ar: Record<keyof typeof en, string> = {
   'serviceLine.searchCatalog':      'بحث في الخدمات…',
   'serviceLine.noServicesFound':    'لا توجد خدمات',
 
-  // ── كتالوج خدمات نقاط البيع ──────────────────────────────────────
+  // ── كتالوج الخدمات ──────────────────────────────────────
   'services.title':          'كتالوج الخدمات',
   'services.subtitle':       'الخدمات التي تُباع عبر جهاز نقاط البيع في حركة، بشكل مستقل عن أصناف رصيد.',
   'services.addService':     'إضافة خدمة',

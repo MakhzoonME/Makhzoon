@@ -60,7 +60,7 @@ export function ProductGrid({ onPick }: Props) {
 
   return (
     <div className="flex flex-col gap-3 h-full min-h-0">
-      {/* Stock Items / POS Services tabs */}
+      {/* Stock Items / Services tabs */}
       <div className="inline-flex rounded-lg border border-border p-0.5 self-start">
         {(['products', 'services'] as const).map((tKey) => (
           <button
@@ -74,7 +74,7 @@ export function ProductGrid({ onPick }: Props) {
                 : { color: 'var(--text-secondary)' }
             }
           >
-            {tKey === 'products' ? 'Stock Items' : 'POS Services'}
+            {tKey === 'products' ? 'Stock Items' : 'Services'}
           </button>
         ))}
       </div>

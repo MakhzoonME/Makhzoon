@@ -422,7 +422,7 @@ export class TransactionsRepository {
     }
 
     for (const line of tx.items) {
-      // Check if this is a stock item (POS Services catalog lines are not
+      // Check if this is a stock item (Services catalog lines are not
       // stock-decremented, so there's nothing to restock).
       const { data: item } = await supabaseAdmin
         .from('inventory_items')
@@ -544,7 +544,7 @@ export class TransactionsRepository {
     const refundId = refund.id as string
 
     for (const line of refundedLines) {
-      // Check if this is a stock item (POS Services catalog lines are not
+      // Check if this is a stock item (Services catalog lines are not
       // stock-decremented, so there's nothing to restock).
       const { data: item } = await supabaseAdmin
         .from('inventory_items')

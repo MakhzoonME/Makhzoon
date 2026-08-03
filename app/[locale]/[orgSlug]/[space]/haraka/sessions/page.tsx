@@ -50,6 +50,13 @@ export default function SessionsListPage() {
       ),
     },
     {
+      key: 'tillName',
+      header: t('haraka.register'),
+      render: (s) => (
+        <span className="text-sm text-gray-700">{s.tillName || <span className="text-gray-400">—</span>}</span>
+      ),
+    },
+    {
       key: 'cashierName',
       header: t('haraka.cashier'),
       render: (s) => <span className="text-sm text-gray-700">{s.cashierName}</span>,

@@ -62,7 +62,7 @@ export class SessionsService {
     return repo.findOpenForCashier(tenant)
   }
 
-  async open(tenant: TenantContext, input: { openingFloat: number; locationId?: string }) {
+  async open(tenant: TenantContext, input: { openingFloat: number; locationId?: string; tillName?: string }) {
     requirePos(tenant, 'open_session')
     requireActiveSubscription(tenant)
     const id = await repo.open(tenant, input)

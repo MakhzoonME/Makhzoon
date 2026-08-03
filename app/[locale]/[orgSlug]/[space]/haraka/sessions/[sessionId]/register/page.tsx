@@ -250,7 +250,9 @@ export default function RegisterPage() {
         <span className="text-xs text-gray-400">
           {orgInfo?.name ?? params.orgSlug} / {params.space} /
         </span>
-        <span className="text-sm font-semibold text-gray-900">{t('register.title')}</span>
+        <span className="text-sm font-semibold text-gray-900">
+          {currentSession?.tillName || t('register.title')}
+        </span>
 
         {currentSession && (
           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-100">

@@ -70,6 +70,7 @@ export interface PosSession {
   locationId: string;
   cashierId: string;
   cashierName: string;
+  tillName: string | null;
   openedAt: Date;
   closedAt: Date | null;
   status: 'open' | 'closed';

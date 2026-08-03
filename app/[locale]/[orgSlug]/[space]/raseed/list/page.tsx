@@ -277,13 +277,19 @@ export default function InventoryListPage() {
             ? 'inventory.deleteBlockedOpenRequests'
             : body.code === 'INVENTORY_DELETE_ACTIVE_WARRANTY'
               ? 'inventory.deleteBlockedActiveWarranty'
-              : null;
+              : body.code === 'INVENTORY_NOT_FOUND'
+                ? 'inventory.itemNotFound'
+                : null;
         toast.error(key ? t(key) : (body.error || t('inventory.itemDeleteFailed')));
         setDeleteTarget(null);
+        // Already gone server-side — refresh so the stale row disappears too.
+        if (body.code === 'INVENTORY_NOT_FOUND') {
+          qc.invalidateQueries({ queryKey: ['inventory'] });
+        }
         return;
       }
       toast.success(t('inventory.itemDeleted'));
-      qc.invalidateQueries({ queryKey: ['inventory'] });
+      await qc.invalidateQueries({ queryKey: ['inventory'] });
       qc.invalidateQueries({ queryKey: ['inventory-categories'] });
       setDeleteTarget(null);
     } catch {

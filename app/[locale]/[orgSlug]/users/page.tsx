@@ -512,7 +512,7 @@ export default function UsersPage() {
                   <td colSpan={4} className="px-4 py-12 text-center text-sm text-gray-400">{t('users.noPendingInvites')}</td>
                 </tr>
               ) : filteredInvites.map((inv) => (
-                <tr key={`invite-${inv.id}`} className="hover:bg-surface-page transition-colors bg-amber-50/30">
+                <tr key={`invite-${inv.id}`} className="hover:bg-surface-page transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <UserAvatar name={inv.displayName || inv.email || '?'} />

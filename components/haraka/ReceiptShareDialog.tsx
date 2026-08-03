@@ -9,6 +9,10 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ReceiptPreview, type ReceiptConfig, type ReceiptData } from '@/components/settings/receipt/ReceiptPreview';
+import { ReceiptRasterPreview, useReceiptRaster } from '@/components/haraka/ReceiptRasterPreview';
+import { buildReceiptFromMatrix } from '@/lib/modules/haraka/printing/receipt-template';
+import { printRaw } from '@/lib/modules/haraka/printing/webusb-transport';
+import { toPrintText } from '@/lib/receipts/receipt-config';
 import type { ReceiptLang } from '@/lib/receipts/labels';
 import { cn } from '@/lib/utils/cn';
 import { toast } from '@/hooks/ui';
@@ -31,6 +35,26 @@ function formatDate(value: Date | string): string {
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return '';
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+/** Re-encode the receipt bitmap as JPEG, flattened onto white (JPEG has no alpha). */
+function pngToJpeg(pngDataUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      const ctx = c.getContext('2d');
+      if (!ctx) return reject(new Error('canvas unavailable'));
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0);
+      resolve(c.toDataURL('image/jpeg', 0.95));
+    };
+    img.onerror = () => reject(new Error('could not decode receipt bitmap'));
+    img.src = pngDataUrl;
+  });
 }
 
 interface Props {
@@ -87,8 +111,11 @@ export function ReceiptShareDialog({
 
   const shareLink = transaction ? `${receiptBase}/r/${orgSlug}/${transaction.id}` : '';
 
-  // Render the real Fawtara QR (not a placeholder) so the preview — and the
-  // print, which rasterizes this same DOM — both show a working code.
+  const isThermal = config.template === 'thermal-58' || config.template === 'thermal-80';
+
+  // Render the real Fawtara QR (not a placeholder) for the A4 templates, which
+  // still preview and print as DOM. The thermal raster draws its own QR from
+  // the payload, so it does not need this.
   useEffect(() => {
     const payload = transaction?.fawtara?.status === 'submitted' ? transaction.fawtara.qrPayload : null;
     if (!payload) { setQrDataUrl(null); return; }
@@ -96,6 +123,16 @@ export function ReceiptShareDialog({
     QRCode.toDataURL(payload, { margin: 0 }).then((url) => { if (!cancelled) setQrDataUrl(url); }).catch(() => undefined);
     return () => { cancelled = true; };
   }, [transaction?.fawtara?.status, transaction?.fawtara?.qrPayload]);
+
+  // Thermal preview = the printer bitmap itself. Rendering it while an A4
+  // template is selected would be wasted work, so gate on the template.
+  const { raster, loading: rasterLoading } = useReceiptRaster({
+    transaction: isThermal ? transaction : null,
+    text: toPrintText(config, { orgName, tagline, taglineAr, taxNumber }),
+    paperWidth,
+    lang,
+    currency: CURRENCY,
+  });
 
   const data: ReceiptData | undefined = useMemo(() => {
     if (!transaction) return undefined;
@@ -119,14 +156,27 @@ export function ReceiptShareDialog({
     };
   }, [transaction, qrDataUrl]);
 
+  /**
+   * Print exactly what the preview shows. Thermal templates already exist as
+   * the printer bitmap, so that matrix is sent straight through — same pixels,
+   * same language, no second render that could drift. A4 templates are still
+   * DOM, so they get rasterized from the preview node.
+   */
   async function handlePrint() {
-    const node = captureRef.current;
-    if (!node || printing) return;
+    if (printing) return;
     setPrinting(true);
     try {
-      const ok = await printPreviewNode(node, { paperWidth, cutFeed, copies });
+      let ok: boolean;
+      if (isThermal && raster && raster.matrix.length > 0) {
+        ok = await printRaw(buildReceiptFromMatrix(raster.matrix, cutFeed), copies);
+      } else {
+        const node = captureRef.current;
+        if (!node) return;
+        ok = await printPreviewNode(node, { paperWidth, cutFeed, copies });
+      }
       if (!ok) toast.info('No printer paired — receipt not printed');
-    } catch {
+    } catch (err) {
+      console.error('[print receipt]', err);
       toast.error('Print failed');
     } finally {
       setPrinting(false);
@@ -135,17 +185,18 @@ export function ReceiptShareDialog({
   }
 
   // Auto-print once per transaction — including bilingual orgs, in whichever
-  // language is currently selected (defaults to English) — but only once the
-  // receipt (and its QR, if any) has actually finished rendering into
-  // captureRef. The language toggle above still lets the cashier reprint in
-  // the other language manually afterward.
+  // language is currently selected (defaults to English) — but only once what
+  // we are going to send actually exists: the raster for thermal, the rendered
+  // node (and its QR, if any) for A4. The language toggle above still lets the
+  // cashier reprint in the other language manually afterward.
+  const printable = isThermal ? !!raster : !!data;
   useEffect(() => {
-    if (!open || !autoPrint || !transaction || !data) return;
+    if (!open || !autoPrint || !transaction || !printable) return;
     if (autoPrintedFor.current === transaction.id) return;
     autoPrintedFor.current = transaction.id;
     handlePrint();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, autoPrint, transaction, data]);
+  }, [open, autoPrint, transaction, printable]);
 
   function copyLink() {
     navigator.clipboard.writeText(shareLink).then(() => {
@@ -155,14 +206,24 @@ export function ReceiptShareDialog({
     }).catch(() => toast.error('Could not copy link'));
   }
 
-  /** Capture the receipt DOM to an image and download it. */
+  /**
+   * Download the receipt as an image. Thermal receipts already exist as a
+   * bitmap — hand that over directly rather than re-rasterizing the DOM. A4
+   * templates are still HTML, so they go through html-to-image.
+   */
   async function downloadImage(format: 'png' | 'jpg') {
-    const node = captureRef.current;
-    if (!node || !transaction) return;
+    if (!transaction) return;
     setCapturing(format);
     try {
-      const opts = { pixelRatio: 2, cacheBust: true, backgroundColor: '#ffffff' };
-      const dataUrl = format === 'png' ? await toPng(node, opts) : await toJpeg(node, { ...opts, quality: 0.95 });
+      let dataUrl: string;
+      if (isThermal && raster) {
+        dataUrl = format === 'png' ? raster.dataUrl : await pngToJpeg(raster.dataUrl);
+      } else {
+        const node = captureRef.current;
+        if (!node) return;
+        const opts = { pixelRatio: 2, cacheBust: true, backgroundColor: '#ffffff' };
+        dataUrl = format === 'png' ? await toPng(node, opts) : await toJpeg(node, { ...opts, quality: 0.95 });
+      }
       const a = document.createElement('a');
       a.href = dataUrl;
       a.download = `receipt-${transaction.receiptNumber}.${format}`;
@@ -173,8 +234,6 @@ export function ReceiptShareDialog({
       setCapturing(null);
     }
   }
-
-  const isThermal = config.template === 'thermal-58' || config.template === 'thermal-80';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -202,34 +261,36 @@ export function ReceiptShareDialog({
             </div>
           )}
 
-          {/* Receipt preview */}
+          {/* Receipt preview. Thermal shows the printer bitmap as an image —
+              this container is exactly what the Print button sends. */}
           <div
             className="rounded-xl overflow-hidden border border-border p-4 max-h-[44vh] overflow-y-auto"
             style={{ background: 'repeating-linear-gradient(45deg,#f4f4f4,#f4f4f4 6px,#fafafa 6px,#fafafa 12px)' }}
           >
-            {/* Outer wrapper only scales for display; the captured node renders
-                at native resolution so exported images stay crisp. */}
-            <div
-              className="flex justify-center"
-              style={!isThermal ? { width: 280, overflow: 'hidden', margin: '0 auto' } : undefined}
-            >
-              <div style={!isThermal ? { transform: 'scale(0.875)', transformOrigin: 'top left', width: 320 } : undefined}>
-                <div ref={captureRef} style={{ display: 'inline-block', background: '#fff' }}>
-                  {data && (
-                    <ReceiptPreview
-                      orgName={orgName}
-                      orgNameAr={config.orgNameAr}
-                      taxNumber={taxNumber}
-                      tagline={tagline}
-                      taglineAr={taglineAr}
-                      lang={lang}
-                      config={config}
-                      data={data}
-                    />
-                  )}
+            {isThermal ? (
+              <ReceiptRasterPreview raster={raster} loading={rasterLoading} />
+            ) : (
+              /* Outer wrapper only scales for display; the captured node renders
+                 at native resolution so exported images stay crisp. */
+              <div className="flex justify-center" style={{ width: 280, overflow: 'hidden', margin: '0 auto' }}>
+                <div style={{ transform: 'scale(0.875)', transformOrigin: 'top left', width: 320 }}>
+                  <div ref={captureRef} style={{ display: 'inline-block', background: '#fff' }}>
+                    {data && (
+                      <ReceiptPreview
+                        orgName={orgName}
+                        orgNameAr={config.orgNameAr}
+                        taxNumber={taxNumber}
+                        tagline={tagline}
+                        taglineAr={taglineAr}
+                        lang={lang}
+                        config={config}
+                        data={data}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Share link */}
@@ -261,12 +322,12 @@ export function ReceiptShareDialog({
                 <Download size={13} />PDF
               </Button>
               <Button variant="outline" size="sm" className="gap-1.5 text-xs"
-                disabled={capturing !== null}
+                disabled={capturing !== null || (isThermal && !raster)}
                 onClick={() => downloadImage('png')}>
                 {capturing === 'png' ? <Loader2 size={13} className="animate-spin" /> : <FileImage size={13} />}PNG
               </Button>
               <Button variant="outline" size="sm" className="gap-1.5 text-xs"
-                disabled={capturing !== null}
+                disabled={capturing !== null || (isThermal && !raster)}
                 onClick={() => downloadImage('jpg')}>
                 {capturing === 'jpg' ? <Loader2 size={13} className="animate-spin" /> : <FileImage size={13} />}JPG
               </Button>
@@ -276,7 +337,8 @@ export function ReceiptShareDialog({
 
         <DialogFooter>
           {transaction && (
-            <Button variant="outline" onClick={handlePrint} disabled={printing} className="gap-2">
+            <Button variant="outline" onClick={handlePrint}
+              disabled={printing || (isThermal && rasterLoading)} className="gap-2">
               {printing ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
               {printing ? 'Printing…' : 'Print'}
             </Button>

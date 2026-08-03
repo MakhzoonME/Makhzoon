@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { hasPermission } from '@/lib/permissions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getUserById } from '@/lib/db/users';
 import { createPasswordResetToken } from '@/lib/db/password-reset-tokens';
 import { sendEmail } from '@/lib/email/resend';
+
+const resetPasswordSchema = z.object({
+  mode: z.enum(['link', 'temp_password']).optional(),
+});
+
 function generateTempPassword(): string {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
   let p = '';
@@ -39,8 +45,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ userId: 
   if (isUsernameAccount) {
     // Username accounts have no real email — never send a link there.
     // Admin picks either an immediate temp password, or a link they copy and share manually.
-    const body = await req.json().catch(() => ({}));
-    const mode = body?.mode === 'link' ? 'link' : 'temp_password';
+    const parsed = resetPasswordSchema.safeParse(await req.json().catch(() => ({})));
+    const mode = parsed.success && parsed.data.mode === 'link' ? 'link' : 'temp_password';
 
     if (mode === 'link') {
       const resetToken = await createPasswordResetToken(userId);

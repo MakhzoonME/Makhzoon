@@ -24,4 +24,6 @@ export const DEFAULT_RECEIPT_CONFIG: ReceiptConfig = {
   orgName: '',
   orgNameAr: '',
   language: 'en',
+  copies: 1,
+  cutFeed: 2,
 };

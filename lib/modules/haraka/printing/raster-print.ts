@@ -48,7 +48,10 @@ export async function printPreviewNode(node: HTMLElement, opts: RasterPrintOptio
   if (matrix.length === 0 || matrix[0].length === 0) return false;
 
   const b = new EscPosBuilder().init();
-  b.rasterImage(matrix);
+  // Chunked, not a single GS v 0 command — a full receipt can be tall enough
+  // to exceed a printer's raster buffer, which silently truncates/misplaces
+  // the tail (e.g. the footer bleeding into the next print job).
+  b.rasterImageChunked(matrix);
   b.feed(1).cut(opts.cutFeed ?? 2);
   return printRaw(b.build(), opts.copies ?? 1);
 }

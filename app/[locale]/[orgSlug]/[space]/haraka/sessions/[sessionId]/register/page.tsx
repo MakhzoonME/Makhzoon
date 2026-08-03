@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
 import { Printer, Lock, Receipt, ShoppingCart, PauseCircle, RotateCcw, Trash2, Banknote, CreditCard } from 'lucide-react';
 import { BarcodeInput, SubscriptionGate } from '@/components/shared';
@@ -235,6 +236,7 @@ export default function RegisterPage() {
 
   function requestPrint(transaction: PosTransaction) {
     if ((receiptCfg?.config?.language ?? 'en') === 'both') {
+      setReceiptTx(null);
       setLangPickTx(transaction);
     } else {
       const lang: ReceiptLang = receiptCfg?.config?.language === 'ar' ? 'ar' : 'en';
@@ -270,6 +272,7 @@ export default function RegisterPage() {
         organization: { id: user?.organizationId ?? '', name: orgInfo?.name ?? '', contactEmail: user?.email ?? '' },
         text: buildPrintText(),
         lang,
+        cutFeed: printer.cutFeed,
       });
       const ok = await printRaw(bytes);
       if (!ok) toast.info('No printer paired — receipt not printed');
@@ -530,9 +533,10 @@ export default function RegisterPage() {
         onPrint={(tx) => requestPrint(tx)}
       />
 
-      {/* Language pick for bilingual orgs */}
-      {langPickTx && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+      {/* Language pick for bilingual orgs — portaled to <body> with a z-index above
+          the receipt preview dialog's Radix portal so it can never render behind it. */}
+      {langPickTx && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-xs rounded-xl bg-white p-6 shadow-xl space-y-4">
             <div className="text-sm font-semibold">Print language</div>
             <p className="text-xs text-gray-500">Choose the language for this receipt.</p>
@@ -548,7 +552,8 @@ export default function RegisterPage() {
               Skip printing
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

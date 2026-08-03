@@ -37,7 +37,18 @@ export async function POST(req: NextRequest, props: { params: Promise<{ userId: 
   const isUsernameAccount = !!targetUser.username && !targetUser.email;
 
   if (isUsernameAccount) {
-    // Username accounts have no real email — set a temp password directly.
+    // Username accounts have no real email — never send a link there.
+    // Admin picks either an immediate temp password, or a link they copy and share manually.
+    const body = await req.json().catch(() => ({}));
+    const mode = body?.mode === 'link' ? 'link' : 'temp_password';
+
+    if (mode === 'link') {
+      const resetToken = await createPasswordResetToken(userId);
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
+      const resetLink = `${appUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
+      return NextResponse.json({ type: 'reset_link', link: resetLink });
+    }
+
     // userId is the auth.users UUID so we can update directly.
     const tempPassword = generateTempPassword();
     const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { password: tempPassword });

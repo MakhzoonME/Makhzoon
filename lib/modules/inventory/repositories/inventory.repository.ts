@@ -1,4 +1,5 @@
 import 'server-only';
+import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import type { InventoryItem, InventoryTransaction, InventoryUnit, TransactionType } from '../types'
@@ -426,7 +427,12 @@ export class InventoryRepository {
 
   async delete(tenant: TenantContext, id: string): Promise<void> {
     const current = await this.getById(tenant, id)
-    if (!current) throw new Error('Inventory item not found')
+    if (!current) {
+      throw NextResponse.json(
+        { error: 'Item not found — it may have already been deleted', code: 'INVENTORY_NOT_FOUND' },
+        { status: 404 },
+      )
+    }
     const { error } = await supabaseAdmin
       .from('inventory_items')
       .delete()

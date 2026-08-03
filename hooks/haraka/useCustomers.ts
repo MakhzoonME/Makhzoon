@@ -4,6 +4,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import type { PosCustomer } from '@/types';
 import type { CustomerFormData } from '@/lib/modules/haraka/customers/schemas';
+import type { CustomerHistoryEntry } from '@/lib/modules/haraka/customers/customers.service';
+
+export type { CustomerHistoryEntry };
 
 const LIST_KEY = ['haraka', 'customers'] as const;
 
@@ -53,6 +56,21 @@ export function useCustomer(id: string | undefined) {
       if (!res.ok) throw new Error('Failed to fetch customer');
       return res.json();
     },
+  });
+}
+
+export function useCustomerHistory(id: string | undefined) {
+  const { space } = useParams<{ space?: string }>();
+  return useQuery<{ entries: CustomerHistoryEntry[] }>({
+    queryKey: ['haraka', 'customers', space, id, 'history'],
+    enabled: !!id && !!space,
+    queryFn: async () => {
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/haraka/customers/${id}/history`, { headers });
+      if (!res.ok) throw new Error('Failed to fetch customer history');
+      return res.json();
+    },
+    staleTime: 30_000,
   });
 }
 

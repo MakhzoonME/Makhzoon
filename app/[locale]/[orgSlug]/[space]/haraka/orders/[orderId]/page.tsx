@@ -2,9 +2,12 @@
 
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Truck, Users, MapPin, CalendarClock, StickyNote, Share2, FileText, Receipt, ShieldCheck } from 'lucide-react';
+import { Truck, Users, MapPin, CalendarClock, StickyNote, Share2, FileText, Receipt, ShieldCheck, ChevronDown, Building2, UserRound } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
 import { OrderStatusBadge } from '@/components/haraka/OrderStatusBadge';
 import { DeliveryAgentPicker } from '@/components/haraka/DeliveryAgentPicker';
 import type { DeliveryAgentValue } from '@/components/haraka/DeliveryAgentPicker';
@@ -36,6 +39,7 @@ export default function OrderDetailPage() {
   const { data: statusItems } = useList('order_status');
 
   const [shareOpen,       setShareOpen]       = useState(false);
+  const [customerShareOpen, setCustomerShareOpen] = useState(false);
   const [docOpen,         setDocOpen]         = useState(false);
   const [docType,         setDocType]         = useState<'invoice' | 'receipt'>('invoice');
   const [warrantyOpen,    setWarrantyOpen]    = useState(false);
@@ -129,10 +133,23 @@ export default function OrderDetailPage() {
                 <ShieldCheck className="h-3.5 w-3.5 me-1" strokeWidth={1.75} /> Warranty
               </Button>
             )}
-            {/* Share with driver */}
-            <Button size="sm" variant="outline" onClick={() => setShareOpen(true)}>
-              <Share2 className="h-3.5 w-3.5 me-1" strokeWidth={1.75} /> Share
-            </Button>
+            {/* Share — internally (driver, interactive) or with customer (read-only) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <Share2 className="h-3.5 w-3.5 me-1" strokeWidth={1.75} /> Share
+                  <ChevronDown className="h-3.5 w-3.5 ms-1" strokeWidth={1.75} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setShareOpen(true)}>
+                  <Building2 className="h-4 w-4 me-2" strokeWidth={1.75} /> Share internally
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setCustomerShareOpen(true)}>
+                  <UserRound className="h-4 w-4 me-2" strokeWidth={1.75} /> Share with customer
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             {nextStatus && (
               <Button
                 size="sm"
@@ -313,11 +330,20 @@ export default function OrderDetailPage() {
 
       {/* ── Dialogs ─────────────────────────────────────────────── */}
       <OrderShareDialog
+        open={customerShareOpen}
+        onOpenChange={setCustomerShareOpen}
+        order={order}
+        orgSlug={params.orgSlug}
+        currency={currency}
+        variant="customer"
+      />
+      <OrderShareDialog
         open={shareOpen}
         onOpenChange={setShareOpen}
         order={order}
         orgSlug={params.orgSlug}
         currency={currency}
+        variant="internal"
       />
       <OrderDocumentDialog
         open={docOpen}

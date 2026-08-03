@@ -1,11 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { Pencil, Trash2, ArrowRight, Copy } from 'lucide-react';
+import { Pencil, Trash2, ArrowRight, Copy, Receipt, ShoppingBag, FileText, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
-import { PageHeader, ConfirmDialog } from '@/components/shared';
+import { PageHeader, ConfirmDialog, StatusBadge } from '@/components/shared';
 import { Button } from '@/components/ui/button';
-import { useCustomer, useDeleteCustomer } from '@/hooks/haraka';
+import { useCustomer, useDeleteCustomer, useCustomerHistory, type CustomerHistoryEntry } from '@/hooks/haraka';
+import { formatCurrency } from '@/lib/utils/format';
 import { toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { useAuthStore } from '@/store/auth.store';
@@ -113,6 +115,12 @@ export default function CustomerDetailPage() {
         </div>
       </div>
 
+      <CustomerHistorySection
+        customerId={customer.id}
+        harakaBase={`/${params.locale}/${params.orgSlug}/${params.space}/haraka`}
+        currency={orgInfo?.currency}
+      />
+
       <ConfirmDialog
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
@@ -140,6 +148,124 @@ export default function CustomerDetailPage() {
         recordLabel={customer.name}
       />
     </div>
+  );
+}
+
+function CustomerHistorySection({
+  customerId,
+  harakaBase,
+  currency,
+}: {
+  customerId: string;
+  harakaBase: string;
+  currency?: string;
+}) {
+  const { data, isLoading, isError } = useCustomerHistory(customerId);
+  const entries = data?.entries ?? [];
+
+  return (
+    <div className="mt-6 rounded-xl border border-border bg-surface-page">
+      <div className="flex items-center justify-between border-b border-border px-6 py-4">
+        <h2 className="text-sm font-semibold">Transaction history</h2>
+        {entries.length > 0 && (
+          <span className="text-xs text-gray-500">{entries.length} record{entries.length === 1 ? '' : 's'}</span>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="p-6">
+          <div className="h-6 w-6 rounded-full border-2 border-primary-600 border-t-transparent animate-spin" />
+        </div>
+      ) : isError ? (
+        <div className="p-6 text-sm text-red-600">Couldn&apos;t load transaction history.</div>
+      ) : entries.length === 0 ? (
+        <div className="p-6 text-sm text-gray-500">
+          No sales or orders recorded for this customer yet.
+        </div>
+      ) : (
+        <ul className="divide-y divide-border">
+          {entries.map((e) => (
+            <HistoryRow key={`${e.kind}-${e.id}`} entry={e} harakaBase={harakaBase} currency={currency} />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function HistoryRow({
+  entry,
+  harakaBase,
+  currency,
+}: {
+  entry: CustomerHistoryEntry;
+  harakaBase: string;
+  currency?: string;
+}) {
+  const href =
+    entry.kind === 'transaction'
+      ? `${harakaBase}/transactions/${entry.id}`
+      : `${harakaBase}/orders/${entry.id}`;
+  const Icon = entry.kind === 'transaction' ? Receipt : ShoppingBag;
+  const kindLabel = entry.kind === 'transaction'
+    ? (entry.isRefund ? 'Refund' : 'Sale')
+    : 'Order';
+
+  return (
+    <li>
+      <Link
+        href={href}
+        className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-surface-hover"
+      >
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface-card text-gray-500">
+          <Icon size={16} />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">{entry.reference}</span>
+            <span className="text-xs text-gray-500">{kindLabel}</span>
+            <StatusBadge status={entry.status} />
+          </div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-gray-500">
+            <span>{new Date(entry.date).toLocaleString()}</span>
+            <span aria-hidden>·</span>
+            <span>{entry.itemCount} item{entry.itemCount === 1 ? '' : 's'}</span>
+            {entry.paymentStatus && (
+              <>
+                <span aria-hidden>·</span>
+                <span className="capitalize">{entry.paymentStatus}</span>
+              </>
+            )}
+            {entry.paymentMethods.length > 0 && (
+              <>
+                <span aria-hidden>·</span>
+                <span className="capitalize">{entry.paymentMethods.join(', ')}</span>
+              </>
+            )}
+            {entry.invoiceNumber && (
+              <span className="inline-flex items-center gap-1">
+                <span aria-hidden>·</span>
+                <FileText size={11} /> {entry.invoiceNumber}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="text-end">
+          <div className={`text-sm font-semibold ${entry.isRefund ? 'text-red-600' : ''}`}>
+            {entry.isRefund ? '−' : ''}{formatCurrency(entry.total, currency)}
+          </div>
+          {entry.amountPaid !== null && entry.amountPaid < entry.total && (
+            <div className="text-xs text-gray-500">
+              {formatCurrency(entry.amountPaid, currency)} paid
+            </div>
+          )}
+        </div>
+
+        <ChevronRight size={16} className="shrink-0 text-gray-400 rtl:rotate-180" />
+      </Link>
+    </li>
   );
 }
 

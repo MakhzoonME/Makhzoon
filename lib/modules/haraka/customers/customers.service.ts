@@ -8,8 +8,40 @@ import {
   type CustomerInput,
   type CustomerListOpts,
 } from './customers.repository'
+import { TransactionsRepository } from '@/lib/modules/haraka/transactions/transactions.repository'
+import { OrdersRepository } from '@/lib/modules/haraka/orders/orders.repository'
 
 const repo = new CustomersRepository()
+const txRepo = new TransactionsRepository()
+const ordersRepo = new OrdersRepository()
+
+/**
+ * A single entry in a customer's activity timeline — either a POS sale/refund
+ * (backed by a receipt, and optionally a Fawtara e-invoice) or a Haraka order
+ * (backed by an invoice number). Both carry enough detail for the UI to render
+ * the row and link through to the underlying record.
+ */
+export interface CustomerHistoryEntry {
+  kind: 'transaction' | 'order'
+  id: string
+  /** ISO timestamp used for sorting and display. */
+  date: string
+  /** Receipt number (transactions) or order number (orders). */
+  reference: string
+  status: string
+  total: number
+  itemCount: number
+  /** Fawtara e-invoice number (transactions) or order invoice number (orders), when issued. */
+  invoiceNumber: string | null
+  /** Payment method labels — 'cash', 'card', etc. */
+  paymentMethods: string[]
+  /** Orders only: unpaid / partial / paid. */
+  paymentStatus: string | null
+  /** Orders only: amount collected so far. */
+  amountPaid: number | null
+  /** Transactions only: set when this row is a refund of an earlier sale. */
+  isRefund: boolean
+}
 
 function requirePosSale(tenant: TenantContext) {
   if (!hasPermission(tenant, 'pos', 'process_sale')) {
@@ -28,6 +60,55 @@ export class CustomersService {
     const customer = await repo.getById(tenant, id)
     if (!customer) throw NextResponse.json({ error: 'Not found' }, { status: 404 })
     return customer
+  }
+
+  /**
+   * Unified activity timeline for one customer: POS transactions and Haraka
+   * orders merged and sorted newest-first. Verifies the customer belongs to the
+   * tenant (via getById) before returning anything.
+   */
+  async history(tenant: TenantContext, customerId: string): Promise<CustomerHistoryEntry[]> {
+    // getById enforces the permission check and 404s on a foreign/unknown id.
+    await this.getById(tenant, customerId)
+
+    const [txs, orders] = await Promise.all([
+      txRepo.listByCustomer(tenant, customerId),
+      ordersRepo.listByCustomer(tenant, customerId),
+    ])
+
+    const entries: CustomerHistoryEntry[] = [
+      ...txs.map((t): CustomerHistoryEntry => ({
+        kind: 'transaction',
+        id: t.id,
+        date: t.createdAt.toISOString(),
+        reference: t.receiptNumber,
+        status: t.status,
+        total: t.total,
+        itemCount: t.items.length,
+        invoiceNumber: t.fawtara?.invoiceNumber ?? null,
+        paymentMethods: Array.from(new Set(t.payments.map((p) => p.method))),
+        paymentStatus: null,
+        amountPaid: null,
+        isRefund: !!t.parentTransactionId || t.status === 'refunded',
+      })),
+      ...orders.map((o): CustomerHistoryEntry => ({
+        kind: 'order',
+        id: o.id,
+        date: o.createdAt.toISOString(),
+        reference: o.orderNumber,
+        status: o.status,
+        total: o.total,
+        itemCount: o.items.length,
+        invoiceNumber: o.invoiceNumber,
+        paymentMethods: o.paymentMethod ? [o.paymentMethod] : [],
+        paymentStatus: o.paymentStatus,
+        amountPaid: o.amountPaid,
+        isRefund: false,
+      })),
+    ]
+
+    entries.sort((a, b) => b.date.localeCompare(a.date))
+    return entries
   }
 
   async create(tenant: TenantContext, input: CustomerInput) {

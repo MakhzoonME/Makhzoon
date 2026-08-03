@@ -127,13 +127,20 @@ export class EscPosBuilder {
   }
 
   /**
-   * `feedAfter` is the blank paper advanced past the cut before the next job's
-   * content starts — this is what shows up as a gap before the next receipt's
-   * header, so it's the printer-specific value callers should make configurable.
+   * Feed the paper clear of the cutter, then full-cut (GS V 0).
+   *
+   * The feed comes BEFORE the cut: the cutter blade sits ~12–15 mm past the
+   * print head, so without it the blade slices through the last printed lines.
+   * Feeding after the cut instead put that blank paper at the top of the NEXT
+   * receipt, which read as phantom white space above the header.
+   *
+   * `feedLines` stays caller-configurable (org-wide `ReceiptConfig.cutFeed`)
+   * because the head-to-blade distance is printer-specific. Note the units are
+   * the same but the meaning moved: this is now paper fed to clear the blade,
+   * not a gap left after it. 4 lines × 1/6" ≈ 17 mm suits common cutters.
    */
-  cut(feedAfter = 2) {
-    // GS V 0 = full cut
-    return this.push([GS, 0x56, 0x00]).feed(feedAfter)
+  cut(feedLines = 4) {
+    return this.feed(feedLines).push([GS, 0x56, 0x00])
   }
 
   /**

@@ -55,8 +55,8 @@ export function PrinterSettingsDialog({ open, onOpenChange }: Props) {
         .line(`Copies: ${copies}`)
         .line(`Cut feed: ${cutFeed}`)
         .line(new Date().toLocaleString())
-        .feed(cutFeed)
-        .cut()
+        .feed(1)
+        .cut(cutFeed)
         .build();
       const ok = await printRaw(bytes);
       if (ok) toast.success('Test page sent');
@@ -125,8 +125,8 @@ export function PrinterSettingsDialog({ open, onOpenChange }: Props) {
                   onChange={(e) => setCutFeed(Number(e.target.value || 0))}
                 />
                 <p className="text-xs text-gray-500">
-                  Blank lines fed before the cut. Lower it if there&apos;s too much blank paper before
-                  the next receipt&apos;s header; raise it if the cutter shears into the footer text.
+                  Blank lines fed after the cut. Lower it if there&apos;s too much blank paper before
+                  the next receipt&apos;s header.
                 </p>
               </div>
 

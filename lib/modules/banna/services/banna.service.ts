@@ -26,6 +26,9 @@ export class BannaService {
   async getCustomFields(tenant: TenantContext, opts?: { module?: 'assets' | 'inventory' | 'customers' }) {
     // No module filter → the general Banna settings list, still banna-gated.
     this.assertCanManage(tenant, opts?.module ?? 'banna', 'view');
+    if (opts?.module === 'customers') {
+      await this.repo.ensureDefaultCustomerFields(tenant);
+    }
     return this.repo.getAll(tenant, opts);
   }
 
@@ -47,7 +50,15 @@ export class BannaService {
     const old = await this.repo.getById(tenant, id);
     this.assertCanManage(tenant, old.module, 'update');
 
-    const updated = await this.repo.update(tenant, id, input);
+    // Default fields (Name/Phone/Email/Tax number/Notes) are real pos_customers
+    // columns, not user-defined fields — only required/visible/order can change.
+    // `old` is a raw db row (snake_case) cast to CustomField, hence is_default here.
+    const isDefault = (old as unknown as Record<string, unknown>).is_default === true;
+    const effectiveInput: UpdateCustomFieldInput = isDefault
+      ? { required: input.required, isActive: input.isActive, sortOrder: input.sortOrder }
+      : input;
+
+    const updated = await this.repo.update(tenant, id, effectiveInput);
     await auditLog.create({ tenant, module: 'banna', action: 'CUSTOM_FIELD_UPDATED', recordId: id, oldValue: old as unknown as Record<string, unknown>, newValue: updated as unknown as Record<string, unknown> });
     return updated;
   }
@@ -55,6 +66,10 @@ export class BannaService {
   async deleteCustomField(tenant: TenantContext, id: string) {
     const old = await this.repo.getById(tenant, id);
     this.assertCanManage(tenant, old.module, 'delete');
+    const isDefault = (old as unknown as Record<string, unknown>).is_default === true;
+    if (isDefault) {
+      throw NextResponse.json({ error: 'Default fields cannot be deleted' }, { status: 400 });
+    }
 
     await this.repo.delete(tenant, id);
     await auditLog.create({ tenant, module: 'banna', action: 'CUSTOM_FIELD_DELETED', recordId: id, oldValue: old as unknown as Record<string, unknown> });

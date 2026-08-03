@@ -24,6 +24,43 @@ import { useAuthStore } from '@/store/auth.store';
 import { hasPermission } from '@/lib/permissions';
 import type { CustomFieldWithValue } from '@/types/banna.types';
 import { customerSchema, type CustomerFormData } from '@/lib/modules/haraka/customers/schemas';
+import { findMissingRequiredFields, type DefaultFieldConfig as RawDefaultFieldConfig } from '@/lib/modules/haraka/customers/required-fields';
+
+/** Per-org required/hidden config for the five built-in fields, keyed by
+ *  form field name. Missing entries (not yet loaded, or org never touched
+ *  them) default to visible + only Name required, matching prior behavior. */
+type DefaultFieldConfigByFormKey = Partial<Record<keyof CustomerFormData, { required: boolean; active: boolean }>>;
+
+const DEFAULT_FIELD_KEY_TO_FORM_KEY: Record<string, keyof CustomerFormData> = {
+  name: 'name',
+  phone: 'phone',
+  email: 'email',
+  tax_number: 'taxNumber',
+  notes: 'notes',
+};
+
+function useDefaultFieldConfig(): { byFormKey: DefaultFieldConfigByFormKey; raw: RawDefaultFieldConfig[] } {
+  const defsQuery = useCustomFields('customers');
+  const byFormKey: DefaultFieldConfigByFormKey = {};
+  const raw: RawDefaultFieldConfig[] = [];
+  for (const item of (defsQuery.data?.items ?? []) as unknown as Record<string, unknown>[]) {
+    if (item.is_default !== true) continue;
+    const fieldKey = item.field_key as string;
+    const entry = { required: item.required as boolean, active: item.is_active as boolean };
+    raw.push({ fieldKey, ...entry });
+    const formKey = DEFAULT_FIELD_KEY_TO_FORM_KEY[fieldKey];
+    if (formKey) byFormKey[formKey] = entry;
+  }
+  return { byFormKey, raw };
+}
+
+function isFieldVisible(config: DefaultFieldConfigByFormKey, key: keyof CustomerFormData): boolean {
+  return config[key]?.active !== false;
+}
+
+function isFieldRequired(config: DefaultFieldConfigByFormKey, key: keyof CustomerFormData): boolean {
+  return config[key]?.required ?? key === 'name';
+}
 
 export interface CustomerFormProps {
   initial?: Partial<CustomerFormData>;
@@ -161,10 +198,20 @@ export function CustomerForm({
     defaultValues: { ...EMPTY, ...initial },
   });
 
+  const { byFormKey: fieldConfig, raw: rawFieldConfig } = useDefaultFieldConfig();
+
   const [fieldsDraft, setFieldsDraft] = useState<Record<string, unknown>>({});
   const [savingFields, setSavingFields] = useState(false);
 
   async function handleFormSubmit(values: CustomerFormData) {
+    const missing = findMissingRequiredFields(rawFieldConfig, values);
+    if (missing.length > 0) {
+      for (const fieldKey of missing) {
+        const formKey = DEFAULT_FIELD_KEY_TO_FORM_KEY[fieldKey];
+        if (formKey) form.setError(formKey, { message: 'This field is required' });
+      }
+      return;
+    }
     const result = await onSubmit(values);
     const id = recordId ?? result?.id;
     const entries = Object.entries(fieldsDraft);
@@ -189,99 +236,109 @@ export function CustomerForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name *</FormLabel>
-              <FormControl>
-                <Input {...field} value={field.value ?? ''} placeholder="Customer name" autoFocus />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {isFieldVisible(fieldConfig, 'name') && (
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name{isFieldRequired(fieldConfig, 'name') ? ' *' : ''}</FormLabel>
+                <FormControl>
+                  <Input {...field} value={field.value ?? ''} placeholder="Customer name" autoFocus />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    value={field.value ?? ''}
-                    onChange={(e) => field.onChange(e.target.value || null)}
-                    placeholder="+962 7…"
-                    inputMode="tel"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {isFieldVisible(fieldConfig, 'phone') && (
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone{isFieldRequired(fieldConfig, 'phone') ? ' *' : ''}</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(e.target.value || null)}
+                      placeholder="+962 7…"
+                      inputMode="tel"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    value={field.value ?? ''}
-                    onChange={(e) => field.onChange(e.target.value || null)}
-                    placeholder="customer@example.com"
-                    type="email"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {isFieldVisible(fieldConfig, 'email') && (
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email{isFieldRequired(fieldConfig, 'email') ? ' *' : ''}</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(e.target.value || null)}
+                      placeholder="customer@example.com"
+                      type="email"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
 
-        <FormField
-          control={form.control}
-          name="taxNumber"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tax number</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ''}
-                  onChange={(e) => field.onChange(e.target.value || null)}
-                  placeholder="Required by Fawtara for B2B invoices"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {isFieldVisible(fieldConfig, 'taxNumber') && (
+          <FormField
+            control={form.control}
+            name="taxNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tax number{isFieldRequired(fieldConfig, 'taxNumber') ? ' *' : ''}</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                    placeholder="Required by Fawtara for B2B invoices"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Notes</FormLabel>
-              <FormControl>
-                <Textarea
-                  {...field}
-                  value={field.value ?? ''}
-                  onChange={(e) => field.onChange(e.target.value || null)}
-                  rows={3}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {isFieldVisible(fieldConfig, 'notes') && (
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes{isFieldRequired(fieldConfig, 'notes') ? ' *' : ''}</FormLabel>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                    rows={3}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <CustomerCustomFields recordId={recordId} onDraftChange={setFieldsDraft} />
 

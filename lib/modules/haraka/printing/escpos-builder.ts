@@ -109,9 +109,14 @@ export class EscPosBuilder {
     return this.rasterImage(matrix)
   }
 
-  cut() {
+  /**
+   * `feedAfter` is the blank paper advanced past the cut before the next job's
+   * content starts — this is what shows up as a gap before the next receipt's
+   * header, so it's the printer-specific value callers should make configurable.
+   */
+  cut(feedAfter = 2) {
     // GS V 0 = full cut
-    return this.push([GS, 0x56, 0x00]).feed(2)
+    return this.push([GS, 0x56, 0x00]).feed(feedAfter)
   }
 
   /**

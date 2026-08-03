@@ -21,7 +21,7 @@ interface PrinterState {
 export const usePrinterStore = create<PrinterState>((set, get) => ({
   paperWidth: 80,
   copies: 1,
-  cutFeed: 1,
+  cutFeed: 2,
   paired: false,
   vendorId: null,
   productId: null,
@@ -34,7 +34,7 @@ export const usePrinterStore = create<PrinterState>((set, get) => ({
         productId: saved.productId,
         paperWidth: saved.paperWidth,
         copies: saved.copies,
-        cutFeed: saved.cutFeed ?? 1,
+        cutFeed: saved.cutFeed ?? 2,
       });
     } else {
       set({ paired: false, vendorId: null, productId: null });

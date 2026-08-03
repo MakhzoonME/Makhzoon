@@ -102,7 +102,9 @@ export function ReceiptShareDialog({
   // Paper size, copies, and cut feed are org-wide (ReceiptConfig), not local
   // browser state — every register should print the same way.
   const paperWidth: 58 | 80 = config.template === 'thermal-80' ? 80 : 58;
-  const cutFeed = config.cutFeed;
+  // Extra tear-off only — blade clearance is handled inside cut(). Orgs whose
+  // saved config predates the field send undefined, which must mean "none".
+  const cutFeed = config.cutFeed ?? 0;
   const copies = config.copies;
   const bothLangs = config.language === 'both';
   const fixedLang: ReceiptLang = config.language === 'ar' ? 'ar' : 'en';

@@ -36,8 +36,8 @@ export interface ReceiptOptions {
  *
  * Chunked, not one tall GS v 0: a full receipt can exceed a printer's raster
  * buffer, which silently truncates or misplaces the tail — the footer bleeding
- * into the next job. `cutFeed` is the org-wide paper advance that clears the
- * cutter blade before the cut.
+ * into the next job. `cutFeed` is org-wide extra tear-off slack; the paper
+ * needed to clear the cutter blade is added by cut() regardless.
  */
 export function buildReceiptFromMatrix(matrix: boolean[][], cutFeed?: number): Uint8Array {
   return new EscPosBuilder().init().rasterImageChunked(matrix).cut(cutFeed).build();

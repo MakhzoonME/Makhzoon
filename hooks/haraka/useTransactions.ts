@@ -49,6 +49,14 @@ export function useTransaction(id: string | undefined) {
   });
 }
 
+export class CompleteSaleError extends Error {
+  code?: string;
+  constructor(message: string, code?: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
 export function useCompleteSale() {
   const qc = useQueryClient();
   return useMutation({
@@ -60,7 +68,10 @@ export function useCompleteSale() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(typeof err.error === 'string' ? err.error : 'Failed to complete sale');
+        throw new CompleteSaleError(
+          typeof err.error === 'string' ? err.error : 'Failed to complete sale',
+          typeof err.code === 'string' ? err.code : undefined,
+        );
       }
       return res.json() as Promise<{ transaction: PosTransaction }>;
     },

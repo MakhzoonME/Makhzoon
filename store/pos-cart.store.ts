@@ -50,6 +50,24 @@ interface PosCartState {
   discardHeld: (id: string) => void;
 }
 
+/** Storage key suffix for the register session the cart is currently scoped to. */
+let activePosCartSessionId: string | null = null;
+
+/**
+ * Scopes the persisted cart (active lines, customer, held receipts) to a
+ * specific POS register session so two sessions never share a cart or
+ * held-receipts list, even within the same browser tab. Call this once the
+ * session id is known (e.g. from the register page's route params) before
+ * the cart is rendered.
+ */
+export function setActivePosCartSession(sessionId: string) {
+  if (activePosCartSessionId === sessionId) return;
+  activePosCartSessionId = sessionId;
+  usePosCart.setState({ lines: [], customer: null, held: [] });
+  usePosCart.persist.setOptions({ name: `pos-cart-${sessionId}` });
+  void usePosCart.persist.rehydrate();
+}
+
 export const usePosCart = create<PosCartState>()(
   persist(
     (set) => ({

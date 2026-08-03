@@ -1,75 +1,42 @@
 'use client';
 
 import { create } from 'zustand';
-import { readSavedPrinter, clearSavedPrinter, savePrinter, pairPrinter as transportPair } from '@/lib/modules/haraka/printing/webusb-transport';
+import { readSavedPrinter, clearSavedPrinter, pairPrinter as transportPair } from '@/lib/modules/haraka/printing/webusb-transport';
 
+/**
+ * Local-only WebUSB device pairing state. Paper size, copies, and cut feed
+ * are NOT here — they're org-wide settings (ReceiptConfig, saved server-side)
+ * so every register prints the same way regardless of which computer it's
+ * on. Only which physical USB device this browser talks to is inherently
+ * per-machine.
+ */
 interface PrinterState {
-  paperWidth: 58 | 80;
-  copies: number;
-  cutFeed: number;
   paired: boolean;
   vendorId: number | null;
   productId: number | null;
   hydrate: () => void;
   pair: () => Promise<void>;
   unpair: () => void;
-  setPaperWidth: (w: 58 | 80) => void;
-  setCopies: (c: number) => void;
-  setCutFeed: (n: number) => void;
 }
 
-export const usePrinterStore = create<PrinterState>((set, get) => ({
-  paperWidth: 80,
-  copies: 1,
-  cutFeed: 2,
+export const usePrinterStore = create<PrinterState>((set) => ({
   paired: false,
   vendorId: null,
   productId: null,
   hydrate: () => {
     const saved = readSavedPrinter();
     if (saved) {
-      set({
-        paired: true,
-        vendorId: saved.vendorId,
-        productId: saved.productId,
-        paperWidth: saved.paperWidth,
-        copies: saved.copies,
-        cutFeed: saved.cutFeed ?? 2,
-      });
+      set({ paired: true, vendorId: saved.vendorId, productId: saved.productId });
     } else {
       set({ paired: false, vendorId: null, productId: null });
     }
   },
   pair: async () => {
-    const s = get();
-    const saved = await transportPair(s.paperWidth, s.copies, s.cutFeed);
+    const saved = await transportPair();
     set({ paired: true, vendorId: saved.vendorId, productId: saved.productId });
   },
   unpair: () => {
     clearSavedPrinter();
     set({ paired: false, vendorId: null, productId: null });
-  },
-  setPaperWidth: (w) => {
-    const s = get();
-    if (s.paired && s.vendorId && s.productId) {
-      savePrinter({ vendorId: s.vendorId, productId: s.productId, paperWidth: w, copies: s.copies, cutFeed: s.cutFeed });
-    }
-    set({ paperWidth: w });
-  },
-  setCopies: (c) => {
-    const s = get();
-    const copies = Math.max(1, c);
-    if (s.paired && s.vendorId && s.productId) {
-      savePrinter({ vendorId: s.vendorId, productId: s.productId, paperWidth: s.paperWidth, copies, cutFeed: s.cutFeed });
-    }
-    set({ copies });
-  },
-  setCutFeed: (n) => {
-    const s = get();
-    const cutFeed = Math.max(0, n);
-    if (s.paired && s.vendorId && s.productId) {
-      savePrinter({ vendorId: s.vendorId, productId: s.productId, paperWidth: s.paperWidth, copies: s.copies, cutFeed });
-    }
-    set({ cutFeed });
   },
 }));

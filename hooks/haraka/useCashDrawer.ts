@@ -21,8 +21,10 @@ function spaceHeaders(space?: string): HeadersInit {
 export function useCashDrawerConfig() {
   const { space } = useParams<{ space?: string }>();
   return useQuery<{ config: CashDrawerConfig }>({
+    // Config is org-scoped server-side, not per-space — don't gate the query
+    // on `space` being present, or routes with no [space] segment (e.g. the
+    // settings page) never fetch and get stuck showing the default (disabled).
     queryKey: [...CONFIG_KEY, space],
-    enabled: !!space,
     queryFn: async () => {
       const res = await fetch('/api/haraka/cash-drawer-config', { headers: spaceHeaders(space) });
       if (!res.ok) throw new Error('Failed to fetch cash drawer config');

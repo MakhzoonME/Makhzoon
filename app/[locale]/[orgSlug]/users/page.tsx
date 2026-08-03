@@ -111,8 +111,9 @@ export default function UsersPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ user: OrgUser; permanent: boolean } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [resetTarget, setResetTarget] = useState<OrgUser | null>(null);
+  const [resetMode, setResetMode] = useState<'temp_password' | 'link'>('temp_password');
   const [resetting, setResetting] = useState(false);
-  const [resetResult, setResetResult] = useState<{ type: 'email_sent' | 'temp_password'; password?: string } | null>(null);
+  const [resetResult, setResetResult] = useState<{ type: 'email_sent' | 'temp_password' | 'reset_link'; password?: string; link?: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [now] = useState(() => Date.now());
   const qc = useQueryClient();
@@ -193,13 +194,20 @@ export default function UsersPage() {
 
   async function handleResetPassword() {
     if (!resetTarget) return;
+    const isUsernameAccount = !!resetTarget.username && !resetTarget.email;
     setResetting(true);
     try {
-      const res = await apiFetch(`/api/users/${resetTarget.id}/reset-password`, { method: 'POST' });
+      const res = await apiFetch(`/api/users/${resetTarget.id}/reset-password`, {
+        method: 'POST',
+        ...(isUsernameAccount
+          ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: resetMode }) }
+          : {}),
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? 'Failed to reset password');
       setResetResult(data);
       setResetTarget(null);
+      setResetMode('temp_password');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('common.failed'));
     } finally {
@@ -207,8 +215,8 @@ export default function UsersPage() {
     }
   }
 
-  function handleCopyPassword(password: string) {
-    navigator.clipboard.writeText(password).then(() => {
+  function handleCopyText(value: string) {
+    navigator.clipboard.writeText(value).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -464,9 +472,43 @@ export default function UsersPage() {
         onOpenChange={(o) => !o && setResetTarget(null)}
         title="Reset Password"
         description={
-          resetTarget?.username && !resetTarget?.email
-            ? `A new temporary password will be generated for @${resetTarget.username}. Share it with them securely — they should change it after signing in.`
-            : `A password reset link will be sent to ${resetTarget?.email ?? 'this user'}. They will have 24 hours to use it.`
+          resetTarget?.username && !resetTarget?.email ? (
+            <div className="space-y-3">
+              <span className="block">
+                {`@${resetTarget.username} signs in with a username, so a reset link can't be delivered to them. Choose how to reset their password:`}
+              </span>
+              <div className="space-y-2">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="reset-mode"
+                    className="mt-0.5 cursor-pointer"
+                    checked={resetMode === 'temp_password'}
+                    onChange={() => setResetMode('temp_password')}
+                  />
+                  <span className="text-sm">
+                    <span className="font-medium block">Set a temporary password now</span>
+                    <span className="text-gray-500">Generated immediately — share it with the user securely.</span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="reset-mode"
+                    className="mt-0.5 cursor-pointer"
+                    checked={resetMode === 'link'}
+                    onChange={() => setResetMode('link')}
+                  />
+                  <span className="text-sm">
+                    <span className="font-medium block">Generate a reset link to copy</span>
+                    <span className="text-gray-500">Not emailed — copy it and send it to the user yourself.</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+          ) : (
+            `A password reset link will be sent to ${resetTarget?.email ?? 'this user'}. They will have 24 hours to use it.`
+          )
         }
         confirmLabel="Reset Password"
         onConfirm={handleResetPassword}
@@ -480,9 +522,10 @@ export default function UsersPage() {
             <DialogTitle>Password Reset</DialogTitle>
           </DialogHeader>
           <div className="px-6 py-5 space-y-3">
-            {resetResult?.type === 'email_sent' ? (
+            {resetResult?.type === 'email_sent' && (
               <p className="text-sm text-gray-700">A password reset link has been sent. The link expires in 24 hours.</p>
-            ) : (
+            )}
+            {resetResult?.type === 'temp_password' && (
               <>
                 <p className="text-sm text-gray-700">A temporary password has been set. Share it with the user securely and ask them to change it after signing in.</p>
                 <div className="flex items-center gap-2 bg-surface-page border border-border rounded-lg px-3 py-2">
@@ -491,7 +534,23 @@ export default function UsersPage() {
                     type="button"
                     aria-label="Copy password"
                     className="text-gray-400 hover:text-primary-600 transition-colors cursor-pointer"
-                    onClick={() => handleCopyPassword(resetResult?.password ?? '')}
+                    onClick={() => handleCopyText(resetResult?.password ?? '')}
+                  >
+                    {copied ? <Check aria-hidden className="h-4 w-4 text-green-600" /> : <Copy aria-hidden className="h-4 w-4" />}
+                  </button>
+                </div>
+              </>
+            )}
+            {resetResult?.type === 'reset_link' && (
+              <>
+                <p className="text-sm text-gray-700">Copy this link and send it to the user yourself. It expires in 24 hours and can only be used once.</p>
+                <div className="flex items-center gap-2 bg-surface-page border border-border rounded-lg px-3 py-2">
+                  <code className="flex-1 text-xs font-mono text-gray-900 select-all break-all">{resetResult?.link}</code>
+                  <button
+                    type="button"
+                    aria-label="Copy link"
+                    className="shrink-0 text-gray-400 hover:text-primary-600 transition-colors cursor-pointer"
+                    onClick={() => handleCopyText(resetResult?.link ?? '')}
                   >
                     {copied ? <Check aria-hidden className="h-4 w-4 text-green-600" /> : <Copy aria-hidden className="h-4 w-4" />}
                   </button>

@@ -102,7 +102,7 @@ export default function UsersPage() {
   const { t } = useT();
   const orgSlug = useOrgSlug();
   const { data: orgInfo } = useOrgInfo();
-  const { isAllowed } = useAdminGuard('settings.users');
+  const { isAllowed } = useAdminGuard('settingsUsers.view');
   const { data: users = [], isLoading: usersLoading } = useUsers();
   const { data: invites = [], isLoading: invitesLoading } = useInvites();
   const { user: currentUser, refreshFeatures } = useAuthStore();

@@ -20,7 +20,7 @@ import type { TaxRate } from '@/types';
 export default function TaxRatesPage() {
   useOrgSlug();
   useOrgInfo();
-  const { isAllowed } = useAdminGuard('settings.taxRates');
+  const { isAllowed } = useAdminGuard('settingsTaxRates.view');
   const { t } = useT();
   useAuthStore((s) => s.user);
   const { data, isLoading } = useTaxRates();

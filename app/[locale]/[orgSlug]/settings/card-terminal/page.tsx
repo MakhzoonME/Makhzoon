@@ -13,7 +13,7 @@ import { getReceiptBaseUrl } from '@/lib/app-env';
 import type { CardTerminalMode } from '@/types';
 
 export default function CardTerminalSettingsPage() {
-  const { isAllowed } = useAdminGuard('settings.fawtara');
+  const { isAllowed } = useAdminGuard('settingsCardTerminal.view');
   const { data, isLoading } = useCardTerminalConfig();
   const updateMut = useUpdateCardTerminalConfig();
 

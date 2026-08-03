@@ -10,7 +10,7 @@ import {
   useOrgNotificationDefaults,
 } from '@/hooks/notifications';
 import { NOTIFICATION_CATALOG, getCatalogByModule } from '@/lib/notifications/catalog';
-import { toast } from '@/hooks/ui';
+import { toast, useAdminGuard } from '@/hooks/ui';
 import type { NotificationEventType } from '@/lib/notifications/catalog';
 
 interface PrefState {
@@ -112,6 +112,7 @@ function usePushSubscription() {
 }
 
 export default function NotificationSettingsPage() {
+  const { isAllowed } = useAdminGuard('settingsNotifications.view');
   const { data: prefsData }   = useNotificationPreferences();
   const { data: defaultsData } = useOrgNotificationDefaults();
   const updateMut              = useUpdateNotificationPreferences();
@@ -163,6 +164,14 @@ export default function NotificationSettingsPage() {
   }
 
   const byModule = getCatalogByModule()
+
+  if (!isAllowed) {
+    return (
+      <div className="flex items-center justify-center h-48">
+        <div className="h-7 w-7 rounded-full border-2 border-primary-600 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl space-y-6">

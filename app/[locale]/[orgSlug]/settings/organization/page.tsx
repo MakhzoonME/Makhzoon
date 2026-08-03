@@ -39,7 +39,7 @@ function normalizeHex(v: string) {
 
 export default function OrganizationInfoPage() {
   const { t } = useT();
-  const { isAllowed } = useAdminGuard('settings.orgInfo');
+  const { isAllowed } = useAdminGuard('settingsOrgInfo.view');
   const { data: org, isLoading, isError } = useOrgInfo();
   const qc = useQueryClient();
 

@@ -12,7 +12,7 @@ import { useAdminGuard, toast } from '@/hooks/ui';
 import { isWebUsbSupported, openCashDrawer } from '@/lib/modules/haraka/printing/webusb-transport';
 
 export default function CashDrawerSettingsPage() {
-  const { isAllowed } = useAdminGuard('settings.fawtara');
+  const { isAllowed } = useAdminGuard('settingsCashDrawer.view');
   const { data, isLoading } = useCashDrawerConfig();
   const updateMut = useUpdateCashDrawerConfig();
 

@@ -12,24 +12,24 @@ import {
 const repo = new ServicesRepository()
 
 function requireView(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'view_services')) {
+  if (!hasPermission(tenant, 'haraka', 'serviceCatalogView')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
 
 /**
  * POS register lookup (item picker): a cashier who can build a receipt
- * (add_receipt_items) but has no Services-catalog management access should
+ * (registerOpen) but has no Services-catalog management access should
  * still be able to read the active services list. Full catalog browsing
- * (the default, non-POS-scoped call) still requires view_services.
+ * (the default, non-POS-scoped call) still requires serviceCatalogView.
  */
 function requireViewForPosLookup(tenant: TenantContext) {
-  if (hasPermission(tenant, 'pos', 'view_services') || hasPermission(tenant, 'pos', 'add_receipt_items')) return
+  if (hasPermission(tenant, 'haraka', 'serviceCatalogView') || hasPermission(tenant, 'haraka', 'registerOpen')) return
   throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 }
 
-function requireManage(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'manage_services')) {
+function requireOp(tenant: TenantContext, op: 'serviceCatalogCreate' | 'serviceCatalogUpdate' | 'serviceCatalogDelete') {
+  if (!hasPermission(tenant, 'haraka', op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -56,7 +56,7 @@ export class ServicesService {
   }
 
   async create(tenant: TenantContext, input: CreateServiceInput) {
-    requireManage(tenant)
+    requireOp(tenant, 'serviceCatalogCreate')
     const service = await repo.create(tenant, input)
     auditLog.queue({
       tenant,
@@ -69,7 +69,7 @@ export class ServicesService {
   }
 
   async update(tenant: TenantContext, id: string, input: UpdateServiceInput) {
-    requireManage(tenant)
+    requireOp(tenant, 'serviceCatalogUpdate')
     await this.getById(tenant, id)
     const service = await repo.update(tenant, id, input)
     auditLog.queue({ tenant, module: 'pos', action: 'SERVICE_UPDATED', recordId: id, newValue: input as Record<string, unknown> })
@@ -77,7 +77,7 @@ export class ServicesService {
   }
 
   async delete(tenant: TenantContext, id: string) {
-    requireManage(tenant)
+    requireOp(tenant, 'serviceCatalogDelete')
     await this.getById(tenant, id)
     await repo.delete(tenant, id)
     auditLog.queue({ tenant, module: 'pos', action: 'SERVICE_DELETED', recordId: id })

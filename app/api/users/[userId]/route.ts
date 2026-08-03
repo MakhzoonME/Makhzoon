@@ -18,7 +18,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ userId:
   const tenant = await resolveTenant().catch(() => null);
   const caller = tenant?.user;
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!hasPermission(caller, 'settings', 'users'))
+  if (!hasPermission(caller, 'settingsUsers', 'update'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   if (tenant?.subscription?.status && tenant.subscription.status !== 'ACTIVE')
@@ -82,7 +82,7 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ userId
   const tenant = await resolveTenant().catch(() => null);
   const caller = tenant?.user;
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!hasPermission(caller, 'settings', 'users'))
+  if (!hasPermission(caller, 'settingsUsers', 'delete'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   if (tenant?.subscription?.status && tenant.subscription.status !== 'ACTIVE')

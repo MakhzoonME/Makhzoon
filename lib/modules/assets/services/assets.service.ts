@@ -12,19 +12,19 @@ export class AssetsService {
   private repo = new AssetsRepository()
 
   async getAll(tenant: TenantContext, opts?: GetAllAssetsOpts) {
-    if (!hasPermission(tenant, 'assets', 'view'))
+    if (!hasPermission(tenant, 'usool', 'view'))
       throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     return this.repo.getAll(tenant, opts)
   }
 
   async getCategories(tenant: TenantContext): Promise<string[]> {
-    if (!hasPermission(tenant, 'assets', 'view'))
+    if (!hasPermission(tenant, 'usool', 'view'))
       throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     return this.repo.getCategories(tenant)
   }
 
   async create(tenant: TenantContext, input: CreateAssetInput): Promise<Asset> {
-    if (!hasPermission(tenant, 'assets', 'create'))
+    if (!hasPermission(tenant, 'usool', 'create'))
       throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     if (tenant.subscription && !tenant.subscription.features['assets'])
       throw NextResponse.json({ error: 'Feature disabled' }, { status: 403 })

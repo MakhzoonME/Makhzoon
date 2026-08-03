@@ -16,12 +16,12 @@ const service = new InventoryService()
  * (the default, non-POS-scoped call) still requires the Inventory module.
  */
 function requireInventoryReadForPosLookup(tenant: Awaited<ReturnType<typeof resolveTenant>>): void {
-  if (hasPermission(tenant.user, 'inventory', 'view')) {
+  if (hasPermission(tenant.user, 'raseed', 'view')) {
     requireFeature(tenant, 'inventory')
     return
   }
   requireFeature(tenant, 'pos')
-  requirePermission(tenant.user, 'pos', 'add_receipt_items')
+  requirePermission(tenant.user, 'haraka', 'registerOpen')
 }
 
 export async function GET(req: NextRequest) {
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       requireInventoryReadForPosLookup(tenant)
     } else {
       requireFeature(tenant, 'inventory')
-      requirePermission(tenant.user, 'inventory', 'view')
+      requirePermission(tenant.user, 'raseed', 'view')
     }
     const limited = await rateLimitTenant(tenant, 'inventory', 60, 60_000)
     if (limited) return limited
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'inventory')
-    requirePermission(tenant.user, 'inventory', 'create')
+    requirePermission(tenant.user, 'raseed', 'create')
     const body = await req.json()
     const parsed = createInventoryItemSchema.safeParse(body)
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })

@@ -25,13 +25,10 @@ export async function requireAuth(): Promise<AuthUser> {
  */
 export async function requirePermission(
   user: AuthUser,
-  module: 'assets' | 'inventory' | 'warranties' | 'support' | 'reports' | 'audit-logs' | 'users',
-  action: 'view' | 'create' | 'update' | 'delete'
+  module: 'usool' | 'raseed',
+  action: string
 ): Promise<void> {
-  // Convert kebab-case to camelCase for auditLogs
-  const camelCaseModule = module === 'audit-logs' ? 'auditLogs' : module;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (!hasPermission(user, camelCaseModule as any, action)) {
+  if (!hasPermission(user, module, action)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 }

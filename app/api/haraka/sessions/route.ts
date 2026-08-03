@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
     await requireHarakaModule(tenant, 'pos')
-    requirePermission(tenant.user, 'pos', 'open_session')
+    requirePermission(tenant.user, 'haraka', 'sessionsOpen')
     const body = await req.json()
     const parsed = openSessionSchema.safeParse(body)
     if (!parsed.success) {

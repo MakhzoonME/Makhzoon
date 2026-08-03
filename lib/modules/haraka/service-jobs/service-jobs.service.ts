@@ -14,19 +14,21 @@ import {
 const repo = new ServiceJobsRepository()
 
 function requireView(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'view_service_jobs')) {
+  if (!hasPermission(tenant, 'haraka', 'servicesView')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
 
 function requireCreate(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'create_service_jobs') && !hasPermission(tenant, 'pos', 'checkout_service_jobs')) {
+  if (!hasPermission(tenant, 'haraka', 'serviceJobsCreate') && !hasPermission(tenant, 'haraka', 'serviceJobsUpdate')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
 
+// Umbrella for every post-creation action (status changes, items, payments,
+// invoice, delete) — same single-flag scope 'checkout_service_jobs' had.
 function requireCheckout(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'pos', 'checkout_service_jobs')) {
+  if (!hasPermission(tenant, 'haraka', 'serviceJobsUpdate')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }

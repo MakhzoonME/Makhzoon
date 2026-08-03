@@ -12,7 +12,7 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ a
     const tenant = await resolveTenant();
     requireFeature(tenant, 'assets');
     const user = tenant.user;
-    requirePermission(user, 'assets', 'checkout');
+    requirePermission(user, 'usool', 'checkoutUpdate');
 
     const checkout = await getCheckoutById(checkoutId);
     if (!checkout || checkout.organizationId !== tenant.organizationId || checkout.assetId !== assetId) {

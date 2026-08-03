@@ -13,7 +13,7 @@ export async function POST(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
-    requirePermission(tenant.user, 'pos', 'void_transaction')
+    requirePermission(tenant.user, 'haraka', 'transactionsVoid')
     const { transactionId } = await params
     await service.voidSale(tenant, transactionId)
     return NextResponse.json({ ok: true })

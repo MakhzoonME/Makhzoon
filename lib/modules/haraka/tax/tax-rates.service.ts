@@ -7,8 +7,8 @@ import { TaxRatesRepository } from './tax-rates.repository'
 
 const repo = new TaxRatesRepository()
 
-function requireSettings(tenant: TenantContext, op: 'taxRates') {
-  if (!hasPermission(tenant, 'settings', op)) {
+function requireSettings(tenant: TenantContext, op: 'create' | 'update' | 'delete') {
+  if (!hasPermission(tenant, 'settingsTaxRates', op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -19,7 +19,7 @@ function requireSettings(tenant: TenantContext, op: 'taxRates') {
  * those modules — staff who can see items should see tax labels.
  */
 function requireInventoryView(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'inventory', 'view')) {
+  if (!hasPermission(tenant, 'raseed', 'view')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -31,7 +31,7 @@ export class TaxRatesService {
   }
 
   async create(tenant: TenantContext, input: { name: string; rate: number; isDefault?: boolean }) {
-    requireSettings(tenant, 'taxRates')
+    requireSettings(tenant, 'create')
     const id = await repo.create(tenant, input)
     auditLog.queue({
       tenant,
@@ -49,7 +49,7 @@ export class TaxRatesService {
     id: string,
     input: { name?: string; rate?: number; isDefault?: boolean },
   ) {
-    requireSettings(tenant, 'taxRates')
+    requireSettings(tenant, 'update')
     await repo.update(tenant, id, input)
     auditLog.queue({
       tenant,
@@ -62,7 +62,7 @@ export class TaxRatesService {
   }
 
   async delete(tenant: TenantContext, id: string) {
-    requireSettings(tenant, 'taxRates')
+    requireSettings(tenant, 'delete')
     await repo.delete(tenant, id)
     auditLog.queue({
       tenant,

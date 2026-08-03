@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
-import { requirePermission } from '@/lib/permissions/require'
 import { TaxRatesService } from '@/lib/modules/haraka/tax/tax-rates.service'
 import { taxRateSchema } from '@/lib/modules/haraka/tax/schemas'
 
@@ -27,7 +26,7 @@ export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
-    requirePermission(tenant.user, 'settings', 'taxRates')
+    // TaxRatesService.create() enforces settingsTaxRates.create.
     const body = await req.json()
     const parsed = taxRateSchema.safeParse(body)
     if (!parsed.success) {

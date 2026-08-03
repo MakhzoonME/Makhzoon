@@ -52,7 +52,7 @@ export async function getOrgInventoryItems(
     sortDir?: 'asc' | 'desc';
   }
 ) {
-  await requirePermission(user, 'inventory', 'view');
+  await requirePermission(user, 'raseed', 'view');
   return getInventoryItems(user.organizationId!, {
     ...filters,
     sortBy: filters?.sortBy as never,
@@ -63,7 +63,7 @@ export async function getOrgInventoryItems(
  * Get single inventory item by ID.
  */
 export async function getOrgInventoryItem(user: AuthUser, itemId: string) {
-  await requirePermission(user, 'inventory', 'view');
+  await requirePermission(user, 'raseed', 'view');
   const item = await getInventoryItemById(itemId);
   if (!item || item.organizationId !== user.organizationId!) {
     throw new Error('Inventory item not found');
@@ -78,7 +78,7 @@ export async function createInventoryItemWithAudit(
   user: AuthUser,
   data: CreateInventoryItemInput
 ) {
-  await requirePermission(user, 'inventory', 'create');
+  await requirePermission(user, 'raseed', 'create');
   await requireActiveSubscription(user.organizationId!, user);
 
   const userContext = getUserContext(user);
@@ -118,7 +118,7 @@ export async function updateInventoryItemWithAudit(
   itemId: string,
   data: UpdateInventoryItemInput
 ) {
-  await requirePermission(user, 'inventory', 'update');
+  await requirePermission(user, 'raseed', 'update');
   await requireActiveSubscription(user.organizationId!, user);
 
   // Verify item belongs to user's org
@@ -154,7 +154,7 @@ export async function updateInventoryItemWithAudit(
  * Delete inventory item with audit logging.
  */
 export async function deleteInventoryItemWithAudit(user: AuthUser, itemId: string) {
-  await requirePermission(user, 'inventory', 'delete');
+  await requirePermission(user, 'raseed', 'delete');
   await requireActiveSubscription(user.organizationId!, user);
 
   // Verify item belongs to user's org
@@ -181,7 +181,7 @@ export async function deleteInventoryItemWithAudit(user: AuthUser, itemId: strin
  * Get inventory categories for organization.
  */
 export async function getOrgInventoryCategories(user: AuthUser) {
-  await requirePermission(user, 'inventory', 'view');
+  await requirePermission(user, 'raseed', 'view');
   return getInventoryCategories(user.organizationId!);
 }
 
@@ -196,7 +196,7 @@ export async function applyInventoryTransactionWithAudit(
   reason: string,
   note?: string
 ) {
-  await requirePermission(user, 'inventory', 'update');
+  await requirePermission(user, 'raseed', 'update');
   await requireActiveSubscription(user.organizationId!, user);
 
   // Verify item belongs to user's org

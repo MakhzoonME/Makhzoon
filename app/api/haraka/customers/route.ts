@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
-import { requirePermission } from '@/lib/permissions/require'
-import { hasPermission } from '@/lib/permissions'
 import { CustomersService } from '@/lib/modules/haraka/customers/customers.service'
 import { customerSchema } from '@/lib/modules/haraka/customers/schemas'
 
@@ -32,11 +30,7 @@ export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
-    // A cashier (process_sale) or a front-desk user building a cart/receipt
-    // (add_receipt_items) can both add a walk-in customer profile.
-    if (!hasPermission(tenant.user, 'pos', 'process_sale')) {
-      requirePermission(tenant.user, 'pos', 'add_receipt_items')
-    }
+    // CustomersService.create() enforces haraka.customersCreate.
     const body = await req.json()
     const parsed = customerSchema.safeParse(body)
     if (!parsed.success) {

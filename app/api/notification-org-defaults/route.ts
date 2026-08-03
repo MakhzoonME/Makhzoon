@@ -14,6 +14,9 @@ const updateSchema = z.array(z.object({
 export async function GET() {
   try {
     const tenant = await resolveTenant()
+    if (!hasPermission(tenant, 'settingsNotifications', 'view')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
     const { data, error } = await supabaseAdmin
       .from('notification_org_defaults')
       .select('organization_id,event_type,in_app_enabled,email_enabled,notify_roles')
@@ -37,7 +40,7 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    if (!hasPermission(tenant, 'settings', 'orgInfo')) {
+    if (!hasPermission(tenant, 'settingsNotifications', 'update')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
     const body = await req.json()

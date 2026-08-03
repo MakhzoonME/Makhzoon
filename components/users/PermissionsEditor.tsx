@@ -97,7 +97,7 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
   const groupedModules = useMemo(() => {
     const map = new Map<ModuleGroup, ModuleConfig[]>();
     for (const m of visibleModules) {
-      const g: ModuleGroup = m.group ?? 'core';
+      const g: ModuleGroup = m.group ?? 'platform';
       if (!map.has(g)) map.set(g, []);
       map.get(g)!.push(m);
     }

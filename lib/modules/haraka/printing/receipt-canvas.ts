@@ -222,6 +222,7 @@ export async function renderReceiptCanvas(
     divider();
     center(footer, F_SMALL);
     gap(2);
+    y += 4; // extra bottom margin so the cut doesn't shear into the footer text
 
     return Math.ceil(y);
   }

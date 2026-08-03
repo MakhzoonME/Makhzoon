@@ -28,11 +28,12 @@ export interface ReceiptOptions {
   /** Concrete language to print in. Defaults to English. */
   lang?: ReceiptLang;
   /**
-   * Line-feeds sent before the cut command. Tunes the blank gap between the
-   * printed content and the cut point — too little and the cutter can shear
-   * into the footer text (or the next receipt's header inherits the leftover
-   * feed as blank space at its top). Varies by printer's head-to-blade
-   * offset, so it's user-configurable in Printer Settings. Defaults to 1.
+   * Line-feeds sent AFTER the cut command, before the next job's content.
+   * This is the blank paper that shows up as a gap before the next receipt's
+   * header — varies by printer's head-to-blade offset, so it's
+   * user-configurable in Printer Settings. Defaults to 2 (ESC/POS's typical
+   * default). A small fixed feed is always sent before the cut itself, to
+   * keep the guillotine from shearing into this receipt's footer text.
    */
   cutFeed?: number;
 }
@@ -75,14 +76,14 @@ export async function buildReceipt(
   opts: ReceiptOptions,
 ): Promise<Uint8Array> {
   const lang: ReceiptLang = opts.lang === 'ar' ? 'ar' : 'en';
-  const cutFeed = Math.max(0, opts.cutFeed ?? 1);
+  const cutFeed = Math.max(0, opts.cutFeed ?? 2);
 
   // Arabic cannot be printed as text — render the whole receipt to a raster.
   if (lang === 'ar' && opts.text) {
     const matrix = await renderReceiptCanvas(transaction, { paperWidth: opts.paperWidth, text: opts.text }, 'ar');
     const rb = new EscPosBuilder().init();
     rb.rasterImage(matrix);
-    rb.feed(cutFeed).cut();
+    rb.feed(1).cut(cutFeed);
     return rb.build();
   }
 
@@ -151,6 +152,6 @@ export async function buildReceipt(
 
   // Footer
   b.feed(2).align('center').line((txt?.footerText || '').trim() || L.thankYou);
-  b.feed(cutFeed).cut();
+  b.feed(1).cut(cutFeed);
   return b.build();
 }

@@ -72,7 +72,7 @@ export function clearSavedPrinter() {
  * Prompt the user to pair a printer. Use class code 7 (printer) as a filter
  * so the device picker shows only printers.
  */
-export async function pairPrinter(paperWidth: 58 | 80 = 80, copies = 1, cutFeed = 1): Promise<SavedDevice> {
+export async function pairPrinter(paperWidth: 58 | 80 = 80, copies = 1, cutFeed = 2): Promise<SavedDevice> {
   if (!navigator.usb) throw new Error('WebUSB not supported in this browser');
   const device = await navigator.usb.requestDevice({ filters: [{ classCode: 7 }] });
   const saved: SavedDevice = {

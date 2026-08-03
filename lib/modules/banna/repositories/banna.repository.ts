@@ -2,6 +2,7 @@ import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { TenantContext } from '@/lib/platform/tenancy/types';
 import type { CustomField, CreateCustomFieldInput, UpdateCustomFieldInput } from '@/types/banna.types';
+import { DEFAULT_CUSTOMER_FIELDS } from '@/lib/modules/banna/default-customer-fields';
 
 export interface GetAllCustomFieldsOpts {
   module?: 'assets' | 'inventory' | 'customers';
@@ -25,6 +26,37 @@ export class BannaRepository {
     const { data, error } = await query;
     if (error) throw error;
     return data as unknown as CustomField[];
+  }
+
+  /** Idempotently inserts any missing default-field rows for this org's
+   *  customers module (Name/Phone/Email/Tax number/Notes). Safe to call on
+   *  every fetch — relies on the existing (organization_id, module,
+   *  field_key) unique index to no-op after the first call. */
+  async ensureDefaultCustomerFields(tenant: TenantContext) {
+    const { data: existing, error: fetchError } = await this.db()
+      .select('field_key')
+      .eq('organization_id', tenant.organizationId)
+      .eq('module', 'customers')
+      .eq('is_default', true);
+    if (fetchError) throw fetchError;
+
+    const existingKeys = new Set((existing ?? []).map((r) => r.field_key as string));
+    const missing = DEFAULT_CUSTOMER_FIELDS.filter((f) => !existingKeys.has(f.fieldKey));
+    if (missing.length === 0) return;
+
+    const { error } = await this.db().insert(
+      missing.map((f) => ({
+        organization_id: tenant.organizationId,
+        module: 'customers',
+        field_key: f.fieldKey,
+        type: 'text',
+        label: f.label,
+        required: f.required,
+        sort_order: f.sortOrder,
+        is_default: true,
+      })),
+    );
+    if (error) throw error;
   }
 
   async getById(tenant: TenantContext, id: string) {

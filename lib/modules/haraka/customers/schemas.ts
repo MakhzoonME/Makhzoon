@@ -9,7 +9,10 @@ const trimmedOptional = z
   .nullable()
 
 export const customerSchema = z.object({
-  name: z.string().trim().min(1, 'Name is required').max(120),
+  // Not hardcoded required — whether it (or any other default field) is
+  // required or hidden is configurable per org (see required-fields.ts) and
+  // enforced dynamically by CustomersService, since hidden overrides required.
+  name: z.string().trim().max(120).optional().nullable().transform((v) => v ?? ''),
   phone: trimmedOptional,
   email: z
     .string()

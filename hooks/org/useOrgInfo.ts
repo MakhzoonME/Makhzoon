@@ -13,14 +13,12 @@ export interface OrgInfo {
   accountManager: { id: string; name: string; email: string } | null;
 }
 
-const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin']);
-
 export function useOrgInfo() {
   const user = useAuthStore((s) => s.user);
-  const canFetch =
-    !!user &&
-    (ADMIN_ROLES.has(user.role) ||
-      (user.role === 'staff' && user.permissions?.settingsOrgInfo?.view === true));
+  // Basic org identity (name, currency, etc.) is shown to every user across
+  // the app regardless of role — breadcrumbs, receipts, the org switcher.
+  // Editing it is still restricted server-side (settingsOrgInfo.view / admin
+  // roles), this hook is read-only.
 
   return useQuery<OrgInfo | null>({
     queryKey: ['org-info-self'],
@@ -29,7 +27,7 @@ export function useOrgInfo() {
       if (!res.ok) throw new Error('Failed to fetch organization info');
       return res.json();
     },
-    enabled: canFetch,
+    enabled: !!user,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: false,

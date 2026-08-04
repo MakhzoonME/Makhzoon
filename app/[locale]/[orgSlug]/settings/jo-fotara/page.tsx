@@ -139,7 +139,7 @@ export default function FawtaraSettingsPage() {
             )}
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="mode"
@@ -180,7 +180,7 @@ export default function FawtaraSettingsPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="taxpayerNumber"
@@ -234,7 +234,7 @@ export default function FawtaraSettingsPage() {
             <p className="text-xs text-gray-500">
               {t('fawtara.credsHelp')}
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="clientId"

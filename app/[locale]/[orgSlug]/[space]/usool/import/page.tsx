@@ -353,6 +353,7 @@ export default function ImportAssetsPage() {
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('import.mapColumns')}</h3>
               <div className="border border-border rounded-xl overflow-hidden">
+                <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-surface-page border-b border-border">
                     <tr>
@@ -387,6 +388,7 @@ export default function ImportAssetsPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
 

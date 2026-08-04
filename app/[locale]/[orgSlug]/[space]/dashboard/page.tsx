@@ -295,6 +295,7 @@ function RecentAssetsTable({ assets, isLoading, onViewAll: _onViewAll }: {
   }
 
   return (
+    <div className="overflow-x-auto">
     <table className="w-full border-collapse">
       <thead>
         <tr className="border-b border-border">
@@ -335,6 +336,7 @@ function RecentAssetsTable({ assets, isLoading, onViewAll: _onViewAll }: {
         ))}
       </tbody>
     </table>
+    </div>
   );
 }
 
@@ -360,7 +362,7 @@ function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: 
     return (
       <div className="space-y-3">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="grid grid-cols-[130px_1fr_64px] gap-3 items-center">
+          <div key={i} className="grid grid-cols-1 sm:grid-cols-[130px_1fr_64px] gap-1.5 sm:gap-3 sm:items-center">
             <div className="h-4 bg-surface-sidebar rounded animate-pulse" />
             <div className="h-1.5 bg-surface-sidebar rounded-full animate-pulse" />
             <div className="h-4 w-12 bg-surface-sidebar rounded animate-pulse" />
@@ -380,7 +382,7 @@ function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: 
         const pct  = Math.round((count / total) * 100);
         const tone = TONES[i] ?? TONES[3];
         return (
-          <div key={cat} className="grid grid-cols-[130px_1fr_64px] gap-3 items-center py-1 border-b border-border last:border-0">
+          <div key={cat} className="grid grid-cols-1 sm:grid-cols-[130px_1fr_64px] gap-1.5 sm:gap-3 sm:items-center py-1 border-b border-border last:border-0">
             <span className="text-sm font-medium text-gray-700 truncate">{cat}</span>
             <div className="h-1.5 rounded-full bg-surface-sidebar overflow-hidden">
               <div className={`h-full rounded-full ${tone.bar} transition-[width] duration-500`} style={{ width: `${pct}%` }} />

@@ -129,6 +129,7 @@ export default function CustomFieldsPage() {
       </div>
 
       <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-surface-page border-b border-border">
             <tr>
@@ -169,6 +170,7 @@ export default function CustomFieldsPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <ConfirmDialog

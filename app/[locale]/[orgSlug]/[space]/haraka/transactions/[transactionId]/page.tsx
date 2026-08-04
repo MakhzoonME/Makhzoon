@@ -188,33 +188,35 @@ export default function TransactionDetailPage(props: Props) {
 
       <Card>
         <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b border-border bg-surface-muted/40">
-              <tr className="text-start">
-                <th className="py-2 px-4 font-medium">Item</th>
-                <th className="py-2 px-2 font-medium text-end">Qty</th>
-                <th className="py-2 px-2 font-medium text-end">Unit</th>
-                <th className="py-2 px-2 font-medium text-end">Tax</th>
-                <th className="py-2 px-2 font-medium text-end">Disc.</th>
-                <th className="py-2 px-4 font-medium text-end">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tx.items.map((line, i) => (
-                <tr key={`${line.inventoryItemId}-${i}`} className="border-b border-border last:border-0">
-                  <td className="py-2 px-4">
-                    <div className="font-medium">{line.inventoryItemName}</div>
-                    {line.sku && <div className="text-xs text-gray-500">SKU: {line.sku}</div>}
-                  </td>
-                  <td className="py-2 px-2 text-end font-mono">{line.quantity}</td>
-                  <td className="py-2 px-2 text-end font-mono">{fmt(line.unitPrice)}</td>
-                  <td className="py-2 px-2 text-end font-mono">{fmt(line.taxAmount)}</td>
-                  <td className="py-2 px-2 text-end font-mono">{fmt(line.discountAmount)}</td>
-                  <td className="py-2 px-4 text-end font-mono">{fmt(line.lineTotal)}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-border bg-surface-muted/40">
+                <tr className="text-start">
+                  <th className="py-2 px-4 font-medium">Item</th>
+                  <th className="py-2 px-2 font-medium text-end">Qty</th>
+                  <th className="py-2 px-2 font-medium text-end">Unit</th>
+                  <th className="py-2 px-2 font-medium text-end">Tax</th>
+                  <th className="py-2 px-2 font-medium text-end">Disc.</th>
+                  <th className="py-2 px-4 font-medium text-end">Total</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {tx.items.map((line, i) => (
+                  <tr key={`${line.inventoryItemId}-${i}`} className="border-b border-border last:border-0">
+                    <td className="py-2 px-4">
+                      <div className="font-medium">{line.inventoryItemName}</div>
+                      {line.sku && <div className="text-xs text-gray-500">SKU: {line.sku}</div>}
+                    </td>
+                    <td className="py-2 px-2 text-end font-mono">{line.quantity}</td>
+                    <td className="py-2 px-2 text-end font-mono">{fmt(line.unitPrice)}</td>
+                    <td className="py-2 px-2 text-end font-mono">{fmt(line.taxAmount)}</td>
+                    <td className="py-2 px-2 text-end font-mono">{fmt(line.discountAmount)}</td>
+                    <td className="py-2 px-4 text-end font-mono">{fmt(line.lineTotal)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
 

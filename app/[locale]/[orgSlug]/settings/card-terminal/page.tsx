@@ -160,7 +160,7 @@ export default function CardTerminalSettingsPage() {
       {enabled && mode === 'cloud' && (
         <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
           <h3 className="text-sm font-semibold text-gray-700">Cloud API</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Provider</Label>
               <Select value={provider} onValueChange={setProvider}>

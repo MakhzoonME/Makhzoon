@@ -202,6 +202,7 @@ export default function DeliveryAgentsPage() {
       />
 
       <div className="bg-surface-card rounded-xl border border-border overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-page">
@@ -284,6 +285,7 @@ export default function DeliveryAgentsPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Add dialog */}

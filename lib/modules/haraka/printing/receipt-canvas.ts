@@ -145,10 +145,15 @@ export async function renderReceiptRaster(
   const endAlign: CanvasTextAlign = rtl ? 'left' : 'right';
   const contentW = W - pad * 2;
 
-  // Async prep, before the synchronous paint passes.
+  // Async prep, before the synchronous paint passes. A malformed QR payload
+  // must not blank the whole receipt — skip it and keep going.
   let qr: boolean[][] | null = null;
   if (t.showFawtaraQr && transaction.fawtara?.status === 'submitted' && transaction.fawtara.qrPayload) {
-    qr = await qrMatrix(transaction.fawtara.qrPayload);
+    try {
+      qr = await qrMatrix(transaction.fawtara.qrPayload);
+    } catch (err) {
+      console.error('[receipt raster] QR generation failed, omitting it', err);
+    }
   }
   const logo = t.showLogo && t.logo ? await loadLogo(t.logo) : null;
 
@@ -377,7 +382,21 @@ export async function renderReceiptRaster(
 
   // Threshold to 1-bit. Text and rules take a hard cut; the logo rectangle is
   // ordered-dithered so photographic / gradient logos keep their shading.
-  const image = ctx.getImageData(0, 0, W, height);
+  //
+  // getImageData() throws a SecurityError if the logo tainted the canvas (a
+  // remote image that loaded despite crossOrigin='anonymous' — some storage
+  // hosts omit CORS headers on redirects/cached responses). A bad logo must
+  // never block the whole receipt, so retry once with it left off entirely.
+  let image: ImageData;
+  try {
+    image = ctx.getImageData(0, 0, W, height);
+  } catch (err) {
+    if (logo) {
+      console.error('[receipt raster] logo tainted the canvas, retrying without it', err);
+      return renderReceiptRaster(transaction, { ...opts, text: { ...t, showLogo: false } }, lang);
+    }
+    throw err;
+  }
   const img = image.data;
   const lr = logoRect as { x: number; y: number; w: number; h: number } | null;
   const matrix: boolean[][] = [];

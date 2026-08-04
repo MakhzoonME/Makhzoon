@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Printer, Lock, Receipt, ShoppingCart, PauseCircle, RotateCcw, Trash2, Banknote, CreditCard } from 'lucide-react';
+import { Printer, Lock, Receipt, ShoppingCart, PauseCircle, RotateCcw, Trash2, Banknote, CreditCard, ChevronLeft, ChevronUp } from 'lucide-react';
+import { cn } from '@/lib/utils/cn';
 import { BarcodeInput, SubscriptionGate } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { ProductGrid } from '@/components/haraka/ProductGrid';
@@ -68,6 +69,9 @@ export default function RegisterPage() {
   const recallCart = usePosCart((s) => s.recallCart);
   const discardHeld = usePosCart((s) => s.discardHeld);
   const [heldOpen, setHeldOpen] = useState(false);
+  // Mobile-only: show either the product grid or the cart, never both side by
+  // side (there isn't room). Ignored at md: and up, where both panes always show.
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const heldRef = useRef<HTMLDivElement>(null);
 
   const canAddItems = !!user && hasPermission(user, 'haraka', 'registerOpen');
@@ -242,10 +246,7 @@ export default function RegisterPage() {
 
   return (
     /* Full-bleed: escape the layout's px-6 py-6 container */
-    <div
-      className="-mx-6 -mt-6 flex flex-col bg-surface-page"
-      style={{ height: 'calc(100vh - 3.5rem)' }}
-    >
+    <div className="-mx-6 -mt-6 flex flex-col bg-surface-page h-[calc(100vh-3.5rem-4rem)] md:h-[calc(100vh-3.5rem)]">
       {/* ── Slim header bar ─────────────────────────────────────────────── */}
       <div className="h-11 flex items-center gap-3 px-5 border-b border-border bg-surface-card flex-shrink-0">
         <span className="text-xs text-gray-400">
@@ -289,17 +290,29 @@ export default function RegisterPage() {
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* LEFT — product catalog */}
-        <div className="flex flex-col flex-1 min-w-0 overflow-hidden p-4 gap-3">
+        <div className={cn(
+          'flex-col flex-1 min-w-0 overflow-hidden p-4 gap-3',
+          mobileCartOpen ? 'hidden md:flex' : 'flex',
+        )}>
           <BarcodeInput onResolve={handleScan} placeholder={t('register.scanPlaceholder')} autoFocus enableCamera disabled={!canAddItems} />
           <ProductGrid onPick={pickItem} />
         </div>
 
         {/* RIGHT — cart panel */}
-        <div
-          className="w-[360px] flex-shrink-0 flex flex-col border-s border-border bg-surface-card overflow-hidden"
-        >
+        <div className={cn(
+          'w-full md:w-[360px] md:flex-shrink-0 flex-col border-s border-border bg-surface-card overflow-hidden',
+          mobileCartOpen ? 'flex' : 'hidden md:flex',
+        )}>
           {/* Cart header */}
           <div className="px-4 py-2.5 border-b border-border flex items-center gap-2 flex-shrink-0">
+            <button
+              type="button"
+              className="md:hidden -ms-1 p-1 text-gray-400 hover:text-gray-700"
+              aria-label="Back to browsing"
+              onClick={() => setMobileCartOpen(false)}
+            >
+              <ChevronLeft size={18} />
+            </button>
             <span className="text-sm font-semibold">{t('register.cart')} ({lines.length})</span>
             {!customer && (
               <span className="flex items-center gap-1 text-xs text-gray-400">
@@ -456,6 +469,25 @@ export default function RegisterPage() {
           </div>
         </div>
       </div>
+
+      {/* Mobile-only: collapsed cart summary bar, replaces the always-visible
+          cart panel below md: — tap to open the full cart. */}
+      {!mobileCartOpen && lines.length > 0 && (
+        <button
+          type="button"
+          className="md:hidden fixed bottom-16 inset-x-0 z-30 flex items-center justify-between px-4 py-3 border-t border-border shadow-lg"
+          style={{ background: 'var(--mod-haraka)', color: '#fff' }}
+          onClick={() => setMobileCartOpen(true)}
+        >
+          <span className="flex items-center gap-2 text-sm font-semibold">
+            <ShoppingCart size={16} />
+            {lines.length} {lines.length === 1 ? 'item' : 'items'} · JOD {totals.total.toFixed(2)}
+          </span>
+          <span className="flex items-center gap-1 text-sm font-medium">
+            {t('register.cart')} <ChevronUp size={16} />
+          </span>
+        </button>
+      )}
 
       {/* ── Dialogs ─────────────────────────────────────────────────────── */}
       <PaymentDialog

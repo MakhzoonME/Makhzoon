@@ -27,7 +27,7 @@ const PAYMENT_METHOD_STYLE: Record<string, React.CSSProperties> = {
 
 export default function TransactionsListPage() {
   const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
-  const { isAllowed } = useAdminGuard('pos.view_orders');
+  const { isAllowed } = useAdminGuard('haraka.posReportView');
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();

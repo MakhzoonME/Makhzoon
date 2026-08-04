@@ -163,7 +163,7 @@ export default function NewOrderPage() {
           {/* ── Channel + Fulfillment ───────────────────────────────── */}
           <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
             <h3 className="text-sm font-semibold text-gray-700">Order info</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="channel"
@@ -222,7 +222,7 @@ export default function NewOrderPage() {
 
             {/* Manual override — visible when no customer selected */}
             {!selectedCustomer && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="customerName"
@@ -253,7 +253,7 @@ export default function NewOrderPage() {
           {fulfillmentType === 'delivery' && (
             <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
               <h3 className="text-sm font-semibold text-gray-700">Delivery address</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
                   name="deliveryAddress.street"
@@ -386,7 +386,7 @@ export default function NewOrderPage() {
           {/* ── Agents ─────────────────────────────────────────────── */}
           <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
             <h3 className="text-sm font-semibold text-gray-700">Agents</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="salesAgentId"
@@ -428,7 +428,7 @@ export default function NewOrderPage() {
           {/* ── Payment + Schedule + Notes ─────────────────────────── */}
           <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
             <h3 className="text-sm font-semibold text-gray-700">Extra</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="paymentMethod"

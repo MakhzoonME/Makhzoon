@@ -635,7 +635,7 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                   </label>
                 ))}
               </div>
-              <div className="grid grid-cols-2 gap-3 max-w-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-sm">
                 <div className="space-y-1.5">
                   <Label>Extra users</Label>
                   <Input

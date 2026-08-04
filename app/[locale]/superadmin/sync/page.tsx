@@ -140,6 +140,7 @@ export default function SyncPage() {
           ) : runs.length === 0 ? (
             <div className="p-4 text-sm text-gray-500">{t('sync.noRuns')}</div>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-page">
@@ -177,6 +178,7 @@ export default function SyncPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

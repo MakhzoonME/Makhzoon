@@ -370,7 +370,7 @@ export default function BackendLogsPage() {
                   {expanded === log.id && (
                     <tr key={`${log.id}-detail`} className="bg-[var(--primary-50)]">
                       <td colSpan={10} className="px-4 py-3">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <p className="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wide">{t('backendLogs.details')}</p>
                             <dl className="space-y-1 text-xs">

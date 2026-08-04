@@ -95,6 +95,7 @@ export default function PackagesPage() {
       />
 
       <div className="bg-surface-card rounded-xl border border-border overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-surface-page border-b border-border">
             <tr>
@@ -170,6 +171,7 @@ export default function PackagesPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <ConfirmDialog

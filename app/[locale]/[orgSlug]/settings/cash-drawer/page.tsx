@@ -150,7 +150,7 @@ export default function CashDrawerSettingsPage() {
             The drawer must be connected to your printer&rsquo;s RJ11/RJ12 port. It is opened via the same USB connection as receipts.
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label>Drawer port</Label>
               <Select

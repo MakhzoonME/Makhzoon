@@ -212,7 +212,7 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {/* ── Customer + Delivery address ───────────────────────── */}
         <div className="rounded-xl border border-border bg-surface-page p-5 space-y-3">
           <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">Customer</div>

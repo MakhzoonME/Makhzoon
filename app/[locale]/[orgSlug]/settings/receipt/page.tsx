@@ -213,9 +213,12 @@ export default function ReceiptSettingsPage() {
         .line('PRINTER TEST').size(0).bold(false)
         .line(orgInfo?.name ?? 'Makhzoon').feed(1)
         .align('left').line(`Paper: ${paperWidth} mm`).line(`Copies: ${settings.copies}`)
-        .line(`Cut feed: ${settings.cutFeed}`)
-        // No feed() before cut() — cut() now advances the paper past the blade itself.
-        .line(new Date().toLocaleString()).cut(settings.cutFeed).build();
+        .line(`Extra tear-off: ${settings.cutFeed}`)
+        // No feed() before cut() — cut() advances the paper past the blade itself.
+        // This is the last printed line, so the gap below it shows the clearance.
+        .line(new Date().toLocaleString())
+        .line('--- END OF TEST ---')
+        .cut(settings.cutFeed).build();
       const ok = await printRaw(bytes, settings.copies);
       if (ok) toast.success(t('register.reprintLast'));
       else toast.error(t('common.updateFailed'));
@@ -299,12 +302,13 @@ export default function ReceiptSettingsPage() {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Cut feed (lines)</Label>
+                    <Label>Extra tear-off (lines)</Label>
                     <Input type="number" min="0" max="10" value={settings.cutFeed}
                       onChange={(e) => set('cutFeed', Number(e.target.value || 0))} />
                     <p className="text-xs text-gray-500">
-                      Blank lines fed after the cut. Lower it if there&apos;s too much blank paper before
-                      the next receipt&apos;s header.
+                      Extra blank lines at the bottom of the receipt. The paper needed for the cut to
+                      clear the blade is always added automatically — raise this only if the footer
+                      still comes out short.
                     </p>
                   </div>
                   <div className="flex items-center gap-2 pt-1 border-t border-border">

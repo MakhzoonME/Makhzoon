@@ -5,7 +5,7 @@ import { usePathname, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
-import { hasModuleAccess } from '@/lib/permissions';
+import { hasModuleAccess, hasPermission } from '@/lib/permissions';
 import type { UserPermissions } from '@/types/user-permissions.types';
 import { useUiStore } from '@/store/ui.store';
 import { useTransferStore } from '@/store/transfer.store';
@@ -28,18 +28,27 @@ function AuditSVG() { return <svg width="18" height="18" viewBox="0 0 18 18" fil
 function XSvg() { return <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>; }
 function LogOutSVG() { return <svg width="15" height="15" viewBox="0 0 14 14" fill="none" aria-hidden><path d="M5 2H2.5A1.5 1.5 0 0 0 1 3.5v7A1.5 1.5 0 0 0 2.5 12H5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /><path d="M9 4.5L12 7l-3 2.5M12 7H5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
 
-interface NavItem { href: string; labelKey: MessageKey; Icon: React.FC; adminOnly?: boolean; featureKey?: string; scope?: 'space' | 'org'; }
+interface NavItem {
+  href: string; labelKey: MessageKey; Icon: React.FC; adminOnly?: boolean;
+  featureKey?: string; scope?: 'space' | 'org';
+  /** Permission module to check for staff — the subscription featureKey
+   *  above often doesn't match the permission module name (e.g. featureKey
+   *  'pos' -> module 'haraka'), so this must be explicit, not derived. */
+  moduleKey?: keyof UserPermissions;
+  /** Operation within moduleKey. Defaults to 'view' via hasModuleAccess. */
+  permOp?: string;
+}
 
 const navItems: NavItem[] = [
-  { href: '/dashboard',    labelKey: 'nav.dashboard',    Icon: DashboardSVG,    featureKey: 'dashboard' },
-  { href: '/usool/list',   labelKey: 'nav.assets',       Icon: AssetsSVG,       featureKey: 'assets' },
-  { href: '/raseed/list',  labelKey: 'nav.inventory',    Icon: InventorySVG,    featureKey: 'inventory' },
-  { href: '/haraka',          labelKey: 'nav.pos',       Icon: AuditSVG,        featureKey: 'pos' },
-  { href: '/warranties',   labelKey: 'nav.warranties',   Icon: WarrantySVG,     featureKey: 'warranties' },
+  { href: '/dashboard',    labelKey: 'nav.dashboard',    Icon: DashboardSVG,    featureKey: 'dashboard', moduleKey: 'dashboard' },
+  { href: '/usool/list',   labelKey: 'nav.assets',       Icon: AssetsSVG,       featureKey: 'assets',    moduleKey: 'usool' },
+  { href: '/raseed/list',  labelKey: 'nav.inventory',    Icon: InventorySVG,    featureKey: 'inventory', moduleKey: 'raseed' },
+  { href: '/haraka',          labelKey: 'nav.pos',       Icon: AuditSVG,        featureKey: 'pos',       moduleKey: 'haraka' },
+  { href: '/warranties',   labelKey: 'nav.warranties',   Icon: WarrantySVG,     featureKey: 'warranties', moduleKey: 'usool', permOp: 'warrantiesView' },
   { href: '/reports',      labelKey: 'nav.reports',      Icon: ReportsSVG,      adminOnly: true, featureKey: 'reports' },
   { href: '/users',        labelKey: 'nav.users',        Icon: UsersSVG,        adminOnly: true, scope: 'org' },
   { href: '/subscription', labelKey: 'nav.subscription', Icon: SubscriptionSVG, adminOnly: true, scope: 'org' },
-  { href: '/support',      labelKey: 'nav.support',      Icon: SupportSVG,      featureKey: 'support' },
+  { href: '/support',      labelKey: 'nav.support',      Icon: SupportSVG,      featureKey: 'support',   moduleKey: 'support' },
   { href: '/audit-logs',   labelKey: 'nav.auditLogs',    Icon: AuditSVG,        adminOnly: true, featureKey: 'auditLogs' },
 ];
 
@@ -64,11 +73,12 @@ export function MobileDrawer() {
   const visibleItems = navItems.filter((item) => {
     if (item.adminOnly && !canSeeAdmin) return false;
     if (item.featureKey && !features[item.featureKey]) return false;
-    if (user?.role === 'staff' && item.featureKey && user) {
-      if (!hasModuleAccess(
-        { ...user, organizationId: user.organizationId ?? null },
-        item.featureKey as keyof UserPermissions,
-      )) return false;
+    if (user?.role === 'staff' && item.moduleKey && user) {
+      const u = { ...user, organizationId: user.organizationId ?? null };
+      const allowed = item.permOp
+        ? hasPermission(u, item.moduleKey, item.permOp)
+        : hasModuleAccess(u, item.moduleKey);
+      if (!allowed) return false;
     }
     return true;
   });

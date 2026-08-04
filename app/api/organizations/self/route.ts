@@ -35,13 +35,9 @@ export async function GET() {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin']);
-    const isAdmin = ADMIN_ROLES.has(user.role);
-    const hasOrgInfoPerm = user.role === 'staff' && user.permissions?.settingsOrgInfo?.view === true;
-    if (!isAdmin && !hasOrgInfoPerm) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
+    // Basic org identity (name, currency, etc.) is shown to every user across
+    // the app regardless of role — breadcrumbs, receipts, the org switcher.
+    // settingsOrgInfo.view only gates the ability to *edit* it (see PATCH below).
     const orgId = user.organizationId;
     if (!orgId) return NextResponse.json({ error: 'No organization associated with this account' }, { status: 403 });
 
@@ -54,8 +50,11 @@ export async function GET() {
       if (ownerEmail) contactEmail = ownerEmail;
     }
 
+    // Unlike the rest of this payload, the assigned Makhzoon account manager
+    // is internal account-management info, not something every cashier needs.
+    const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin']);
     let accountManager: { id: string; name: string; email: string } | null = null;
-    if (org.assignedMemberId) {
+    if (ADMIN_ROLES.has(user.role) && org.assignedMemberId) {
       const member = await getSuperAdminUserById(org.assignedMemberId);
       if (member) {
         accountManager = { id: member.id, name: member.displayName ?? '', email: member.email };

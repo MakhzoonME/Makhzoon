@@ -106,7 +106,7 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
         moduleColor: '#AD1457', moduleName: 'ضمانات' },
       { type: 'section-header', label: 'Finance', labelKey: 'nav.sectionFinance' },
       { href: '/haraka/transactions', label: 'Transactions', labelKey: 'nav.transactions',
-        featureKey: 'pos', permissionKey: 'haraka.transactionsView',
+        featureKey: 'pos', permissionKey: 'haraka.posReportView',
         moduleColor: '#AD1457', moduleName: 'معاملات' },
       { href: '/haraka/reports', label: 'Reports', labelKey: 'nav.harakaReports',
         featureKey: 'pos', permissionKey: 'haraka.posReportView',

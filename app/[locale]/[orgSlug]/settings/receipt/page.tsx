@@ -258,7 +258,7 @@ export default function ReceiptSettingsPage() {
         </Button>
       </div>
 
-      <div className="flex gap-8 items-start">
+      <div className="flex flex-col lg:flex-row gap-8 lg:items-start">
         {/* ── Left: configuration ── */}
         <div className="flex-1 min-w-0 space-y-5">
 
@@ -397,7 +397,7 @@ export default function ReceiptSettingsPage() {
         </div>
 
         {/* ── Right: preview + share (sticky) ── */}
-        <div className="w-[420px] shrink-0 space-y-4 sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto">
+        <div className="w-full lg:w-[420px] lg:shrink-0 space-y-4 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
           {bothLangs && (
             <div className="flex items-center justify-center gap-2">
               <span className="text-[11px] text-gray-400">Preview:</span>

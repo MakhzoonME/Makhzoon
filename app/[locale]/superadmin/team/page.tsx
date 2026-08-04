@@ -348,6 +348,7 @@ export default function SuperAdminTeamPage() {
       </div>
 
       <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-page">
@@ -474,6 +475,7 @@ export default function SuperAdminTeamPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       <Dialog open={showAdd} onOpenChange={(o) => !o && setShowAdd(false)}>

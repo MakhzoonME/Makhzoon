@@ -222,7 +222,7 @@ export default function OrganizationInfoPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="org-category">{t('settings.category')}</Label>
                 <Select
@@ -339,7 +339,7 @@ export default function OrganizationInfoPage() {
           </div>
 
           {/* Business names */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Business name (English)</Label>
               <Input
@@ -363,7 +363,7 @@ export default function OrganizationInfoPage() {
           </div>
 
           {/* Taglines */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Tagline (English)</Label>
               <Input placeholder="e.g. Quality you can trust" value={tagline} onChange={(e) => setTagline(e.target.value)} maxLength={80} />
@@ -375,7 +375,7 @@ export default function OrganizationInfoPage() {
           </div>
 
           {/* Phone + Tax number */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Phone</Label>
               <Input placeholder="+962 6 000 0000" value={phone} onChange={(e) => setPhone(e.target.value)} />
@@ -387,7 +387,7 @@ export default function OrganizationInfoPage() {
           </div>
 
           {/* Addresses */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Address (English)</Label>
               <Input placeholder="123 Main Street, Amman" value={address} onChange={(e) => setAddress(e.target.value)} />

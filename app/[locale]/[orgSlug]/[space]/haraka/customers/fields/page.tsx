@@ -173,6 +173,7 @@ export default function CustomerFieldsPage() {
       />
 
       <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-surface-page border-b border-border">
             <tr>
@@ -207,6 +208,7 @@ export default function CustomerFieldsPage() {
             </SortableContext>
           </DndContext>
         </table>
+        </div>
       </div>
 
       <ConfirmDialog

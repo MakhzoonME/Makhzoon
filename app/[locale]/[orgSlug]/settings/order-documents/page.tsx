@@ -121,7 +121,7 @@ export default function OrderDocumentsSettingsPage() {
         </Button>
       </div>
 
-      <div className="flex gap-8 items-start">
+      <div className="flex flex-col lg:flex-row gap-8 lg:items-start">
         {/* ── Left: configuration ── */}
         <div className="flex-1 min-w-0 space-y-5">
 
@@ -196,7 +196,7 @@ export default function OrderDocumentsSettingsPage() {
         </div>
 
         {/* ── Right: live preview (sticky) ── */}
-        <div className="w-80 flex-shrink-0 sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto space-y-3">
+        <div className="w-full lg:w-80 lg:flex-shrink-0 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto space-y-3">
           <p className="text-[11px] text-gray-400 text-center">Preview</p>
           <div
             className="rounded-xl overflow-hidden border border-border p-3"

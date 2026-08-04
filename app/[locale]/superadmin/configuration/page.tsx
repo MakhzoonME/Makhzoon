@@ -259,6 +259,7 @@ export default function ConfigurationPage() {
       ) : (
         <div className="space-y-6">
           <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-surface-page border-b border-border">
                 <tr>
@@ -283,11 +284,13 @@ export default function ConfigurationPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
 
           <div>
             <h3 className="text-sm font-semibold text-gray-900 mb-2">{t('config.inclusionsRef')}</h3>
             <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-surface-page border-b border-border">
                   <tr>
@@ -308,6 +311,7 @@ export default function ConfigurationPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         </div>

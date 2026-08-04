@@ -88,7 +88,7 @@ export default function RetainerDetailPage() {
           {/* Contract info */}
           <div className="rounded-xl border border-border bg-surface-page p-5 space-y-3 text-sm">
             <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">{t('retainers.sectionContract')}</div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <div className="text-xs text-gray-400">{t('retainers.labelBillingCycleVal')}</div>
                 <div className="font-medium capitalize">{retainer.billingCycle}</div>

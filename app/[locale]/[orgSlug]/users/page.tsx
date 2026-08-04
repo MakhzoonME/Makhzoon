@@ -311,6 +311,7 @@ export default function UsersPage() {
           )}
         </div>
 
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-page">
@@ -469,6 +470,7 @@ export default function UsersPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Reset password confirm dialog */}

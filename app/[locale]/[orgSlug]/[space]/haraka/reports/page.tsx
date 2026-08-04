@@ -251,24 +251,26 @@ function TopItemsWidget({ range }: WidgetProps) {
       filename="top-items.csv"
     >
       <EmptyOrLoading isLoading={isLoading} empty={buckets.length === 0}>
-        <table className="w-full text-sm">
-          <thead className="border-b border-border">
-            <tr className="text-start text-xs text-gray-500">
-              <th className="py-1.5 font-medium">{t('reports.item')}</th>
-              <th className="py-1.5 font-medium text-end">{t('reports.qty')}</th>
-              <th className="py-1.5 font-medium text-end">{t('reports.revenue')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {buckets.map((b) => (
-              <tr key={b.key} className="border-b border-border last:border-0">
-                <td className="py-1.5 truncate max-w-[200px]">{b.label}</td>
-                <td className="py-1.5 text-end font-mono">{b.quantity ?? 0}</td>
-                <td className="py-1.5 text-end font-mono">{fmt(b.total)}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-b border-border">
+              <tr className="text-start text-xs text-gray-500">
+                <th className="py-1.5 font-medium">{t('reports.item')}</th>
+                <th className="py-1.5 font-medium text-end">{t('reports.qty')}</th>
+                <th className="py-1.5 font-medium text-end">{t('reports.revenue')}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {buckets.map((b) => (
+                <tr key={b.key} className="border-b border-border last:border-0">
+                  <td className="py-1.5 truncate max-w-[200px]">{b.label}</td>
+                  <td className="py-1.5 text-end font-mono">{b.quantity ?? 0}</td>
+                  <td className="py-1.5 text-end font-mono">{fmt(b.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </EmptyOrLoading>
     </WidgetShell>
   );
@@ -306,24 +308,26 @@ function SalesByPaymentMethodWidget({ range }: WidgetProps) {
       filename="sales-by-payment-method.csv"
     >
       <EmptyOrLoading isLoading={isLoading} empty={buckets.length === 0}>
-        <table className="w-full text-sm">
-          <thead className="border-b border-border">
-            <tr className="text-start text-xs text-gray-500">
-              <th className="py-1.5 font-medium">{t('reports.method')}</th>
-              <th className="py-1.5 font-medium text-end">{t('reports.count')}</th>
-              <th className="py-1.5 font-medium text-end">{t('col.total')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {buckets.map((b) => (
-              <tr key={b.key} className="border-b border-border last:border-0">
-                <td className="py-1.5 capitalize">{b.label}</td>
-                <td className="py-1.5 text-end font-mono">{b.count}</td>
-                <td className="py-1.5 text-end font-mono">{fmt(b.total)}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-b border-border">
+              <tr className="text-start text-xs text-gray-500">
+                <th className="py-1.5 font-medium">{t('reports.method')}</th>
+                <th className="py-1.5 font-medium text-end">{t('reports.count')}</th>
+                <th className="py-1.5 font-medium text-end">{t('col.total')}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {buckets.map((b) => (
+                <tr key={b.key} className="border-b border-border last:border-0">
+                  <td className="py-1.5 capitalize">{b.label}</td>
+                  <td className="py-1.5 text-end font-mono">{b.count}</td>
+                  <td className="py-1.5 text-end font-mono">{fmt(b.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </EmptyOrLoading>
     </WidgetShell>
   );
@@ -359,30 +363,32 @@ function BucketTable({
 }) {
   const { t } = useT();
   return (
-    <table className="w-full text-sm">
-      <thead className="border-b border-border">
-        <tr className="text-start text-xs text-gray-500">
-          <th className="py-1.5 font-medium">{keyHeader}</th>
-          <th className="py-1.5 font-medium text-end">{t('reports.sales')}</th>
-          <th className="py-1.5 font-medium text-end">{t('reports.subtotal')}</th>
-          <th className="py-1.5 font-medium text-end">{t('reports.tax')}</th>
-          <th className="py-1.5 font-medium text-end">{t('col.total')}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {buckets.map((b) => (
-          <tr key={b.key} className="border-b border-border last:border-0">
-            <td className={`py-1.5 truncate max-w-[180px] ${mono ? 'font-mono text-xs' : ''}`}>
-              {b.label}
-            </td>
-            <td className="py-1.5 text-end font-mono">{b.count}</td>
-            <td className="py-1.5 text-end font-mono">{fmt(b.subtotal)}</td>
-            <td className="py-1.5 text-end font-mono">{fmt(b.taxAmount)}</td>
-            <td className="py-1.5 text-end font-mono">{fmt(b.total)}</td>
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead className="border-b border-border">
+          <tr className="text-start text-xs text-gray-500">
+            <th className="py-1.5 font-medium">{keyHeader}</th>
+            <th className="py-1.5 font-medium text-end">{t('reports.sales')}</th>
+            <th className="py-1.5 font-medium text-end">{t('reports.subtotal')}</th>
+            <th className="py-1.5 font-medium text-end">{t('reports.tax')}</th>
+            <th className="py-1.5 font-medium text-end">{t('col.total')}</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {buckets.map((b) => (
+            <tr key={b.key} className="border-b border-border last:border-0">
+              <td className={`py-1.5 truncate max-w-[180px] ${mono ? 'font-mono text-xs' : ''}`}>
+                {b.label}
+              </td>
+              <td className="py-1.5 text-end font-mono">{b.count}</td>
+              <td className="py-1.5 text-end font-mono">{fmt(b.subtotal)}</td>
+              <td className="py-1.5 text-end font-mono">{fmt(b.taxAmount)}</td>
+              <td className="py-1.5 text-end font-mono">{fmt(b.total)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

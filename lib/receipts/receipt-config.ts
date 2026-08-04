@@ -26,7 +26,9 @@ export const DEFAULT_RECEIPT_CONFIG: ReceiptConfig = {
   orgNameAr: '',
   language: 'en',
   copies: 1,
-  cutFeed: 2,
+  // Extra blank lines on top of the mandatory blade clearance. 0 = just enough
+  // paper for the cut to land below the footer; raise it for a longer tear-off.
+  cutFeed: 0,
 };
 
 /**

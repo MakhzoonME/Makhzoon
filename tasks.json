@@ -1,0 +1,16 @@
+{
+  "tasks": [
+    {
+      "id": "MZ-001",
+      "title": "ADR-001: Email Verification Strategy",
+      "description": "Document BUG-08 (email ownership never verified) as a product decision ADR. Created ADR-001 in docs/decisions/ recommending Supabase email confirmation flow (Option B) before GA. Awaiting stakeholder input on 5 open questions.",
+      "status": "done",
+      "assignee": "product-manager",
+      "requestedBy": "user",
+      "files": ["docs/decisions/ADR-001-email-verification.md"],
+      "branch": null,
+      "createdAt": "2026-07-26T21:32:00.000Z",
+      "completedAt": "2026-07-26T21:32:00.000Z"
+    }
+  ]
+}

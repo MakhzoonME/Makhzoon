@@ -91,7 +91,7 @@ export default function LoyaltyProgramPage() {
       {enabled && (
         <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
           <h3 className="text-sm font-semibold text-gray-700">Tiers</h3>
-          <p className="text-xs text-gray-400">Ordered by minimum points required. A customer's tier is recalculated after every award.</p>
+          <p className="text-xs text-gray-400">Ordered by minimum points required. A customer&apos;s tier is recalculated after every award.</p>
           <div className="space-y-2">
             {tiers.map((tier, i) => (
               <div key={i} className="flex items-center gap-2">

@@ -58,9 +58,8 @@ export async function POST(
     await applyPlanChangeNow(subscription.id, { packageId: newPkg.id, appliedBy: user.uid });
 
     let invoiceId: string | undefined;
-    let preview;
     const projectedSub = { ...subscription, packageId: newPkg.id };
-    preview = computeInvoice(projectedSub, newPkg, new Date());
+    const preview = computeInvoice(projectedSub, newPkg, new Date());
 
     if (parsed.data.generateInvoiceNow) {
       const periodStart = new Date();

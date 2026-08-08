@@ -1,11 +1,14 @@
 // GRACE and READ_ONLY are added for the billing lifecycle (Phase 2). ACTIVE/
 // EXPIRED/SUSPENDED remain valid — status is stored as free text.
+// CANCELLED is deliberate churn (superadmin cancel action), distinct from
+// EXPIRED which is passive non-payment.
 export type SubscriptionStatus =
   | 'ACTIVE'
   | 'GRACE'
   | 'READ_ONLY'
   | 'EXPIRED'
-  | 'SUSPENDED';
+  | 'SUSPENDED'
+  | 'CANCELLED';
 
 // The four selectable Haraka sub-modules ("Choose 1 / Choose 2").
 export type HarakaModule = 'pos' | 'services' | 'orders' | 'retainers';
@@ -25,6 +28,8 @@ export interface SubscriptionAddOns {
   warrantyCerts: boolean;
   customization: boolean;
   purchasesRequests: boolean;
+  vehicleIntake: boolean;
+  loyalty: boolean;
   // Haraka modules active beyond the plan's included slot count — each billed
   // at the standalone add-on price.
   extraHarakaModules: HarakaModule[];
@@ -37,6 +42,8 @@ export const EMPTY_ADD_ONS: SubscriptionAddOns = {
   warrantyCerts: false,
   customization: false,
   purchasesRequests: false,
+  vehicleIntake: false,
+  loyalty: false,
   extraHarakaModules: [],
   extraUsers: 0,
   extraSpaces: 0,
@@ -74,6 +81,12 @@ export interface Subscription {
   foundingCohort: FoundingCohort | null;
   billingAnchorDay: number | null;
   graceStartedAt: Date | null;
+  // Lifecycle fields (cancel + scheduled downgrade).
+  cancelledAt: Date | null;
+  cancelReason: string | null;
+  // Downgrade scheduled to apply at the next renewal (subscription-status cron).
+  pendingPackageId: string | null;
+  pendingChangeEffectiveAt: Date | null;
   createdAt: Date;
   createdBy: string;
   updatedAt: Date;

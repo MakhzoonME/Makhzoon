@@ -23,6 +23,8 @@ export type NotificationEventType =
   | 'fawtara.failed'
   | 'service_job.created'
   | 'service_job.status_changed'
+  | 'service_job.agents_assigned'
+  | 'service_job.rating_requested'
 
 export type NotificationModule =
   | 'orders' | 'pos' | 'inventory' | 'users' | 'warranty' | 'system' | 'service_jobs'
@@ -59,8 +61,10 @@ export const NOTIFICATION_CATALOG: NotificationCatalogEntry[] = [
   { key: 'subscription.expiring',  label: 'Subscription expiring',       module: 'system',    defaultRoles: ['org_owner'],          defaultInApp: true,  defaultEmail: true  },
   { key: 'fawtara.failed',         label: 'Fawtara submission failed',   module: 'system',    defaultRoles: ['admin', 'org_owner'], defaultInApp: true,  defaultEmail: true  },
   // ── Service Jobs ────────────────────────────────────────────────────────
-  { key: 'service_job.created',       label: 'New service job created',       module: 'service_jobs', defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: false },
-  { key: 'service_job.status_changed', label: 'Service job status updated',   module: 'service_jobs', defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: false },
+  { key: 'service_job.created',          label: 'New service job created',       module: 'service_jobs', defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: false },
+  { key: 'service_job.status_changed',   label: 'Service job status updated',    module: 'service_jobs', defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: false },
+  { key: 'service_job.agents_assigned',  label: 'Service job assigned to agents', module: 'service_jobs', defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: false },
+  { key: 'service_job.rating_requested', label: 'Rating requested from customer', module: 'service_jobs', defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: false },
 ]
 
 export const NOTIFICATION_EVENT_TYPES = NOTIFICATION_CATALOG.map((e) => e.key) as readonly NotificationEventType[]

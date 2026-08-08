@@ -8,6 +8,7 @@ import type { ColumnDef } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { ServiceJobStatusBadge } from '@/components/haraka/ServiceJobStatusBadge';
+import { RatingsSummaryWidget } from '@/components/haraka/RatingsSummaryWidget';
 import { useServiceJobs } from '@/hooks/haraka';
 import { useAdminGuard, useModuleGuard, useT } from '@/hooks/ui';
 import { formatCurrency } from '@/lib/utils/format';
@@ -72,9 +73,22 @@ export default function ServiceJobsListPage() {
       render: (j) => <ServiceJobStatusBadge status={j.status} />,
     },
     {
+      key: 'vehiclePlateNumber',
+      header: t('serviceJobs.labelPlateNumber'),
+      render: (j) => (
+        j.vehiclePlateNumber
+          ? <span className="font-mono text-xs font-semibold tracking-wide">{j.vehiclePlateNumber}</span>
+          : <span className="text-gray-300">—</span>
+      ),
+    },
+    {
       key: 'staffMemberName',
       header: t('col.assignedTo'),
-      render: (j) => <span className="text-sm text-gray-600">{j.staffMemberName ?? '—'}</span>,
+      render: (j) => (
+        j.assignedAgentNames && j.assignedAgentNames.length > 0
+          ? <span className="text-sm text-gray-600">{j.assignedAgentNames.join(', ')}</span>
+          : <span className="text-sm text-gray-600">{j.staffMemberName ?? '—'}</span>
+      ),
     },
     {
       key: 'total',
@@ -110,6 +124,8 @@ export default function ServiceJobsListPage() {
           </Button>
         }
       />
+
+      <RatingsSummaryWidget />
 
       <FilterBar
         filters={[

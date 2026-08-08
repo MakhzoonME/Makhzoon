@@ -6,6 +6,7 @@ export const subscriptionStatusEnum = z.enum([
   'READ_ONLY',
   'EXPIRED',
   'SUSPENDED',
+  'CANCELLED',
 ]);
 
 const harakaModuleEnum = z.enum(['pos', 'services', 'orders', 'retainers']);
@@ -30,6 +31,8 @@ const addOnsSchema = z
     warrantyCerts: z.boolean().optional(),
     customization: z.boolean().optional(),
     purchasesRequests: z.boolean().optional(),
+    vehicleIntake: z.boolean().optional(),
+    loyalty: z.boolean().optional(),
     extraHarakaModules: z.array(harakaModuleEnum).optional(),
     extraUsers: z.number().int().min(0).optional(),
     extraSpaces: z.number().int().min(0).optional(),

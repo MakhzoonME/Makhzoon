@@ -230,6 +230,33 @@ export interface HarakaDeliveryAgent {
   updatedBy: string | null;
 }
 
+// A delivery agent assigned to a service job, with their current open-job
+// load at the time of the query (used to render/verify balanced routing).
+export interface ServiceJobAgentAssignment {
+  agentId: string;
+  agentName: string;
+  role: 'primary' | 'helper';
+  assignedAt: Date;
+}
+
+// The asset being serviced (car-care vertical, behind the 'vehicleIntake'
+// feature flag). Kept separate from customer custom fields so it's directly
+// queryable by plate number and reusable for other asset types later.
+export interface HarakaServiceVehicle {
+  id: string;
+  organizationId: string;
+  customerId: string | null;
+  plateNumber: string;
+  make: string | null;
+  model: string | null;
+  color: string | null;
+  notes: string | null;
+  createdAt: Date;
+  createdBy: string | null;
+  updatedAt: Date;
+  updatedBy: string | null;
+}
+
 // ── Haraka Warranty Certificates ─────────────────────────────────────────
 
 export type WarrantyCertSourceType = 'order' | 'pos_transaction';
@@ -339,6 +366,11 @@ export interface HarakaServiceJob {
   customerPhone: string | null;
   staffMemberId: string | null;
   staffMemberName: string | null;
+  vehicleId: string | null;
+  /** Enriched by ServiceJobsRepository.list() only — plate of the linked vehicle, if any. */
+  vehiclePlateNumber?: string | null;
+  /** Enriched by ServiceJobsRepository.list() only — names of assigned delivery agents. */
+  assignedAgentNames?: string[];
   items: ServiceLine[];
   subtotal: number;
   discountAmount: number;

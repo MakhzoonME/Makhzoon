@@ -20,11 +20,18 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { UsageBar } from '@/components/features/subscription';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { PaymentLogForm, type PaymentLogFormPayload } from '@/components/super-admin/PaymentLogForm';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePackages } from '@/hooks/superadmin';
 import {
   usePaymentLogs,
   useCreatePaymentLog,
   useDeletePaymentLog,
+  useCreateSubscription,
+  useRenewSubscription,
+  useCancelSubscription,
+  useChangeSubscriptionPlan,
+  useRefundInvoice,
 } from '@/hooks/superadmin';
 import { useOrgUsage } from '@/hooks/org';
 import { toast } from '@/hooks/ui';
@@ -73,10 +80,11 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
   const { t, locale } = useT();
   const qc = useQueryClient();
 
-  const { data: sub, isLoading: subLoading } = useQuery<Subscription>({
+  const { data: sub, isLoading: subLoading } = useQuery<Subscription | null>({
     queryKey: ['subscription', orgId],
     queryFn: async () => {
       const res = await fetch(`/api/organizations/${orgId}/subscription`);
+      if (res.status === 404) return null;
       if (!res.ok) throw new Error('Failed to load subscription');
       return res.json();
     },
@@ -87,6 +95,29 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
   const { data: payments = [] } = usePaymentLogs(orgId);
   const createPayment = useCreatePaymentLog(orgId);
   const deletePayment = useDeletePaymentLog(orgId);
+  const createSubscription = useCreateSubscription(orgId);
+  const renewSubscription = useRenewSubscription(orgId);
+  const cancelSubscription = useCancelSubscription(orgId);
+  const changePlan = useChangeSubscriptionPlan(orgId);
+  const refundInvoice = useRefundInvoice(orgId);
+
+  const [createPackageId, setCreatePackageId] = useState('');
+  const [creatingSub, setCreatingSub] = useState(false);
+
+  const [renewOpen, setRenewOpen] = useState(false);
+  const [renewEndDate, setRenewEndDate] = useState('');
+  const [renewInvoiceNow, setRenewInvoiceNow] = useState(false);
+
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+
+  const [changePlanOpen, setChangePlanOpen] = useState(false);
+  const [changePlanPackageId, setChangePlanPackageId] = useState('');
+  const [changePlanInvoiceNow, setChangePlanInvoiceNow] = useState(false);
+
+  const [refundInvoiceTarget, setRefundInvoiceTarget] = useState<Invoice | null>(null);
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundReason, setRefundReason] = useState('');
 
   const { data: invoices = [] } = useQuery<Invoice[]>({
     queryKey: ['invoices', orgId],
@@ -174,6 +205,95 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
       toast.error(err instanceof Error ? err.message : t('subscription.featuresUpdateFailed'));
     } finally {
       setSavingMeta(false);
+    }
+  }
+
+  async function handleCreateSubscription() {
+    if (!createPackageId) return;
+    setCreatingSub(true);
+    try {
+      await createSubscription.mutateAsync({ packageId: createPackageId });
+      toast.success(t('common.created'));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.saveFailed'));
+    } finally {
+      setCreatingSub(false);
+    }
+  }
+
+  async function handleRenew() {
+    try {
+      const res = await renewSubscription.mutateAsync({
+        endDate: renewEndDate ? new Date(renewEndDate).toISOString() : undefined,
+        generateInvoiceNow: renewInvoiceNow,
+      });
+      toast.success(res.invoiceId ? t('subscription.renewedWithInvoice') : t('subscription.renewed'));
+      setRenewOpen(false);
+      setRenewEndDate('');
+      setRenewInvoiceNow(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.saveFailed'));
+    }
+  }
+
+  async function handleCancel() {
+    if (!cancelReason.trim()) { toast.error(t('subscription.cancelReasonRequired')); return; }
+    try {
+      await cancelSubscription.mutateAsync({ reason: cancelReason.trim() });
+      toast.success(t('subscription.cancelled'));
+      setCancelOpen(false);
+      setCancelReason('');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.saveFailed'));
+    }
+  }
+
+  const changePlanTargetPackage = useMemo(
+    () => packages.find((p) => p.id === changePlanPackageId) ?? null,
+    [packages, changePlanPackageId],
+  );
+  const changePlanMode: 'upgrade' | 'downgrade' = useMemo(() => {
+    const currentPrice = selectedPackage?.pricing.monthlyPrice ?? 0;
+    const targetPrice = changePlanTargetPackage?.pricing.monthlyPrice ?? 0;
+    return targetPrice < currentPrice ? 'downgrade' : 'upgrade';
+  }, [selectedPackage, changePlanTargetPackage]);
+
+  async function handleChangePlan() {
+    if (!changePlanPackageId) return;
+    try {
+      const res = await changePlan.mutateAsync({
+        packageId: changePlanPackageId,
+        mode: changePlanMode,
+        generateInvoiceNow: changePlanMode === 'upgrade' ? changePlanInvoiceNow : undefined,
+      });
+      toast.success(
+        changePlanMode === 'downgrade'
+          ? `${t('subscription.downgradeScheduled')} ${res.effectiveAt ? formatDate(new Date(res.effectiveAt)) : ''}`
+          : t('subscription.upgraded'),
+      );
+      setChangePlanOpen(false);
+      setChangePlanPackageId('');
+      setChangePlanInvoiceNow(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.saveFailed'));
+    }
+  }
+
+  async function handleRefund() {
+    if (!refundInvoiceTarget) return;
+    if (!refundReason.trim()) { toast.error(t('subscription.refundReasonRequired')); return; }
+    try {
+      await refundInvoice.mutateAsync({
+        invoiceId: refundInvoiceTarget.id,
+        amount: refundAmount.trim() ? Number(refundAmount) : undefined,
+        reason: refundReason.trim(),
+      });
+      toast.success(t('subscription.refunded'));
+      setRefundInvoiceTarget(null);
+      setRefundAmount('');
+      setRefundReason('');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.saveFailed'));
     }
   }
 
@@ -410,17 +530,34 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
     {
       key: 'status',
       header: t('subscription.status'),
-      render: (i) => <span className="text-xs font-medium">{i.status.replace(/_/g, ' ')}</span>,
+      render: (i) => <StatusBadge status={i.status} />,
     },
     {
       key: 'actions',
       header: '',
-      render: (i) =>
-        i.status === 'PAID' ? (
-          <span className="text-xs text-green-600">{i.paymentMethod?.replace('_', ' ')}</span>
-        ) : (
-          <Button size="sm" variant="outline" onClick={() => openPay(i)}>Mark paid</Button>
-        ),
+      render: (i) => {
+        if (i.status === 'PAID') {
+          return (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-green-600">{i.paymentMethod?.replace('_', ' ')}</span>
+              <Button size="sm" variant="ghost" onClick={() => setRefundInvoiceTarget(i)}>
+                {t('subscription.refund')}
+              </Button>
+            </div>
+          );
+        }
+        if (i.status === 'REFUNDED') {
+          return (
+            <span className="text-xs text-gray-500">
+              {i.refundAmount?.toFixed(2)} {i.currency} — {i.refundReason}
+            </span>
+          );
+        }
+        if (i.status === 'VOID') {
+          return <span className="text-xs text-gray-400">{t('subscription.voided')}</span>;
+        }
+        return <Button size="sm" variant="outline" onClick={() => openPay(i)}>Mark paid</Button>;
+      },
     },
   ];
 
@@ -439,7 +576,172 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
 
       {subLoading && <p className="text-sm text-gray-500">{t('common.loading')}</p>}
 
+      {!subLoading && !sub && (
+        <Card>
+          <CardContent className="p-5 space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900">{t('subscription.noSubscription')}</h3>
+            <p className="text-sm text-gray-500">{t('subscription.noSubscriptionHint')}</p>
+            <div className="flex items-end gap-3">
+              <div className="space-y-1.5 flex-1 max-w-xs">
+                <Label>{t('nav.packages')}</Label>
+                <Select value={createPackageId} onValueChange={setCreatePackageId}>
+                  <SelectTrigger><SelectValue placeholder={t('common.selectPlaceholder')} /></SelectTrigger>
+                  <SelectContent>
+                    {packages.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleCreateSubscription} disabled={!createPackageId || creatingSub}>
+                {creatingSub ? t('common.creating') : t('subscription.createSubscription')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {sub && (
+        <>
+          <Card className="mb-4">
+            <CardContent className="p-5 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <StatusBadge status={sub.status} />
+                  <span className="text-sm text-gray-500">
+                    {sub.status === 'CANCELLED'
+                      ? `${t('subscription.cancelledOn')} ${sub.cancelledAt ? formatDate(new Date(sub.cancelledAt)) : ''}`
+                      : `${t('col.end')}: ${formatDate(new Date(sub.endDate))} (${subDays < 0 ? `${Math.abs(subDays)}d ago` : `${subDays}d`})`}
+                  </span>
+                </div>
+                {sub.status !== 'CANCELLED' && (
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" onClick={() => { setRenewEndDate(''); setRenewOpen(true); }}>
+                      {t('subscription.renew')}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => { setChangePlanPackageId(''); setChangePlanOpen(true); }}>
+                      {t('subscription.changePlan')}
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" onClick={() => setCancelOpen(true)}>
+                      {t('subscription.cancel')}
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {sub.pendingPackageId && sub.pendingChangeEffectiveAt && (
+                <div className="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
+                  {t('subscription.downgradePending')}{' '}
+                  {packages.find((p) => p.id === sub.pendingPackageId)?.name ?? sub.pendingPackageId}
+                  {' '}{t('subscription.effectiveOn')} {formatDate(new Date(sub.pendingChangeEffectiveAt))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Dialog open={renewOpen} onOpenChange={setRenewOpen}>
+            <DialogContent>
+              <DialogHeader><DialogTitle>{t('subscription.renew')}</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>{t('subscription.newEndDate')}</Label>
+                  <DatePicker value={renewEndDate} onChange={(v) => setRenewEndDate(v ?? '')} />
+                  <p className="text-xs text-gray-400">{t('subscription.renewDefaultHint')}</p>
+                </div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={renewInvoiceNow} onChange={(e) => setRenewInvoiceNow(e.target.checked)} />
+                  {t('subscription.generateInvoiceNow')}
+                </label>
+                <Button onClick={handleRenew} disabled={renewSubscription.isPending} className="w-full">
+                  {renewSubscription.isPending ? t('common.saving') : t('subscription.renew')}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={changePlanOpen} onOpenChange={setChangePlanOpen}>
+            <DialogContent>
+              <DialogHeader><DialogTitle>{t('subscription.changePlan')}</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>{t('subscription.newPackage')}</Label>
+                  <Select value={changePlanPackageId} onValueChange={setChangePlanPackageId}>
+                    <SelectTrigger><SelectValue placeholder={t('common.selectPlaceholder')} /></SelectTrigger>
+                    <SelectContent>
+                      {packages.filter((p) => p.id !== sub.packageId).map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {changePlanPackageId && (
+                  <div className="rounded-lg bg-gray-50 border border-border px-3 py-2 text-xs text-gray-600">
+                    {changePlanMode === 'upgrade'
+                      ? t('subscription.upgradeImmediateHint')
+                      : `${t('subscription.downgradeScheduledHint')} ${sub.endDate ? formatDate(new Date(sub.endDate)) : ''}`}
+                  </div>
+                )}
+                {changePlanPackageId && changePlanMode === 'upgrade' && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={changePlanInvoiceNow} onChange={(e) => setChangePlanInvoiceNow(e.target.checked)} />
+                    {t('subscription.generateInvoiceNow')}
+                  </label>
+                )}
+                <Button onClick={handleChangePlan} disabled={!changePlanPackageId || changePlan.isPending} className="w-full">
+                  {changePlan.isPending ? t('common.saving') : t('subscription.confirmChangePlan')}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+            <DialogContent>
+              <DialogHeader><DialogTitle>{t('subscription.cancel')}</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>{t('subscription.cancelReason')}</Label>
+                  <Textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3} />
+                </div>
+                <Button
+                  onClick={handleCancel}
+                  disabled={!cancelReason.trim() || cancelSubscription.isPending}
+                  variant="destructive"
+                  className="w-full"
+                >
+                  {cancelSubscription.isPending ? t('common.saving') : t('subscription.confirmCancel')}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={!!refundInvoiceTarget} onOpenChange={(v) => { if (!v) setRefundInvoiceTarget(null); }}>
+            <DialogContent>
+              <DialogHeader><DialogTitle>{t('subscription.refund')}</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>{t('subscription.refundAmount')}</Label>
+                  <Input
+                    type="number"
+                    value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)}
+                    placeholder={refundInvoiceTarget ? `Full amount: ${refundInvoiceTarget.total.toFixed(2)}` : ''}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t('subscription.refundReason')}</Label>
+                  <Textarea value={refundReason} onChange={(e) => setRefundReason(e.target.value)} rows={3} />
+                </div>
+                <Button
+                  onClick={handleRefund}
+                  disabled={!refundReason.trim() || refundInvoice.isPending}
+                  variant="destructive"
+                  className="w-full"
+                >
+                  {refundInvoice.isPending ? t('common.saving') : t('subscription.confirmRefund')}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
         <div className="grid lg:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-5 space-y-4">
@@ -722,6 +1024,7 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
             </CardContent>
           </Card>
         </div>
+        </>
       )}
 
       {/* Mark invoice paid */}

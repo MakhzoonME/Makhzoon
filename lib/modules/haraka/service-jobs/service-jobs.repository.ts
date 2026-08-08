@@ -1,4 +1,5 @@
 import 'server-only'
+import { randomBytes } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import type {
@@ -7,6 +8,7 @@ import type {
   ServiceLine,
   OrderPaymentStatus,
   OrderDeliveryAddress,
+  ServiceJobAgentAssignment,
 } from '@/types'
 import { priceCart, type CartLineInput } from '@/lib/modules/haraka/pricing/calc'
 import { allocateServiceInvoiceNumber } from './invoice-numbering'
@@ -40,6 +42,7 @@ function toJob(r: Row): HarakaServiceJob {
     customerPhone:   (r.customer_phone as string) ?? null,
     staffMemberId:   (r.staff_member_id as string) ?? null,
     staffMemberName: (r.staff_member_name as string) ?? null,
+    vehicleId:       (r.vehicle_id as string) ?? null,
     items:           Array.isArray(r.items) ? (r.items as Row[]).map(toServiceLine) : [],
     subtotal:        Number(r.subtotal ?? 0),
     discountAmount:  Number(r.discount_amount ?? 0),
@@ -84,6 +87,7 @@ export interface CreateServiceJobInput {
   customerId?:      string | null
   staffMemberId?:   string | null
   staffMemberName?: string | null
+  vehicleId?:       string | null
   lines: CartLineInput[]
   paymentMethod?:   string | null
   scheduledAt?:     string | null
@@ -133,7 +137,44 @@ export class ServiceJobsRepository {
     const totalPages = Math.max(1, Math.ceil(total / pageSize))
     const safePage  = Math.min(page, totalPages)
     const start     = (safePage - 1) * pageSize
-    return { items: items.slice(start, start + pageSize), total, page: safePage, pageSize, totalPages }
+    const pageItems = items.slice(start, start + pageSize)
+
+    await this.enrichWithVehiclesAndAgents(pageItems)
+
+    return { items: pageItems, total, page: safePage, pageSize, totalPages }
+  }
+
+  /** Bulk-fetches vehicle plate + assigned agent names for a page of jobs, mutating them in place. */
+  private async enrichWithVehiclesAndAgents(jobs: HarakaServiceJob[]): Promise<void> {
+    if (jobs.length === 0) return
+    const jobIds = jobs.map((j) => j.id)
+    const vehicleIds = [...new Set(jobs.map((j) => j.vehicleId).filter((v): v is string => !!v))]
+
+    const [vehiclesRes, agentsRes] = await Promise.all([
+      vehicleIds.length > 0
+        ? supabaseAdmin.from('haraka_service_vehicles').select('id, plate_number').in('id', vehicleIds)
+        : Promise.resolve({ data: [] as Row[] }),
+      supabaseAdmin
+        .from('haraka_service_job_agents')
+        .select('job_id, haraka_delivery_agents!inner(name)')
+        .in('job_id', jobIds),
+    ])
+
+    const plateById = new Map<string, string>()
+    for (const v of (vehiclesRes.data ?? []) as Row[]) {
+      plateById.set(v.id as string, v.plate_number as string)
+    }
+    const agentNamesByJob = new Map<string, string[]>()
+    for (const r of (agentsRes.data ?? []) as unknown as { job_id: string; haraka_delivery_agents: { name: string } }[]) {
+      const list = agentNamesByJob.get(r.job_id) ?? []
+      list.push(r.haraka_delivery_agents.name)
+      agentNamesByJob.set(r.job_id, list)
+    }
+
+    for (const job of jobs) {
+      job.vehiclePlateNumber = job.vehicleId ? plateById.get(job.vehicleId) ?? null : null
+      job.assignedAgentNames = agentNamesByJob.get(job.id) ?? []
+    }
   }
 
   async getById(tenant: TenantContext, id: string): Promise<HarakaServiceJob | null> {
@@ -174,6 +215,7 @@ export class ServiceJobsRepository {
         customer_phone:   input.customerPhone ?? null,
         staff_member_id:  input.staffMemberId ?? null,
         staff_member_name: input.staffMemberName ?? null,
+        vehicle_id:       input.vehicleId ?? null,
         items,
         subtotal:         priced.totals.subtotal,
         discount_amount:  priced.totals.discountTotal,
@@ -491,5 +533,83 @@ export class ServiceJobsRepository {
       })
       .eq('id', jobId)
       .eq('organization_id', tenant.organizationId)
+  }
+
+  /** Generate (or reuse a still-valid) public rating-link token — 14 day TTL, same as orders' customer_token. */
+  async ensureRatingToken(tenant: TenantContext, jobId: string): Promise<string> {
+    const { data } = await supabaseAdmin
+      .from('haraka_service_jobs')
+      .select('rating_token, rating_token_expires_at')
+      .eq('id', jobId)
+      .eq('organization_id', tenant.organizationId)
+      .maybeSingle()
+    const existing = data as { rating_token: string | null; rating_token_expires_at: string | null } | null
+    const stillValid = existing?.rating_token
+      && existing.rating_token_expires_at
+      && new Date(existing.rating_token_expires_at).getTime() > Date.now()
+    if (stillValid) return existing!.rating_token!
+
+    const token = randomBytes(24).toString('hex')
+    const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+    const { error } = await supabaseAdmin
+      .from('haraka_service_jobs')
+      .update({ rating_token: token, rating_token_expires_at: expiresAt })
+      .eq('id', jobId)
+      .eq('organization_id', tenant.organizationId)
+    if (error) throw error
+    return token
+  }
+
+  async listAgentAssignments(
+    tenant: TenantContext,
+    jobId: string,
+  ): Promise<ServiceJobAgentAssignment[]> {
+    const { data, error } = await supabaseAdmin
+      .from('haraka_service_job_agents')
+      .select('delivery_agent_id, role, assigned_at, haraka_delivery_agents!inner(name, organization_id)')
+      .eq('job_id', jobId)
+      .eq('haraka_delivery_agents.organization_id', tenant.organizationId)
+    if (error) throw error
+    return (data ?? []).map((r) => {
+      const row = r as unknown as {
+        delivery_agent_id: string
+        role: 'primary' | 'helper'
+        assigned_at: string
+        haraka_delivery_agents: { name: string }
+      }
+      return {
+        agentId:    row.delivery_agent_id,
+        agentName:  row.haraka_delivery_agents.name,
+        role:       row.role,
+        assignedAt: new Date(row.assigned_at),
+      }
+    })
+  }
+
+  /** Replace a job's agent assignments (used by both auto and manual assignment). */
+  async setAgentAssignments(
+    tenant: TenantContext,
+    jobId: string,
+    agentIds: string[],
+    assignedBy: string,
+  ): Promise<void> {
+    const { error: deleteError } = await supabaseAdmin
+      .from('haraka_service_job_agents')
+      .delete()
+      .eq('job_id', jobId)
+    if (deleteError) throw deleteError
+
+    if (agentIds.length === 0) return
+
+    const rows = agentIds.map((agentId, i) => ({
+      job_id:            jobId,
+      delivery_agent_id: agentId,
+      role:              i === 0 ? 'primary' : 'helper',
+      assigned_by:       assignedBy,
+    }))
+    const { error: insertError } = await supabaseAdmin
+      .from('haraka_service_job_agents')
+      .insert(rows)
+    if (insertError) throw insertError
   }
 }

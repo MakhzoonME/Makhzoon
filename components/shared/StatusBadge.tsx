@@ -68,6 +68,15 @@ const statusConfig: Record<string, { variant: BadgeVariant; label: string }> = {
   SUSPENDED:   { variant: 'orange', label: 'Suspended' },
   Suspended:   { variant: 'orange', label: 'Suspended' },
   deactivated: { variant: 'red',    label: 'Deactivated' },
+  GRACE:       { variant: 'yellow', label: 'Grace Period' },
+  READ_ONLY:   { variant: 'orange', label: 'Read-Only' },
+  CANCELLED:   { variant: 'default', label: 'Cancelled' },
+  /* Invoice statuses */
+  PAID:                 { variant: 'green',   label: 'Paid' },
+  OVERDUE:               { variant: 'red',     label: 'Overdue' },
+  READ_ONLY_TRIGGERED:   { variant: 'orange',  label: 'Read-Only Triggered' },
+  REFUNDED:              { variant: 'blue',    label: 'Refunded' },
+  VOID:                  { variant: 'default', label: 'Void' },
   /* Purchase statuses */
   draft:     { variant: 'pending',  label: 'Draft' },
   received:  { variant: 'approved', label: 'Received' },

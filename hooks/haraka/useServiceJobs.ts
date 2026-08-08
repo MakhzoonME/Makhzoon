@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useParams } from 'next/navigation'
-import type { HarakaServiceJob, ServiceJobStatus } from '@/types'
+import type { HarakaServiceJob, ServiceJobStatus, ServiceJobAgentAssignment } from '@/types'
 import type {
   CreateServiceJobPayload,
   UpdateServiceJobPayload,
@@ -228,6 +228,44 @@ export function useRemoveServiceJobPayment() {
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['haraka', 'service-job-payments', vars.jobId] })
       qc.invalidateQueries({ queryKey: LIST_KEY })
+    },
+  })
+}
+
+export function useServiceJobAgents(jobId: string | undefined) {
+  return useQuery<{ agents: ServiceJobAgentAssignment[] }>({
+    queryKey: ['haraka', 'service-job-agents', jobId],
+    enabled:  !!jobId,
+    queryFn:  async () => {
+      const res = await fetch(`/api/haraka/service-jobs/${jobId}/agents`)
+      if (!res.ok) throw new Error('Failed to fetch assigned agents')
+      return res.json()
+    },
+    staleTime: 10_000,
+  })
+}
+
+export function useAssignServiceJobAgents() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (vars: { jobId: string } & (
+      | { mode: 'auto'; count: number }
+      | { mode: 'manual'; agentIds: string[] }
+    )) => {
+      const { jobId, ...body } = vars
+      const res = await fetch(`/api/haraka/service-jobs/${jobId}/agents`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(typeof err.error === 'string' ? err.error : 'Failed to assign agents')
+      }
+      return res.json() as Promise<{ agents: ServiceJobAgentAssignment[] }>
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['haraka', 'service-job-agents', vars.jobId] })
     },
   })
 }

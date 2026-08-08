@@ -4,8 +4,6 @@ import { requireFeature } from '@/lib/permissions/require-feature'
 import { requireHarakaModule } from '@/lib/permissions/require-module'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 
-type Row = Record<string, unknown>
-
 export async function GET() {
   try {
     const tenant = await resolveTenant()

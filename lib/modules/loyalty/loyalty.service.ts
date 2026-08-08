@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import { auditLog } from '@/lib/platform/audit'
 import { LoyaltyRepository } from './loyalty.repository'

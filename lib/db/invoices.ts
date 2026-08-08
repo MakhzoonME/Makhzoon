@@ -22,6 +22,10 @@ function toInvoice(r: Row): Invoice {
     paymentMethod: (r.payment_method as InvoicePaymentMethod) ?? null,
     paidAt: r.paid_at ? new Date(r.paid_at as string) : null,
     markedPaidBy: (r.marked_paid_by as string) ?? null,
+    refundedAt: r.refunded_at ? new Date(r.refunded_at as string) : null,
+    refundedBy: (r.refunded_by as string) ?? null,
+    refundAmount: r.refund_amount != null ? Number(r.refund_amount) : null,
+    refundReason: (r.refund_reason as string) ?? null,
     createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
   };
 }
@@ -112,12 +116,13 @@ export async function listPendingInvoicesPastGrace(now: Date): Promise<Invoice[]
   return (data ?? []).map(toInvoice);
 }
 
-/** All non-PAID invoices (newest first) — for the superadmin billing view. */
+/** Still-owed invoices (newest first) — for the superadmin billing view. Excludes
+ *  PAID as well as the terminal REFUNDED/VOID statuses, neither of which is "open." */
 export async function getOpenInvoices(): Promise<Invoice[]> {
   const { data, error } = await supabaseAdmin
     .from('invoices')
     .select('*')
-    .neq('status', 'PAID')
+    .in('status', ['PENDING', 'OVERDUE', 'READ_ONLY_TRIGGERED'])
     .order('due_date', { ascending: true });
   if (error) throw error;
   return (data ?? []).map(toInvoice);
@@ -128,5 +133,52 @@ export async function markInvoiceReadOnlyTriggered(id: string): Promise<void> {
     .from('invoices')
     .update({ status: 'READ_ONLY_TRIGGERED' })
     .eq('id', id);
+  if (error) throw error;
+}
+
+/** Refunds a PAID invoice — full amount by default, or a partial amount. */
+export async function refundInvoice(
+  id: string,
+  opts: { amount?: number; reason: string; refundedBy: string },
+): Promise<Invoice> {
+  const existing = await getInvoiceById(id);
+  if (!existing) throw new Error('Invoice not found');
+  if (existing.status !== 'PAID') throw new Error('Only a PAID invoice can be refunded');
+
+  const refundAmount = opts.amount ?? existing.total;
+  const { data, error } = await supabaseAdmin
+    .from('invoices')
+    .update({
+      status: 'REFUNDED',
+      refunded_at: new Date().toISOString(),
+      refunded_by: opts.refundedBy,
+      refund_amount: refundAmount,
+      refund_reason: opts.reason,
+    })
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return toInvoice(data);
+}
+
+/** Kills a PENDING invoice without payment — used when its subscription is cancelled,
+ *  so grace-enforcement never acts on a dead account's leftover invoice. */
+export async function voidInvoice(id: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('invoices')
+    .update({ status: 'VOID' })
+    .eq('id', id)
+    .eq('status', 'PENDING');
+  if (error) throw error;
+}
+
+/** Voids every still-PENDING invoice for a subscription (cancel flow). */
+export async function voidPendingInvoices(subscriptionId: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('invoices')
+    .update({ status: 'VOID' })
+    .eq('subscription_id', subscriptionId)
+    .eq('status', 'PENDING');
   if (error) throw error;
 }

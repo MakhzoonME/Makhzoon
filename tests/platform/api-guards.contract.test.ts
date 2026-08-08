@@ -22,6 +22,8 @@ const PUBLIC_ROUTES = [
   'invites/', 'haraka/card-payment-result', 'organizations/check-subdomain',
   'auth/send-password-reset', 'public/assets', 'push-subscriptions/vapid-key',
   'track/', // public read-only order tracking — token-gated, rate-limited
+  'rate/', // public service-job rating kiosk — token-gated, rate-limited
+  'whatsapp/webhook', // Meta Cloud API inbound webhook — HMAC-signature verified, not session auth
 ];
 
 const MUTATING = ['POST', 'PUT', 'PATCH'];

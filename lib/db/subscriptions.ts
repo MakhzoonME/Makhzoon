@@ -1,5 +1,6 @@
 import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { voidPendingInvoices } from '@/lib/db/invoices';
 import {
   Subscription,
   EMPTY_ADD_ONS,
@@ -48,6 +49,12 @@ function toSubscription(r: Row): Subscription {
     foundingCohort: toFoundingCohort(r.founding_cohort),
     billingAnchorDay: (r.billing_anchor_day as number) ?? null,
     graceStartedAt: r.grace_started_at ? new Date(r.grace_started_at as string) : null,
+    cancelledAt: r.cancelled_at ? new Date(r.cancelled_at as string) : null,
+    cancelReason: (r.cancel_reason as string) ?? null,
+    pendingPackageId: (r.pending_package_id as string) ?? null,
+    pendingChangeEffectiveAt: r.pending_change_effective_at
+      ? new Date(r.pending_change_effective_at as string)
+      : null,
     createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
     createdBy: r.created_by as string,
     updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
@@ -80,6 +87,10 @@ type CreateSubscriptionInput = Omit<
   | 'foundingCohort'
   | 'billingAnchorDay'
   | 'graceStartedAt'
+  | 'cancelledAt'
+  | 'cancelReason'
+  | 'pendingPackageId'
+  | 'pendingChangeEffectiveAt'
 > &
   Partial<
     Pick<
@@ -90,6 +101,10 @@ type CreateSubscriptionInput = Omit<
       | 'foundingCohort'
       | 'billingAnchorDay'
       | 'graceStartedAt'
+      | 'cancelledAt'
+      | 'cancelReason'
+      | 'pendingPackageId'
+      | 'pendingChangeEffectiveAt'
     >
   >;
 
@@ -154,6 +169,14 @@ export async function updateSubscription(
     patch.grace_started_at = data.graceStartedAt
       ? new Date(data.graceStartedAt).toISOString()
       : null;
+  if (data.cancelledAt !== undefined)
+    patch.cancelled_at = data.cancelledAt ? new Date(data.cancelledAt).toISOString() : null;
+  if (data.cancelReason !== undefined) patch.cancel_reason = data.cancelReason;
+  if (data.pendingPackageId !== undefined) patch.pending_package_id = data.pendingPackageId;
+  if (data.pendingChangeEffectiveAt !== undefined)
+    patch.pending_change_effective_at = data.pendingChangeEffectiveAt
+      ? new Date(data.pendingChangeEffectiveAt).toISOString()
+      : null;
   if (data.updatedBy !== undefined) patch.updated_by = data.updatedBy;
   const { error } = await supabaseAdmin
     .from('subscriptions')
@@ -173,4 +196,56 @@ export async function getSubscriptionsByOrgs(
     .in('organization_id', unique);
   if (error) throw error;
   return (data ?? []).map(toSubscription);
+}
+
+/** Deliberate cancellation — distinct from the passive ACTIVE→EXPIRED cron flip. */
+export async function cancelSubscription(
+  id: string,
+  opts: { reason: string; cancelledBy: string },
+): Promise<void> {
+  await updateSubscription(id, {
+    status: 'CANCELLED',
+    cancelledAt: new Date(),
+    cancelReason: opts.reason,
+    updatedBy: opts.cancelledBy,
+  });
+  await voidPendingInvoices(id);
+}
+
+/** Extends endDate and reactivates a lapsed subscription (EXPIRED/GRACE/READ_ONLY → ACTIVE). */
+export async function renewSubscription(
+  id: string,
+  opts: { newEndDate: Date; currentStatus: Subscription['status']; renewedBy: string },
+): Promise<void> {
+  const needsReactivation = opts.currentStatus !== 'ACTIVE' && opts.currentStatus !== 'CANCELLED';
+  await updateSubscription(id, {
+    endDate: opts.newEndDate,
+    ...(needsReactivation ? { status: 'ACTIVE' as const } : {}),
+    updatedBy: opts.renewedBy,
+  });
+}
+
+/** Queues a downgrade to apply automatically at the given renewal date (cron-applied). */
+export async function schedulePlanChange(
+  id: string,
+  opts: { pendingPackageId: string; effectiveAt: Date; scheduledBy: string },
+): Promise<void> {
+  await updateSubscription(id, {
+    pendingPackageId: opts.pendingPackageId,
+    pendingChangeEffectiveAt: opts.effectiveAt,
+    updatedBy: opts.scheduledBy,
+  });
+}
+
+/** Applies a plan change immediately (upgrades, and the cron applying a due scheduled downgrade). */
+export async function applyPlanChangeNow(
+  id: string,
+  opts: { packageId: string; appliedBy: string },
+): Promise<void> {
+  await updateSubscription(id, {
+    packageId: opts.packageId,
+    pendingPackageId: null,
+    pendingChangeEffectiveAt: null,
+    updatedBy: opts.appliedBy,
+  });
 }

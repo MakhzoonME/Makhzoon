@@ -138,6 +138,8 @@ export interface AddOnPrices {
   reports?: number;      // not sold until Reports ships
   extraUser?: number;
   extraSpace?: number;
+  vehicleIntake?: number; // plate-photo intake for Haraka Service Jobs
+  loyalty?: number;       // points/tiers/barcode loyalty module
 }
 
 // Structured, per-module allowances for the new pricing model. Distinct from
@@ -153,6 +155,8 @@ export interface PackageAllowances {
   spacesIncluded: number | null;
   usersIncluded: number | null;
   reportsAvailable: boolean;
+  vehicleIntakeIncluded: boolean;
+  loyaltyIncluded: boolean;
 }
 
 export interface Package {

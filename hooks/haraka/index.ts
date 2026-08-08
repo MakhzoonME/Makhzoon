@@ -43,6 +43,10 @@ export {
   useUpdateChargeStatus,
 } from './useCardTerminal';
 export {
+  useServiceNotificationConfig,
+  useUpdateServiceNotificationConfig,
+} from './useServiceNotificationConfig';
+export {
   useWarrantyCerts,
   useWarrantyCert,
   useWarrantyCertByOrder,
@@ -62,9 +66,14 @@ export {
   useServiceJobPayments,
   useAddServiceJobPayment,
   useRemoveServiceJobPayment,
+  useServiceJobAgents,
+  useAssignServiceJobAgents,
   useDeleteServiceJob,
 } from './useServiceJobs';
 export type { UseServiceJobsParams, ServiceJobPaymentEntry } from './useServiceJobs';
+export { useOcrPlate, useFindOrCreateVehicle } from './useServiceVehicles';
+export { useServiceJobRatingsSummary } from './useServiceJobRatings';
+export type { RatingsSummary } from './useServiceJobRatings';
 export {
   useRetainers,
   useRetainer,

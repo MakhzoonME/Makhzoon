@@ -3,15 +3,22 @@ import type { TenantContext } from '@/lib/platform/tenancy/types'
 import { hasPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
 import { notificationQueue } from '@/lib/notifications/notification-queue'
-import type { ServiceJobStatus } from '@/types'
+import type { ServiceJobStatus, ServiceJobAgentAssignment } from '@/types'
 import { isValidTransition } from './schemas'
 import {
   ServiceJobsRepository,
   type CreateServiceJobInput,
   type ListServiceJobsOpts,
 } from './service-jobs.repository'
+import { DeliveryAgentsRepository } from '@/lib/modules/haraka/delivery-agents/delivery-agents.repository'
+import { selectBalancedAgents } from '@/lib/modules/haraka/delivery-agents/balanced-routing'
+import { customerMessaging } from '@/lib/notifications/customer-messaging'
+import { LoyaltyService } from '@/lib/modules/loyalty/loyalty.service'
+
+const loyaltyService = new LoyaltyService()
 
 const repo = new ServiceJobsRepository()
+const agentsRepo = new DeliveryAgentsRepository()
 
 function requireView(tenant: TenantContext) {
   if (!hasPermission(tenant, 'haraka', 'servicesView')) {
@@ -62,6 +69,13 @@ export class ServiceJobsService {
       data:          { jobNumber: job.jobNumber, serviceType: job.serviceType, customerName: job.customerName },
       link:          `/haraka/service-jobs/${job.id}`,
       titleOverride: `New service job ${job.jobNumber} created`,
+    })
+    customerMessaging.enqueue({
+      tenant,
+      jobId:         job.id,
+      customerPhone: job.customerPhone,
+      template:      'order_received',
+      variables:     { customerName: job.customerName, jobNumber: job.jobNumber },
     })
     return job
   }
@@ -119,6 +133,44 @@ export class ServiceJobsService {
       link:          `/haraka/service-jobs/${id}`,
       titleOverride: `Service job ${job.jobNumber} is now ${newStatus.replace('_', ' ')}`,
     })
+
+    if (newStatus === 'done') {
+      customerMessaging.enqueue({
+        tenant,
+        jobId:         id,
+        customerPhone: job.customerPhone,
+        template:      'job_finished',
+        variables:     { customerName: job.customerName, jobNumber: job.jobNumber },
+      })
+      const ratingToken = await repo.ensureRatingToken(tenant, id)
+      notificationQueue.enqueue({
+        tenant,
+        eventType:     'service_job.rating_requested',
+        data:          { jobNumber: job.jobNumber },
+        link:          `/haraka/service-jobs/${id}/rate`,
+        titleOverride: `Rating requested for service job ${job.jobNumber}`,
+      })
+      customerMessaging.enqueue({
+        tenant,
+        jobId:         id,
+        customerPhone: job.customerPhone,
+        template:      'rating_requested',
+        variables:     {
+          customerName: job.customerName,
+          jobNumber:    job.jobNumber,
+          ratingLink:   `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/rate/${ratingToken}`,
+        },
+      })
+    } else {
+      customerMessaging.enqueue({
+        tenant,
+        jobId:         id,
+        customerPhone: job.customerPhone,
+        template:      'status_update',
+        variables:     { customerName: job.customerName, jobNumber: job.jobNumber, status: newStatus.replace('_', ' ') },
+      })
+    }
+
     return updated
   }
 
@@ -138,6 +190,10 @@ export class ServiceJobsService {
       recordId: id,
       newValue: { amountPaid, paymentMethod, paymentStatus: job.paymentStatus },
     })
+    if (job.paymentStatus === 'paid') {
+      loyaltyService.awardPoints(tenant, job.customerId, job.total, 'haraka_service_jobs', id)
+        .catch((err) => console.error('[ServiceJobsService] loyalty award failed', err))
+    }
     return job
   }
 
@@ -180,6 +236,11 @@ export class ServiceJobsService {
       recordId: jobId,
       newValue: { amount, paymentMethod },
     })
+    const job = await repo.getById(tenant, jobId)
+    if (job?.paymentStatus === 'paid') {
+      loyaltyService.awardPoints(tenant, job.customerId, job.total, 'haraka_service_jobs', jobId)
+        .catch((err) => console.error('[ServiceJobsService] loyalty award failed', err))
+    }
   }
 
   async removePayment(tenant: TenantContext, jobId: string, paymentId: string) {
@@ -198,6 +259,52 @@ export class ServiceJobsService {
   async listPayments(tenant: TenantContext, jobId: string) {
     requireView(tenant)
     return repo.listPayments(tenant, jobId)
+  }
+
+  async listAgents(tenant: TenantContext, jobId: string): Promise<ServiceJobAgentAssignment[]> {
+    requireView(tenant)
+    return repo.listAgentAssignments(tenant, jobId)
+  }
+
+  /**
+   * Assign delivery agents to a job. 'auto' picks the `count` active agents
+   * with the lowest current open-job load (balanced routing); 'manual'
+   * assigns exactly the given agentIds (receptionist override, e.g. the
+   * customer asked for someone specific).
+   */
+  async assignAgents(
+    tenant: TenantContext,
+    jobId: string,
+    opts: { mode: 'auto'; count: number } | { mode: 'manual'; agentIds: string[] },
+  ) {
+    requireCheckout(tenant)
+    const job = await this.getById(tenant, jobId)
+
+    let agentIds: string[]
+    if (opts.mode === 'manual') {
+      agentIds = opts.agentIds
+    } else {
+      const activeAgents = await agentsRepo.list(tenant, true)
+      const counts = await agentsRepo.openJobCounts(tenant, activeAgents.map((a) => a.id))
+      agentIds = selectBalancedAgents(activeAgents, counts, opts.count).map((a) => a.id)
+    }
+
+    await repo.setAgentAssignments(tenant, jobId, agentIds, tenant.userId)
+    auditLog.queue({
+      tenant,
+      module:   'pos',
+      action:   'SERVICE_JOB_AGENTS_ASSIGNED',
+      recordId: jobId,
+      newValue: { mode: opts.mode, agentIds },
+    })
+    notificationQueue.enqueue({
+      tenant,
+      eventType:     'service_job.agents_assigned',
+      data:          { jobNumber: job.jobNumber, agentCount: agentIds.length },
+      link:          `/haraka/service-jobs/${jobId}`,
+      titleOverride: `Service job ${job.jobNumber} assigned to ${agentIds.length} agent(s)`,
+    })
+    return repo.listAgentAssignments(tenant, jobId)
   }
 
   async delete(tenant: TenantContext, id: string) {

@@ -97,4 +97,27 @@ export class DeliveryAgentsRepository {
       .eq('organization_id', tenant.organizationId)
     if (error) throw error
   }
+
+  /**
+   * Count each agent's currently-open service jobs (status not done/cancelled).
+   * Feeds balanced-routing selection — agents not present in the result have
+   * zero open jobs.
+   */
+  async openJobCounts(tenant: TenantContext, agentIds: string[]): Promise<Record<string, number>> {
+    const counts: Record<string, number> = {}
+    if (agentIds.length === 0) return counts
+
+    const { data, error } = await supabaseAdmin
+      .from('haraka_service_job_agents')
+      .select('delivery_agent_id, haraka_service_jobs!inner(status, organization_id)')
+      .in('delivery_agent_id', agentIds)
+      .eq('haraka_service_jobs.organization_id', tenant.organizationId)
+      .in('haraka_service_jobs.status', ['new', 'confirmed', 'in_progress'])
+
+    if (error) throw error
+    for (const row of (data ?? []) as unknown as { delivery_agent_id: string }[]) {
+      counts[row.delivery_agent_id] = (counts[row.delivery_agent_id] ?? 0) + 1
+    }
+    return counts
+  }
 }

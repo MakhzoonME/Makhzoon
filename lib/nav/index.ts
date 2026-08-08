@@ -132,6 +132,7 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
         moduleColor: '#1565C0', moduleName: 'بنّا' },
     ],
   },
+  { href: '/loyalty', label: 'Loyalty', labelKey: 'nav.loyalty', adminOnly: true, featureKey: 'loyalty' },
   { href: '/reports',      label: 'Reports',      labelKey: 'nav.reports',      adminOnly: true, featureKey: 'reports', permissionKey: 'reports.view' },
   { type: 'separator' } as NavSeparator,
   { href: '/support',      label: 'Support',      labelKey: 'nav.support',      featureKey: 'support', permissionKey: 'support.view' },
@@ -157,6 +158,7 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/settings/notifications',   label: 'Notifications',       labelKey: 'nav.notificationSettings', permissionKey: 'settingsNotifications.view', scope: 'org' },
       { href: '/settings/cash-drawer',   label: 'Cash Drawer',   labelKey: 'nav.cashDrawer',     permissionKey: 'settingsCashDrawer.view',    featureKey: 'pos', scope: 'org' },
       { href: '/settings/card-terminal', label: 'Card Terminal', labelKey: 'nav.cardTerminal',   permissionKey: 'settingsCardTerminal.view',  featureKey: 'pos', scope: 'org' },
+      { href: '/settings/service-notifications', label: 'Customer Notifications', labelKey: 'nav.serviceNotifications', permissionKey: 'settingsServiceNotifications.view', featureKey: 'pos', scope: 'org' },
     ],
   },
 ];

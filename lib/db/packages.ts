@@ -178,11 +178,10 @@ export async function updatePackage(
       | 'limits'
       | 'features'
       | 'inclusions'
-      | 'allowances'
       | 'addOnPrices'
       | 'isCustom'
     >
-  >,
+  > & { allowances?: Partial<PackageAllowances> },
 ): Promise<void> {
   const patch: Row = { updated_by: userId };
   if (updates.name !== undefined) patch.name = updates.name;

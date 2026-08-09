@@ -89,6 +89,22 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
     ),
   );
 
+  // Add-ons — only vehicleIntake/loyalty are editable here today; the other
+  // allowances/addOnPrices keys (deliveryAgents, warrantyCerts, ...) have no
+  // form fields yet either.
+  const [vehicleIntakeIncluded, setVehicleIntakeIncluded] = useState(
+    initial?.allowances?.vehicleIntakeIncluded ?? false,
+  );
+  const [loyaltyIncluded, setLoyaltyIncluded] = useState(
+    initial?.allowances?.loyaltyIncluded ?? false,
+  );
+  const [vehicleIntakePrice, setVehicleIntakePrice] = useState<string>(
+    initial?.addOnPrices?.vehicleIntake != null ? String(initial.addOnPrices.vehicleIntake) : '',
+  );
+  const [loyaltyPrice, setLoyaltyPrice] = useState<string>(
+    initial?.addOnPrices?.loyalty != null ? String(initial.addOnPrices.loyalty) : '',
+  );
+
   function onChangeLimit(key: (typeof LIMIT_KEYS)[number], value: number) {
     setLimits((prev) => ({ ...prev, [key]: value }));
   }
@@ -118,6 +134,14 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
       limits: finalLimits,
       features,
       inclusions,
+      allowances: {
+        vehicleIntakeIncluded,
+        loyaltyIncluded,
+      },
+      addOnPrices: {
+        vehicleIntake: vehicleIntakePrice === '' ? undefined : Number(vehicleIntakePrice),
+        loyalty: loyaltyPrice === '' ? undefined : Number(loyaltyPrice),
+      },
     });
   }
 
@@ -270,6 +294,54 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
             </label>
           ))}
         </div>
+      </fieldset>
+
+      <fieldset className="space-y-3 border border-border rounded-lg p-4">
+        <legend className="px-2 text-sm font-medium text-gray-700">Add-ons</legend>
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="pkg-vehicle-intake"
+            checked={vehicleIntakeIncluded}
+            onChange={(e) => setVehicleIntakeIncluded(e.target.checked)}
+          />
+          <Label htmlFor="pkg-vehicle-intake" className="font-normal text-sm flex-1">
+            Vehicle intake included in plan
+          </Label>
+          <Input
+            type="number"
+            min={0}
+            step="0.01"
+            placeholder="Price if purchased separately"
+            value={vehicleIntakePrice}
+            onChange={(e) => setVehicleIntakePrice(e.target.value)}
+            className="max-w-[220px]"
+          />
+        </div>
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="pkg-loyalty"
+            checked={loyaltyIncluded}
+            onChange={(e) => setLoyaltyIncluded(e.target.checked)}
+          />
+          <Label htmlFor="pkg-loyalty" className="font-normal text-sm flex-1">
+            Loyalty program included in plan
+          </Label>
+          <Input
+            type="number"
+            min={0}
+            step="0.01"
+            placeholder="Price if purchased separately"
+            value={loyaltyPrice}
+            onChange={(e) => setLoyaltyPrice(e.target.value)}
+            className="max-w-[220px]"
+          />
+        </div>
+        <p className="text-xs text-gray-500">
+          Either mark an add-on as included in this plan, or leave it unchecked and set a
+          standalone price — orgs on this plan can then purchase it separately.
+        </p>
       </fieldset>
 
       <div className="flex items-center gap-3">

@@ -34,6 +34,24 @@ export const packagePricingSchema = z.object({
   isCustom: z.boolean(),
 });
 
+// Partial on purpose — only the add-ons actually editable from PackageForm
+// today (vehicleIntake, loyalty). The other PackageAllowances/AddOnPrices
+// keys (deliveryAgents, warrantyCerts, customization, ...) aren't in this
+// form yet either; add them here alongside their form fields when they are.
+export const packageAllowancesSchema = z
+  .object({
+    vehicleIntakeIncluded: z.boolean().optional(),
+    loyaltyIncluded: z.boolean().optional(),
+  })
+  .optional();
+
+export const packageAddOnPricesSchema = z
+  .object({
+    vehicleIntake: z.number().min(0).optional(),
+    loyalty: z.number().min(0).optional(),
+  })
+  .optional();
+
 export const packageSchema = z.object({
   name: z.string().min(2).max(100),
   description: z.string().min(0).max(500),
@@ -44,6 +62,8 @@ export const packageSchema = z.object({
   limits: packageLimitsSchema,
   features: packageFeaturesSchema,
   inclusions: packageInclusionsSchema,
+  allowances: packageAllowancesSchema,
+  addOnPrices: packageAddOnPricesSchema,
 });
 
 export const packageUpdateSchema = packageSchema.partial();

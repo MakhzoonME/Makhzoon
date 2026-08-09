@@ -38,6 +38,16 @@ import { toast } from '@/hooks/ui';
 import { formatDate } from '@/lib/utils/date';
 import { Input } from '@/components/ui/input';
 import {
+  PLATFORM_FEATURES,
+  USOOL_BASE_FEATURE,
+  USOOL_SUB_FEATURES,
+  RASEED_BASE_FEATURE,
+  HARAKA_BASE_FEATURE,
+  BANNA_FEATURE,
+  LOYALTY_FEATURE,
+  MODULE_COLORS,
+} from '@/lib/config/package-feature-groups';
+import {
   FEATURE_KEYS,
   FEATURE_LABELS,
   HARAKA_MODULES,
@@ -857,26 +867,77 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
           </Card>
 
           <Card className="lg:col-span-3">
-            <CardContent className="p-5 space-y-3">
-              <h3 className="text-sm font-semibold text-gray-900">{t('subscription.featureOverrides')}</h3>
-              <p className="text-xs text-gray-500">
-                {t('subscription.featureOverridesHint')}
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                {FEATURE_KEYS.map((k) => (
-                  <label
-                    key={k}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={features[k]}
-                      onChange={(e) => handleFeatureToggle(k, e.target.checked)}
-                    />
-                    <span className="text-sm text-gray-700">{FEATURE_LABELS[k]}</span>
-                  </label>
-                ))}
+            <CardContent className="p-5 space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">{t('subscription.featureOverrides')}</h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {t('subscription.featureOverridesHint')}
+                </p>
               </div>
+
+              {/* Grouped the same way lib/nav/index.ts groups the sidebar —
+                  see lib/config/package-feature-groups.ts. */}
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Platform</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                  {PLATFORM_FEATURES.map((k) => (
+                    <label key={k} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
+                      <input type="checkbox" checked={features[k]} onChange={(e) => handleFeatureToggle(k, e.target.checked)} />
+                      <span className="text-sm text-gray-700">{FEATURE_LABELS[k]}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-s-4 ps-3" style={{ borderInlineStartColor: MODULE_COLORS.usool }}>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Usool — Assets</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                  <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer font-medium">
+                    <input type="checkbox" checked={features[USOOL_BASE_FEATURE]} onChange={(e) => handleFeatureToggle(USOOL_BASE_FEATURE, e.target.checked)} />
+                    <span className="text-sm text-gray-800">{FEATURE_LABELS[USOOL_BASE_FEATURE]}</span>
+                  </label>
+                  {USOOL_SUB_FEATURES.map((k) => (
+                    <label key={k} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
+                      <input type="checkbox" checked={features[k]} disabled={!features[USOOL_BASE_FEATURE]} onChange={(e) => handleFeatureToggle(k, e.target.checked)} />
+                      <span className="text-sm text-gray-700">{FEATURE_LABELS[k]}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-s-4 ps-3" style={{ borderInlineStartColor: MODULE_COLORS.raseed }}>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Raseed — Inventory</p>
+                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
+                  <input type="checkbox" checked={features[RASEED_BASE_FEATURE]} onChange={(e) => handleFeatureToggle(RASEED_BASE_FEATURE, e.target.checked)} />
+                  <span className="text-sm text-gray-700">{FEATURE_LABELS[RASEED_BASE_FEATURE]}</span>
+                </label>
+              </div>
+
+              <div className="border-s-4 ps-3" style={{ borderInlineStartColor: MODULE_COLORS.haraka }}>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Haraka — Point of Sale</p>
+                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
+                  <input type="checkbox" checked={features[HARAKA_BASE_FEATURE]} onChange={(e) => handleFeatureToggle(HARAKA_BASE_FEATURE, e.target.checked)} />
+                  <span className="text-sm text-gray-700">{FEATURE_LABELS[HARAKA_BASE_FEATURE]}</span>
+                </label>
+                <p className="text-xs text-gray-400 mt-1">Which of the four Haraka sub-modules are active is set below, under &quot;Haraka modules&quot;.</p>
+              </div>
+
+              <div className="border-s-4 ps-3" style={{ borderInlineStartColor: MODULE_COLORS.banna }}>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Banna — Custom Fields</p>
+                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
+                  <input type="checkbox" checked={features[BANNA_FEATURE]} onChange={(e) => handleFeatureToggle(BANNA_FEATURE, e.target.checked)} />
+                  <span className="text-sm text-gray-700">{FEATURE_LABELS[BANNA_FEATURE]}</span>
+                </label>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Loyalty</p>
+                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
+                  <input type="checkbox" checked={features[LOYALTY_FEATURE]} onChange={(e) => handleFeatureToggle(LOYALTY_FEATURE, e.target.checked)} />
+                  <span className="text-sm text-gray-700">{FEATURE_LABELS[LOYALTY_FEATURE]}</span>
+                </label>
+              </div>
+
               {planSaveBar}
             </CardContent>
           </Card>
@@ -922,8 +983,10 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                     ['warrantyCerts', 'Warranty certificates'],
                     ['customization', 'Customization'],
                     ['purchasesRequests', 'Purchases & Requests'],
+                    ['vehicleIntake', 'Vehicle intake (plate capture)'],
+                    ['loyalty', 'Loyalty program'],
                   ] as [
-                    'deliveryAgents' | 'warrantyCerts' | 'customization' | 'purchasesRequests',
+                    'deliveryAgents' | 'warrantyCerts' | 'customization' | 'purchasesRequests' | 'vehicleIntake' | 'loyalty',
                     string,
                   ][]
                 ).map(([key, label]) => (

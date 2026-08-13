@@ -176,6 +176,10 @@ export interface BannaPermissions {
   delete: boolean;
 }
 
+export interface LoyaltyPermissions {
+  view: boolean;
+}
+
 // ── Settings — one module per page ──────────────────────────────────────
 export interface SettingsOrgInfoPermissions {
   view: boolean;
@@ -252,6 +256,7 @@ export interface UserPermissions {
   auditLogs: AuditLogsPermissions;
   leads: LeadsPermissions;
   banna: BannaPermissions;
+  loyalty: LoyaltyPermissions;
   settingsOrgInfo: SettingsOrgInfoPermissions;
   settingsSpaces: SettingsSpacesPermissions;
   settingsLists: SettingsListsPermissions;
@@ -313,6 +318,7 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   auditLogs: { view: true, viewSpace: true, viewAllSpaces: true },
   leads: { view: true },
   banna: { view: true, create: true, update: true, delete: true },
+  loyalty: { view: true },
   settingsOrgInfo: { view: true, editName: true, editBranding: true },
   settingsSpaces: { view: true, create: true, update: true, grantAccess: true, archive: true, restore: true },
   settingsLists: { view: true, create: true, update: true, delete: true },
@@ -338,6 +344,7 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   auditLogs: { view: false, viewSpace: false, viewAllSpaces: false },
   leads: { view: true },
   banna: { view: true, create: false, update: false, delete: false },
+  loyalty: { view: false },
   settingsOrgInfo: { view: false, editName: false, editBranding: false },
   settingsSpaces: { view: false, create: false, update: false, grantAccess: false, archive: false, restore: false },
   settingsLists: { view: false, create: false, update: false, delete: false },
@@ -574,6 +581,13 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'create', label: 'Create', labelKey: 'permOp.banna.create', requiresView: true },
       { key: 'update', label: 'Update', labelKey: 'permOp.banna.update', requiresView: true },
       { key: 'delete', label: 'Delete', labelKey: 'permOp.banna.delete', requiresView: true },
+    ],
+  },
+  {
+    key: 'loyalty', label: 'Loyalty', labelKey: 'permModule.loyalty',
+    featureKey: 'loyalty', group: 'platform',
+    operations: [
+      { key: 'view', label: 'View', labelKey: 'permOp.loyalty.view' },
     ],
   },
   {

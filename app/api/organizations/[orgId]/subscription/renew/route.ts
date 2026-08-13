@@ -10,7 +10,10 @@ import { queueAuditLog } from '@/lib/audit/logger';
 const renewSchema = z.object({
   endDate: z.union([z.string().datetime(), z.string().date(), z.date()]).optional(),
   generateInvoiceNow: z.boolean().optional(),
-});
+}).refine(
+  (data) => !data.endDate || new Date(data.endDate).getTime() > Date.now(),
+  { message: 'End date must be after today', path: ['endDate'] },
+);
 
 export async function POST(
   req: NextRequest,

@@ -132,7 +132,7 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
         moduleColor: '#1565C0', moduleName: 'بنّا' },
     ],
   },
-  { href: '/loyalty', label: 'Loyalty', labelKey: 'nav.loyalty', adminOnly: true, featureKey: 'loyalty' },
+  { href: '/loyalty', label: 'Loyalty', labelKey: 'nav.loyalty', featureKey: 'loyalty', permissionKey: 'loyalty.view' },
   { href: '/reports',      label: 'Reports',      labelKey: 'nav.reports',      adminOnly: true, featureKey: 'reports', permissionKey: 'reports.view' },
   { type: 'separator' } as NavSeparator,
   { href: '/support',      label: 'Support',      labelKey: 'nav.support',      featureKey: 'support', permissionKey: 'support.view' },

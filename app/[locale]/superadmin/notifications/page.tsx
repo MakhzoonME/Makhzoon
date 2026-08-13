@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useNotificationConfig, useUpdateNotificationConfig } from '@/hooks/superadmin';
 import { toast } from '@/hooks/ui';
-import { getReceiptBaseUrl } from '@/lib/app-env';
 
 export default function SuperadminNotificationsPage() {
   const { data, isLoading } = useNotificationConfig();
@@ -20,6 +19,7 @@ export default function SuperadminNotificationsPage() {
   const [token,            setToken]            = useState('');
   const [webhookSecret,    setWebhookSecret]    = useState('');
   const [copied,           setCopied]           = useState(false);
+  const [webhookUrl,       setWebhookUrl]       = useState('');
 
   const config = data?.config;
 
@@ -30,7 +30,11 @@ export default function SuperadminNotificationsPage() {
     }
   }, [config]);
 
-  const webhookUrl = `${getReceiptBaseUrl()}/api/whatsapp/webhook`;
+  // /api/whatsapp/webhook lives in this same app, not the rcpt-* receipt app
+  // — the URL to give Meta is always this app's own origin.
+  useEffect(() => {
+    setWebhookUrl(`${window.location.origin}/api/whatsapp/webhook`);
+  }, []);
 
   async function handleSave() {
     try {

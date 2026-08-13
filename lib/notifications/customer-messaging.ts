@@ -1,6 +1,6 @@
 import 'server-only'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
-import { ServiceNotificationConfigRepository } from '@/lib/modules/haraka/service-notifications/notification-config.repository'
+import { PlatformNotificationConfigRepository } from '@/lib/platform/notification-config.repository'
 import { sendWhatsAppTemplate } from './channels/whatsapp'
 
 /**
@@ -20,7 +20,7 @@ export type CustomerMessageTemplate =
   | 'job_finished'
   | 'rating_requested'
 
-const configRepo = new ServiceNotificationConfigRepository()
+const configRepo = new PlatformNotificationConfigRepository()
 
 interface SendInput {
   tenant: TenantContext
@@ -32,7 +32,7 @@ interface SendInput {
 
 async function deliver(input: SendInput): Promise<void> {
   if (!input.customerPhone) return
-  const cfg = await configRepo.getWithSecrets(input.tenant.organizationId)
+  const cfg = await configRepo.getWithSecrets()
   if (!cfg?.whatsappEnabled || !cfg.whatsappPhoneNumberId || !cfg.whatsappToken) return
 
   const result = await sendWhatsAppTemplate({

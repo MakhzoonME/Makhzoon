@@ -43,10 +43,6 @@ export {
   useUpdateChargeStatus,
 } from './useCardTerminal';
 export {
-  useServiceNotificationConfig,
-  useUpdateServiceNotificationConfig,
-} from './useServiceNotificationConfig';
-export {
   useWarrantyCerts,
   useWarrantyCert,
   useWarrantyCertByOrder,

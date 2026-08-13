@@ -61,7 +61,7 @@ export default function NewServiceJobPage() {
   const vehicleMut = useFindOrCreateVehicle();
   const { data: matchedCustomerData } = useCustomer(matchedCustomerId ?? undefined);
 
-  // Delivery agents (only rendered if the org has active agents)
+  // Workers (only rendered if the org has active agents)
   const { data: agentsData } = useDeliveryAgents(true);
   const activeAgents = agentsData?.items ?? [];
   const [agentMode,      setAgentMode]      = useState<'auto' | 'manual'>('auto');

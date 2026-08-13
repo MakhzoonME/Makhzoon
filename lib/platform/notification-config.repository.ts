@@ -1,17 +1,20 @@
 import 'server-only'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { encrypt, decrypt } from '@/lib/platform/crypto/secret-cipher'
-import type { TenantContext } from '@/lib/platform/tenancy/types'
 
-export interface ServiceNotificationConfig {
-  organizationId: string
+/**
+ * WhatsApp/OCR credentials are Makhzoon's own accounts (one shared WhatsApp
+ * Business number, one shared FastPlateOCR account) used across every
+ * organization — not something each org configures. Single global row,
+ * editable only by superadmins (app/api/superadmin/notification-config).
+ */
+
+export interface PlatformNotificationConfig {
   whatsappEnabled: boolean
   whatsappPhoneNumberId: string | null
-  /** whatsapp_token_enc is never returned to the client — only this flag. */
   whatsappTokenSet: boolean
   whatsappWebhookSecretSet: boolean
   ocrProvider: string
-  /** ocr_api_key_enc is never returned to the client — only this flag. */
   ocrApiKeySet: boolean
 }
 
@@ -23,9 +26,8 @@ interface ResolvedSecrets {
 
 type Row = Record<string, unknown>
 
-function toConfig(r: Row): ServiceNotificationConfig {
+function toConfig(r: Row): PlatformNotificationConfig {
   return {
-    organizationId:            r.organization_id as string,
     whatsappEnabled:           (r.whatsapp_enabled as boolean) ?? false,
     whatsappPhoneNumberId:     (r.whatsapp_phone_number_id as string) ?? null,
     whatsappTokenSet:          !!r.whatsapp_token_enc,
@@ -35,25 +37,23 @@ function toConfig(r: Row): ServiceNotificationConfig {
   }
 }
 
-export class ServiceNotificationConfigRepository {
+export class PlatformNotificationConfigRepository {
   /** Public shape only — never includes decrypted secrets, only *Set flags. */
-  async get(tenant: TenantContext): Promise<ServiceNotificationConfig | null> {
+  async get(): Promise<PlatformNotificationConfig | null> {
     const { data } = await supabaseAdmin
-      .from('haraka_service_notification_config')
+      .from('platform_notification_config')
       .select('*')
-      .eq('organization_id', tenant.organizationId)
+      .eq('id', true)
       .maybeSingle()
     return data ? toConfig(data as Row) : null
   }
 
   /** Server-only: fetches and decrypts secrets. Never expose the return value to a client response. */
-  async getWithSecrets(
-    organizationId: string,
-  ): Promise<(ServiceNotificationConfig & ResolvedSecrets) | null> {
+  async getWithSecrets(): Promise<(PlatformNotificationConfig & ResolvedSecrets) | null> {
     const { data } = await supabaseAdmin
-      .from('haraka_service_notification_config')
+      .from('platform_notification_config')
       .select('*')
-      .eq('organization_id', organizationId)
+      .eq('id', true)
       .maybeSingle()
     if (!data) return null
     const r = data as Row
@@ -66,7 +66,7 @@ export class ServiceNotificationConfigRepository {
   }
 
   async upsert(
-    tenant: TenantContext,
+    updatedBy: string,
     patch: Partial<{
       whatsappEnabled: boolean
       whatsappPhoneNumberId: string | null
@@ -75,8 +75,8 @@ export class ServiceNotificationConfigRepository {
       ocrProvider: string
       ocrApiKey: string | null
     }>,
-  ): Promise<ServiceNotificationConfig> {
-    const row: Row = { organization_id: tenant.organizationId, updated_by: tenant.userId }
+  ): Promise<PlatformNotificationConfig> {
+    const row: Row = { id: true, updated_by: updatedBy }
     if (patch.whatsappEnabled        !== undefined) row.whatsapp_enabled = patch.whatsappEnabled
     if (patch.whatsappPhoneNumberId  !== undefined) row.whatsapp_phone_number_id = patch.whatsappPhoneNumberId
     if (patch.whatsappToken          !== undefined) row.whatsapp_token_enc = patch.whatsappToken ? encrypt(patch.whatsappToken) : null
@@ -85,8 +85,8 @@ export class ServiceNotificationConfigRepository {
     if (patch.ocrApiKey              !== undefined) row.ocr_api_key_enc = patch.ocrApiKey ? encrypt(patch.ocrApiKey) : null
 
     const { data, error } = await supabaseAdmin
-      .from('haraka_service_notification_config')
-      .upsert(row, { onConflict: 'organization_id' })
+      .from('platform_notification_config')
+      .upsert(row, { onConflict: 'id' })
       .select('*')
       .single()
     if (error) throw error

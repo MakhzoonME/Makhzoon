@@ -27,7 +27,6 @@ const SETTINGS_ORDER: Array<{ permKey: string; path: string }> = [
   { permKey: 'settingsNotifications.view',path: '/settings/notifications' },
   { permKey: 'settingsCashDrawer.view',   path: '/settings/cash-drawer' },
   { permKey: 'settingsCardTerminal.view', path: '/settings/card-terminal' },
-  { permKey: 'settingsServiceNotifications.view', path: '/settings/service-notifications' },
 ];
 
 export default function SettingsIndexPage() {

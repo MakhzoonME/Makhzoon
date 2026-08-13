@@ -11,15 +11,5 @@ export const createServiceVehicleSchema = z.object({
 
 export const updateServiceVehicleSchema = createServiceVehicleSchema.partial()
 
-export const ocrPlateRequestSchema = z.object({
-  // Data URI or already-hosted image URL — the OCR proxy accepts either and
-  // forwards to the configured provider (FastPlateOCR by default).
-  imageDataUri: z.string().startsWith('data:image/').optional(),
-  imageUrl:     z.string().url().optional(),
-}).refine((v) => !!v.imageDataUri || !!v.imageUrl, {
-  message: 'Either imageDataUri or imageUrl is required',
-})
-
 export type CreateServiceVehiclePayload = z.infer<typeof createServiceVehicleSchema>
 export type UpdateServiceVehiclePayload = z.infer<typeof updateServiceVehicleSchema>
-export type OcrPlateRequestPayload = z.infer<typeof ocrPlateRequestSchema>

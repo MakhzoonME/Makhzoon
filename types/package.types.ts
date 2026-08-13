@@ -34,6 +34,7 @@ export const FEATURE_KEYS: FeatureKey[] = [
   'pos',
   'banna',
   'loyalty',
+  'vehicleIntake',
 ];
 
 export const FEATURE_LABELS: Record<FeatureKey, string> = {

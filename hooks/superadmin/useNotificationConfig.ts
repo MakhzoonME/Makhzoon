@@ -9,8 +9,6 @@ export interface NotificationConfigPatch {
   whatsappPhoneNumberId?: string | null;
   whatsappToken?: string;
   whatsappWebhookSecret?: string;
-  ocrProvider?: string;
-  ocrApiKey?: string;
 }
 
 export function useNotificationConfig() {

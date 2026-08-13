@@ -19,7 +19,6 @@ export default function SuperadminNotificationsPage() {
   const [phoneNumberId,    setPhoneNumberId]    = useState('');
   const [token,            setToken]            = useState('');
   const [webhookSecret,    setWebhookSecret]    = useState('');
-  const [ocrApiKey,        setOcrApiKey]        = useState('');
   const [copied,           setCopied]           = useState(false);
 
   const config = data?.config;
@@ -40,11 +39,9 @@ export default function SuperadminNotificationsPage() {
         whatsappPhoneNumberId: phoneNumberId || null,
         whatsappToken:         token || undefined,
         whatsappWebhookSecret: webhookSecret || undefined,
-        ocrApiKey:             ocrApiKey || undefined,
       });
       setToken('');
       setWebhookSecret('');
-      setOcrApiKey('');
       toast.success('Notification settings saved');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save');
@@ -66,7 +63,7 @@ export default function SuperadminNotificationsPage() {
     <div>
       <PageHeader
         title="Notifications"
-        description="Makhzoon's own WhatsApp Business number and plate-recognition account — shared across every organization, not configured per-org."
+        description="Makhzoon's own WhatsApp Business number — shared across every organization, not configured per-org. Plate recognition runs entirely in the browser, no account needed."
         breadcrumb={[{ label: 'Notifications' }]}
       />
 
@@ -120,19 +117,6 @@ export default function SuperadminNotificationsPage() {
               </div>
             </>
           )}
-        </div>
-
-        <div className="rounded-xl border border-border bg-surface-card p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-gray-700">Plate recognition (FastPlateOCR)</h3>
-          <div className="space-y-1.5">
-            <Label>API key {config?.ocrApiKeySet && <span className="text-xs font-normal text-gray-400">(currently set — leave blank to keep)</span>}</Label>
-            <Input
-              type="password"
-              value={ocrApiKey}
-              onChange={(e) => setOcrApiKey(e.target.value)}
-              placeholder={config?.ocrApiKeySet ? '••••••••' : "From Makhzoon's FastPlateOCR dashboard"}
-            />
-          </div>
         </div>
 
         <div className="flex gap-2">

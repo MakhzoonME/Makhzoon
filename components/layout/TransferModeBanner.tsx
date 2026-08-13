@@ -1,4 +1,5 @@
 'use client';
+import { forwardRef } from 'react';
 import { useTransferStore } from '@/store/transfer.store';
 import { useTransferMode, useT } from '@/hooks/ui';
 import { useUiStore } from '@/store/ui.store';
@@ -14,7 +15,11 @@ function AlertTriangleSVG() {
   );
 }
 
-export function TransferModeBanner() {
+// Forwards a ref to the actual fixed banner element so the layout can
+// ResizeObserver its real rendered height (org name length/wrapping varies)
+// instead of guessing a fixed offset for the content below it — see
+// app/[locale]/[orgSlug]/layout.tsx.
+export const TransferModeBanner = forwardRef<HTMLDivElement>(function TransferModeBanner(_props, ref) {
   const { active, orgName } = useTransferStore();
   const { exitTransferMode } = useTransferMode();
   const { sidebarCollapsed } = useUiStore();
@@ -26,6 +31,7 @@ export function TransferModeBanner() {
 
   return (
     <div
+      ref={ref}
       className="fixed top-14 end-0 z-30 bg-[var(--yellow-100)] border-b border-[var(--yellow-100)] px-4 py-2 flex items-center gap-2 transition-[inset-inline-start] duration-350 ease-out-expo [inset-inline-start:0] md:[inset-inline-start:var(--banner-left)]"
       style={{ '--banner-left': `${leftOffset}px` } as React.CSSProperties}
     >
@@ -38,4 +44,4 @@ export function TransferModeBanner() {
       </Button>
     </div>
   );
-}
+});

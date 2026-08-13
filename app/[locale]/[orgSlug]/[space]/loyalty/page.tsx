@@ -12,7 +12,7 @@ import { useModuleGuard, toast } from '@/hooks/ui';
 import type { LoyaltyTierThreshold } from '@/types';
 
 export default function LoyaltyProgramPage() {
-  const { isAllowed } = useModuleGuard({ featureKey: 'loyalty' });
+  const { isAllowed } = useModuleGuard({ featureKey: 'loyalty', moduleKey: 'loyalty' });
   const { data, isLoading } = useLoyaltyProgram();
   const updateMut = useUpdateLoyaltyProgram();
 

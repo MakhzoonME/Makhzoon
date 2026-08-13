@@ -8,12 +8,16 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
+import { ModuleCard } from '@/components/super-admin/ModuleCard';
+import { cn } from '@/lib/utils/cn';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -45,7 +49,6 @@ import {
   HARAKA_BASE_FEATURE,
   BANNA_FEATURE,
   LOYALTY_FEATURE,
-  MODULE_COLORS,
 } from '@/lib/config/package-feature-groups';
 import {
   FEATURE_KEYS,
@@ -81,6 +84,13 @@ function normalizeAddOns(a: SubscriptionAddOns) {
 function daysUntil(d: Date | string): number {
   const target = typeof d === 'string' ? new Date(d) : d;
   return Math.ceil((target.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+}
+
+type RenewDateErrorKind = 'required' | 'mustBeFuture' | null;
+
+function renewEndDateErrorKind(value: string): RenewDateErrorKind {
+  if (!value) return 'required';
+  return new Date(value).getTime() <= Date.now() ? 'mustBeFuture' : null;
 }
 
 export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: string }> }) {
@@ -231,10 +241,17 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
     }
   }
 
+  const renewErrorKind = renewEndDateErrorKind(renewEndDate);
+  const renewEndDateError =
+    renewErrorKind === 'required' ? t('subscription.renewDateRequired')
+    : renewErrorKind === 'mustBeFuture' ? t('subscription.renewDateMustBeFuture')
+    : null;
+
   async function handleRenew() {
+    if (renewEndDateError) return;
     try {
       const res = await renewSubscription.mutateAsync({
-        endDate: renewEndDate ? new Date(renewEndDate).toISOString() : undefined,
+        endDate: new Date(renewEndDate).toISOString(),
         generateInvoiceNow: renewInvoiceNow,
       });
       toast.success(res.invoiceId ? t('subscription.renewedWithInvoice') : t('subscription.renewed'));
@@ -651,27 +668,33 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
           <Dialog open={renewOpen} onOpenChange={setRenewOpen}>
             <DialogContent>
               <DialogHeader><DialogTitle>{t('subscription.renew')}</DialogTitle></DialogHeader>
-              <div className="space-y-4">
+              <DialogBody className="space-y-4">
                 <div className="space-y-1.5">
                   <Label>{t('subscription.newEndDate')}</Label>
                   <DatePicker value={renewEndDate} onChange={(v) => setRenewEndDate(v ?? '')} />
-                  <p className="text-xs text-gray-400">{t('subscription.renewDefaultHint')}</p>
+                  {renewEndDate && renewEndDateError ? (
+                    <p className="text-xs text-red-600">{renewEndDateError}</p>
+                  ) : (
+                    <p className="text-xs text-gray-400">{t('subscription.renewDefaultHint')}</p>
+                  )}
                 </div>
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={renewInvoiceNow} onChange={(e) => setRenewInvoiceNow(e.target.checked)} />
                   {t('subscription.generateInvoiceNow')}
                 </label>
-                <Button onClick={handleRenew} disabled={renewSubscription.isPending} className="w-full">
+              </DialogBody>
+              <DialogFooter>
+                <Button onClick={handleRenew} disabled={!!renewEndDateError || renewSubscription.isPending} className="w-full sm:w-auto">
                   {renewSubscription.isPending ? t('common.saving') : t('subscription.renew')}
                 </Button>
-              </div>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
 
           <Dialog open={changePlanOpen} onOpenChange={setChangePlanOpen}>
             <DialogContent>
               <DialogHeader><DialogTitle>{t('subscription.changePlan')}</DialogTitle></DialogHeader>
-              <div className="space-y-4">
+              <DialogBody className="space-y-4">
                 <div className="space-y-1.5">
                   <Label>{t('subscription.newPackage')}</Label>
                   <Select value={changePlanPackageId} onValueChange={setChangePlanPackageId}>
@@ -696,37 +719,41 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                     {t('subscription.generateInvoiceNow')}
                   </label>
                 )}
-                <Button onClick={handleChangePlan} disabled={!changePlanPackageId || changePlan.isPending} className="w-full">
+              </DialogBody>
+              <DialogFooter>
+                <Button onClick={handleChangePlan} disabled={!changePlanPackageId || changePlan.isPending} className="w-full sm:w-auto">
                   {changePlan.isPending ? t('common.saving') : t('subscription.confirmChangePlan')}
                 </Button>
-              </div>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
 
           <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
             <DialogContent>
               <DialogHeader><DialogTitle>{t('subscription.cancel')}</DialogTitle></DialogHeader>
-              <div className="space-y-4">
+              <DialogBody className="space-y-4">
                 <div className="space-y-1.5">
                   <Label>{t('subscription.cancelReason')}</Label>
                   <Textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3} />
                 </div>
+              </DialogBody>
+              <DialogFooter>
                 <Button
                   onClick={handleCancel}
                   disabled={!cancelReason.trim() || cancelSubscription.isPending}
                   variant="destructive"
-                  className="w-full"
+                  className="w-full sm:w-auto"
                 >
                   {cancelSubscription.isPending ? t('common.saving') : t('subscription.confirmCancel')}
                 </Button>
-              </div>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
 
           <Dialog open={!!refundInvoiceTarget} onOpenChange={(v) => { if (!v) setRefundInvoiceTarget(null); }}>
             <DialogContent>
               <DialogHeader><DialogTitle>{t('subscription.refund')}</DialogTitle></DialogHeader>
-              <div className="space-y-4">
+              <DialogBody className="space-y-4">
                 <div className="space-y-1.5">
                   <Label>{t('subscription.refundAmount')}</Label>
                   <Input
@@ -740,15 +767,17 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                   <Label>{t('subscription.refundReason')}</Label>
                   <Textarea value={refundReason} onChange={(e) => setRefundReason(e.target.value)} rows={3} />
                 </div>
+              </DialogBody>
+              <DialogFooter>
                 <Button
                   onClick={handleRefund}
                   disabled={!refundReason.trim() || refundInvoice.isPending}
                   variant="destructive"
-                  className="w-full"
+                  className="w-full sm:w-auto"
                 >
                   {refundInvoice.isPending ? t('common.saving') : t('subscription.confirmRefund')}
                 </Button>
-              </div>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
 
@@ -866,6 +895,9 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
             </CardContent>
           </Card>
 
+          {/* Same collapsible module-card pattern as the user invite/edit
+              permissions editor (components/users/PermissionsEditor.tsx) —
+              toggle pill, name, "X of Y" count, chevron, expandable body. */}
           <Card className="lg:col-span-3">
             <CardContent className="p-5 space-y-4">
               <div>
@@ -875,10 +907,8 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                 </p>
               </div>
 
-              {/* Grouped the same way lib/nav/index.ts groups the sidebar —
-                  see lib/config/package-feature-groups.ts. */}
               <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Platform</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 px-1 mb-1.5">Platform</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                   {PLATFORM_FEATURES.map((k) => (
                     <label key={k} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
@@ -889,135 +919,140 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                 </div>
               </div>
 
-              <div className="border-s-4 ps-3" style={{ borderInlineStartColor: MODULE_COLORS.usool }}>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Usool — Assets</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                  <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer font-medium">
-                    <input type="checkbox" checked={features[USOOL_BASE_FEATURE]} onChange={(e) => handleFeatureToggle(USOOL_BASE_FEATURE, e.target.checked)} />
-                    <span className="text-sm text-gray-800">{FEATURE_LABELS[USOOL_BASE_FEATURE]}</span>
-                  </label>
+              <div className="space-y-2">
+                <ModuleCard
+                  label="Usool — Assets"
+                  enabled={features[USOOL_BASE_FEATURE]}
+                  onToggleEnabled={(v) => handleFeatureToggle(USOOL_BASE_FEATURE, v)}
+                  countLabel={`${USOOL_SUB_FEATURES.filter((k) => features[k]).length} of ${USOOL_SUB_FEATURES.length}`}
+                >
                   {USOOL_SUB_FEATURES.map((k) => (
-                    <label key={k} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
-                      <input type="checkbox" checked={features[k]} disabled={!features[USOOL_BASE_FEATURE]} onChange={(e) => handleFeatureToggle(k, e.target.checked)} />
-                      <span className="text-sm text-gray-700">{FEATURE_LABELS[k]}</span>
+                    <label key={k} className="flex items-center gap-2 text-xs cursor-pointer hover:text-gray-900">
+                      <input
+                        type="checkbox"
+                        checked={features[k]}
+                        onChange={(e) => handleFeatureToggle(k, e.target.checked)}
+                        className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span className={cn('text-gray-600', features[k] && 'text-gray-900 font-medium')}>{FEATURE_LABELS[k]}</span>
                     </label>
                   ))}
-                </div>
-              </div>
+                </ModuleCard>
 
-              <div className="border-s-4 ps-3" style={{ borderInlineStartColor: MODULE_COLORS.raseed }}>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Raseed — Inventory</p>
-                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
-                  <input type="checkbox" checked={features[RASEED_BASE_FEATURE]} onChange={(e) => handleFeatureToggle(RASEED_BASE_FEATURE, e.target.checked)} />
-                  <span className="text-sm text-gray-700">{FEATURE_LABELS[RASEED_BASE_FEATURE]}</span>
-                </label>
-              </div>
-
-              <div className="border-s-4 ps-3" style={{ borderInlineStartColor: MODULE_COLORS.haraka }}>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Haraka — Point of Sale</p>
-                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
-                  <input type="checkbox" checked={features[HARAKA_BASE_FEATURE]} onChange={(e) => handleFeatureToggle(HARAKA_BASE_FEATURE, e.target.checked)} />
-                  <span className="text-sm text-gray-700">{FEATURE_LABELS[HARAKA_BASE_FEATURE]}</span>
-                </label>
-                <p className="text-xs text-gray-400 mt-1">Which of the four Haraka sub-modules are active is set below, under &quot;Haraka modules&quot;.</p>
-              </div>
-
-              <div className="border-s-4 ps-3" style={{ borderInlineStartColor: MODULE_COLORS.banna }}>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Banna — Custom Fields</p>
-                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
-                  <input type="checkbox" checked={features[BANNA_FEATURE]} onChange={(e) => handleFeatureToggle(BANNA_FEATURE, e.target.checked)} />
-                  <span className="text-sm text-gray-700">{FEATURE_LABELS[BANNA_FEATURE]}</span>
-                </label>
-              </div>
-
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Loyalty</p>
-                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
-                  <input type="checkbox" checked={features[LOYALTY_FEATURE]} onChange={(e) => handleFeatureToggle(LOYALTY_FEATURE, e.target.checked)} />
-                  <span className="text-sm text-gray-700">{FEATURE_LABELS[LOYALTY_FEATURE]}</span>
-                </label>
-              </div>
-
-              {planSaveBar}
-            </CardContent>
-          </Card>
-
-          {/* ── Haraka modules ("Choose N") ─────────────────────────── */}
-          <Card className="lg:col-span-3">
-            <CardContent className="p-5 space-y-3">
-              <h3 className="text-sm font-semibold text-gray-900">Haraka modules</h3>
-              <p className="text-xs text-gray-500">
-                Included slots: {selectedPackage?.allowances.harakaIncludedModuleSlots ?? 0}. Modules
-                selected beyond the included slots are billed as add-ons.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                {HARAKA_MODULES.map((m) => (
-                  <label key={m} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
+                <ModuleCard
+                  label="Raseed — Inventory"
+                  enabled={features[RASEED_BASE_FEATURE]}
+                  onToggleEnabled={(v) => handleFeatureToggle(RASEED_BASE_FEATURE, v)}
+                  countLabel={addOns.purchasesRequests ? '1 of 1 add-on' : '0 of 1 add-on'}
+                >
+                  <label className="flex items-center gap-2 text-xs cursor-pointer hover:text-gray-900">
                     <input
                       type="checkbox"
-                      checked={harakaModules.includes(m)}
-                      onChange={(e) => toggleHarakaModule(m, e.target.checked)}
+                      checked={addOns.purchasesRequests}
+                      onChange={(e) => setAddOns((a) => ({ ...a, purchasesRequests: e.target.checked }))}
+                      className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
-                    <span className="text-sm text-gray-700">{HARAKA_MODULE_LABELS[m]}</span>
+                    <span className={cn('text-gray-600', addOns.purchasesRequests && 'text-gray-900 font-medium')}>Purchases &amp; Requests</span>
                   </label>
-                ))}
-              </div>
-              <p className="text-xs text-gray-500">
-                Selected {harakaModules.length} of {selectedPackage?.allowances.harakaIncludedModuleSlots ?? 0} included slots
-                {harakaModules.length > (selectedPackage?.allowances.harakaIncludedModuleSlots ?? 0)
-                  ? ` · ${harakaModules.length - (selectedPackage?.allowances.harakaIncludedModuleSlots ?? 0)} as add-on`
-                  : ''}
-              </p>
-              {planSaveBar}
-            </CardContent>
-          </Card>
+                </ModuleCard>
 
-          {/* ── Add-ons ──────────────────────────────────────────────── */}
-          <Card className="lg:col-span-3">
-            <CardContent className="p-5 space-y-3">
-              <h3 className="text-sm font-semibold text-gray-900">Add-ons</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                {(
-                  [
-                    ['deliveryAgents', 'Delivery agents'],
-                    ['warrantyCerts', 'Warranty certificates'],
-                    ['customization', 'Customization'],
-                    ['purchasesRequests', 'Purchases & Requests'],
-                    ['vehicleIntake', 'Vehicle intake (plate capture)'],
-                    ['loyalty', 'Loyalty program'],
-                  ] as [
-                    'deliveryAgents' | 'warrantyCerts' | 'customization' | 'purchasesRequests' | 'vehicleIntake' | 'loyalty',
-                    string,
-                  ][]
-                ).map(([key, label]) => (
-                  <label key={key} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-surface-page cursor-pointer">
+                <ModuleCard
+                  label="Haraka — Point of Sale"
+                  enabled={features[HARAKA_BASE_FEATURE]}
+                  onToggleEnabled={(v) => handleFeatureToggle(HARAKA_BASE_FEATURE, v)}
+                  countLabel={`${harakaModules.length} of ${HARAKA_MODULES.length} modules`}
+                  defaultExpanded
+                >
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1.5">
+                      Included slots: {selectedPackage?.allowances.harakaIncludedModuleSlots ?? 0}. Modules
+                      selected beyond the included slots are billed as add-ons.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      {HARAKA_MODULES.map((m) => (
+                        <label key={m} className="flex items-center gap-2 text-xs cursor-pointer hover:text-gray-900">
+                          <input
+                            type="checkbox"
+                            checked={harakaModules.includes(m)}
+                            onChange={(e) => toggleHarakaModule(m, e.target.checked)}
+                            className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          />
+                          <span className={cn('text-gray-600', harakaModules.includes(m) && 'text-gray-900 font-medium')}>{HARAKA_MODULE_LABELS[m]}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="border-t border-border pt-2.5 space-y-1.5">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Add-ons</p>
+                    {(
+                      [
+                        ['deliveryAgents', 'Delivery agents'],
+                        ['warrantyCerts', 'Warranty certificates'],
+                        ['customization', 'Customization'],
+                        ['vehicleIntake', 'Vehicle intake (plate capture)'],
+                      ] as ['deliveryAgents' | 'warrantyCerts' | 'customization' | 'vehicleIntake', string][]
+                    ).map(([key, label]) => (
+                      <label key={key} className="flex items-center gap-2 text-xs cursor-pointer hover:text-gray-900">
+                        <input
+                          type="checkbox"
+                          checked={addOns[key]}
+                          onChange={(e) => setAddOns((a) => ({ ...a, [key]: e.target.checked }))}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        />
+                        <span className={cn('text-gray-600', addOns[key] && 'text-gray-900 font-medium')}>{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </ModuleCard>
+
+                <ModuleCard
+                  label="Banna — Custom Fields"
+                  enabled={features[BANNA_FEATURE]}
+                  onToggleEnabled={(v) => handleFeatureToggle(BANNA_FEATURE, v)}
+                >
+                  <p className="text-xs text-gray-500">Custom fields for assets, inventory, and customers.</p>
+                </ModuleCard>
+
+                <ModuleCard
+                  label="Loyalty"
+                  enabled={features[LOYALTY_FEATURE]}
+                  onToggleEnabled={(v) => handleFeatureToggle(LOYALTY_FEATURE, v)}
+                  countLabel={addOns.loyalty ? '1 of 1 add-on' : '0 of 1 add-on'}
+                >
+                  <label className="flex items-center gap-2 text-xs cursor-pointer hover:text-gray-900">
                     <input
                       type="checkbox"
-                      checked={addOns[key]}
-                      onChange={(e) => setAddOns((a) => ({ ...a, [key]: e.target.checked }))}
+                      checked={addOns.loyalty}
+                      onChange={(e) => setAddOns((a) => ({ ...a, loyalty: e.target.checked }))}
+                      className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
-                    <span className="text-sm text-gray-700">{label}</span>
+                    <span className={cn('text-gray-600', addOns.loyalty && 'text-gray-900 font-medium')}>Loyalty program</span>
                   </label>
-                ))}
+                </ModuleCard>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-sm">
-                <div className="space-y-1.5">
-                  <Label>Extra users</Label>
-                  <Input
-                    type="number" min={0} inputMode="numeric"
-                    value={String(addOns.extraUsers)}
-                    onChange={(e) => setAddOns((a) => ({ ...a, extraUsers: Math.max(0, Math.floor(Number(e.target.value) || 0)) }))}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Extra spaces</Label>
-                  <Input
-                    type="number" min={0} inputMode="numeric"
-                    value={String(addOns.extraSpaces)}
-                    onChange={(e) => setAddOns((a) => ({ ...a, extraSpaces: Math.max(0, Math.floor(Number(e.target.value) || 0)) }))}
-                  />
+
+              <div className="border-t border-border pt-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Account</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-sm">
+                  <div className="space-y-1.5">
+                    <Label>Extra users</Label>
+                    <Input
+                      type="number" min={0} inputMode="numeric"
+                      value={String(addOns.extraUsers)}
+                      onChange={(e) => setAddOns((a) => ({ ...a, extraUsers: Math.max(0, Math.floor(Number(e.target.value) || 0)) }))}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Extra spaces</Label>
+                    <Input
+                      type="number" min={0} inputMode="numeric"
+                      value={String(addOns.extraSpaces)}
+                      onChange={(e) => setAddOns((a) => ({ ...a, extraSpaces: Math.max(0, Math.floor(Number(e.target.value) || 0)) }))}
+                    />
+                  </div>
                 </div>
               </div>
+
               {planSaveBar}
             </CardContent>
           </Card>

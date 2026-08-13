@@ -7,6 +7,11 @@ export {
 } from './usePackages';
 export { usePaymentLogs, useCreatePaymentLog, useDeletePaymentLog } from './usePaymentLogs';
 export {
+  useNotificationConfig,
+  useUpdateNotificationConfig,
+  type NotificationConfigPatch,
+} from './useNotificationConfig';
+export {
   useCreateSubscription,
   useRenewSubscription,
   useCancelSubscription,

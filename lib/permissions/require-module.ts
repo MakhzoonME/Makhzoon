@@ -61,7 +61,7 @@ const ADDON_INCLUDED: Record<AddOnKey, keyof PackageAllowances> = {
 };
 
 const ADDON_LABELS: Record<AddOnKey, string> = {
-  deliveryAgents: 'Delivery agents',
+  deliveryAgents: 'Workers',
   warrantyCerts: 'Warranty certificates',
   customization: 'Customization',
   purchasesRequests: 'Purchases & Requests',

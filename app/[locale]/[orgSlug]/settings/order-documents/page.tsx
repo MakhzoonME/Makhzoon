@@ -151,7 +151,7 @@ export default function OrderDocumentsSettingsPage() {
                 { key: 'showDeliveryAddress', label: 'Delivery address' },
                 { key: 'showChannel',         label: 'Order channel (Phone, WhatsApp…)' },
                 { key: 'showSalesAgent',      label: 'Sales agent name' },
-                { key: 'showDeliveryAgent',   label: 'Delivery agent name' },
+                { key: 'showDeliveryAgent',   label: 'Worker name' },
               ] as const).map(({ key, label }) => (
                 <div key={key} className="flex items-center justify-between">
                   <Label className="font-normal text-gray-700">{label}</Label>

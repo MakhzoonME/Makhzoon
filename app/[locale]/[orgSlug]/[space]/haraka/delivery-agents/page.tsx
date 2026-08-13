@@ -145,7 +145,7 @@ export default function DeliveryAgentsPage() {
   async function handleCreate(values: DeliveryAgentFormData) {
     try {
       await createMut.mutateAsync(values);
-      toast.success('Delivery agent added');
+      toast.success('Worker added');
       setAddOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to add agent');
@@ -185,13 +185,13 @@ export default function DeliveryAgentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Delivery agents"
+        title="Workers"
         description="External people who handle deliveries. They don't need a system account."
         breadcrumb={[
           { label: orgInfo?.name ?? params.orgSlug },
           { label: params.space },
           { label: 'Haraka', href: base },
-          { label: 'Delivery agents' },
+          { label: 'Workers' },
         ]}
         actions={
           <Button size="sm" onClick={() => setAddOpen(true)}>

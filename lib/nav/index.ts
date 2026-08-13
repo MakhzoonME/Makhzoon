@@ -98,7 +98,7 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/haraka/customers', label: 'Customers', labelKey: 'nav.customers',
         featureKey: 'pos', permissionKey: 'haraka.customersView',
         moduleColor: '#AD1457', moduleName: 'عملاء' },
-      { href: '/haraka/delivery-agents', label: 'Delivery Agents', labelKey: 'nav.deliveryAgents',
+      { href: '/haraka/delivery-agents', label: 'Workers', labelKey: 'nav.deliveryAgents',
         featureKey: 'pos', permissionKey: 'haraka.deliveryAgentsView',
         moduleColor: '#AD1457', moduleName: 'موزعون' },
       { href: '/haraka/warranty-certs', label: 'Warranty Certs', labelKey: 'nav.harakaWarrantyCerts',
@@ -158,7 +158,6 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/settings/notifications',   label: 'Notifications',       labelKey: 'nav.notificationSettings', permissionKey: 'settingsNotifications.view', scope: 'org' },
       { href: '/settings/cash-drawer',   label: 'Cash Drawer',   labelKey: 'nav.cashDrawer',     permissionKey: 'settingsCashDrawer.view',    featureKey: 'pos', scope: 'org' },
       { href: '/settings/card-terminal', label: 'Card Terminal', labelKey: 'nav.cardTerminal',   permissionKey: 'settingsCardTerminal.view',  featureKey: 'pos', scope: 'org' },
-      { href: '/settings/service-notifications', label: 'Customer Notifications', labelKey: 'nav.serviceNotifications', permissionKey: 'settingsServiceNotifications.view', featureKey: 'pos', scope: 'org' },
     ],
   },
 ];

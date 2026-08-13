@@ -69,7 +69,7 @@ type AddOnKey = 'deliveryAgents' | 'warrantyCerts' | 'customization' | 'purchase
 interface AddOnState { included: boolean; price: string }
 
 const ADDON_META: Record<AddOnKey, { label: string; group: 'haraka' | 'raseed' | 'loyalty' }> = {
-  deliveryAgents:     { label: 'Delivery agents',      group: 'haraka' },
+  deliveryAgents:     { label: 'Workers',              group: 'haraka' },
   warrantyCerts:      { label: 'Warranty certificates', group: 'haraka' },
   customization:      { label: 'Customization',         group: 'haraka' },
   vehicleIntake:      { label: 'Vehicle intake (plate capture)', group: 'haraka' },
@@ -160,6 +160,7 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
   const [pos,        setPos]        = useState(initial?.features?.pos       ?? true);
   const [banna,      setBanna]      = useState(initial?.features?.banna     ?? true);
   const [loyaltyFeature, setLoyaltyFeature] = useState(initial?.features?.loyalty ?? false);
+  const [vehicleIntakeFeature, setVehicleIntakeFeature] = useState(initial?.features?.vehicleIntake ?? false);
 
   const [usoolSub, setUsoolSub] = useState<Record<(typeof USOOL_SUB_FEATURES)[number], boolean>>(() =>
     USOOL_SUB_FEATURES.reduce(
@@ -244,6 +245,7 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
         dashboard, reports, support, auditLogs,
         assets, inventory, pos, banna,
         loyalty: loyaltyFeature,
+        vehicleIntake: vehicleIntakeFeature,
         ...usoolSub,
       },
       inclusions,
@@ -491,6 +493,10 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
             <AddOnRow addonKey="deliveryAgents" state={addOns.deliveryAgents} onChange={(patch) => updateAddOn("deliveryAgents", patch)} />
             <AddOnRow addonKey="warrantyCerts" state={addOns.warrantyCerts} onChange={(patch) => updateAddOn("warrantyCerts", patch)} />
             <AddOnRow addonKey="customization" state={addOns.customization} onChange={(patch) => updateAddOn("customization", patch)} />
+            <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-page cursor-pointer">
+              <input type="checkbox" checked={vehicleIntakeFeature} onChange={(e) => setVehicleIntakeFeature(e.target.checked)} />
+              <span className="text-sm text-gray-700">Show plate-capture in the intake UI (car-care)</span>
+            </label>
             <AddOnRow addonKey="vehicleIntake" state={addOns.vehicleIntake} onChange={(patch) => updateAddOn("vehicleIntake", patch)} />
           </div>
         </fieldset>

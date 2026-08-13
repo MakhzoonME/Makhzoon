@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createHmac, timingSafeEqual } from 'crypto'
-import { supabaseAdmin } from '@/lib/supabase/admin'
 import { logServerEvent } from '@/lib/logging/log-server-event'
 
 /**
- * Inbound Meta WhatsApp Cloud API webhook. Unlike the card-terminal webhook,
- * this is a single URL registered once per Meta App (not per-org) — the org
- * is resolved from `metadata.phone_number_id` in the payload against
- * haraka_service_notification_config.whatsapp_phone_number_id.
+ * Inbound Meta WhatsApp Cloud API webhook. One number, one Meta App, shared
+ * across every org (see lib/platform/notification-config.repository.ts) —
+ * there's no per-org phone_number_id to resolve against anymore, so this
+ * just logs delivery status against the message ID.
  *
  * GET handles Meta's one-time subscription verification handshake.
  * POST receives message status updates (sent/delivered/read/failed).
@@ -53,22 +52,9 @@ export async function POST(req: NextRequest) {
         : []
       for (const change of changes) {
         const value = (change as { value?: Record<string, unknown> })?.value
-        const phoneNumberId = (value?.metadata as Record<string, unknown> | undefined)?.phone_number_id as
-          | string
-          | undefined
         const statuses = Array.isArray(value?.statuses) ? (value!.statuses as Record<string, unknown>[]) : []
-        if (!phoneNumberId || statuses.length === 0) continue
-
-        const { data: config } = await supabaseAdmin
-          .from('haraka_service_notification_config')
-          .select('organization_id')
-          .eq('whatsapp_phone_number_id', phoneNumberId)
-          .maybeSingle()
-        if (!config) continue
-
         for (const s of statuses) {
           logServerEvent('info', 'whatsapp/webhook', `Message ${s.status}`, {
-            organizationId: config.organization_id as string,
             detail: { messageId: s.id, status: s.status },
           })
         }

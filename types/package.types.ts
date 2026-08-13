@@ -13,7 +13,8 @@ export type FeatureKey =
   | 'assetNotes'
   | 'pos'
   | 'banna'
-  | 'loyalty';
+  | 'loyalty'
+  | 'vehicleIntake';
 
 // Order here drives the order of checkboxes in the package + org subscription
 // forms. Grouping (Platform / Usool / Raseed / Haraka / Banna / Loyalty)
@@ -49,6 +50,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   pos: 'Point of Sale',
   banna: 'Banna (Custom Fields)',
   loyalty: 'Loyalty',
+  vehicleIntake: 'Vehicle Intake',
 };
 
 export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
@@ -65,6 +67,7 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
   pos: 'Point of sale terminal for processing sales transactions.',
   banna: 'Custom fields for assets, inventory, and customers.',
   loyalty: 'Points, tiers, and membership cards for repeat customers.',
+  vehicleIntake: 'Plate-photo intake for Haraka Service Jobs.',
 };
 
 export interface PackageLimits {

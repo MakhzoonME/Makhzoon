@@ -3,11 +3,11 @@ import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
 import { requireAddOn } from '@/lib/permissions/require-module'
 import { rateLimitTenant } from '@/lib/rate-limit'
-import { ServiceNotificationConfigRepository } from '@/lib/modules/haraka/service-notifications/notification-config.repository'
+import { PlatformNotificationConfigRepository } from '@/lib/platform/notification-config.repository'
 import { recognizePlate } from '@/lib/modules/haraka/service-vehicles/plate-ocr'
 import { ocrPlateRequestSchema } from '@/lib/modules/haraka/service-vehicles/schemas'
 
-const configRepo = new ServiceNotificationConfigRepository()
+const configRepo = new PlatformNotificationConfigRepository()
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,10 +26,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
     }
 
-    const cfg = await configRepo.getWithSecrets(tenant.organizationId)
+    const cfg = await configRepo.getWithSecrets()
     if (!cfg?.ocrApiKey) {
       return NextResponse.json(
-        { error: 'Plate OCR is not configured for this organization' },
+        { error: 'Plate OCR is not configured — ask a superadmin to set it up under Superadmin → Notifications' },
         { status: 409 },
       )
     }

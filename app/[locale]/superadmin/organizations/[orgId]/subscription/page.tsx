@@ -983,14 +983,36 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                     </div>
                   </div>
                   <div className="border-t border-border pt-2.5 space-y-1.5">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Vehicle intake (car-care)</p>
+                    <label className="flex items-center gap-2 text-xs cursor-pointer hover:text-gray-900">
+                      <input
+                        type="checkbox"
+                        checked={features.vehicleIntake}
+                        onChange={(e) => handleFeatureToggle('vehicleIntake', e.target.checked)}
+                        className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span className={cn('text-gray-600', features.vehicleIntake && 'text-gray-900 font-medium')}>Show plate-capture in the intake UI</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-xs cursor-pointer hover:text-gray-900">
+                      <input
+                        type="checkbox"
+                        checked={addOns.vehicleIntake}
+                        onChange={(e) => setAddOns((a) => ({ ...a, vehicleIntake: e.target.checked }))}
+                        className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span className={cn('text-gray-600', addOns.vehicleIntake && 'text-gray-900 font-medium')}>Purchased / billed for this org</span>
+                    </label>
+                    <p className="text-[11px] text-gray-400">Both must be on for the vehicle-intake flow to work — the first controls visibility, the second is what billing checks.</p>
+                  </div>
+
+                  <div className="border-t border-border pt-2.5 space-y-1.5">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Add-ons</p>
                     {(
                       [
-                        ['deliveryAgents', 'Delivery agents'],
+                        ['deliveryAgents', 'Workers'],
                         ['warrantyCerts', 'Warranty certificates'],
                         ['customization', 'Customization'],
-                        ['vehicleIntake', 'Vehicle intake (plate capture)'],
-                      ] as ['deliveryAgents' | 'warrantyCerts' | 'customization' | 'vehicleIntake', string][]
+                      ] as ['deliveryAgents' | 'warrantyCerts' | 'customization', string][]
                     ).map(([key, label]) => (
                       <label key={key} className="flex items-center gap-2 text-xs cursor-pointer hover:text-gray-900">
                         <input

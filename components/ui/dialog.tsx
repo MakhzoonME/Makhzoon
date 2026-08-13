@@ -48,8 +48,8 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed left-[50%] top-[50%] z-50 w-full max-w-[520px] translate-x-[-50%] translate-y-[-50%]',
-        'bg-surface-card rounded-xl border border-border shadow-lg overflow-hidden',
+        'fixed left-[50%] top-[50%] z-50 w-full max-w-[520px] max-h-[90vh] translate-x-[-50%] translate-y-[-50%]',
+        'flex flex-col bg-surface-card rounded-xl border border-border shadow-lg overflow-hidden',
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
         'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
@@ -76,7 +76,7 @@ DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn('flex flex-col space-y-1 px-6 py-5 border-b border-border', className)}
+    className={cn('flex flex-shrink-0 flex-col space-y-1 px-6 py-5 border-b border-border', className)}
     {...props}
   />
 );
@@ -85,7 +85,7 @@ DialogHeader.displayName = 'DialogHeader';
 const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'flex flex-col-reverse gap-2 px-6 py-[14px] border-t border-border bg-surface-page sm:flex-row sm:justify-end sm:gap-2',
+      'flex flex-shrink-0 flex-col-reverse gap-2 px-6 py-[14px] border-t border-border bg-surface-page sm:flex-row sm:justify-end sm:gap-2',
       className
     )}
     {...props}
@@ -133,7 +133,7 @@ const DialogIconHeader = ({
   title: string;
   className?: string;
 }) => (
-  <div className={cn('flex items-center gap-[14px] px-6 py-5 border-b border-border', className)}>
+  <div className={cn('flex flex-shrink-0 items-center gap-[14px] px-6 py-5 border-b border-border', className)}>
     <div
       className="flex items-center justify-center w-10 h-10 rounded-lg flex-shrink-0"
       style={{ background: iconBg, color: iconColor }}
@@ -147,7 +147,7 @@ const DialogIconHeader = ({
 );
 
 const DialogBody = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn('px-6 py-5', className)} {...props} />
+  <div className={cn('px-6 py-5 overflow-y-auto min-h-0', className)} {...props} />
 );
 
 export {

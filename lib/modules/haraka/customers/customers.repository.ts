@@ -48,11 +48,20 @@ export class CustomersRepository {
 
     const search = opts?.search?.trim().toLowerCase()
     if (search) {
+      const { data: plateMatches } = await supabaseAdmin
+        .from('haraka_service_vehicles')
+        .select('customer_id')
+        .eq('organization_id', tenant.organizationId)
+        .not('customer_id', 'is', null)
+        .ilike('plate_number', `%${search.toUpperCase()}%`)
+      const plateMatchIds = new Set((plateMatches ?? []).map((r) => r.customer_id as string))
+
       items = items.filter((c) =>
         [c.name, c.phone ?? '', c.email ?? '', c.taxNumber ?? '']
           .join(' ')
           .toLowerCase()
-          .includes(search),
+          .includes(search)
+        || plateMatchIds.has(c.id),
       )
     }
     items.sort((a, b) => a.name.localeCompare(b.name))

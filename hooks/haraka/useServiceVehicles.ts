@@ -1,7 +1,27 @@
 'use client'
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { useParams } from 'next/navigation'
 import type { HarakaServiceVehicle } from '@/types'
+
+/** A customer's saved vehicles — the "pick from saved plates" list on New
+ *  Service Job. Reads the same haraka_service_vehicles rows regardless of
+ *  whether they were added via the customer profile's plate custom field or
+ *  a previous job's inline capture, so both entry points stay consistent. */
+export function useCustomerVehicles(customerId: string | null | undefined) {
+  const { space } = useParams<{ space?: string }>()
+  return useQuery<{ items: HarakaServiceVehicle[] }>({
+    queryKey: ['haraka', 'service-vehicles', space, customerId],
+    enabled: !!customerId && !!space,
+    queryFn: async () => {
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {}
+      const res = await fetch(`/api/haraka/service-vehicles?customerId=${customerId}`, { headers })
+      if (!res.ok) throw new Error('Failed to fetch vehicles')
+      return res.json()
+    },
+    staleTime: 10_000,
+  })
+}
 
 export function useOcrPlate() {
   return useMutation({

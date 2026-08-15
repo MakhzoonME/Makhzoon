@@ -15,6 +15,7 @@ import {
   useCreateServiceJob,
   useOcrPlate,
   useFindOrCreateVehicle,
+  useCustomerVehicles,
   useDeliveryAgents,
   useAssignServiceJobAgents,
   useCustomer,
@@ -61,6 +62,9 @@ export default function NewServiceJobPage() {
   const ocrMut = useOcrPlate();
   const vehicleMut = useFindOrCreateVehicle();
   const { data: matchedCustomerData } = useCustomer(matchedCustomerId ?? undefined);
+  const { data: customerVehiclesData } = useCustomerVehicles(customerId);
+  const savedVehicles = customerVehiclesData?.items ?? [];
+  const [showAddVehicle, setShowAddVehicle] = useState(false);
 
   // Workers (only rendered if the org has active agents)
   const { data: agentsData } = useDeliveryAgents(true);
@@ -119,6 +123,14 @@ export default function NewServiceJobPage() {
     setVehicleId(null)
     setVehicleIsNew(null)
     resolveVehicle(plate)
+  }
+
+  function pickSavedVehicle(vehicle: { id: string; plateNumber: string }) {
+    setPlateNumber(vehicle.plateNumber)
+    setVehicleId(vehicle.id)
+    setVehicleIsNew(false)
+    setPlateCandidates([])
+    setShowAddVehicle(false)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -204,6 +216,11 @@ export default function NewServiceJobPage() {
                   setCustomerId(c?.id ?? null);
                   setCustomerName(c?.name ?? '');
                   setCustomerPhone(c?.phone ?? '');
+                  setShowAddVehicle(false);
+                  setPlateNumber('');
+                  setVehicleId(null);
+                  setVehicleIsNew(null);
+                  setPlateCandidates([]);
                 }}
               />
             </div>
@@ -218,18 +235,53 @@ export default function NewServiceJobPage() {
         {vehicleIntakeEnabled && (
           <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
             <h3 className="text-sm font-semibold text-gray-700">{t('serviceJobs.sectionVehicle')}</h3>
-            <div className="flex gap-2">
-              <Input
-                value={plateNumber}
-                onChange={(e) => { setPlateNumber(e.target.value.toUpperCase()); setPlateCandidates([]); }}
-                onBlur={() => { if (plateNumber.trim() && !vehicleId) resolveVehicle(plateNumber); }}
-                placeholder={t('serviceJobs.labelPlateNumber')}
-                className="font-mono tracking-wider"
-              />
-              <Button type="button" variant="outline" onClick={() => setPlateDialogOpen(true)}>
-                <Camera className="h-4 w-4 me-2" /> {t('serviceJobs.capture')}
-              </Button>
-            </div>
+
+            {savedVehicles.length > 0 && !showAddVehicle && (
+              <div className="space-y-1.5">
+                <p className="text-xs text-gray-500">This customer&apos;s saved vehicles:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {savedVehicles.map((v) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => pickSavedVehicle(v)}
+                      className={`rounded-md border px-2.5 py-1.5 text-xs transition-colors ${
+                        vehicleId === v.id
+                          ? 'border-primary-500 bg-primary-50 text-primary-700'
+                          : 'border-border bg-surface-card text-gray-700 hover:border-primary-500 hover:text-primary-700'
+                      }`}
+                    >
+                      <span className="font-mono tracking-wider">{v.plateNumber}</span>
+                      {(v.make || v.model) && (
+                        <span className="text-gray-400 ms-1.5">{[v.make, v.model].filter(Boolean).join(' ')}</span>
+                      )}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => { setShowAddVehicle(true); setPlateNumber(''); setVehicleId(null); setVehicleIsNew(null); }}
+                    className="rounded-md border border-dashed border-border px-2.5 py-1.5 text-xs text-gray-500 hover:border-primary-500 hover:text-primary-700 transition-colors"
+                  >
+                    + Add new vehicle
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {(savedVehicles.length === 0 || showAddVehicle) && (
+              <div className="flex gap-2">
+                <Input
+                  value={plateNumber}
+                  onChange={(e) => { setPlateNumber(e.target.value.toUpperCase()); setPlateCandidates([]); }}
+                  onBlur={() => { if (plateNumber.trim() && !vehicleId) resolveVehicle(plateNumber); }}
+                  placeholder={t('serviceJobs.labelPlateNumber')}
+                  className="font-mono tracking-wider"
+                />
+                <Button type="button" variant="outline" onClick={() => setPlateDialogOpen(true)}>
+                  <Camera className="h-4 w-4 me-2" /> {t('serviceJobs.capture')}
+                </Button>
+              </div>
+            )}
             {(ocrMut.isPending || vehicleMut.isPending) && (
               <p className="text-xs text-gray-400">{t('serviceJobs.plateScanning')}</p>
             )}

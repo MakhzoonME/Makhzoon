@@ -104,7 +104,9 @@ export default function NewServiceJobPage() {
         toast.error('Could not read the plate — enter it manually')
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Plate recognition failed')
+      console.error('[plate-ocr] handleCapturedPlate failed', err)
+      const message = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Plate recognition failed'
+      toast.error(message)
     }
   }
 

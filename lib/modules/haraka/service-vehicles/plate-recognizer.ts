@@ -32,6 +32,32 @@ export class PlateOcrQuotaExceededError extends Error {
 }
 
 const PLATE_READER_ENDPOINT = 'https://api.platerecognizer.com/v1/plate-reader/'
+const STATISTICS_ENDPOINT   = 'https://api.platerecognizer.com/v1/statistics/'
+
+// Confirmed against Plate Recognizer's official OpenAPI spec (/v1/statistics/):
+// { "usage": { "month": 1, "calls": 128, "year": 2019, "resets_on": "..." }, "total_calls": 2500 }
+export interface PlateOcrAccountUsage {
+  callsThisMonth: number
+  totalCallsAllowed: number | null
+  resetsOn: string | null
+}
+
+/** Account-wide usage (shared across every org) — call on demand from Superadmin. */
+export async function getAccountUsage(apiKey: string): Promise<PlateOcrAccountUsage> {
+  const res = await fetch(STATISTICS_ENDPOINT, {
+    headers: { Authorization: `Token ${apiKey}` },
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body?.detail ?? body?.error ?? `Failed to fetch usage (${res.status})`)
+  }
+  const json = await res.json()
+  return {
+    callsThisMonth:    typeof json?.usage?.calls === 'number' ? json.usage.calls : 0,
+    totalCallsAllowed: typeof json?.total_calls === 'number' ? json.total_calls : null,
+    resetsOn:          typeof json?.usage?.resets_on === 'string' ? json.usage.resets_on : null,
+  }
+}
 
 function dataUriToBlob(dataUri: string): Blob {
   const [header, base64] = dataUri.split(',')
@@ -70,11 +96,6 @@ export async function recognizePlate(
     throw new Error(message || `Plate OCR failed (${res.status})`)
   }
   const json = await res.json()
-
-  if (typeof json?.usage?.calls === 'number' && typeof json?.usage?.max_calls === 'number') {
-    console.log(`[plate-recognizer] usage: ${json.usage.calls}/${json.usage.max_calls} calls this period`)
-  }
-
   const best = Array.isArray(json?.results) ? json.results[0] : null
   if (!best) return { plateNumber: null, confidence: null, candidates: [] }
 

@@ -6,6 +6,7 @@ import { rateLimitTenant } from '@/lib/rate-limit'
 import { PlatformNotificationConfigRepository } from '@/lib/platform/notification-config.repository'
 import { recognizePlate, PlateOcrQuotaExceededError } from '@/lib/modules/haraka/service-vehicles/plate-recognizer'
 import { ocrPlateRequestSchema } from '@/lib/modules/haraka/service-vehicles/schemas'
+import { queueOcrUsageLog } from '@/lib/modules/haraka/service-vehicles/ocr-usage.repository'
 
 const configRepo = new PlatformNotificationConfigRepository()
 
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
       dataUri:  parsed.data.imageDataUri,
       imageUrl: parsed.data.imageUrl,
     })
+    queueOcrUsageLog(tenant.organizationId, !!result.plateNumber)
     return NextResponse.json(result)
   } catch (err) {
     if (err instanceof NextResponse) return err

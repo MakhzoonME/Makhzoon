@@ -1,18 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Info, Copy, Check } from 'lucide-react';
+import { Info, Copy, Check, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { useNotificationConfig, useUpdateNotificationConfig } from '@/hooks/superadmin';
+import { useNotificationConfig, useUpdateNotificationConfig, useCheckOcrUsage } from '@/hooks/superadmin';
 import { toast } from '@/hooks/ui';
+import { formatDate } from '@/lib/utils/date';
 
 export default function SuperadminNotificationsPage() {
   const { data, isLoading } = useNotificationConfig();
   const updateMut = useUpdateNotificationConfig();
+  const usageMut = useCheckOcrUsage();
 
   const [whatsappEnabled,  setWhatsappEnabled]  = useState(false);
   const [phoneNumberId,    setPhoneNumberId]    = useState('');
@@ -129,7 +131,7 @@ export default function SuperadminNotificationsPage() {
         <div className="rounded-xl border border-border bg-surface-card p-5 space-y-4">
           <h3 className="text-sm font-semibold text-gray-700">Plate recognition (Plate Recognizer)</h3>
           <p className="text-xs text-gray-400">
-            Purpose-built plate-recognition API, not generic OCR — free tier covers ~100 scans/month.
+            Purpose-built plate-recognition API, not generic OCR — free tier covers ~2,500 scans/month.
             Get your token from{' '}
             <a href="https://app.platerecognizer.com" target="_blank" rel="noreferrer" className="text-primary-600 hover:underline">
               app.platerecognizer.com
@@ -145,6 +147,63 @@ export default function SuperadminNotificationsPage() {
               placeholder={config?.ocrApiKeySet ? '••••••••' : "From Plate Recognizer's dashboard"}
             />
           </div>
+
+          {config?.ocrApiKeySet && (
+            <>
+              <hr className="border-border" />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">Usage this month, and per-organization breakdown</p>
+                <Button
+                  type="button" variant="outline" size="sm"
+                  onClick={() => usageMut.mutate(undefined, {
+                    onError: (err) => toast.error(err instanceof Error ? err.message : 'Failed to fetch usage'),
+                  })}
+                  disabled={usageMut.isPending}
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 me-1.5 ${usageMut.isPending ? 'animate-spin' : ''}`} />
+                  {usageMut.isPending ? 'Checking…' : 'Check usage'}
+                </Button>
+              </div>
+
+              {usageMut.data && (
+                <div className="space-y-3">
+                  <div className="rounded-lg bg-surface-page border border-border p-3 text-xs">
+                    <p className="font-medium text-gray-800">
+                      {usageMut.data.account.callsThisMonth}
+                      {usageMut.data.account.totalCallsAllowed != null && ` / ${usageMut.data.account.totalCallsAllowed}`}
+                      {' '}calls used this month (account-wide, all orgs combined)
+                    </p>
+                    {usageMut.data.account.resetsOn && (
+                      <p className="text-gray-400 mt-0.5">Resets on {formatDate(usageMut.data.account.resetsOn)}</p>
+                    )}
+                  </div>
+
+                  {usageMut.data.byOrg.length > 0 && (
+                    <div className="rounded-lg border border-border overflow-hidden">
+                      <table className="w-full text-xs">
+                        <thead className="bg-surface-page">
+                          <tr>
+                            <th className="text-start px-3 py-2 font-medium text-gray-500">Organization</th>
+                            <th className="text-end px-3 py-2 font-medium text-gray-500">This month</th>
+                            <th className="text-end px-3 py-2 font-medium text-gray-500">All-time</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {usageMut.data.byOrg.map((row) => (
+                            <tr key={row.organizationId}>
+                              <td className="px-3 py-2 text-gray-700">{row.organizationName}</td>
+                              <td className="px-3 py-2 text-end font-mono">{row.callsThisMonth}</td>
+                              <td className="px-3 py-2 text-end font-mono text-gray-400">{row.callsTotal}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         <div className="flex gap-2">

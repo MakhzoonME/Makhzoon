@@ -12,6 +12,12 @@ export {
   type NotificationConfigPatch,
 } from './useNotificationConfig';
 export {
+  useCheckOcrUsage,
+  type OcrAccountUsage,
+  type OcrUsageByOrg,
+  type OcrUsageResponse,
+} from './useOcrUsage';
+export {
   useCreateSubscription,
   useRenewSubscription,
   useCancelSubscription,

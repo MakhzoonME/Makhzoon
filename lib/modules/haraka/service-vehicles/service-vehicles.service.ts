@@ -22,9 +22,9 @@ function requireWrite(tenant: TenantContext) {
 }
 
 export class ServiceVehiclesService {
-  async list(tenant: TenantContext, search?: string) {
+  async list(tenant: TenantContext, opts?: { search?: string; customerId?: string }) {
     requireView(tenant)
-    return repo.list(tenant, search)
+    return repo.list(tenant, opts)
   }
 
   async getById(tenant: TenantContext, id: string) {

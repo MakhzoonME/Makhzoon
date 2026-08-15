@@ -32,13 +32,14 @@ export interface CreateServiceVehicleInput {
 }
 
 export class ServiceVehiclesRepository {
-  async list(tenant: TenantContext, search?: string): Promise<HarakaServiceVehicle[]> {
+  async list(tenant: TenantContext, opts?: { search?: string; customerId?: string }): Promise<HarakaServiceVehicle[]> {
     let q = supabaseAdmin
       .from('haraka_service_vehicles')
       .select('*')
       .eq('organization_id', tenant.organizationId)
       .order('created_at', { ascending: false })
-    if (search) q = q.ilike('plate_number', `%${search}%`)
+    if (opts?.search) q = q.ilike('plate_number', `%${opts.search}%`)
+    if (opts?.customerId) q = q.eq('customer_id', opts.customerId)
     const { data, error } = await q
     if (error) throw error
     return (data ?? []).map(toVehicle)

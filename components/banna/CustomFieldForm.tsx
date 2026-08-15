@@ -14,7 +14,7 @@ import type { CustomFieldType, CustomField, CustomFieldOption } from '@/types/ba
 
 const MAX_OPTIONS = 50;
 
-const FIELD_TYPES: { value: CustomFieldType; label: string }[] = [
+const BASE_FIELD_TYPES: { value: CustomFieldType; label: string }[] = [
   { value: 'text', label: 'Text' },
   { value: 'number', label: 'Number' },
   { value: 'select', label: 'Select' },
@@ -23,6 +23,12 @@ const FIELD_TYPES: { value: CustomFieldType; label: string }[] = [
   { value: 'boolean', label: 'Yes/No' },
   { value: 'user', label: 'User' },
 ];
+
+// Plate/vehicle capture only makes sense on a customer record — hidden for
+// assets/inventory custom fields.
+const PLATE_READER_TYPE: { value: CustomFieldType; label: string } = {
+  value: 'plate_reader', label: 'Plate / Vehicle Reader',
+};
 
 const MODULES = [
   { value: 'assets', label: 'Assets' },
@@ -67,6 +73,8 @@ export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, subm
   const [placeholder, setPlaceholder] = useState(initial?.placeholder ?? '');
   const [placeholderAr, setPlaceholderAr] = useState(initial?.placeholderAr ?? '');
   const [sortOrder, setSortOrder] = useState(initial?.sortOrder ?? 0);
+
+  const fieldTypes = module === 'customers' ? [...BASE_FIELD_TYPES, PLATE_READER_TYPE] : BASE_FIELD_TYPES;
 
   function addOption() {
     setOptions((prev) => (prev.length >= MAX_OPTIONS ? prev : [...prev, { value: '', label: '', labelAr: '' }]));
@@ -124,7 +132,7 @@ export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, subm
           <Select value={type} onValueChange={(v) => setType(v as CustomFieldType)} disabled={!!initial}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              {FIELD_TYPES.map((ft) => (
+              {fieldTypes.map((ft) => (
                 <SelectItem key={ft.value} value={ft.value}>{ft.label}</SelectItem>
               ))}
             </SelectContent>

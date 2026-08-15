@@ -14,8 +14,11 @@ export async function GET(req: NextRequest) {
     requireFeature(tenant, 'vehicleIntake')
     await requireHarakaModule(tenant, 'services')
     await requireAddOn(tenant, 'vehicleIntake')
-    const search = new URL(req.url).searchParams.get('plate') ?? undefined
-    const items = await service.list(tenant, search)
+    const params = new URL(req.url).searchParams
+    const items = await service.list(tenant, {
+      search:     params.get('plate') ?? undefined,
+      customerId: params.get('customerId') ?? undefined,
+    })
     return NextResponse.json({ items })
   } catch (err) {
     if (err instanceof NextResponse) return err

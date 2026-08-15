@@ -67,7 +67,7 @@ export {
   useDeleteServiceJob,
 } from './useServiceJobs';
 export type { UseServiceJobsParams, ServiceJobPaymentEntry } from './useServiceJobs';
-export { useOcrPlate, useFindOrCreateVehicle } from './useServiceVehicles';
+export { useOcrPlate, useFindOrCreateVehicle, useCustomerVehicles } from './useServiceVehicles';
 export { useServiceJobRatingsSummary } from './useServiceJobRatings';
 export type { RatingsSummary } from './useServiceJobRatings';
 export {

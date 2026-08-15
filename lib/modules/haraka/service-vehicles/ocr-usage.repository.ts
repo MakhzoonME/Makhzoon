@@ -30,10 +30,12 @@ export async function getOcrUsageByOrg(): Promise<OcrUsageByOrg[]> {
   monthStart.setUTCDate(1)
   monthStart.setUTCHours(0, 0, 0, 0)
 
-  const [{ data: allRows }, { data: monthRows }] = await Promise.all([
+  const [{ data: allRows, error: allError }, { data: monthRows, error: monthError }] = await Promise.all([
     supabaseAdmin.from('haraka_plate_ocr_usage_log').select('organization_id'),
     supabaseAdmin.from('haraka_plate_ocr_usage_log').select('organization_id').gte('created_at', monthStart.toISOString()),
   ])
+  if (allError) throw allError
+  if (monthError) throw monthError
 
   const orgIds = new Set<string>()
   const totalByOrg = new Map<string, number>()

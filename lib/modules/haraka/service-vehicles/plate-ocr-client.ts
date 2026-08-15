@@ -1,6 +1,6 @@
 'use client'
 
-import { createWorker, PSM, type Worker } from 'tesseract.js'
+import { createWorker, type Worker } from 'tesseract.js'
 
 /**
  * Fully client-side plate OCR — runs in the browser via Tesseract.js (WASM),
@@ -33,11 +33,12 @@ async function getWorker(): Promise<Worker> {
       console.log(`[plate-ocr] worker ready in ${Date.now() - startedAt}ms`)
       await worker.setParameters({
         tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789٠١٢٣٤٥٦٧٨٩- ',
-        // SINGLE_COLUMN: plates like Jordan's stack a 1-2 digit prefix above
-        // a 1-5 digit main number (plus an Arabic/English country-name row
-        // between them) — this segments each row correctly instead of the
-        // default fully-automatic mode merging/reordering them.
-        tessedit_pageseg_mode: PSM.SINGLE_COLUMN,
+        // Deliberately left at the default AUTO page-segmentation mode.
+        // SINGLE_COLUMN was tried to help stacked-line plates (Jordan's
+        // truck-style prefix-over-main layout) but made single-line layouts
+        // (Jordan's car-style "prefix · main", and most other countries)
+        // produce total garbage — forcing one structural assumption doesn't
+        // hold across plate shapes. AUTO is less specialized but far safer.
       })
       return worker
     }).catch((err) => {
@@ -56,31 +57,46 @@ const ARABIC_INDIC_DIGITS: Record<string, string> = {
   '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9',
 }
 
-// Jordan plates stack a 1-2 digit prefix above a 1-5 digit main number (with
-// an Arabic/English country-name row in between, which carries no digits and
-// drops out on its own). Reconstruct that as "<prefix>-<main>" even when the
-// physical plate has no dash printed between them — matches how the number
-// is written/searched everywhere else in the system.
-function joinJordanPrefixMain(lineGroups: string[]): string | null {
-  if (lineGroups.length !== 2) return null
-  const [first, second] = lineGroups
+// Jordan plates pair a 1-2 digit prefix with a 1-5 digit main number,
+// separated visually by a middle dot or gap ("10 · 23456") — sometimes on
+// one line, sometimes stacked across two, with a small Arabic/English
+// country-name label elsewhere on the plate that carries no digits and
+// drops out on its own. Whatever the layout, Tesseract reports the prefix
+// and main number as separate whitespace-delimited words (it can't read the
+// dot itself, but it does see the gap), so tokenizing by any whitespace —
+// not just line breaks — catches both layouts the same way. Reconstruct as
+// "<prefix>-<main>" even when no dash is physically printed, matching how
+// the number is written/searched everywhere else in the system.
+function joinJordanPrefixMain(wordGroups: string[]): string | null {
+  if (wordGroups.length !== 2) return null
+  const [first, second] = wordGroups
   if (/^[0-9]{1,2}$/.test(first) && /^[0-9]{1,5}$/.test(second)) return `${first}-${second}`
   return null
 }
 
+// No real plate across any of these countries runs longer than this many
+// identifying characters (prefix + main, dash excluded) — a longer result
+// means the engine picked up border/frame/screw-hole noise as text, not a
+// real read, so treat it as unrecognized rather than submit garbage.
+const MAX_PLATE_CHARS = 10
+// Tesseract's 0-100 word-confidence score. Below this, a "successful" read
+// is more likely noise than a real plate — same reasoning as above.
+const MIN_CONFIDENCE = 40
+
 function extractPlate(rawText: string): string | null {
   const normalized = rawText.replace(/[٠-٩]/g, (d) => ARABIC_INDIC_DIGITS[d] ?? d)
 
-  const lineGroups = normalized
-    .split('\n')
-    .map((line) => line.toUpperCase().replace(/[^A-Z0-9]/g, ''))
-    .filter((line) => line.length > 0)
+  const wordGroups = normalized
+    .split(/\s+/)
+    .map((word) => word.toUpperCase().replace(/[^A-Z0-9]/g, ''))
+    .filter((word) => word.length > 0)
 
-  const jordanFormat = joinJordanPrefixMain(lineGroups)
+  const jordanFormat = joinJordanPrefixMain(wordGroups)
   if (jordanFormat) return jordanFormat
 
-  const cleaned = lineGroups.join('')
-  return cleaned.length >= 3 ? cleaned : null
+  const cleaned = wordGroups.join('')
+  if (cleaned.length < 3 || cleaned.length > MAX_PLATE_CHARS) return null
+  return cleaned
 }
 
 export async function recognizePlateClientSide(dataUri: string): Promise<PlateOcrResult> {
@@ -89,12 +105,11 @@ export async function recognizePlateClientSide(dataUri: string): Promise<PlateOc
   try {
     const worker = await getWorker()
     const { data } = await worker.recognize(dataUri)
-    const result = {
-      plateNumber: extractPlate(data.text),
-      confidence:  typeof data.confidence === 'number' ? data.confidence : null,
-    }
-    console.log(`[plate-ocr] recognize() done in ${Date.now() - startedAt}ms — raw text: ${JSON.stringify(data.text)}, confidence: ${data.confidence}, extracted: ${result.plateNumber}`)
-    return result
+    const confidence = typeof data.confidence === 'number' ? data.confidence : null
+    const extracted = extractPlate(data.text)
+    const plateNumber = confidence !== null && confidence < MIN_CONFIDENCE ? null : extracted
+    console.log(`[plate-ocr] recognize() done in ${Date.now() - startedAt}ms — raw text: ${JSON.stringify(data.text)}, confidence: ${confidence}, extracted: ${extracted}, accepted: ${plateNumber}`)
+    return { plateNumber, confidence }
   } catch (err) {
     console.error(`[plate-ocr] recognize() failed after ${Date.now() - startedAt}ms`, err)
     throw err

@@ -4,7 +4,7 @@ import { requireFeature } from '@/lib/permissions/require-feature'
 import { requireAddOn } from '@/lib/permissions/require-module'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { PlatformNotificationConfigRepository } from '@/lib/platform/notification-config.repository'
-import { recognizePlate } from '@/lib/modules/haraka/service-vehicles/plate-recognizer'
+import { recognizePlate, PlateOcrQuotaExceededError } from '@/lib/modules/haraka/service-vehicles/plate-recognizer'
 import { ocrPlateRequestSchema } from '@/lib/modules/haraka/service-vehicles/schemas'
 
 const configRepo = new PlatformNotificationConfigRepository()
@@ -41,6 +41,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result)
   } catch (err) {
     if (err instanceof NextResponse) return err
+    if (err instanceof PlateOcrQuotaExceededError) {
+      return NextResponse.json({ error: err.message }, { status: 429 })
+    }
     if (err instanceof Error) return NextResponse.json({ error: err.message }, { status: 400 })
     console.error('[POST /api/haraka/service-vehicles/ocr]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

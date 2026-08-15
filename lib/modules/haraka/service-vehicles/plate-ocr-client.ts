@@ -1,6 +1,6 @@
 'use client'
 
-import { createWorker, type Worker } from 'tesseract.js'
+import { createWorker, PSM, type Worker } from 'tesseract.js'
 
 /**
  * Fully client-side plate OCR — runs in the browser via Tesseract.js (WASM),
@@ -33,6 +33,11 @@ async function getWorker(): Promise<Worker> {
       console.log(`[plate-ocr] worker ready in ${Date.now() - startedAt}ms`)
       await worker.setParameters({
         tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789٠١٢٣٤٥٦٧٨٩- ',
+        // SINGLE_COLUMN: plates like Jordan's stack a 1-2 digit prefix above
+        // a 1-5 digit main number (plus an Arabic/English country-name row
+        // between them) — this segments each row correctly instead of the
+        // default fully-automatic mode merging/reordering them.
+        tessedit_pageseg_mode: PSM.SINGLE_COLUMN,
       })
       return worker
     }).catch((err) => {
@@ -51,9 +56,30 @@ const ARABIC_INDIC_DIGITS: Record<string, string> = {
   '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9',
 }
 
+// Jordan plates stack a 1-2 digit prefix above a 1-5 digit main number (with
+// an Arabic/English country-name row in between, which carries no digits and
+// drops out on its own). Reconstruct that as "<prefix>-<main>" even when the
+// physical plate has no dash printed between them — matches how the number
+// is written/searched everywhere else in the system.
+function joinJordanPrefixMain(lineGroups: string[]): string | null {
+  if (lineGroups.length !== 2) return null
+  const [first, second] = lineGroups
+  if (/^[0-9]{1,2}$/.test(first) && /^[0-9]{1,5}$/.test(second)) return `${first}-${second}`
+  return null
+}
+
 function extractPlate(rawText: string): string | null {
   const normalized = rawText.replace(/[٠-٩]/g, (d) => ARABIC_INDIC_DIGITS[d] ?? d)
-  const cleaned = normalized.toUpperCase().replace(/[^A-Z0-9]/g, '')
+
+  const lineGroups = normalized
+    .split('\n')
+    .map((line) => line.toUpperCase().replace(/[^A-Z0-9]/g, ''))
+    .filter((line) => line.length > 0)
+
+  const jordanFormat = joinJordanPrefixMain(lineGroups)
+  if (jordanFormat) return jordanFormat
+
+  const cleaned = lineGroups.join('')
   return cleaned.length >= 3 ? cleaned : null
 }
 

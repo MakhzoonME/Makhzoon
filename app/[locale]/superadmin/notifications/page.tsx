@@ -18,6 +18,7 @@ export default function SuperadminNotificationsPage() {
   const [phoneNumberId,    setPhoneNumberId]    = useState('');
   const [token,            setToken]            = useState('');
   const [webhookSecret,    setWebhookSecret]    = useState('');
+  const [ocrApiKey,        setOcrApiKey]        = useState('');
   const [copied,           setCopied]           = useState(false);
   const [webhookUrl,       setWebhookUrl]       = useState('');
 
@@ -43,9 +44,11 @@ export default function SuperadminNotificationsPage() {
         whatsappPhoneNumberId: phoneNumberId || null,
         whatsappToken:         token || undefined,
         whatsappWebhookSecret: webhookSecret || undefined,
+        ocrApiKey:             ocrApiKey || undefined,
       });
       setToken('');
       setWebhookSecret('');
+      setOcrApiKey('');
       toast.success('Notification settings saved');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save');
@@ -67,7 +70,7 @@ export default function SuperadminNotificationsPage() {
     <div>
       <PageHeader
         title="Notifications"
-        description="Makhzoon's own WhatsApp Business number — shared across every organization, not configured per-org. Plate recognition runs entirely in the browser, no account needed."
+        description="Makhzoon's own WhatsApp Business number and Plate Recognizer account — shared across every organization, not configured per-org."
         breadcrumb={[{ label: 'Notifications' }]}
       />
 
@@ -121,6 +124,27 @@ export default function SuperadminNotificationsPage() {
               </div>
             </>
           )}
+        </div>
+
+        <div className="rounded-xl border border-border bg-surface-card p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-gray-700">Plate recognition (Plate Recognizer)</h3>
+          <p className="text-xs text-gray-400">
+            Purpose-built plate-recognition API, not generic OCR — free tier covers ~100 scans/month.
+            Get your token from{' '}
+            <a href="https://app.platerecognizer.com" target="_blank" rel="noreferrer" className="text-primary-600 hover:underline">
+              app.platerecognizer.com
+            </a>{' '}
+            → API Token.
+          </p>
+          <div className="space-y-1.5">
+            <Label>API token {config?.ocrApiKeySet && <span className="text-xs font-normal text-gray-400">(currently set — leave blank to keep)</span>}</Label>
+            <Input
+              type="password"
+              value={ocrApiKey}
+              onChange={(e) => setOcrApiKey(e.target.value)}
+              placeholder={config?.ocrApiKeySet ? '••••••••' : "From Plate Recognizer's dashboard"}
+            />
+          </div>
         </div>
 
         <div className="flex gap-2">

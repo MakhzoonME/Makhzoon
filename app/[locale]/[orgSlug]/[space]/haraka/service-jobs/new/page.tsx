@@ -57,6 +57,7 @@ export default function NewServiceJobPage() {
   const [vehicleId,       setVehicleId]       = useState<string | null>(null);
   const [vehicleIsNew,    setVehicleIsNew]    = useState<boolean | null>(null);
   const [matchedCustomerId, setMatchedCustomerId] = useState<string | null>(null);
+  const [plateCandidates, setPlateCandidates] = useState<{ plate: string; score: number }[]>([]);
   const ocrMut = useOcrPlate();
   const vehicleMut = useFindOrCreateVehicle();
   const { data: matchedCustomerData } = useCustomer(matchedCustomerId ?? undefined);
@@ -95,10 +96,12 @@ export default function NewServiceJobPage() {
   }
 
   async function handleCapturedPlate(dataUri: string) {
+    setPlateCandidates([])
     try {
       const result = await ocrMut.mutateAsync(dataUri)
       if (result.plateNumber) {
         setPlateNumber(result.plateNumber)
+        setPlateCandidates(result.candidates ?? [])
         await resolveVehicle(result.plateNumber)
       } else {
         toast.error('Could not read the plate — enter it manually')
@@ -108,6 +111,14 @@ export default function NewServiceJobPage() {
       const message = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Plate recognition failed'
       toast.error(message)
     }
+  }
+
+  function pickPlateCandidate(plate: string) {
+    setPlateNumber(plate)
+    setPlateCandidates([])
+    setVehicleId(null)
+    setVehicleIsNew(null)
+    resolveVehicle(plate)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -210,7 +221,7 @@ export default function NewServiceJobPage() {
             <div className="flex gap-2">
               <Input
                 value={plateNumber}
-                onChange={(e) => setPlateNumber(e.target.value.toUpperCase())}
+                onChange={(e) => { setPlateNumber(e.target.value.toUpperCase()); setPlateCandidates([]); }}
                 onBlur={() => { if (plateNumber.trim() && !vehicleId) resolveVehicle(plateNumber); }}
                 placeholder={t('serviceJobs.labelPlateNumber')}
                 className="font-mono tracking-wider"
@@ -221,6 +232,23 @@ export default function NewServiceJobPage() {
             </div>
             {(ocrMut.isPending || vehicleMut.isPending) && (
               <p className="text-xs text-gray-400">{t('serviceJobs.plateScanning')}</p>
+            )}
+            {plateCandidates.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-xs text-gray-500">Not quite right? Other readings:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {plateCandidates.map((c) => (
+                    <button
+                      key={c.plate}
+                      type="button"
+                      onClick={() => pickPlateCandidate(c.plate)}
+                      className="rounded-md border border-border bg-surface-card px-2.5 py-1 font-mono text-xs tracking-wider text-gray-700 hover:border-primary-500 hover:text-primary-700 transition-colors"
+                    >
+                      {c.plate}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
             {vehicleId && vehicleIsNew === false && (
               <p className="flex items-center gap-1.5 text-xs text-green-700">

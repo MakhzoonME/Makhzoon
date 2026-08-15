@@ -15,7 +15,11 @@ export function useOcrPlate() {
         const err = await res.json().catch(() => ({}))
         throw new Error(typeof err.error === 'string' ? err.error : 'Plate recognition failed')
       }
-      return res.json() as Promise<{ plateNumber: string | null; confidence: number | null }>
+      return res.json() as Promise<{
+        plateNumber: string | null
+        confidence: number | null
+        candidates: { plate: string; score: number }[]
+      }>
     },
   })
 }

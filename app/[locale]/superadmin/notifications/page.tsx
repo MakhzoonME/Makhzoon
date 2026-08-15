@@ -178,28 +178,34 @@ export default function SuperadminNotificationsPage() {
                     )}
                   </div>
 
-                  {usageMut.data.byOrg.length > 0 && (
-                    <div className="rounded-lg border border-border overflow-hidden">
-                      <table className="w-full text-xs">
-                        <thead className="bg-surface-page">
+                  <div className="rounded-lg border border-border overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead className="bg-surface-page">
+                        <tr>
+                          <th className="text-start px-3 py-2 font-medium text-gray-500">Organization</th>
+                          <th className="text-end px-3 py-2 font-medium text-gray-500">This month</th>
+                          <th className="text-end px-3 py-2 font-medium text-gray-500">All-time</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {usageMut.data.byOrg.length === 0 ? (
                           <tr>
-                            <th className="text-start px-3 py-2 font-medium text-gray-500">Organization</th>
-                            <th className="text-end px-3 py-2 font-medium text-gray-500">This month</th>
-                            <th className="text-end px-3 py-2 font-medium text-gray-500">All-time</th>
+                            <td colSpan={3} className="px-3 py-4 text-center text-gray-400">
+                              No scans logged per-org yet — this fills in after the next capture.
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {usageMut.data.byOrg.map((row) => (
+                        ) : (
+                          usageMut.data.byOrg.map((row) => (
                             <tr key={row.organizationId}>
                               <td className="px-3 py-2 text-gray-700">{row.organizationName}</td>
                               <td className="px-3 py-2 text-end font-mono">{row.callsThisMonth}</td>
                               <td className="px-3 py-2 text-end font-mono text-gray-400">{row.callsTotal}</td>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </>

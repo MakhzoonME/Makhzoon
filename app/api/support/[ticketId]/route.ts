@@ -14,6 +14,7 @@ import {
   supportTicketAdminUpdateSchema,
   supportTicketOrgUpdateSchema,
 } from '@/lib/validations/support-ticket.schema';
+import { notificationQueue } from '@/lib/notifications/notification-queue';
 
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
@@ -74,6 +75,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
         recordId: ticketId,
         newValue: parsed.data as Record<string, unknown>,
       });
+
+      if (parsed.data.status) {
+        notificationQueue.enqueue({
+          tenant: { organizationId: ticket.organizationId },
+          eventType: 'support.ticket_status_changed',
+          data: { ticketId, subject: ticket.subject, status: parsed.data.status },
+          link: `/support/${ticketId}`,
+          titleOverride: `Ticket "${ticket.subject}" marked ${parsed.data.status.toLowerCase()}`,
+        });
+      }
 
       return NextResponse.json({ success: true });
     }

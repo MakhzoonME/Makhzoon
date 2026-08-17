@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
       customerId:      d.customerId ?? null,
       staffMemberId:   d.staffMemberId ?? null,
       staffMemberName: d.staffMemberName ?? null,
+      vehicleId:       d.vehicleId ?? null,
       lines:           d.items.map((l) => ({
         itemId:    '',
         itemName:  l.name,

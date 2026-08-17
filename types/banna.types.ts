@@ -5,7 +5,21 @@ export type CustomFieldType =
   | 'multi_select'
   | 'date'
   | 'boolean'
-  | 'user';
+  | 'user'
+  | 'plate_reader';
+
+/** One entry in a `plate_reader` field's value array — always a list, one
+ *  customer can have multiple vehicles. `vehicleId` links to the underlying
+ *  haraka_service_vehicles row (populated server-side on save); absent on a
+ *  freshly-added row that hasn't been saved yet. */
+export interface PlateReaderEntry {
+  vehicleId?: string | null;
+  plateNumber: string;
+  make?: string | null;
+  model?: string | null;
+  color?: string | null;
+  notes?: string | null;
+}
 
 export interface CustomFieldOption {
   value: string;

@@ -96,7 +96,7 @@ export default function OrderDetailPage() {
           deliveryAgentName:     newAgent?.name ?? null,
         },
       });
-      toast.success('Delivery agent updated.');
+      toast.success('Worker updated.');
       setReassignAgent(false);
       refetch();
     } catch (err) {
@@ -254,7 +254,7 @@ export default function OrderDetailPage() {
           <div className="flex items-start gap-2">
             <Truck className="h-4 w-4 text-gray-300 mt-0.5" />
             <div className="flex-1">
-              <div className="text-xs text-gray-400">Delivery agent</div>
+              <div className="text-xs text-gray-400">Worker</div>
               {reassignAgent ? (
                 <div className="space-y-2 mt-1">
                   <DeliveryAgentPicker value={newAgent} onChange={setNewAgent} />

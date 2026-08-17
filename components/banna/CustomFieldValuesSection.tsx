@@ -1,18 +1,102 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useCustomFieldValues, useSaveCustomFieldValues } from '@/hooks/banna';
-import type { CustomFieldWithValue, CustomFieldRecordType, UpsertCustomFieldValueInput } from '@/types/banna.types';
+import type { CustomFieldWithValue, CustomFieldRecordType, UpsertCustomFieldValueInput, PlateReaderEntry } from '@/types/banna.types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useT } from '@/hooks/ui';
-import { Loader2 } from 'lucide-react';
+import { useT, toast } from '@/hooks/ui';
+import { Loader2, Camera, X, Plus } from 'lucide-react';
+import { PlateCaptureDialog } from '@/components/haraka/PlateCaptureDialog';
+import { useOcrPlate } from '@/hooks/haraka';
 
 interface Props {
   recordType: CustomFieldRecordType;
   recordId: string;
+}
+
+/** Repeatable vehicle-plate list — one customer can have several vehicles.
+ *  Each row's plate can be typed or captured via the camera/OCR reader,
+ *  same flow as service-job intake. Saved rows sync to the real
+ *  haraka_service_vehicles table server-side (see BannaValuesService). */
+function PlateReaderFieldInput({
+  value,
+  onChange,
+}: {
+  value: unknown;
+  onChange: (v: unknown) => void;
+}) {
+  const entries: PlateReaderEntry[] = Array.isArray(value) ? (value as PlateReaderEntry[]) : [];
+  const [captureIndex, setCaptureIndex] = useState<number | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const ocrMut = useOcrPlate();
+
+  function updateEntry(i: number, patch: Partial<PlateReaderEntry>) {
+    onChange(entries.map((e, idx) => (idx === i ? { ...e, ...patch } : e)));
+  }
+  function addEntry() {
+    onChange([...entries, { plateNumber: '' }]);
+  }
+  function removeEntry(i: number) {
+    onChange(entries.filter((_, idx) => idx !== i));
+  }
+
+  async function handleCaptured(dataUri: string) {
+    if (captureIndex === null) return;
+    const i = captureIndex;
+    try {
+      const result = await ocrMut.mutateAsync(dataUri);
+      if (result.plateNumber) {
+        updateEntry(i, { plateNumber: result.plateNumber });
+      } else {
+        toast.error('Could not read the plate — enter it manually');
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Plate recognition failed');
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      {entries.map((entry, i) => (
+        <div key={i} className="rounded-lg border border-border p-2.5 space-y-2">
+          <div className="flex gap-1.5">
+            <Input
+              value={entry.plateNumber}
+              onChange={(e) => updateEntry(i, { plateNumber: e.target.value.toUpperCase() })}
+              placeholder="Plate number"
+              className="h-8 text-sm font-mono tracking-wider"
+            />
+            <Button
+              type="button" size="sm" variant="outline" className="h-8 px-2.5 flex-shrink-0"
+              onClick={() => { setCaptureIndex(i); setDialogOpen(true); }}
+              aria-label="Capture plate"
+            >
+              <Camera className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              type="button" size="sm" variant="ghost" className="h-8 px-2 flex-shrink-0 text-red-500"
+              onClick={() => removeEntry(i)}
+              aria-label="Remove vehicle"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            <Input value={entry.make ?? ''} onChange={(e) => updateEntry(i, { make: e.target.value })} placeholder="Make" className="h-7 text-xs" />
+            <Input value={entry.model ?? ''} onChange={(e) => updateEntry(i, { model: e.target.value })} placeholder="Model" className="h-7 text-xs" />
+            <Input value={entry.color ?? ''} onChange={(e) => updateEntry(i, { color: e.target.value })} placeholder="Color" className="h-7 text-xs" />
+          </div>
+        </div>
+      ))}
+      <Button type="button" size="sm" variant="outline" onClick={addEntry}>
+        <Plus className="h-3.5 w-3.5 me-1" /> Add vehicle
+      </Button>
+      <PlateCaptureDialog open={dialogOpen} onOpenChange={setDialogOpen} onCaptured={handleCaptured} />
+    </div>
+  );
 }
 
 export function FieldInput({
@@ -27,6 +111,18 @@ export function FieldInput({
   const { locale } = useT();
   const label = (locale === 'ar' && field.labelAr) ? field.labelAr : field.label;
   const placeholder = (locale === 'ar' && field.placeholderAr) ? field.placeholderAr : (field.placeholder ?? '');
+
+  if (field.type === 'plate_reader') {
+    return (
+      <div className="space-y-1 sm:col-span-2">
+        <Label className="text-xs font-medium text-gray-600">
+          {label}
+          {field.required && <span className="text-red-500 ms-0.5">*</span>}
+        </Label>
+        <PlateReaderFieldInput value={value} onChange={onChange} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-1">

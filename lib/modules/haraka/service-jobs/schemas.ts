@@ -45,6 +45,7 @@ export const createServiceJobSchema = z.object({
   customerId:       z.string().uuid().nullable().optional(),
   staffMemberId:    z.string().nullable().optional(),
   staffMemberName:  z.string().trim().max(120).nullable().optional(),
+  vehicleId:        z.string().uuid().nullable().optional(),
   items:            z.array(serviceLineSchema).min(1, 'At least one service item is required'),
   paymentMethod:    z.string().max(60).nullable().optional(),
   scheduledAt:      z.preprocess(coerceLocalDatetime, z.string().datetime().nullable().optional()),
@@ -80,6 +81,12 @@ export const addPaymentEntrySchema = z.object({
   note:          z.string().trim().max(500).nullable().optional(),
 })
 
+export const assignServiceJobAgentsSchema = z.discriminatedUnion('mode', [
+  z.object({ mode: z.literal('auto'), count: z.number().int().min(1).max(10) }),
+  z.object({ mode: z.literal('manual'), agentIds: z.array(z.string().uuid()).min(1).max(10) }),
+])
+
+export type AssignServiceJobAgentsPayload = z.infer<typeof assignServiceJobAgentsSchema>
 export type CreateServiceJobPayload = z.infer<typeof createServiceJobSchema>
 export type UpdateServiceJobPayload = z.infer<typeof updateServiceJobSchema>
 export type UpdateServiceJobStatusPayload = z.infer<typeof updateServiceJobStatusSchema>

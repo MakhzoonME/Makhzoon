@@ -47,20 +47,26 @@ export type AddOnKey =
   | 'deliveryAgents'
   | 'warrantyCerts'
   | 'customization'
-  | 'purchasesRequests';
+  | 'purchasesRequests'
+  | 'vehicleIntake'
+  | 'loyalty';
 
 const ADDON_INCLUDED: Record<AddOnKey, keyof PackageAllowances> = {
   deliveryAgents: 'deliveryAgentsIncluded',
   warrantyCerts: 'warrantyCertsIncluded',
   customization: 'customizationIncluded',
   purchasesRequests: 'purchasesRequestsIncluded',
+  vehicleIntake: 'vehicleIntakeIncluded',
+  loyalty: 'loyaltyIncluded',
 };
 
 const ADDON_LABELS: Record<AddOnKey, string> = {
-  deliveryAgents: 'Delivery agents',
+  deliveryAgents: 'Workers',
   warrantyCerts: 'Warranty certificates',
   customization: 'Customization',
   purchasesRequests: 'Purchases & Requests',
+  vehicleIntake: 'Vehicle intake (plate capture)',
+  loyalty: 'Loyalty program',
 };
 
 /**

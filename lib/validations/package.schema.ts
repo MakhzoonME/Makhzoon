@@ -34,6 +34,41 @@ export const packagePricingSchema = z.object({
   isCustom: z.boolean(),
 });
 
+// Partial on purpose — usoolIncluded/raseedIncluded/spacesIncluded/
+// usersIncluded/reportsAvailable stay off this schema; those overlap with
+// the legacy `limits` block above and aren't part of the Module Access
+// rebuild (a separate cleanup, not this one).
+export const packageAllowancesSchema = z
+  .object({
+    harakaIncludedModuleSlots: z.number().int().min(0).optional(),
+    purchasesRequestsIncluded: z.boolean().optional(),
+    deliveryAgentsIncluded: z.boolean().optional(),
+    warrantyCertsIncluded: z.boolean().optional(),
+    customizationIncluded: z.boolean().optional(),
+    vehicleIntakeIncluded: z.boolean().optional(),
+    loyaltyIncluded: z.boolean().optional(),
+  })
+  .optional();
+
+export const packageAddOnPricesSchema = z
+  .object({
+    purchasesRequests: z.number().min(0).optional(),
+    deliveryAgents: z.number().min(0).optional(),
+    warrantyCerts: z.number().min(0).optional(),
+    customization: z.number().min(0).optional(),
+    vehicleIntake: z.number().min(0).optional(),
+    loyalty: z.number().min(0).optional(),
+    harakaModules: z
+      .object({
+        pos: z.number().min(0).optional(),
+        services: z.number().min(0).optional(),
+        orders: z.number().min(0).optional(),
+        retainers: z.number().min(0).optional(),
+      })
+      .optional(),
+  })
+  .optional();
+
 export const packageSchema = z.object({
   name: z.string().min(2).max(100),
   description: z.string().min(0).max(500),
@@ -44,6 +79,8 @@ export const packageSchema = z.object({
   limits: packageLimitsSchema,
   features: packageFeaturesSchema,
   inclusions: packageInclusionsSchema,
+  allowances: packageAllowancesSchema,
+  addOnPrices: packageAddOnPricesSchema,
 });
 
 export const packageUpdateSchema = packageSchema.partial();

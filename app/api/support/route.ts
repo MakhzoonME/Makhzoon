@@ -15,7 +15,7 @@ import { TicketStatus, TicketPriority } from '@/types';
 import { sendEmail } from '@/lib/email/resend';
 import { supportTicketNotificationEmail } from '@/lib/email/templates';
 
-const SUPPORT_EMAILS = ['info@makhzoon.me', 'support@makhzoon.me'];
+const SUPPORT_EMAILS = ['info@makhzoon.me'];
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
 export async function GET(req: NextRequest) {

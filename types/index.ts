@@ -27,3 +27,4 @@ export * from './pos.types';
 export * from './purchase.types';
 export * from './managed-lists.types';
 export * from './space.types';
+export * from './loyalty.types';

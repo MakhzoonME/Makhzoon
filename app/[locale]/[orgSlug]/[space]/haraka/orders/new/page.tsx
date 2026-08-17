@@ -419,7 +419,7 @@ export default function NewOrderPage() {
                 )}
               />
               <div className="space-y-2">
-                <div className="text-sm font-medium text-gray-700">Delivery agent</div>
+                <div className="text-sm font-medium text-gray-700">Worker</div>
                 <DeliveryAgentPicker value={deliveryAgent} onChange={setDeliveryAgent} />
               </div>
             </div>

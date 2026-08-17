@@ -12,24 +12,29 @@ export type FeatureKey =
   | 'assetCheckouts'
   | 'assetNotes'
   | 'pos'
-  | 'reception'
-  | 'banna';
+  | 'banna'
+  | 'loyalty'
+  | 'vehicleIntake';
 
-// Order here drives the order of checkboxes in the package + org subscription forms.
+// Order here drives the order of checkboxes in the package + org subscription
+// forms. Grouping (Platform / Usool / Raseed / Haraka / Banna / Loyalty)
+// lives in the UI layer (PackageForm) — it mirrors lib/nav/index.ts's module
+// groups so package config matches what an org actually sees in the sidebar.
 export const FEATURE_KEYS: FeatureKey[] = [
   'dashboard',
-  'assets',
-  'inventory',
-  'warranties',
   'reports',
   'support',
   'auditLogs',
+  'assets',
+  'warranties',
   'maintenance',
   'assetCheckouts',
   'assetNotes',
+  'inventory',
   'pos',
-  'reception',
   'banna',
+  'loyalty',
+  'vehicleIntake',
 ];
 
 export const FEATURE_LABELS: Record<FeatureKey, string> = {
@@ -44,8 +49,9 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   assetCheckouts: 'Asset Checkouts',
   assetNotes: 'Asset Notes',
   pos: 'Point of Sale',
-  reception: 'Reception (front desk)',
   banna: 'Banna (Custom Fields)',
+  loyalty: 'Loyalty',
+  vehicleIntake: 'Vehicle Intake',
 };
 
 export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
@@ -60,8 +66,9 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
   assetCheckouts: 'Loan-out and return tracking for shared inventory.',
   assetNotes: 'Free-form notes attached to individual assets.',
   pos: 'Point of sale terminal for processing sales transactions.',
-  reception: 'Front-desk intake tickets handed off to the POS register for payment. Requires Point of Sale.',
   banna: 'Custom fields for assets, inventory, and customers.',
+  loyalty: 'Points, tiers, and membership cards for repeat customers.',
+  vehicleIntake: 'Plate-photo intake for Haraka Service Jobs.',
 };
 
 export interface PackageLimits {
@@ -138,6 +145,8 @@ export interface AddOnPrices {
   reports?: number;      // not sold until Reports ships
   extraUser?: number;
   extraSpace?: number;
+  vehicleIntake?: number; // plate-photo intake for Haraka Service Jobs
+  loyalty?: number;       // points/tiers/barcode loyalty module
 }
 
 // Structured, per-module allowances for the new pricing model. Distinct from
@@ -153,6 +162,8 @@ export interface PackageAllowances {
   spacesIncluded: number | null;
   usersIncluded: number | null;
   reportsAvailable: boolean;
+  vehicleIntakeIncluded: boolean;
+  loyaltyIncluded: boolean;
 }
 
 export interface Package {

@@ -259,7 +259,8 @@ export class InventoryService {
 
     // Fire stock alerts after OUT transactions — fetch item metadata for the notification title
     if (type === 'out') {
-      const after = Number(result.quantityAfter);
+      const after  = Number(result.quantityAfter);
+      const before = after + quantity; // 'out' deducts `quantity`, so this recovers the pre-transaction level
       // Async but fire-and-forget — never blocks the caller
       (async () => {
         try {
@@ -270,7 +271,9 @@ export class InventoryService {
             .maybeSingle()
           const itemName  = (item?.name as string) ?? itemId
           const threshold = Number(item?.minimum_threshold ?? 0)
-          if (after === 0) {
+          // Only notify on the transaction that crosses the threshold, not every
+          // subsequent 'out' while stock stays below it — avoids alert spam.
+          if (after === 0 && before > 0) {
             notificationQueue.enqueue({
               tenant,
               eventType: 'inventory.out_of_stock',
@@ -278,7 +281,7 @@ export class InventoryService {
               link: `/raseed/${itemId}`,
               titleOverride: `${itemName} is out of stock`,
             })
-          } else if (after <= threshold) {
+          } else if (after > 0 && after <= threshold && before > threshold) {
             notificationQueue.enqueue({
               tenant,
               eventType: 'inventory.low_stock',

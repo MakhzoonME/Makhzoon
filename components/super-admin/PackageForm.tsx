@@ -6,13 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import {
-  FEATURE_KEYS,
-  FEATURE_LABELS,
   INCLUSION_KEYS,
   INCLUSION_LABELS,
+  HARAKA_MODULE_LABELS,
   type Package,
-  type FeatureKey,
   type InclusionKey,
+  type HarakaModule,
 } from '@/types';
 import type { PackageFormData } from '@/lib/validations/package.schema';
 
@@ -42,6 +41,79 @@ const CURRENCIES = ['USD', 'JOD', 'SAR', 'AED', 'EUR'] as const;
 
 const selectClass =
   'flex h-9 w-full rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600';
+
+// Sub-features gated under the Usool umbrella (module color/grouping mirrors
+// lib/nav/index.ts so package config matches what an org actually sees in
+// the sidebar, instead of one flat unordered checkbox list).
+const USOOL_SUB_FEATURES = ['warranties', 'maintenance', 'assetCheckouts', 'assetNotes'] as const;
+const USOOL_SUB_LABELS: Record<(typeof USOOL_SUB_FEATURES)[number], string> = {
+  warranties: 'Warranties',
+  maintenance: 'Maintenance Records',
+  assetCheckouts: 'Asset Checkouts',
+  assetNotes: 'Asset Notes',
+};
+
+const PLATFORM_FEATURES = ['dashboard', 'reports', 'support', 'auditLogs'] as const;
+const PLATFORM_LABELS: Record<(typeof PLATFORM_FEATURES)[number], string> = {
+  dashboard: 'Dashboard',
+  reports: 'Reports',
+  support: 'Support',
+  auditLogs: 'Audit Logs',
+};
+
+// Haraka modules sold beyond the plan's free slot count (pos is the base
+// module the 'pos' feature flag already gates, so it's not priced here).
+const EXTRA_HARAKA_MODULES: Exclude<HarakaModule, 'pos'>[] = ['services', 'orders', 'retainers'];
+
+type AddOnKey = 'deliveryAgents' | 'warrantyCerts' | 'customization' | 'purchasesRequests' | 'vehicleIntake' | 'loyalty';
+interface AddOnState { included: boolean; price: string }
+
+const ADDON_META: Record<AddOnKey, { label: string; group: 'haraka' | 'raseed' | 'loyalty' }> = {
+  deliveryAgents:     { label: 'Workers',              group: 'haraka' },
+  warrantyCerts:      { label: 'Warranty certificates', group: 'haraka' },
+  customization:      { label: 'Customization',         group: 'haraka' },
+  vehicleIntake:      { label: 'Vehicle intake (plate capture)', group: 'haraka' },
+  purchasesRequests:  { label: 'Purchases & Requests',   group: 'raseed' },
+  loyalty:            { label: 'Loyalty program',        group: 'loyalty' },
+};
+
+function moduleAllowanceKey(key: AddOnKey): string {
+  return `${key}Included`;
+}
+
+function AddOnRow({
+  addonKey,
+  state,
+  onChange,
+}: {
+  addonKey: AddOnKey;
+  state: AddOnState;
+  onChange: (patch: Partial<AddOnState>) => void;
+}) {
+  const meta = ADDON_META[addonKey];
+  return (
+    <div className="flex items-center gap-3">
+      <input
+        type="checkbox"
+        id={`pkg-addon-${addonKey}`}
+        checked={state.included}
+        onChange={(e) => onChange({ included: e.target.checked })}
+      />
+      <Label htmlFor={`pkg-addon-${addonKey}`} className="font-normal text-sm flex-1">
+        {meta.label} — included in plan
+      </Label>
+      <Input
+        type="number"
+        min={0}
+        step="0.01"
+        placeholder="Standalone price"
+        value={state.price}
+        onChange={(e) => onChange({ price: e.target.value })}
+        className="max-w-[180px]"
+      />
+    </div>
+  );
+}
 
 export function PackageForm({ initial, onSubmit, onCancel, submitting }: PackageFormProps) {
   const [name, setName] = useState(initial?.name ?? '');
@@ -76,18 +148,61 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
     maxWarranties: (initial?.limits.maxWarranties ?? 100) === -1,
   });
 
-  const [features, setFeatures] = useState<Record<FeatureKey, boolean>>(() =>
-    FEATURE_KEYS.reduce(
+  // Module-level feature flags (whole umbrella on/off). Sub-features and
+  // add-ons within each module have their own state below, grouped in the
+  // JSX by the same module they belong to in lib/nav/index.ts.
+  const [dashboard,  setDashboard]  = useState(initial?.features?.dashboard  ?? true);
+  const [reports,    setReports]    = useState(initial?.features?.reports    ?? true);
+  const [support,    setSupport]    = useState(initial?.features?.support    ?? true);
+  const [auditLogs,  setAuditLogs]  = useState(initial?.features?.auditLogs  ?? true);
+  const [assets,     setAssets]     = useState(initial?.features?.assets     ?? true);
+  const [inventory,  setInventory]  = useState(initial?.features?.inventory  ?? true);
+  const [pos,        setPos]        = useState(initial?.features?.pos       ?? true);
+  const [banna,      setBanna]      = useState(initial?.features?.banna     ?? true);
+  const [loyaltyFeature, setLoyaltyFeature] = useState(initial?.features?.loyalty ?? false);
+  const [vehicleIntakeFeature, setVehicleIntakeFeature] = useState(initial?.features?.vehicleIntake ?? false);
+
+  const [usoolSub, setUsoolSub] = useState<Record<(typeof USOOL_SUB_FEATURES)[number], boolean>>(() =>
+    USOOL_SUB_FEATURES.reduce(
       (acc, k) => ({ ...acc, [k]: initial?.features?.[k] ?? true }),
-      {} as Record<FeatureKey, boolean>,
+      {} as Record<(typeof USOOL_SUB_FEATURES)[number], boolean>,
     ),
   );
+
   const [inclusions, setInclusions] = useState<Record<InclusionKey, boolean>>(() =>
     INCLUSION_KEYS.reduce(
       (acc, k) => ({ ...acc, [k]: initial?.inclusions?.[k] ?? false }),
       {} as Record<InclusionKey, boolean>,
     ),
   );
+
+  // Haraka: free module slots + per-module price beyond that count.
+  const [harakaIncludedModuleSlots, setHarakaIncludedModuleSlots] = useState<number>(
+    initial?.allowances?.harakaIncludedModuleSlots ?? 1,
+  );
+  const [harakaModulePrices, setHarakaModulePrices] = useState<Record<Exclude<HarakaModule, 'pos'>, string>>({
+    services: initial?.addOnPrices?.harakaModules?.services != null ? String(initial.addOnPrices.harakaModules.services) : '',
+    orders: initial?.addOnPrices?.harakaModules?.orders != null ? String(initial.addOnPrices.harakaModules.orders) : '',
+    retainers: initial?.addOnPrices?.harakaModules?.retainers != null ? String(initial.addOnPrices.harakaModules.retainers) : '',
+  });
+
+  // Add-ons — included-in-plan toggle + standalone price, one row per
+  // key, grouped under whichever module owns it (see ADDON_META).
+  const [addOns, setAddOns] = useState<Record<AddOnKey, AddOnState>>(() => {
+    const keys: AddOnKey[] = ['deliveryAgents', 'warrantyCerts', 'customization', 'purchasesRequests', 'vehicleIntake', 'loyalty'];
+    return keys.reduce((acc, key) => {
+      const allowanceKey = moduleAllowanceKey(key) as keyof NonNullable<Package['allowances']>;
+      acc[key] = {
+        included: (initial?.allowances?.[allowanceKey] as boolean | undefined) ?? false,
+        price: initial?.addOnPrices?.[key] != null ? String(initial.addOnPrices[key]) : '',
+      };
+      return acc;
+    }, {} as Record<AddOnKey, AddOnState>);
+  });
+
+  function updateAddOn(key: AddOnKey, patch: Partial<AddOnState>) {
+    setAddOns((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
+  }
 
   function onChangeLimit(key: (typeof LIMIT_KEYS)[number], value: number) {
     setLimits((prev) => ({ ...prev, [key]: value }));
@@ -103,6 +218,16 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
       (acc, k) => ({ ...acc, [k]: unlimited[k] ? -1 : limits[k] }),
       {} as PackageFormData['limits'],
     );
+
+    const addOnAllowances = (Object.keys(addOns) as AddOnKey[]).reduce(
+      (acc, key) => ({ ...acc, [moduleAllowanceKey(key)]: addOns[key].included }),
+      {} as Record<string, boolean>,
+    );
+    const addOnPriceValues = (Object.keys(addOns) as AddOnKey[]).reduce(
+      (acc, key) => ({ ...acc, [key]: addOns[key].price === '' ? undefined : Number(addOns[key].price) }),
+      {} as Record<AddOnKey, number | undefined>,
+    );
+
     await onSubmit({
       name: name.trim(),
       description: description.trim(),
@@ -116,8 +241,26 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
       trialDays,
       sortOrder,
       limits: finalLimits,
-      features,
+      features: {
+        dashboard, reports, support, auditLogs,
+        assets, inventory, pos, banna,
+        loyalty: loyaltyFeature,
+        vehicleIntake: vehicleIntakeFeature,
+        ...usoolSub,
+      },
       inclusions,
+      allowances: {
+        harakaIncludedModuleSlots,
+        ...addOnAllowances,
+      },
+      addOnPrices: {
+        ...addOnPriceValues,
+        harakaModules: {
+          services: harakaModulePrices.services === '' ? undefined : Number(harakaModulePrices.services),
+          orders: harakaModulePrices.orders === '' ? undefined : Number(harakaModulePrices.orders),
+          retainers: harakaModulePrices.retainers === '' ? undefined : Number(harakaModulePrices.retainers),
+        },
+      },
     });
   }
 
@@ -256,21 +399,129 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
         </div>
       </fieldset>
 
-      <fieldset className="space-y-2 border border-border rounded-lg p-4">
-        <legend className="px-2 text-sm font-medium text-gray-700">Module Access</legend>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {FEATURE_KEYS.map((key) => (
-            <label key={key} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-page cursor-pointer">
-              <input
-                type="checkbox"
-                checked={features[key]}
-                onChange={(e) => setFeatures((prev) => ({ ...prev, [key]: e.target.checked }))}
+      {/* ── Module Access — grouped to match lib/nav/index.ts's sidebar structure ── */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-gray-800 px-1">Module Access</h3>
+
+        {/* Platform — global org-level pages, not tied to a named module */}
+        <fieldset className="space-y-2 border border-border rounded-lg p-4">
+          <legend className="px-2 text-sm font-medium text-gray-700">Platform</legend>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {PLATFORM_FEATURES.map((key) => {
+              const value = { dashboard, reports, support, auditLogs }[key];
+              const setter = { dashboard: setDashboard, reports: setReports, support: setSupport, auditLogs: setAuditLogs }[key];
+              return (
+                <label key={key} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-page cursor-pointer">
+                  <input type="checkbox" checked={value} onChange={(e) => setter(e.target.checked)} />
+                  <span className="text-sm text-gray-700">{PLATFORM_LABELS[key]}</span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        {/* Usool (Assets) */}
+        <fieldset className="space-y-2 border-s-4 border border-border rounded-lg p-4" style={{ borderInlineStartColor: '#00695C' }}>
+          <legend className="px-2 text-sm font-medium text-gray-700">Usool — Assets</legend>
+          <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-page cursor-pointer font-medium">
+            <input type="checkbox" checked={assets} onChange={(e) => setAssets(e.target.checked)} />
+            <span className="text-sm text-gray-800">Assets (base module)</span>
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 ps-6">
+            {USOOL_SUB_FEATURES.map((key) => (
+              <label key={key} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-page cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={usoolSub[key]}
+                  disabled={!assets}
+                  onChange={(e) => setUsoolSub((prev) => ({ ...prev, [key]: e.target.checked }))}
+                />
+                <span className="text-sm text-gray-700">{USOOL_SUB_LABELS[key]}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        {/* Raseed (Inventory) */}
+        <fieldset className="space-y-2 border-s-4 border border-border rounded-lg p-4" style={{ borderInlineStartColor: '#E65100' }}>
+          <legend className="px-2 text-sm font-medium text-gray-700">Raseed — Inventory</legend>
+          <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-page cursor-pointer font-medium">
+            <input type="checkbox" checked={inventory} onChange={(e) => setInventory(e.target.checked)} />
+            <span className="text-sm text-gray-800">Inventory (base module)</span>
+          </label>
+          <div className="ps-6">
+            <AddOnRow addonKey="purchasesRequests" state={addOns.purchasesRequests} onChange={(patch) => updateAddOn("purchasesRequests", patch)} />
+          </div>
+        </fieldset>
+
+        {/* Haraka (POS umbrella) */}
+        <fieldset className="space-y-3 border-s-4 border border-border rounded-lg p-4" style={{ borderInlineStartColor: '#C2185B' }}>
+          <legend className="px-2 text-sm font-medium text-gray-700">Haraka — Point of Sale</legend>
+          <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-page cursor-pointer font-medium">
+            <input type="checkbox" checked={pos} onChange={(e) => setPos(e.target.checked)} />
+            <span className="text-sm text-gray-800">Point of Sale (base module)</span>
+          </label>
+
+          <div className="ps-6 space-y-3">
+            <div className="flex items-center gap-3">
+              <Label className="w-56 shrink-0 text-sm font-normal">Free Haraka module slots</Label>
+              <Input
+                type="number"
+                min={0}
+                max={EXTRA_HARAKA_MODULES.length}
+                value={harakaIncludedModuleSlots}
+                onChange={(e) => setHarakaIncludedModuleSlots(Number(e.target.value) || 0)}
+                className="max-w-[120px]"
               />
-              <span className="text-sm text-gray-700">{FEATURE_LABELS[key]}</span>
+              <p className="text-xs text-gray-500">Choose N of Services/Orders/Retainers free; extras are priced below.</p>
+            </div>
+            {EXTRA_HARAKA_MODULES.map((mod) => (
+              <div key={mod} className="flex items-center gap-3">
+                <Label className="w-56 shrink-0 text-sm font-normal">{HARAKA_MODULE_LABELS[mod]} (beyond free slots)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="Price/mo"
+                  value={harakaModulePrices[mod]}
+                  onChange={(e) => setHarakaModulePrices((prev) => ({ ...prev, [mod]: e.target.value }))}
+                  className="max-w-[180px]"
+                />
+              </div>
+            ))}
+
+            <AddOnRow addonKey="deliveryAgents" state={addOns.deliveryAgents} onChange={(patch) => updateAddOn("deliveryAgents", patch)} />
+            <AddOnRow addonKey="warrantyCerts" state={addOns.warrantyCerts} onChange={(patch) => updateAddOn("warrantyCerts", patch)} />
+            <AddOnRow addonKey="customization" state={addOns.customization} onChange={(patch) => updateAddOn("customization", patch)} />
+            <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-page cursor-pointer">
+              <input type="checkbox" checked={vehicleIntakeFeature} onChange={(e) => setVehicleIntakeFeature(e.target.checked)} />
+              <span className="text-sm text-gray-700">Show plate-capture in the intake UI (car-care)</span>
             </label>
-          ))}
-        </div>
-      </fieldset>
+            <AddOnRow addonKey="vehicleIntake" state={addOns.vehicleIntake} onChange={(patch) => updateAddOn("vehicleIntake", patch)} />
+          </div>
+        </fieldset>
+
+        {/* Banna */}
+        <fieldset className="space-y-2 border-s-4 border border-border rounded-lg p-4" style={{ borderInlineStartColor: '#1565C0' }}>
+          <legend className="px-2 text-sm font-medium text-gray-700">Banna — Custom Fields</legend>
+          <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-page cursor-pointer">
+            <input type="checkbox" checked={banna} onChange={(e) => setBanna(e.target.checked)} />
+            <span className="text-sm text-gray-700">Custom fields for assets, inventory, and customers</span>
+          </label>
+        </fieldset>
+
+        {/* Loyalty — independent of Haraka, usable by any org */}
+        <fieldset className="space-y-2 border border-border rounded-lg p-4">
+          <legend className="px-2 text-sm font-medium text-gray-700">Loyalty</legend>
+          <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-page cursor-pointer font-medium">
+            <input type="checkbox" checked={loyaltyFeature} onChange={(e) => setLoyaltyFeature(e.target.checked)} />
+            <span className="text-sm text-gray-800">Loyalty (base module)</span>
+          </label>
+          <div className="ps-6">
+            <AddOnRow addonKey="loyalty" state={addOns.loyalty} onChange={(patch) => updateAddOn("loyalty", patch)} />
+          </div>
+        </fieldset>
+      </div>
 
       <div className="flex items-center gap-3">
         <Switch checked={isActive} onCheckedChange={setIsActive} />

@@ -28,7 +28,7 @@ interface PrimaryNavItem {
 }
 
 const PRIMARY_NAV: PrimaryNavItem[] = [
-  { href: '/dashboard',  labelKey: 'nav.dashboard',  Icon: DashboardSVG, featureKey: 'dashboard' },
+  { href: '/dashboard',  labelKey: 'nav.dashboard',  Icon: DashboardSVG, featureKey: 'dashboard', moduleKey: 'dashboard' },
   { href: '/usool',      labelKey: 'nav.assets',     Icon: AssetsSVG,    featureKey: 'assets',     moduleKey: 'usool' },
   { href: '/banna',      labelKey: 'nav.banna',      Icon: BannaSVG,     featureKey: 'banna',      moduleKey: 'banna' },
   { href: '/warranties', labelKey: 'nav.warranties', Icon: WarrantySVG,  featureKey: 'warranties', moduleKey: 'usool', permOp: 'warrantiesView' },

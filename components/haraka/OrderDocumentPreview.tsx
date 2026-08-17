@@ -129,7 +129,7 @@ export function OrderDocumentPreview({
               {docConfig.showChannel && <tr><td style={{ color: '#888', paddingRight: 8, paddingBottom: 2 }}>Channel</td><td>{capFirst(order.channel)}</td></tr>}
               <tr><td style={{ color: '#888', paddingRight: 8, paddingBottom: 2 }}>Type</td><td>{capFirst(order.fulfillmentType)}</td></tr>
               {docConfig.showSalesAgent && order.salesAgentName && <tr><td style={{ color: '#888', paddingRight: 8, paddingBottom: 2 }}>Sales Agent</td><td>{order.salesAgentName}</td></tr>}
-              {docConfig.showDeliveryAgent && order.deliveryAgentName && <tr><td style={{ color: '#888', paddingRight: 8, paddingBottom: 2 }}>Delivery Agent</td><td>{order.deliveryAgentName}</td></tr>}
+              {docConfig.showDeliveryAgent && order.deliveryAgentName && <tr><td style={{ color: '#888', paddingRight: 8, paddingBottom: 2 }}>Worker</td><td>{order.deliveryAgentName}</td></tr>}
             </tbody>
           </table>
         </div>

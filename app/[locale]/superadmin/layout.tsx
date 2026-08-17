@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/ui';
-import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity, Mail, RefreshCw, ChevronLeft, ChevronRight, Package, Inbox, Database, Receipt } from 'lucide-react';
+import { Building2, FileText, LogOut, LayoutDashboard, Settings, MessageSquare, Users, Activity, Mail, RefreshCw, ChevronLeft, ChevronRight, Package, Inbox, Database, Receipt, Bell } from 'lucide-react';
 import type { SuperAdminPermissions } from '@/types/superadmin-permissions.types';
 import { resolveSuperAdminPermissions } from '@/lib/permissions/superadmin';
 import { NetworkStatusIndicator } from '@/components/shared/NetworkStatusIndicator';
@@ -48,6 +48,7 @@ const ALL_NAV_ITEMS = (locale: string): NavEntry[] => [
   { href: `/${locale}/superadmin/lists`,         labelKey: 'nav.lists',         icon: FileText,        roles: ['super_admin', 'makhzoon_admin'], permModule: 'configuration', permOp: 'view' },
   { href: `/${locale}/superadmin/packages`,      labelKey: 'nav.packages',      icon: Package,         roles: ['super_admin', 'makhzoon_admin'], permModule: 'configuration', permOp: 'view' },
   { href: `/${locale}/superadmin/billing`,       labelKey: 'nav.billing',       icon: Receipt,        roles: ['super_admin', 'makhzoon_admin'], permModule: 'organizations', permOp: 'view' },
+  { href: `/${locale}/superadmin/notifications`, labelKey: 'nav.superadminNotifications', icon: Bell, roles: ['super_admin', 'makhzoon_admin'], permModule: 'configuration', permOp: 'view' },
   { href: `/${locale}/superadmin/configuration`, labelKey: 'nav.configuration', icon: Settings,        roles: ['super_admin', 'makhzoon_admin'], permModule: 'configuration', permOp: 'view' },
   { separator: true },
   { href: `/${locale}/superadmin/support`,       labelKey: 'nav.support',       icon: MessageSquare,   roles: ['super_admin', 'makhzoon_admin', 'makhzoon_support'], permModule: 'support', permOp: 'view' },

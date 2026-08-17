@@ -85,7 +85,7 @@ async function shouldSendToUser(
 }
 
 async function _send(input: NotificationEnqueueInput): Promise<void> {
-  const { tenant, eventType, data, link, titleOverride, recipientIds } = input
+  const { tenant, eventType, data, link, titleOverride, recipientIds, emailHtml, emailText, emailSubject } = input
   const catalog = getCatalogEntry(eventType)
   const title   = titleOverride ?? catalog?.label ?? eventType
 
@@ -133,9 +133,9 @@ async function _send(input: NotificationEnqueueInput): Promise<void> {
       if (!email) continue
       sendEmail({
         to:      email,
-        subject: `${title} — Makhzoon`,
-        html:    buildSimpleEmailHtml(title, data, link),
-        text:    `${title}\n\n${link ?? ''}`,
+        subject: emailSubject ?? `${title} — Makhzoon`,
+        html:    emailHtml ?? buildSimpleEmailHtml(title, data, link),
+        text:    emailText ?? `${title}\n\n${link ?? ''}`,
       }).catch((err) => console.error('[notificationQueue] email error', err))
     }
   }
@@ -167,5 +167,13 @@ function buildSimpleEmailHtml(title: string, data: Record<string, unknown>, link
 export const notificationQueue = {
   enqueue(input: NotificationEnqueueInput): void {
     _send(input).catch((err) => console.error('[notificationQueue] _send error', err))
+  },
+  /**
+   * Awaited variant for callers that must finish before returning (e.g. cron
+   * jobs, where the serverless function can be frozen right after the
+   * response is sent, before a fire-and-forget promise settles).
+   */
+  async send(input: NotificationEnqueueInput): Promise<void> {
+    await _send(input).catch((err) => console.error('[notificationQueue] _send error', err))
   },
 }

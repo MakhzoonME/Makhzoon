@@ -25,9 +25,11 @@ export type NotificationEventType =
   | 'service_job.status_changed'
   | 'service_job.agents_assigned'
   | 'service_job.rating_requested'
+  | 'support.ticket_replied'
+  | 'support.ticket_status_changed'
 
 export type NotificationModule =
-  | 'orders' | 'pos' | 'inventory' | 'users' | 'warranty' | 'system' | 'service_jobs'
+  | 'orders' | 'pos' | 'inventory' | 'users' | 'warranty' | 'system' | 'service_jobs' | 'support'
 
 export interface NotificationCatalogEntry {
   key: NotificationEventType
@@ -65,6 +67,9 @@ export const NOTIFICATION_CATALOG: NotificationCatalogEntry[] = [
   { key: 'service_job.status_changed',   label: 'Service job status updated',    module: 'service_jobs', defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: false },
   { key: 'service_job.agents_assigned',  label: 'Service job assigned to agents', module: 'service_jobs', defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: false },
   { key: 'service_job.rating_requested', label: 'Rating requested from customer', module: 'service_jobs', defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: false },
+  // ── Support ────────────────────────────────────────────────────────────
+  { key: 'support.ticket_replied',       label: 'Reply on your support ticket',  module: 'support',      defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: true },
+  { key: 'support.ticket_status_changed', label: 'Support ticket status updated', module: 'support',     defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: true },
 ]
 
 export const NOTIFICATION_EVENT_TYPES = NOTIFICATION_CATALOG.map((e) => e.key) as readonly NotificationEventType[]

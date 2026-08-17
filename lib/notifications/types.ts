@@ -2,7 +2,8 @@ import type { NotificationEventType } from './catalog'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 
 export interface NotificationEnqueueInput {
-  tenant: TenantContext
+  /** Only organizationId/spaceId are read — system callers (cron) don't need a full user tenant. */
+  tenant: Pick<TenantContext, 'organizationId' | 'spaceId'>
   eventType: NotificationEventType
   data: Record<string, unknown>
   link?: string
@@ -10,6 +11,10 @@ export interface NotificationEnqueueInput {
   titleOverride?: string
   /** Explicit recipient IDs — skips role-based fanout when provided */
   recipientIds?: string[]
+  /** Override the generic email body with pre-rendered HTML/text (e.g. a richer template) */
+  emailHtml?: string
+  emailText?: string
+  emailSubject?: string
 }
 
 export interface NotificationRow {

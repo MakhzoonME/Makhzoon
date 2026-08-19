@@ -102,7 +102,6 @@ const publicRoutes = new Set([
   'invites/',
   'track/',                        // public read-only order tracking — token-gated, rate-limited
   'rate/',                         // public service-job rating kiosk — token-gated, rate-limited
-  'whatsapp/webhook',              // Meta Cloud API inbound webhook — HMAC signature verification
   'haraka/card-payment-result',   // webhook — HMAC signature verification
   'organizations/check-subdomain', // pre-signup — rate-limited
   'auth/send-password-reset',      // pre-auth by design — rate-limited per IP

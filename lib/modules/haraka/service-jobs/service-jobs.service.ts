@@ -12,7 +12,6 @@ import {
 } from './service-jobs.repository'
 import { DeliveryAgentsRepository } from '@/lib/modules/haraka/delivery-agents/delivery-agents.repository'
 import { selectBalancedAgents } from '@/lib/modules/haraka/delivery-agents/balanced-routing'
-import { customerMessaging } from '@/lib/notifications/customer-messaging'
 import { LoyaltyService } from '@/lib/modules/loyalty/loyalty.service'
 
 const loyaltyService = new LoyaltyService()
@@ -69,13 +68,6 @@ export class ServiceJobsService {
       data:          { jobNumber: job.jobNumber, serviceType: job.serviceType, customerName: job.customerName },
       link:          `/haraka/service-jobs/${job.id}`,
       titleOverride: `New service job ${job.jobNumber} created`,
-    })
-    customerMessaging.enqueue({
-      tenant,
-      jobId:         job.id,
-      customerPhone: job.customerPhone,
-      template:      'order_received',
-      variables:     { customerName: job.customerName, jobNumber: job.jobNumber },
     })
     return job
   }
@@ -135,39 +127,13 @@ export class ServiceJobsService {
     })
 
     if (newStatus === 'done') {
-      customerMessaging.enqueue({
-        tenant,
-        jobId:         id,
-        customerPhone: job.customerPhone,
-        template:      'job_finished',
-        variables:     { customerName: job.customerName, jobNumber: job.jobNumber },
-      })
-      const ratingToken = await repo.ensureRatingToken(tenant, id)
+      await repo.ensureRatingToken(tenant, id) // pre-generate so the public /rate/[token] page works whenever it's accessed
       notificationQueue.enqueue({
         tenant,
         eventType:     'service_job.rating_requested',
         data:          { jobNumber: job.jobNumber },
         link:          `/haraka/service-jobs/${id}/rate`,
         titleOverride: `Rating requested for service job ${job.jobNumber}`,
-      })
-      customerMessaging.enqueue({
-        tenant,
-        jobId:         id,
-        customerPhone: job.customerPhone,
-        template:      'rating_requested',
-        variables:     {
-          customerName: job.customerName,
-          jobNumber:    job.jobNumber,
-          ratingLink:   `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/rate/${ratingToken}`,
-        },
-      })
-    } else {
-      customerMessaging.enqueue({
-        tenant,
-        jobId:         id,
-        customerPhone: job.customerPhone,
-        template:      'status_update',
-        variables:     { customerName: job.customerName, jobNumber: job.jobNumber, status: newStatus.replace('_', ' ') },
       })
     }
 

@@ -23,7 +23,6 @@ const PUBLIC_ROUTES = [
   'auth/send-password-reset', 'public/assets', 'push-subscriptions/vapid-key',
   'track/', // public read-only order tracking — token-gated, rate-limited
   'rate/', // public service-job rating kiosk — token-gated, rate-limited
-  'whatsapp/webhook', // Infobip inbound webhook — shared-secret query param verified, not session auth
 ];
 
 const MUTATING = ['POST', 'PUT', 'PATCH'];

@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Info, Copy, Check, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { useNotificationConfig, useUpdateNotificationConfig, useCheckOcrUsage } from '@/hooks/superadmin';
 import { toast } from '@/hooks/ui';
 import { formatDate } from '@/lib/utils/date';
@@ -16,57 +15,20 @@ export default function SuperadminNotificationsPage() {
   const updateMut = useUpdateNotificationConfig();
   const usageMut = useCheckOcrUsage();
 
-  const [whatsappEnabled,  setWhatsappEnabled]  = useState(false);
-  const [baseUrl,          setBaseUrl]          = useState('');
-  const [sender,           setSender]           = useState('');
-  const [apiKey,           setApiKey]           = useState('');
-  const [webhookSecret,    setWebhookSecret]    = useState('');
-  const [ocrApiKey,        setOcrApiKey]        = useState('');
-  const [copied,           setCopied]           = useState(false);
-  const [webhookUrl,       setWebhookUrl]       = useState('');
+  const [ocrApiKey, setOcrApiKey] = useState('');
 
   const config = data?.config;
-
-  useEffect(() => {
-    if (config) {
-      setWhatsappEnabled(config.whatsappEnabled);
-      setBaseUrl(config.infobipBaseUrl ?? '');
-      setSender(config.infobipSender ?? '');
-    }
-  }, [config]);
-
-  // /api/whatsapp/webhook lives in this same app, not the rcpt-* receipt app
-  // — the URL to give Infobip is always this app's own origin, plus the
-  // shared secret as a query param (Infobip does not sign webhook payloads).
-  useEffect(() => {
-    const secretParam = webhookSecret || (config?.infobipWebhookSecretSet ? '<your-webhook-secret>' : '<set-a-webhook-secret-below>');
-    setWebhookUrl(`${window.location.origin}/api/whatsapp/webhook?secret=${secretParam}`);
-  }, [webhookSecret, config?.infobipWebhookSecretSet]);
 
   async function handleSave() {
     try {
       await updateMut.mutateAsync({
-        whatsappEnabled,
-        infobipBaseUrl:       baseUrl || null,
-        infobipSender:        sender || null,
-        infobipApiKey:        apiKey || undefined,
-        infobipWebhookSecret: webhookSecret || undefined,
-        ocrApiKey:            ocrApiKey || undefined,
+        ocrApiKey: ocrApiKey || undefined,
       });
-      setApiKey('');
-      setWebhookSecret('');
       setOcrApiKey('');
       toast.success('Notification settings saved');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save');
     }
-  }
-
-  function copyWebhookUrl() {
-    navigator.clipboard.writeText(webhookUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
   }
 
   if (isLoading) {
@@ -77,67 +39,11 @@ export default function SuperadminNotificationsPage() {
     <div>
       <PageHeader
         title="Notifications"
-        description="Makhzoon's own WhatsApp Business number and Plate Recognizer account — shared across every organization, not configured per-org."
+        description="Makhzoon's own Plate Recognizer account — shared across every organization, not configured per-org."
         breadcrumb={[{ label: 'Notifications' }]}
       />
 
       <div className="max-w-xl space-y-6">
-        <div className="rounded-xl border border-border bg-surface-card p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="font-medium">Enable WhatsApp updates</Label>
-              <p className="text-xs text-gray-400 mt-0.5">Sends status updates and the rating request to customers, for every org with the vehicle-intake add-on active</p>
-            </div>
-            <Switch checked={whatsappEnabled} onCheckedChange={setWhatsappEnabled} />
-          </div>
-
-          {whatsappEnabled && (
-            <>
-              <hr className="border-border" />
-              <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
-                <Info className="h-3.5 w-3.5 flex-shrink-0" />
-                Get these from the Infobip dashboard → Channels and Numbers → WhatsApp, after registering Makhzoon&apos;s own WhatsApp sender.
-              </div>
-              <div className="space-y-1.5">
-                <Label>API base URL</Label>
-                <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="k95dkx.api.infobip.com" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Sender</Label>
-                <Input value={sender} onChange={(e) => setSender(e.target.value)} placeholder="447860088970" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>API key {config?.infobipApiKeySet && <span className="text-xs font-normal text-gray-400">(currently set — leave blank to keep)</span>}</Label>
-                <Input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={config?.infobipApiKeySet ? '••••••••' : 'From Infobip → Manage API keys'}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Webhook secret {config?.infobipWebhookSecretSet && <span className="text-xs font-normal text-gray-400">(currently set — leave blank to keep)</span>}</Label>
-                <Input
-                  type="password"
-                  value={webhookSecret}
-                  onChange={(e) => setWebhookSecret(e.target.value)}
-                  placeholder={config?.infobipWebhookSecretSet ? '••••••••' : 'Generate a random value, e.g. openssl rand -hex 16'}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Webhook URL (paste into Infobip → WhatsApp → Configuration)</Label>
-                <div className="flex items-center gap-2">
-                  <Input value={webhookUrl} readOnly className="font-mono text-xs bg-surface-inset" />
-                  <Button variant="outline" size="sm" onClick={copyWebhookUrl}>
-                    {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                  </Button>
-                </div>
-                <p className="text-xs text-gray-400">Enter a webhook secret above first, then copy this URL — Infobip doesn&apos;t sign payloads, so the secret in the URL is what authenticates it.</p>
-              </div>
-            </>
-          )}
-        </div>
-
         <div className="rounded-xl border border-border bg-surface-card p-5 space-y-4">
           <h3 className="text-sm font-semibold text-gray-700">Plate recognition (Plate Recognizer)</h3>
           <p className="text-xs text-gray-400">

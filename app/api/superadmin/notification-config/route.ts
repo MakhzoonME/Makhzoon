@@ -7,13 +7,8 @@ const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin']);
 const repo = new PlatformNotificationConfigRepository();
 
 const patchSchema = z.object({
-  whatsappEnabled:         z.boolean().optional(),
-  infobipBaseUrl:          z.string().trim().max(120).nullable().optional(),
-  infobipSender:           z.string().trim().max(30).nullable().optional(),
-  infobipApiKey:           z.string().trim().min(1).optional(), // omit to keep existing
-  infobipWebhookSecret:    z.string().trim().min(8).optional(),
-  ocrProvider:             z.string().trim().max(40).optional(),
-  ocrApiKey:               z.string().trim().min(1).optional(), // omit to keep existing
+  ocrProvider: z.string().trim().max(40).optional(),
+  ocrApiKey:   z.string().trim().min(1).optional(), // omit to keep existing
 });
 
 export async function GET() {

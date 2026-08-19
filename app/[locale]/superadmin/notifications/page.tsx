@@ -17,8 +17,9 @@ export default function SuperadminNotificationsPage() {
   const usageMut = useCheckOcrUsage();
 
   const [whatsappEnabled,  setWhatsappEnabled]  = useState(false);
-  const [phoneNumberId,    setPhoneNumberId]    = useState('');
-  const [token,            setToken]            = useState('');
+  const [baseUrl,          setBaseUrl]          = useState('');
+  const [sender,           setSender]           = useState('');
+  const [apiKey,           setApiKey]           = useState('');
   const [webhookSecret,    setWebhookSecret]    = useState('');
   const [ocrApiKey,        setOcrApiKey]        = useState('');
   const [copied,           setCopied]           = useState(false);
@@ -29,26 +30,30 @@ export default function SuperadminNotificationsPage() {
   useEffect(() => {
     if (config) {
       setWhatsappEnabled(config.whatsappEnabled);
-      setPhoneNumberId(config.whatsappPhoneNumberId ?? '');
+      setBaseUrl(config.infobipBaseUrl ?? '');
+      setSender(config.infobipSender ?? '');
     }
   }, [config]);
 
   // /api/whatsapp/webhook lives in this same app, not the rcpt-* receipt app
-  // — the URL to give Meta is always this app's own origin.
+  // — the URL to give Infobip is always this app's own origin, plus the
+  // shared secret as a query param (Infobip does not sign webhook payloads).
   useEffect(() => {
-    setWebhookUrl(`${window.location.origin}/api/whatsapp/webhook`);
-  }, []);
+    const secretParam = webhookSecret || (config?.infobipWebhookSecretSet ? '<your-webhook-secret>' : '<set-a-webhook-secret-below>');
+    setWebhookUrl(`${window.location.origin}/api/whatsapp/webhook?secret=${secretParam}`);
+  }, [webhookSecret, config?.infobipWebhookSecretSet]);
 
   async function handleSave() {
     try {
       await updateMut.mutateAsync({
         whatsappEnabled,
-        whatsappPhoneNumberId: phoneNumberId || null,
-        whatsappToken:         token || undefined,
-        whatsappWebhookSecret: webhookSecret || undefined,
-        ocrApiKey:             ocrApiKey || undefined,
+        infobipBaseUrl:       baseUrl || null,
+        infobipSender:        sender || null,
+        infobipApiKey:        apiKey || undefined,
+        infobipWebhookSecret: webhookSecret || undefined,
+        ocrApiKey:            ocrApiKey || undefined,
       });
-      setToken('');
+      setApiKey('');
       setWebhookSecret('');
       setOcrApiKey('');
       toast.success('Notification settings saved');
@@ -91,38 +96,43 @@ export default function SuperadminNotificationsPage() {
               <hr className="border-border" />
               <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
                 <Info className="h-3.5 w-3.5 flex-shrink-0" />
-                Get these from Meta Business Manager → WhatsApp → API Setup, after completing business verification for Makhzoon&apos;s own WhatsApp Business account.
+                Get these from the Infobip dashboard → Channels and Numbers → WhatsApp, after registering Makhzoon&apos;s own WhatsApp sender.
               </div>
               <div className="space-y-1.5">
-                <Label>Phone number ID</Label>
-                <Input value={phoneNumberId} onChange={(e) => setPhoneNumberId(e.target.value)} placeholder="1234567890" />
+                <Label>API base URL</Label>
+                <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="k95dkx.api.infobip.com" />
               </div>
               <div className="space-y-1.5">
-                <Label>Permanent access token {config?.whatsappTokenSet && <span className="text-xs font-normal text-gray-400">(currently set — leave blank to keep)</span>}</Label>
+                <Label>Sender</Label>
+                <Input value={sender} onChange={(e) => setSender(e.target.value)} placeholder="447860088970" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>API key {config?.infobipApiKeySet && <span className="text-xs font-normal text-gray-400">(currently set — leave blank to keep)</span>}</Label>
                 <Input
                   type="password"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  placeholder={config?.whatsappTokenSet ? '••••••••' : 'Paste the System User permanent token'}
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder={config?.infobipApiKeySet ? '••••••••' : 'From Infobip → Manage API keys'}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Webhook URL (paste into Meta App → Webhooks)</Label>
+                <Label>Webhook secret {config?.infobipWebhookSecretSet && <span className="text-xs font-normal text-gray-400">(currently set — leave blank to keep)</span>}</Label>
+                <Input
+                  type="password"
+                  value={webhookSecret}
+                  onChange={(e) => setWebhookSecret(e.target.value)}
+                  placeholder={config?.infobipWebhookSecretSet ? '••••••••' : 'Generate a random value, e.g. openssl rand -hex 16'}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Webhook URL (paste into Infobip → WhatsApp → Configuration)</Label>
                 <div className="flex items-center gap-2">
                   <Input value={webhookUrl} readOnly className="font-mono text-xs bg-surface-inset" />
                   <Button variant="outline" size="sm" onClick={copyWebhookUrl}>
                     {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                   </Button>
                 </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Webhook verify token {config?.whatsappWebhookSecretSet && <span className="text-xs font-normal text-gray-400">(currently set)</span>}</Label>
-                <Input
-                  type="password"
-                  value={webhookSecret}
-                  onChange={(e) => setWebhookSecret(e.target.value)}
-                  placeholder={config?.whatsappWebhookSecretSet ? '••••••••' : 'Same value as hub.verify_token in Meta'}
-                />
+                <p className="text-xs text-gray-400">Enter a webhook secret above first, then copy this URL — Infobip doesn&apos;t sign payloads, so the secret in the URL is what authenticates it.</p>
               </div>
             </>
           )}

@@ -6,9 +6,10 @@ const CONFIG_KEY = ['superadmin', 'notification-config'] as const;
 
 export interface NotificationConfigPatch {
   whatsappEnabled?: boolean;
-  whatsappPhoneNumberId?: string | null;
-  whatsappToken?: string;
-  whatsappWebhookSecret?: string;
+  infobipBaseUrl?: string | null;
+  infobipSender?: string | null;
+  infobipApiKey?: string;
+  infobipWebhookSecret?: string;
   ocrProvider?: string;
   ocrApiKey?: string;
 }

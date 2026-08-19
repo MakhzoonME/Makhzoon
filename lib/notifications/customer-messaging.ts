@@ -33,14 +33,15 @@ interface SendInput {
 async function deliver(input: SendInput): Promise<void> {
   if (!input.customerPhone) return
   const cfg = await configRepo.getWithSecrets()
-  if (!cfg?.whatsappEnabled || !cfg.whatsappPhoneNumberId || !cfg.whatsappToken) return
+  if (!cfg?.whatsappEnabled || !cfg.infobipBaseUrl || !cfg.infobipSender || !cfg.infobipApiKey) return
 
   const result = await sendWhatsAppTemplate({
-    phoneNumberId: cfg.whatsappPhoneNumberId,
-    accessToken:   cfg.whatsappToken,
-    to:            input.customerPhone,
-    templateName:  input.template,
-    bodyParams:    Object.values(input.variables),
+    baseUrl:      cfg.infobipBaseUrl,
+    apiKey:       cfg.infobipApiKey,
+    sender:       cfg.infobipSender,
+    to:           input.customerPhone,
+    templateName: input.template,
+    bodyParams:   Object.values(input.variables),
   })
   if (!result.ok) {
     console.error(`[customerMessaging] WhatsApp failed for job ${input.jobId}:`, result.error)

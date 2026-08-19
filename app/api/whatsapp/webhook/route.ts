@@ -1,64 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createHmac, timingSafeEqual } from 'crypto'
+import { timingSafeEqual } from 'crypto'
+import { z } from 'zod'
 import { logServerEvent } from '@/lib/logging/log-server-event'
+import { PlatformNotificationConfigRepository } from '@/lib/platform/notification-config.repository'
+
+// Loose on purpose — field names follow Infobip's documented DLR shape but
+// aren't verified against a live payload yet (see note below).
+const webhookBodySchema = z.object({
+  results: z.array(z.object({
+    messageId: z.union([z.string(), z.number()]).optional(),
+    status: z.object({
+      name: z.string().optional(),
+      groupName: z.string().optional(),
+    }).partial().optional(),
+  }).passthrough()).optional(),
+}).passthrough()
 
 /**
- * Inbound Meta WhatsApp Cloud API webhook. One number, one Meta App, shared
+ * Inbound Infobip WhatsApp delivery-report webhook. One sender, shared
  * across every org (see lib/platform/notification-config.repository.ts) —
- * there's no per-org phone_number_id to resolve against anymore, so this
- * just logs delivery status against the message ID.
+ * there's no per-org identifier to resolve against, so this just logs
+ * delivery status against the message ID.
  *
- * GET handles Meta's one-time subscription verification handshake.
- * POST receives message status updates (sent/delivered/read/failed).
+ * Infobip does not sign webhook payloads the way Meta did (no
+ * x-hub-signature-256 equivalent), so auth is a shared secret configured
+ * as a query param on the webhook URL registered in Infobip's dashboard:
+ * https://<this-app>/api/whatsapp/webhook?secret=<infobip_webhook_secret>
+ *
+ * NOTE: the exact field names below (`results[].status.name` etc.) follow
+ * Infobip's documented delivery-report shape used across their messaging
+ * APIs, but haven't been verified against a live Infobip webhook payload
+ * yet — worth double-checking once the sender is registered and a real
+ * webhook fires.
  */
 
-function verifySignature(rawBody: string, signatureHeader: string | null): boolean {
-  const appSecret = process.env.WHATSAPP_APP_SECRET
-  if (!appSecret || !signatureHeader) return false
-  const expected = 'sha256=' + createHmac('sha256', appSecret).update(rawBody).digest('hex')
-  const a = Buffer.from(expected)
-  const b = Buffer.from(signatureHeader)
+const configRepo = new PlatformNotificationConfigRepository()
+
+async function verifySecret(req: NextRequest): Promise<boolean> {
+  const provided = req.nextUrl.searchParams.get('secret')
+  if (!provided) return false
+  const cfg = await configRepo.getWithSecrets()
+  if (!cfg?.infobipWebhookSecret) return false
+  const a = Buffer.from(provided)
+  const b = Buffer.from(cfg.infobipWebhookSecret)
   return a.length === b.length && timingSafeEqual(a, b)
 }
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const mode      = searchParams.get('hub.mode')
-  const token     = searchParams.get('hub.verify_token')
-  const challenge = searchParams.get('hub.challenge')
-
-  if (mode === 'subscribe' && token === process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN && challenge) {
-    return new NextResponse(challenge, { status: 200 })
-  }
-  return NextResponse.json({ error: 'Verification failed' }, { status: 403 })
-}
-
 export async function POST(req: NextRequest) {
-  const rawBody = await req.text()
-  const signature = req.headers.get('x-hub-signature-256')
-
-  if (!verifySignature(rawBody, signature)) {
-    logServerEvent('warning', 'whatsapp/webhook', 'Rejected webhook: invalid signature')
+  if (!(await verifySecret(req))) {
+    logServerEvent('warning', 'whatsapp/webhook', 'Rejected webhook: invalid or missing secret')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
-    const body = JSON.parse(rawBody)
-    const entries: unknown[] = Array.isArray(body?.entry) ? body.entry : []
+    const parsed = webhookBodySchema.safeParse(await req.json())
+    if (!parsed.success) {
+      logServerEvent('warning', 'whatsapp/webhook', 'Unrecognized webhook payload shape', {
+        detail: { issues: parsed.error.issues },
+      })
+      return NextResponse.json({ ok: true }) // ack anyway — don't make Infobip retry a shape we can't parse
+    }
 
-    for (const entry of entries) {
-      const changes: unknown[] = Array.isArray((entry as { changes?: unknown[] })?.changes)
-        ? (entry as { changes: unknown[] }).changes
-        : []
-      for (const change of changes) {
-        const value = (change as { value?: Record<string, unknown> })?.value
-        const statuses = Array.isArray(value?.statuses) ? (value!.statuses as Record<string, unknown>[]) : []
-        for (const s of statuses) {
-          logServerEvent('info', 'whatsapp/webhook', `Message ${s.status}`, {
-            detail: { messageId: s.id, status: s.status },
-          })
-        }
-      }
+    for (const row of parsed.data.results ?? []) {
+      logServerEvent('info', 'whatsapp/webhook', `Message ${row.status?.name ?? row.status?.groupName ?? 'unknown'}`, {
+        detail: { messageId: row.messageId, status: row.status?.name, groupName: row.status?.groupName },
+      })
     }
     return NextResponse.json({ ok: true })
   } catch (err) {

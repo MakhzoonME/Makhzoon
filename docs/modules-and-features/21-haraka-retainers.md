@@ -1,7 +1,7 @@
 # Haraka — Retainers (العقود)
 
 **Parent module**: Haraka (حركة) — Feature key: `pos`  
-**Permission keys**: `pos.view_retainers`, `pos.manage_retainers`  
+**Permission keys**: `haraka.retainersView`, `haraka.retainersCreate` (create/update/delete/invoice-manage umbrella), plus dedicated status-transition keys `haraka.retainersPause`, `haraka.retainersCancel`, `haraka.retainersReactivate`, and `haraka.retainersAddInvoice`  
 **Brand color**: `#C2185B` (inherited from Haraka)
 
 ---
@@ -97,6 +97,23 @@ Reactivating a cancelled retainer is not allowed.
 | List page | `app/[locale]/[orgSlug]/[space]/haraka/retainers/page.tsx` |
 | New page | `app/[locale]/[orgSlug]/[space]/haraka/retainers/new/page.tsx` |
 | Detail page | `app/[locale]/[orgSlug]/[space]/haraka/retainers/[retainerId]/page.tsx` |
+
+---
+
+## Permissions
+
+Checked via `lib/modules/haraka/retainers/retainers.service.ts` against the `haraka` permission module (not `pos`):
+
+| Key | Gates |
+|---|---|
+| `haraka.retainersView` | List/detail reads |
+| `haraka.retainersCreate` | Create, update, delete, invoice management — "umbrella" key reused for all non-status-transition writes |
+| `haraka.retainersPause` | Status → `paused` |
+| `haraka.retainersCancel` | Status → `cancelled` |
+| `haraka.retainersReactivate` | Status → `active` (from `paused`) |
+| `haraka.retainersAddInvoice` | Create a retainer invoice |
+
+The API routes additionally gate on `requireFeature(tenant, 'pos')` and `requireHarakaModule(tenant, 'retainers')` (subscription module gating; see `app/api/haraka/retainers/route.ts`).
 
 ---
 

@@ -14,8 +14,8 @@ A unified notification system that delivers alerts across the entire platform. E
 | Channel | Mechanism | When |
 |---------|-----------|------|
 | **In-app** | Persisted `notifications` table, polled via React Query | Real-time feel (15s stale time); bell icon in header |
-| **Email** | Existing Resend integration + new templates | Async, fire-and-forget |
-| **Push** *(future)* | Web Push API / mobile | Explicitly out of scope for v1; data model is designed to accommodate it |
+| **Email** | Existing Resend integration | Async, fire-and-forget |
+| **Push** | Web Push API (VAPID, `web-push` npm package) via `sendWebPush()` (`lib/webpush/index.ts`) | Already implemented — fired alongside every `notificationQueue` send to all of the recipient's registered `web_push_subscriptions`; subscribe/unsubscribe toggle lives on the Settings → Notifications page |
 
 ### Architecture decision — service-layer fanout, not event bus
 
@@ -25,29 +25,36 @@ The existing `EventBus` is in-memory and unreliable in Next.js serverless (each 
 
 ## Notification Event Catalog
 
-Each event type has a fixed `key`, a human label, which roles receive it by default, and default channel settings. Org admins can override all defaults.
+Each event type has a fixed `key`, a human label, which roles receive it by default, and default channel settings. Org admins can override all defaults. Source of truth: `lib/notifications/catalog.ts` (`NOTIFICATION_CATALOG`).
 
-| key | Label | Default recipients | In-app | Email |
+> Note: there is no `requests.*` module in the catalog (Requests isn't wired into notifications yet). The actual catalog additionally covers Service Jobs, Support, and Appointments, none of which are in the original design doc.
+
+| key | Label | Default roles | In-app | Email |
 |-----|-------|--------------------|--------|-------|
-| `order.created` | New order received | admin | ✅ | ❌ |
-| `order.status_changed` | Order status updated | admin | ✅ | ❌ |
-| `order.assigned_to_you` | Order assigned to you | assigned agent | ✅ | ✅ |
-| `order.payment_recorded` | Payment recorded on order | admin | ✅ | ❌ |
-| `pos.session_closed` | POS session closed | admin | ✅ | ❌ |
-| `pos.refund_issued` | Refund issued | admin | ✅ | ✅ |
-| `pos.sale_voided` | Sale voided | admin | ✅ | ✅ |
-| `inventory.low_stock` | Item stock is low | admin | ✅ | ✅ |
-| `inventory.out_of_stock` | Item is out of stock | admin | ✅ | ✅ |
-| `inventory.purchase_received` | Purchase received (stock-in) | admin | ✅ | ❌ |
-| `inventory.audit_completed` | Stock audit completed | admin | ✅ | ❌ |
-| `requests.submitted` | New request submitted | admin | ✅ | ✅ |
-| `requests.approved` | Your request was approved | requester | ✅ | ✅ |
-| `requests.rejected` | Your request was rejected | requester | ✅ | ✅ |
-| `users.invited` | New user invited | admin | ✅ | ❌ |
-| `users.joined` | New user joined org | admin | ✅ | ❌ |
-| `warranty.expiring` | Warranty expiring soon | admin | ✅ | ✅ |
-| `subscription.expiring` | Subscription expiring | admin | ✅ | ✅ |
-| `fawtara.failed` | Fawtara submission failed | admin | ✅ | ✅ |
+| `order.created` | New order received | admin, org_owner | ✅ | ❌ |
+| `order.status_changed` | Order status updated | admin, org_owner | ✅ | ❌ |
+| `order.assigned_to_you` | Order assigned to you | staff, admin | ✅ | ✅ |
+| `order.payment_recorded` | Payment recorded on order | admin, org_owner | ✅ | ❌ |
+| `pos.session_closed` | POS session closed | admin, org_owner | ✅ | ❌ |
+| `pos.refund_issued` | Refund issued | admin, org_owner | ✅ | ✅ |
+| `pos.sale_voided` | Sale voided | admin, org_owner | ✅ | ✅ |
+| `inventory.low_stock` | Item stock is low | admin, org_owner | ✅ | ✅ |
+| `inventory.out_of_stock` | Item is out of stock | admin, org_owner | ✅ | ✅ |
+| `inventory.purchase_received` | Purchase received | admin, org_owner | ✅ | ❌ |
+| `inventory.audit_completed` | Stock audit completed | admin, org_owner | ✅ | ❌ |
+| `users.invited` | New user invited | admin, org_owner | ✅ | ❌ |
+| `users.joined` | New user joined org | admin, org_owner | ✅ | ❌ |
+| `warranty.expiring` | Warranty expiring soon | admin, org_owner | ✅ | ✅ |
+| `subscription.expiring` | Subscription expiring | org_owner | ✅ | ✅ |
+| `fawtara.failed` | Fawtara submission failed | admin, org_owner | ✅ | ✅ |
+| `service_job.created` | New service job created | admin, org_owner | ✅ | ❌ |
+| `service_job.status_changed` | Service job status updated | admin, org_owner | ✅ | ❌ |
+| `service_job.agents_assigned` | Service job assigned to agents | admin, org_owner | ✅ | ❌ |
+| `service_job.rating_requested` | Rating requested from customer | admin, org_owner | ✅ | ❌ |
+| `support.ticket_replied` | Reply on your support ticket | admin, org_owner | ✅ | ✅ |
+| `support.ticket_status_changed` | Support ticket status updated | admin, org_owner | ✅ | ✅ |
+| `appointment.booked` | New appointment booked | admin, org_owner | ✅ | ❌ |
+| `appointment.status_changed` | Appointment status updated | admin, org_owner | ✅ | ❌ |
 
 ---
 
@@ -98,22 +105,24 @@ notificationQueue.enqueue({
   eventType: 'order.created',
   data: { orderId: order.id, orderNumber: order.orderNumber, channel: order.channel },
   link: `/haraka/orders/${order.id}`,
-  titleKey: 'notification.order.created',
 })
 ```
 
-`notificationQueue.enqueue()` (fire-and-forget) does:
+There is no `titleKey`/localization mechanism — the notification title is either an explicit `titleOverride` passed by the caller or falls back to the catalog entry's (English-only) `label`.
+
+`notificationQueue.enqueue()` (fire-and-forget, `lib/notifications/notification-queue.ts`) does:
 1. Resolves which users in the org should receive this (from `notification_org_defaults` → role matching → `notification_preferences` overrides)
-2. Inserts one row into `notifications` per recipient
-3. For each recipient where email is enabled: calls `sendEmail()` with the appropriate template
+2. Inserts one row into `notifications` per recipient who wants the in-app channel
+3. For each recipient who wants the email channel: calls `sendEmail()` — using the caller's `emailHtml`/`emailText`/`emailSubject` if provided, otherwise a generic auto-generated HTML template (`buildSimpleEmailHtml()`, not a per-category template)
+4. Sends a Web Push notification to every recipient's registered devices via `sendWebPush()`
+
+There is also an awaited variant, `notificationQueue.send()`, for callers (like cron jobs) that must finish before the serverless function is frozen.
 
 ---
 
 ## Permissions
 
-Notification preferences are user-managed (no new permission key needed for reading own notifications). Org-level defaults require `settings.orgInfo`.
-
-No new permission module — reuses existing `settings` permission.
+Notification preferences are user-managed (no permission key needed for reading/writing own preferences). Org-level defaults are gated by a dedicated permission module, `settingsNotifications` (`view` / `update`), checked in `app/api/notification-org-defaults/route.ts` via `hasPermission(tenant, 'settingsNotifications', 'view'|'update')` — not `settings.orgInfo`, and not a reuse of an existing module as originally planned.
 
 ---
 
@@ -135,63 +144,50 @@ No new permission module — reuses existing `settings` permission.
 ### Notifications List Page
 **Route**: `/{locale}/{orgSlug}/notifications` (org-scoped, no space in URL)
 - Full paginated list of all notifications for the current user
-- Filters: unread only toggle, event type
-- Bulk mark-as-read, bulk delete
+- Filters: unread only toggle (no event-type filter is implemented)
+- "Mark all as read" button; no bulk-delete and no per-item delete (see Known Issues)
 
-### User Notification Preferences
-**Route**: `/{locale}/{orgSlug}/settings/notifications` (org-scoped)
-- Table of all event types grouped by module
-- Per-event toggles: In-app ✅/❌, Email ✅/❌
-- Saved per user+org combination
-
-### Org Notification Defaults
-**Route**: Part of `/{locale}/{orgSlug}/settings/organization` or a dedicated tab
-- Admin-only section
-- Same event-type table but controls the org-wide defaults and which roles receive each type
+### User Notification Preferences & Org Notification Defaults
+**Route**: `/{locale}/{orgSlug}/settings/notifications` (org-scoped) — a single page, not two
+- Table of all event types grouped by module, with per-event toggles (In-app ✅/❌, Email ✅/❌), saved per user+org combination
+- Also includes a push-subscription toggle (browser Web Push opt-in/out)
+- Admin-only section on the same page controls the org-wide defaults and which roles receive each type
 
 ---
 
 ## Notification Hooks
 
+Source: `hooks/notifications/index.ts`.
+
 | Hook | Purpose |
 |------|---------|
 | `useNotifications(params?)` | List notifications (page, unreadOnly) |
-| `useUnreadCount()` | Lightweight count for bell badge (polls frequently) |
+| `useUnreadCount()` | Lightweight count for bell badge (polls every 30s) |
 | `useMarkAsRead()` | Mutation — mark one as read |
 | `useMarkAllAsRead()` | Mutation — mark all as read |
-| `useDeleteNotification()` | Mutation — delete one |
 | `useNotificationPreferences()` | Get current user's preferences |
 | `useUpdateNotificationPreferences()` | Save user preferences |
 | `useOrgNotificationDefaults()` | Get org defaults (admin) |
 | `useUpdateOrgNotificationDefaults()` | Save org defaults (admin) |
 
+> Known issue: `useDeleteNotification()` does not exist — there is no delete-notification API route or mutation. The full list page also has no bulk-delete or event-type filter, despite both being described below.
+
 ---
 
-## Email Templates (additions to `lib/email/templates.ts`)
+## Email Templates
 
-One template per notification category (not one per event type — grouped by urgency/format):
-
-| Template function | Used for |
-|-------------------|---------|
-| `orderNotificationEmail()` | order.created, order.status_changed, order.assigned_to_you |
-| `inventoryAlertEmail()` | low_stock, out_of_stock, purchase_received, audit_completed |
-| `posAlertEmail()` | refund_issued, sale_voided, session_closed |
-| `requestNotificationEmail()` | requests.submitted, requests.approved, requests.rejected |
-| `systemAlertEmail()` | fawtara.failed, subscription.expiring |
-| `userActivityEmail()` | users.invited, users.joined |
-
-The existing `warrantyAlertEmail()` is kept as-is (cron-based batch, not event-driven).
+There is no per-category email-template system. `lib/notifications/notification-queue.ts` builds a generic HTML email inline (`buildSimpleEmailHtml()`) for any event whose caller didn't supply custom `emailHtml`/`emailText`. `lib/email/templates.ts` only defines a handful of hand-written templates unrelated to the generic notification catalog: `warrantyAlertEmail()`, `inviteEmail()`, `supportTicketNotificationEmail()`, `supportTicketReplyEmail()`.
 
 ---
 
 ## Cron Integration
 
-The existing warranty alert cron (`/api/cron/warranty-alerts`) stays as-is. It is the exception to the event-driven pattern because it is time-based (expiry proximity), not action-triggered. It should be extended to also write rows into the `notifications` table in addition to sending email, so the in-app bell also shows warranty expiry alerts.
+The existing warranty alert cron (`/api/cron/warranty-alerts`) is time-based (expiry proximity), not action-triggered — the exception to the event-driven pattern. It already calls `notificationQueue.send()` (the awaited variant) in addition to sending email, so the in-app bell and push both show warranty expiry alerts.
 
 ---
 
 ## Navigation
 
 - Bell icon in AppHeader (not a nav item — always visible)
-- User preferences: add `{ href: '/settings/notifications', labelKey: 'nav.notifications', scope: 'org' }` to Settings group
-- Full list: `{ href: '/notifications', labelKey: 'nav.allNotifications', scope: 'org' }` (no sidebar entry — accessible from panel "View all")
+- Settings → Notifications (`/settings/notifications`) hosts **both** the user's own channel preferences and, for admins, the org-wide defaults section on the same page — not two separate routes/tabs
+- Full list: `/{locale}/{orgSlug}/notifications` (no sidebar entry — accessible from panel "View all")

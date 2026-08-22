@@ -27,13 +27,14 @@ Define extra fields that appear on asset, inventory item, and request forms. Fie
 | `date` | Date picker |
 | `boolean` | Yes/No toggle |
 | `user` | User reference picker |
+| `plate_reader` | Plate/vehicle capture — only offered when `module = 'customers'` (`components/banna/CustomFieldForm.tsx`) |
 
 **Field properties**
 
 | Property | Notes |
 |----------|-------|
 | `fieldKey` | Snake_case identifier, immutable after creation. Pattern: `/^[a-z_][a-z0-9_]*$/`, max 50 chars. |
-| `module` | `assets` \| `inventory` \| `requests` — immutable after creation |
+| `module` | `assets` \| `inventory` \| `customers` — immutable after creation. Not `requests`: the `custom_fields`/`custom_field_values` DB check constraints still list `requests` as an allowed value (migration `0043_banna_customers_module.sql`), but the Zod validator (`lib/modules/banna/validators/schemas.ts`) and the UI's module picker no longer offer it — `requests` custom fields cannot actually be created through the app today. |
 | `label` / `labelAr` | Display name in English and Arabic |
 | `required` | Enforces presence on form submit |
 | `options` | JSON array of `{value, label, labelAr?, color?}` — only for `select` / `multi_select` |
@@ -65,6 +66,8 @@ DELETE /api/banna/custom-fields/:fieldId     Delete field
 ```
 
 Rate limit: 60 requests / 60 s per tenant on the list endpoint.
+
+> Note: `customers`-module custom fields are gated behind the `pos` feature flag instead of `banna` (`app/api/banna/custom-fields/route.ts`) — per an in-code comment, this is because customer fields "ship ahead of the rest of Banna" and ride on the already-live `pos` feature. All other modules (`assets`, `inventory`) are gated behind the `banna` feature flag as normal.
 
 Input is validated with Zod schemas defined in [lib/modules/banna/validators/schemas.ts](../../lib/modules/banna/validators/schemas.ts).
 

@@ -11,15 +11,16 @@ export type SubscriptionStatus =
   | 'CANCELLED';
 
 // The four selectable Haraka sub-modules ("Choose 1 / Choose 2").
-export type HarakaModule = 'pos' | 'services' | 'orders' | 'retainers';
+export type HarakaModule = 'pos' | 'services' | 'orders' | 'retainers' | 'appointments';
 
-export const HARAKA_MODULES: HarakaModule[] = ['pos', 'services', 'orders', 'retainers'];
+export const HARAKA_MODULES: HarakaModule[] = ['pos', 'services', 'orders', 'retainers', 'appointments'];
 
 export const HARAKA_MODULE_LABELS: Record<HarakaModule, string> = {
   pos: 'Point of Sale',
   services: 'Services',
   orders: 'Orders',
   retainers: 'Retainers',
+  appointments: 'Appointments',
 };
 
 // Purchased add-ons layered on top of the plan's included allowances.

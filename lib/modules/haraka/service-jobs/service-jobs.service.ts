@@ -142,7 +142,7 @@ export class ServiceJobsService {
         template:      'job_finished',
         variables:     { customerName: job.customerName, jobNumber: job.jobNumber },
       })
-      const ratingToken = await repo.ensureRatingToken(tenant, id)
+      const ratingToken = await repo.ensureRatingToken(tenant, id) // pre-generate so the public /rate/[token] page works whenever it's accessed
       notificationQueue.enqueue({
         tenant,
         eventType:     'service_job.rating_requested',

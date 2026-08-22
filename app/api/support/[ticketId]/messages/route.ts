@@ -15,6 +15,7 @@ import { auditLog } from '@/lib/platform/audit';
 import { ticketMessageSchema } from '@/lib/validations/support-ticket.schema';
 import { sendEmail } from '@/lib/email/resend';
 import { supportTicketReplyEmail } from '@/lib/email/templates';
+import { notificationQueue } from '@/lib/notifications/notification-queue';
 
 const SUPPORT_EMAILS = ['info@makhzoon.me', 'support@makhzoon.me'];
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
@@ -74,6 +75,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tic
         recordId: ticketId,
       });
 
+      // A Makhzoon staff reply needs to reach the customer's org, not the
+      // support inbox — the old code emailed SUPPORT_EMAILS here, so the
+      // customer never actually heard back. Route through the notification
+      // queue instead: it resolves the org's admin/org_owner users, respects
+      // their per-user preferences, and also raises the in-app bell.
       (async () => {
         try {
           const org = await getOrganizationById(ticket.organizationId);
@@ -84,16 +90,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tic
             ticketId,
             authorName: user.displayName || user.email || 'Makhzoon Team',
             message: parsed.data.body,
-            ticketUrl: `${baseUrl}/superadmin/support/${ticketId}`,
+            ticketUrl: `${baseUrl}/support/${ticketId}`,
           });
-          await sendEmail({
-            to: SUPPORT_EMAILS,
-            subject: `[Support Reply] ${ticket.subject} — ${org?.name ?? ticket.organizationId}`,
-            html,
-            text,
+          await notificationQueue.send({
+            tenant: { organizationId: ticket.organizationId },
+            eventType: 'support.ticket_replied',
+            data: { ticketId, subject: ticket.subject, authorName: user.displayName || user.email },
+            link: `/support/${ticketId}`,
+            titleOverride: `New reply on "${ticket.subject}"`,
+            emailSubject: `[Support Reply] ${ticket.subject} — ${org?.name ?? ticket.organizationId}`,
+            emailHtml: html,
+            emailText: text,
           });
-        } catch (emailErr) {
-          console.error('[POST /api/support/[ticketId]/messages] email notification failed:', emailErr);
+        } catch (notifyErr) {
+          console.error('[POST /api/support/[ticketId]/messages] customer notification failed:', notifyErr);
         }
       })();
 

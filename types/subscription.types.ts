@@ -10,7 +10,9 @@ export type SubscriptionStatus =
   | 'SUSPENDED'
   | 'CANCELLED';
 
-// The four selectable Haraka sub-modules ("Choose 1 / Choose 2").
+// The selectable Haraka sub-modules ("Choose 1 / Choose 2"). Anything that
+// validates or renders this set must derive it from HARAKA_MODULES below —
+// re-listing the values leaves stale copies behind when a module is added.
 export type HarakaModule = 'pos' | 'services' | 'orders' | 'retainers' | 'appointments';
 
 export const HARAKA_MODULES: HarakaModule[] = ['pos', 'services', 'orders', 'retainers', 'appointments'];

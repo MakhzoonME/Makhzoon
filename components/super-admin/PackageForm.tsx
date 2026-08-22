@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import {
   INCLUSION_KEYS,
   INCLUSION_LABELS,
+  HARAKA_MODULES,
   HARAKA_MODULE_LABELS,
   type Package,
   type InclusionKey,
@@ -63,7 +64,9 @@ const PLATFORM_LABELS: Record<(typeof PLATFORM_FEATURES)[number], string> = {
 
 // Haraka modules sold beyond the plan's free slot count (pos is the base
 // module the 'pos' feature flag already gates, so it's not priced here).
-const EXTRA_HARAKA_MODULES: Exclude<HarakaModule, 'pos'>[] = ['services', 'orders', 'retainers', 'appointments'];
+const EXTRA_HARAKA_MODULES = HARAKA_MODULES.filter(
+  (m): m is Exclude<HarakaModule, 'pos'> => m !== 'pos',
+);
 
 type AddOnKey = 'deliveryAgents' | 'warrantyCerts' | 'customization' | 'purchasesRequests' | 'vehicleIntake' | 'loyalty';
 interface AddOnState { included: boolean; price: string }

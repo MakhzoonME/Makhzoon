@@ -43,6 +43,23 @@ export async function requireHarakaModule(
   }
 }
 
+/**
+ * Gate the shared staff directory. It backs two independently-sold things —
+ * the Workers add-on (deliveries, service-job assignment) and the Appointments
+ * module (providers) — so either entitlement grants access. Only when both
+ * gates reject does the caller get the Workers error, which is the one that
+ * existed before the directory was generalized (migration 0067).
+ */
+export async function requireStaffAccess(tenant: TenantContext): Promise<void> {
+  try {
+    await requireHarakaModule(tenant, 'appointments');
+    return;
+  } catch {
+    // Not an appointments org — fall through to the delivery add-on check.
+  }
+  await requireAddOn(tenant, 'deliveryAgents');
+}
+
 export type AddOnKey =
   | 'deliveryAgents'
   | 'warrantyCerts'

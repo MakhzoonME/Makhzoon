@@ -138,7 +138,7 @@ export interface AddOnPrices {
   purchasesRequests?: number;
   // Per-module monthly price for a Haraka module active beyond the plan's
   // included slot count.
-  harakaModules?: { pos?: number; services?: number; orders?: number; retainers?: number };
+  harakaModules?: { pos?: number; services?: number; orders?: number; retainers?: number; appointments?: number };
   deliveryAgents?: number;
   warrantyCerts?: number;
   customization?: number;

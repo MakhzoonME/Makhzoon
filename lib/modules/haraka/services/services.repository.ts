@@ -16,6 +16,8 @@ function toService(r: Row): HarakaService {
     price:            Number(r.price ?? 0),
     taxRateId:        (r.tax_rate_id as string) ?? null,
     active:           (r.active as boolean) ?? true,
+    durationMinutes:  r.duration_minutes == null ? null : Number(r.duration_minutes),
+    appointmentBookable: (r.appointment_bookable as boolean) ?? false,
     createdAt:        r.created_at ? new Date(r.created_at as string) : new Date(),
     createdBy:        (r.created_by as string) ?? null,
     createdByEmail:   (r.created_by_email as string) ?? null,
@@ -31,6 +33,8 @@ export interface ListServicesOpts {
   search?:   string
   active?:   boolean
   category?: string
+  /** Appointments picker: only services flagged bookable. */
+  appointmentBookable?: boolean
   page?:     number
   pageSize?: number
 }
@@ -42,6 +46,8 @@ export interface CreateServiceInput {
   price:       number
   taxRateId?:  string | null
   active?:     boolean
+  durationMinutes?: number | null
+  appointmentBookable?: boolean
 }
 
 export interface UpdateServiceInput {
@@ -51,6 +57,8 @@ export interface UpdateServiceInput {
   price?:       number
   taxRateId?:   string | null
   active?:      boolean
+  durationMinutes?: number | null
+  appointmentBookable?: boolean
 }
 
 export class ServicesRepository {
@@ -62,6 +70,7 @@ export class ServicesRepository {
     if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
     if (opts?.active !== undefined) q = q.eq('active', opts.active)
     if (opts?.category) q = q.eq('category', opts.category)
+    if (opts?.appointmentBookable !== undefined) q = q.eq('appointment_bookable', opts.appointmentBookable)
     if (opts?.search) {
       const term = opts.search.replace(/[,()%*\\]/g, ' ').trim()
       if (term) q = q.or(['name', 'category', 'description'].map((c) => `${c}.ilike.%${term}%`).join(','))
@@ -112,6 +121,8 @@ export class ServicesRepository {
         price:            input.price,
         tax_rate_id:      input.taxRateId ?? null,
         active:           input.active ?? true,
+        duration_minutes: input.durationMinutes ?? null,
+        appointment_bookable: input.appointmentBookable ?? false,
         created_by:       tenant.userId,
         created_by_email: tenant.user.email ?? null,
         created_by_name:  tenant.user.displayName ?? null,
@@ -134,6 +145,7 @@ export class ServicesRepository {
     const map: Record<string, string> = {
       name: 'name', category: 'category', description: 'description',
       price: 'price', taxRateId: 'tax_rate_id', active: 'active',
+      durationMinutes: 'duration_minutes', appointmentBookable: 'appointment_bookable',
     }
     for (const [k, col] of Object.entries(map)) {
       const v = (input as Record<string, unknown>)[k]

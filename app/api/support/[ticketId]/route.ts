@@ -18,8 +18,6 @@ import { notificationQueue } from '@/lib/notifications/notification-queue';
 
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
-const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
-
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ ticketId: string }> }) {
   try {
     const user = await verifySessionCookie();

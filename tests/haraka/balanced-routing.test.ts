@@ -1,14 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { selectBalancedAgents } from '@/lib/modules/haraka/delivery-agents/balanced-routing';
-import type { HarakaDeliveryAgent } from '@/types';
+import { selectBalancedStaff as selectBalancedAgents } from '@/lib/modules/haraka/staff/balanced-routing';
+import type { HarakaStaff } from '@/types';
 
-function agent(overrides: Partial<HarakaDeliveryAgent> = {}): HarakaDeliveryAgent {
+function agent(overrides: Partial<HarakaStaff> = {}): HarakaStaff {
   return {
     id: 'agent-1',
     organizationId: 'org-1',
     name: 'Agent',
     phone: null,
     notes: null,
+    capabilities: ['delivery'],
     isActive: true,
     createdAt: new Date(),
     createdBy: null,

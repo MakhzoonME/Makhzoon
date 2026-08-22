@@ -16,7 +16,9 @@ export async function GET(req: NextRequest) {
     const limited = await rateLimitTenant(tenant, 'haraka-delivery-agents', 60, 60_000)
     if (limited) return limited
     const onlyActive = new URL(req.url).searchParams.get('active') === 'true'
-    const items = await service.list(tenant, onlyActive)
+    // Scoped to delivery-capable staff so this endpoint keeps returning exactly
+    // what it returned before haraka_staff absorbed other capabilities.
+    const items = await service.list(tenant, { onlyActive, capability: 'delivery' })
     return NextResponse.json({ items })
   } catch (err) {
     if (err instanceof NextResponse) return err
@@ -36,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
     }
     const { name, phone, notes, isActive } = parsed.data
-    const agent = await service.create(tenant, { name, phone, notes, isActive })
+    const agent = await service.create(tenant, { name, phone, notes, isActive, capabilities: ['delivery'] })
     return NextResponse.json({ agent }, { status: 201 })
   } catch (err) {
     if (err instanceof NextResponse) return err

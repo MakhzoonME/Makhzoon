@@ -16,6 +16,7 @@ import { ticketMessageSchema } from '@/lib/validations/support-ticket.schema';
 import { sendEmail } from '@/lib/email/resend';
 import { supportTicketReplyEmail } from '@/lib/email/templates';
 import { notificationQueue } from '@/lib/notifications/notification-queue';
+import { dispatchSupportTicketWebhook } from '@/lib/webhooks/support-ticket-webhooks';
 
 const SUPPORT_EMAILS = ['info@makhzoon.me', 'support@makhzoon.me'];
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
@@ -107,6 +108,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tic
         }
       })();
 
+      dispatchSupportTicketWebhook({
+        event: 'ticket.comment_added',
+        ticketId,
+        messageId: message.id,
+        body: parsed.data.body,
+        authorId: user.uid,
+        authorName: user.displayName || user.email || user.uid,
+        authorRole: 'MAKHZOON_SUPPORT',
+      });
+
       return NextResponse.json(message, { status: 201 });
     }
 
@@ -153,6 +164,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tic
         console.error('[POST /api/support/[ticketId]/messages] email notification failed:', emailErr);
       }
     })();
+
+    dispatchSupportTicketWebhook({
+      event: 'ticket.comment_added',
+      ticketId,
+      messageId: message.id,
+      body: parsed.data.body,
+      authorId: user.uid,
+      authorName: user.displayName || user.email || user.uid,
+      authorRole: 'ORG_USER',
+    });
 
     return NextResponse.json(message, { status: 201 });
   } catch (err) {

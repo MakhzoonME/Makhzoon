@@ -14,6 +14,9 @@ import { supportTicketCreateSchema } from '@/lib/validations/support-ticket.sche
 import { TicketStatus, TicketPriority } from '@/types';
 import { sendEmail } from '@/lib/email/resend';
 import { supportTicketNotificationEmail } from '@/lib/email/templates';
+import { dispatchSupportTicketWebhook, buildTicketUrl } from '@/lib/webhooks/support-ticket-webhooks';
+
+const LOCALE_COOKIE = 'makhzoon-locale';
 
 const SUPPORT_EMAILS = ['info@makhzoon.me', 'support@makhzoon.me'];
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
@@ -93,6 +96,30 @@ export async function POST(req: NextRequest) {
         });
       } catch (emailErr) {
         console.error('[POST /api/support] email notification failed:', emailErr);
+      }
+    })();
+
+    (async () => {
+      try {
+        const org = await getOrganizationById(tenant.organizationId!);
+        const locale = req.cookies.get(LOCALE_COOKIE)?.value ?? 'en';
+        dispatchSupportTicketWebhook({
+          event: 'ticket.created',
+          ticketId: ticket.id,
+          organizationId: tenant.organizationId!,
+          organizationName: org?.name ?? tenant.organizationId!,
+          subject: parsed.data.subject,
+          description: parsed.data.description,
+          priority: parsed.data.priority ?? 'MEDIUM',
+          status: 'OPEN',
+          createdById: user.uid,
+          createdByName: user.displayName || user.email || user.uid,
+          ticketUrl: org?.subdomain
+            ? buildTicketUrl(locale, org.subdomain, ticket.id)
+            : '',
+        });
+      } catch (webhookErr) {
+        console.error('[POST /api/support] webhook dispatch failed:', webhookErr);
       }
     })();
 

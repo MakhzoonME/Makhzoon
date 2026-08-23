@@ -340,12 +340,16 @@ export default function AppointmentDetailPage() {
         </div>
       </div>
 
-      <AppointmentInvoiceDialog
-        open={invoiceOpen}
-        onOpenChange={setInvoiceOpen}
-        appointment={appointment}
-        currency={currency}
-      />
+      {invoiceOpen && (
+        <AppointmentInvoiceDialog
+          open={invoiceOpen}
+          onOpenChange={setInvoiceOpen}
+          appointment={appointment}
+          orgSlug={params.orgSlug}
+          orgName={orgInfo?.name ?? ''}
+          currency={currency}
+        />
+      )}
     </div>
   );
 }

@@ -1753,6 +1753,9 @@ const en = {
   'invoiceDialog.copyLink':         'Copy Link',
   'invoiceDialog.copied':           'Copied!',
   'invoiceDialog.screenshot':       'Screenshot',
+  'invoiceDialog.downloadPng':      'PNG',
+  'invoiceDialog.downloadJpg':      'JPG',
+  'invoiceDialog.print':            'Print',
   'invoiceDialog.noInvoiceJobStatus': 'Invoice number is assigned once the job is marked Done.',
   'invoiceDialog.noInvoiceGenerate':  'No invoice number yet. Generate one to include it on the document.',
   // Service Job Invoice Preview
@@ -3811,6 +3814,9 @@ const ar: Record<keyof typeof en, string> = {
   'invoiceDialog.copyLink':         'نسخ الرابط',
   'invoiceDialog.copied':           'تم النسخ!',
   'invoiceDialog.screenshot':       'لقطة شاشة',
+  'invoiceDialog.downloadPng':      'PNG',
+  'invoiceDialog.downloadJpg':      'JPG',
+  'invoiceDialog.print':            'طباعة',
   'invoiceDialog.noInvoiceJobStatus': 'يُعيَّن رقم الفاتورة عند تغيير حالة الطلب إلى "منجز".',
   'invoiceDialog.noInvoiceGenerate':  'لا يوجد رقم فاتورة بعد. أنشئ رقماً لإدراجه في المستند.',
   // Service Job Invoice Preview

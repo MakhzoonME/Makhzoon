@@ -68,6 +68,7 @@ export class BannaValuesRepository {
         placeholderAr:  (f.placeholder_ar as string) ?? undefined,
         sortOrder:      f.sort_order as number,
         active:         f.is_active as boolean,
+        isDefault:      f.is_default as boolean,
         createdAt:      f.created_at as string,
         updatedAt:      f.updated_at as string,
         value:          existing?.value,

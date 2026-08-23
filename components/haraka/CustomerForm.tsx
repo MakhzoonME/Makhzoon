@@ -38,8 +38,8 @@ const DEFAULT_FIELD_KEY_TO_FORM_KEY: Record<string, keyof CustomerFormData> = {
   notes: 'notes',
 };
 
-/** Name/Phone/Email are always shown and can't be hidden by org config. */
-const ALWAYS_VISIBLE_FORM_KEYS: ReadonlySet<keyof CustomerFormData> = new Set(['name', 'phone', 'email']);
+/** Name/Phone are always shown and can't be hidden by org config. */
+const ALWAYS_VISIBLE_FORM_KEYS: ReadonlySet<keyof CustomerFormData> = new Set(['name', 'phone']);
 
 function useDefaultFieldConfig(): { byFormKey: DefaultFieldConfigByFormKey; raw: RawDefaultFieldConfig[] } {
   const defsQuery = useCustomFields('customers');
@@ -63,7 +63,6 @@ function isFieldVisible(config: DefaultFieldConfigByFormKey, key: keyof Customer
 
 function isFieldRequired(config: DefaultFieldConfigByFormKey, key: keyof CustomerFormData): boolean {
   if (key === 'name' || key === 'phone') return true;
-  if (key === 'email') return false;
   return config[key]?.required ?? false;
 }
 

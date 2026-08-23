@@ -92,7 +92,10 @@ export function useCreateServiceJob() {
       }
       return res.json() as Promise<{ job: HarakaServiceJob }>
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: LIST_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: LIST_KEY })
+      qc.invalidateQueries({ queryKey: ['haraka', 'customers'] })
+    },
   })
 }
 

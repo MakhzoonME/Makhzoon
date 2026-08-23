@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { Pencil, Trash2, ArrowRight, Copy, Receipt, ShoppingBag, FileText, ChevronRight } from 'lucide-react';
+import { Pencil, Trash2, ArrowRight, Copy, Receipt, ShoppingBag, FileText, ChevronRight, CalendarClock, Wrench } from 'lucide-react';
 import { useState } from 'react';
 import { PageHeader, ConfirmDialog, StatusBadge } from '@/components/shared';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,6 @@ import { useAuthStore } from '@/store/auth.store';
 import { useAccessibleSpaces } from '@/hooks/spaces';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
-import { CustomFieldValuesSection } from '@/components/banna/CustomFieldValuesSection';
 
 export default function CustomerDetailPage() {
   const router = useRouter();
@@ -101,14 +100,11 @@ export default function CustomerDetailPage() {
         <Field label="Name" value={customer.name} />
         <Field label="Phone" value={customer.phone ?? '—'} />
         <Field label="Email" value={customer.email ?? '—'} />
-        <Field label="Tax number" value={customer.taxNumber ?? '—'} />
         <Field
           label="Notes"
           value={customer.notes ?? '—'}
           multiline
         />
-        <CustomFieldValuesSection recordType="customers" recordId={customer.id} />
-
         <div className="text-xs text-gray-500 pt-2 border-t border-border">
           Created {new Date(customer.createdAt).toLocaleString()} · Updated{' '}
           {new Date(customer.updatedAt).toLocaleString()}
@@ -166,7 +162,7 @@ function CustomerHistorySection({
   return (
     <div className="mt-6 rounded-xl border border-border bg-surface-page">
       <div className="flex items-center justify-between border-b border-border px-6 py-4">
-        <h2 className="text-sm font-semibold">Transaction history</h2>
+        <h2 className="text-sm font-semibold">Activity history</h2>
         {entries.length > 0 && (
           <span className="text-xs text-gray-500">{entries.length} record{entries.length === 1 ? '' : 's'}</span>
         )}
@@ -180,7 +176,7 @@ function CustomerHistorySection({
         <div className="p-6 text-sm text-red-600">Couldn&apos;t load transaction history.</div>
       ) : entries.length === 0 ? (
         <div className="p-6 text-sm text-gray-500">
-          No sales or orders recorded for this customer yet.
+          No sales, orders, appointments, or service jobs recorded for this customer yet.
         </div>
       ) : (
         <ul className="divide-y divide-border">
@@ -202,14 +198,25 @@ function HistoryRow({
   harakaBase: string;
   currency?: string;
 }) {
-  const href =
-    entry.kind === 'transaction'
-      ? `${harakaBase}/transactions/${entry.id}`
-      : `${harakaBase}/orders/${entry.id}`;
-  const Icon = entry.kind === 'transaction' ? Receipt : ShoppingBag;
-  const kindLabel = entry.kind === 'transaction'
-    ? (entry.isRefund ? 'Refund' : 'Sale')
-    : 'Order';
+  const hrefByKind: Record<CustomerHistoryEntry['kind'], string> = {
+    transaction: `${harakaBase}/transactions/${entry.id}`,
+    order: `${harakaBase}/orders/${entry.id}`,
+    appointment: `${harakaBase}/appointments/${entry.id}`,
+    service_job: `${harakaBase}/service-jobs/${entry.id}`,
+  };
+  const href = hrefByKind[entry.kind];
+  const iconByKind: Record<CustomerHistoryEntry['kind'], typeof Receipt> = {
+    transaction: Receipt,
+    order: ShoppingBag,
+    appointment: CalendarClock,
+    service_job: Wrench,
+  };
+  const Icon = iconByKind[entry.kind];
+  const kindLabel =
+    entry.kind === 'transaction' ? (entry.isRefund ? 'Refund' : 'Sale')
+    : entry.kind === 'order' ? 'Order'
+    : entry.kind === 'appointment' ? 'Appointment'
+    : 'Service Job';
 
   return (
     <li>

@@ -35,11 +35,13 @@ const DEFAULT_FIELD_KEY_TO_FORM_KEY: Record<string, keyof CustomerFormData> = {
   name: 'name',
   phone: 'phone',
   email: 'email',
-  tax_number: 'taxNumber',
   notes: 'notes',
 };
 
-function useDefaultFieldConfig(): { byFormKey: DefaultFieldConfigByFormKey; raw: RawDefaultFieldConfig[] } {
+/** Name/Phone are always shown and can't be hidden by org config. */
+const ALWAYS_VISIBLE_FORM_KEYS: ReadonlySet<keyof CustomerFormData> = new Set(['name', 'phone']);
+
+function useDefaultFieldConfig(): { byFormKey: DefaultFieldConfigByFormKey; raw: RawDefaultFieldConfig[]; isLoading: boolean } {
   const defsQuery = useCustomFields('customers');
   const byFormKey: DefaultFieldConfigByFormKey = {};
   const raw: RawDefaultFieldConfig[] = [];
@@ -51,15 +53,17 @@ function useDefaultFieldConfig(): { byFormKey: DefaultFieldConfigByFormKey; raw:
     const formKey = DEFAULT_FIELD_KEY_TO_FORM_KEY[fieldKey];
     if (formKey) byFormKey[formKey] = entry;
   }
-  return { byFormKey, raw };
+  return { byFormKey, raw, isLoading: defsQuery.isLoading };
 }
 
 function isFieldVisible(config: DefaultFieldConfigByFormKey, key: keyof CustomerFormData): boolean {
+  if (ALWAYS_VISIBLE_FORM_KEYS.has(key)) return true;
   return config[key]?.active !== false;
 }
 
 function isFieldRequired(config: DefaultFieldConfigByFormKey, key: keyof CustomerFormData): boolean {
-  return config[key]?.required ?? key === 'name';
+  if (key === 'name' || key === 'phone') return true;
+  return config[key]?.required ?? false;
 }
 
 export interface CustomerFormProps {
@@ -95,9 +99,14 @@ function CustomerCustomFields({
   // customer there's no record yet, so fetch just the field definitions.
   const valuesQuery = useCustomFieldValues('customers', recordId ?? '');
   const defsQuery = useCustomFields('customers');
-  const fields: CustomFieldWithValue[] = recordId
+  // Name/Phone/Email/Notes are rendered above as dedicated inputs bound to
+  // real pos_customers columns — exclude their is_default=true rows here so
+  // they don't also show up as generic text inputs in this section.
+  const isDefaultField = (f: Record<string, unknown>) => f.is_default === true || f.isDefault === true;
+  const allFields: CustomFieldWithValue[] = recordId
     ? (valuesQuery.data?.items ?? [])
     : (defsQuery.data?.items ?? []).map((f) => ({ ...f, value: null }));
+  const fields = allFields.filter((f) => !isDefaultField(f as unknown as Record<string, unknown>));
   const loading = recordId ? valuesQuery.isLoading : defsQuery.isLoading;
 
   const [draft, setDraft] = useState<Record<string, unknown>>({});
@@ -115,6 +124,7 @@ function CustomerCustomFields({
 
   if (!posEnabled) return null;
   if (loading) return null;
+  if (fields.length === 0 && !canCreateField) return null;
 
   function handleChange(fieldId: string, value: unknown) {
     setDraft((prev) => {
@@ -132,9 +142,8 @@ function CustomerCustomFields({
 
   return (
     <div className="pt-2 border-t border-border space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Custom fields</p>
-        {canCreateField && (
+      {canCreateField && (
+        <div className="flex items-center justify-end">
           <Button
             type="button"
             size="sm"
@@ -144,8 +153,8 @@ function CustomerCustomFields({
           >
             <Plus className="h-3 w-3 me-1" /> Add field
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {fields.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -181,7 +190,6 @@ const EMPTY: CustomerFormData = {
   name: '',
   phone: null,
   email: null,
-  taxNumber: null,
   notes: null,
 };
 
@@ -198,7 +206,7 @@ export function CustomerForm({
     defaultValues: { ...EMPTY, ...initial },
   });
 
-  const { byFormKey: fieldConfig, raw: rawFieldConfig } = useDefaultFieldConfig();
+  const { byFormKey: fieldConfig, raw: rawFieldConfig, isLoading: fieldConfigLoading } = useDefaultFieldConfig();
 
   const [fieldsDraft, setFieldsDraft] = useState<Record<string, unknown>>({});
   const [savingFields, setSavingFields] = useState(false);
@@ -275,7 +283,7 @@ export function CustomerForm({
             />
           )}
 
-          {isFieldVisible(fieldConfig, 'email') && (
+          {!fieldConfigLoading && isFieldVisible(fieldConfig, 'email') && (
             <FormField
               control={form.control}
               name="email"
@@ -298,28 +306,7 @@ export function CustomerForm({
           )}
         </div>
 
-        {isFieldVisible(fieldConfig, 'taxNumber') && (
-          <FormField
-            control={form.control}
-            name="taxNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tax number{isFieldRequired(fieldConfig, 'taxNumber') ? ' *' : ''}</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    value={field.value ?? ''}
-                    onChange={(e) => field.onChange(e.target.value || null)}
-                    placeholder="Required by Fawtara for B2B invoices"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-
-        {isFieldVisible(fieldConfig, 'notes') && (
+        {!fieldConfigLoading && isFieldVisible(fieldConfig, 'notes') && (
           <FormField
             control={form.control}
             name="notes"

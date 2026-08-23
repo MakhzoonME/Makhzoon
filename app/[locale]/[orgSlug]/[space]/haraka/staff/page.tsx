@@ -283,7 +283,11 @@ export default function StaffPage() {
                   </td>
                 </tr>
               ) : staff.map((person) => (
-                <tr key={person.id} className="hover:bg-surface-page transition-colors">
+                <tr
+                  key={person.id}
+                  className="hover:bg-surface-page transition-colors cursor-pointer"
+                  onClick={() => router.push(`${base}/staff/${person.id}`)}
+                >
                   <td className="px-4 py-3 font-medium text-gray-900">{person.name}</td>
                   <td className="px-4 py-3 text-gray-500">
                     {person.phone ? (
@@ -307,7 +311,7 @@ export default function StaffPage() {
                       ))}
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
                       onClick={() => handleToggleActive(person)}
@@ -323,7 +327,7 @@ export default function StaffPage() {
                         : <><ToggleLeft className="h-3 w-3" strokeWidth={1.75} /> {t('common.inactive')}</>}
                     </button>
                   </td>
-                  <td className="px-4 py-3 text-end">
+                  <td className="px-4 py-3 text-end" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
                       {/* Working hours only mean something for appointment providers. */}
                       {person.capabilities.includes('appointment_provider') && (

@@ -21,7 +21,7 @@ import type { ServiceJobStatus } from '@/types';
 const STATUS_FLOW: ServiceJobStatus[] = ['new', 'confirmed', 'in_progress', 'done'];
 
 export default function ServiceJobDetailPage() {
-  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', harakaModule: 'services', moduleKey: 'haraka' });
   const { isAllowed } = useAdminGuard('pos.view_service_jobs');
   const params  = useParams<{ locale: string; orgSlug: string; space: string; jobId: string }>();
   const router  = useRouter();

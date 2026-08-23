@@ -95,6 +95,7 @@ export function useCreateCustomer() {
 
 export function useUpdateCustomer() {
   const qc = useQueryClient();
+  const { space } = useParams<{ space?: string }>();
   return useMutation({
     mutationFn: async (vars: { id: string; patch: Partial<CustomerFormData> }) => {
       const res = await fetch(`/api/haraka/customers/${vars.id}`, {
@@ -110,7 +111,7 @@ export function useUpdateCustomer() {
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: LIST_KEY });
-      qc.invalidateQueries({ queryKey: ['haraka', 'customers', vars.id] });
+      qc.invalidateQueries({ queryKey: ['haraka', 'customers', space, vars.id] });
     },
   });
 }

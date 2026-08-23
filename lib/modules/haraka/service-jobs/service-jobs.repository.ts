@@ -100,6 +100,7 @@ export interface ListServiceJobsOpts {
   status?:        string
   serviceType?:   string
   staffMemberId?: string
+  customerId?:    string
   from?:          Date
   to?:            Date
   page?:          number
@@ -124,6 +125,7 @@ export class ServiceJobsRepository {
     if (opts?.status)        q = q.eq('status', opts.status)
     if (opts?.serviceType)   q = q.eq('service_type', opts.serviceType)
     if (opts?.staffMemberId) q = q.eq('staff_member_id', opts.staffMemberId)
+    if (opts?.customerId)    q = q.eq('customer_id', opts.customerId)
     if (opts?.from)          q = q.gte('created_at', opts.from.toISOString())
     if (opts?.to)            q = q.lte('created_at', opts.to.toISOString())
 

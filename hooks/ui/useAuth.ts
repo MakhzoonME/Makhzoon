@@ -20,6 +20,7 @@ export function useAuth() {
       organizationId: string | null,
     ) {
       let features: Record<string, boolean> = {};
+      let activeHarakaModules: AuthUser['activeHarakaModules'] = [];
       let permissions = null;
       let saPermissions = null;
       let orgSlug: string | null = null;
@@ -35,6 +36,7 @@ export function useAuth() {
           const data = await res.json();
           resolvedRole = data.role ?? role;
           features = data.features ?? {};
+          activeHarakaModules = data.activeHarakaModules ?? [];
           permissions = data.permissions ?? null;
           saPermissions = data.saPermissions ?? null;
           orgSlug = data.orgSlug ?? null;
@@ -57,6 +59,7 @@ export function useAuth() {
         permissions,
         saPermissions,
         features,
+        activeHarakaModules,
       } as AuthUser;
       setUser(authUser);
       setLoading(false);
@@ -94,6 +97,7 @@ export function useAuth() {
               permissions: data.permissions ?? null,
               saPermissions: data.saPermissions ?? null,
               features: data.features ?? {},
+              activeHarakaModules: data.activeHarakaModules ?? [],
             } as AuthUser);
           } else {
             setUser(null);

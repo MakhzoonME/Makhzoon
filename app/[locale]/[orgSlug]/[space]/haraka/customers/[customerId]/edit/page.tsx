@@ -51,7 +51,6 @@ export default function EditCustomerPage() {
           name: customer.name,
           phone: customer.phone,
           email: customer.email,
-          taxNumber: customer.taxNumber,
           notes: customer.notes,
         }}
         recordId={customer.id}

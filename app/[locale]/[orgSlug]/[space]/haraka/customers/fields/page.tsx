@@ -82,7 +82,12 @@ export default function CustomerFieldsPage() {
 
   const [fields, setFields] = useState<CustomField[]>([]);
   useEffect(() => {
-    const items = (data?.items ?? []).map(mapDbField).sort((a, b) => a.sortOrder - b.sortOrder);
+    const items = (data?.items ?? [])
+      .map(mapDbField)
+      // Tax number was retired — stop showing any stale row from before the
+      // cleanup migration ran.
+      .filter((f) => f.fieldKey !== 'tax_number')
+      .sort((a, b) => a.sortOrder - b.sortOrder);
     setFields(items);
   }, [data]);
 
@@ -125,7 +130,6 @@ export default function CustomerFieldsPage() {
       case 'name': return t('customers.fields.name');
       case 'phone': return t('customers.fields.phone');
       case 'email': return t('customers.fields.email');
-      case 'tax_number': return t('customers.fields.taxNumber');
       case 'notes': return t('customers.fields.notes');
       default: return fieldKey;
     }
@@ -264,6 +268,10 @@ function FieldRow({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // Name/Phone are always shown and required — Email, Notes, and genuinely
+  // custom fields stay editable here.
+  const isLocked = ['name', 'phone'].includes(field.fieldKey);
+
   return (
     <tr ref={setNodeRef} style={style} className="hover:bg-surface-page transition-colors">
       <td className="px-2 py-3">
@@ -289,21 +297,18 @@ function FieldRow({
       <td className="px-4 py-3">
         <Switch
           checked={field.required}
-          disabled={!field.isDefault}
-          onCheckedChange={field.isDefault ? onToggleRequired : undefined}
+          disabled={isLocked || !field.isDefault}
+          onCheckedChange={field.isDefault && !isLocked ? onToggleRequired : undefined}
           aria-label={t('banna.fieldRequired')}
         />
       </td>
       <td className="px-4 py-3">
-        {field.isDefault ? (
-          <Switch
-            checked={field.active}
-            onCheckedChange={onToggleVisible}
-            aria-label={t('banna.fieldVisible')}
-          />
-        ) : (
-          <span className="text-gray-300">—</span>
-        )}
+        <Switch
+          checked={isLocked ? true : field.active}
+          disabled={isLocked}
+          onCheckedChange={isLocked ? undefined : onToggleVisible}
+          aria-label={t('banna.fieldVisible')}
+        />
       </td>
       <td className="px-4 py-3">
         {!field.isDefault && (

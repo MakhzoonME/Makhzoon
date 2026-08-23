@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireHarakaModule } from '@/lib/permissions/require-module'
 import { requireAddOn } from '@/lib/permissions/require-module'
 import { ServiceJobsService } from '@/lib/modules/haraka/service-jobs/service-jobs.service'
 import { assignServiceJobAgentsSchema } from '@/lib/modules/haraka/service-jobs/schemas'
@@ -14,6 +15,7 @@ export async function GET(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
+    await requireHarakaModule(tenant, 'services')
     await requireAddOn(tenant, 'deliveryAgents')
     const { jobId } = await params
     const agents = await service.listAgents(tenant, jobId)
@@ -32,6 +34,7 @@ export async function POST(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
+    await requireHarakaModule(tenant, 'services')
     await requireAddOn(tenant, 'deliveryAgents')
     const { jobId } = await params
     const body = await req.json()

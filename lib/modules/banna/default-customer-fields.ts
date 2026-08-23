@@ -6,10 +6,13 @@
  */
 export const DEFAULT_CUSTOMER_FIELDS = [
   { fieldKey: 'name', label: 'Name', required: true, sortOrder: 0 },
-  { fieldKey: 'phone', label: 'Phone', required: false, sortOrder: 1 },
+  { fieldKey: 'phone', label: 'Phone', required: true, sortOrder: 1 },
   { fieldKey: 'email', label: 'Email', required: false, sortOrder: 2 },
-  { fieldKey: 'tax_number', label: 'Tax number', required: false, sortOrder: 3 },
-  { fieldKey: 'notes', label: 'Notes', required: false, sortOrder: 4 },
+  { fieldKey: 'notes', label: 'Notes', required: false, sortOrder: 3 },
 ] as const;
 
 export type DefaultCustomerFieldKey = (typeof DEFAULT_CUSTOMER_FIELDS)[number]['fieldKey'];
+
+/** Name/phone are always shown, required, and can't be hidden — Email,
+ *  Notes, and genuine org-added custom fields can all be toggled off. */
+export const ALWAYS_VISIBLE_CUSTOMER_FIELDS: readonly DefaultCustomerFieldKey[] = ['name', 'phone'];

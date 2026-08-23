@@ -19,6 +19,7 @@ import type { HarakaAppointment } from '@/types';
 export default function AppointmentsListPage() {
   const { isAllowed } = useModuleGuard({
     featureKey: 'pos',
+    harakaModule: 'appointments',
     moduleKey: 'haraka',
     permOp: 'appointmentsView',
   });

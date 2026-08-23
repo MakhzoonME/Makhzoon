@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
 
     let orgSlug: string | null = null;
     let features: Record<string, boolean> = {};
+    let activeHarakaModules: string[] = [];
     let orgSuspended = false;
 
     if (orgId) {
@@ -94,6 +95,12 @@ export async function POST(req: NextRequest) {
       orgSlug = org?.subdomain ?? null;
       if (subscription?.features)
         features = subscription.features as Record<string, boolean>;
+      if (subscription) {
+        activeHarakaModules = [
+          ...(subscription.activeHarakaModules ?? []),
+          ...(subscription.activeAddOns?.extraHarakaModules ?? []),
+        ];
+      }
       if (subscription?.status === 'SUSPENDED' && role !== 'super_admin') {
         orgSuspended = true;
       }
@@ -128,7 +135,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { role, orgSlug, features, permissions, saPermissions },
+      { role, orgSlug, features, activeHarakaModules, permissions, saPermissions },
       { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (err) {

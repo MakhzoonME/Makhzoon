@@ -3,7 +3,7 @@
 #
 # Branch → environment mapping mirrors wrangler.toml:
 #   DevBranch → makhzoon-dev      (dev.makhzoon.me)
-#   STGBranch → makhzoon-staging  (stage.makhzoon.me)
+#   STGBranch → makhzoon-staging  (stg.makhzoon.me)
 #   main      → makhzoon-prod     (app.makhzoon.me)
 #
 # ═══════════════════════════════════════════════════════════════════════

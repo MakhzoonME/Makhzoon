@@ -78,7 +78,6 @@ export default function CustomersListPage() {
     { key: 'name', header: t('col.name'), sortable: true, render: (c) => c.name },
     { key: 'phone', header: t('col.phone'), render: (c) => c.phone ?? '—' },
     { key: 'email', header: t('col.email'), render: (c) => c.email ?? '—' },
-    { key: 'taxNumber', header: t('col.taxNumber'), render: (c) => c.taxNumber ?? '—' },
     {
       key: 'actions',
       header: '',

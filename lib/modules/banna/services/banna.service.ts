@@ -41,7 +41,16 @@ export class BannaService {
   async createCustomField(tenant: TenantContext, input: CreateCustomFieldInput): Promise<CustomField> {
     this.assertCanManage(tenant, input.module, 'create');
 
-    const field = await this.repo.create(tenant, input);
+    // Always append to the bottom of the list — order isn't something the
+    // creator picks, it's just "newest last". repo.getAll returns raw
+    // snake_case rows cast to CustomField, hence sort_order here.
+    const existing = await this.repo.getAll(tenant, { module: input.module as 'assets' | 'inventory' | 'customers' });
+    const sortOrder = existing.reduce(
+      (max, f) => Math.max(max, ((f as unknown as Record<string, unknown>).sort_order as number) ?? 0),
+      -1,
+    ) + 1;
+
+    const field = await this.repo.create(tenant, { ...input, sortOrder });
     await auditLog.create({ tenant, module: 'banna', action: 'CUSTOM_FIELD_CREATED', recordId: field.id, newValue: field as unknown as Record<string, unknown> });
     return field;
   }

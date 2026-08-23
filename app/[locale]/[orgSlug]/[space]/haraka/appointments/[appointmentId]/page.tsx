@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { AppointmentStatusBadge } from '@/components/haraka/AppointmentStatusBadge';
+import { AppointmentInvoiceDialog } from '@/components/haraka/AppointmentInvoiceDialog';
 import { AppointmentPaymentsPanel } from '@/components/haraka/AppointmentPaymentsPanel';
 import {
   useAppointment,
@@ -29,6 +30,7 @@ const STATUS_FLOW: AppointmentStatus[] = ['scheduled', 'confirmed', 'completed']
 export default function AppointmentDetailPage() {
   const { isAllowed } = useModuleGuard({
     featureKey: 'pos',
+    harakaModule: 'appointments',
     moduleKey: 'haraka',
     permOp: 'appointmentsView',
   });
@@ -45,6 +47,7 @@ export default function AppointmentDetailPage() {
 
   const [rescheduling, setRescheduling] = useState(false);
   const [newTime, setNewTime] = useState('');
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
 
   if (!isAllowed) return null;
 
@@ -104,9 +107,15 @@ export default function AppointmentDetailPage() {
 
   async function handleInvoice() {
     if (!appointment) return;
+    // Already invoiced — just show it, no need to hit the generate endpoint again.
+    if (appointment.invoiceNumber) {
+      setInvoiceOpen(true);
+      return;
+    }
     try {
       await generateInvoice.mutateAsync(appointment.id);
       toast.success(t('appointments.generateInvoice'));
+      setInvoiceOpen(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong'));
     }
@@ -125,7 +134,7 @@ export default function AppointmentDetailPage() {
                   variant="outline"
                   className="gap-2"
                   onClick={handleInvoice}
-                  disabled={generateInvoice.isPending || !!appointment.invoiceNumber}
+                  disabled={generateInvoice.isPending}
                 >
                   <FileText className="h-4 w-4" strokeWidth={1.75} />
                   {appointment.invoiceNumber
@@ -330,6 +339,17 @@ export default function AppointmentDetailPage() {
           )}
         </div>
       </div>
+
+      {invoiceOpen && (
+        <AppointmentInvoiceDialog
+          open={invoiceOpen}
+          onOpenChange={setInvoiceOpen}
+          appointment={appointment}
+          orgSlug={params.orgSlug}
+          orgName={orgInfo?.name ?? ''}
+          currency={currency}
+        />
+      )}
     </div>
   );
 }

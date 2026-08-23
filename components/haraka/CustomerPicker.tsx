@@ -122,7 +122,7 @@ function CustomerPickerDialog({
         name: values.name,
         phone: values.phone ?? null,
         email: values.email ?? null,
-        taxNumber: values.taxNumber ?? null,
+        taxNumber: null,
         notes: values.notes ?? null,
         createdAt: new Date(),
         createdBy: '',

@@ -17,6 +17,7 @@ import { formatCurrency } from '@/lib/utils/format';
 export default function NewAppointmentPage() {
   const { isAllowed } = useModuleGuard({
     featureKey: 'pos',
+    harakaModule: 'appointments',
     moduleKey: 'haraka',
     permOp: 'appointmentsCreate',
   });

@@ -79,6 +79,7 @@ export function useCompleteSale() {
       qc.invalidateQueries({ queryKey: LIST_KEY });
       qc.invalidateQueries({ queryKey: ['inventory'] });
       qc.invalidateQueries({ queryKey: ['haraka', 'sessions'] });
+      qc.invalidateQueries({ queryKey: ['haraka', 'customers'] });
     },
   });
 }

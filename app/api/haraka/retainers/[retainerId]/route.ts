@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireHarakaModule } from '@/lib/permissions/require-module'
 import { RetainersService } from '@/lib/modules/haraka/retainers/retainers.service'
 import { updateRetainerSchema } from '@/lib/modules/haraka/retainers/schemas'
 
@@ -13,6 +14,7 @@ export async function GET(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
+    await requireHarakaModule(tenant, 'retainers')
     const { retainerId } = await params
     const retainer = await service.getById(tenant, retainerId)
     return NextResponse.json({ retainer })
@@ -30,6 +32,7 @@ export async function PATCH(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
+    await requireHarakaModule(tenant, 'retainers')
     const { retainerId } = await params
     const body = await req.json()
     const parsed = updateRetainerSchema.safeParse(body)
@@ -53,6 +56,7 @@ export async function DELETE(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
+    await requireHarakaModule(tenant, 'retainers')
     const { retainerId } = await params
     await service.delete(tenant, retainerId)
     return NextResponse.json({ success: true })

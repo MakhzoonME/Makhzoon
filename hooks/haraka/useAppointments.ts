@@ -92,7 +92,10 @@ export function useCreateAppointment() {
       if (!res.ok) throw await errorFrom(res, 'Failed to book appointment');
       return res.json() as Promise<{ appointment: HarakaAppointment }>;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: LIST_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: LIST_KEY });
+      qc.invalidateQueries({ queryKey: ['haraka', 'customers'] });
+    },
   });
 }
 

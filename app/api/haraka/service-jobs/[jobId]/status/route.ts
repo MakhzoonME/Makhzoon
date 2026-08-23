@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireHarakaModule } from '@/lib/permissions/require-module'
 import { ServiceJobsService } from '@/lib/modules/haraka/service-jobs/service-jobs.service'
 import { updateServiceJobStatusSchema } from '@/lib/modules/haraka/service-jobs/schemas'
 
@@ -13,6 +14,7 @@ export async function POST(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
+    await requireHarakaModule(tenant, 'services')
     const { jobId } = await params
     const body = await req.json()
     const parsed = updateServiceJobStatusSchema.safeParse(body)

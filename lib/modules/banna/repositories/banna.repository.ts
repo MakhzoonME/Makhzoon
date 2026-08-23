@@ -29,34 +29,50 @@ export class BannaRepository {
   }
 
   /** Idempotently inserts any missing default-field rows for this org's
-   *  customers module (Name/Phone/Email/Tax number/Notes). Safe to call on
-   *  every fetch — relies on the existing (organization_id, module,
-   *  field_key) unique index to no-op after the first call. */
+   *  customers module (Name/Phone/Email/Notes). Safe to call on every fetch.
+   *
+   *  Matches by field_key alone (not `is_default`) — orgs whose rows predate
+   *  migration 0057 have `is_default=false` from that column's backfill-free
+   *  default, and re-inserting for those would collide with the existing row
+   *  on the (organization_id, module, field_key) unique index. Existing rows
+   *  are flagged is_default=true instead of duplicated; only truly missing
+   *  keys are inserted. */
   async ensureDefaultCustomerFields(tenant: TenantContext) {
     const { data: existing, error: fetchError } = await this.db()
-      .select('field_key')
+      .select('id, field_key, is_default')
       .eq('organization_id', tenant.organizationId)
-      .eq('module', 'customers')
-      .eq('is_default', true);
+      .eq('module', 'customers');
     if (fetchError) throw fetchError;
 
-    const existingKeys = new Set((existing ?? []).map((r) => r.field_key as string));
-    const missing = DEFAULT_CUSTOMER_FIELDS.filter((f) => !existingKeys.has(f.fieldKey));
-    if (missing.length === 0) return;
+    const existingByKey = new Map((existing ?? []).map((r) => [r.field_key as string, r]));
+    const missing = DEFAULT_CUSTOMER_FIELDS.filter((f) => !existingByKey.has(f.fieldKey));
+    const needsFlag = DEFAULT_CUSTOMER_FIELDS.filter((f) => {
+      const row = existingByKey.get(f.fieldKey);
+      return row && !row.is_default;
+    });
 
-    const { error } = await this.db().insert(
-      missing.map((f) => ({
-        organization_id: tenant.organizationId,
-        module: 'customers',
-        field_key: f.fieldKey,
-        type: 'text',
-        label: f.label,
-        required: f.required,
-        sort_order: f.sortOrder,
-        is_default: true,
-      })),
-    );
-    if (error) throw error;
+    if (needsFlag.length > 0) {
+      const { error } = await this.db()
+        .update({ is_default: true })
+        .in('id', needsFlag.map((f) => existingByKey.get(f.fieldKey)!.id as string));
+      if (error) throw error;
+    }
+
+    if (missing.length > 0) {
+      const { error } = await this.db().insert(
+        missing.map((f) => ({
+          organization_id: tenant.organizationId,
+          module: 'customers',
+          field_key: f.fieldKey,
+          type: 'text',
+          label: f.label,
+          required: f.required,
+          sort_order: f.sortOrder,
+          is_default: true,
+        })),
+      );
+      if (error) throw error;
+    }
   }
 
   async getById(tenant: TenantContext, id: string) {

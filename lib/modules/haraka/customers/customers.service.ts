@@ -10,22 +10,25 @@ import {
 } from './customers.repository'
 import { TransactionsRepository } from '@/lib/modules/haraka/transactions/transactions.repository'
 import { OrdersRepository } from '@/lib/modules/haraka/orders/orders.repository'
+import { AppointmentsRepository } from '@/lib/modules/haraka/appointments/appointments.repository'
+import { ServiceJobsRepository } from '@/lib/modules/haraka/service-jobs/service-jobs.repository'
 import { BannaRepository } from '@/lib/modules/banna/repositories/banna.repository'
 import { findMissingRequiredFields } from './required-fields'
 
 const repo = new CustomersRepository()
 const txRepo = new TransactionsRepository()
 const ordersRepo = new OrdersRepository()
+const appointmentsRepo = new AppointmentsRepository()
+const serviceJobsRepo = new ServiceJobsRepository()
 const bannaRepo = new BannaRepository()
 
 /**
- * A single entry in a customer's activity timeline — either a POS sale/refund
- * (backed by a receipt, and optionally a Fawtara e-invoice) or a Haraka order
- * (backed by an invoice number). Both carry enough detail for the UI to render
- * the row and link through to the underlying record.
+ * A single entry in a customer's activity timeline — a POS sale/refund, a
+ * Haraka order, a booked appointment, or a service job. All carry enough
+ * detail for the UI to render the row and link through to the underlying record.
  */
 export interface CustomerHistoryEntry {
-  kind: 'transaction' | 'order'
+  kind: 'transaction' | 'order' | 'appointment' | 'service_job'
   id: string
   /** ISO timestamp used for sorting and display. */
   date: string
@@ -95,9 +98,10 @@ export class CustomersService {
   }
 
   /**
-   * Unified activity timeline for one customer: POS transactions and Haraka
-   * orders merged and sorted newest-first. Verifies the customer belongs to the
-   * tenant (via getById) before returning anything.
+   * Unified activity timeline for one customer: POS transactions, Haraka
+   * orders, appointments, and service jobs merged and sorted newest-first.
+   * Verifies the customer belongs to the tenant (via getById) before returning
+   * anything.
    */
   async history(tenant: TenantContext, customerId: string): Promise<CustomerHistoryEntry[]> {
     // getById enforces the permission check and 404s on a foreign/unknown id.
@@ -105,13 +109,15 @@ export class CustomersService {
 
     // Match by id, plus a fallback on the snapshotted name/phone so legacy
     // sales/orders taken before this customer was linked still surface.
-    const [txs, orders] = await Promise.all([
+    const [txs, orders, appointmentsRes, serviceJobsRes] = await Promise.all([
       txRepo.listByCustomer(tenant, { id: customerId, name: customer.name }),
       ordersRepo.listByCustomer(tenant, {
         id: customerId,
         name: customer.name,
         phone: customer.phone,
       }),
+      appointmentsRepo.list(tenant, { customerId, pageSize: 200 }),
+      serviceJobsRepo.list(tenant, { customerId, pageSize: 200 }),
     ])
 
     const entries: CustomerHistoryEntry[] = [
@@ -141,6 +147,34 @@ export class CustomersService {
         paymentMethods: o.paymentMethod ? [o.paymentMethod] : [],
         paymentStatus: o.paymentStatus,
         amountPaid: o.amountPaid,
+        isRefund: false,
+      })),
+      ...appointmentsRes.items.map((a): CustomerHistoryEntry => ({
+        kind: 'appointment',
+        id: a.id,
+        date: a.scheduledAt.toISOString(),
+        reference: a.appointmentNumber,
+        status: a.status,
+        total: a.total,
+        itemCount: 1,
+        invoiceNumber: a.invoiceNumber,
+        paymentMethods: [],
+        paymentStatus: a.paymentStatus,
+        amountPaid: a.amountPaid,
+        isRefund: false,
+      })),
+      ...serviceJobsRes.items.map((j): CustomerHistoryEntry => ({
+        kind: 'service_job',
+        id: j.id,
+        date: j.createdAt.toISOString(),
+        reference: j.jobNumber,
+        status: j.status,
+        total: j.total,
+        itemCount: j.items.length,
+        invoiceNumber: j.invoiceNumber,
+        paymentMethods: j.paymentMethod ? [j.paymentMethod] : [],
+        paymentStatus: j.paymentStatus,
+        amountPaid: j.amountPaid,
         isRefund: false,
       })),
     ]

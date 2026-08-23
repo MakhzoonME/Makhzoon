@@ -29,6 +29,7 @@ const STATUS_FLOW: AppointmentStatus[] = ['scheduled', 'confirmed', 'completed']
 export default function AppointmentDetailPage() {
   const { isAllowed } = useModuleGuard({
     featureKey: 'pos',
+    harakaModule: 'appointments',
     moduleKey: 'haraka',
     permOp: 'appointmentsView',
   });
@@ -125,7 +126,7 @@ export default function AppointmentDetailPage() {
                   variant="outline"
                   className="gap-2"
                   onClick={handleInvoice}
-                  disabled={generateInvoice.isPending || !!appointment.invoiceNumber}
+                  disabled={generateInvoice.isPending}
                 >
                   <FileText className="h-4 w-4" strokeWidth={1.75} />
                   {appointment.invoiceNumber

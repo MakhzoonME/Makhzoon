@@ -56,7 +56,7 @@ export function VersionCheck() {
       <button
         type="button"
         onClick={() => window.location.reload()}
-        className="flex items-center gap-1.5 rounded-full bg-primary text-white text-xs font-semibold px-3 py-1.5 hover:opacity-90 transition-opacity cursor-pointer"
+        className="flex items-center gap-1.5 rounded-full bg-primary-600 text-white text-xs font-semibold px-3 py-1.5 hover:opacity-90 transition-opacity cursor-pointer"
       >
         <RefreshCw size={12} /> {t('update.refresh')}
       </button>

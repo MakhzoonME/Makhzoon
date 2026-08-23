@@ -14,7 +14,6 @@ import { useAuthStore } from '@/store/auth.store';
 import { useAccessibleSpaces } from '@/hooks/spaces';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
-import { CustomFieldValuesSection } from '@/components/banna/CustomFieldValuesSection';
 
 export default function CustomerDetailPage() {
   const router = useRouter();
@@ -106,8 +105,6 @@ export default function CustomerDetailPage() {
           value={customer.notes ?? '—'}
           multiline
         />
-        <CustomFieldValuesSection recordType="customers" recordId={customer.id} />
-
         <div className="text-xs text-gray-500 pt-2 border-t border-border">
           Created {new Date(customer.createdAt).toLocaleString()} · Updated{' '}
           {new Date(customer.updatedAt).toLocaleString()}

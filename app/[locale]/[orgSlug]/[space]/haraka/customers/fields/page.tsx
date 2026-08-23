@@ -268,9 +268,9 @@ function FieldRow({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  // Name/Phone/Email are always shown and their required-ness is fixed —
-  // only Notes (and genuinely custom fields) stay editable here.
-  const isLocked = ['name', 'phone', 'email'].includes(field.fieldKey);
+  // Name/Phone are always shown and required — Email, Notes, and genuinely
+  // custom fields stay editable here.
+  const isLocked = ['name', 'phone'].includes(field.fieldKey);
 
   return (
     <tr ref={setNodeRef} style={style} className="hover:bg-surface-page transition-colors">

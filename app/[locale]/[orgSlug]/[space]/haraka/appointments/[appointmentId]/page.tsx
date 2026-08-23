@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { AppointmentStatusBadge } from '@/components/haraka/AppointmentStatusBadge';
+import { AppointmentInvoiceDialog } from '@/components/haraka/AppointmentInvoiceDialog';
 import { AppointmentPaymentsPanel } from '@/components/haraka/AppointmentPaymentsPanel';
 import {
   useAppointment,
@@ -46,6 +47,7 @@ export default function AppointmentDetailPage() {
 
   const [rescheduling, setRescheduling] = useState(false);
   const [newTime, setNewTime] = useState('');
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
 
   if (!isAllowed) return null;
 
@@ -105,9 +107,15 @@ export default function AppointmentDetailPage() {
 
   async function handleInvoice() {
     if (!appointment) return;
+    // Already invoiced — just show it, no need to hit the generate endpoint again.
+    if (appointment.invoiceNumber) {
+      setInvoiceOpen(true);
+      return;
+    }
     try {
       await generateInvoice.mutateAsync(appointment.id);
       toast.success(t('appointments.generateInvoice'));
+      setInvoiceOpen(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong'));
     }
@@ -331,6 +339,13 @@ export default function AppointmentDetailPage() {
           )}
         </div>
       </div>
+
+      <AppointmentInvoiceDialog
+        open={invoiceOpen}
+        onOpenChange={setInvoiceOpen}
+        appointment={appointment}
+        currency={currency}
+      />
     </div>
   );
 }

@@ -4,7 +4,7 @@
 #
 # Branch → environment mapping:
 #   DevBranch  → `wrangler deploy --env dev`     (dev.makhzoon.me)
-#   STGBranch  → `wrangler deploy --env staging` (stage.makhzoon.me)
+#   STGBranch  → `wrangler deploy --env staging` (stg.makhzoon.me)
 #   main       → `wrangler deploy --env production` (app.makhzoon.me)
 #
 # ═══════════════════════════════════════════════════════════════════════

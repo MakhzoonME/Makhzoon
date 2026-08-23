@@ -31,6 +31,30 @@ Prerequisites: items 1 & 2 above must be done first.
 ### 7. Haraka — Card Terminal: live sandbox verification
 Paymob, SumUp, and Square providers are fully wired (Paymob 4-step auth/order/payment_key/pay flow fixed). End-to-end verification against each provider's live sandbox still needs real API credentials and a physical terminal.
 
+### 8. Docs — module-doc numbering collision
+`docs/modules-and-features/` has two files numbered `20-` (`haraka-service-jobs.md`, `haraka-warranty-certs.md`) and two numbered `21-` (`haraka-retainers.md`, `notifications.md`). Renumber one of each pair (and anything referencing the old filename) so the sequence is unambiguous.
+
+### 9. Haraka — Loyalty: POS orders don't award points
+`awardPoints()` is only ever called from `lib/modules/haraka/service-jobs/service-jobs.service.ts` — completed, paid POS orders never award loyalty points, despite the Loyalty settings page copy promising "earn points automatically on completed, paid sales." Wire `awardPoints` into the orders completion path. Also: no redemption/spend logic exists anywhere yet (schema anticipates a `'redemption'` reason and negative deltas, but nothing implements it) — needs its own design pass.
+
+### 10. Haraka — Discount Approval: duplicate permission-check implementations
+`lib/modules/haraka/discount-approval/discount-approval.repository.ts` imports `hasPermission` from `lib/permissions` (operates on the `AuthUser` row shape), while `discount-approval.service.ts` and `transactions.service.ts` import a different `hasPermission` from `lib/platform/permissions` (operates on `TenantContext`). Both currently check the same key correctly, but having two parallel permission-check code paths in one feature is a latent trap for drift. Consolidate on one.
+
+### 11. Haraka — Service Vehicles: dead/conflicting OCR provider config
+`ocrProvider` on `platform_notification_config` is stored and editable via the superadmin config UI but `lib/modules/haraka/service-vehicles/plate-recognizer.ts` never branches on it — always calls Plate Recognizer regardless of the setting. The DB migration also defaults `ocr_provider` to `'fastplateocr'` while the repository's read-side fallback defaults to `'platerecognizer'` — the two defaults disagree. Either wire the setting up for real (support multiple providers) or remove it. Separately, the OCR proxy route (`/api/haraka/service-vehicles/ocr`) has no `hasPermission` check, unlike the vehicle CRUD routes (`servicesView`/`serviceJobsCreate`/`serviceJobsUpdate`) — worth closing that gap even though it's behind the `vehicleIntake` feature/add-on gate.
+
+### 12. Superadmin — confirm WhatsApp Business integration status
+`/superadmin/notifications` still fully implements a Makhzoon-owned WhatsApp Business integration (phone number ID, token, webhook at `/api/whatsapp/webhook`). This is a *separate* integration from the Infobip-based customer-messaging feature removed in `654ae91`/`ace3071`, but given the timing it's worth a human confirming this one wasn't meant to be retired too, or if it's still actively used (e.g. for a different purpose than customer messaging).
+
+### 13. Dashboard — "low stock" banner uses the wrong signal
+The dashboard's low-stock metric/banner is computed from assets with status `Pending`, not actual inventory stock levels (`quantity_on_hand` vs `minimum_threshold`). Either the banner's data source is wrong, or its label/copy is misleading about what it measures — needs a decision and a fix.
+
+### 14. Haraka — Warranty Certs: broken permission check silently blocks granted access
+The warranty certs list page's admin guard calls `useAdminGuard('pos.view_warranty_certs')`, but `'pos'` is not a module in `UserPermissions` (the real module is `'haraka'`, key `haraka.warrantyCertsView`). `hasPermByKey` falls through to admin-only on an unrecognized module, so any non-admin staff granted warranty-cert access via the permission editor is silently blocked anyway. Fix the guard to check the real key.
+
+### 15. Haraka — Printing: latent paper-width trap
+`paperWidthFor()` in `lib/receipts/receipt-config.ts` maps every template except `thermal-80` to 58mm dot width, including the A4 templates. Harmless today only because every caller already checks `isThermal` before using the return value — but it's a footgun for the next caller that doesn't. Make the function return something explicit (e.g. `null`/throw) for non-thermal templates instead of silently defaulting to 58mm.
+
 ---
 
 ## ✅ Recently completed

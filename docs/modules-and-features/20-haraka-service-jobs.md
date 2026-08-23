@@ -1,7 +1,7 @@
 # Haraka — Service Jobs (الخدمات)
 
 **Parent module**: Haraka (حركة) — Feature key: `pos`  
-**Permission keys**: `pos.view_service_jobs`, `pos.manage_service_jobs`  
+**Permission keys**: `haraka.servicesView` (view), `haraka.serviceJobsCreate` (create), `haraka.serviceJobsUpdate` (umbrella for every post-creation action — status changes, items, payments, invoice, delete). `pos` is only the subscription feature key, not the permission module; there is no `pos.view_service_jobs`/`pos.manage_service_jobs` key in the catalog (`types/user-permissions.types.ts`). Enforced in `lib/modules/haraka/service-jobs/service-jobs.service.ts` via `hasPermission(tenant, 'haraka', <op>)`.  
 **Brand color**: `#C2185B` (inherited from Haraka)
 
 ---

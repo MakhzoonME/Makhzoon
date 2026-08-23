@@ -46,12 +46,12 @@ Active space is tracked in `store/active-space.store.ts`.
 
 **Route**: `/{locale}/{orgSlug}/settings/spaces`
 
-**Who can access**: `admin` and `org_owner` only.
+**Who can access**: gated by the `settingsSpaces.view` permission (`admin`/`org_owner` have it by default; staff don't unless granted), not a hardcoded role check (`hooks/ui/useAdminGuard`, checked in `app/[locale]/[orgSlug]/settings/spaces/page.tsx`).
 
 **Page layout**:
 - `PageHeader` with "Spaces" title and a "+ New Space" button.
 - A `DataTable` listing all org spaces with columns: Name, Slug, Status, Member Count, Default badge, Actions.
-- Each row has Edit and (if not default) Delete actions.
+- Each row has Edit and (if not default) Archive actions; archived, non-default spaces show a Restore action instead.
 
 **Creating a space**:
 - "+ New Space" opens a form dialog.
@@ -62,10 +62,11 @@ Active space is tracked in `store/active-space.store.ts`.
 - Inline edit dialog with the same fields.
 - Slug can be changed (affects URLs — use carefully).
 
-**Deleting a space**:
-- Confirmation dialog warns that all data in the space will be permanently deleted.
-- Default space cannot be deleted.
-- Only available to `org_owner`.
+**Archiving a space**:
+- There is no delete capability for spaces — `app/api/spaces/[spaceId]/route.ts` only exposes `PATCH` (no `DELETE` handler). Spaces are archived (`status: 'archived'`), not removed.
+- Confirmation dialog warns before archiving; archived spaces can be restored back to `active` from the same row.
+- The default space cannot be archived — enforced server-side in `lib/modules/spaces/services/spaces.service.ts`, which throws 422 if `input.status === 'archived'` on the default space.
+- Gated by the `settingsSpaces.archive` / `settingsSpaces.restore` permissions, same as edit/create — not restricted to `org_owner` specifically.
 
 ---
 
@@ -86,7 +87,7 @@ Renders as a side drawer:
 
 **Components**: `components/spaces/DuplicateResourceDialog.tsx`, `components/spaces/MoveResourceDialog.tsx`
 
-These dialogs appear in the **Bulk Actions bar** across modules (assets, inventory, requests, POS customers):
+These dialogs appear in the **Bulk Actions bar** across modules (assets/`usool`, inventory/`raseed`, Haraka customers) — there is no "requests" module in the codebase.
 
 - **Move to Space** — moves selected records from current space to a target space. The records disappear from the current space.
 - **Duplicate to Space** — creates copies of selected records in a target space. Originals remain.
@@ -96,11 +97,10 @@ Both dialogs show:
 - A summary of how many records will be affected.
 - A confirm/cancel pair.
 
-Permission keys that gate these actions per module:
-- `assets.bulk_move`, `assets.bulk_duplicate`
-- `inventory.bulk_move`, `inventory.bulk_duplicate`
-- `requests.bulk_move`, `requests.bulk_duplicate`
-- `pos.customers_bulk_move`, `pos.customers_bulk_duplicate`
+There are no separate `bulk_move`/`bulk_duplicate` permission keys — bulk Move/Duplicate/Delete reuse the equivalent single-item permission for that module (`app/[locale]/[orgSlug]/[space]/usool/list/page.tsx`, `.../raseed/list/page.tsx`, `.../haraka/customers/page.tsx`):
+- Usool: bulk delete → `usool.delete`, bulk move → `usool.update`, bulk duplicate → `usool.create`
+- Raseed: bulk delete → `raseed.delete`, bulk move → `raseed.update`, bulk duplicate → `raseed.create`
+- Haraka customers: bulk delete → `haraka.customersDelete`, bulk move → `haraka.customersUpdate`, bulk duplicate → `haraka.customersCreate`
 
 ---
 

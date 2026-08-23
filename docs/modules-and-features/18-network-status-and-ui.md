@@ -85,7 +85,7 @@ Used on every list page across all modules.
 - Loading skeleton (animated rows while data loads).
 - Responsive: horizontal scroll on mobile for wide tables.
 
-**Dark mode**: Table uses `dark:bg-gray-900` background, `dark:border-gray-700` dividers, `dark:hover:bg-gray-800` row hover.
+**Dark mode**: Table uses theme-aware tokens (`bg-surface-card`, `border-border`, `hover:bg-gray-100`/`hover:bg-surface-page`) driven by CSS custom properties, not hardcoded `dark:` Tailwind classes.
 
 ---
 
@@ -93,21 +93,18 @@ Used on every list page across all modules.
 
 **Component**: `components/shared/FilterBar.tsx`
 
-Appears above every DataTable. Consists of:
-- Search input (text) with debounce.
-- Dropdown filters (each powered by a `Select` from shadcn/ui).
-- "Clear filters" button (appears when any filter is active).
+Appears above every DataTable. The component itself is a thin layout wrapper: a search `Input` (no built-in debounce in the component — callers debounce `onSearchChange` themselves) plus two slots, `filters` and `actions`, that each page fills with its own dropdown/`Select` controls and buttons.
 
-Filters are passed as URL search params so they survive page refresh and can be linked to directly.
+> Note: `FilterBar` does not itself render a "Clear filters" button or manage URL search params — those behaviors, where present, are implemented per-page by the caller, not by the shared component.
 
 ---
 
 ## Toast Notifications
 
-Toast notifications (`hooks/ui/useToast.ts`, wrapping a library like `sonner` or `react-hot-toast`) are used for:
+Toast notifications (`hooks/ui/useToast.ts` + `components/ui/toast.tsx`) are a custom implementation built directly on `@radix-ui/react-toast` — not a wrapper around `sonner` or `react-hot-toast`. Four tones: `default`, `success`, `error`, `warning`/`info`. Used for:
 - Success confirmations (asset saved, transaction recorded, etc.)
 - Error messages (API errors, validation failures)
 - Informational updates (network status changes)
 - Blocking delete errors (e.g. "Cannot delete item — it is referenced by active records")
 
-Toasts appear in the top-right corner (bottom-right on mobile). Dark mode: toast adapts to `dark:bg-gray-800` background.
+Toasts appear fixed to the bottom-right corner (`bottom-4 end-4`) at all viewport sizes — not top-right on desktop. Auto-dismiss after 4000ms. Dark mode: uses theme-aware tokens (`bg-surface-card`, etc.), not a hardcoded `dark:bg-gray-800` class.

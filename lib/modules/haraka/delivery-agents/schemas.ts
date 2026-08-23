@@ -1,26 +1,9 @@
-import { z } from 'zod'
+/**
+ * @deprecated Compatibility shim — see delivery-agents.repository.ts.
+ * New code should use `@/lib/modules/haraka/staff/schemas`.
+ */
+import { staffSchema, staffUpdateSchema, type StaffFormData } from '@/lib/modules/haraka/staff/schemas'
 
-const trimmedOptional = z
-  .string()
-  .trim()
-  .max(200)
-  .optional()
-  .transform((v) => (v && v.length > 0 ? v : null))
-  .nullable()
-
-export const deliveryAgentSchema = z.object({
-  name: z.string().trim().min(1, 'Name is required').max(120),
-  phone: trimmedOptional,
-  notes: z
-    .string()
-    .trim()
-    .max(1000)
-    .optional()
-    .nullable()
-    .transform((v) => (v && v.length > 0 ? v : null)),
-  isActive: z.boolean().optional().default(true),
-})
-
-export const deliveryAgentUpdateSchema = deliveryAgentSchema.partial()
-
-export type DeliveryAgentFormData = z.infer<typeof deliveryAgentSchema>
+export const deliveryAgentSchema = staffSchema
+export const deliveryAgentUpdateSchema = staffUpdateSchema
+export type DeliveryAgentFormData = StaffFormData

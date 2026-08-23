@@ -50,12 +50,12 @@ export default function ServiceCatalogPage() {
 
   const form = useForm<CreateServicePayload>({
     resolver: zodResolver(createServiceSchema),
-    defaultValues: { name: '', category: '', description: '', price: 0, taxRateId: '', active: true },
+    defaultValues: { name: '', category: '', description: '', price: 0, taxRateId: '', active: true, durationMinutes: null, appointmentBookable: false },
   });
 
   function openCreate() {
     setEditing(null);
-    form.reset({ name: '', category: '', description: '', price: 0, taxRateId: '', active: true });
+    form.reset({ name: '', category: '', description: '', price: 0, taxRateId: '', active: true, durationMinutes: null, appointmentBookable: false });
     setDrawerOpen(true);
   }
 
@@ -68,12 +68,21 @@ export default function ServiceCatalogPage() {
       price: service.price,
       taxRateId: service.taxRateId ?? '',
       active: service.active,
+      durationMinutes: service.durationMinutes,
+      appointmentBookable: service.appointmentBookable,
     });
     setDrawerOpen(true);
   }
 
   async function onSubmit(values: CreateServicePayload) {
-    const payload = { ...values, category: values.category || null, description: values.description || null, taxRateId: values.taxRateId || null };
+    const payload = {
+      ...values,
+      category: values.category || null,
+      description: values.description || null,
+      taxRateId: values.taxRateId || null,
+      // Blank input clears the duration rather than saving NaN.
+      durationMinutes: values.durationMinutes ? Number(values.durationMinutes) : null,
+    };
     try {
       if (editing) {
         await updateMut.mutateAsync({ id: editing.id, body: payload });
@@ -106,6 +115,17 @@ export default function ServiceCatalogPage() {
       key: 'price',
       header: t('col.price'),
       render: (s) => <span className="font-mono text-sm tabular-nums">{formatCurrency(s.price, currency)}</span>,
+    },
+    {
+      key: 'appointmentBookable',
+      header: t('services.labelBookable'),
+      render: (s) => (
+        s.appointmentBookable
+          ? <span className="text-xs font-medium" style={{ color: 'var(--mod-haraka)' }}>
+              {s.durationMinutes ? `${s.durationMinutes} min` : t('common.active')}
+            </span>
+          : <span className="text-gray-300 text-xs">—</span>
+      ),
     },
     {
       key: 'active',
@@ -220,6 +240,35 @@ export default function ServiceCatalogPage() {
               <FormItem>
                 <FormLabel>{t('col.notes')}</FormLabel>
                 <FormControl><Textarea {...field} value={field.value ?? ''} rows={3} placeholder="…" /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="durationMinutes" render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('services.labelDuration')}</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number" min="1" step="5"
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
+                    className="font-mono"
+                  />
+                </FormControl>
+                <p className="text-xs text-gray-500">{t('services.durationHelp')}</p>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="appointmentBookable" render={({ field }) => (
+              <FormItem className="flex items-center gap-3">
+                <FormControl>
+                  <Switch checked={!!field.value} onCheckedChange={field.onChange} />
+                </FormControl>
+                <div>
+                  <FormLabel className="!mt-0">{t('services.labelBookable')}</FormLabel>
+                  <p className="text-xs text-gray-500">{t('services.bookableHelp')}</p>
+                </div>
                 <FormMessage />
               </FormItem>
             )} />

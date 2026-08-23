@@ -56,15 +56,24 @@ export async function GET(req: NextRequest) {
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? req.nextUrl.origin;
-    const results: { orgId: string; items: number; skipped: boolean }[] = [];
+    const results: { orgId: string; admins: number; items: number; skipped: boolean }[] = [];
 
     const entries: [string, WarrantyDoc[]][] = [];
     byOrg.forEach((v, k) => entries.push([k, v]));
 
     for (const [orgId, warranties] of entries) {
-      const org = await getOrganizationById(orgId);
-      if (!org) {
-        results.push({ orgId, items: warranties.length, skipped: true });
+      const [org, adminsRes] = await Promise.all([
+        getOrganizationById(orgId),
+        supabaseAdmin
+          .from('users')
+          .select('email')
+          .eq('organization_id', orgId)
+          .eq('role', 'admin'),
+      ]);
+
+      const admins = (adminsRes.data ?? []) as Row[];
+      if (!org || admins.length === 0) {
+        results.push({ orgId, admins: admins.length, items: warranties.length, skipped: true });
         continue;
       }
 
@@ -117,10 +126,10 @@ export async function GET(req: NextRequest) {
         role: 'super_admin',
         action: 'WARRANTY_ALERT_SENT',
         module: 'warranties',
-        newValue: { items: items.length },
+        newValue: { items: items.length, admins: admins.length },
       });
 
-      results.push({ orgId, items: items.length, skipped: false });
+      results.push({ orgId, admins: admins.length, items: items.length, skipped: false });
     }
 
     logServerEvent('info', 'cron/warranty-alerts',

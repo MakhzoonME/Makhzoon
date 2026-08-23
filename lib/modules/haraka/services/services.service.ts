@@ -24,7 +24,13 @@ function requireView(tenant: TenantContext) {
  * (the default, non-POS-scoped call) still requires serviceCatalogView.
  */
 function requireViewForPosLookup(tenant: TenantContext) {
-  if (hasPermission(tenant, 'haraka', 'serviceCatalogView') || hasPermission(tenant, 'haraka', 'registerOpen')) return
+  if (
+    hasPermission(tenant, 'haraka', 'serviceCatalogView') ||
+    hasPermission(tenant, 'haraka', 'registerOpen') ||
+    // The Appointments booking form reads the same active-services list to
+    // populate its picker.
+    hasPermission(tenant, 'haraka', 'appointmentsView')
+  ) return
   throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 }
 

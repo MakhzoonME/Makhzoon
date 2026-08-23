@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { HARAKA_MODULES, type HarakaModule } from '@/types';
 
 export const subscriptionStatusEnum = z.enum([
   'ACTIVE',
@@ -9,7 +10,9 @@ export const subscriptionStatusEnum = z.enum([
   'CANCELLED',
 ]);
 
-const harakaModuleEnum = z.enum(['pos', 'services', 'orders', 'retainers']);
+// Derived from HARAKA_MODULES rather than re-listed, so adding a module to the
+// type can't leave this validator rejecting it (as 'appointments' did).
+const harakaModuleEnum = z.enum(HARAKA_MODULES as [HarakaModule, ...HarakaModule[]]);
 
 const dateInput = z.union([z.string().datetime(), z.string().date(), z.date()]).transform((v) =>
   v instanceof Date ? v : new Date(v),

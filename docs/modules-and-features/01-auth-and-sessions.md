@@ -26,9 +26,9 @@ Authentication is handled by **Supabase Auth** with `@supabase/ssr` managing ses
 1. User visits `/{locale}/login`.
 2. Enters email + password.
 3. Supabase Auth validates credentials; `@supabase/ssr` writes the session as httpOnly cookies.
-4. Middleware reads the session on the next request and routes appropriately:
-   - Platform roles (`super_admin`, `makhzoon_admin`, `makhzoon_support`) → `/superadmin/dashboard`
-   - Org users → `/{orgSlug}/{defaultSpace}/dashboard`
+4. The login page itself (not middleware) fetches `GET /api/auth/session` for role/org/features/permissions, then redirects client-side (`app/[locale]/(auth)/login/page.tsx`):
+   - Platform roles (`super_admin`, `makhzoon_admin`, `makhzoon_support`) → `/{locale}/superadmin/dashboard`
+   - Org users → the first nav item they actually have access to, computed by `getFirstAccessiblePath()` (`lib/nav/index.ts`) from their role/features/permissions — not a hardcoded `/dashboard` path.
 
 ## Invite Flow
 
@@ -40,9 +40,9 @@ Authentication is handled by **Supabase Auth** with `@supabase/ssr` managing ses
 
 ## Sign-out Flow
 
-1. `supabase.auth.signOut()` clears the session.
-2. Session revocation is recorded in `lib/supabase/session-revocation.ts` so the old token cannot be replayed.
-3. Hard redirect to `/{locale}/login`.
+1. Client calls `DELETE /api/auth/session` (`app/api/auth/session/route.ts`), which decodes the current access token, revokes it via `revokeSession()` (`lib/supabase/session-revocation.ts` — the deny-list row so the old token can't be replayed even before expiry), and then calls `supabase.auth.signOut()` server-side to invalidate refresh tokens and clear the SSR auth cookies.
+2. Client also calls `supabase.auth.signOut()` itself (belt-and-suspenders) and clears the transfer-mode store.
+3. Hard redirect via `window.location.href` to `/{locale}/login`.
 
 ---
 

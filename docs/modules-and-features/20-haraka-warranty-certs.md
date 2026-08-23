@@ -89,7 +89,7 @@ Mirrors the receipt system exactly:
 
 The generate-warranty action lives inside the **order detail page** (`/haraka/orders/[orderId]`):
 
-- A "Generate Warranty" button appears in the order detail header (gated by `pos.manage_warranty_certs`).
+- A "Generate Warranty" button appears in the order detail header (gated by `haraka.ordersGenerateWarranty`).
 - If a certificate already exists for the order, the button becomes "View Warranty" with a badge.
 - Clicking "Generate" opens a small dialog to confirm the warranty period (pre-filled with `defaultDurationDays` from config), then creates the certificate and immediately opens `WarrantyCertShareDialog`.
 
@@ -105,7 +105,7 @@ The same flow can also be triggered from a **POS transaction detail page** for b
 - Table: cert number, customer, source (order/transaction), items count, warranty period, issue date.
 - Filters: date range.
 - Row click → share dialog (no separate detail page needed).
-- Gated by `pos.view_warranty_certs`.
+- Gated by `haraka.warrantyCertsView`.
 
 ### Warranty Certificate Settings
 **Route**: `/{locale}/{orgSlug}/settings/warranty-cert`
@@ -116,7 +116,7 @@ The same flow can also be triggered from a **POS transaction detail page** for b
 - Org-scoped settings page.
 
 ### Public Certificate View
-**Route**: `/w/[orgSlug]/[certId]`
+**Route**: `/w/[orgSlug]/cert/[certId]`
 
 - No auth required.
 - Renders `WarrantyCertPreview` with real data.
@@ -126,15 +126,20 @@ The same flow can also be triggered from a **POS transaction detail page** for b
 
 ## Permissions
 
-Two new operations added to the existing `pos` module.
+There is no dedicated `manage_warranty_certs` operation. Instead (`lib/modules/haraka/warranty-certs/warranty-certs.service.ts`):
 
-| Key | Label | Admin | Staff |
-|-----|-------|-------|-------|
-| `pos.view_warranty_certs` | View Warranty Certificates | ✅ | ❌ |
-| `pos.manage_warranty_certs` | Generate & Delete Warranties | ✅ | ❌ |
+| Key | Label | Notes |
+|-----|-------|-------|
+| `haraka.warrantyCertsView` | View Warranty Certificates | Gates list/detail reads (`requireView()`) |
+| `haraka.ordersGenerateWarranty` | Generate a warranty from an order | Also used to gate delete — "generating/removing a cert is the same capability as generating one from an order" (`requireManage()`) |
+| `settingsWarrantyCert.view` / `settingsWarrantyCert.update` | Warranty cert settings page | Separate permission block, used by the Settings page (`useAdminGuard('settingsWarrantyCert.view')`) |
+
+The API additionally gates list/create behind a subscription add-on: `requireAddOn(tenant, 'warrantyCerts')` in `app/api/haraka/warranty-certs/route.ts` — an org without the add-on (or an unmigrated pricing package) gets a `403 ADDON_NOT_ACTIVE`.
+
+> Known issue: the Warranty Certificates list page (`app/[locale]/[orgSlug]/[space]/haraka/warranty-certs/page.tsx`) calls `useAdminGuard('pos.view_warranty_certs')`. `'pos'` is not a key of `UserPermissions` (the actual module key is `'haraka'`), so `hasPermByKey` never finds a matching permission block and silently falls back to "admin roles only." A staff user explicitly granted `haraka.warrantyCertsView` would still be redirected away from this page.
 
 ---
 
 ## Navigation
 
-Warranty Certificates appears as a child item of the Haraka group in the sidebar, gated by `pos.view_warranty_certs`. The Settings page link is added to Settings → (org-scoped) alongside "Receipt".
+Warranty Certificates appears as a child item of the Haraka group in the sidebar, gated by `haraka.warrantyCertsView`. The Settings page link is added to Settings → (org-scoped) alongside "Receipt".

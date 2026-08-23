@@ -76,7 +76,7 @@ Tracks in-flight and completed card charges so the POS can poll for results.
 ```
 id                uuid PK
 organization_id   uuid
-reference         text NOT NULL UNIQUE  — sale offlineId or a generated UUID
+reference         text NOT NULL  — sale offlineId or a generated UUID; UNIQUE per (organization_id, reference), not globally unique
 amount            numeric(14,4)
 currency          text
 status            text  — 'pending' | 'approved' | 'declined' | 'timeout' | 'cancelled'
@@ -101,7 +101,7 @@ When cashier selects "Card" in the Payment Dialog and `config.enabled = true`:
 
 ### Settings Page
 **Route**: `/{locale}/{orgSlug}/settings/card-terminal`
-**Permission**: `settings.fawtara`
+**Permission**: `settingsCardTerminal.view` / `settingsCardTerminal.update` — its own dedicated permission module, not `settings.fawtara`. Register/charge operations (get config, initiate/poll a charge) are gated separately by `haraka.sessionsOpen` (`lib/modules/haraka/card-terminal/card-terminal.service.ts`).
 
 Form sections:
 | Section | Fields |
@@ -135,8 +135,8 @@ Replaces the plain "Card" tab in `PaymentDialog` when the terminal is enabled:
 
 ## Navigation
 
-Add to Settings group in `lib/nav/index.ts` (org-scoped, after Cash Drawer):
+Registered in Settings group in `lib/nav/index.ts` (org-scoped):
 ```typescript
 { href: '/settings/card-terminal', label: 'Card Terminal', labelKey: 'nav.cardTerminal',
-  permissionKey: 'settings.fawtara', featureKey: 'pos', scope: 'org' }
+  permissionKey: 'settingsCardTerminal.view', featureKey: 'pos', scope: 'org' }
 ```

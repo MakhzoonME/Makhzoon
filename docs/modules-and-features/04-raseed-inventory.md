@@ -16,15 +16,20 @@ Raseed tracks stocked items — consumables, supplies, spare parts, products. It
 
 ### InventoryItem
 ```
-id, organizationId, spaceId
+id, organizationId
 name (required), category, sku?, barcode?
-unit (each | box | pack | pair | roll | liter | kg | meter | sheet | set)
-quantityOnHand, minimumThreshold, reorderQuantity?
-location?, supplier?, unitCost?, notes?
-stockStatus: 'ok' | 'low' | 'out'  ← computed: out=0, low≤threshold, ok>threshold
+unit (each | box | pack | pair | roll | liter | kg | meter | sheet | set — config-driven `inventory_unit` managed list, org-extensible)
+quantityOnHand, minimumThreshold
+location? (single "Storage Location" field, config-driven `inventory_storage_location` managed list)
+supplier?, unitCost?, notes?, expiryDate?
+stockStatus: 'ok' | 'low' | 'out'  ← computed: out=0, low<threshold, ok≥threshold (see Stock Status Logic below)
 posEnabled?, posPrice?, taxRateId?
+documents? (DocumentRef[] — receipts, private inventory-receipts bucket)
 createdAt/By, updatedAt/By
 ```
+`types/inventory.types.ts` has no `spaceId` field on the base `InventoryItem` type — it's threaded through ad-hoc as `& { spaceId?: string }` at the `lib/db/inventory.ts` layer, even though the DB column exists and is used for scoping.
+
+> Note: the DB has a `reorder_quantity` column and a `inventory.reorderQty` translation string exists, but no form, type, or API field reads/writes it — there is no Reorder Quantity feature in the UI.
 
 ### InventoryTransaction
 ```
@@ -54,6 +59,8 @@ totalItems, countedCount, pendingCount, varianceTotal
 startedBy/Name, completedAt?
 ```
 
+> As with `InventoryItem` above, `spaceId` is not actually declared on the base `InventoryTransaction`/`Purchase`/`StockAudit` TypeScript interfaces (`types/purchase.types.ts`, `types/stock-audit.types.ts`, `types/inventory.types.ts`) even though the DB columns exist and are used for space scoping at the query layer.
+
 ---
 
 ## Pages & UI
@@ -61,9 +68,9 @@ startedBy/Name, completedAt?
 ### Overview Page
 **Route**: `/{locale}/{orgSlug}/{space}/raseed`
 
-- Metric cards: total items, items in-stock (ok), low-stock count, out-of-stock count.
-- Quick actions: "Add Item", "Record Transaction", "New Purchase".
-- Links to sub-sections: Stock Items, Purchases, Stock Audits.
+- Metric cards: total items, items in-stock (ok), low-stock count, out-of-stock count, expiring-soon count (within 30 days) — each links to a filtered Stock Items list.
+- Quick action: "Add Item" only (`app/[locale]/[orgSlug]/[space]/raseed/page.tsx`) — there is no "Record Transaction" or "New Purchase" quick action on the overview page.
+- A stock-items preview table.
 
 ### Stock Items (List)
 **Route**: `/{locale}/{orgSlug}/{space}/raseed/list`
@@ -79,36 +86,31 @@ startedBy/Name, completedAt?
   - Stock Status badge (green/amber/red)
   - Min Threshold
   - Location
-  - Actions: Edit, Record Transaction, Delete
-- Row checkboxes for bulk actions (delete, move, duplicate — gated by permissions).
+  - Actions: Delete (row click navigates to the item detail page; there is no separate "Record Transaction" row action)
+- Row checkboxes for bulk actions (delete, move, duplicate — gated by permissions, see Permissions section).
 
-Quantity shown is ledger-derived (sum of all transactions), not a stored field.
+`quantityOnHand` is a **stored column** on `inventory_items`, not ledger-derived — each transaction does a read-modify-write that updates it directly (`applyInventoryTransaction()` in `lib/db/inventory.ts`), rather than the UI summing transactions at query time.
 
 **Empty state**: "No inventory items yet. Add your first item."
 
 ### Add / Edit Inventory Item
-**Routes**: `/{locale}/{orgSlug}/{space}/raseed/new` | `/{locale}/{orgSlug}/{space}/raseed/[itemId]`
+**Routes**: `/{locale}/{orgSlug}/{space}/raseed/new` (add), `/{locale}/{orgSlug}/{space}/raseed/[itemId]/edit` (edit) — `/{locale}/{orgSlug}/{space}/raseed/[itemId]` is the read/detail view, not the edit form.
 
-**Form sections**:
-1. **Basic Info**: Name (required), Category (managed list), SKU, Barcode.
-2. **Stock Settings**: Unit (dropdown), Minimum Threshold (number), Reorder Quantity (number).
-3. **Cost & Location**: Unit Cost, Location (managed list), Storage Location, Supplier (managed list).
-4. **POS Settings** (shown if Haraka feature enabled): POS Enabled toggle, POS Price, Tax Rate.
-5. **Notes**: textarea.
+**Form fields** (`components/inventory/InventoryItemForm.tsx`, not split into named sections in code): Item Name (required), Category (managed list `inventory_category`), SKU/Code, Unit (managed list `inventory_unit`), Quantity on Hand, Minimum Threshold, Unit Cost, Storage Location (managed list `inventory_storage_location` — a single field, not two), Supplier (free text, not a managed list), Expiry Date, Barcode (manual entry or HID scanner, Enter key suppressed so a scan doesn't submit the form), Tax Rate, POS Enabled toggle + POS Price (shown when Haraka is enabled), Notes, and a document upload for receipts. There is no "Reorder Quantity" field.
 
 Item detail page also shows:
-- **Transaction History** tab — all in/out/adjustment movements with timestamp, type, quantity delta, reason, performer.
-- **Record Transaction** button — opens inline modal to record in/out/adjustment.
+- **Transaction History** — all in/out/adjustment movements with timestamp, type, quantity, reason, performer.
+- An inline **"Adjust Stock"** form in the sidebar (not a modal, and not reachable from the list) — see below.
 - **Stock Audits** tab — audits this item has appeared in.
 
-### Record Transaction Modal
+### Adjust Stock (inline form)
 
-Available from the item detail page and the list row action. Fields:
-- Type: In / Out / Adjustment (segmented control)
-- Quantity (number, positive)
+Lives in the sidebar of the item detail page (`app/[locale]/[orgSlug]/[space]/raseed/[itemId]/page.tsx`), not a separate route or modal, and there is no equivalent action from the list page. Fields:
+- Type: In / Out / Set Absolute (labeled "adjustment" internally; segmented dropdown)
+- Quantity — for In/Out this is a delta; for **Adjustment it is the new absolute quantity**, not a delta (`applyInventoryTransaction()` sets `newQty = quantity` directly for type `'adjustment'`).
 - Reason (text — required)
-- Note (optional textarea)
-- Date (defaults to now)
+- Note (optional)
+- No date field — `performedAt` is always "now"; there is no backdating option.
 
 On submit, creates an `InventoryTransaction` record and updates `quantityOnHand` on the item.
 
@@ -117,7 +119,7 @@ On submit, creates an `InventoryTransaction` record and updates `quantityOnHand`
 
 Lists all purchase orders with columns: Supplier, Invoice Number, Invoice Date, Total, Status badge, Actions.
 
-Gated by `purchases.view` permission.
+Gated by `raseed.purchasesView` permission.
 
 **Create Purchase**:
 **Route**: `/{locale}/{orgSlug}/{space}/raseed/purchases/new`
@@ -136,7 +138,7 @@ Shows the full PO with line items, totals, and status. Actions:
 - **Receive** (if draft) — marks as received and triggers stock-in transactions for each line.
 - **Cancel** — marks as cancelled (no stock changes).
 - **Edit** (if draft only).
-- **Delete** (if draft or cancelled, gated by `purchases.delete`).
+- **Delete** (if draft or cancelled, gated by `raseed.purchasesDelete`).
 
 ### Stock Audits
 **Route**: `/{locale}/{orgSlug}/{space}/raseed/audits`
@@ -165,29 +167,37 @@ Lists all stock audits with columns: Title, Status, Items, Counted, Pending, Var
 
 ## Stock Status Logic
 
+Computed server-side in `stockStatus()` (`lib/db/inventory.ts`):
+
 | Condition | Status |
 |-----------|--------|
 | `quantityOnHand === 0` | `out` (red) |
-| `quantityOnHand <= minimumThreshold` | `low` (amber) |
-| `quantityOnHand > minimumThreshold` | `ok` (green) |
+| `quantityOnHand < minimumThreshold` | `low` (amber) |
+| `quantityOnHand >= minimumThreshold` (and > 0) | `ok` (green) |
+
+Note: a quantity exactly equal to the threshold is `ok`, not `low` — the comparison is strict `<`, not `<=`.
 
 ---
 
 ## Permissions
 
+Permission module key is `raseed` (feature key `inventory`), defined in `types/user-permissions.types.ts` — there is no `inventory.*` or `purchases.*` permission module; purchases operations live under `raseed.purchases*`. There are no dedicated bulk permission keys — bulk delete/move/duplicate on the Stock Items list reuse `delete`/`update`/`create` respectively (`app/[locale]/[orgSlug]/[space]/raseed/list/page.tsx`).
+
 | Key | Admin | Staff | Description |
 |-----|-------|-------|-------------|
-| `inventory.view` | ✅ | ✅ | View stock items list |
-| `inventory.create` | ✅ | ❌ | Add new items |
-| `inventory.update` | ✅ | ❌ | Edit items |
-| `inventory.delete` | ✅ | ❌ | Delete items |
-| `inventory.transactions` | ✅ | ❌ | Record in/out/adjustment |
-| `inventory.audits` | ✅ | ❌ | Create and manage stock audits |
-| `inventory.bulk_delete` | ✅ | ❌ | Bulk delete |
-| `inventory.bulk_move` | ✅ | ❌ | Bulk move to space |
-| `inventory.bulk_duplicate` | ✅ | ❌ | Bulk duplicate to space |
-| `purchases.view` | ✅ | ❌ | View purchases |
-| `purchases.create` | ✅ | ❌ | Create purchase orders |
-| `purchases.update` | ✅ | ❌ | Edit draft purchases |
-| `purchases.delete` | ✅ | ❌ | Delete draft/cancelled purchases |
-| `purchases.receive` | ✅ | ❌ | Mark purchase as received (triggers stock-in) |
+| `raseed.view` | ✅ | ✅ | View stock items list |
+| `raseed.create` | ✅ | ❌ | Add new items |
+| `raseed.update` | ✅ | ❌ | Edit items |
+| `raseed.delete` | ✅ | ❌ | Delete items |
+| `raseed.export` | ✅ | ❌ | Export CSV |
+| `raseed.requestRefill` | ✅ | ❌ | Request refill |
+| `raseed.transactionsView` | ✅ | ❌ | View stock movements |
+| `raseed.adjustStockView` | ✅ | ❌ | View stock adjustments |
+| `raseed.adjustStockUpdate` | ✅ | ❌ | Record in/out/adjustment |
+| `raseed.purchasesView` | ✅ | ❌ | View purchases |
+| `raseed.purchasesCreate` | ✅ | ❌ | Create purchase orders |
+| `raseed.purchasesUpdate` | ✅ | ❌ | Edit draft purchases |
+| `raseed.purchasesDelete` | ✅ | ❌ | Delete draft/cancelled purchases |
+| `raseed.purchasesReceive` | ✅ | ❌ | Mark purchase as received (triggers stock-in) |
+| `raseed.stockAuditView` | ✅ | ❌ | View stock audits |
+| `raseed.stockAuditStart` | ✅ | ❌ | Start a stock audit |

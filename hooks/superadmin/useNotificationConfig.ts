@@ -5,6 +5,10 @@ import type { PlatformNotificationConfig } from '@/lib/platform/notification-con
 const CONFIG_KEY = ['superadmin', 'notification-config'] as const;
 
 export interface NotificationConfigPatch {
+  whatsappEnabled?: boolean;
+  whatsappPhoneNumberId?: string | null;
+  whatsappToken?: string;
+  whatsappWebhookSecret?: string;
   ocrProvider?: string;
   ocrApiKey?: string;
 }

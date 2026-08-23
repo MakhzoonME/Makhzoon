@@ -27,9 +27,12 @@ export type NotificationEventType =
   | 'service_job.rating_requested'
   | 'support.ticket_replied'
   | 'support.ticket_status_changed'
+  | 'appointment.booked'
+  | 'appointment.status_changed'
 
 export type NotificationModule =
   | 'orders' | 'pos' | 'inventory' | 'users' | 'warranty' | 'system' | 'service_jobs' | 'support'
+  | 'appointments'
 
 export interface NotificationCatalogEntry {
   key: NotificationEventType
@@ -70,6 +73,9 @@ export const NOTIFICATION_CATALOG: NotificationCatalogEntry[] = [
   // ── Support ────────────────────────────────────────────────────────────
   { key: 'support.ticket_replied',       label: 'Reply on your support ticket',  module: 'support',      defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: true },
   { key: 'support.ticket_status_changed', label: 'Support ticket status updated', module: 'support',     defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: true },
+  // ── Appointments ───────────────────────────────────────────────────────
+  { key: 'appointment.booked',           label: 'New appointment booked',        module: 'appointments', defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: false },
+  { key: 'appointment.status_changed',   label: 'Appointment status updated',    module: 'appointments', defaultRoles: ['admin', 'org_owner'], defaultInApp: true, defaultEmail: false },
 ]
 
 export const NOTIFICATION_EVENT_TYPES = NOTIFICATION_CATALOG.map((e) => e.key) as readonly NotificationEventType[]

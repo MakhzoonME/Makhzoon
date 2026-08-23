@@ -1,123 +1,50 @@
-import 'server-only';
-import { supabaseAdmin } from '@/lib/supabase/admin'
+/**
+ * @deprecated Compatibility shim.
+ *
+ * `haraka_delivery_agents` became `haraka_staff` in migration 0067 and this
+ * module moved to `lib/modules/haraka/staff/`. This wrapper preserves the old
+ * delivery-agent API — including `list(tenant, onlyActive)`'s boolean second
+ * argument — so existing call sites compile and behave unchanged. Every read
+ * is scoped to delivery-capable staff, which is exactly what this repository
+ * returned before the directory absorbed other capabilities.
+ *
+ * New code should use `@/lib/modules/haraka/staff/staff.repository`.
+ */
+import 'server-only'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
-import type { HarakaDeliveryAgent } from '@/types'
+import type { HarakaStaff } from '@/types'
+import { StaffRepository, type CreateStaffInput } from '@/lib/modules/haraka/staff/staff.repository'
 
-type Row = Record<string, unknown>
-
-function toAgent(r: Row): HarakaDeliveryAgent {
-  return {
-    id: r.id as string,
-    organizationId: r.organization_id as string,
-    name: r.name as string,
-    phone: (r.phone as string) ?? null,
-    notes: (r.notes as string) ?? null,
-    isActive: (r.is_active as boolean) ?? true,
-    createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
-    createdBy: (r.created_by as string) ?? null,
-    updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
-    updatedBy: (r.updated_by as string) ?? null,
-  }
-}
-
-export interface CreateDeliveryAgentInput {
-  name: string
-  phone?: string | null
-  notes?: string | null
-  isActive?: boolean
-}
+export type CreateDeliveryAgentInput = Omit<CreateStaffInput, 'capabilities'>
 
 export class DeliveryAgentsRepository {
-  async list(tenant: TenantContext, onlyActive = false): Promise<HarakaDeliveryAgent[]> {
-    let q = supabaseAdmin
-      .from('haraka_delivery_agents')
-      .select('*')
-      .eq('organization_id', tenant.organizationId)
-      .order('name')
-    if (onlyActive) q = q.eq('is_active', true)
-    const { data, error } = await q
-    if (error) throw error
-    return (data ?? []).map(toAgent)
+  private readonly staff = new StaffRepository()
+
+  list(tenant: TenantContext, onlyActive = false): Promise<HarakaStaff[]> {
+    return this.staff.list(tenant, { onlyActive, capability: 'delivery' })
   }
 
-  async getById(tenant: TenantContext, id: string): Promise<HarakaDeliveryAgent | null> {
-    const { data } = await supabaseAdmin
-      .from('haraka_delivery_agents')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle()
-    if (!data || data.organization_id !== tenant.organizationId) return null
-    return toAgent(data)
+  getById(tenant: TenantContext, id: string): Promise<HarakaStaff | null> {
+    return this.staff.getById(tenant, id)
   }
 
-  async create(tenant: TenantContext, input: CreateDeliveryAgentInput): Promise<HarakaDeliveryAgent> {
-    const { data, error } = await supabaseAdmin
-      .from('haraka_delivery_agents')
-      .insert({
-        organization_id: tenant.organizationId,
-        name: input.name,
-        phone: input.phone ?? null,
-        notes: input.notes ?? null,
-        is_active: input.isActive ?? true,
-        created_by: tenant.userId,
-        updated_by: tenant.userId,
-      })
-      .select('*')
-      .single()
-    if (error) throw error
-    return toAgent(data)
+  create(tenant: TenantContext, input: CreateDeliveryAgentInput): Promise<HarakaStaff> {
+    return this.staff.create(tenant, { ...input, capabilities: ['delivery'] })
   }
 
-  async update(
+  update(
     tenant: TenantContext,
     id: string,
     patch: Partial<CreateDeliveryAgentInput>,
-  ): Promise<HarakaDeliveryAgent> {
-    const update: Record<string, unknown> = { updated_by: tenant.userId }
-    if (patch.name !== undefined) update.name = patch.name
-    if (patch.phone !== undefined) update.phone = patch.phone
-    if (patch.notes !== undefined) update.notes = patch.notes
-    if (patch.isActive !== undefined) update.is_active = patch.isActive
-    const { data, error } = await supabaseAdmin
-      .from('haraka_delivery_agents')
-      .update(update)
-      .eq('id', id)
-      .eq('organization_id', tenant.organizationId)
-      .select('*')
-      .single()
-    if (error) throw error
-    return toAgent(data)
+  ): Promise<HarakaStaff> {
+    return this.staff.update(tenant, id, patch)
   }
 
-  async delete(tenant: TenantContext, id: string): Promise<void> {
-    const { error } = await supabaseAdmin
-      .from('haraka_delivery_agents')
-      .delete()
-      .eq('id', id)
-      .eq('organization_id', tenant.organizationId)
-    if (error) throw error
+  delete(tenant: TenantContext, id: string): Promise<void> {
+    return this.staff.delete(tenant, id)
   }
 
-  /**
-   * Count each agent's currently-open service jobs (status not done/cancelled).
-   * Feeds balanced-routing selection — agents not present in the result have
-   * zero open jobs.
-   */
-  async openJobCounts(tenant: TenantContext, agentIds: string[]): Promise<Record<string, number>> {
-    const counts: Record<string, number> = {}
-    if (agentIds.length === 0) return counts
-
-    const { data, error } = await supabaseAdmin
-      .from('haraka_service_job_agents')
-      .select('delivery_agent_id, haraka_service_jobs!inner(status, organization_id)')
-      .in('delivery_agent_id', agentIds)
-      .eq('haraka_service_jobs.organization_id', tenant.organizationId)
-      .in('haraka_service_jobs.status', ['new', 'confirmed', 'in_progress'])
-
-    if (error) throw error
-    for (const row of (data ?? []) as unknown as { delivery_agent_id: string }[]) {
-      counts[row.delivery_agent_id] = (counts[row.delivery_agent_id] ?? 0) + 1
-    }
-    return counts
+  openJobCounts(tenant: TenantContext, agentIds: string[]): Promise<Record<string, number>> {
+    return this.staff.openJobCounts(tenant, agentIds)
   }
 }

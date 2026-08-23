@@ -15,6 +15,7 @@ import {
   supportTicketOrgUpdateSchema,
 } from '@/lib/validations/support-ticket.schema';
 import { notificationQueue } from '@/lib/notifications/notification-queue';
+import { dispatchSupportTicketWebhook } from '@/lib/webhooks/support-ticket-webhooks';
 
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
@@ -83,6 +84,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
           data: { ticketId, subject: ticket.subject, status: parsed.data.status },
           link: `/support/${ticketId}`,
           titleOverride: `Ticket "${ticket.subject}" marked ${parsed.data.status.toLowerCase()}`,
+        });
+
+        dispatchSupportTicketWebhook({
+          event: 'ticket.status_changed',
+          ticketId,
+          oldStatus: ticket.status,
+          newStatus: parsed.data.status,
+          changedById: user.uid,
+          changedByName: user.displayName || user.email || user.uid,
         });
       }
 

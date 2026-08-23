@@ -26,6 +26,10 @@ export async function GET(req: NextRequest) {
       search:   searchParams.get('search')   ?? undefined,
       active:   searchParams.get('active') === 'true' ? true : searchParams.get('active') === 'false' ? false : undefined,
       category: searchParams.get('category') ?? undefined,
+      appointmentBookable:
+        searchParams.get('appointmentBookable') === 'true'  ? true
+        : searchParams.get('appointmentBookable') === 'false' ? false
+        : undefined,
       page:     searchParams.get('page')     ? parseInt(searchParams.get('page')!, 10)     : undefined,
       pageSize: searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined,
     })
@@ -55,6 +59,8 @@ export async function POST(req: NextRequest) {
       price:       d.price,
       taxRateId:   d.taxRateId || null,
       active:      d.active,
+      durationMinutes: d.durationMinutes ?? null,
+      appointmentBookable: d.appointmentBookable,
     })
     return NextResponse.json({ service: result }, { status: 201 })
   } catch (err) {

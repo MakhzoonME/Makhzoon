@@ -217,17 +217,65 @@ export interface HarakaOrder {
   updatedBy: string | null;
 }
 
-export interface HarakaDeliveryAgent {
+/** What a staff member can be assigned to. Multi-valued — one technician can
+ *  both run field service jobs and take appointments. */
+export type StaffCapability = 'delivery' | 'service_job' | 'appointment_provider';
+
+export const STAFF_CAPABILITIES: StaffCapability[] = [
+  'delivery',
+  'service_job',
+  'appointment_provider',
+];
+
+/** A person in the org's staff directory. Deliberately NOT tied to an auth
+ *  account — most drivers and technicians never log in. */
+export interface HarakaStaff {
   id: string;
   organizationId: string;
   name: string;
   phone: string | null;
   notes: string | null;
+  capabilities: StaffCapability[];
   isActive: boolean;
   createdAt: Date;
   createdBy: string | null;
   updatedAt: Date;
   updatedBy: string | null;
+}
+
+/** @deprecated `haraka_delivery_agents` became `haraka_staff` in migration
+ *  0067. Kept so existing delivery call sites compile unchanged — prefer
+ *  HarakaStaff in new code. */
+export type HarakaDeliveryAgent = HarakaStaff;
+
+/** One recurring weekly working block for an appointment provider. Several
+ *  rows may share a dayOfWeek (split shifts). */
+export interface HarakaStaffAvailability {
+  id: string;
+  organizationId: string;
+  staffId: string;
+  /** 0 = Sunday … 6 = Saturday, matching JS Date#getDay. */
+  dayOfWeek: number;
+  /** 'HH:mm', read in the organization's timezone. */
+  startTime: string;
+  endTime: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** A single date overriding the weekly pattern. Both times null = day off;
+ *  both set = different hours for that date. */
+export interface HarakaStaffAvailabilityException {
+  id: string;
+  organizationId: string;
+  staffId: string;
+  /** 'YYYY-MM-DD'. */
+  exceptionDate: string;
+  startTime: string | null;
+  endTime: string | null;
+  reason: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // A delivery agent assigned to a service job, with their current open-job
@@ -450,6 +498,12 @@ export interface HarakaService {
   price: number;
   taxRateId: string | null;
   active: boolean;
+  /** Nullable — only appointment-bookable services need one. Required by the
+   *  zod schema whenever appointmentBookable is true. */
+  durationMinutes: number | null;
+  /** Gates whether this service shows up in the Appointments picker. Does not
+   *  restrict its use in Service Jobs or on the register. */
+  appointmentBookable: boolean;
   createdAt: Date;
   createdBy: string | null;
   createdByEmail: string | null;
@@ -458,4 +512,87 @@ export interface HarakaService {
   updatedBy: string | null;
   updatedByEmail: string | null;
   updatedByName: string | null;
+}
+
+// ── Haraka Appointments ───────────────────────────────────────────────────
+
+export type AppointmentStatus =
+  | 'scheduled'
+  | 'confirmed'
+  | 'completed'
+  | 'cancelled'
+  | 'no_show';
+
+/** Statuses that still occupy their slot — anything else frees the time up
+ *  for rebooking (design doc §4.2). */
+export const BLOCKING_APPOINTMENT_STATUSES: AppointmentStatus[] = [
+  'scheduled',
+  'confirmed',
+  'completed',
+];
+
+export interface HarakaAppointment {
+  id: string;
+  organizationId: string;
+  spaceId: string | null;
+  appointmentNumber: string;
+  invoiceNumber: string | null;
+
+  customerId: string | null;
+  customerName: string;
+  customerPhone: string | null;
+
+  serviceId: string;
+  staffId: string;
+  /** Enriched by AppointmentsRepository reads — not a stored column. */
+  serviceName?: string | null;
+  staffName?: string | null;
+
+  scheduledAt: Date;
+  /** Snapshot of haraka_services.duration_minutes at booking time. */
+  durationMinutes: number;
+  /** Snapshots of the catalog price / tax rate at booking time. */
+  price: number;
+  taxRate: number | null;
+
+  status: AppointmentStatus;
+  taxAmount: number;
+  total: number;
+  paymentStatus: OrderPaymentStatus;
+  amountPaid: number;
+
+  notes: string | null;
+  createdAt: Date;
+  createdBy: string | null;
+  updatedAt: Date;
+  updatedBy: string | null;
+}
+
+export interface HarakaAppointmentPayment {
+  id: string;
+  appointmentId: string;
+  organizationId: string;
+  amount: number;
+  paymentMethod: string | null;
+  note: string | null;
+  paidAt: Date;
+  createdAt: Date;
+  createdBy: string | null;
+}
+
+/** A Service Job line that references the catalog by FK, with price/tax
+ *  snapshotted at the time the line was added (migration 0068). */
+export interface HarakaServiceJobItem {
+  id: string;
+  organizationId: string;
+  jobId: string;
+  serviceId: string;
+  /** Enriched on read from the catalog — not a stored column. */
+  serviceName?: string | null;
+  quantity: number;
+  unitPrice: number;
+  taxRate: number | null;
+  discountAmount: number;
+  createdAt: Date;
+  createdBy: string | null;
 }

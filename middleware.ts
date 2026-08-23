@@ -53,7 +53,14 @@ export async function middleware(req: NextRequest) {
   }
 
   // Public shareable pages — no locale prefix, no session required
-  if (pathname.startsWith('/r/') || pathname.startsWith('/inv/') || pathname.startsWith('/delivery/') || pathname.startsWith('/w/')) {
+  if (
+    pathname.startsWith('/r/') ||
+    pathname.startsWith('/inv/') ||
+    pathname.startsWith('/delivery/') ||
+    pathname.startsWith('/w/') ||
+    pathname.startsWith('/service-job-invoice/') ||
+    pathname.startsWith('/appointment-invoice/')
+  ) {
     return NextResponse.next();
   }
 

@@ -72,7 +72,6 @@ export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, subm
   const [options, setOptions] = useState<CustomFieldOption[]>(initial?.options ?? []);
   const [placeholder, setPlaceholder] = useState(initial?.placeholder ?? '');
   const [placeholderAr, setPlaceholderAr] = useState(initial?.placeholderAr ?? '');
-  const [sortOrder, setSortOrder] = useState(initial?.sortOrder ?? 0);
 
   const fieldTypes = module === 'customers' ? [...BASE_FIELD_TYPES, PLATE_READER_TYPE] : BASE_FIELD_TYPES;
 
@@ -107,7 +106,11 @@ export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, subm
     await onSubmit({
       module, fieldKey, type, label, labelAr, required,
       options: isChoiceType && cleanOptions.length > 0 ? cleanOptions : undefined,
-      placeholder, placeholderAr, sortOrder,
+      placeholder, placeholderAr,
+      // Order is server-assigned on create (always appended to the bottom)
+      // and untouched on edit — only drag-reordering on the fields list
+      // changes it after that.
+      sortOrder: initial?.sortOrder ?? 0,
     });
   }
 
@@ -203,11 +206,6 @@ export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, subm
       <div className="flex items-center gap-2">
         <Switch checked={required} onCheckedChange={setRequired} id="field-required" />
         <Label htmlFor="field-required">{t('banna.fieldRequired')}</Label>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>{t('banna.fieldOrder')}</Label>
-        <Input type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value))} className="w-24" />
       </div>
 
       <DialogFooter>

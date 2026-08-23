@@ -13,6 +13,6 @@ export const DEFAULT_CUSTOMER_FIELDS = [
 
 export type DefaultCustomerFieldKey = (typeof DEFAULT_CUSTOMER_FIELDS)[number]['fieldKey'];
 
-/** Name/phone/email are always shown and can't be hidden — only Notes (and
- *  genuine org-added custom fields) can be toggled off. */
-export const ALWAYS_VISIBLE_CUSTOMER_FIELDS: readonly DefaultCustomerFieldKey[] = ['name', 'phone', 'email'];
+/** Name/phone are always shown, required, and can't be hidden — Email,
+ *  Notes, and genuine org-added custom fields can all be toggled off. */
+export const ALWAYS_VISIBLE_CUSTOMER_FIELDS: readonly DefaultCustomerFieldKey[] = ['name', 'phone'];

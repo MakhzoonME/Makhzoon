@@ -22,6 +22,7 @@ import {
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
+import { WeekPicker, MonthPicker } from '@/components/haraka/CalendarPeriodPicker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppointments, useStaff } from '@/hooks/haraka';
@@ -37,8 +38,6 @@ const DAY_END_HOUR = 21;
 const PX_PER_MINUTE = 1.1;
 const GRID_HEIGHT = (DAY_END_HOUR - DAY_START_HOUR) * 60 * PX_PER_MINUTE;
 const WEEK_STARTS_ON = 6; // Saturday — regional business week
-// Caps the time grid's own scroll region so only it scrolls, not the page.
-const GRID_MAX_HEIGHT = 'calc(100vh - 300px)';
 
 type CalendarView = 'day' | 'week' | 'month';
 
@@ -162,13 +161,6 @@ export default function AppointmentsCalendarPage() {
     else goTo({ date: addDays(day, delta) });
   }
 
-  const headerLabel =
-    view === 'day'
-      ? format(day, 'dd MMM yyyy')
-      : view === 'week'
-        ? `${format(range.from, 'dd MMM')} – ${format(addDays(range.to, -1), 'dd MMM yyyy')}`
-        : format(day, 'MMMM yyyy');
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -201,8 +193,14 @@ export default function AppointmentsCalendarPage() {
           <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
         </Button>
 
-        <div className="w-44">
-          <DatePicker value={format(day, 'yyyy-MM-dd')} onChange={(v) => v && goTo({ date: parseDateParam(v) })} />
+        <div className={view === 'week' ? 'w-56' : 'w-44'}>
+          {view === 'week' ? (
+            <WeekPicker value={day} onChange={(d) => goTo({ date: d })} />
+          ) : view === 'month' ? (
+            <MonthPicker value={day} onChange={(d) => goTo({ date: d })} />
+          ) : (
+            <DatePicker value={format(day, 'yyyy-MM-dd')} onChange={(v) => v && goTo({ date: parseDateParam(v) })} />
+          )}
         </div>
 
         <div className="w-48">
@@ -219,7 +217,6 @@ export default function AppointmentsCalendarPage() {
           </Select>
         </div>
 
-        <span className="ms-1 text-sm font-medium text-gray-700">{headerLabel}</span>
         {isLoading && (
           <span className="h-4 w-4 rounded-full border-2 border-primary-600 border-t-transparent animate-spin ms-1" />
         )}
@@ -237,27 +234,26 @@ export default function AppointmentsCalendarPage() {
           onPickDay={(d) => goTo({ view: 'day', date: d })}
         />
       ) : (
-        <div className="rounded-xl border border-border bg-surface-card overflow-hidden">
-          <div className="overflow-auto" style={{ maxHeight: GRID_MAX_HEIGHT }}>
-            <div className="min-w-max">
-              {view === 'day' ? (
-                <DayColumns
-                  hours={hours}
-                  columns={providers.map((p) => ({ key: p.id, label: p.name, items: byProvider.get(p.id) ?? [] }))}
-                  onOpen={(id) => router.push(`${base}/appointments/${id}`)}
-                />
-              ) : (
-                <DayColumns
-                  hours={hours}
-                  columns={eachDayOfInterval({ start: range.from, end: addDays(range.to, -1) }).map((d) => ({
-                    key: format(d, 'yyyy-MM-dd'),
-                    label: format(d, 'EEE dd MMM'),
-                    items: byDay.get(format(d, 'yyyy-MM-dd')) ?? [],
-                  }))}
-                  onOpen={(id) => router.push(`${base}/appointments/${id}`)}
-                />
-              )}
-            </div>
+        <div className="rounded-xl border border-border bg-surface-card overflow-x-auto">
+          <div className="min-w-max">
+            {view === 'day' ? (
+              <DayColumns
+                hours={hours}
+                columns={providers.map((p) => ({ key: p.id, label: p.name, items: byProvider.get(p.id) ?? [] }))}
+                onOpen={(id) => router.push(`${base}/appointments/${id}`)}
+              />
+            ) : (
+              <DayColumns
+                hours={hours}
+                showProvider
+                columns={eachDayOfInterval({ start: range.from, end: addDays(range.to, -1) }).map((d) => ({
+                  key: format(d, 'yyyy-MM-dd'),
+                  label: format(d, 'EEE dd MMM'),
+                  items: byDay.get(format(d, 'yyyy-MM-dd')) ?? [],
+                }))}
+                onOpen={(id) => router.push(`${base}/appointments/${id}`)}
+              />
+            )}
           </div>
         </div>
       )}
@@ -271,22 +267,75 @@ interface Column {
   items: HarakaAppointment[];
 }
 
+interface LaneInfo {
+  lane: number;
+  laneCount: number;
+}
+
+/** Assigns each appointment a lane within its overlap cluster so concurrent
+ *  bookings render side by side instead of stacked on top of each other. */
+function layoutOverlaps(items: HarakaAppointment[]): Map<string, LaneInfo> {
+  const intervals = items
+    .map((item) => {
+      const start = new Date(item.scheduledAt);
+      const startMin = start.getHours() * 60 + start.getMinutes();
+      return { item, start: startMin, end: startMin + item.durationMinutes };
+    })
+    .sort((a, b) => a.start - b.start || a.end - b.end);
+
+  const clusters: (typeof intervals)[] = [];
+  let current: typeof intervals = [];
+  let currentEnd = -Infinity;
+  for (const iv of intervals) {
+    if (current.length > 0 && iv.start >= currentEnd) {
+      clusters.push(current);
+      current = [];
+      currentEnd = -Infinity;
+    }
+    current.push(iv);
+    currentEnd = Math.max(currentEnd, iv.end);
+  }
+  if (current.length > 0) clusters.push(current);
+
+  const result = new Map<string, LaneInfo>();
+  for (const cluster of clusters) {
+    const laneEnds: number[] = [];
+    const laneOf = new Map<(typeof intervals)[number], number>();
+    for (const iv of cluster) {
+      let lane = laneEnds.findIndex((end) => end <= iv.start);
+      if (lane === -1) {
+        lane = laneEnds.length;
+        laneEnds.push(iv.end);
+      } else {
+        laneEnds[lane] = iv.end;
+      }
+      laneOf.set(iv, lane);
+    }
+    const laneCount = laneEnds.length;
+    for (const iv of cluster) result.set(iv.item.id, { lane: laneOf.get(iv)!, laneCount });
+  }
+  return result;
+}
+
 /** Shared time-grid renderer for both the day view (columns = providers) and
- *  the week view (columns = days, appointments from all matching providers
- *  stacked in one column — overlapping bookings render side by side by browser
- *  layout order rather than a true collision layout, an accepted v1 simplification). */
+ *  the week view (columns = days, appointments from every matching provider
+ *  stacked in one column — `showProvider` labels each card with its worker
+ *  since the column itself no longer identifies one). Overlapping bookings
+ *  within a column are laid out side by side via layoutOverlaps. */
 function DayColumns({
   hours,
   columns,
+  showProvider,
   onOpen,
 }: {
   hours: number[];
   columns: Column[];
+  showProvider?: boolean;
   onOpen: (id: string) => void;
 }) {
   return (
     <>
-      <div className="flex border-b border-border bg-surface-page sticky top-0 z-10">
+      <div className="flex border-b border-border bg-surface-page">
         <div className="w-14 flex-shrink-0" />
         {columns.map((col) => (
           <div
@@ -311,47 +360,53 @@ function DayColumns({
           ))}
         </div>
 
-        {columns.map((col) => (
-          <div key={col.key} className="w-48 flex-shrink-0 relative border-s border-border">
-            {hours.map((h) => (
-              <div
-                key={h}
-                className="absolute inset-x-0 border-t border-gray-100"
-                style={{ top: (h - DAY_START_HOUR) * 60 * PX_PER_MINUTE }}
-              />
-            ))}
+        {columns.map((col) => {
+          const layout = layoutOverlaps(col.items);
+          return (
+            <div key={col.key} className="w-48 flex-shrink-0 relative border-s border-border">
+              {hours.map((h) => (
+                <div
+                  key={h}
+                  className="absolute inset-x-0 border-t border-gray-100"
+                  style={{ top: (h - DAY_START_HOUR) * 60 * PX_PER_MINUTE }}
+                />
+              ))}
 
-            {col.items.map((a) => {
-              const start = new Date(a.scheduledAt);
-              const minutesFromTop = (start.getHours() - DAY_START_HOUR) * 60 + start.getMinutes();
-              const color = STATUS_COLOR[a.status] ?? '#9ca3af';
-              const faded = a.status === 'cancelled' || a.status === 'no_show';
-              return (
-                <button
-                  key={a.id}
-                  type="button"
-                  onClick={() => onOpen(a.id)}
-                  className={cn(
-                    'absolute inset-x-1 rounded-md px-2 py-1 text-start text-[11px] overflow-hidden transition-opacity hover:opacity-90',
-                    faded && 'opacity-50 line-through',
-                  )}
-                  style={{
-                    top: minutesFromTop * PX_PER_MINUTE,
-                    height: Math.max(18, a.durationMinutes * PX_PER_MINUTE - 2),
-                    backgroundColor: `${color}1f`,
-                    borderInlineStart: `3px solid ${color}`,
-                  }}
-                  title={`${a.appointmentNumber} · ${a.customerName}`}
-                >
-                  <div className="font-medium text-gray-800 truncate">{a.customerName}</div>
-                  <div className="text-gray-500 truncate">
-                    {hhmm(start)} · {a.serviceName ?? ''}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        ))}
+              {col.items.map((a) => {
+                const start = new Date(a.scheduledAt);
+                const minutesFromTop = (start.getHours() - DAY_START_HOUR) * 60 + start.getMinutes();
+                const color = STATUS_COLOR[a.status] ?? '#9ca3af';
+                const faded = a.status === 'cancelled' || a.status === 'no_show';
+                const { lane, laneCount } = layout.get(a.id) ?? { lane: 0, laneCount: 1 };
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => onOpen(a.id)}
+                    className={cn(
+                      'absolute rounded-md px-2 py-1 text-start text-[11px] overflow-hidden transition-opacity hover:opacity-90 hover:z-10',
+                      faded && 'opacity-50 line-through',
+                    )}
+                    style={{
+                      top: minutesFromTop * PX_PER_MINUTE,
+                      height: Math.max(18, a.durationMinutes * PX_PER_MINUTE - 2),
+                      left: `calc(${(lane / laneCount) * 100}% + 2px)`,
+                      width: `calc(${100 / laneCount}% - 4px)`,
+                      backgroundColor: `${color}1f`,
+                      borderInlineStart: `3px solid ${color}`,
+                    }}
+                    title={`${a.appointmentNumber} · ${a.customerName}${showProvider && a.staffName ? ` · ${a.staffName}` : ''}`}
+                  >
+                    <div className="font-medium text-gray-800 truncate">{a.customerName}</div>
+                    <div className="text-gray-500 truncate">
+                      {hhmm(start)} · {showProvider && a.staffName ? a.staffName : (a.serviceName ?? '')}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
     </>
   );
@@ -381,7 +436,7 @@ function MonthGrid({
           </div>
         ))}
       </div>
-      <div className="overflow-auto" style={{ maxHeight: GRID_MAX_HEIGHT }}>
+      <div>
         {weeks.map((week) => (
           <div key={week[0].toISOString()} className="grid grid-cols-7">
             {week.map((d) => {
@@ -417,9 +472,10 @@ function MonthGrid({
                           key={a.id}
                           className="truncate rounded px-1 py-0.5 text-[10px]"
                           style={{ backgroundColor: `${color}1f`, borderInlineStart: `2px solid ${color}` }}
-                          title={`${hhmm(new Date(a.scheduledAt))} · ${a.customerName}`}
+                          title={`${hhmm(new Date(a.scheduledAt))} · ${a.customerName}${a.staffName ? ` · ${a.staffName}` : ''}`}
                         >
                           {hhmm(new Date(a.scheduledAt))} {a.customerName}
+                          {a.staffName ? ` · ${a.staffName}` : ''}
                         </div>
                       );
                     })}

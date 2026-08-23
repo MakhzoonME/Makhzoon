@@ -7,12 +7,6 @@ import { DEFAULT_RECEIPT_CONFIG } from '@/lib/receipts/receipt-config'
 
 type Row = Record<string, unknown>
 
-/** No per-org customization table for this yet (unlike service jobs) — a
- *  fixed title/thank-you line, branding still comes from the shared receipt
- *  context (logo/address/phone/accent color). */
-export const APPOINTMENT_INVOICE_TITLE = 'APPOINTMENT INVOICE'
-export const APPOINTMENT_INVOICE_THANK_YOU = 'Thank you for your business!'
-
 export interface AppointmentDocumentContext {
   orgId: string
   orgName: string

@@ -3,7 +3,7 @@
 import { useT } from '@/hooks/ui';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import type { AppointmentDocumentAppointment } from '@/lib/modules/haraka/appointments/appointment-document-loader';
-import { APPOINTMENT_INVOICE_TITLE, APPOINTMENT_INVOICE_THANK_YOU } from '@/lib/modules/haraka/appointments/appointment-document-loader';
+import { APPOINTMENT_INVOICE_TITLE, APPOINTMENT_INVOICE_THANK_YOU } from '@/lib/modules/haraka/appointments/appointment-document-config';
 
 interface Props {
   appointment: AppointmentDocumentAppointment;

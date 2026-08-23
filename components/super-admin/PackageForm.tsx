@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import {
   INCLUSION_KEYS,
   INCLUSION_LABELS,
+  HARAKA_MODULES,
   HARAKA_MODULE_LABELS,
   type Package,
   type InclusionKey,
@@ -63,7 +64,9 @@ const PLATFORM_LABELS: Record<(typeof PLATFORM_FEATURES)[number], string> = {
 
 // Haraka modules sold beyond the plan's free slot count (pos is the base
 // module the 'pos' feature flag already gates, so it's not priced here).
-const EXTRA_HARAKA_MODULES: Exclude<HarakaModule, 'pos'>[] = ['services', 'orders', 'retainers'];
+const EXTRA_HARAKA_MODULES = HARAKA_MODULES.filter(
+  (m): m is Exclude<HarakaModule, 'pos'> => m !== 'pos',
+);
 
 type AddOnKey = 'deliveryAgents' | 'warrantyCerts' | 'customization' | 'purchasesRequests' | 'vehicleIntake' | 'loyalty';
 interface AddOnState { included: boolean; price: string }
@@ -184,6 +187,7 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
     services: initial?.addOnPrices?.harakaModules?.services != null ? String(initial.addOnPrices.harakaModules.services) : '',
     orders: initial?.addOnPrices?.harakaModules?.orders != null ? String(initial.addOnPrices.harakaModules.orders) : '',
     retainers: initial?.addOnPrices?.harakaModules?.retainers != null ? String(initial.addOnPrices.harakaModules.retainers) : '',
+    appointments: initial?.addOnPrices?.harakaModules?.appointments != null ? String(initial.addOnPrices.harakaModules.appointments) : '',
   });
 
   // Add-ons — included-in-plan toggle + standalone price, one row per
@@ -259,6 +263,7 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
           services: harakaModulePrices.services === '' ? undefined : Number(harakaModulePrices.services),
           orders: harakaModulePrices.orders === '' ? undefined : Number(harakaModulePrices.orders),
           retainers: harakaModulePrices.retainers === '' ? undefined : Number(harakaModulePrices.retainers),
+          appointments: harakaModulePrices.appointments === '' ? undefined : Number(harakaModulePrices.appointments),
         },
       },
     });

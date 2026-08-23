@@ -15,6 +15,8 @@ export interface UseServicesParams {
   search?:   string
   active?:   boolean
   category?: string
+  /** Appointments picker: only services flagged bookable. */
+  appointmentBookable?: boolean
   page?:     number
   pageSize?: number
 }
@@ -33,6 +35,7 @@ export function useServices(params?: UseServicesParams) {
   if (params?.search)   query.set('search', params.search)
   if (params?.active !== undefined) query.set('active', String(params.active))
   if (params?.category) query.set('category', params.category)
+  if (params?.appointmentBookable !== undefined) query.set('appointmentBookable', String(params.appointmentBookable))
   if (params?.page)     query.set('page', String(params.page))
   if (params?.pageSize) query.set('pageSize', String(params.pageSize))
   return useQuery<ListResp>({

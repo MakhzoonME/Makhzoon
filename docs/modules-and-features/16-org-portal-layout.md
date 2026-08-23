@@ -23,7 +23,7 @@ Examples:
 - `{locale}` — `en` or `ar`
 - `{orgSlug}` — organization's unique URL slug
 - `{spaceSlug}` — active space's URL slug
-- `{module}` — one of: `dashboard`, `usool`, `raseed`, `haraka`, `warranties`, `requests`, `reports`, `audit-logs`
+- `{module}` — one of: `dashboard`, `usool`, `raseed`, `haraka`, `banna`, `loyalty`, `warranties`, `reports`, `support`, `audit-logs` (per `lib/nav/index.ts` → `ORG_NAV_ENTRIES`). There is no `requests` module.
 - Org-level pages (no space): `settings`, `users`, `subscription`, `support`, `profile`
 
 ---
@@ -67,14 +67,17 @@ Examples:
 
 **Layout** (left to right):
 - Hamburger / menu button (mobile only) → opens `MobileDrawer`.
-- Breadcrumb navigation showing current org → space → module.
+- Page context (desktop only) — current module name (bold) + sub-page name (small), derived from `PageHeader`'s `breadcrumb` prop via `store/ui.store.ts` (`headerBreadcrumb`); the first two breadcrumb entries (org, space) are stripped, not shown as a trail.
+- Search button opening `CommandPalette` (⌘K / Ctrl+K).
 - Right actions:
+  - `NotificationBell` (`components/notifications/NotificationBell.tsx`)
   - `NetworkStatusIndicator` (wifi icon — online/slow/offline)
   - `ThemeToggle` (sun/moon icon)
   - `LanguageToggle` (EN/AR)
-  - User menu (avatar button → dropdown with Profile, Settings, Logout)
 
-**Dark mode**: Header uses `bg-surface-card dark:bg-gray-900` with a bottom border.
+> Note: there is no user-menu/avatar dropdown in the header. Profile/Settings/Logout live in the sidebar's bottom "User info" section (and in `MobileDrawer` on mobile), not `AppHeader`.
+
+**Dark mode**: Header uses `bg-surface-card` with a bottom border — theme-aware via CSS custom properties, not a hardcoded `dark:` class.
 
 ---
 
@@ -84,10 +87,10 @@ Examples:
 
 On mobile (`flex md:hidden`): A fixed bottom navigation bar with icon+label tabs for the main modules.
 
-- Shows 4-5 key modules as icon tabs.
-- Active tab highlighted with the module color.
+- Shows a hardcoded set of 4 modules (`PRIMARY_NAV` in `BottomNav.tsx`): Dashboard, Usool (Assets), Banna, Warranties — plus a 5th "More" tab that opens `MobileDrawer` (full nav). This is not the same list as the sidebar's full module set.
+- Active tab highlighted with the primary brand color (`text-primary-600`), not per-module brand colors.
 - Tapping a tab navigates to that module's root page.
-- Module-aware: tabs show only enabled modules.
+- Feature/permission-aware: each of the 4 tabs is filtered by its subscription feature flag and, for staff, by permission (`hasPermission`).
 
 **Mobile Drawer**: `components/layout/MobileDrawer.tsx`
 
@@ -101,9 +104,9 @@ Opens from the hamburger in the header. Slides in from left (RTL: from right). C
 
 Shown when a superadmin is acting in transfer mode (viewing/editing an org on the org's behalf).
 
-- Fixed banner at the top of the screen (above the header).
+- Fixed banner positioned just below the header (`top-14`), not above it — the header itself stays on top.
 - Shows: "Transfer Mode — viewing [Org Name]" + "Exit Transfer Mode" button.
-- Styled in a distinct warning color (amber/orange) so it's always visible.
+- Styled in a yellow/amber warning color so it's always visible.
 - On "Exit": clears `transferOrgId` cookie and redirects back to superadmin.
 
 ---
@@ -112,11 +115,11 @@ Shown when a superadmin is acting in transfer mode (viewing/editing an org on th
 
 **Component**: `components/layout/PageTransition.tsx`
 
-Wraps page content in a `motion.div` that animates:
-- Fade in (opacity 0 → 1)
-- Slight upward translate (y: 8px → 0)
+Wraps page content in a `motion.div` (keyed by pathname) that animates:
+- Enter: fade in (opacity 0 → 1) + upward translate (y: 12px → 0), 300ms.
+- Exit: fade out (opacity 1 → 0) + slight upward translate (y: 0 → -8px), 180ms.
 
-Duration: 180ms. Disabled when `prefers-reduced-motion` is set.
+Uses `AnimatePresence mode="wait"`. Disabled when `prefers-reduced-motion` is set.
 
 ---
 

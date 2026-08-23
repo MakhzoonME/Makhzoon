@@ -145,6 +145,20 @@ export interface HarakaPermissions {
   serviceCatalogCreate: boolean;
   serviceCatalogUpdate: boolean;
   serviceCatalogDelete: boolean;
+  // Appointments
+  appointmentsView: boolean;
+  appointmentsCreate: boolean;
+  appointmentsUpdate: boolean;
+  appointmentsConfirm: boolean;
+  appointmentsComplete: boolean;
+  appointmentsCancel: boolean;
+  appointmentsMarkNoShow: boolean;
+  appointmentsGenerateInvoice: boolean;
+  appointmentsAddPayment: boolean;
+  // Staff directory beyond the delivery-agent CRUD above: capability tags
+  // and per-provider working hours.
+  staffManage: boolean;
+  staffAvailabilityManage: boolean;
 }
 
 export interface ReportsPermissions {
@@ -306,6 +320,8 @@ const HARAKA_KEYS: (keyof HarakaPermissions)[] = [
   'servicesView', 'serviceJobsCreate', 'serviceJobsMarkConfirmed', 'serviceJobsAddPayment', 'serviceJobsMarkInProgress', 'serviceJobsMarkDone', 'serviceJobsUpdate', 'serviceJobsGenerateInvoice',
   'retainersView', 'retainersCreate', 'retainersPause', 'retainersCancel', 'retainersAddInvoice', 'retainersReactivate',
   'serviceCatalogView', 'serviceCatalogCreate', 'serviceCatalogUpdate', 'serviceCatalogDelete',
+  'appointmentsView', 'appointmentsCreate', 'appointmentsUpdate', 'appointmentsConfirm', 'appointmentsComplete', 'appointmentsCancel', 'appointmentsMarkNoShow', 'appointmentsGenerateInvoice', 'appointmentsAddPayment',
+  'staffManage', 'staffAvailabilityManage',
 ];
 
 export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
@@ -537,6 +553,17 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'serviceCatalogCreate', label: 'Add Service', labelKey: 'permOp.haraka.serviceCatalogCreate', requiresKey: 'serviceCatalogView' },
       { key: 'serviceCatalogUpdate', label: 'Edit Service', labelKey: 'permOp.haraka.serviceCatalogUpdate', requiresKey: 'serviceCatalogView' },
       { key: 'serviceCatalogDelete', label: 'Delete Service', labelKey: 'permOp.haraka.serviceCatalogDelete', requiresKey: 'serviceCatalogView' },
+      { key: 'appointmentsView', label: 'View Appointments', labelKey: 'permOp.haraka.appointmentsView' },
+      { key: 'appointmentsCreate', label: 'Book Appointment', labelKey: 'permOp.haraka.appointmentsCreate', requiresKey: 'appointmentsView' },
+      { key: 'appointmentsUpdate', label: 'Edit / Reschedule Appointment', labelKey: 'permOp.haraka.appointmentsUpdate', requiresKey: 'appointmentsView' },
+      { key: 'appointmentsConfirm', label: 'Confirm Appointment', labelKey: 'permOp.haraka.appointmentsConfirm', requiresKey: 'appointmentsView' },
+      { key: 'appointmentsComplete', label: 'Complete Appointment', labelKey: 'permOp.haraka.appointmentsComplete', requiresKey: 'appointmentsView' },
+      { key: 'appointmentsCancel', label: 'Cancel Appointment', labelKey: 'permOp.haraka.appointmentsCancel', requiresKey: 'appointmentsView' },
+      { key: 'appointmentsMarkNoShow', label: 'Mark Appointment No-Show', labelKey: 'permOp.haraka.appointmentsMarkNoShow', requiresKey: 'appointmentsView' },
+      { key: 'appointmentsGenerateInvoice', label: 'Generate Invoice for Appointment', labelKey: 'permOp.haraka.appointmentsGenerateInvoice', requiresKey: 'appointmentsView' },
+      { key: 'appointmentsAddPayment', label: 'Add Payment Entry (Appointments)', labelKey: 'permOp.haraka.appointmentsAddPayment', requiresKey: 'appointmentsView' },
+      { key: 'staffManage', label: 'Manage Staff Capabilities', labelKey: 'permOp.haraka.staffManage', requiresKey: 'deliveryAgentsView' },
+      { key: 'staffAvailabilityManage', label: 'Manage Staff Working Hours', labelKey: 'permOp.haraka.staffAvailabilityManage', requiresKey: 'staffManage' },
     ],
   },
   {

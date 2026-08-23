@@ -1,73 +1,7 @@
-import { NextResponse } from 'next/server'
-import type { TenantContext } from '@/lib/platform/tenancy/types'
-import { hasPermission } from '@/lib/platform/permissions'
-import { auditLog } from '@/lib/platform/audit'
-import {
-  DeliveryAgentsRepository,
-  type CreateDeliveryAgentInput,
-} from './delivery-agents.repository'
+/**
+ * @deprecated Compatibility shim — see delivery-agents.repository.ts.
+ * New code should use `@/lib/modules/haraka/staff/staff.service`.
+ */
+import { StaffService } from '@/lib/modules/haraka/staff/staff.service'
 
-const repo = new DeliveryAgentsRepository()
-
-function requireOp(
-  tenant: TenantContext,
-  op: 'deliveryAgentsCreate' | 'deliveryAgentsUpdate' | 'deliveryAgentsDelete',
-) {
-  if (!hasPermission(tenant, 'haraka', op)) {
-    throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-}
-
-function requireView(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'haraka', 'deliveryAgentsView')) {
-    throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-}
-
-export class DeliveryAgentsService {
-  async list(tenant: TenantContext, onlyActive = false) {
-    requireView(tenant)
-    return repo.list(tenant, onlyActive)
-  }
-
-  async getById(tenant: TenantContext, id: string) {
-    requireView(tenant)
-    const agent = await repo.getById(tenant, id)
-    if (!agent) throw NextResponse.json({ error: 'Not found' }, { status: 404 })
-    return agent
-  }
-
-  async create(tenant: TenantContext, input: CreateDeliveryAgentInput) {
-    requireOp(tenant, 'deliveryAgentsCreate')
-    const agent = await repo.create(tenant, input)
-    auditLog.queue({
-      tenant,
-      module: 'pos',
-      action: 'DELIVERY_AGENT_CREATED',
-      recordId: agent.id,
-      newValue: { name: agent.name },
-    })
-    return agent
-  }
-
-  async update(tenant: TenantContext, id: string, patch: Partial<CreateDeliveryAgentInput>) {
-    requireOp(tenant, 'deliveryAgentsUpdate')
-    await this.getById(tenant, id)
-    const agent = await repo.update(tenant, id, patch)
-    auditLog.queue({
-      tenant,
-      module: 'pos',
-      action: 'DELIVERY_AGENT_UPDATED',
-      recordId: id,
-      newValue: patch,
-    })
-    return agent
-  }
-
-  async delete(tenant: TenantContext, id: string) {
-    requireOp(tenant, 'deliveryAgentsDelete')
-    await this.getById(tenant, id)
-    await repo.delete(tenant, id)
-    auditLog.queue({ tenant, module: 'pos', action: 'DELIVERY_AGENT_DELETED', recordId: id })
-  }
-}
+export { StaffService as DeliveryAgentsService }

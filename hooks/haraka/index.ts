@@ -32,6 +32,31 @@ export {
   useUpdateDeliveryAgent,
   useDeleteDeliveryAgent,
 } from './useDeliveryAgents';
+export {
+  useStaff,
+  useCreateStaff,
+  useUpdateStaff,
+  useDeleteStaff,
+  useStaffAvailability,
+  useAddStaffAvailability,
+  useRemoveStaffAvailability,
+  useUpsertStaffAvailabilityException,
+  useRemoveStaffAvailabilityException,
+} from './useStaff';
+export type { UseStaffParams } from './useStaff';
+export {
+  useAppointments,
+  useAppointment,
+  useCreateAppointment,
+  useUpdateAppointment,
+  useUpdateAppointmentStatus,
+  useGenerateAppointmentInvoice,
+  useDeleteAppointment,
+  useAppointmentPayments,
+  useAddAppointmentPayment,
+  useRemoveAppointmentPayment,
+} from './useAppointments';
+export type { UseAppointmentsParams } from './useAppointments';
 export { useCashDrawerConfig, useUpdateCashDrawerConfig, useVerifyDrawerPin } from './useCashDrawer';
 export type { CashDrawerConfig } from './useCashDrawer';
 export { useDiscountApprovalPin, useSetDiscountApprovalPin } from './useDiscountApproval';

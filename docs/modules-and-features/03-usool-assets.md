@@ -2,7 +2,7 @@
 
 **Brand color**: `#00695C` (deep teal)
 **Arabic name**: أصول
-**Feature key**: `assets`
+**Feature key**: `assets` (permission module key is `usool`, not `assets` — see Permissions section)
 
 ---
 
@@ -15,11 +15,12 @@ Usool is the fixed-asset register. It tracks every physical and non-physical ass
 ## Data Model
 
 ```
-Asset
+Asset (types/asset.types.ts)
   id, organizationId, spaceId
   name (required), category, status (config-driven managed list)
   serialNumber?, purchaseDate?, purchaseCost?
   assignedTo?, location?, notes?
+  documents? (DocumentRef[] — purchase receipts/invoices, private asset-receipts bucket)
   createdAt/By/Email/Name/Role, updatedAt/By/Email/Name/Role
 ```
 
@@ -42,7 +43,7 @@ A summary page showing:
 **Route**: `/{locale}/{orgSlug}/{space}/usool/list`
 
 **Layout**:
-- `PageHeader` with title "Asset Register" + "Add Asset" button (gated by `assets.create`) + "Import" button (gated by `assets.import`) + "Export CSV" button.
+- `PageHeader` with title "Asset Register" + "Add Asset" button (gated by `usool.create`) + "Import" button + "Export CSV" button.
 - `FilterBar` with search (by name/serial), status filter (dropdown from managed list), category filter, location filter.
 - `DataTable` with columns:
   - Name (clickable → asset detail)
@@ -53,7 +54,7 @@ A summary page showing:
   - Location
   - Purchase Date
   - Actions (Edit, Delete — gated by permissions)
-- Row selection checkboxes appear when `assets.bulk_delete`, `assets.bulk_move`, or `assets.bulk_duplicate` permissions are present → activates the **BulkActionsBar** at the bottom.
+- Row selection checkboxes appear when the user has `usool.delete`, `usool.update`, or `usool.create` — there are no separate bulk-specific permission keys; bulk delete/move/duplicate reuse the single-item delete/update/create keys (`app/[locale]/[orgSlug]/[space]/usool/list/page.tsx`) → activates the **BulkActionsBar** at the bottom.
 - Pagination (if large set).
 
 **Empty state**: Illustration + "No assets yet. Add your first asset." CTA.
@@ -74,12 +75,13 @@ A summary page showing:
 
 Footer: Cancel + Save buttons. Validation errors appear inline below each field.
 
-The asset detail page (edit route) also shows:
+The asset detail page (edit route, `app/[locale]/[orgSlug]/[space]/usool/[assetId]/page.tsx`) is tabbed: Details, Warranties, Maintenance, Checkouts, Notes, Audit.
 - **QR Code** section — generates and downloads a QR code with the asset ID.
-- **Checkout History** tab — list of all checkout/check-in events.
-- **Maintenance Records** tab — list of service/repair/inspection events.
-- **Asset Notes** tab — free-form timestamped notes.
-- **Audit Trail** — button linking to audit logs filtered to this asset.
+- **Warranties** tab — list of warranties tied to the asset, with add/edit and computed status (active/expired) based on end date. Not mentioned elsewhere in this doc but is a real tab, gated by `usool.warrantiesView`/`warrantiesCreate`/`warrantiesUpdate`/`warrantiesDelete` (feature key `warranties`).
+- **Checkouts** tab — list of all checkout/check-in events.
+- **Maintenance** tab — list of service/repair/inspection/upgrade/other events.
+- **Notes** tab — free-form timestamped notes.
+- **Audit** tab — button linking to audit logs filtered to this asset.
 
 ### Asset Audits (Physical Count)
 **Route**: `/{locale}/{orgSlug}/{space}/usool/audits`
@@ -110,7 +112,7 @@ Lists all physical asset audits for this space with columns: Title, Status (badg
 
 ## Checkout / Check-in
 
-Accessible from the asset detail page (gated by `assets.checkout`):
+Accessible from the asset detail page (gated by `usool.checkoutCreate` / `usool.checkoutUpdate`, view gated by `usool.checkoutView`; feature key `assetCheckouts`):
 - **Check Out** — records who the asset was loaned to and when.
 - **Check In** — marks the asset as returned.
 - History tab shows all checkout events with timestamps.
@@ -120,15 +122,15 @@ Accessible from the asset detail page (gated by `assets.checkout`):
 
 ## Maintenance Records
 
-Accessible from the asset detail page (gated by `assets.maintenance`):
-- Add maintenance record: type (Service / Repair / Inspection — from `maintenance_type` managed list), date, cost, notes.
+Accessible from the asset detail page (gated by `usool.maintenanceCreate`/`maintenanceUpdate`/`maintenanceDelete`, view gated by `usool.maintenanceView`; feature key `maintenance`):
+- Add maintenance record: type (Repair / Service / Inspection / Upgrade / Other — from `maintenance_type` managed list), date, cost, notes.
 - Records shown in reverse chronological order.
 
 ---
 
 ## Asset Notes
 
-Accessible from the asset detail page (gated by `assets.notes`):
+Accessible from the asset detail page (gated by `usool.notesCreate`, view gated by `usool.notesView`; feature key `assetNotes`):
 - Free-form notes with timestamp and author.
 - Rendered as a chronological feed.
 
@@ -145,19 +147,30 @@ From the asset detail page:
 
 ## Permissions
 
+Permission module key is `usool` (feature key `assets`), defined in `types/user-permissions.types.ts`. There is no `assets.*` permission key — that string is only the feature flag key. Keys below are `usool.<key>`. There are no dedicated bulk permission keys; bulk delete/move/duplicate reuse `delete`/`update`/`create` respectively (see Asset Register section above).
+
 | Key | Admin default | Staff default | Description |
 |-----|--------------|---------------|-------------|
-| `assets.view` | ✅ | ✅ | See the asset register |
-| `assets.create` | ✅ | ❌ | Add new assets |
-| `assets.update` | ✅ | ❌ | Edit existing assets |
-| `assets.delete` | ✅ | ❌ | Delete assets |
-| `assets.import` | ✅ | ❌ | Bulk import via CSV |
-| `assets.checkout` | ✅ | ❌ | Check out / check in assets |
-| `assets.maintenance` | ✅ | ❌ | Add maintenance records |
-| `assets.notes` | ✅ | ❌ | Add asset notes |
-| `assets.bulk_delete` | ✅ | ❌ | Bulk delete selected assets |
-| `assets.bulk_move` | ✅ | ❌ | Bulk move to another space |
-| `assets.bulk_duplicate` | ✅ | ❌ | Bulk duplicate to another space |
+| `usool.view` | ✅ | ✅ | See the asset register |
+| `usool.create` | ✅ | ❌ | Add new assets |
+| `usool.update` | ✅ | ❌ | Edit existing assets |
+| `usool.delete` | ✅ | ❌ | Delete assets |
+| `usool.export` | ✅ | ❌ | Export CSV |
+| `usool.import` | ✅ | ❌ | Bulk import via CSV |
+| `usool.retire` | ✅ | ❌ | Retire assets |
+| `usool.qrLabel` | ✅ | ❌ | Print QR labels |
+| `usool.viewActivity` | ✅ | ❌ | View activity timeline |
+| `usool.auditTrailView` | ✅ | ✅ | View audit trail |
+| `usool.assetAuditsView` | ✅ | ❌ | View asset (physical count) audits |
+| `usool.assetAuditStart` | ✅ | ❌ | Start an asset audit |
+| `usool.warrantiesView` | ✅ | ✅ | View warranties |
+| `usool.warrantiesCreate`/`Update`/`Delete` | ✅ | ❌ | Manage warranties |
+| `usool.checkoutView` | ✅ | ✅ | View checkouts |
+| `usool.checkoutCreate`/`Update` | ✅ | ❌ | Check out / check in assets |
+| `usool.maintenanceView` | ✅ | ✅ | View maintenance records |
+| `usool.maintenanceCreate`/`Update`/`Delete` | ✅ | ❌ | Manage maintenance records |
+| `usool.notesView` | ✅ | ✅ | View asset notes |
+| `usool.notesCreate` | ✅ | ❌ | Add asset notes |
 
 ---
 

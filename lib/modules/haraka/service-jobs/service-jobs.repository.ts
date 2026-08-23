@@ -156,7 +156,7 @@ export class ServiceJobsRepository {
         : Promise.resolve({ data: [] as Row[] }),
       supabaseAdmin
         .from('haraka_service_job_agents')
-        .select('job_id, haraka_delivery_agents!inner(name)')
+        .select('job_id, haraka_staff!inner(name)')
         .in('job_id', jobIds),
     ])
 
@@ -165,9 +165,9 @@ export class ServiceJobsRepository {
       plateById.set(v.id as string, v.plate_number as string)
     }
     const agentNamesByJob = new Map<string, string[]>()
-    for (const r of (agentsRes.data ?? []) as unknown as { job_id: string; haraka_delivery_agents: { name: string } }[]) {
+    for (const r of (agentsRes.data ?? []) as unknown as { job_id: string; haraka_staff: { name: string } }[]) {
       const list = agentNamesByJob.get(r.job_id) ?? []
-      list.push(r.haraka_delivery_agents.name)
+      list.push(r.haraka_staff.name)
       agentNamesByJob.set(r.job_id, list)
     }
 
@@ -566,20 +566,20 @@ export class ServiceJobsRepository {
   ): Promise<ServiceJobAgentAssignment[]> {
     const { data, error } = await supabaseAdmin
       .from('haraka_service_job_agents')
-      .select('delivery_agent_id, role, assigned_at, haraka_delivery_agents!inner(name, organization_id)')
+      .select('staff_id, role, assigned_at, haraka_staff!inner(name, organization_id)')
       .eq('job_id', jobId)
-      .eq('haraka_delivery_agents.organization_id', tenant.organizationId)
+      .eq('haraka_staff.organization_id', tenant.organizationId)
     if (error) throw error
     return (data ?? []).map((r) => {
       const row = r as unknown as {
-        delivery_agent_id: string
+        staff_id: string
         role: 'primary' | 'helper'
         assigned_at: string
-        haraka_delivery_agents: { name: string }
+        haraka_staff: { name: string }
       }
       return {
-        agentId:    row.delivery_agent_id,
-        agentName:  row.haraka_delivery_agents.name,
+        agentId:    row.staff_id,
+        agentName:  row.haraka_staff.name,
         role:       row.role,
         assignedAt: new Date(row.assigned_at),
       }
@@ -602,10 +602,10 @@ export class ServiceJobsRepository {
     if (agentIds.length === 0) return
 
     const rows = agentIds.map((agentId, i) => ({
-      job_id:            jobId,
-      delivery_agent_id: agentId,
-      role:              i === 0 ? 'primary' : 'helper',
-      assigned_by:       assignedBy,
+      job_id:      jobId,
+      staff_id:    agentId,
+      role:        i === 0 ? 'primary' : 'helper',
+      assigned_by: assignedBy,
     }))
     const { error: insertError } = await supabaseAdmin
       .from('haraka_service_job_agents')

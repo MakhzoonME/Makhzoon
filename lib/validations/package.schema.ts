@@ -64,6 +64,7 @@ export const packageAddOnPricesSchema = z
         services: z.number().min(0).optional(),
         orders: z.number().min(0).optional(),
         retainers: z.number().min(0).optional(),
+        appointments: z.number().min(0).optional(),
       })
       .optional(),
   })

@@ -111,14 +111,14 @@ All three lists appear in **Settings → Lists** and **Superadmin → Lists** au
 - Table: order number, customer, channel badge, status badge, fulfillment type, total, payment status, sales agent, created at.
 - Filters: status, channel, agent, date range.
 - "New Order" action button.
-- Gated by `pos.view_orders`.
+- Gated by `haraka.ordersView`.
 
 ### New Order
 **Route**: `/{locale}/{orgSlug}/{space}/haraka/orders/new`
 
 Form fields: channel, fulfillment type toggle, customer picker (existing or ad-hoc name + phone), delivery address (delivery only), items from Raseed catalog, sales agent (org members), delivery agent (`DeliveryAgentPicker`), payment method, scheduled at, notes.
 
-Gated by `pos.manage_orders`.
+Gated by `haraka.ordersCreate`.
 
 ### Order Detail
 **Route**: `/{locale}/{orgSlug}/{space}/haraka/orders/[orderId]`
@@ -126,7 +126,7 @@ Gated by `pos.manage_orders`.
 Sections:
 - **Status stepper** — visual progress bar. "Advance" button or manual status select.
 - **Fulfillment info** — type, delivery address, scheduled time.
-- **Agents** — sales agent, delivery agent with reassign (gated by `pos.assign_delivery`).
+- **Agents** — sales agent, delivery agent with reassign (gated by `haraka.ordersMarkAssigned`).
 - **Items table** — line items, totals.
 - **Payment panel** — status badge, amount paid. Lists all `HarakaOrderPayment` entries with add / delete per entry. `amountPaid` and `paymentStatus` recalculate after each change.
 - **Invoice** — "Generate Invoice" button allocates a sequential `INV-YYYY-NNNNNN` invoice number and renders a printable/downloadable A4 invoice via the order document template.
@@ -174,17 +174,29 @@ The page is intentionally minimal and inline-styled for maximum compatibility (n
 
 ## Permissions
 
-All new permissions sit inside the existing `pos` module and appear in the Users → role editor automatically.
+Order permissions live inside the `haraka` permission module (`types/user-permissions.types.ts`), not a `pos` module — `pos` is only the **feature key** used for subscription gating (`featureKey: 'pos'`). Keys appear in the Users → role editor automatically. Enforced server-side in `lib/modules/haraka/orders/orders.service.ts` via `hasPermission(tenant, 'haraka', <op>)`.
 
 | Key | Label | Admin | Staff |
 |-----|-------|-------|-------|
-| `pos.view_orders` | View Orders | ✅ | ❌ |
-| `pos.manage_orders` | Create & Update Orders | ✅ | ❌ |
-| `pos.assign_delivery` | Assign Delivery Agent | ✅ | ❌ |
-| `pos.manage_delivery_agents` | Manage Delivery Agents | ✅ | ❌ |
+| `haraka.ordersView` | View Orders | ✅ | ❌ |
+| `haraka.ordersCreate` | Create Orders | ✅ | ❌ |
+| `haraka.ordersMarkConfirmed` | Mark Order Confirmed | ✅ | ❌ |
+| `haraka.ordersMarkAssigned` | Mark Order Assigned (also gates delivery-agent reassignment) | ✅ | ❌ |
+| `haraka.ordersMarkInTransit` | Mark Order In Transit | ✅ | ❌ |
+| `haraka.ordersMarkDelivered` | Mark Order Delivered / Picked Up | ✅ | ❌ |
+| `haraka.ordersCancel` | Cancel Order | ✅ | ❌ |
+| `haraka.ordersAddPayment` | Add Payment Entry | ✅ | ❌ |
+| `haraka.ordersGenerateInvoice` | Generate Invoice for Order | ✅ | ❌ |
+| `haraka.ordersGenerateWarranty` | Generate Warranty for Order | ✅ | ❌ |
+| `haraka.ordersShare` | Share Order | ✅ | ❌ |
+| `haraka.ordersRemoveCustomer` | Remove Customer from Order | ✅ | ❌ |
+
+Delivery agent management (add/edit/delete external agents, separate from the orders list above) uses its own keys: `haraka.deliveryAgentsView`, `deliveryAgentsCreate`, `deliveryAgentsUpdate`, `deliveryAgentsDelete` (enforced in `lib/modules/haraka/staff/staff.service.ts`).
+
+There is no single `pos.manage_orders`/`pos.assign_delivery`/`pos.manage_delivery_agents`-style catch-all permission — status transitions each require their own specific `ordersMark*`/`ordersCancel` key, mapped via a `STATUS_OP` table in the order service.
 
 ---
 
 ## Navigation
 
-Orders appears as a child item of the Haraka group in the sidebar, gated by `pos.view_orders`.
+Orders appears as a child item of the Haraka group in the sidebar, gated by `haraka.ordersView` (see `permissionKey: 'haraka.ordersView'` on the `/haraka/orders` entry in `lib/nav/index.ts`).

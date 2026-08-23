@@ -41,7 +41,7 @@ organization_id   ← PRIMARY KEY
 enabled           bool   — master on/off
 auto_open_on_cash bool   — kick after any cash payment on a completed sale
 require_pin       bool   — require PIN for manual-open button
-pin               text?  — 4–6 digit PIN (stored plaintext; table is RLS-protected, admin-only)
+pin_hash          text?  — bcrypt hash of the 4–6 digit PIN (table is RLS-protected, admin-only)
 drawer_port       0 | 1  — RJ11 pin 2 or pin 5
 on_time_ms        int    — solenoid fire duration (default 100 ms → t1=50)
 off_time_ms       int    — recovery time (default 100 ms → t2=50)
@@ -84,7 +84,7 @@ Auto-open never requires a PIN.
 
 ### Settings Page
 **Route**: `/{locale}/{orgSlug}/settings/cash-drawer`
-**Permission**: `settings.fawtara` (POS-adjacent hardware setting)
+**Permission**: `settingsCashDrawer.view` / `settingsCashDrawer.update` — its own dedicated permission module, not `settings.fawtara`
 
 Form fields:
 | Field | Type | Description |
@@ -103,14 +103,15 @@ Save button → PATCH `/api/haraka/cash-drawer-config`.
 
 ## Permissions
 
-No new permission keys — uses `settings.fawtara` to gate the settings page and `pos.open_session` to gate the button (any cashier who can run a session can use the button).
+- Settings page: `settingsCashDrawer.view` / `settingsCashDrawer.update` (its own permission module, not shared with Fawtara).
+- Register button (open/verify PIN): `haraka.sessionsOpen` — any cashier who can open a session can use the button, checked in `CashDrawerService` (`lib/modules/haraka/cash-drawer/cash-drawer.service.ts`), not a `pos.open_session` key (there is no `pos` permission module — the module is `haraka`).
 
 ---
 
 ## Navigation
 
-Add to Settings group in `lib/nav/index.ts` (org-scoped, after Receipt):
+Registered in Settings group in `lib/nav/index.ts` (org-scoped):
 ```typescript
 { href: '/settings/cash-drawer', label: 'Cash Drawer', labelKey: 'nav.cashDrawer',
-  permissionKey: 'settings.fawtara', featureKey: 'pos', scope: 'org' }
+  permissionKey: 'settingsCashDrawer.view', featureKey: 'pos', scope: 'org' }
 ```

@@ -1,114 +1,27 @@
 # Requests
 
-**Feature key**: `requests`
+**Status: REMOVED.** The Requests module described below no longer exists in the app.
 
 ---
 
-## Overview
+## What happened
 
-The Requests module provides a structured approval workflow. Staff members submit requests when they need something — a refill of inventory, retirement of an asset, purchase of a new asset, or extension of a warranty. Admins approve or reject. Every decision is recorded in the audit trail.
+Commit `e740554` — "feat: remove Requests module and Reorder Quantity field" — deleted the Requests feature entirely: pages, `/api/requests` routes, service layer, db layer, hooks, types, and both UI entry points (the "Request Refill" modal on Raseed, the retire/buy-new request panel on Usool assets). It also stripped Requests from the dashboard, reports page, nav (sidebar/bottom nav/mobile drawer/command palette), notifications catalog, feature flags (`FeatureKey`), the permission catalog (`RequestPermissions` and its module definition were removed from `types/user-permissions.types.ts`), limits/usage counting, and the superadmin Package/Subscription editors. Requests was also dropped as a Banna custom-field record type.
 
----
+Confirmed by direct inspection of the current codebase:
+- No route under `app/[locale]/[orgSlug]/[space]/requests`.
+- No route under `app/api/requests`.
+- No `requests` key in `types/user-permissions.types.ts` (`MODULE_PERMISSIONS_CONFIG`).
+- `lib/validations/request.schema.ts` still exists (dead code — unused by any route).
 
-## Request Types
+## What's left behind (intentionally, per the removal commit)
 
-| Type | Description |
-|------|-------------|
-| `REFILL` | Request to restock an inventory item |
-| `RETIRE` | Request to retire an asset |
-| `BUY_NEW` | Request to purchase a new asset |
-| `EXTEND_WARRANTY` | Request to extend an existing warranty |
+- The `public.requests` DB table (`supabase/migrations/0004_modules.sql`) was **not** dropped — it's unused but still present.
+- The `reorder_quantity` column on inventory items was also left in place, unused.
+- `lib/modules/spaces/services/move.service.ts` and `duplicate.service.ts` still reference the `requests` table when moving/duplicating a space's data (leftover cleanup code, not a live feature).
+- `lib/modules/inventory/services/inventory.service.ts` still has a guard that blocks deleting an inventory item if it has "open requests" — dead code path since nothing can create a request anymore.
+- The `AuditLog` action enum (`lib/audit/logger.ts`) still lists `REQUEST_SUBMITTED` / `REQUEST_APPROVED` / `REQUEST_REJECTED`, but nothing writes them anymore.
 
----
+## For historical reference
 
-## Status Lifecycle
-
-```
-PENDING → APPROVED
-         ↘ REJECTED
-```
-
-Only users with `requests.approve` permission can approve or reject.
-
----
-
-## Data Model
-
-```
-Request
-  id, organizationId, spaceId
-  type: 'REFILL' | 'RETIRE' | 'BUY_NEW' | 'EXTEND_WARRANTY'
-  assetId?, assetName?
-  warrantyId?
-  inventoryItemId?, inventoryItemName?
-  description (required — explains the need)
-  status: 'PENDING' | 'APPROVED' | 'REJECTED'
-  decisionBy?, decisionAt?
-  createdAt/By/Name/Email, updatedAt/By
-```
-
----
-
-## Pages & UI
-
-### Overview Page
-**Route**: `/{locale}/{orgSlug}/{space}/requests`
-
-- Metric cards: total requests, pending, approved, rejected.
-- Quick-action: "Submit Request" button.
-- Link to the full list.
-
-### Requests List
-**Route**: `/{locale}/{orgSlug}/{space}/requests/list`
-
-**Layout**:
-- `PageHeader` with "Requests" + "Submit Request" button (gated by `requests.create`).
-- `FilterBar`: search by description, type filter, status filter.
-- `DataTable` with columns:
-  - Type (badge with icon)
-  - Subject (asset name / item name / description excerpt)
-  - Description
-  - Status badge (PENDING = amber, APPROVED = green, REJECTED = red)
-  - Submitted By
-  - Submitted At
-  - Decision By
-  - Actions: Approve / Reject (gated by `requests.approve`), Delete
-
-**Staff view**: Staff see only their own requests. Admins see all.
-
-Bulk actions: move to space, duplicate to space (gated by `requests.bulk_move`, `requests.bulk_duplicate`).
-
-**Empty state**: "No requests yet. Submit your first request."
-
-### Submit Request (New)
-**Route**: Via modal or inline form on the list/overview page.
-
-**Form**:
-- **Type** (segmented control or dropdown): REFILL / RETIRE / BUY_NEW / EXTEND_WARRANTY.
-- **Linked Item** (conditional based on type):
-  - REFILL → Inventory item picker (combobox).
-  - RETIRE → Asset picker.
-  - BUY_NEW → Free-text asset description.
-  - EXTEND_WARRANTY → Warranty picker.
-- **Description** (required textarea — explain the need/justification).
-
-Footer: Cancel + Submit.
-
-### Approve / Reject
-
-Admin presses "Approve" or "Reject" on a request row:
-- Approval: status → `APPROVED`, `decisionBy` and `decisionAt` are recorded.
-- Rejection: status → `REJECTED` with same metadata.
-- Audit log entry is written for each decision.
-
----
-
-## Permissions
-
-| Key | Admin | Staff | Description |
-|-----|-------|-------|-------------|
-| `requests.view` | ✅ | ✅ | View requests (staff: own only) |
-| `requests.create` | ✅ | ✅ | Submit new requests |
-| `requests.approve` | ✅ | ❌ | Approve or reject pending requests |
-| `requests.bulk_move` | ✅ | ❌ | Bulk move to space |
-| `requests.bulk_duplicate` | ✅ | ❌ | Bulk duplicate to space |
+The module used to provide a staff-submits / admin-approves workflow (types: `REFILL`, `RETIRE`, `BUY_NEW`, `EXTEND_WARRANTY`) at `/{locale}/{orgSlug}/{space}/requests`. If this functionality needs to be resurrected, treat it as a new feature build rather than restoring old code — the frontend, API routes, and permission wiring were all deleted, and the schema/permission model has moved on since (e.g. warranties are now permissioned under `usool.*`, not a standalone module).

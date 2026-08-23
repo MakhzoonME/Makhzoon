@@ -25,7 +25,6 @@ export const customerSchema = z.object({
       (v) => v == null || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
       { message: 'Invalid email address' },
     ),
-  taxNumber: trimmedOptional,
   notes: z
     .string()
     .trim()

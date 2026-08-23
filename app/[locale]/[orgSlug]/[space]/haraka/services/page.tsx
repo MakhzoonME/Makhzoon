@@ -21,8 +21,18 @@ import { useOrgInfo } from '@/hooks/org';
 import { formatCurrency } from '@/lib/utils/format';
 import type { HarakaService } from '@/types';
 
+const DURATION_OPTIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
+
+function formatDuration(minutes: number) {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours === 0) return `${mins} min`;
+  if (mins === 0) return `${hours}h`;
+  return `${hours}h ${mins}m`;
+}
+
 export default function ServiceCatalogPage() {
-  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', harakaModule: 'services', moduleKey: 'haraka' });
   const { isAllowed } = useAdminGuard('pos.manage_services');
   const { t, locale } = useT();
   const isAr = locale === 'ar';
@@ -247,14 +257,23 @@ export default function ServiceCatalogPage() {
             <FormField control={form.control} name="durationMinutes" render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('services.labelDuration')}</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number" min="1" step="5"
-                    value={field.value ?? ''}
-                    onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
-                    className="font-mono"
-                  />
-                </FormControl>
+                <Select
+                  value={field.value ? String(field.value) : ''}
+                  onValueChange={(v) => field.onChange(v ? Number(v) : null)}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('services.durationPlaceholder')} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {DURATION_OPTIONS.map((minutes) => (
+                      <SelectItem key={minutes} value={String(minutes)}>
+                        {formatDuration(minutes)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-gray-500">{t('services.durationHelp')}</p>
                 <FormMessage />
               </FormItem>

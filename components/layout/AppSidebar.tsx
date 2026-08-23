@@ -10,10 +10,11 @@ import { useTransferStore } from '@/store/transfer.store';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, NavSectionHeader, buildNavUrl } from '@/lib/nav';
 import { SpaceSwitcher } from '@/components/layout/SpaceSwitcher';
-import { useOrgInfo, useSubscriptionFeatures } from '@/hooks/org';
+import { useOrgInfo, useSubscriptionFeatures, useActiveHarakaModules } from '@/hooks/org';
 import { useSpace } from '@/hooks/ui';
 import { hasModuleAccess, hasPermByKey } from '@/lib/permissions';
 import { UserPermissions } from '@/types';
+import type { HarakaModule } from '@/types/subscription.types';
 import { useT } from '@/hooks/ui';
 import { createClient } from '@/lib/supabase/client';
 import type { MessageKey } from '@/locales/messages';
@@ -215,6 +216,7 @@ export function AppSidebar() {
   // can keep showing a module (e.g. Banna) long after it's been disabled for
   // the org. Matches the pattern already used by MobileDrawer/BottomNav.
   const features    = useSubscriptionFeatures();
+  const activeHarakaModules = useActiveHarakaModules();
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
   // Admins with stored custom permissions may have module restrictions.
   const adminHasCustomPerms = canSeeAdmin && !!user?.permissions;
@@ -246,9 +248,10 @@ export function AppSidebar() {
       }
       return true;
     }
-    const item = entry as { adminOnly?: boolean; featureKey?: string; permissionKey?: string };
+    const item = entry as { adminOnly?: boolean; featureKey?: string; harakaModule?: HarakaModule; permissionKey?: string };
     if (item.adminOnly && !canSeeAdmin) return false;
     if (item.featureKey && !features[item.featureKey]) return false;
+    if (item.harakaModule && !activeHarakaModules.includes(item.harakaModule)) return false;
     if (user && (user.role === 'staff' || adminHasCustomPerms)) {
       const u = { ...user, organizationId: user.organizationId ?? null };
       if (item.permissionKey) {
@@ -383,6 +386,7 @@ export function AppSidebar() {
                 .filter((sub): sub is NavItemConfig => !('type' in sub))
                 .filter((sub) => {
                   if (sub.featureKey && !features[sub.featureKey]) return false;
+                  if (sub.harakaModule && !activeHarakaModules.includes(sub.harakaModule)) return false;
                   if (canSeeAdmin || !sub.permissionKey) return true;
                   return !!user && hasPermByKey(user, sub.permissionKey);
                 });
@@ -620,6 +624,7 @@ export function AppSidebar() {
             // Visible only when the sidebar is expanded; in collapsed mode children are reachable
             // by clicking the parent and navigating from there.
             const visibleChildren = (navEntry.children ?? []).filter((sub) => {
+              if (sub.harakaModule && !activeHarakaModules.includes(sub.harakaModule)) return false;
               if (canSeeAdmin) return true;
               if (sub.featureKey && !features[sub.featureKey]) return false;
               if (sub.permissionKey && user) return hasPermByKey(user, sub.permissionKey);

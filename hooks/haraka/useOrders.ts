@@ -88,7 +88,10 @@ export function useCreateOrder() {
       }
       return res.json() as Promise<{ order: HarakaOrder }>;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: LIST_KEY }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: LIST_KEY });
+      qc.invalidateQueries({ queryKey: ['haraka', 'customers'] });
+    },
   });
 }
 

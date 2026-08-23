@@ -1,4 +1,5 @@
 import type { MessageKey } from '@/locales/messages';
+import type { HarakaModule } from '@/types/subscription.types';
 
 /**
  * Route scope:
@@ -14,6 +15,8 @@ export interface NavItemConfig {
   labelKey: MessageKey;
   adminOnly?: boolean;
   featureKey?: string;
+  /** Haraka sub-module (Orders/Services/Appointments/Retainers) this item requires be active on the subscription. */
+  harakaModule?: HarakaModule;
   /** dot-separated permission key, e.g. 'settingsOrgInfo.view' — grants access to staff with that specific permission */
   permissionKey?: string;
   /** Module brand color (hex). Present only on named Makhzoon modules (Usool, Raseed, etc.) */
@@ -93,7 +96,7 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
         moduleColor: '#AD1457', moduleName: 'جلسات' },
       { type: 'section-header', label: 'Commerce', labelKey: 'nav.sectionCommerce' },
       { href: '/haraka/orders', label: 'Orders', labelKey: 'nav.harakaOrders',
-        featureKey: 'pos', permissionKey: 'haraka.ordersView',
+        featureKey: 'pos', harakaModule: 'orders', permissionKey: 'haraka.ordersView',
         moduleColor: '#AD1457', moduleName: 'طلبات' },
       { href: '/haraka/customers', label: 'Customers', labelKey: 'nav.customers',
         featureKey: 'pos', permissionKey: 'haraka.customersView',
@@ -113,22 +116,22 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
         moduleColor: '#AD1457', moduleName: 'تقارير' },
       { type: 'section-header', label: 'Services', labelKey: 'nav.sectionServices' },
       { href: '/haraka/service-jobs', label: 'Services', labelKey: 'nav.harakaServiceJobs',
-        featureKey: 'pos', permissionKey: 'haraka.servicesView',
+        featureKey: 'pos', harakaModule: 'services', permissionKey: 'haraka.servicesView',
         moduleColor: '#AD1457', moduleName: 'خدمات' },
       { href: '/haraka/appointments', label: 'Appointments', labelKey: 'nav.harakaAppointments',
-        featureKey: 'pos', permissionKey: 'haraka.appointmentsView',
+        featureKey: 'pos', harakaModule: 'appointments', permissionKey: 'haraka.appointmentsView',
         moduleColor: '#AD1457', moduleName: 'مواعيد',
         children: [
           { href: '/haraka/appointments/calendar', label: 'Calendar', labelKey: 'nav.harakaAppointmentsCalendar',
-            featureKey: 'pos', permissionKey: 'haraka.appointmentsView',
+            featureKey: 'pos', harakaModule: 'appointments', permissionKey: 'haraka.appointmentsView',
             moduleColor: '#AD1457', moduleName: 'تقويم' },
         ],
       },
       { href: '/haraka/retainers', label: 'Retainers', labelKey: 'nav.harakaRetainers',
-        featureKey: 'pos', permissionKey: 'haraka.retainersView',
+        featureKey: 'pos', harakaModule: 'retainers', permissionKey: 'haraka.retainersView',
         moduleColor: '#AD1457', moduleName: 'عقود' },
       { href: '/haraka/services', label: 'Service Catalog', labelKey: 'nav.harakaServiceCatalog',
-        featureKey: 'pos', permissionKey: 'haraka.serviceCatalogView',
+        featureKey: 'pos', harakaModule: 'services', permissionKey: 'haraka.serviceCatalogView',
         moduleColor: '#AD1457', moduleName: 'كتالوج الخدمات' },
     ],
   },
@@ -232,12 +235,15 @@ export function getFirstAccessiblePath(opts: {
   space?: string;
   role: string;
   features: Record<string, boolean>;
+  activeHarakaModules?: string[];
   permissions?: Record<string, Record<string, boolean>> | null;
 }): string {
   const isAdmin = opts.role === 'admin' || opts.role === 'super_admin' || opts.role === 'org_owner';
+  const activeHarakaModules = opts.activeHarakaModules ?? [];
   for (const item of ORG_NAV_FLAT) {
     if (item.adminOnly && !isAdmin) continue;
     if (item.featureKey && !opts.features[item.featureKey]) continue;
+    if (item.harakaModule && !activeHarakaModules.includes(item.harakaModule)) continue;
     if (!isAdmin && opts.permissions) {
       // Use permissionKey's module when available (e.g. 'purchases.view' → 'purchases'),
       // otherwise fall back to featureKey. Prevents 'inventory' featureKey from being

@@ -33,16 +33,20 @@ const DAY_PICKER_CLASSNAMES = {
 
 const WEEK_STARTS_ON = 6;
 
-/** Week view's date control — picking any day snaps to the week containing
- *  it (the calendar shades that whole week so the 7-day span reads clearly). */
+/** Week view's date control — hovering any day shades the whole week it
+ *  belongs to (clicking anywhere in that shaded week picks it); no single
+ *  day is highlighted on its own, since a day-level selection isn't what
+ *  this control represents. */
 export function WeekPicker({ value, onChange }: { value: Date; onChange: (d: Date) => void }) {
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(value);
+  const [hovered, setHovered] = useState<Date | null>(null);
   const weekStart = startOfWeek(value, { weekStartsOn: WEEK_STARTS_ON });
   const weekEnd = endOfWeek(value, { weekStartsOn: WEEK_STARTS_ON });
+  const shadedAround = hovered ?? value;
 
   return (
-    <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
+    <PopoverPrimitive.Root open={open} onOpenChange={(o) => { setOpen(o); if (!o) setHovered(null); }}>
       <PopoverPrimitive.Trigger asChild>
         <button type="button" className={TRIGGER_CLASS}>
           <span>{format(weekStart, 'dd MMM')} – {format(weekEnd, 'dd MMM yyyy')}</span>
@@ -57,13 +61,15 @@ export function WeekPicker({ value, onChange }: { value: Date; onChange: (d: Dat
         >
           <DayPicker
             mode="single"
-            selected={value}
-            onSelect={(d) => { if (d) { onChange(d); setOpen(false); } }}
+            selected={undefined}
+            onSelect={(d) => { if (d) { onChange(d); setOpen(false); setHovered(null); } }}
+            onDayMouseEnter={(d) => setHovered(d)}
+            onDayMouseLeave={() => setHovered(null)}
             month={month}
             onMonthChange={setMonth}
             weekStartsOn={WEEK_STARTS_ON}
-            modifiers={{ inWeek: (d) => isSameWeek(d, value, { weekStartsOn: WEEK_STARTS_ON }) }}
-            modifiersClassNames={{ inWeek: '[&>button]:bg-primary-50' }}
+            modifiers={{ inWeek: (d) => isSameWeek(d, shadedAround, { weekStartsOn: WEEK_STARTS_ON }) }}
+            modifiersClassNames={{ inWeek: '[&>button]:bg-primary-50 [&>button]:text-primary-700' }}
             classNames={DAY_PICKER_CLASSNAMES}
             components={{
               Chevron: ({ orientation }) =>

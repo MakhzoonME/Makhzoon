@@ -5,8 +5,6 @@ import { useParams, useRouter, usePathname, useSearchParams } from 'next/navigat
 import { ChevronLeft, ChevronRight, List } from 'lucide-react';
 import {
   addDays,
-  addMonths,
-  addWeeks,
   eachDayOfInterval,
   endOfMonth,
   endOfWeek,
@@ -155,10 +153,10 @@ export default function AppointmentsCalendarPage() {
     (_, i) => DAY_START_HOUR + i,
   );
 
-  function shift(delta: number) {
-    if (view === 'week') goTo({ date: addWeeks(day, delta) });
-    else if (view === 'month') goTo({ date: addMonths(day, delta) });
-    else goTo({ date: addDays(day, delta) });
+  // Only the day view uses this prev/next control — week/month navigate via
+  // their own pickers instead.
+  function shiftDay(delta: number) {
+    goTo({ date: addDays(day, delta) });
   }
 
   return (
@@ -183,15 +181,19 @@ export default function AppointmentsCalendarPage() {
           </TabsList>
         </Tabs>
 
-        <Button size="sm" variant="outline" aria-label={t('appointments.prevDay')} onClick={() => shift(-1)}>
-          <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => goTo({ date: startOfDay(new Date()) })}>
-          {t('appointments.today')}
-        </Button>
-        <Button size="sm" variant="outline" aria-label={t('appointments.nextDay')} onClick={() => shift(1)}>
-          <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
-        </Button>
+        {view === 'day' && (
+          <>
+            <Button size="sm" variant="outline" aria-label={t('appointments.prevDay')} onClick={() => shiftDay(-1)}>
+              <ChevronLeft className="h-4 w-4" strokeWidth={1.75} />
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => goTo({ date: startOfDay(new Date()) })}>
+              {t('appointments.today')}
+            </Button>
+            <Button size="sm" variant="outline" aria-label={t('appointments.nextDay')} onClick={() => shiftDay(1)}>
+              <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
+            </Button>
+          </>
+        )}
 
         <div className={view === 'week' ? 'w-56' : 'w-44'}>
           {view === 'week' ? (
@@ -234,7 +236,10 @@ export default function AppointmentsCalendarPage() {
           onPickDay={(d) => goTo({ view: 'day', date: d })}
         />
       ) : (
-        <div className="rounded-xl border border-border bg-surface-card overflow-x-auto">
+        // overflow-y-visible is explicit, not decorative — per the CSS overflow
+        // spec, overflow-x: auto alone silently computes overflow-y to auto too,
+        // which would create a second, unwanted vertical scrollbar on this box.
+        <div className="rounded-xl border border-border bg-surface-card overflow-x-auto overflow-y-visible">
           <div className="min-w-max">
             {view === 'day' ? (
               <DayColumns

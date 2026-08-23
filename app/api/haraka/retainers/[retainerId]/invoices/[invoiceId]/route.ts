@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireHarakaModule } from '@/lib/permissions/require-module'
 import { RetainersService } from '@/lib/modules/haraka/retainers/retainers.service'
 import { updateRetainerInvoiceSchema } from '@/lib/modules/haraka/retainers/schemas'
 
@@ -13,6 +14,7 @@ export async function PATCH(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
+    await requireHarakaModule(tenant, 'retainers')
     const { retainerId, invoiceId } = await params
     const body = await req.json()
     const parsed = updateRetainerInvoiceSchema.safeParse(body)
@@ -36,6 +38,7 @@ export async function DELETE(
   try {
     const tenant = await resolveTenant()
     requireFeature(tenant, 'pos')
+    await requireHarakaModule(tenant, 'retainers')
     const { retainerId, invoiceId } = await params
     await service.deleteInvoice(tenant, retainerId, invoiceId)
     return NextResponse.json({ success: true })

@@ -13,7 +13,7 @@ import { useAdminGuard, useModuleGuard, toast, useT } from '@/hooks/ui';
 import type { HarakaService } from '@/types';
 
 export default function NewRetainerPage() {
-  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', harakaModule: 'retainers', moduleKey: 'haraka' });
   const { isAllowed } = useAdminGuard('pos.manage_retainers');
   const router    = useRouter();
   const params    = useParams<{ locale: string; orgSlug: string; space: string }>();

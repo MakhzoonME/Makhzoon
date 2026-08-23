@@ -4,6 +4,7 @@ export { useOrgConfig } from './useOrgConfig';
 export { useOrgUsage } from './useOrgUsage';
 export { useSubscription } from './useSubscription';
 export { useSubscriptionFeatures } from './useSubscriptionFeatures';
+export { useActiveHarakaModules } from './useActiveHarakaModules';
 export { useSubscriptionGate } from './useSubscriptionGate';
 export { useAllOrgsUsage } from './useAllOrgsUsage';
 export { useReports } from './useReports';

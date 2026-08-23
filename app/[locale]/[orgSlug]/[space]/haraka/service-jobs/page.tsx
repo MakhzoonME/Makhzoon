@@ -17,7 +17,7 @@ import { useOrgInfo } from '@/hooks/org';
 import type { HarakaServiceJob } from '@/types';
 
 export default function ServiceJobsListPage() {
-  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', harakaModule: 'services', moduleKey: 'haraka' });
   const { isAllowed } = useAdminGuard('pos.view_service_jobs');
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();

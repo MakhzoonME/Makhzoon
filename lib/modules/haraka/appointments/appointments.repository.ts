@@ -76,14 +76,15 @@ function derivePaymentStatus(total: number, paid: number): OrderPaymentStatus {
 }
 
 export interface ListAppointmentsOpts {
-  status?:    string
-  staffId?:   string
-  serviceId?: string
+  status?:     string
+  staffId?:    string
+  serviceId?:  string
+  customerId?: string
   /** ISO instants — the calendar passes a day/week range. */
-  from?:      string
-  to?:        string
-  page?:      number
-  pageSize?:  number
+  from?:       string
+  to?:         string
+  page?:       number
+  pageSize?:   number
 }
 
 export interface CreateAppointmentInput {
@@ -156,6 +157,7 @@ export class AppointmentsRepository {
     if (opts?.status) q = q.eq('status', opts.status)
     if (opts?.staffId) q = q.eq('staff_id', opts.staffId)
     if (opts?.serviceId) q = q.eq('service_id', opts.serviceId)
+    if (opts?.customerId) q = q.eq('customer_id', opts.customerId)
     if (opts?.from) q = q.gte('scheduled_at', opts.from)
     if (opts?.to) q = q.lt('scheduled_at', opts.to)
 

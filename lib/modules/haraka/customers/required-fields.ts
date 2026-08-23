@@ -11,7 +11,6 @@ const FIELD_KEY_TO_FORM_KEY: Record<string, keyof CustomerFormData> = {
   name: 'name',
   phone: 'phone',
   email: 'email',
-  tax_number: 'taxNumber',
   notes: 'notes',
 };
 

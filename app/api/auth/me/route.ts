@@ -10,6 +10,7 @@ export async function GET() {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     let features: Record<string, boolean> = {};
+    let activeHarakaModules: string[] = [];
     let orgSlug: string | null = null;
     let avatarUrl: string | null = null;
 
@@ -19,6 +20,12 @@ export async function GET() {
       getUserById(user.uid),
     ]);
     if (sub?.features) features = sub.features as Record<string, boolean>;
+    if (sub) {
+      activeHarakaModules = [
+        ...(sub.activeHarakaModules ?? []),
+        ...(sub.activeAddOns?.extraHarakaModules ?? []),
+      ];
+    }
     orgSlug = org?.subdomain ?? null;
     avatarUrl = dbUser?.avatarUrl ?? null;
     const displayName = dbUser?.displayName ?? null;
@@ -34,6 +41,7 @@ export async function GET() {
         permissions: user.permissions ?? null,
         saPermissions: user.saPermissions ?? null,
         features,
+        activeHarakaModules,
       },
       { headers: { 'Cache-Control': 'no-store' } },
     );

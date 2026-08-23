@@ -41,7 +41,7 @@ const DEFAULT_FIELD_KEY_TO_FORM_KEY: Record<string, keyof CustomerFormData> = {
 /** Name/Phone are always shown and can't be hidden by org config. */
 const ALWAYS_VISIBLE_FORM_KEYS: ReadonlySet<keyof CustomerFormData> = new Set(['name', 'phone']);
 
-function useDefaultFieldConfig(): { byFormKey: DefaultFieldConfigByFormKey; raw: RawDefaultFieldConfig[] } {
+function useDefaultFieldConfig(): { byFormKey: DefaultFieldConfigByFormKey; raw: RawDefaultFieldConfig[]; isLoading: boolean } {
   const defsQuery = useCustomFields('customers');
   const byFormKey: DefaultFieldConfigByFormKey = {};
   const raw: RawDefaultFieldConfig[] = [];
@@ -53,7 +53,7 @@ function useDefaultFieldConfig(): { byFormKey: DefaultFieldConfigByFormKey; raw:
     const formKey = DEFAULT_FIELD_KEY_TO_FORM_KEY[fieldKey];
     if (formKey) byFormKey[formKey] = entry;
   }
-  return { byFormKey, raw };
+  return { byFormKey, raw, isLoading: defsQuery.isLoading };
 }
 
 function isFieldVisible(config: DefaultFieldConfigByFormKey, key: keyof CustomerFormData): boolean {
@@ -206,7 +206,7 @@ export function CustomerForm({
     defaultValues: { ...EMPTY, ...initial },
   });
 
-  const { byFormKey: fieldConfig, raw: rawFieldConfig } = useDefaultFieldConfig();
+  const { byFormKey: fieldConfig, raw: rawFieldConfig, isLoading: fieldConfigLoading } = useDefaultFieldConfig();
 
   const [fieldsDraft, setFieldsDraft] = useState<Record<string, unknown>>({});
   const [savingFields, setSavingFields] = useState(false);
@@ -283,7 +283,7 @@ export function CustomerForm({
             />
           )}
 
-          {isFieldVisible(fieldConfig, 'email') && (
+          {!fieldConfigLoading && isFieldVisible(fieldConfig, 'email') && (
             <FormField
               control={form.control}
               name="email"
@@ -306,7 +306,7 @@ export function CustomerForm({
           )}
         </div>
 
-        {isFieldVisible(fieldConfig, 'notes') && (
+        {!fieldConfigLoading && isFieldVisible(fieldConfig, 'notes') && (
           <FormField
             control={form.control}
             name="notes"

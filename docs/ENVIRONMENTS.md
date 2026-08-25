@@ -62,6 +62,16 @@ they must match or every scheduled job 401s.
 `kanquzwaxlbanbwmguyd` (`supabase projects api-keys --project-ref
 kanquzwaxlbanbwmguyd`).
 
+> **GitHub is not the only path, and for some of these it is not the path in
+> use.** The 2026-08-26 deploy log shows `CRON_SECRET_*` and
+> `GOOGLE_DRIVE_*` are empty for **every** environment, not just support —
+> so those were set directly on the workers with
+> `wrangler secret put <NAME> --env <env>` and never lived in GitHub.
+> Only `RESEND_API_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are actually
+> populated as Actions secrets (dev/prod). Adding the `_SUPPORT` copies to
+> GitHub works, but to match how the other envs are configured, set the
+> cron and Drive values on the worker directly.
+
 **3. Resend sender** — `[env.support.vars]` sends as
 `support-notifications@makhzoon.me`. Verify that address in Resend, or point
 `RESEND_FROM_EMAIL` at an already-verified sender.
@@ -70,9 +80,20 @@ kanquzwaxlbanbwmguyd`).
 **production** service account and folder ID, so support uploads land in the
 live production Drive folder. Give it its own folder before real use.
 
-Verify after the first green deploy: `sup.makhzoon.me` loads with a sky-blue
-`SUPPORT` env badge, and the anon key's decoded `ref` claim reads
-`kanquzwaxlbanbwmguyd`.
+### First deploy — verified 2026-08-26
+
+Commit `825a44f`, workflow run 32904987475, worker version
+`1ed116f0-af61-4f1b-9134-2030d42896fa`. Confirmed:
+
+- `sup.makhzoon.me` returns HTTP 200 and redirects `/` → `/en`.
+- Both triggers bound: `sup.makhzoon.me/*`, `rcpt-sup.makhzoon.me/*`.
+- The served bundle references `kanquzwaxlbanbwmguyd.supabase.co` and no
+  other Supabase host — it is **not** talking to prod.
+- The `SUPPORT` env badge renders.
+- `rcpt-sup.makhzoon.me` fails to connect (no DNS), as expected.
+
+Note that Cloudflare accepted the `rcpt-sup` route even though the hostname
+does not resolve, so a bound trigger is not evidence the host works.
 
 ### Database
 

@@ -24,9 +24,10 @@ import { WeekPicker, MonthPicker } from '@/components/haraka/CalendarPeriodPicke
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppointments, useStaff } from '@/hooks/haraka';
+import { useList } from '@/hooks/lists';
 import { useModuleGuard, useT } from '@/hooks/ui';
 import { cn } from '@/lib/utils/cn';
-import type { AppointmentStatus, HarakaAppointment } from '@/types';
+import type { AppointmentStatus, HarakaAppointment, ResolvedListItem } from '@/types';
 
 // Hand-built grid rather than a calendar library — this codebase prefers
 // small purpose-built UI over heavy dependencies, and each view is one
@@ -46,6 +47,16 @@ const STATUS_COLOR: Record<AppointmentStatus, string> = {
   cancelled: '#ef4444',
   no_show: '#f97316',
 };
+
+function statusColor(statusList: ResolvedListItem[], status: string): string {
+  return statusList.find((s) => s.value === status)?.color ?? STATUS_COLOR[status] ?? '#9ca3af';
+}
+
+// Falls back to the platform-default codes until the org's list resolves.
+function statusFaded(statusList: ResolvedListItem[], status: string): boolean {
+  const item = statusList.find((s) => s.value === status);
+  return item ? !item.isBlocking : status === 'cancelled' || status === 'no_show';
+}
 
 function hhmm(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -92,6 +103,8 @@ export default function AppointmentsCalendarPage() {
     },
     [pathname, router, searchParams],
   );
+
+  const { data: statusList = [] } = useList('appointment_status');
 
   const { data: staffData } = useStaff({ onlyActive: true, capability: 'appointment_provider' });
   const allProviders = useMemo(() => staffData?.items ?? [], [staffData]);
@@ -234,6 +247,7 @@ export default function AppointmentsCalendarPage() {
           range={range}
           byDay={byDay}
           onPickDay={(d) => goTo({ view: 'day', date: d })}
+          statusList={statusList}
         />
       ) : (
         // overflow-y-visible is explicit, not decorative — per the CSS overflow
@@ -246,6 +260,7 @@ export default function AppointmentsCalendarPage() {
                 hours={hours}
                 columns={providers.map((p) => ({ key: p.id, label: p.name, items: byProvider.get(p.id) ?? [] }))}
                 onOpen={(id) => router.push(`${base}/appointments/${id}`)}
+                statusList={statusList}
               />
             ) : (
               <DayColumns
@@ -257,6 +272,7 @@ export default function AppointmentsCalendarPage() {
                   items: byDay.get(format(d, 'yyyy-MM-dd')) ?? [],
                 }))}
                 onOpen={(id) => router.push(`${base}/appointments/${id}`)}
+                statusList={statusList}
               />
             )}
           </div>
@@ -332,11 +348,13 @@ function DayColumns({
   columns,
   showProvider,
   onOpen,
+  statusList,
 }: {
   hours: number[];
   columns: Column[];
   showProvider?: boolean;
   onOpen: (id: string) => void;
+  statusList: ResolvedListItem[];
 }) {
   return (
     <>
@@ -380,8 +398,8 @@ function DayColumns({
               {col.items.map((a) => {
                 const start = new Date(a.scheduledAt);
                 const minutesFromTop = (start.getHours() - DAY_START_HOUR) * 60 + start.getMinutes();
-                const color = STATUS_COLOR[a.status] ?? '#9ca3af';
-                const faded = a.status === 'cancelled' || a.status === 'no_show';
+                const color = statusColor(statusList, a.status);
+                const faded = statusFaded(statusList, a.status);
                 const { lane, laneCount } = layout.get(a.id) ?? { lane: 0, laneCount: 1 };
                 return (
                   <button
@@ -422,11 +440,13 @@ function MonthGrid({
   range,
   byDay,
   onPickDay,
+  statusList,
 }: {
   day: Date;
   range: { from: Date; to: Date };
   byDay: Map<string, HarakaAppointment[]>;
   onPickDay: (d: Date) => void;
+  statusList: ResolvedListItem[];
 }) {
   const days = eachDayOfInterval({ start: range.from, end: addDays(range.to, -1) });
   const weeks: Date[][] = [];
@@ -471,7 +491,7 @@ function MonthGrid({
                   </div>
                   <div className="space-y-0.5">
                     {visible.map((a) => {
-                      const color = STATUS_COLOR[a.status] ?? '#9ca3af';
+                      const color = statusColor(statusList, a.status);
                       return (
                         <div
                           key={a.id}

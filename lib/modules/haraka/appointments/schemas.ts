@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import type { AppointmentStatus } from '@/types'
 
 // datetime-local inputs produce "YYYY-MM-DDTHH:mm" (no seconds, no zone) —
 // same coercion Orders and Service Jobs use.
@@ -10,26 +9,6 @@ function coerceLocalDatetime(v: unknown): unknown {
     return isNaN(d.getTime()) ? v : d.toISOString()
   }
   return v
-}
-
-/**
- * Status machine (design doc §4.3). `completed` is the only state that
- * unlocks invoice generation; cancelled and no_show are terminal and free the
- * slot for rebooking.
- */
-const VALID_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
-  scheduled: ['confirmed', 'cancelled', 'no_show'],
-  confirmed: ['completed', 'cancelled', 'no_show'],
-  completed: [],
-  cancelled: [],
-  no_show:   [],
-}
-
-export function isValidAppointmentTransition(
-  from: AppointmentStatus,
-  to: AppointmentStatus,
-): boolean {
-  return VALID_TRANSITIONS[from]?.includes(to) ?? false
 }
 
 export const createAppointmentSchema = z.object({
@@ -55,8 +34,10 @@ export const updateAppointmentSchema = z.object({
   notes:           z.string().trim().max(2000).nullable().optional(),
 })
 
+// Status is a value from the org's `appointment_status` managed list, which
+// can include custom statuses beyond the 5 platform defaults.
 export const updateAppointmentStatusSchema = z.object({
-  status: z.enum(['scheduled', 'confirmed', 'completed', 'cancelled', 'no_show']),
+  status: z.string().trim().min(1).max(100),
 })
 
 export const addAppointmentPaymentSchema = z.object({

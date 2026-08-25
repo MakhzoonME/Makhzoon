@@ -516,20 +516,13 @@ export interface HarakaService {
 
 // ── Haraka Appointments ───────────────────────────────────────────────────
 
-export type AppointmentStatus =
-  | 'scheduled'
-  | 'confirmed'
-  | 'completed'
-  | 'cancelled'
-  | 'no_show';
-
-/** Statuses that still occupy their slot — anything else frees the time up
- *  for rebooking (design doc §4.2). */
-export const BLOCKING_APPOINTMENT_STATUSES: AppointmentStatus[] = [
-  'scheduled',
-  'confirmed',
-  'completed',
-];
+// Org-configurable via the `appointment_status` managed list — see
+// lib/db/managed-lists.ts. 'scheduled' | 'confirmed' | 'completed' |
+// 'cancelled' | 'no_show' are the platform defaults, not a closed set:
+// orgs can add, rename, or disable statuses. Whether a given status
+// triggers invoicing, blocks the calendar slot, or is terminal is looked
+// up per-org at runtime (resolveListItemForOrg), not inferred from the code.
+export type AppointmentStatus = string;
 
 export interface HarakaAppointment {
   id: string;

@@ -1228,6 +1228,8 @@ const en = {
   'lists.nameAr':                'Name (Arabic, optional)',
   'lists.colorOptional':         'Color (optional)',
   'lists.color':                 'Color',
+  'lists.triggersInvoicing':     'Triggers invoicing',
+  'lists.blocksCalendar':        'Holds the calendar slot',
   'common.clear':                'Clear',
 
   // ── Superadmin Lists ─────────────────────────────────────────────
@@ -3289,6 +3291,8 @@ const ar: Record<keyof typeof en, string> = {
   'lists.nameAr':                'الاسم (بالعربية، اختياري)',
   'lists.colorOptional':         'اللون (اختياري)',
   'lists.color':                 'اللون',
+  'lists.triggersInvoicing':     'يُفعّل الفوترة',
+  'lists.blocksCalendar':        'يشغل موعد التقويم',
   'common.clear':                'مسح',
 
   // ── Superadmin Lists ─────────────────────────────────────────────

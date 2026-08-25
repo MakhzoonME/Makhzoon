@@ -50,6 +50,9 @@ export interface ListMeta {
   scope: ListScope;
   /** true → SYSTEM list: value locked, no add/remove (label/color/order only). */
   isSystem: boolean;
+  /** true → items carry behavior flags (isInvoicingTrigger/isBlocking/isTerminal)
+   *  that the portal should expose as toggles, not just label/color. */
+  supportsBehaviorFlags?: boolean;
   /** Optional note shown in the portal. */
   description?: string;
 }
@@ -85,7 +88,7 @@ export const LIST_REGISTRY: Record<ListKey, ListMeta> = {
   retainer_status:            { key: 'retainer_status',            label: 'Retainer Statuses',           labelKey: 'managedList.retainer_status',            scope: 'org', isSystem: true,  description: 'Retainer lifecycle — values locked.' },
   service_category:           { key: 'service_category',           label: 'Service Categories',          labelKey: 'managedList.service_category',           scope: 'org', isSystem: false, description: 'Categories for the Services catalog. Orgs can add custom categories.' },
 
-  appointment_status:         { key: 'appointment_status',         label: 'Appointment Statuses',        labelKey: 'managedList.appointment_status',         scope: 'org', isSystem: true,  description: 'Appointment lifecycle — values locked (only "completed" unlocks invoicing), labels/colors customizable.' },
+  appointment_status:         { key: 'appointment_status',         label: 'Appointment Statuses',        labelKey: 'managedList.appointment_status',         scope: 'org', isSystem: false, supportsBehaviorFlags: true, description: 'Appointment lifecycle. Add, rename, reorder, or hide statuses; flag which ones trigger invoicing or hold the calendar slot.' },
 };
 
 export const LIST_KEYS = Object.keys(LIST_REGISTRY) as ListKey[];
@@ -101,6 +104,10 @@ export interface PlatformListItem {
   sortOrder: number;
   enabled: boolean;
   isSystem: boolean;
+  /** Behavior flags, meaningful only for lists with supportsBehaviorFlags. */
+  isInvoicingTrigger: boolean;
+  isBlocking: boolean;
+  isTerminal: boolean;
   createdAt: Date;
   createdBy: string | null;
   updatedAt: Date;
@@ -119,6 +126,9 @@ export interface OrgListItem {
   sortOrder: number | null;
   enabled: boolean;
   isCustom: boolean;
+  isInvoicingTrigger: boolean | null;
+  isBlocking: boolean | null;
+  isTerminal: boolean | null;
   createdAt: Date;
   createdBy: string | null;
   updatedAt: Date;
@@ -135,4 +145,8 @@ export interface ResolvedListItem {
   isSystem: boolean;
   /** true when contributed/overridden by the org (vs a pure platform default). */
   isCustom: boolean;
+  /** Behavior flags, meaningful only for lists with supportsBehaviorFlags. */
+  isInvoicingTrigger: boolean;
+  isBlocking: boolean;
+  isTerminal: boolean;
 }

@@ -7,7 +7,6 @@ import type {
   HarakaAppointmentPayment,
   OrderPaymentStatus,
 } from '@/types'
-import { BLOCKING_APPOINTMENT_STATUSES } from '@/types'
 import {
   allocateAppointmentNumber,
   allocateAppointmentInvoiceNumber,
@@ -199,17 +198,20 @@ export class AppointmentsRepository {
     staffId: string,
     aroundIso: string,
     durationMinutes: number,
+    blockingStatuses: AppointmentStatus[],
   ): Promise<ExistingBooking[]> {
     const start = new Date(aroundIso).getTime()
     const windowStart = new Date(start - 24 * 60 * 60_000).toISOString()
     const windowEnd = new Date(start + durationMinutes * 60_000 + 24 * 60 * 60_000).toISOString()
+
+    if (blockingStatuses.length === 0) return []
 
     const { data, error } = await supabaseAdmin
       .from('haraka_appointments')
       .select('id, scheduled_at, duration_minutes')
       .eq('organization_id', organizationId)
       .eq('staff_id', staffId)
-      .in('status', BLOCKING_APPOINTMENT_STATUSES)
+      .in('status', blockingStatuses)
       .gte('scheduled_at', windowStart)
       .lte('scheduled_at', windowEnd)
     if (error) throw error

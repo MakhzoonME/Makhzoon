@@ -1448,13 +1448,12 @@ const en = {
   'managedList.maintenance_type':   'Maintenance Types',
   'managedList.order_status':         'Order Statuses',
   'managedList.order_channel':        'Order Channels',
-  'managedList.order_payment_method': 'Order Payment Methods',
   'managedList.service_job_status':   'Service Job Statuses',
   'managedList.service_job_type':     'Service Job Types',
-  'managedList.service_job_payment_method': 'Service Job Payment Methods',
   'managedList.retainer_status':      'Retainer Statuses',
   'managedList.service_category':     'Service Categories',
   'managedList.appointment_status':   'Appointment Statuses',
+  'managedList.payment_method':       'Payment Methods',
 
   // ── Subscription inclusions + features ────────────────────────────
   'inclusion.csvExport':            'CSV export',
@@ -3529,13 +3528,12 @@ const ar: Record<keyof typeof en, string> = {
   'managedList.maintenance_type':   'أنواع الصيانة',
   'managedList.order_status':         'حالات الطلبات',
   'managedList.order_channel':        'قنوات الطلبات',
-  'managedList.order_payment_method': 'طرق الدفع للطلبات',
   'managedList.service_job_status':   'حالات وظائف الخدمة',
   'managedList.service_job_type':     'أنواع وظائف الخدمة',
-  'managedList.service_job_payment_method': 'طرق دفع وظائف الخدمة',
   'managedList.retainer_status':      'حالات العقود الدورية',
   'managedList.service_category':     'فئات الخدمات',
   'managedList.appointment_status':   'حالات المواعيد',
+  'managedList.payment_method':       'طرق الدفع',
 
   // ── Subscription inclusions + features ────────────────────────────
   'inclusion.csvExport':            'تصدير CSV',

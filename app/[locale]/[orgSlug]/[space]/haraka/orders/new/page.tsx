@@ -432,7 +432,7 @@ export default function NewOrderPage() {
                     <FormLabel>Payment method</FormLabel>
                     <FormControl>
                       <ConfigSelect
-                        listKey="order_payment_method"
+                        listKey="payment_method"
                         value={field.value ?? ''}
                         onValueChange={field.onChange}
                         placeholder="Select method…"

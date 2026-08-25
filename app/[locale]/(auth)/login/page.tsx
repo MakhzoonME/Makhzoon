@@ -368,11 +368,11 @@ export default function LoginPage() {
       if (!res.ok) return;
       const body = await res.json().catch(() => null);
       if (!body) return;
-      const { role, orgSlug, features = {}, activeHarakaModules = [], permissions = null } = body;
+      const { role, orgSlug, features = {}, activeHarakaModules = [], activeAddOns, permissions = null } = body;
       if (SUPERADMIN_ROLES.has(role)) {
         router.replace(buildSuperAdminPath(locale, '/dashboard'));
       } else if (orgSlug) {
-        router.replace(getFirstAccessiblePath({ locale, orgSlug, role, features, activeHarakaModules, permissions }));
+        router.replace(getFirstAccessiblePath({ locale, orgSlug, role, features, activeHarakaModules, activeAddOns, permissions }));
       }
     }).catch(() => {});
   }, [locale, router, sessionExpiredMessage]);
@@ -407,11 +407,11 @@ export default function LoginPage() {
       if (body.orgSuspended) toast.error('This workspace is suspended. Please contact support to restore access.');
       throw new Error(body.error || 'Session creation failed');
     }
-    const { role, orgSlug, features = {}, activeHarakaModules = [], permissions = null } = body;
+    const { role, orgSlug, features = {}, activeHarakaModules = [], activeAddOns, permissions = null } = body;
     if (SUPERADMIN_ROLES.has(role)) {
       router.push(buildSuperAdminPath(locale, '/dashboard'));
     } else if (orgSlug) {
-      router.push(getFirstAccessiblePath({ locale, orgSlug, role, features, activeHarakaModules, permissions }));
+      router.push(getFirstAccessiblePath({ locale, orgSlug, role, features, activeHarakaModules, activeAddOns, permissions }));
     } else {
       throw new Error('Your workspace could not be found. Please contact support.');
     }

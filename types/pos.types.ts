@@ -536,7 +536,8 @@ export interface HarakaAppointment {
   customerPhone: string | null;
 
   serviceId: string;
-  staffId: string;
+  /** Null when booked without a provider — orgs without the Workers add-on. */
+  staffId: string | null;
   /** Enriched by AppointmentsRepository reads — not a stored column. */
   serviceName?: string | null;
   staffName?: string | null;
@@ -547,6 +548,8 @@ export interface HarakaAppointment {
   /** Snapshots of the catalog price / tax rate at booking time. */
   price: number;
   taxRate: number | null;
+  /** Flat amount subtracted from price before tax, same convention as Orders/Service Jobs. */
+  discountAmount: number;
 
   status: AppointmentStatus;
   taxAmount: number;

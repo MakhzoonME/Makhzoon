@@ -137,12 +137,14 @@ export default function AppointmentsCalendarPage() {
 
   const appointments = data?.items ?? [];
 
+  const UNASSIGNED_KEY = '__unassigned__';
   const byProvider = useMemo(() => {
     const map = new Map<string, HarakaAppointment[]>();
     for (const a of appointments) {
-      const list = map.get(a.staffId) ?? [];
+      const key = a.staffId ?? UNASSIGNED_KEY;
+      const list = map.get(key) ?? [];
       list.push(a);
-      map.set(a.staffId, list);
+      map.set(key, list);
     }
     return map;
   }, [appointments]);
@@ -258,7 +260,12 @@ export default function AppointmentsCalendarPage() {
             {view === 'day' ? (
               <DayColumns
                 hours={hours}
-                columns={providers.map((p) => ({ key: p.id, label: p.name, items: byProvider.get(p.id) ?? [] }))}
+                columns={[
+                  ...providers.map((p) => ({ key: p.id, label: p.name, items: byProvider.get(p.id) ?? [] })),
+                  ...(byProvider.get(UNASSIGNED_KEY)?.length
+                    ? [{ key: UNASSIGNED_KEY, label: t('appointments.unassigned'), items: byProvider.get(UNASSIGNED_KEY) ?? [] }]
+                    : []),
+                ]}
                 onOpen={(id) => router.push(`${base}/appointments/${id}`)}
                 statusList={statusList}
               />

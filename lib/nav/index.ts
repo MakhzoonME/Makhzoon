@@ -1,5 +1,5 @@
 import type { MessageKey } from '@/locales/messages';
-import type { HarakaModule } from '@/types/subscription.types';
+import type { AddOnKey, HarakaModule } from '@/types/subscription.types';
 
 /**
  * Route scope:
@@ -17,6 +17,8 @@ export interface NavItemConfig {
   featureKey?: string;
   /** Haraka sub-module (Orders/Services/Appointments/Retainers) this item requires be active on the subscription. */
   harakaModule?: HarakaModule;
+  /** Independent add-on (Workers/Warranty Certs/…) this item requires be active on the subscription. */
+  harakaAddOn?: AddOnKey;
   /** dot-separated permission key, e.g. 'settingsOrgInfo.view' — grants access to staff with that specific permission */
   permissionKey?: string;
   /** Module brand color (hex). Present only on named Makhzoon modules (Usool, Raseed, etc.) */
@@ -102,10 +104,10 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
         featureKey: 'pos', permissionKey: 'haraka.customersView',
         moduleColor: '#AD1457', moduleName: 'عملاء' },
       { href: '/haraka/staff', label: 'Workers', labelKey: 'nav.harakaStaff',
-        featureKey: 'pos', permissionKey: 'haraka.deliveryAgentsView',
+        featureKey: 'pos', harakaAddOn: 'deliveryAgents', permissionKey: 'haraka.deliveryAgentsView',
         moduleColor: '#AD1457', moduleName: 'موزعون' },
       { href: '/haraka/warranty-certs', label: 'Warranty Certs', labelKey: 'nav.harakaWarrantyCerts',
-        featureKey: 'pos', permissionKey: 'haraka.warrantyCertsView',
+        featureKey: 'pos', harakaAddOn: 'warrantyCerts', permissionKey: 'haraka.warrantyCertsView',
         moduleColor: '#AD1457', moduleName: 'ضمانات' },
       { type: 'section-header', label: 'Finance', labelKey: 'nav.sectionFinance' },
       { href: '/haraka/transactions', label: 'Transactions', labelKey: 'nav.transactions',
@@ -236,6 +238,7 @@ export function getFirstAccessiblePath(opts: {
   role: string;
   features: Record<string, boolean>;
   activeHarakaModules?: string[];
+  activeAddOns?: Record<string, boolean>;
   permissions?: Record<string, Record<string, boolean>> | null;
 }): string {
   const isAdmin = opts.role === 'admin' || opts.role === 'super_admin' || opts.role === 'org_owner';
@@ -244,6 +247,7 @@ export function getFirstAccessiblePath(opts: {
     if (item.adminOnly && !isAdmin) continue;
     if (item.featureKey && !opts.features[item.featureKey]) continue;
     if (item.harakaModule && !activeHarakaModules.includes(item.harakaModule)) continue;
+    if (item.harakaAddOn && opts.activeAddOns && !opts.activeAddOns[item.harakaAddOn]) continue;
     if (!isAdmin && opts.permissions) {
       // Use permissionKey's module when available (e.g. 'purchases.view' → 'purchases'),
       // otherwise fall back to featureKey. Prevents 'inventory' featureKey from being

@@ -14,7 +14,7 @@ import { hasModuleAccess, hasPermission } from '@/lib/permissions';
 /* ── Inline SVG icons ───────────────────────────────────────────── */
 function ActiveIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden className="w-[18px] h-[18px] 2xl:w-[22px] 2xl:h-[22px]">
       <path d="M15 5.5L9 2 3 5.5v7L9 16l6-3.5v-7z" stroke="currentColor" strokeWidth="1.4" fill="none" />
       <path d="M9 2v14M3 5.5l6 3.5 6-3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
     </svg>
@@ -22,7 +22,7 @@ function ActiveIcon() {
 }
 function WarningIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden className="w-[18px] h-[18px] 2xl:w-[22px] 2xl:h-[22px]">
       <path d="M9 2L1.5 15h15L9 2z" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinejoin="round" />
       <path d="M9 8v3.5M9 13.5v.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
@@ -30,7 +30,7 @@ function WarningIcon() {
 }
 function TotalIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden className="w-[18px] h-[18px] 2xl:w-[22px] 2xl:h-[22px]">
       <rect x="2" y="2" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.4" fill="none" />
       <rect x="10" y="2" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.4" fill="none" />
       <rect x="2" y="10" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.4" fill="none" />
@@ -40,7 +40,7 @@ function TotalIcon() {
 }
 function InboxIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden className="w-[18px] h-[18px] 2xl:w-[22px] 2xl:h-[22px]">
       <path d="M16 9h-4l-1.5 2.5h-3L6 9H2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M4 4.5l-2 4.5v5a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 16 14V9l-2-4.5a1.5 1.5 0 0 0-1.35-.85H5.35A1.5 1.5 0 0 0 4 4.5z" stroke="currentColor" strokeWidth="1.4" fill="none" />
     </svg>
@@ -48,14 +48,14 @@ function InboxIcon() {
 }
 function PlusIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+    <svg viewBox="0 0 14 14" fill="none" aria-hidden className="w-[14px] h-[14px] 2xl:w-4 2xl:h-4">
       <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
 function RefreshIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+    <svg viewBox="0 0 14 14" fill="none" aria-hidden className="w-[14px] h-[14px] 2xl:w-4 2xl:h-4">
       <path d="M2 7a5 5 0 1 0 1-3M2 2v3h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -69,7 +69,7 @@ function ChevronRightIcon() {
 }
 function CartIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+    <svg viewBox="0 0 14 14" fill="none" aria-hidden className="w-[14px] h-[14px] 2xl:w-4 2xl:h-4">
       <path d="M1 1h2l1.5 7h6L12 4H4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
       <circle cx="5.5" cy="11.5" r="1" fill="currentColor" />
       <circle cx="10" cy="11.5" r="1" fill="currentColor" />
@@ -207,24 +207,24 @@ function StatCard({ icon, iconBg, iconColor, accent, label, value, delta, sub, s
       onClick={onClick}
       style={{ borderTop: `3px solid ${accent}` }}
     >
-      <CardContent className="ps-3 pe-4 py-3">
-        <div className="flex items-center gap-3">
+      <CardContent className="ps-3 pe-4 py-3 2xl:ps-4 2xl:pe-5 2xl:py-4">
+        <div className="flex items-center gap-3 2xl:gap-4">
           <div
-            className="p-2 rounded-lg flex items-center justify-center flex-shrink-0"
+            className="p-2 2xl:p-2.5 rounded-lg flex items-center justify-center flex-shrink-0"
             style={{ background: iconBg, color: iconColor }}
           >
             {icon}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5 truncate">{label}</p>
+            <p className="text-[11px] 2xl:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5 truncate">{label}</p>
             {value}
             {delta && (
-              <span className="inline-flex mt-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
+              <span className="inline-flex mt-1 text-[11px] 2xl:text-xs font-semibold px-2 py-0.5 rounded-full"
                 style={{ background: iconBg, color: iconColor }}>
                 {delta}
               </span>
             )}
-            {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+            {sub && <p className="text-xs 2xl:text-sm text-gray-400 mt-0.5">{sub}</p>}
           </div>
           {spark && spark.length > 1 && (
             <Sparkline data={spark} color={accent} />
@@ -534,9 +534,9 @@ function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: bool
 /* ── SectionHeader ───────────────────────────────────────────────── */
 function SectionHeader({ title, count, action, onClick }: { title: string; count?: number; action?: string; onClick?: () => void }) {
   return (
-    <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
+    <div className="px-5 py-3.5 2xl:px-6 2xl:py-4 border-b border-border flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+        <h2 className="text-sm 2xl:text-base font-semibold text-gray-900">{title}</h2>
         {count != null && count > 0 && (
           <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[11px] font-semibold tabular-nums">
             {count}
@@ -631,7 +631,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 2xl:space-y-6">
 
       {/* ── Alert banners ────────────────────────────────────────────── */}
       {!isLoading && ((canViewInventory && lowStockCount > 0) || (canViewWarranties && expiringWarranties.length > 0)) && (
@@ -666,11 +666,11 @@ export default function DashboardPage() {
       {/* ── Page header ──────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="font-bold tracking-tight text-gray-900"
-            style={{ fontSize: 22, fontFamily: 'var(--font-display)' }}>
+          <h1 className="font-bold tracking-tight text-gray-900 text-[22px] 2xl:text-[26px]"
+            style={{ fontFamily: 'var(--font-display)' }}>
             {t(getGreetingKey())} {firstName}{locale === 'ar' ? '،' : ','}
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">{t('dashboard.subtitle')}</p>
+          <p className="text-sm 2xl:text-base text-gray-500 mt-0.5">{t('dashboard.subtitle')}</p>
         </div>
         {!isLoading && syncedAgo && (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800 flex-shrink-0">
@@ -682,7 +682,7 @@ export default function DashboardPage() {
 
       {/* ── KPI cards ────────────────────────────────────────────────── */}
       {(canViewAssets || canViewInventory || canViewWarranties) && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 2xl:gap-6">
           {canViewAssets && (
             <StatCard
               icon={<TotalIcon />}
@@ -690,7 +690,7 @@ export default function DashboardPage() {
               iconColor="var(--mod-usool)"
               accent="var(--mod-usool)"
               label={t('dashboard.totalAssets')}
-              value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{totalAssetCount}</p>}
+              value={isLoading ? <SkeletonValue /> : <p className="text-2xl 2xl:text-3xl font-bold text-gray-900 tabular-nums leading-tight">{totalAssetCount}</p>}
               delta={!isLoading && activeAssetCount > 0 ? `${activeAssetCount} active` : undefined}
               onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
             />
@@ -702,7 +702,7 @@ export default function DashboardPage() {
               iconColor="var(--mod-raseed)"
               accent="var(--mod-raseed)"
               label={t('dashboard.inventoryItems')}
-              value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{lowStockCount}</p>}
+              value={isLoading ? <SkeletonValue /> : <p className="text-2xl 2xl:text-3xl font-bold text-gray-900 tabular-nums leading-tight">{lowStockCount}</p>}
               delta={!isLoading && lowStockCount > 0 ? `${lowStockCount} low` : undefined}
               sub={!isLoading ? t('dashboard.lowStock') : undefined}
               onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list`)}
@@ -717,7 +717,7 @@ export default function DashboardPage() {
               label={t('dashboard.warrantiesExpiring')}
               value={
                 isLoading ? <SkeletonValue /> : (
-                  <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">
+                  <p className="text-2xl 2xl:text-3xl font-bold text-gray-900 tabular-nums leading-tight">
                     {expiringWarranties.length}
                   </p>
                 )
@@ -739,7 +739,7 @@ export default function DashboardPage() {
           {canViewAssets && (
             <button
               onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list?new=true`)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 2xl:px-4 2xl:py-2 rounded-lg border border-border bg-surface-card text-sm 2xl:text-base font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
             >
               <PlusIcon aria-hidden /> {t('dashboard.addAsset')}
             </button>
@@ -747,7 +747,7 @@ export default function DashboardPage() {
           {canViewInventory && (
             <button
               onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/purchases/new`)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 2xl:px-4 2xl:py-2 rounded-lg border border-border bg-surface-card text-sm 2xl:text-base font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
             >
               <RefreshIcon aria-hidden /> {t('dashboard.recordTransaction')}
             </button>
@@ -755,7 +755,7 @@ export default function DashboardPage() {
           {features.pos && (
             <button
               onClick={() => router.push(`/${locale}/${orgSlug}/${space}/haraka/register`)}
-              className="ms-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors duration-150 cursor-pointer"
+              className="ms-auto inline-flex items-center gap-1.5 px-3 py-1.5 2xl:px-4 2xl:py-2 rounded-lg border text-sm 2xl:text-base font-medium transition-colors duration-150 cursor-pointer"
               style={{ color: 'var(--mod-haraka)', borderColor: 'color-mix(in srgb, var(--mod-haraka) 35%, transparent)', background: 'color-mix(in srgb, var(--mod-haraka) 6%, transparent)' }}
             >
               <CartIcon aria-hidden /> {t('dashboard.openRegister')}
@@ -766,7 +766,7 @@ export default function DashboardPage() {
 
       {/* ── Row 1: Recent assets (1.5fr) + Expiring warranties (1fr) ─── */}
       {(canViewAssets || canViewWarranties) && (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 2xl:gap-6">
           {canViewAssets && (
             <Card className={`${canViewWarranties ? 'lg:col-span-3' : 'lg:col-span-5'} p-0`}>
               <SectionHeader
@@ -800,7 +800,7 @@ export default function DashboardPage() {
 
       {/* ── Row 2: Asset breakdown (3/5) + Activity feed (2/5) ───────── */}
       {(canViewAssets || canViewAuditLogs) && (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 2xl:gap-6">
           {canViewAssets && (
             <Card className={`${canViewAuditLogs ? 'lg:col-span-3' : 'lg:col-span-5'} p-0`}>
               <SectionHeader
@@ -808,7 +808,7 @@ export default function DashboardPage() {
                 action={t('dashboard.viewAll')}
                 onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
               />
-              <div className="p-5">
+              <div className="p-5 2xl:p-6">
                 <AssetBreakdownBar assets={totalAssets} isLoading={isLoading} />
               </div>
             </Card>
@@ -820,7 +820,7 @@ export default function DashboardPage() {
                 action={t('dashboard.viewAll')}
                 onClick={() => router.push(`/${locale}/${orgSlug}/${space}/audit-logs`)}
               />
-              <div className="p-5">
+              <div className="p-5 2xl:p-6">
                 <ActivityFeed logs={auditLogs} isLoading={isLoading} />
               </div>
             </Card>

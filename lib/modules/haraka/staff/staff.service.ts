@@ -99,7 +99,20 @@ export class StaffService {
   async delete(tenant: TenantContext, id: string) {
     requireOp(tenant, 'deliveryAgentsDelete')
     await this.getById(tenant, id)
-    await repo.delete(tenant, id)
+    try {
+      await repo.delete(tenant, id)
+    } catch (err) {
+      if (err instanceof Error && err.message === 'STAFF_HAS_LINKED_RECORDS') {
+        throw NextResponse.json(
+          {
+            error:
+              'This worker has appointments on record and can\'t be deleted. Mark them inactive instead to hide them from new bookings.',
+          },
+          { status: 400 },
+        )
+      }
+      throw err
+    }
     auditLog.queue({ tenant, module: 'pos', action: 'STAFF_DELETED', recordId: id })
   }
 

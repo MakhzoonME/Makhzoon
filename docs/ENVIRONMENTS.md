@@ -95,13 +95,65 @@ Commit `825a44f`, workflow run 32904987475, worker version
 Note that Cloudflare accepted the `rcpt-sup` route even though the hostname
 does not resolve, so a bound trigger is not evidence the host works.
 
-### Database
+### Database — cloned from prod 2026-08-26
 
 Support is seeded as a **clone of the production database** (decision
 2026-08-26) rather than a bare `supabase db push` of the migration history —
 the environment exists to reproduce real customer issues. That means it holds
 production customer data: treat its service_role key and dashboard access with
 the same care as prod.
+
+**Verified parity after the clone** (prod → `kanquzwaxlbanbwmguyd`):
+
+| Object | prod | support |
+|--------|------|---------|
+| public tables | 85 | 85 |
+| rows (all public tables) | 596 | 596 |
+| constraints | 252 | 252 |
+| indexes | 269 | 269 |
+| RLS policies | 185 | 185 |
+| functions | 58 | 58 |
+| tables with RLS enabled | 86 | 86 |
+| triggers | 46 | 46 |
+| auth.users / public.users / auth.identities | 12 / 10 / 12 | 12 / 10 / 12 |
+
+`/rest/v1` and `/auth/v1/settings` both return 200 on the support project.
+
+**Two deliberate deviations:**
+
+1. `pg_trgm` lives in prod's `public` schema, so dropping `public` on the
+   target destroys it and every `gin_trgm_ops` index fails. The extension must
+   be created **before** restoring. Any future re-clone must do the same.
+2. Default privileges `FOR ROLE supabase_admin` could not be copied —
+   `postgres` is not permitted to set another role's defaults on Supabase.
+   Only the `FOR ROLE postgres` defaults exist on support. This affects
+   privileges on objects a superuser might create in `public` later, not
+   anything the app does.
+
+Ordering matters: `public.users.users_id_fkey` references `auth.users`, so the
+constraint cannot validate until auth data is loaded. Restore `public`, then
+auth, then add that FK — or the constraint silently goes missing while the
+row counts still look correct.
+
+### ⚠ Prod schema is not reproducible from git
+
+Discovered during the clone. Prod contains objects that **no migration in the
+repo creates**:
+
+- Tables `spaces`, `space_members`, `cleanup_orgs_to_keep`
+- `space_id` columns on 16 tables
+- Migrations `0075_appointments_optional_staff`,
+  `0076_appointments_discount`, `0077_custom_field_conditions` — applied to
+  prod, with SQL stored only in `supabase_migrations.schema_migrations`
+
+The repo tops out at `0074` (72 files) and `combined.sql` has no `spaces`
+table, yet migrations from `0016` onward reference `space_id`. Prod carries
+1025 columns in `public` against 989 for a database built from the repo.
+
+A rebuild from migrations therefore does **not** reproduce prod. The missing
+DDL should be reconstructed into migration files from prod's stored statements
+and live schema; until then, cloning prod is the only reliable way to stand up
+an environment that matches it.
 
 ## ⚠ OPEN ISSUE — staging shares the production database (audit finding S2)
 

@@ -37,7 +37,12 @@ export function isAddOnActive(
 ): boolean {
   if (!sub?.packageId) return true; // no package / trial = allowed
   if (sub.activeAddOns?.[addOn]) return true; // purchased
-  if (!isPricingModelPackage(pkg)) return true; // not migrated yet — legacy flags only
+  if (!pkg) return true; // package not loaded — don't block on missing data
+  // Note: unlike the numeric pricing-model allowances (usool/raseed, gated by
+  // isPricingModelPackage), the add-on include flags are `not null default
+  // false`, so every package — migrated or not — has a real value here. Gating
+  // this on isPricingModelPackage would make the per-org purchase checkbox a
+  // no-op (always active) for any org on a not-yet-migrated package.
   return !!pkg.allowances[ADDON_INCLUDED[addOn]]; // included in plan
 }
 

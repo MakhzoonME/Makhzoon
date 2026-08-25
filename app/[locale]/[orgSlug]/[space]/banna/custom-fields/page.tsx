@@ -15,7 +15,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { Switch } from '@/components/ui/switch';
 import { CustomFieldForm, type CustomFieldFormData } from '@/components/banna/CustomFieldForm';
 import { useCreateCustomField, useUpdateCustomField } from '@/hooks/banna';
-import type { CustomField, CustomFieldType, CustomFieldOption } from '@/types/banna.types';
+import type { CustomField, CustomFieldType, CustomFieldOption, CustomFieldCondition } from '@/types/banna.types';
 
 const MODULES = [
   { value: 'assets', label: 'Usool (Assets)' },
@@ -31,7 +31,7 @@ export default function CustomFieldsPage() {
   const createMut = useCreateCustomField();
   const updateMut = useUpdateCustomField();
 
-  const { data, isLoading } = useQuery<{ items: CustomField[] }>({
+  const { data, isLoading } = useQuery<{ items: Record<string, unknown>[] }>({
     queryKey: ['banna-custom-fields', moduleFilter],
     queryFn: async () => {
       const params = moduleFilter !== 'all' ? `?module=${moduleFilter}` : '';
@@ -41,7 +41,10 @@ export default function CustomFieldsPage() {
     },
   });
 
-  const fields = data?.items ?? [];
+  // API returns raw snake_case db rows — map to the camelCase CustomField
+  // shape once here so every consumer below (the table, the condition
+  // builder's parent-field picker) sees consistent field keys.
+  const fields = (data?.items ?? []).map(mapDbField);
   const [editing, setEditing] = useState<CustomField | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CustomField | null>(null);
 
@@ -87,6 +90,7 @@ export default function CustomFieldsPage() {
       options: raw.options as CustomFieldOption[] | undefined,
       placeholder: raw.placeholder as string | undefined,
       placeholderAr: raw.placeholder_ar as string | undefined,
+      condition: (raw.condition as CustomFieldCondition | null) ?? null,
       sortOrder: raw.sort_order as number,
       active: raw.is_active as boolean,
       isDefault: raw.is_default as boolean,
@@ -155,7 +159,7 @@ export default function CustomFieldsPage() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1 justify-end">
-                    <Button size="sm" variant="ghost" aria-label={t('common.edit')} onClick={() => { setEditing(mapDbField(field as unknown as Record<string, unknown>)); setFormOpen(true); }}>
+                    <Button size="sm" variant="ghost" aria-label={t('common.edit')} onClick={() => { setEditing(field); setFormOpen(true); }}>
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button size="sm" variant="ghost" aria-label={t('common.delete')} className="text-red-500" onClick={() => setDeleteTarget(field)}>
@@ -188,6 +192,7 @@ export default function CustomFieldsPage() {
           </DialogHeader>
           <CustomFieldForm
             initial={editing ?? undefined}
+            siblingFields={fields}
             onSubmit={handleFormSubmit}
             onCancel={closeForm}
             submitting={createMut.isPending || updateMut.isPending}

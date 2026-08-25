@@ -160,6 +160,9 @@ export interface HarakaPermissions {
   // and per-provider working hours.
   staffManage: boolean;
   staffAvailabilityManage: boolean;
+  // Analytics — cross-module revenue/sales overview (POS + Orders + Service
+  // Jobs + Retainers + Appointments), distinct from the POS-only report above.
+  analyticsView: boolean;
 }
 
 export interface ReportsPermissions {
@@ -323,6 +326,7 @@ const HARAKA_KEYS: (keyof HarakaPermissions)[] = [
   'serviceCatalogView', 'serviceCatalogCreate', 'serviceCatalogUpdate', 'serviceCatalogDelete',
   'appointmentsView', 'appointmentsCreate', 'appointmentsUpdate', 'appointmentsConfirm', 'appointmentsComplete', 'appointmentsCancel', 'appointmentsMarkNoShow', 'appointmentsGenerateInvoice', 'appointmentsAddPayment',
   'staffManage', 'staffAvailabilityManage',
+  'analyticsView',
 ];
 
 export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
@@ -566,6 +570,7 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'appointmentsAddPayment', label: 'Add Payment Entry (Appointments)', labelKey: 'permOp.haraka.appointmentsAddPayment', requiresKey: 'appointmentsView' },
       { key: 'staffManage', label: 'Manage Staff Capabilities', labelKey: 'permOp.haraka.staffManage', requiresKey: 'deliveryAgentsView' },
       { key: 'staffAvailabilityManage', label: 'Manage Staff Working Hours', labelKey: 'permOp.haraka.staffAvailabilityManage', requiresKey: 'staffManage' },
+      { key: 'analyticsView', label: 'View Analytics', labelKey: 'permOp.haraka.analyticsView' },
     ],
   },
   {

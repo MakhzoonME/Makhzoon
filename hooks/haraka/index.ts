@@ -4,6 +4,8 @@ export { useTransactions, useTransaction, useCompleteSale, useVoidSale, useRefun
 export { useFawtaraConfig, useUpdateFawtaraConfig, useResubmitFawtara } from './useFawtara';
 export { useHarakaReport, buildReportExportUrl } from './useReports';
 export type { AggregateGroupBy, AggregateBucket, AggregateResult, UseHarakaReportParams } from './useReports';
+export { useHarakaAnalytics, buildAnalyticsExportUrl } from './useAnalytics';
+export type { AnalyticsModuleKey, ModuleSummary, HarakaAnalytics, UseHarakaAnalyticsParams } from './useAnalytics';
 export {
   useCustomers,
   useCustomer,

@@ -8,7 +8,8 @@
 #   CRON_SECRET  — must match the app's CRON_SECRET (Bearer token the
 #                  /api/cron/* routes validate)
 #
-#   CRON_SECRET must be set for EVERY environment (dev, staging, production)
+#   CRON_SECRET must be set for EVERY environment (dev, staging, production,
+#   support)
 #   because each has a different APP_URL pointing at the corresponding
 #   app environment. The cron worker uses CRON_SECRET in the Authorization
 #   header when calling the app's /api/cron/* endpoints.
@@ -44,3 +45,9 @@ name = "makhzoon-cron-prod"
 
 [env.production.vars]
 APP_URL = "https://app.makhzoon.me"
+
+[env.support]
+name = "makhzoon-cron-support"
+
+[env.support.vars]
+APP_URL = "https://sup.makhzoon.me"

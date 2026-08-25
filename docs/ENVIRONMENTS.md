@@ -8,14 +8,79 @@
 
 | Branch      | Env        | URL               | Cloudflare Worker | Supabase project ref |
 |-------------|------------|-------------------|-------------------|----------------------|
-| `main`      | production | app.makhzoon.me   | `makhzoon`        | `ncjzozvzjtyycdlwohtr` |
-| `STGBranch` | staging    | stg.makhzoon.me   | `makhzoonstg`     | ⚠ `ncjzozvzjtyycdlwohtr` (**shared with prod**) |
+| `main`      | production | app.makhzoon.me   | `makhzoon`        | `ebupajukvyhparjkhlhr` |
+| `STGBranch` | staging    | stg.makhzoon.me   | `makhzoonstg`     | `ncjzozvzjtyycdlwohtr` |
 | `DevBranch` | dev        | dev.makhzoon.me   | `makhzoondev`     | `ltujtoabnewoypittoku` |
+| `Support`   | support    | sup.makhzoon.me   | `makhzoonsupport` | `kanquzwaxlbanbwmguyd` |
+
+> Refs above were re-checked 2026-08-26 against `wrangler.toml` and
+> `deploy.yml`. The earlier table listed prod as `ncjzozvzjtyycdlwohtr`, which
+> is in fact **staging's** ref — see the staging note below.
 
 Deploys run via GitHub Actions on push to each branch
 (github.com/MakhzoonME/Makhzoon/actions). Public env vars live in
 `wrangler.toml` per `[env.*.vars]`; secrets are set with
 `wrangler secret put <NAME> --env <env>` and never committed.
+
+## The `support` environment
+
+Added 2026-08-24, wired up 2026-08-26. Branch `Support` → `sup.makhzoon.me`,
+worker `makhzoonsupport`, Supabase project `kanquzwaxlbanbwmguyd`.
+
+**The host is `sup`, not `support`.** `sup.makhzoon.me` is the record that
+exists in the Cloudflare zone; `support.makhzoon.me` does not resolve. A
+`routes` entry in `wrangler.toml` only binds to a hostname already present in
+the zone, so if the subdomain is ever renamed, these must change together:
+`wrangler.toml` `[env.support]` (routes + vars), `workers/cron/wrangler.toml`
+`[env.support.vars]`, `deploy.yml` (map-env `app_url`), `middleware.ts`
+`APP_HOSTS`, `lib/csrf.ts` `ALLOWED_ORIGINS`, and `RECEIPT_SUBDOMAINS` in
+`lib/app-env.ts`.
+
+### Still outstanding
+
+**1. `rcpt-sup.makhzoon.me` DNS.** The receipt host does **not** resolve yet.
+`getReceiptBaseUrl()` derives `rcpt-<sub>` from the live hostname, so on
+`sup.makhzoon.me` it returns `https://rcpt-sup.makhzoon.me` — receipt links
+will 404 until a proxied record is added to the zone. `wrangler.toml` already
+claims the route.
+
+**2. GitHub Actions secrets** — the `_SUPPORT`-suffixed copies (Settings →
+Secrets and variables → Actions). The deploy step **skips missing secrets with
+a warning rather than failing**, so an omission surfaces as a runtime error
+later, not a red build:
+
+```
+RESEND_API_KEY_SUPPORT              CRON_SECRET_SUPPORT
+SUPABASE_SERVICE_ROLE_KEY_SUPPORT   FAWTARA_SECRET_ENC_KEY_SUPPORT
+GOOGLE_DRIVE_CLIENT_EMAIL_SUPPORT   GOOGLE_DRIVE_PRIVATE_KEY_SUPPORT
+GOOGLE_DRIVE_FOLDER_ID_SUPPORT
+```
+
+`CRON_SECRET_SUPPORT` is set on **both** the app worker and the cron worker —
+they must match or every scheduled job 401s.
+`SUPABASE_SERVICE_ROLE_KEY_SUPPORT` is the service_role key of
+`kanquzwaxlbanbwmguyd` (`supabase projects api-keys --project-ref
+kanquzwaxlbanbwmguyd`).
+
+**3. Resend sender** — `[env.support.vars]` sends as
+`support-notifications@makhzoon.me`. Verify that address in Resend, or point
+`RESEND_FROM_EMAIL` at an already-verified sender.
+
+**4. Google Drive folder** — `[env.support.vars]` currently reuses the
+**production** service account and folder ID, so support uploads land in the
+live production Drive folder. Give it its own folder before real use.
+
+Verify after the first green deploy: `sup.makhzoon.me` loads with a sky-blue
+`SUPPORT` env badge, and the anon key's decoded `ref` claim reads
+`kanquzwaxlbanbwmguyd`.
+
+### Database
+
+Support is seeded as a **clone of the production database** (decision
+2026-08-26) rather than a bare `supabase db push` of the migration history —
+the environment exists to reproduce real customer issues. That means it holds
+production customer data: treat its service_role key and dashboard access with
+the same care as prod.
 
 ## ⚠ OPEN ISSUE — staging shares the production database (audit finding S2)
 
@@ -89,8 +154,8 @@ extension exists; otherwise call `purge_expired_sessions()` /
 ## Deploys
 
 ```bash
-npm run cf:deploy:dev | cf:deploy:staging | cf:deploy:prod   # manual
-npm run cf:deploy:cron:dev | :staging | :prod                # cron worker
+npm run cf:deploy:dev | cf:deploy:staging | cf:deploy:prod | cf:deploy:support
+npm run cf:deploy:cron:dev | :staging | :prod | :support      # cron worker
 ```
 
 Pushing the mapped branch triggers the same via GitHub Actions.

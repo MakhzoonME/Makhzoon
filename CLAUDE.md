@@ -159,6 +159,7 @@ Pushing to any of these branches automatically triggers a deploy via GitHub Acti
 | `DevBranch` | dev | dev.makhzoon.me |
 | `STGBranch` | staging | stg.makhzoon.me |
 | `main` | production | app.makhzoon.me |
+| `Support` | support | sup.makhzoon.me |
 
 Monitor runs at **github.com/MakhzoonME/Makhzoon/actions**.
 

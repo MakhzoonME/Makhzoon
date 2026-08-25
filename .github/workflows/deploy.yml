@@ -5,6 +5,7 @@
 #   DevBranch → makhzoon-dev      (dev.makhzoon.me)
 #   STGBranch → makhzoon-staging  (stg.makhzoon.me)
 #   main      → makhzoon-prod     (app.makhzoon.me)
+#   Support   → makhzoonsupport   (sup.makhzoon.me)
 #
 # ═══════════════════════════════════════════════════════════════════════
 # REQUIRED REPO SECRETS (Settings → Secrets and variables → Actions):
@@ -22,7 +23,7 @@ name: Deploy
 
 on:
   push:
-    branches: [DevBranch, STGBranch, main]
+    branches: [DevBranch, STGBranch, main, Support]
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -87,6 +88,14 @@ jobs:
               echo "app_url=https://app.makhzoon.me" >> $GITHUB_OUTPUT
               echo "supabase_url=https://ebupajukvyhparjkhlhr.supabase.co" >> $GITHUB_OUTPUT
               ;;
+            # Support runs on its own dedicated Supabase project. Host is
+            # `sup`, not `support` — that is the record in the Cloudflare zone.
+            refs/heads/Support)
+              echo "env=support" >> $GITHUB_OUTPUT
+              echo "env_name=support" >> $GITHUB_OUTPUT
+              echo "app_url=https://sup.makhzoon.me" >> $GITHUB_OUTPUT
+              echo "supabase_url=https://kanquzwaxlbanbwmguyd.supabase.co" >> $GITHUB_OUTPUT
+              ;;
           esac
 
   deploy:
@@ -127,12 +136,13 @@ jobs:
       #
       # Per-env Supabase project: DevBranch → ltujtoabnewoypittoku (dev),
       # STGBranch → ncjzozvzjtyycdlwohtr (staging), main →
-      # ebupajukvyhparjkhlhr (production). Each env is its own project.
+      # ebupajukvyhparjkhlhr (production), Support → kanquzwaxlbanbwmguyd.
+      # Each env is its own project.
       - name: Deploy main app worker
         run: npm run cf:deploy:${{ needs.map-env.outputs.env }}
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ needs.map-env.outputs.supabase_url }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref == 'refs/heads/DevBranch' && 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dWp0b2FibmV3b3lwaXR0b2t1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODg0MTcsImV4cCI6MjA5NTU2NDQxN30.gZ15djtZQyMAp6Mw_CeYqxQpQjmDty1geHBWLaw2_CY' || github.ref == 'refs/heads/main' && 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidXBhanVrdnlocGFyamtobGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MjYyOTAsImV4cCI6MjA5NDUwMjI5MH0.qvo7XgzvfMWzJu0dlTX_TrvY-Us74peqPVcx7ZIexhM' || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref == 'refs/heads/DevBranch' && 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dWp0b2FibmV3b3lwaXR0b2t1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODg0MTcsImV4cCI6MjA5NTU2NDQxN30.gZ15djtZQyMAp6Mw_CeYqxQpQjmDty1geHBWLaw2_CY' || github.ref == 'refs/heads/main' && 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidXBhanVrdnlocGFyamtobGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MjYyOTAsImV4cCI6MjA5NDUwMjI5MH0.qvo7XgzvfMWzJu0dlTX_TrvY-Us74peqPVcx7ZIexhM' || github.ref == 'refs/heads/Support' && 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImthbnF1endheGxiYW5id21ndXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MTMwNjEsImV4cCI6MjEwMzA4OTA2MX0.WWvsDYa85oLuJm510uKp85YQn2tPVJZ30Y7sCdahCOE' || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5janpvenZ6anR5eWNkbHdvaHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTg5MzcsImV4cCI6MjA5NDQ5NDkzN30.mb7ZrxNeluFRXCdtZ7v9J0GbXKP_7ZpkCGmeUIKXbD0' }}
           NEXT_PUBLIC_APP_URL: ${{ needs.map-env.outputs.app_url }}
           NEXT_PUBLIC_APP_ENV: ${{ needs.map-env.outputs.env }}
           # Lets running tabs detect a newer deployment and prompt a refresh
@@ -181,24 +191,31 @@ jobs:
           RESEND_API_KEY_DEV: ${{ secrets.RESEND_API_KEY_DEV }}
           RESEND_API_KEY_STAGING: ${{ secrets.RESEND_API_KEY_STAGING }}
           RESEND_API_KEY_PRODUCTION: ${{ secrets.RESEND_API_KEY_PRODUCTION }}
+          RESEND_API_KEY_SUPPORT: ${{ secrets.RESEND_API_KEY_SUPPORT }}
           CRON_SECRET_DEV: ${{ secrets.CRON_SECRET_DEV }}
           CRON_SECRET_STAGING: ${{ secrets.CRON_SECRET_STAGING }}
           CRON_SECRET_PRODUCTION: ${{ secrets.CRON_SECRET_PRODUCTION }}
+          CRON_SECRET_SUPPORT: ${{ secrets.CRON_SECRET_SUPPORT }}
           SUPABASE_SERVICE_ROLE_KEY_DEV: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_DEV }}
           SUPABASE_SERVICE_ROLE_KEY_STAGING: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_STAGING }}
           SUPABASE_SERVICE_ROLE_KEY_PRODUCTION: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_PRODUCTION }}
+          SUPABASE_SERVICE_ROLE_KEY_SUPPORT: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_SUPPORT }}
           GOOGLE_DRIVE_CLIENT_EMAIL_DEV: ${{ secrets.GOOGLE_DRIVE_CLIENT_EMAIL_DEV }}
           GOOGLE_DRIVE_CLIENT_EMAIL_STAGING: ${{ secrets.GOOGLE_DRIVE_CLIENT_EMAIL_STAGING }}
           GOOGLE_DRIVE_CLIENT_EMAIL_PRODUCTION: ${{ secrets.GOOGLE_DRIVE_CLIENT_EMAIL_PRODUCTION }}
+          GOOGLE_DRIVE_CLIENT_EMAIL_SUPPORT: ${{ secrets.GOOGLE_DRIVE_CLIENT_EMAIL_SUPPORT }}
           GOOGLE_DRIVE_PRIVATE_KEY_DEV: ${{ secrets.GOOGLE_DRIVE_PRIVATE_KEY_DEV }}
           GOOGLE_DRIVE_PRIVATE_KEY_STAGING: ${{ secrets.GOOGLE_DRIVE_PRIVATE_KEY_STAGING }}
           GOOGLE_DRIVE_PRIVATE_KEY_PRODUCTION: ${{ secrets.GOOGLE_DRIVE_PRIVATE_KEY_PRODUCTION }}
+          GOOGLE_DRIVE_PRIVATE_KEY_SUPPORT: ${{ secrets.GOOGLE_DRIVE_PRIVATE_KEY_SUPPORT }}
           GOOGLE_DRIVE_FOLDER_ID_DEV: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID_DEV }}
           GOOGLE_DRIVE_FOLDER_ID_STAGING: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID_STAGING }}
           GOOGLE_DRIVE_FOLDER_ID_PRODUCTION: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID_PRODUCTION }}
+          GOOGLE_DRIVE_FOLDER_ID_SUPPORT: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID_SUPPORT }}
           FAWTARA_SECRET_ENC_KEY_DEV: ${{ secrets.FAWTARA_SECRET_ENC_KEY_DEV }}
           FAWTARA_SECRET_ENC_KEY_STAGING: ${{ secrets.FAWTARA_SECRET_ENC_KEY_STAGING }}
           FAWTARA_SECRET_ENC_KEY_PRODUCTION: ${{ secrets.FAWTARA_SECRET_ENC_KEY_PRODUCTION }}
+          FAWTARA_SECRET_ENC_KEY_SUPPORT: ${{ secrets.FAWTARA_SECRET_ENC_KEY_SUPPORT }}
 
       # ── Deploy cron worker ─────────────────────────────────────────
       - name: Deploy cron worker
@@ -223,3 +240,4 @@ jobs:
           CRON_SECRET_DEV: ${{ secrets.CRON_SECRET_DEV }}
           CRON_SECRET_STAGING: ${{ secrets.CRON_SECRET_STAGING }}
           CRON_SECRET_PRODUCTION: ${{ secrets.CRON_SECRET_PRODUCTION }}
+          CRON_SECRET_SUPPORT: ${{ secrets.CRON_SECRET_SUPPORT }}

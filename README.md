@@ -39,7 +39,7 @@ Two locales: `en` (default) and `ar`. All strings in `locales/messages.ts`. Loca
 
 `middleware.ts` routes traffic based on hostname:
 - `makhzoon.me` / `www.makhzoon.me` → marketing site
-- `app.makhzoon.me` / `dev.makhzoon.me` / `stg.makhzoon.me` → app
+- `app.makhzoon.me` / `dev.makhzoon.me` / `stg.makhzoon.me` / `sup.makhzoon.me` → app
 
 ---
 

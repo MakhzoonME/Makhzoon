@@ -6,6 +6,7 @@
 #   DevBranch  → `wrangler deploy --env dev`     (dev.makhzoon.me)
 #   STGBranch  → `wrangler deploy --env staging` (stg.makhzoon.me)
 #   main       → `wrangler deploy --env production` (app.makhzoon.me)
+#   Support    → `wrangler deploy --env support` (sup.makhzoon.me)
 #
 # ═══════════════════════════════════════════════════════════════════════
 # IMPORTANT: Secrets (not vars) — set via `wrangler secret put --env <name>`
@@ -78,5 +79,27 @@ NEXT_PUBLIC_APP_URL = "https://app.makhzoon.me"
 NEXT_PUBLIC_RECEIPT_URL = "https://rcpt-app.makhzoon.me"
 NEXT_PUBLIC_APP_ENV = "production"
 RESEND_FROM_EMAIL = "Makhzoon <notifications@makhzoon.me>"
+GOOGLE_DRIVE_CLIENT_EMAIL = "makhzoonme-prod@makhzoonme-prod-496318.iam.gserviceaccount.com"
+GOOGLE_DRIVE_FOLDER_ID = "1y6VunC5Qc0_t7MO5tF_b26eg_VN43Exq"
+
+# ── Support ─────────────────────────────────────────────────────────
+# Branch `Support` → sup.makhzoon.me. Its own dedicated Supabase project
+# `kanquzwaxlbanbwmguyd` (decision 2026-08-24) — NOT shared with
+# dev/staging/prod.
+#
+# Host is `sup`, not `support` — that is the record that exists in the
+# Cloudflare zone. A `routes` entry only binds to a hostname already in
+# DNS, so the two must stay in sync.
+[env.support]
+name = "makhzoonsupport"
+routes = ["sup.makhzoon.me/*", "rcpt-sup.makhzoon.me/*"]
+
+[env.support.vars]
+NEXT_PUBLIC_SUPABASE_URL = "https://kanquzwaxlbanbwmguyd.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImthbnF1endheGxiYW5id21ndXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MTMwNjEsImV4cCI6MjEwMzA4OTA2MX0.WWvsDYa85oLuJm510uKp85YQn2tPVJZ30Y7sCdahCOE"
+NEXT_PUBLIC_APP_URL = "https://sup.makhzoon.me"
+NEXT_PUBLIC_RECEIPT_URL = "https://rcpt-sup.makhzoon.me"
+NEXT_PUBLIC_APP_ENV = "support"
+RESEND_FROM_EMAIL = "Makhzoon Support <support-notifications@makhzoon.me>"
 GOOGLE_DRIVE_CLIENT_EMAIL = "makhzoonme-prod@makhzoonme-prod-496318.iam.gserviceaccount.com"
 GOOGLE_DRIVE_FOLDER_ID = "1y6VunC5Qc0_t7MO5tF_b26eg_VN43Exq"

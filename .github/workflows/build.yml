@@ -10,7 +10,7 @@ name: Build
 
 on:
   push:
-    branches: [DevBranch, STGBranch, main]
+    branches: [DevBranch, STGBranch, main, Support]
   pull_request:
 
 jobs:

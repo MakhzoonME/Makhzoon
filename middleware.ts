@@ -6,7 +6,12 @@ const LOCALE_COOKIE = 'makhzoon-locale';
 const SKIP_PREFIXES = ['/api/', '/_next/'];
 
 const MARKETING_HOSTS = new Set(['makhzoon.me', 'www.makhzoon.me']);
-const APP_HOSTS = new Set(['app.makhzoon.me', 'dev.makhzoon.me', 'stg.makhzoon.me']);
+const APP_HOSTS = new Set([
+  'app.makhzoon.me',
+  'dev.makhzoon.me',
+  'stg.makhzoon.me',
+  'sup.makhzoon.me',
+]);
 
 // Paths that belong only to the marketing site — block on app hosts
 const MARKETING_ONLY_PATHS = new Set([

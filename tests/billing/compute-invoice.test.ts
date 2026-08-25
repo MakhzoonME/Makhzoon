@@ -29,6 +29,7 @@ function pkg(overrides: Partial<Package> = {}): Package {
       spacesIncluded: null,
       usersIncluded: null,
       vehicleIntakeIncluded: false,
+      documentReportsIncluded: false,
     },
     addOnPrices: {
       deliveryAgents: 10,

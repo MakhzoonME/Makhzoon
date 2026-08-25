@@ -10,6 +10,7 @@ import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { AppointmentStatusBadge } from '@/components/haraka/AppointmentStatusBadge';
 import { AppointmentInvoiceDialog } from '@/components/haraka/AppointmentInvoiceDialog';
 import { AppointmentPaymentsPanel } from '@/components/haraka/AppointmentPaymentsPanel';
+import { ReportGenerateDrawer } from '@/components/document-reports/ReportGenerateDrawer';
 import {
   useAppointment,
   useUpdateAppointment,
@@ -59,6 +60,7 @@ export default function AppointmentDetailPage() {
   const [rescheduling, setRescheduling] = useState(false);
   const [newTime, setNewTime] = useState('');
   const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [reportDrawerOpen, setReportDrawerOpen] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState(false);
   const [discountInput, setDiscountInput] = useState('');
 
@@ -169,12 +171,28 @@ export default function AppointmentDetailPage() {
                     : t('appointments.generateInvoice')}
                 </Button>
               )}
+            {appointment.customerId && user?.activeAddOns?.documentReports && hasPermByKey(user, 'documentReports.reportsCreate') && (
+              <Button variant="outline" onClick={() => setReportDrawerOpen(true)}>
+                <FileText className="h-4 w-4 me-2" /> Generate Report
+              </Button>
+            )}
             <Button variant="ghost" onClick={() => router.push(`${base}/appointments`)}>
               <ArrowLeft className="h-4 w-4 me-2" /> {t('common.back')}
             </Button>
           </div>
         }
       />
+
+      {appointment.customerId && (
+        <ReportGenerateDrawer
+          open={reportDrawerOpen}
+          onOpenChange={setReportDrawerOpen}
+          customerId={appointment.customerId}
+          encounterType="appointment"
+          encounterId={appointment.id}
+          onCreated={(report) => router.push(`${base}/reports/${report.id}`)}
+        />
+      )}
 
       {/* Status */}
       <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">

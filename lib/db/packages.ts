@@ -53,6 +53,7 @@ function toPackage(r: Row): Package {
       spacesIncluded: toNumberOrNull(r.spaces_included),
       usersIncluded: toNumberOrNull(r.users_included),
       vehicleIntakeIncluded: (r.vehicle_intake_included as boolean) ?? false,
+      documentReportsIncluded: (r.document_reports_included as boolean) ?? false,
     },
     addOnPrices: (r.add_on_prices ?? {}) as import('@/types').AddOnPrices,
     isCustom: (r.is_custom as boolean) ?? false,
@@ -112,6 +113,7 @@ function allowanceColumns(a: Partial<PackageAllowances>): Row {
   if (a.spacesIncluded !== undefined) out.spaces_included = a.spacesIncluded;
   if (a.usersIncluded !== undefined) out.users_included = a.usersIncluded;
   if (a.vehicleIntakeIncluded !== undefined) out.vehicle_intake_included = a.vehicleIntakeIncluded;
+  if (a.documentReportsIncluded !== undefined) out.document_reports_included = a.documentReportsIncluded;
   return out;
 }
 

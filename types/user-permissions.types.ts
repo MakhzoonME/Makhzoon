@@ -165,6 +165,17 @@ export interface HarakaPermissions {
   analyticsView: boolean;
 }
 
+// Document Reports: generic, org-templated report generation (e.g. a
+// doctor's patient report), separate from template building so a role can
+// fill out reports without being able to change what templates look like.
+// No delete op — reports are a retained record.
+export interface DocumentReportsPermissions {
+  reportsView: boolean;
+  reportsCreate: boolean;
+  reportsEdit: boolean;
+  reportsManageTemplates: boolean;
+}
+
 export interface SupportPermissions {
   view: boolean;
   viewOthers: boolean;
@@ -246,6 +257,7 @@ export interface UserPermissions {
   usool: UsoolPermissions;
   raseed: RaseedPermissions;
   haraka: HarakaPermissions;
+  documentReports: DocumentReportsPermissions;
   support: SupportPermissions;
   auditLogs: AuditLogsPermissions;
   leads: LeadsPermissions;
@@ -306,6 +318,7 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   usool: allTrue<UsoolPermissions>(USOOL_KEYS),
   raseed: allTrue<RaseedPermissions>(RASEED_KEYS),
   haraka: allTrue<HarakaPermissions>(HARAKA_KEYS),
+  documentReports: { reportsView: true, reportsCreate: true, reportsEdit: true, reportsManageTemplates: true },
   support: { view: true, viewOthers: true, submit: true, replyOwn: true, replyOthers: true },
   auditLogs: { view: true, viewSpace: true, viewAllSpaces: true },
   leads: { view: true },
@@ -327,6 +340,7 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   usool: { ...allFalse<UsoolPermissions>(USOOL_KEYS), view: true, warrantiesView: true, maintenanceView: true, checkoutView: true, notesView: true, auditTrailView: true },
   raseed: { ...allFalse<RaseedPermissions>(RASEED_KEYS), view: true, transactionsView: true },
   haraka: allFalse<HarakaPermissions>(HARAKA_KEYS),
+  documentReports: { reportsView: false, reportsCreate: false, reportsEdit: false, reportsManageTemplates: false },
   support: { view: true, viewOthers: false, submit: true, replyOwn: true, replyOthers: false },
   auditLogs: { view: false, viewSpace: false, viewAllSpaces: false },
   leads: { view: true },
@@ -533,6 +547,16 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'staffManage', label: 'Manage Staff Capabilities', labelKey: 'permOp.haraka.staffManage', requiresKey: 'deliveryAgentsView' },
       { key: 'staffAvailabilityManage', label: 'Manage Staff Working Hours', labelKey: 'permOp.haraka.staffAvailabilityManage', requiresKey: 'staffManage' },
       { key: 'analyticsView', label: 'View Analytics', labelKey: 'permOp.haraka.analyticsView' },
+    ],
+  },
+  {
+    key: 'documentReports', label: 'Document Reports', labelKey: 'permModule.documentReports',
+    featureKey: 'pos', group: 'haraka',
+    operations: [
+      { key: 'reportsView', label: 'View Reports', labelKey: 'permOp.documentReports.reportsView' },
+      { key: 'reportsCreate', label: 'Generate Reports', labelKey: 'permOp.documentReports.reportsCreate', requiresKey: 'reportsView' },
+      { key: 'reportsEdit', label: 'Edit Reports', labelKey: 'permOp.documentReports.reportsEdit', requiresKey: 'reportsView' },
+      { key: 'reportsManageTemplates', label: 'Manage Report Templates', labelKey: 'permOp.documentReports.reportsManageTemplates', requiresKey: 'reportsView' },
     ],
   },
   {

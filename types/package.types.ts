@@ -137,6 +137,7 @@ export interface AddOnPrices {
   extraUser?: number;
   extraSpace?: number;
   vehicleIntake?: number; // plate-photo intake for Haraka Service Jobs
+  documentReports?: number;
 }
 
 // Structured, per-module allowances for the new pricing model. Distinct from
@@ -152,6 +153,7 @@ export interface PackageAllowances {
   spacesIncluded: number | null;
   usersIncluded: number | null;
   vehicleIntakeIncluded: boolean;
+  documentReportsIncluded: boolean;
 }
 
 export interface Package {

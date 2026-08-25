@@ -23,6 +23,7 @@ const PUBLIC_ROUTES = [
   'auth/send-password-reset', 'public/assets', 'push-subscriptions/vapid-key',
   'track/', // public read-only order tracking — token-gated, rate-limited
   'rate/', // public service-job rating kiosk — token-gated, rate-limited
+  'document-reports/share/', // public read-only report share link — token-gated (32-byte random token)
   'whatsapp/webhook', // Meta Cloud API inbound webhook — HMAC-signature verified, not session auth
 ];
 

@@ -65,7 +65,7 @@ const EXTRA_HARAKA_MODULES = HARAKA_MODULES.filter(
   (m): m is Exclude<HarakaModule, 'pos'> => m !== 'pos',
 );
 
-type AddOnKey = 'deliveryAgents' | 'warrantyCerts' | 'customization' | 'purchasesRequests' | 'vehicleIntake';
+type AddOnKey = 'deliveryAgents' | 'warrantyCerts' | 'customization' | 'purchasesRequests' | 'vehicleIntake' | 'documentReports';
 interface AddOnState { included: boolean; price: string }
 
 const ADDON_META: Record<AddOnKey, { label: string; group: 'haraka' | 'raseed' }> = {
@@ -73,6 +73,7 @@ const ADDON_META: Record<AddOnKey, { label: string; group: 'haraka' | 'raseed' }
   warrantyCerts:      { label: 'Warranty certificates', group: 'haraka' },
   customization:      { label: 'Customization',         group: 'haraka' },
   vehicleIntake:      { label: 'Vehicle intake (plate capture)', group: 'haraka' },
+  documentReports:    { label: 'Document reports',      group: 'haraka' },
   purchasesRequests:  { label: 'Purchases & Requests',   group: 'raseed' },
 };
 
@@ -187,7 +188,7 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
   // Add-ons — included-in-plan toggle + standalone price, one row per
   // key, grouped under whichever module owns it (see ADDON_META).
   const [addOns, setAddOns] = useState<Record<AddOnKey, AddOnState>>(() => {
-    const keys: AddOnKey[] = ['deliveryAgents', 'warrantyCerts', 'customization', 'purchasesRequests', 'vehicleIntake'];
+    const keys: AddOnKey[] = ['deliveryAgents', 'warrantyCerts', 'customization', 'purchasesRequests', 'vehicleIntake', 'documentReports'];
     return keys.reduce((acc, key) => {
       const allowanceKey = moduleAllowanceKey(key) as keyof NonNullable<Package['allowances']>;
       acc[key] = {
@@ -497,6 +498,7 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
               <span className="text-sm text-gray-700">Show plate-capture in the intake UI (car-care)</span>
             </label>
             <AddOnRow addonKey="vehicleIntake" state={addOns.vehicleIntake} onChange={(patch) => updateAddOn("vehicleIntake", patch)} />
+            <AddOnRow addonKey="documentReports" state={addOns.documentReports} onChange={(patch) => updateAddOn("documentReports", patch)} />
           </div>
         </fieldset>
 

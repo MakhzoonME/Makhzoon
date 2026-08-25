@@ -135,6 +135,9 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/haraka/services', label: 'Service Catalog', labelKey: 'nav.harakaServiceCatalog',
         featureKey: 'pos', harakaModule: 'services', permissionKey: 'haraka.serviceCatalogView',
         moduleColor: '#AD1457', moduleName: 'كتالوج الخدمات' },
+      { href: '/haraka/reports', label: 'Reports', labelKey: 'nav.documentReports',
+        featureKey: 'pos', harakaAddOn: 'documentReports', permissionKey: 'documentReports.reportsView',
+        moduleColor: '#AD1457', moduleName: 'تقارير' },
     ],
   },
   {
@@ -167,6 +170,7 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/settings/warranty-cert',   label: 'Warranty Cert',       labelKey: 'nav.warrantyCert',         permissionKey: 'settingsWarrantyCert.view',  featureKey: 'pos', harakaAddOn: 'warrantyCerts', scope: 'org' },
       { href: '/settings/notifications',   label: 'Notifications',       labelKey: 'nav.notificationSettings', permissionKey: 'settingsNotifications.view', scope: 'org' },
       { href: '/settings/cash-drawer',   label: 'Cash Drawer',   labelKey: 'nav.cashDrawer',     permissionKey: 'settingsCashDrawer.view',    featureKey: 'pos', scope: 'org' },
+      { href: '/settings/reports',       label: 'Report Templates', labelKey: 'nav.reportTemplates', permissionKey: 'documentReports.reportsManageTemplates', featureKey: 'pos', harakaAddOn: 'documentReports', scope: 'org' },
     ],
   },
 ];

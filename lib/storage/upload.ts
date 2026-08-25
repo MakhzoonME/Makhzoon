@@ -16,7 +16,8 @@ export type UploadKind =
   | 'asset-receipt'
   | 'inventory-receipt'
   | 'warranty-document'
-  | 'purchase-invoice';
+  | 'purchase-invoice'
+  | 'report-attachment';
 
 interface BucketDef {
   bucket: string;
@@ -31,6 +32,7 @@ export const BUCKETS: Record<UploadKind, BucketDef> = {
   'inventory-receipt': { bucket: 'inventory-receipts', isPublic: false },
   'warranty-document': { bucket: 'warranty-documents', isPublic: false },
   'purchase-invoice':  { bucket: 'purchase-invoices',  isPublic: false },
+  'report-attachment': { bucket: 'report-attachments', isPublic: false },
 };
 
 export interface UploadResult {

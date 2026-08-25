@@ -12,7 +12,7 @@ export type DocRef = DocumentRef;
 
 interface Props {
   /** Upload kind → maps to a bucket server-side. */
-  kind: 'avatar' | 'logo' | 'asset-receipt' | 'inventory-receipt' | 'warranty-document' | 'purchase-invoice';
+  kind: 'avatar' | 'logo' | 'asset-receipt' | 'inventory-receipt' | 'warranty-document' | 'purchase-invoice' | 'report-attachment';
   value: DocRef[];
   onChange: (refs: DocRef[]) => void;
   multiple?: boolean;

@@ -17,7 +17,6 @@ function PackageSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" f
 function ShieldCheckSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 1.5L2 4v5.5C2 12.5 4.7 15 8 15.5c3.3-.5 6-3 6-6V4L8 1.5z" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M5.5 8l2 2 3-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>; }
 function UsersSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><circle cx="6" cy="5.5" r="2.5" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M1 14c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /><path d="M11.5 4a2.5 2.5 0 0 1 0 4.5M13.5 14c0-1.7-1-3-2.5-3.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
 function CreditCardSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><rect x="1.5" y="3.5" width="13" height="9" rx="1" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M1.5 6.5h13M4.5 10h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
-function FileTextSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M4 1.5h6l3.5 3.5v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1z" stroke="currentColor" strokeWidth="1.3" fill="none" /><path d="M10 1.5v4h3.5M5.5 8h5M5.5 10.5h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>; }
 function SearchSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.4" /><path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>; }
 function PlusSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>; }
 function UploadSVG() { return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden><path d="M8 10V3M5 6l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M2 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>; }
@@ -43,7 +42,6 @@ const NAV_GROUPS: PaletteEntry[] = [
 const ADMIN_NAV: PaletteEntry[] = [
   { href: '/users',        label: 'Users',         icon: UsersSVG,      scope: 'org', adminOnly: true },
   { href: '/subscription', label: 'Subscription',  icon: CreditCardSVG, scope: 'org', adminOnly: true },
-  { href: '/reports',      label: 'Reports',       icon: FileTextSVG,   featureKey: 'reports', moduleKey: 'reports', adminOnly: true },
 ];
 
 const ACTIONS: PaletteEntry[] = [

@@ -13,7 +13,6 @@ const EMPTY_ACTIVE_ADD_ONS: Record<AddOnKey, boolean> = {
   customization: false,
   purchasesRequests: false,
   vehicleIntake: false,
-  loyalty: false,
 };
 
 export async function GET() {

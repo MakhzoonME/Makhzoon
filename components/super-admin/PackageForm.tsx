@@ -52,10 +52,9 @@ const USOOL_SUB_LABELS: Record<(typeof USOOL_SUB_FEATURES)[number], string> = {
   assetNotes: 'Asset Notes',
 };
 
-const PLATFORM_FEATURES = ['dashboard', 'reports', 'support', 'auditLogs'] as const;
+const PLATFORM_FEATURES = ['dashboard', 'support', 'auditLogs'] as const;
 const PLATFORM_LABELS: Record<(typeof PLATFORM_FEATURES)[number], string> = {
   dashboard: 'Dashboard',
-  reports: 'Reports',
   support: 'Support',
   auditLogs: 'Audit Logs',
 };
@@ -66,16 +65,15 @@ const EXTRA_HARAKA_MODULES = HARAKA_MODULES.filter(
   (m): m is Exclude<HarakaModule, 'pos'> => m !== 'pos',
 );
 
-type AddOnKey = 'deliveryAgents' | 'warrantyCerts' | 'customization' | 'purchasesRequests' | 'vehicleIntake' | 'loyalty';
+type AddOnKey = 'deliveryAgents' | 'warrantyCerts' | 'customization' | 'purchasesRequests' | 'vehicleIntake';
 interface AddOnState { included: boolean; price: string }
 
-const ADDON_META: Record<AddOnKey, { label: string; group: 'haraka' | 'raseed' | 'loyalty' }> = {
+const ADDON_META: Record<AddOnKey, { label: string; group: 'haraka' | 'raseed' }> = {
   deliveryAgents:     { label: 'Workers',              group: 'haraka' },
   warrantyCerts:      { label: 'Warranty certificates', group: 'haraka' },
   customization:      { label: 'Customization',         group: 'haraka' },
   vehicleIntake:      { label: 'Vehicle intake (plate capture)', group: 'haraka' },
   purchasesRequests:  { label: 'Purchases & Requests',   group: 'raseed' },
-  loyalty:            { label: 'Loyalty program',        group: 'loyalty' },
 };
 
 function moduleAllowanceKey(key: AddOnKey): string {
@@ -153,14 +151,12 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
   // add-ons within each module have their own state below, grouped in the
   // JSX by the same module they belong to in lib/nav/index.ts.
   const [dashboard,  setDashboard]  = useState(initial?.features?.dashboard  ?? true);
-  const [reports,    setReports]    = useState(initial?.features?.reports    ?? true);
   const [support,    setSupport]    = useState(initial?.features?.support    ?? true);
   const [auditLogs,  setAuditLogs]  = useState(initial?.features?.auditLogs  ?? true);
   const [assets,     setAssets]     = useState(initial?.features?.assets     ?? true);
   const [inventory,  setInventory]  = useState(initial?.features?.inventory  ?? true);
   const [pos,        setPos]        = useState(initial?.features?.pos       ?? true);
   const [banna,      setBanna]      = useState(initial?.features?.banna     ?? true);
-  const [loyaltyFeature, setLoyaltyFeature] = useState(initial?.features?.loyalty ?? false);
   const [vehicleIntakeFeature, setVehicleIntakeFeature] = useState(initial?.features?.vehicleIntake ?? false);
 
   const [usoolSub, setUsoolSub] = useState<Record<(typeof USOOL_SUB_FEATURES)[number], boolean>>(() =>
@@ -191,7 +187,7 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
   // Add-ons — included-in-plan toggle + standalone price, one row per
   // key, grouped under whichever module owns it (see ADDON_META).
   const [addOns, setAddOns] = useState<Record<AddOnKey, AddOnState>>(() => {
-    const keys: AddOnKey[] = ['deliveryAgents', 'warrantyCerts', 'customization', 'purchasesRequests', 'vehicleIntake', 'loyalty'];
+    const keys: AddOnKey[] = ['deliveryAgents', 'warrantyCerts', 'customization', 'purchasesRequests', 'vehicleIntake'];
     return keys.reduce((acc, key) => {
       const allowanceKey = moduleAllowanceKey(key) as keyof NonNullable<Package['allowances']>;
       acc[key] = {
@@ -244,9 +240,8 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
       sortOrder,
       limits: finalLimits,
       features: {
-        dashboard, reports, support, auditLogs,
+        dashboard, support, auditLogs,
         assets, inventory, pos, banna,
-        loyalty: loyaltyFeature,
         vehicleIntake: vehicleIntakeFeature,
         ...usoolSub,
       },
@@ -412,8 +407,8 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
           <legend className="px-2 text-sm font-medium text-gray-700">Platform</legend>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {PLATFORM_FEATURES.map((key) => {
-              const value = { dashboard, reports, support, auditLogs }[key];
-              const setter = { dashboard: setDashboard, reports: setReports, support: setSupport, auditLogs: setAuditLogs }[key];
+              const value = { dashboard, support, auditLogs }[key];
+              const setter = { dashboard: setDashboard, support: setSupport, auditLogs: setAuditLogs }[key];
               return (
                 <label key={key} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-page cursor-pointer">
                   <input type="checkbox" checked={value} onChange={(e) => setter(e.target.checked)} />
@@ -512,18 +507,6 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
             <input type="checkbox" checked={banna} onChange={(e) => setBanna(e.target.checked)} />
             <span className="text-sm text-gray-700">Custom fields for assets, inventory, and customers</span>
           </label>
-        </fieldset>
-
-        {/* Loyalty — independent of Haraka, usable by any org */}
-        <fieldset className="space-y-2 border border-border rounded-lg p-4">
-          <legend className="px-2 text-sm font-medium text-gray-700">Loyalty</legend>
-          <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-page cursor-pointer font-medium">
-            <input type="checkbox" checked={loyaltyFeature} onChange={(e) => setLoyaltyFeature(e.target.checked)} />
-            <span className="text-sm text-gray-800">Loyalty (base module)</span>
-          </label>
-          <div className="ps-6">
-            <AddOnRow addonKey="loyalty" state={addOns.loyalty} onChange={(patch) => updateAddOn("loyalty", patch)} />
-          </div>
         </fieldset>
       </div>
 

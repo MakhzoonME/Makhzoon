@@ -91,7 +91,6 @@ export async function POST(req: NextRequest) {
         requests: true,
         support: true,
         auditLogs: true,
-        reports: true,
         pos: false,
         banna: false,
       },

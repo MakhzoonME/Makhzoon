@@ -52,9 +52,7 @@ function toPackage(r: Row): Package {
       customizationIncluded: (r.customization_included as boolean) ?? false,
       spacesIncluded: toNumberOrNull(r.spaces_included),
       usersIncluded: toNumberOrNull(r.users_included),
-      reportsAvailable: (r.reports_available as boolean) ?? false,
       vehicleIntakeIncluded: (r.vehicle_intake_included as boolean) ?? false,
-      loyaltyIncluded: (r.loyalty_included as boolean) ?? false,
     },
     addOnPrices: (r.add_on_prices ?? {}) as import('@/types').AddOnPrices,
     isCustom: (r.is_custom as boolean) ?? false,
@@ -113,9 +111,7 @@ function allowanceColumns(a: Partial<PackageAllowances>): Row {
   if (a.customizationIncluded !== undefined) out.customization_included = a.customizationIncluded;
   if (a.spacesIncluded !== undefined) out.spaces_included = a.spacesIncluded;
   if (a.usersIncluded !== undefined) out.users_included = a.usersIncluded;
-  if (a.reportsAvailable !== undefined) out.reports_available = a.reportsAvailable;
   if (a.vehicleIntakeIncluded !== undefined) out.vehicle_intake_included = a.vehicleIntakeIncluded;
-  if (a.loyaltyIncluded !== undefined) out.loyalty_included = a.loyaltyIncluded;
   return out;
 }
 

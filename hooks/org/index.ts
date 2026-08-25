@@ -8,5 +8,4 @@ export { useActiveHarakaModules } from './useActiveHarakaModules';
 export { useActiveAddOns } from './useActiveAddOns';
 export { useSubscriptionGate } from './useSubscriptionGate';
 export { useAllOrgsUsage } from './useAllOrgsUsage';
-export { useReports } from './useReports';
 export { useAuditLogs } from './useAuditLogs';

@@ -18,7 +18,6 @@ const EMPTY_ACTIVE_ADD_ONS: Record<AddOnKey, boolean> = {
   customization: false,
   purchasesRequests: false,
   vehicleIntake: false,
-  loyalty: false,
 };
 
 const ORG_ROLES = new Set<UserRole>(['org_owner', 'admin', 'staff']);

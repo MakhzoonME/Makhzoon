@@ -69,9 +69,9 @@ describe('hasPermission — stored permissions override role defaults', () => {
 
 describe('hasModuleAccess / hasPermByKey', () => {
   it('hasModuleAccess is view permission', () => {
-    expect(hasModuleAccess(user('staff'), 'reports')).toBe(true);
-    const restricted = user('staff', { reports: { view: false } } as Partial<UserPermissions>);
-    expect(hasModuleAccess(restricted, 'reports')).toBe(false);
+    expect(hasModuleAccess(user('staff'), 'support')).toBe(true);
+    const restricted = user('staff', { support: { view: false } } as Partial<UserPermissions>);
+    expect(hasModuleAccess(restricted, 'support')).toBe(false);
   });
 
   it('hasPermByKey resolves dotted keys', () => {

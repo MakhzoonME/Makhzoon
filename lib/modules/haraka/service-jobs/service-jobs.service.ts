@@ -13,9 +13,6 @@ import {
 import { DeliveryAgentsRepository } from '@/lib/modules/haraka/delivery-agents/delivery-agents.repository'
 import { selectBalancedAgents } from '@/lib/modules/haraka/delivery-agents/balanced-routing'
 import { customerMessaging } from '@/lib/notifications/customer-messaging'
-import { LoyaltyService } from '@/lib/modules/loyalty/loyalty.service'
-
-const loyaltyService = new LoyaltyService()
 
 const repo = new ServiceJobsRepository()
 const agentsRepo = new DeliveryAgentsRepository()
@@ -190,10 +187,6 @@ export class ServiceJobsService {
       recordId: id,
       newValue: { amountPaid, paymentMethod, paymentStatus: job.paymentStatus },
     })
-    if (job.paymentStatus === 'paid') {
-      loyaltyService.awardPoints(tenant, job.customerId, job.total, 'haraka_service_jobs', id)
-        .catch((err) => console.error('[ServiceJobsService] loyalty award failed', err))
-    }
     return job
   }
 
@@ -236,11 +229,6 @@ export class ServiceJobsService {
       recordId: jobId,
       newValue: { amount, paymentMethod },
     })
-    const job = await repo.getById(tenant, jobId)
-    if (job?.paymentStatus === 'paid') {
-      loyaltyService.awardPoints(tenant, job.customerId, job.total, 'haraka_service_jobs', jobId)
-        .catch((err) => console.error('[ServiceJobsService] loyalty award failed', err))
-    }
   }
 
   async removePayment(tenant: TenantContext, jobId: string, paymentId: string) {

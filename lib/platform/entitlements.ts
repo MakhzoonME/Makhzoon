@@ -10,7 +10,6 @@ export const ADDON_INCLUDED: Record<AddOnKey, keyof PackageAllowances> = {
   customization: 'customizationIncluded',
   purchasesRequests: 'purchasesRequestsIncluded',
   vehicleIntake: 'vehicleIntakeIncluded',
-  loyalty: 'loyaltyIncluded',
 };
 
 export const ADDON_LABELS: Record<AddOnKey, string> = {
@@ -19,7 +18,6 @@ export const ADDON_LABELS: Record<AddOnKey, string> = {
   customization: 'Customization',
   purchasesRequests: 'Purchases & Requests',
   vehicleIntake: 'Vehicle intake (plate capture)',
-  loyalty: 'Loyalty program',
 };
 
 // A package is "on the new pricing model" once its structured allowances are

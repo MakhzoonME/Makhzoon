@@ -3,7 +3,7 @@ import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getOrganizationById, updateOrganization, deleteOrganizationWithData } from '@/lib/db/organizations';
 import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
 import { queueAuditLog } from '@/lib/audit/logger';
-import { organizationUpdateSchema } from '@/lib/validations/organization.schema';
+import { organizationUpdateSchema, normalizeCategory } from '@/lib/validations/organization.schema';
 import { hasSuperAdminPermission } from '@/lib/permissions/superadmin';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ orgId: string }> }) {
@@ -18,7 +18,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ org
     if (!org) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const subscription = await getSubscriptionByOrg(orgId);
-    return NextResponse.json({ ...org, subscription });
+    return NextResponse.json({ ...org, category: normalizeCategory(org.category), subscription });
   } catch (err) {
     console.error('[GET /api/organizations/[orgId]]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

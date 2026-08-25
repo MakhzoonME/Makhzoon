@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { DocumentUpload } from '@/components/shared';
 import { toast } from '@/hooks/ui';
@@ -215,24 +215,20 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
           <FormField control={form.control} name="taxRateId" render={({ field }) => (
             <FormItem>
               <FormLabel>Tax Rate</FormLabel>
-              <Select
-                onValueChange={(v) => field.onChange(v === '__none__' ? '' : v)}
-                value={field.value || '__none__'}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="No tax" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="__none__">No tax</SelectItem>
-                  {taxRates.map((tr) => (
-                    <SelectItem key={tr.id} value={tr.id}>
-                      {tr.name} ({(tr.rate * 100).toFixed(2)}%){tr.isDefault ? ' • default' : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <Combobox
+                  onChange={(v) => field.onChange(!v || v === '__none__' ? '' : v)}
+                  value={field.value || '__none__'}
+                  options={[
+                    { value: '__none__', label: 'No tax' },
+                    ...taxRates.map((tr) => ({
+                      value: tr.id,
+                      label: `${tr.name} (${(tr.rate * 100).toFixed(2)}%)${tr.isDefault ? ' • default' : ''}`,
+                    })),
+                  ]}
+                  clearable={false}
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )} />

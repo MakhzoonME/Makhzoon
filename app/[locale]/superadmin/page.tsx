@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Combobox } from '@/components/ui/combobox';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { formatDate } from '@/lib/utils/date';
 import { Plus, ArrowRight, Search, Edit2, CreditCard, List } from 'lucide-react';
@@ -283,16 +284,14 @@ export default function SuperAdminPage() {
             className="ps-8"
           />
         </div>
-        <select
-          value={category}
-          onChange={(e) => syncAllToUrl({ category: e.target.value, page: '1' })}
-          className="h-9 rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
-        >
-          <option value="">{t('orgs.allCategories')}</option>
-          {ORG_CATEGORIES.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
+        <Combobox
+          value={category || null}
+          onChange={(v) => syncAllToUrl({ category: v ?? '', page: '1' })}
+          options={ORG_CATEGORIES.map((c) => ({ value: c, label: c }))}
+          placeholder={t('orgs.allCategories')}
+          searchable={false}
+          className="w-auto"
+        />
         {(searchInput || category) && (
           <Button
             size="sm"

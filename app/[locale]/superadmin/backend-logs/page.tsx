@@ -8,9 +8,7 @@ import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { useT } from '@/hooks/ui';
 
 interface BackendLog {
@@ -235,16 +233,14 @@ export default function BackendLogsPage() {
 
           <div className="space-y-1">
             <Label className="text-xs">{t('backendLogs.limit')}</Label>
-            <Select value={String(pageSize)} onValueChange={(v) => syncAllToUrl({ pageSize: v, page: '1' })}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {['20', '50', '100', '200'].map((n) => (
-                  <SelectItem key={n} value={n}>{n} per page</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={String(pageSize)}
+              onChange={(v) => syncAllToUrl({ pageSize: v ?? String(pageSize), page: '1' })}
+              options={['20', '50', '100', '200'].map((n) => ({ value: n, label: `${n} per page` }))}
+              searchable={false}
+              clearable={false}
+              className="h-8 text-xs"
+            />
           </div>
         </div>
 

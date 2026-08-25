@@ -7,9 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { useT, useAdminGuard } from '@/hooks/ui';
 import { toast } from '@/hooks/ui';
@@ -225,20 +223,17 @@ export default function OrganizationInfoPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="org-category">{t('settings.category')}</Label>
-                <Select
+                <Combobox
+                  id="org-category"
                   value={category || NONE_CATEGORY}
-                  onValueChange={(v) => setCategory(v === NONE_CATEGORY ? '' : v)}
-                >
-                  <SelectTrigger id="org-category">
-                    <SelectValue placeholder={t('settings.selectCategory')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE_CATEGORY}>{t('settings.noneSelected')}</SelectItem>
-                    {ORG_CATEGORIES.map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onChange={(v) => setCategory(!v || v === NONE_CATEGORY ? '' : v)}
+                  placeholder={t('settings.selectCategory')}
+                  options={[
+                    { value: NONE_CATEGORY, label: t('settings.noneSelected') },
+                    ...ORG_CATEGORIES.map((c) => ({ value: c, label: c })),
+                  ]}
+                  clearable={false}
+                />
               </div>
 
               <div className="space-y-1.5">
@@ -255,16 +250,14 @@ export default function OrganizationInfoPage() {
 
             <div className="space-y-1.5">
               <Label htmlFor="org-currency">{t('settings.currency')}</Label>
-              <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger id="org-currency">
-                  <SelectValue placeholder={t('settings.selectCurrency')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {ORG_CURRENCIES.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                id="org-currency"
+                value={currency}
+                onChange={(v) => setCurrency(v ?? currency)}
+                placeholder={t('settings.selectCurrency')}
+                options={ORG_CURRENCIES.map((c) => ({ value: c, label: c }))}
+                clearable={false}
+              />
               <p className="text-[11px] text-gray-400">{t('settings.currencyHelp')}</p>
             </div>
 

@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker';
 import { formatDate } from '@/lib/utils/date';
 import { toast } from '@/hooks/ui';
@@ -115,14 +115,13 @@ export function MaintenanceSection({ assetId }: { assetId: string }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-gray-500 mb-1 block">Type</label>
-              <Select value={type} onValueChange={(v) => setType(v as MaintenanceType)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {MAINTENANCE_TYPES.map((t) => (
-                    <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                value={type}
+                onChange={(v) => setType((v ?? type) as MaintenanceType)}
+                options={MAINTENANCE_TYPES.map((t) => ({ value: t, label: t }))}
+                searchable={false}
+                clearable={false}
+              />
             </div>
             <div>
               <label className="text-xs text-gray-500 mb-1 block">Date</label>

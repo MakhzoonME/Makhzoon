@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { useT, toast } from '@/hooks/ui';
 import { Loader2, Camera, X, Plus } from 'lucide-react';
 import { PlateCaptureDialog } from '@/components/haraka/PlateCaptureDialog';
@@ -170,24 +170,16 @@ export function FieldInput({
       )}
 
       {field.type === 'select' && (
-        <Select
-          value={typeof value === 'string' ? value : ''}
-          onValueChange={(v) => onChange(v)}
-        >
-          <SelectTrigger className="h-8 text-sm">
-            <SelectValue placeholder={placeholder || 'Select…'} />
-          </SelectTrigger>
-          <SelectContent>
-            {(field.options ?? []).map((opt) => {
-              const optLabel = (locale === 'ar' && opt.labelAr) ? opt.labelAr : opt.label;
-              return (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {optLabel}
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
+        <Combobox
+          value={typeof value === 'string' && value ? value : null}
+          onChange={(v) => onChange(v ?? '')}
+          placeholder={placeholder || 'Select…'}
+          className="h-8 text-sm"
+          options={(field.options ?? []).map((opt) => ({
+            value: opt.value,
+            label: (locale === 'ar' && opt.labelAr) ? opt.labelAr : opt.label,
+          }))}
+        />
       )}
 
       {field.type === 'multi_select' && (

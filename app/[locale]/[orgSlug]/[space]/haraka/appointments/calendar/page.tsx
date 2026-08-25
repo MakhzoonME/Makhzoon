@@ -21,7 +21,7 @@ import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import { WeekPicker, MonthPicker } from '@/components/haraka/CalendarPeriodPicker';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppointments, useStaff } from '@/hooks/haraka';
 import { useList } from '@/hooks/lists';
@@ -221,17 +221,15 @@ export default function AppointmentsCalendarPage() {
         </div>
 
         <div className="w-48">
-          <Select value={staffId || '__all__'} onValueChange={(v) => goTo({ staffId: v === '__all__' ? null : v })}>
-            <SelectTrigger>
-              <SelectValue placeholder={t('appointments.filterProvider')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{t('appointments.filterProvider')}</SelectItem>
-              {allProviders.map((p) => (
-                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            value={staffId || '__all__'}
+            onChange={(v) => goTo({ staffId: !v || v === '__all__' ? null : v })}
+            options={[
+              { value: '__all__', label: t('appointments.filterProvider') },
+              ...allProviders.map((p) => ({ value: p.id, label: p.name })),
+            ]}
+            clearable={false}
+          />
         </div>
 
         {isLoading && (

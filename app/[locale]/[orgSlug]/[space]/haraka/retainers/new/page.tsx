@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CustomerSelect } from '@/components/haraka/CustomerSelect';
 import { ServicePicker } from '@/components/haraka/ServicePicker';
+import { Combobox } from '@/components/ui/combobox';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { useCreateRetainer, useTaxRates } from '@/hooks/haraka';
 import { useAdminGuard, useModuleGuard, toast, useT } from '@/hooks/ui';
 import type { HarakaService } from '@/types';
@@ -127,15 +129,17 @@ export default function NewRetainerPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-600">{t('retainers.labelBillingCycle')} *</label>
-              <select
+              <Combobox
                 value={billingCycle}
-                onChange={(e) => setBillingCycle(e.target.value as typeof billingCycle)}
-                className="w-full rounded-lg border border-border bg-surface-page px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="annual">Annual</option>
-              </select>
+                onChange={(v) => setBillingCycle((v ?? 'monthly') as typeof billingCycle)}
+                options={[
+                  { value: 'monthly', label: 'Monthly' },
+                  { value: 'quarterly', label: 'Quarterly' },
+                  { value: 'annual', label: 'Annual' },
+                ]}
+                searchable={false}
+                clearable={false}
+              />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-600">{t('retainers.labelAmountPerCycle')} *</label>
@@ -157,15 +161,13 @@ export default function NewRetainerPage() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-600">{t('retainers.labelStartDate')} *</label>
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-600">{t('retainers.labelEndDate')}</label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-            </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-600">{t('retainers.labelStartDate')} * / {t('retainers.labelEndDate')}</label>
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onChange={({ startDate: s, endDate: e }) => { setStartDate(s); setEndDate(e); }}
+            />
           </div>
         </div>
 

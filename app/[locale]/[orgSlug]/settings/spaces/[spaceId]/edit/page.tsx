@@ -19,7 +19,7 @@ import { toast, useT } from '@/hooks/ui';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import type { OrgUser } from '@/types/user.types';
 
 export default function EditSpacePage() {
@@ -170,22 +170,14 @@ export default function EditSpacePage() {
               onChange={(e) => setFilter(e.target.value)}
               className="flex-1"
             />
-            <Select value={userToAdd} onValueChange={setUserToAdd}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder={t('spaces.pickUser')} />
-              </SelectTrigger>
-              <SelectContent>
-                {eligibleToAdd.length === 0 ? (
-                  <div className="px-2.5 py-2 text-sm text-gray-500">{t('spaces.noEligibleUsers')}</div>
-                ) : (
-                  eligibleToAdd.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      <span className="block truncate">{u.displayName || u.email || u.username}</span>
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={userToAdd || null}
+              onChange={(v) => setUserToAdd(v ?? '')}
+              placeholder={t('spaces.pickUser')}
+              emptyMessage={t('spaces.noEligibleUsers')}
+              options={eligibleToAdd.map((u) => ({ value: u.id, label: u.displayName || u.email || u.username }))}
+              className="w-[200px]"
+            />
             <Button onClick={handleAdd} disabled={!userToAdd || addMut.isPending} size="sm">
               <Plus className="h-3.5 w-3.5" strokeWidth={1.75} />
               <span className="ms-1">{addMut.isPending ? t('spaces.adding') : t('spaces.add')}</span>

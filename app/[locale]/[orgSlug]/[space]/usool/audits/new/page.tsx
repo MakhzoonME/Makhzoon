@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -69,16 +69,17 @@ export default function NewAuditPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Scope</label>
-            <Select value={scope} onValueChange={(v) => setScope(v as 'all' | 'category' | 'location')}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All active assets</SelectItem>
-                <SelectItem value="category">By category</SelectItem>
-                <SelectItem value="location">By location</SelectItem>
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={scope}
+              onChange={(v) => setScope((v ?? 'all') as 'all' | 'category' | 'location')}
+              options={[
+                { value: 'all', label: 'All active assets' },
+                { value: 'category', label: 'By category' },
+                { value: 'location', label: 'By location' },
+              ]}
+              searchable={false}
+              clearable={false}
+            />
           </div>
           {scope === 'category' && (
             <div>

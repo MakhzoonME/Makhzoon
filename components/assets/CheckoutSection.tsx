@@ -5,7 +5,7 @@ import { useCheckouts, useCheckoutAsset, useReturnAsset } from '@/hooks/assets';
 import { useAssignableUsers } from '@/hooks/users';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker';
 import { formatDate } from '@/lib/utils/date';
 import { toast } from '@/hooks/ui';
@@ -127,19 +127,13 @@ export function CheckoutSection({ assetId, assetName }: { assetId: string; asset
         <form onSubmit={handleCheckout} className="px-5 py-4 space-y-3">
           <div>
             <label className="text-xs text-gray-500 mb-1 block">Checked out to</label>
-            <Select value={checkedOutTo} onValueChange={setCheckedOutTo}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a user" />
-              </SelectTrigger>
-              <SelectContent>
-                {assignableUsers.length === 0 && (
-                  <SelectItem value="__none" disabled>No users found</SelectItem>
-                )}
-                {assignableUsers.map((u: OrgUser) => (
-                  <SelectItem key={u.id} value={u.displayName}>{u.displayName}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={checkedOutTo || null}
+              onChange={(v) => setCheckedOutTo(v ?? '')}
+              placeholder="Select a user"
+              emptyMessage="No users found"
+              options={assignableUsers.map((u: OrgUser) => ({ value: u.displayName, label: u.displayName }))}
+            />
           </div>
           <div>
             <label className="text-xs text-gray-500 mb-1 block">Due date (optional)</label>

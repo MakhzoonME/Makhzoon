@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { useCashDrawerConfig, useUpdateCashDrawerConfig } from '@/hooks/haraka';
 import { useAdminGuard, toast } from '@/hooks/ui';
 import { isWebUsbSupported, openCashDrawer } from '@/lib/modules/haraka/printing/webusb-transport';
@@ -153,16 +153,16 @@ export default function CashDrawerSettingsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label>Drawer port</Label>
-              <Select
+              <Combobox
                 value={String(drawerPort)}
-                onValueChange={(v) => setDrawerPort(Number(v) as 0 | 1)}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">Port 0 (pin 2)</SelectItem>
-                  <SelectItem value="1">Port 1 (pin 5)</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(v) => setDrawerPort(Number(v ?? 0) as 0 | 1)}
+                options={[
+                  { value: '0', label: 'Port 0 (pin 2)' },
+                  { value: '1', label: 'Port 1 (pin 5)' },
+                ]}
+                searchable={false}
+                clearable={false}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>On-time (ms)</Label>

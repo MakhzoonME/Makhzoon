@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import { useSupportTickets } from '@/hooks/support';
 import { useAllOrgsUsage } from '@/hooks/org';
 import { formatDate } from '@/lib/utils/date';
@@ -114,42 +115,30 @@ export default function SupportPage() {
       <PageHeader title={t('nav.support')} description={t('support.description2')} breadcrumb={[{ label: t('nav.support') }]} />
 
       <div className="bg-surface-card border border-border rounded-lg p-3 flex flex-wrap gap-2 mb-4">
-        <select
-          value={orgId}
-          onChange={(e) => syncAllToUrl({ orgId: e.target.value, page: '1' })}
-          className="h-9 rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
-        >
-          <option value="">{t('support.allOrgs')}</option>
-          {orgs.map((r) => (
-            <option key={r.organization.id} value={r.organization.id}>
-              {r.organization.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={status}
-          onChange={(e) => syncAllToUrl({ status: e.target.value, page: '1' })}
-          className="h-9 rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
-        >
-          <option value="">{t('support.anyStatus')}</option>
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s.replace('_', ' ')}
-            </option>
-          ))}
-        </select>
-        <select
-          value={priority}
-          onChange={(e) => syncAllToUrl({ priority: e.target.value, page: '1' })}
-          className="h-9 rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
-        >
-          <option value="">{t('support.anyPriority')}</option>
-          {PRIORITIES.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
+        <Combobox
+          value={orgId || null}
+          onChange={(v) => syncAllToUrl({ orgId: v ?? '', page: '1' })}
+          options={orgs.map((r) => ({ value: r.organization.id, label: r.organization.name }))}
+          placeholder={t('support.allOrgs')}
+          searchable
+          className="w-auto"
+        />
+        <Combobox
+          value={status || null}
+          onChange={(v) => syncAllToUrl({ status: v ?? '', page: '1' })}
+          options={STATUSES.map((s) => ({ value: s, label: s.replace('_', ' ') }))}
+          placeholder={t('support.anyStatus')}
+          searchable={false}
+          className="w-auto"
+        />
+        <Combobox
+          value={priority || null}
+          onChange={(v) => syncAllToUrl({ priority: v ?? '', page: '1' })}
+          options={PRIORITIES.map((p) => ({ value: p, label: p }))}
+          placeholder={t('support.anyPriority')}
+          searchable={false}
+          className="w-auto"
+        />
         {(orgId || status || priority) && (
           <Button size="sm" variant="ghost" onClick={clearFilters}>
             {t('orgs.clear')}

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { useCardTerminalConfig, useUpdateCardTerminalConfig } from '@/hooks/haraka';
 import { useAdminGuard, toast } from '@/hooks/ui';
 import { getReceiptBaseUrl } from '@/lib/app-env';
@@ -118,17 +118,18 @@ export default function CardTerminalSettingsPage() {
             <hr className="border-border" />
             <div className="space-y-1.5">
               <Label>Integration mode</Label>
-              <Select value={mode} onValueChange={(v) => { setMode(v as CardTerminalMode); setTestResult(null); }}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="display">Display-only — cashier enters amount manually</SelectItem>
-                  <SelectItem value="local_bridge">Local Bridge — POS Bridge app on this machine</SelectItem>
-                  <SelectItem value="cloud">Cloud API — SumUp, Square, Paymob, etc.</SelectItem>
-                  <SelectItem value="webhook">Webhook — terminal pushes result to Makhzoon</SelectItem>
-                </SelectContent>
-              </Select>
+              <Combobox
+                value={mode}
+                onChange={(v) => { setMode((v ?? mode) as CardTerminalMode); setTestResult(null); }}
+                options={[
+                  { value: 'display', label: 'Display-only — cashier enters amount manually' },
+                  { value: 'local_bridge', label: 'Local Bridge — POS Bridge app on this machine' },
+                  { value: 'cloud', label: 'Cloud API — SumUp, Square, Paymob, etc.' },
+                  { value: 'webhook', label: 'Webhook — terminal pushes result to Makhzoon' },
+                ]}
+                searchable={false}
+                clearable={false}
+              />
             </div>
           </>
         )}
@@ -163,15 +164,18 @@ export default function CardTerminalSettingsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Provider</Label>
-              <Select value={provider} onValueChange={setProvider}>
-                <SelectTrigger><SelectValue placeholder="Select provider" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sumup">SumUp</SelectItem>
-                  <SelectItem value="square">Square</SelectItem>
-                  <SelectItem value="paymob">Paymob</SelectItem>
-                  <SelectItem value="custom">Custom</SelectItem>
-                </SelectContent>
-              </Select>
+              <Combobox
+                value={provider || null}
+                onChange={(v) => setProvider(v ?? '')}
+                placeholder="Select provider"
+                options={[
+                  { value: 'sumup', label: 'SumUp' },
+                  { value: 'square', label: 'Square' },
+                  { value: 'paymob', label: 'Paymob' },
+                  { value: 'custom', label: 'Custom' },
+                ]}
+                searchable={false}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Terminal device ID</Label>

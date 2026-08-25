@@ -6,7 +6,7 @@ import { CheckCircle2, AlertTriangle, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useFawtaraConfig, useUpdateFawtaraConfig } from '@/hooks/haraka';
 import { toast, useAdminGuard, useT, useOrgSlug } from '@/hooks/ui';
@@ -146,15 +146,18 @@ export default function FawtaraSettingsPage() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('fawtara.mode')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="sandbox">{t('fawtara.sandbox')}</SelectItem>
-                      <SelectItem value="production">{t('fawtara.production')}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Combobox
+                      value={field.value}
+                      onChange={(v) => field.onChange(v ?? field.value)}
+                      options={[
+                        { value: 'sandbox', label: t('fawtara.sandbox') },
+                        { value: 'production', label: t('fawtara.production') },
+                      ]}
+                      searchable={false}
+                      clearable={false}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -165,15 +168,18 @@ export default function FawtaraSettingsPage() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('fawtara.invoiceType')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="general">{t('fawtara.general')}</SelectItem>
-                      <SelectItem value="income">{t('fawtara.income')}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Combobox
+                      value={field.value}
+                      onChange={(v) => field.onChange(v ?? field.value)}
+                      options={[
+                        { value: 'general', label: t('fawtara.general') },
+                        { value: 'income', label: t('fawtara.income') },
+                      ]}
+                      searchable={false}
+                      clearable={false}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

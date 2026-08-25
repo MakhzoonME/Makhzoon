@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -236,14 +236,15 @@ export function InviteLeadModal({ open, onOpenChange, leadEmail, leadName }: Inv
               <FormField control={form.control} name="orgId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Organization *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select organization..." /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      {orgs?.map((org) => (
-                        <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Combobox
+                      value={field.value ?? null}
+                      onChange={(v) => field.onChange(v)}
+                      placeholder="Select organization..."
+                      options={(orgs ?? []).map((org) => ({ value: org.id, label: org.name }))}
+                      searchable
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -251,14 +252,19 @@ export function InviteLeadModal({ open, onOpenChange, leadEmail, leadName }: Inv
               <FormField control={form.control} name="role" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role *</FormLabel>
-                  <Select onValueChange={handleRoleChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      <SelectItem value="org_owner">Owner</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="staff">Staff</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Combobox
+                      value={field.value ?? null}
+                      onChange={(v) => v && handleRoleChange(v)}
+                      options={[
+                        { value: 'org_owner', label: 'Owner' },
+                        { value: 'admin', label: 'Admin' },
+                        { value: 'staff', label: 'Staff' },
+                      ]}
+                      searchable={false}
+                      clearable={false}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />

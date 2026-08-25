@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Combobox } from '@/components/ui/combobox';
 import { SubscriptionGate } from '@/components/shared';
 import { OrgUser, Invite } from '@/types';
 import { formatDate } from '@/lib/utils/date';
@@ -288,25 +289,29 @@ export default function UsersPage() {
           </div>
           {tab === 'members' && (
             <>
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="h-8 text-xs border border-border rounded-md bg-surface-card px-2 text-gray-600 cursor-pointer"
-              >
-                <option value="">{t('users.role')}</option>
-                <option value="org_owner">{t('role.orgOwner')}</option>
-                <option value="admin">{t('role.admin')}</option>
-                <option value="staff">{t('role.staff')}</option>
-              </select>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-8 text-xs border border-border rounded-md bg-surface-card px-2 text-gray-600 cursor-pointer"
-              >
-                <option value="">{t('users.status')}</option>
-                <option value="active">{t('userStatus.active')}</option>
-                <option value="deactivated">{t('userStatus.deactivated')}</option>
-              </select>
+              <Combobox
+                value={roleFilter || null}
+                onChange={(v) => setRoleFilter(v ?? '')}
+                options={[
+                  { value: 'org_owner', label: t('role.orgOwner') },
+                  { value: 'admin', label: t('role.admin') },
+                  { value: 'staff', label: t('role.staff') },
+                ]}
+                placeholder={t('users.role')}
+                searchable={false}
+                className="h-8 w-auto text-xs"
+              />
+              <Combobox
+                value={statusFilter || null}
+                onChange={(v) => setStatusFilter(v ?? '')}
+                options={[
+                  { value: 'active', label: t('userStatus.active') },
+                  { value: 'deactivated', label: t('userStatus.deactivated') },
+                ]}
+                placeholder={t('users.status')}
+                searchable={false}
+                className="h-8 w-auto text-xs"
+              />
             </>
           )}
         </div>

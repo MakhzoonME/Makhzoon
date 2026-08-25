@@ -3,8 +3,9 @@ import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getOrganizationById, updateOrganization } from '@/lib/db/organizations';
 import { getSuperAdminUserById } from '@/lib/db/superadmin-users';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { ORG_CATEGORIES, ORG_CURRENCIES } from '@/types';
+import { ORG_CURRENCIES } from '@/types';
 import { queueAuditLog } from '@/lib/audit/logger';
+import { normalizeCategory } from '@/lib/validations/organization.schema';
 import { z } from 'zod';
 
 const orgSelfPatchSchema = z.object({
@@ -67,7 +68,7 @@ export async function GET() {
       subdomain: org.subdomain,
       contactEmail,
       description: org.description,
-      category: org.category,
+      category: normalizeCategory(org.category),
       currency: org.currency ?? 'JOD',
       accountManager,
     });
@@ -103,10 +104,11 @@ export async function PATCH(req: NextRequest) {
     if (typeof body.contactEmail === 'string') patch.contactEmail = body.contactEmail.trim() || undefined;
     if (typeof body.description === 'string') patch.description = body.description.trim() || undefined;
     if (typeof body.category === 'string') {
-      if (body.category && !(ORG_CATEGORIES as readonly string[]).includes(body.category)) {
+      const normalized = normalizeCategory(body.category);
+      if (body.category && !normalized) {
         return NextResponse.json({ error: 'Invalid category' }, { status: 422 });
       }
-      patch.category = body.category || null;
+      patch.category = normalized;
     }
     if (typeof body.currency === 'string') {
       if (!(ORG_CURRENCIES as readonly string[]).includes(body.currency)) {

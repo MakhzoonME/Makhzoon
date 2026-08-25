@@ -98,7 +98,7 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
         } as React.CSSProperties}
       >
         <ExpiryWarningBanner />
-        <div className="px-6 py-6 max-w-7xl">
+        <div className="px-6 py-6 max-w-7xl 2xl:max-w-[1600px] mx-auto">
           <PageTransition>{children}</PageTransition>
         </div>
       </main>

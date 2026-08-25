@@ -16,6 +16,9 @@ export const platformListItemSchema = z.object({
   sortOrder: z.coerce.number().int().optional(),
   enabled: z.boolean().optional(),
   isSystem: z.boolean().optional(),
+  isInvoicingTrigger: z.boolean().optional(),
+  isBlocking: z.boolean().optional(),
+  isTerminal: z.boolean().optional(),
 });
 
 /** Update a platform item. value omitted here — locked for system items and
@@ -26,6 +29,9 @@ export const platformListItemUpdateSchema = z.object({
   color: hexColor.nullable().optional(),
   sortOrder: z.coerce.number().int().optional(),
   enabled: z.boolean().optional(),
+  isInvoicingTrigger: z.boolean().optional(),
+  isBlocking: z.boolean().optional(),
+  isTerminal: z.boolean().optional(),
 });
 
 /** Upsert a per-org override/addition (org manager). */
@@ -38,6 +44,9 @@ export const orgListItemSchema = z.object({
   sortOrder: z.coerce.number().int().nullable().optional(),
   enabled: z.boolean().optional(),
   isCustom: z.boolean().optional(),
+  isInvoicingTrigger: z.boolean().nullable().optional(),
+  isBlocking: z.boolean().nullable().optional(),
+  isTerminal: z.boolean().nullable().optional(),
 });
 
 export const orgListItemDeleteSchema = z.object({

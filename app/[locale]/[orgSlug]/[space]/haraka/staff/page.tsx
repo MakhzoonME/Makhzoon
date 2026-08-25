@@ -174,7 +174,7 @@ function StaffFormDialog({
 }
 
 export default function StaffPage() {
-  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
+  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka', harakaAddOn: 'deliveryAgents' });
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const router = useRouter();
   const { data: orgInfo } = useOrgInfo();

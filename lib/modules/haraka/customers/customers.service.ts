@@ -51,7 +51,7 @@ export interface CustomerHistoryEntry {
 
 function requireCustomers(
   tenant: TenantContext,
-  op: 'customersView' | 'customersCreate' | 'customersUpdate' | 'customersDelete',
+  op: 'customersView' | 'customersCreate' | 'customersUpdate' | 'customersDelete' | 'customersExport',
 ) {
   if (!hasPermission(tenant, 'haraka', op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -88,6 +88,12 @@ export class CustomersService {
   async list(tenant: TenantContext, opts?: CustomerListOpts) {
     requireCustomers(tenant, 'customersView')
     return repo.list(tenant, opts)
+  }
+
+  async listAllForExport(tenant: TenantContext, search?: string) {
+    requireCustomers(tenant, 'customersExport')
+    const { items } = await repo.list(tenant, { search, page: 1, pageSize: Number.MAX_SAFE_INTEGER })
+    return items
   }
 
   async getById(tenant: TenantContext, id: string) {

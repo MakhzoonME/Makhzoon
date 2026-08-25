@@ -26,6 +26,11 @@ const availabilityRepo = new StaffAvailabilityRepository()
 
 type Row = Record<string, unknown>
 
+/** Rounded to 4 dp — matches AppointmentsRepository's money(), same scale as every Haraka money column. */
+function money(n: number): number {
+  return Math.round(n * 10_000) / 10_000
+}
+
 function requireView(tenant: TenantContext) {
   if (!hasPermission(tenant, 'haraka', 'appointmentsView')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -88,12 +93,16 @@ export class AppointmentsService {
   private async assertSlotBookable(
     tenant: TenantContext,
     args: {
-      staffId: string
+      staffId: string | null | undefined
       scheduledAt: string
       durationMinutes: number
       excludeAppointmentId?: string
     },
   ): Promise<void> {
+    // No provider = no staff calendar to check working hours or conflicts
+    // against. Orgs without the Workers add-on accept this trade-off.
+    if (!args.staffId) return
+    const staffId = args.staffId
     const when = new Date(args.scheduledAt)
     if (isNaN(when.getTime())) badRequest('Invalid appointment date/time')
 
@@ -103,7 +112,7 @@ export class AppointmentsService {
 
     const rules = await availabilityRepo.getDayRules(
       tenant.organizationId,
-      args.staffId,
+      staffId,
       zoned.dayOfWeek,
       zoned.isoDate,
     )
@@ -130,7 +139,7 @@ export class AppointmentsService {
     const blockingStatuses = statusList.filter((s) => s.isBlocking).map((s) => s.value)
     const existing = await repo.findBlockingBookings(
       tenant.organizationId,
-      args.staffId,
+      staffId,
       args.scheduledAt,
       args.durationMinutes,
       blockingStatuses,
@@ -153,7 +162,7 @@ export class AppointmentsService {
   private async resolveBookingSnapshot(
     tenant: TenantContext,
     serviceId: string,
-    staffId: string,
+    staffId: string | null | undefined,
     durationOverride?: number | null,
   ): Promise<{ durationMinutes: number; price: number; taxRate: number | null }> {
     const [serviceRes, staffRes] = await Promise.all([
@@ -162,11 +171,13 @@ export class AppointmentsService {
         .select('id, organization_id, price, tax_rate_id, active, duration_minutes, appointment_bookable')
         .eq('id', serviceId)
         .maybeSingle(),
-      supabaseAdmin
-        .from('haraka_staff')
-        .select('id, organization_id, capabilities, is_active')
-        .eq('id', staffId)
-        .maybeSingle(),
+      staffId
+        ? supabaseAdmin
+            .from('haraka_staff')
+            .select('id, organization_id, capabilities, is_active')
+            .eq('id', staffId)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
     ])
 
     const service = serviceRes.data as Row | null
@@ -178,14 +189,16 @@ export class AppointmentsService {
       badRequest('That service is not bookable as an appointment')
     }
 
-    const staff = staffRes.data as Row | null
-    if (!staff || staff.organization_id !== tenant.organizationId) {
-      badRequest('Provider not found')
-    }
-    if (staff.is_active === false) badRequest('That provider is inactive')
-    const capabilities = (staff.capabilities as string[]) ?? []
-    if (!capabilities.includes('appointment_provider')) {
-      badRequest('That worker is not tagged as an appointment provider')
+    if (staffId) {
+      const staff = staffRes.data as Row | null
+      if (!staff || staff.organization_id !== tenant.organizationId) {
+        badRequest('Provider not found')
+      }
+      if (staff.is_active === false) badRequest('That provider is inactive')
+      const capabilities = (staff.capabilities as string[]) ?? []
+      if (!capabilities.includes('appointment_provider')) {
+        badRequest('That worker is not tagged as an appointment provider')
+      }
     }
 
     const durationMinutes = durationOverride ?? Number(service.duration_minutes ?? 0)
@@ -216,9 +229,10 @@ export class AppointmentsService {
       customerName: string
       customerPhone?: string | null
       serviceId: string
-      staffId: string
+      staffId?: string | null
       scheduledAt: string
       durationMinutes?: number | null
+      discountAmount?: number | null
       notes?: string | null
     },
   ): Promise<HarakaAppointment> {
@@ -230,6 +244,10 @@ export class AppointmentsService {
       input.staffId,
       input.durationMinutes,
     )
+    const discountAmount = input.discountAmount ?? 0
+    if (discountAmount > snapshot.price) {
+      badRequest('Discount cannot exceed the service price')
+    }
     await this.assertSlotBookable(tenant, {
       staffId: input.staffId,
       scheduledAt: input.scheduledAt,
@@ -246,6 +264,7 @@ export class AppointmentsService {
       durationMinutes: snapshot.durationMinutes,
       price:           snapshot.price,
       taxRate:         snapshot.taxRate,
+      discountAmount,
       notes:           input.notes ?? null,
     })
 
@@ -285,7 +304,8 @@ export class AppointmentsService {
       customerPhone?: string | null
       scheduledAt?: string
       durationMinutes?: number
-      staffId?: string
+      staffId?: string | null
+      discountAmount?: number
       notes?: string | null
     },
   ): Promise<HarakaAppointment> {
@@ -303,7 +323,7 @@ export class AppointmentsService {
       patch.staffId !== undefined
 
     if (reschedules) {
-      const staffId = patch.staffId ?? current.staffId
+      const staffId = patch.staffId !== undefined ? patch.staffId : current.staffId
       const durationMinutes = patch.durationMinutes ?? current.durationMinutes
       const scheduledAt = patch.scheduledAt ?? current.scheduledAt.toISOString()
 
@@ -319,13 +339,23 @@ export class AppointmentsService {
       })
     }
 
-    const appointment = await repo.update(tenant, id, patch)
+    let totals: { discountAmount?: number; taxAmount?: number; total?: number } = {}
+    if (patch.discountAmount !== undefined) {
+      if (patch.discountAmount > current.price) {
+        badRequest('Discount cannot exceed the service price')
+      }
+      const subtotal = money(current.price - patch.discountAmount)
+      const taxAmount = money(subtotal * (current.taxRate ?? 0))
+      totals = { discountAmount: patch.discountAmount, taxAmount, total: money(subtotal + taxAmount) }
+    }
+
+    const appointment = await repo.update(tenant, id, { ...patch, ...totals })
     auditLog.queue({
       tenant,
       module:   'pos',
       action:   'APPOINTMENT_UPDATED',
       recordId: id,
-      newValue: patch,
+      newValue: { ...patch, ...totals },
     })
     return appointment
   }

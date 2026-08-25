@@ -7,7 +7,7 @@ import { useSpace } from '@/hooks/ui/useSpace';
 import { hasModuleAccess, hasPermission } from '@/lib/permissions';
 import { getFirstAccessiblePath } from '@/lib/nav';
 import type { UserPermissions } from '@/types/user-permissions.types';
-import type { HarakaModule } from '@/types/subscription.types';
+import type { AddOnKey, HarakaModule } from '@/types/subscription.types';
 
 const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
@@ -19,8 +19,10 @@ export function useModuleGuard(opts: {
   adminOnly?: boolean;
   /** Haraka sub-module (Orders/Services/Appointments/Retainers) this page requires be active on the subscription. */
   harakaModule?: HarakaModule;
+  /** Independent add-on (Workers/Warranty Certs/…) this page requires be active on the subscription. */
+  harakaAddOn?: AddOnKey;
 }) {
-  const { featureKey, moduleKey, permOp, adminOnly, harakaModule } = opts;
+  const { featureKey, moduleKey, permOp, adminOnly, harakaModule, harakaAddOn } = opts;
   const { user, loading } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
@@ -36,6 +38,7 @@ export function useModuleGuard(opts: {
     if (adminOnly && !isAdmin) return false;
     if (featureKey && !user.features?.[featureKey]) return false;
     if (harakaModule && !user.activeHarakaModules?.includes(harakaModule)) return false;
+    if (harakaAddOn && !user.activeAddOns?.[harakaAddOn]) return false;
     // Check module permissions for staff always, and for admins when they have
     // stored custom permissions (which may restrict their access).
     if (moduleKey && (user.role === 'staff' || (isAdmin && user.permissions))) {
@@ -55,6 +58,7 @@ export function useModuleGuard(opts: {
         role: user.role,
         features: user.features ?? {},
         activeHarakaModules: user.activeHarakaModules ?? [],
+        activeAddOns: user.activeAddOns,
         permissions: user.permissions as Record<string, Record<string, boolean>> | null | undefined,
       });
       // guard against redirecting to the same page (e.g. when user has zero features)

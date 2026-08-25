@@ -8,7 +8,18 @@ import { getUserById } from '@/lib/db/users';
 import { invalidateCachedSession } from '@/lib/supabase/session-cache';
 import { revokeSession } from '@/lib/supabase/session-revocation';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
-import type { UserRole } from '@/types';
+import { getPackageById } from '@/lib/db/packages';
+import { getActiveAddOns } from '@/lib/platform/entitlements';
+import type { AddOnKey, UserRole } from '@/types';
+
+const EMPTY_ACTIVE_ADD_ONS: Record<AddOnKey, boolean> = {
+  deliveryAgents: false,
+  warrantyCerts: false,
+  customization: false,
+  purchasesRequests: false,
+  vehicleIntake: false,
+  loyalty: false,
+};
 
 const ORG_ROLES = new Set<UserRole>(['org_owner', 'admin', 'staff']);
 
@@ -85,6 +96,7 @@ export async function POST(req: NextRequest) {
     let orgSlug: string | null = null;
     let features: Record<string, boolean> = {};
     let activeHarakaModules: string[] = [];
+    let activeAddOns: Record<AddOnKey, boolean> = { ...EMPTY_ACTIVE_ADD_ONS };
     let orgSuspended = false;
 
     if (orgId) {
@@ -100,6 +112,8 @@ export async function POST(req: NextRequest) {
           ...(subscription.activeHarakaModules ?? []),
           ...(subscription.activeAddOns?.extraHarakaModules ?? []),
         ];
+        const pkg = subscription.packageId ? await getPackageById(subscription.packageId) : null;
+        activeAddOns = getActiveAddOns(subscription, pkg);
       }
       if (subscription?.status === 'SUSPENDED' && role !== 'super_admin') {
         orgSuspended = true;
@@ -135,7 +149,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { role, orgSlug, features, activeHarakaModules, permissions, saPermissions },
+      { role, orgSlug, features, activeHarakaModules, activeAddOns, permissions, saPermissions },
       { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (err) {

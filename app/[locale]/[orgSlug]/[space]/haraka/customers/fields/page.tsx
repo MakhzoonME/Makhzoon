@@ -297,8 +297,8 @@ function FieldRow({
       <td className="px-4 py-3">
         <Switch
           checked={field.required}
-          disabled={isLocked || !field.isDefault}
-          onCheckedChange={field.isDefault && !isLocked ? onToggleRequired : undefined}
+          disabled={isLocked}
+          onCheckedChange={isLocked ? undefined : onToggleRequired}
           aria-label={t('banna.fieldRequired')}
         />
       </td>

@@ -7,10 +7,10 @@ import { cn } from '@/lib/utils/cn';
 import { useAuthStore } from '@/store/auth.store';
 import { hasModuleAccess, hasPermByKey } from '@/lib/permissions';
 import type { UserPermissions } from '@/types/user-permissions.types';
-import type { HarakaModule } from '@/types/subscription.types';
+import type { AddOnKey, HarakaModule } from '@/types/subscription.types';
 import { useUiStore } from '@/store/ui.store';
 import { useTransferStore } from '@/store/transfer.store';
-import { useSubscriptionFeatures, useActiveHarakaModules } from '@/hooks/org';
+import { useSubscriptionFeatures, useActiveHarakaModules, useActiveAddOns } from '@/hooks/org';
 import { createClient } from '@/lib/supabase/client';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { SpaceSwitcher } from '@/components/layout/SpaceSwitcher';
@@ -65,6 +65,7 @@ export function MobileDrawer() {
   const { mobileMenuOpen, setMobileMenuOpen } = useUiStore();
   const features = useSubscriptionFeatures();
   const activeHarakaModules = useActiveHarakaModules();
+  const activeAddOns = useActiveAddOns();
   const { t, dir } = useT();
   const offscreen = dir === 'rtl' ? '100%' : '-100%';
 
@@ -97,10 +98,11 @@ export function MobileDrawer() {
       }
       return true;
     }
-    const item = entry as { adminOnly?: boolean; featureKey?: string; harakaModule?: HarakaModule; permissionKey?: string };
+    const item = entry as { adminOnly?: boolean; featureKey?: string; harakaModule?: HarakaModule; harakaAddOn?: AddOnKey; permissionKey?: string };
     if (item.adminOnly && !canSeeAdmin) return false;
     if (item.featureKey && !features[item.featureKey]) return false;
     if (item.harakaModule && !activeHarakaModules.includes(item.harakaModule)) return false;
+    if (item.harakaAddOn && !activeAddOns[item.harakaAddOn]) return false;
     if (user && (user.role === 'staff' || adminHasCustomPerms)) {
       const u = { ...user, organizationId: user.organizationId ?? null };
       if (item.permissionKey) {
@@ -214,6 +216,7 @@ export function MobileDrawer() {
                     .filter((sub) => {
                       if (sub.featureKey && !features[sub.featureKey]) return false;
                       if (sub.harakaModule && !activeHarakaModules.includes(sub.harakaModule)) return false;
+                      if (sub.harakaAddOn && !activeAddOns[sub.harakaAddOn]) return false;
                       if (canSeeAdmin || !sub.permissionKey) return true;
                       return !!user && hasPermByKey(user, sub.permissionKey);
                     });

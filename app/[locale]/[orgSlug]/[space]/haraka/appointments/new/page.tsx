@@ -11,7 +11,7 @@ import { CustomerSelect, type SelectedCustomer } from '@/components/haraka/Custo
 import { StaffPicker } from '@/components/haraka/StaffPicker';
 import { useCreateAppointment, useServices } from '@/hooks/haraka';
 import { useModuleGuard, toast, useT } from '@/hooks/ui';
-import { useOrgInfo } from '@/hooks/org';
+import { useOrgInfo, useActiveAddOns } from '@/hooks/org';
 import { formatCurrency } from '@/lib/utils/format';
 
 export default function NewAppointmentPage() {
@@ -26,6 +26,8 @@ export default function NewAppointmentPage() {
   const { data: orgInfo } = useOrgInfo();
   const { t } = useT();
   const createMut = useCreateAppointment();
+  const activeAddOns = useActiveAddOns();
+  const hasWorkers = activeAddOns.deliveryAgents;
 
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
   const currency = orgInfo?.currency ?? 'JOD';
@@ -45,6 +47,7 @@ export default function NewAppointmentPage() {
   const [staffId, setStaffId] = useState<string | null>(null);
   const [scheduledAt, setScheduledAt] = useState(() => new Date().toISOString());
   const [duration, setDuration] = useState('');
+  const [discount, setDiscount] = useState('');
   const [notes, setNotes] = useState('');
 
   if (!isAllowed) return null;
@@ -60,7 +63,7 @@ export default function NewAppointmentPage() {
     const name = customer?.name || customerName.trim();
     if (!name) { toast.error(t('serviceJobs.errCustomerRequired')); return; }
     if (!serviceId) { toast.error(t('appointments.errServiceRequired')); return; }
-    if (!staffId) { toast.error(t('appointments.errProviderRequired')); return; }
+    if (hasWorkers && !staffId) { toast.error(t('appointments.errProviderRequired')); return; }
 
     try {
       const res = await createMut.mutateAsync({
@@ -68,9 +71,10 @@ export default function NewAppointmentPage() {
         customerName: name,
         customerPhone: customer?.phone || customerPhone.trim() || null,
         serviceId,
-        staffId,
+        staffId: hasWorkers ? staffId : null,
         scheduledAt,
         durationMinutes: duration.trim() ? Number(duration) : null,
+        discountAmount: discount.trim() ? Number(discount) : null,
         notes: notes.trim() || null,
       });
       toast.success(res.appointment.appointmentNumber);
@@ -159,17 +163,19 @@ export default function NewAppointmentPage() {
             </select>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-600">
-              {t('appointments.labelProvider')} *
-            </label>
-            <StaffPicker
-              value={staffId}
-              onChange={(id) => setStaffId(id)}
-              capability="appointment_provider"
-              emptyMessage={t('appointments.errNoProviders')}
-            />
-          </div>
+          {hasWorkers && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gray-600">
+                {t('appointments.labelProvider')} *
+              </label>
+              <StaffPicker
+                value={staffId}
+                onChange={(id) => setStaffId(id)}
+                capability="appointment_provider"
+                emptyMessage={t('appointments.errNoProviders')}
+              />
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-600">
@@ -189,6 +195,21 @@ export default function NewAppointmentPage() {
               value={duration}
               onChange={(e) => setDuration(e.target.value)}
               placeholder={selectedService?.durationMinutes ? String(selectedService.durationMinutes) : ''}
+              className="font-mono"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-600">
+              {t('appointments.labelDiscount')}
+            </label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={discount}
+              onChange={(e) => setDiscount(e.target.value)}
+              placeholder="0"
               className="font-mono"
             />
           </div>

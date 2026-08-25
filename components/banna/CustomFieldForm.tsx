@@ -20,7 +20,7 @@ const BASE_FIELD_TYPES: { value: CustomFieldType; label: string }[] = [
   { value: 'select', label: 'Select' },
   { value: 'multi_select', label: 'Multi Select' },
   { value: 'date', label: 'Date' },
-  { value: 'boolean', label: 'Yes/No' },
+  { value: 'boolean', label: 'Toggle' },
   { value: 'user', label: 'User' },
 ];
 

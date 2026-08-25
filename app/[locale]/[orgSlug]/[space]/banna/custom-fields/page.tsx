@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { Switch } from '@/components/ui/switch';
 import { CustomFieldForm, type CustomFieldFormData } from '@/components/banna/CustomFieldForm';
 import { useCreateCustomField, useUpdateCustomField } from '@/hooks/banna';
@@ -115,17 +115,14 @@ export default function CustomFieldsPage() {
       />
 
       <div className="bg-surface-card border border-border rounded-lg p-3 mb-4">
-        <Select value={moduleFilter} onValueChange={setModuleFilter}>
-          <SelectTrigger className="w-48 h-8 text-xs">
-            <SelectValue placeholder="All modules" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All modules</SelectItem>
-            {MODULES.map((m) => (
-              <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Combobox
+          value={moduleFilter}
+          onChange={(v) => setModuleFilter(v ?? 'all')}
+          options={[{ value: 'all', label: 'All modules' }, ...MODULES]}
+          searchable={false}
+          clearable={false}
+          className="w-48 h-8 text-xs"
+        />
       </div>
 
       <div className="bg-surface-card rounded-lg border border-border overflow-hidden">

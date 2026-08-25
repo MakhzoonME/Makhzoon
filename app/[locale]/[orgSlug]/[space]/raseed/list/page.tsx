@@ -10,7 +10,7 @@ import { FilterBar } from '@/components/shared/FilterBar';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
 import { useOrgInfo } from '@/hooks/org';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { ConfirmDialog, SubscriptionGate, BulkActionsBar } from '@/components/shared';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -501,27 +501,30 @@ export default function InventoryListPage() {
         onSearchChange={handleSearchChange}
         filters={
           <div className="flex items-center gap-2">
-            <Select value={category || 'all'} onValueChange={handleCategoryChange}>
-              <SelectTrigger className="w-40"><SelectValue placeholder={t('inventory.allCategories')} /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('inventory.allCategories')}</SelectItem>
-                {(categories ?? []).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select
+            <Combobox
+              value={category || 'all'}
+              onChange={(v) => handleCategoryChange(v ?? 'all')}
+              options={[
+                { value: 'all', label: t('inventory.allCategories') },
+                ...(categories ?? []).map((c) => ({ value: c, label: c })),
+              ]}
+              clearable={false}
+              className="w-40"
+            />
+            <Combobox
               value={stockMultiActive ? stockFilter : (stockFilter || 'all')}
-              onValueChange={handleStockChange}
-            >
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder={stockMultiActive ? t('inventory.multipleStock') : t('inventory.allStock')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('inventory.allStock')}</SelectItem>
-                <SelectItem value="ok">{t('inventory.inStock')}</SelectItem>
-                <SelectItem value="low">{t('inventory.lowStock')}</SelectItem>
-                <SelectItem value="out">{t('inventory.outOfStock')}</SelectItem>
-              </SelectContent>
-            </Select>
+              onChange={(v) => handleStockChange(v ?? 'all')}
+              placeholder={stockMultiActive ? t('inventory.multipleStock') : t('inventory.allStock')}
+              options={[
+                { value: 'all', label: t('inventory.allStock') },
+                { value: 'ok', label: t('inventory.inStock') },
+                { value: 'low', label: t('inventory.lowStock') },
+                { value: 'out', label: t('inventory.outOfStock') },
+              ]}
+              searchable={false}
+              clearable={false}
+              className="w-44"
+            />
           </div>
         }
       />

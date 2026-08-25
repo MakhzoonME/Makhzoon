@@ -19,7 +19,7 @@ import { useAssets } from '@/hooks/assets';
 import { useInventoryItems } from '@/hooks/inventory';
 import { useActiveWarrantyIds } from '@/hooks/warranties';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DatePicker } from '@/components/ui/date-picker';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 function AlertTriangleSVG() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -317,25 +317,22 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId, defaultInven
           </FormItem>
         )} />
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField control={form.control} name="startDate" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Start Date *</FormLabel>
-              <FormControl>
-                <DatePicker value={field.value} onChange={field.onChange} placeholder="Select start date" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-          <FormField control={form.control} name="endDate" render={({ field }) => (
-            <FormItem>
-              <FormLabel>End Date *</FormLabel>
-              <FormControl>
-                <DatePicker value={field.value} onChange={field.onChange} placeholder="Select end date" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
+        <div className="space-y-1.5">
+          <Label>Warranty period *</Label>
+          <DateRangePicker
+            startDate={form.watch('startDate')}
+            endDate={form.watch('endDate')}
+            error={!!(form.formState.errors.startDate || form.formState.errors.endDate)}
+            onChange={({ startDate, endDate }) => {
+              form.setValue('startDate', startDate, { shouldValidate: true, shouldDirty: true });
+              form.setValue('endDate', endDate, { shouldValidate: true, shouldDirty: true });
+            }}
+          />
+          {(form.formState.errors.startDate || form.formState.errors.endDate) && (
+            <p className="text-xs font-medium text-red-700">
+              {form.formState.errors.startDate?.message || form.formState.errors.endDate?.message}
+            </p>
+          )}
         </div>
 
         <FormField control={form.control} name="reminder" render={({ field }) => (

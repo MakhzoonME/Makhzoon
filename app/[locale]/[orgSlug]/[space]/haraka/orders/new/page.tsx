@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { DeliveryAgentPicker } from '@/components/haraka/DeliveryAgentPicker';
 import type { DeliveryAgentValue } from '@/components/haraka/DeliveryAgentPicker';
@@ -184,13 +184,16 @@ export default function NewOrderPage() {
                   <FormItem>
                     <FormLabel>Fulfillment *</FormLabel>
                     <FormControl>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="delivery">Delivery</SelectItem>
-                          <SelectItem value="pickup">Pickup</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Combobox
+                        value={field.value ?? null}
+                        onChange={(v) => field.onChange(v)}
+                        options={[
+                          { value: 'delivery', label: 'Delivery' },
+                          { value: 'pickup', label: 'Pickup' },
+                        ]}
+                        searchable={false}
+                        clearable={false}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -394,25 +397,17 @@ export default function NewOrderPage() {
                   <FormItem>
                     <FormLabel>Sales agent *</FormLabel>
                     <FormControl>
-                      <Select
-                        value={field.value}
-                        onValueChange={(v) => {
+                      <Combobox
+                        value={field.value ?? null}
+                        onChange={(v) => {
                           field.onChange(v);
                           const m = members.find((m) => m.userId === v);
-                          form.setValue('salesAgentName', m?.displayName || m?.email || v);
+                          form.setValue('salesAgentName', m?.displayName || m?.email || v || '');
                         }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Who took this order?" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {members.map((m) => (
-                            <SelectItem key={m.userId} value={m.userId}>
-                              {m.displayName || m.email || m.userId}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        options={members.map((m) => ({ value: m.userId, label: m.displayName || m.email || m.userId }))}
+                        placeholder="Who took this order?"
+                        clearable={false}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

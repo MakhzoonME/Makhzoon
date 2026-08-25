@@ -1,11 +1,5 @@
 'use client';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { useList } from '@/hooks/lists';
 import { useT } from '@/hooks/ui';
 import type { ListKey } from '@/types';
@@ -44,19 +38,20 @@ export function ConfigSelect({
   const { locale } = useT();
   const isAr = locale === 'ar';
 
+  const options = [
+    ...(includeAll ? [{ value: allValue, label: allLabel }] : []),
+    ...items.map((item) => ({ value: item.value, label: isAr ? item.labelAr || item.label : item.label })),
+  ];
+
   return (
-    <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-      <SelectTrigger className={className}>
-        <SelectValue placeholder={isLoading ? 'Loading…' : placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {includeAll && <SelectItem value={allValue}>{allLabel}</SelectItem>}
-        {items.map((item) => (
-          <SelectItem key={item.value} value={item.value}>
-            {isAr ? item.labelAr || item.label : item.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Combobox
+      value={value ?? null}
+      onChange={(v) => onValueChange?.(v ?? '')}
+      options={options}
+      placeholder={isLoading ? 'Loading…' : placeholder}
+      disabled={disabled}
+      className={className}
+      clearable={false}
+    />
   );
 }

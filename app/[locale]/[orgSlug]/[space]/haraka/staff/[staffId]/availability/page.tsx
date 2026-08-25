@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Combobox } from '@/components/ui/combobox';
 import {
   useStaff,
   useStaffAvailability,
@@ -141,15 +142,13 @@ export default function StaffAvailabilityPage() {
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 border-t border-border">
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-600">{t('col.date')}</label>
-            <select
+            <Combobox
               value={day}
-              onChange={(e) => setDay(e.target.value)}
-              className="h-9 w-full rounded-md border border-border bg-surface-card px-2 text-sm"
-            >
-              {DAY_NAMES.map((name, i) => (
-                <option key={name} value={String(i)}>{name}</option>
-              ))}
-            </select>
+              onChange={(v) => setDay(v ?? String(0))}
+              options={DAY_NAMES.map((name, i) => ({ value: String(i), label: name }))}
+              searchable={false}
+              clearable={false}
+            />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-600">{t('staff.labelStartTime')}</label>

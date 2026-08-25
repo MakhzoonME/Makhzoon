@@ -18,7 +18,7 @@ import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ExportButton } from '@/components/shared/ExportButton';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { Asset } from '@/types';
 import { hasPermission } from '@/lib/permissions';
@@ -372,13 +372,17 @@ export default function AssetsListPage() {
         filters={
           <div className="flex items-center gap-2">
             <ConfigSelect listKey="asset_status" value={status || 'all'} onValueChange={handleStatusChange} includeAll allLabel={t('assets.allStatuses')} className="w-44" />
-            <Select value={category || 'all'} onValueChange={handleCategoryChange}>
-              <SelectTrigger className="w-44"><SelectValue placeholder={t('col.category')} /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('assets.allCategories')}</SelectItem>
-                {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={category || 'all'}
+              onChange={(v) => handleCategoryChange(v ?? 'all')}
+              placeholder={t('col.category')}
+              options={[
+                { value: 'all', label: t('assets.allCategories') },
+                ...categories.map((c) => ({ value: c, label: c })),
+              ]}
+              clearable={false}
+              className="w-44"
+            />
           </div>
         }
         actions={isAdmin ? (

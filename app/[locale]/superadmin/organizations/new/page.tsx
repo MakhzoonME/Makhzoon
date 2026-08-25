@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import { toast, useT } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -98,16 +99,13 @@ export default function NewOrganizationPage() {
               <FormItem>
                 <FormLabel>{t('orgs.category')}</FormLabel>
                 <FormControl>
-                  <select
-                    value={field.value ?? ''}
-                    onChange={(e) => field.onChange(e.target.value || null)}
-                    className="flex h-9 w-full rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
-                  >
-                    <option value="">— None —</option>
-                    {ORG_CATEGORIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                  <Combobox
+                    value={field.value ?? null}
+                    onChange={(v) => field.onChange(v || null)}
+                    options={ORG_CATEGORIES.map((c) => ({ value: c, label: c }))}
+                    placeholder="— None —"
+                    searchable={false}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -127,16 +125,13 @@ export default function NewOrganizationPage() {
                 <FormItem>
                   <FormLabel>{t('nav.packages')}</FormLabel>
                   <FormControl>
-                    <select
-                      value={field.value ?? ''}
-                      onChange={(e) => field.onChange(e.target.value || null)}
-                      className="flex h-9 w-full rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
-                    >
-                      <option value="">— None —</option>
-                      {packages.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
+                    <Combobox
+                      value={field.value ?? null}
+                      onChange={(v) => field.onChange(v || null)}
+                      options={packages.map((p) => ({ value: p.id, label: p.name }))}
+                      placeholder="— None —"
+                      searchable
+                    />
                   </FormControl>
                   {selected && (
                     <p className="text-xs text-gray-500">

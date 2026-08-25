@@ -86,3 +86,6 @@ x.collectionGroup
 db-backups/
 *_rows.csv
 
+# one-off admin scripts with hardcoded prod org ids — not for the repo history
+scripts/delete-orgs.sql
+

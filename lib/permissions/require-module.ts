@@ -1,17 +1,12 @@
 import 'server-only';
 import { NextResponse } from 'next/server';
 import type { TenantContext } from '@/lib/platform/tenancy/types';
-import type { HarakaModule, Package, PackageAllowances } from '@/types';
+import type { AddOnKey, HarakaModule } from '@/types';
 import { HARAKA_MODULE_LABELS } from '@/types';
 import { getPackageById } from '@/lib/db/packages';
+import { ADDON_LABELS, isAddOnActive, isPricingModelPackage } from '@/lib/platform/entitlements';
 
-// A package is "on the new pricing model" once its structured allowances are
-// populated (reseed / Business creation). Until then, module/add-on gating is a
-// no-op and the legacy feature flags (requireFeature) remain the only gate —
-// so wiring these guards in ahead of the reseed changes nothing for live orgs.
-function isPricingModelPackage(pkg: Package | null): pkg is Package {
-  return !!pkg && pkg.allowances.usoolIncluded !== null;
-}
+export { getActiveAddOns, isAddOnActive } from '@/lib/platform/entitlements';
 
 /**
  * Gate a Haraka sub-module (POS / Services / Orders / Retainers). A module is
@@ -44,47 +39,13 @@ export async function requireHarakaModule(
 }
 
 /**
- * Gate the shared staff directory. It backs two independently-sold things —
- * the Workers add-on (deliveries, service-job assignment) and the Appointments
- * module (providers) — so either entitlement grants access. Only when both
- * gates reject does the caller get the Workers error, which is the one that
- * existed before the directory was generalized (migration 0067).
+ * Gate the staff directory strictly on the Workers add-on. Appointments no
+ * longer falls back to this — when Workers is off, appointments must be
+ * created without a staff provider (see createAppointmentSchema).
  */
 export async function requireStaffAccess(tenant: TenantContext): Promise<void> {
-  try {
-    await requireHarakaModule(tenant, 'appointments');
-    return;
-  } catch {
-    // Not an appointments org — fall through to the delivery add-on check.
-  }
   await requireAddOn(tenant, 'deliveryAgents');
 }
-
-export type AddOnKey =
-  | 'deliveryAgents'
-  | 'warrantyCerts'
-  | 'customization'
-  | 'purchasesRequests'
-  | 'vehicleIntake'
-  | 'loyalty';
-
-const ADDON_INCLUDED: Record<AddOnKey, keyof PackageAllowances> = {
-  deliveryAgents: 'deliveryAgentsIncluded',
-  warrantyCerts: 'warrantyCertsIncluded',
-  customization: 'customizationIncluded',
-  purchasesRequests: 'purchasesRequestsIncluded',
-  vehicleIntake: 'vehicleIntakeIncluded',
-  loyalty: 'loyaltyIncluded',
-};
-
-const ADDON_LABELS: Record<AddOnKey, string> = {
-  deliveryAgents: 'Workers',
-  warrantyCerts: 'Warranty certificates',
-  customization: 'Customization',
-  purchasesRequests: 'Purchases & Requests',
-  vehicleIntake: 'Vehicle intake (plate capture)',
-  loyalty: 'Loyalty program',
-};
 
 /**
  * Gate an independent add-on. Active when the plan includes it OR it's been
@@ -95,11 +56,8 @@ export async function requireAddOn(
   addOn: AddOnKey,
 ): Promise<void> {
   const sub = tenant.subscription;
-  if (!sub?.packageId) return;
-  if (sub.activeAddOns?.[addOn]) return; // purchased
-  const pkg = await getPackageById(sub.packageId);
-  if (!isPricingModelPackage(pkg)) return; // not migrated yet — legacy flags only
-  if (pkg.allowances[ADDON_INCLUDED[addOn]]) return; // included in plan
+  const pkg = sub?.packageId ? await getPackageById(sub.packageId) : null;
+  if (isAddOnActive(sub, pkg, addOn)) return;
   throw NextResponse.json(
     {
       error: `${ADDON_LABELS[addOn]} isn't part of your plan. Add it to enable it.`,

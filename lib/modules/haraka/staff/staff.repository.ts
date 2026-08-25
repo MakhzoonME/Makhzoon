@@ -110,7 +110,13 @@ export class StaffRepository {
       .delete()
       .eq('id', id)
       .eq('organization_id', tenant.organizationId)
-    if (error) throw error
+    if (error) {
+      // haraka_appointments.staff_id has no ON DELETE clause (unlike the
+      // other staff FKs, which CASCADE or SET NULL), so a worker who has any
+      // appointment on record blocks the delete with a raw FK violation.
+      if (error.code === '23503') throw new Error('STAFF_HAS_LINKED_RECORDS')
+      throw error
+    }
   }
 
   /**

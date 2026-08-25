@@ -15,6 +15,7 @@ import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview
 import type { ServiceJobDocumentConfig } from '@/lib/modules/haraka/service-jobs/service-job-document-config';
 import { DEFAULT_SERVICE_JOB_DOCUMENT_CONFIG } from '@/lib/modules/haraka/service-jobs/service-job-document-config';
 import { DEFAULT_RECEIPT_CONFIG } from '@/lib/receipts/receipt-config';
+import { getReceiptBaseUrl } from '@/lib/app-env';
 import { cn } from '@/lib/utils/cn';
 
 interface Props {
@@ -46,9 +47,7 @@ export function ServiceJobInvoiceDialog({
   const generateMut = useGenerateServiceJobInvoice();
   const { t }       = useT();
 
-  const publicUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/service-job-invoice/${orgSlug}/${job.id}`
-    : `/service-job-invoice/${orgSlug}/${job.id}`;
+  const publicUrl = `${getReceiptBaseUrl()}/service-job-invoice/${orgSlug}/${job.id}`;
 
   async function ensureInvoiceNumber() {
     if (job.invoiceNumber) return job.invoiceNumber;

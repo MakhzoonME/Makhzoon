@@ -3,6 +3,18 @@ import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
 import { getOrganizationById } from '@/lib/db/organizations';
 import { getUserById } from '@/lib/db/users';
+import { getPackageById } from '@/lib/db/packages';
+import { getActiveAddOns } from '@/lib/platform/entitlements';
+import type { AddOnKey } from '@/types';
+
+const EMPTY_ACTIVE_ADD_ONS: Record<AddOnKey, boolean> = {
+  deliveryAgents: false,
+  warrantyCerts: false,
+  customization: false,
+  purchasesRequests: false,
+  vehicleIntake: false,
+  loyalty: false,
+};
 
 export async function GET() {
   try {
@@ -11,6 +23,7 @@ export async function GET() {
 
     let features: Record<string, boolean> = {};
     let activeHarakaModules: string[] = [];
+    let activeAddOns: Record<AddOnKey, boolean> = { ...EMPTY_ACTIVE_ADD_ONS };
     let orgSlug: string | null = null;
     let avatarUrl: string | null = null;
 
@@ -25,6 +38,8 @@ export async function GET() {
         ...(sub.activeHarakaModules ?? []),
         ...(sub.activeAddOns?.extraHarakaModules ?? []),
       ];
+      const pkg = sub.packageId ? await getPackageById(sub.packageId) : null;
+      activeAddOns = getActiveAddOns(sub, pkg);
     }
     orgSlug = org?.subdomain ?? null;
     avatarUrl = dbUser?.avatarUrl ?? null;
@@ -42,6 +57,7 @@ export async function GET() {
         saPermissions: user.saPermissions ?? null,
         features,
         activeHarakaModules,
+        activeAddOns,
       },
       { headers: { 'Cache-Control': 'no-store' } },
     );

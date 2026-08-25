@@ -13,7 +13,7 @@ import { getReceiptBaseUrl } from '@/lib/app-env';
 import type { HarakaWarrantyCert } from '@/types';
 
 export default function WarrantyCertsPage() {
-  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka', harakaAddOn: 'warrantyCerts' });
   const { isAllowed } = useAdminGuard('pos.view_warranty_certs');
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { data: orgInfo } = useOrgInfo();

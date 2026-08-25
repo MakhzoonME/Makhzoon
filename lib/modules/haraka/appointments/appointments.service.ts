@@ -7,7 +7,7 @@ import { auditLog } from '@/lib/platform/audit'
 import { notificationQueue } from '@/lib/notifications/notification-queue'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { AppointmentStatus, HarakaAppointment } from '@/types'
-import { isValidAppointmentTransition } from './schemas'
+import { resolveListForOrg, resolveListItemForOrg } from '@/lib/db/managed-lists'
 import {
   AppointmentsRepository,
   type ListAppointmentsOpts,
@@ -45,16 +45,18 @@ function requireOp(
   }
 }
 
-/** Each terminal/forward transition has its own permission, mirroring how
- *  Retainers gates pause/cancel/reactivate separately. */
+/** The 4 built-in transitions each have their own permission, mirroring how
+ *  Retainers gates pause/cancel/reactivate separately. A custom status an org
+ *  added beyond the platform defaults falls back to the general update
+ *  permission, since there's no dedicated permission key for it. */
 function requireStatusChange(tenant: TenantContext, to: AppointmentStatus) {
   const op =
     to === 'confirmed' ? 'appointmentsConfirm'
     : to === 'completed' ? 'appointmentsComplete'
     : to === 'cancelled' ? 'appointmentsCancel'
     : to === 'no_show'   ? 'appointmentsMarkNoShow'
-    : null
-  if (!op || !hasPermission(tenant, 'haraka', op)) {
+    : 'appointmentsUpdate'
+  if (!hasPermission(tenant, 'haraka', op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -124,11 +126,14 @@ export class AppointmentsService {
       )
     }
 
+    const statusList = await resolveListForOrg(tenant.organizationId, 'appointment_status')
+    const blockingStatuses = statusList.filter((s) => s.isBlocking).map((s) => s.value)
     const existing = await repo.findBlockingBookings(
       tenant.organizationId,
       args.staffId,
       args.scheduledAt,
       args.durationMinutes,
+      blockingStatuses,
     )
     const conflict = findConflict(
       { scheduledAt: when, durationMinutes: args.durationMinutes },
@@ -287,7 +292,8 @@ export class AppointmentsService {
     requireOp(tenant, 'appointmentsUpdate')
     const current = await this.getById(tenant, id)
 
-    if (current.status === 'completed' || current.status === 'cancelled' || current.status === 'no_show') {
+    const currentStatusItem = await resolveListItemForOrg(tenant.organizationId, 'appointment_status', current.status)
+    if (currentStatusItem?.isTerminal) {
       badRequest(`A ${current.status.replace('_', '-')} appointment can no longer be edited`)
     }
 
@@ -327,11 +333,9 @@ export class AppointmentsService {
   async updateStatus(tenant: TenantContext, id: string, status: AppointmentStatus) {
     requireStatusChange(tenant, status)
     const current = await this.getById(tenant, id)
-    if (!isValidAppointmentTransition(current.status, status)) {
-      throw NextResponse.json(
-        { error: `Cannot transition from '${current.status}' to '${status}'` },
-        { status: 400 },
-      )
+    const targetStatusItem = await resolveListItemForOrg(tenant.organizationId, 'appointment_status', status)
+    if (!targetStatusItem) {
+      badRequest(`'${status}' is not a status configured for this organization`)
     }
 
     const updated = await repo.updateStatus(tenant, id, status)
@@ -355,9 +359,10 @@ export class AppointmentsService {
   async generateInvoice(tenant: TenantContext, id: string) {
     requireOp(tenant, 'appointmentsGenerateInvoice')
     const appointment = await this.getById(tenant, id)
-    if (appointment.status !== 'completed') {
+    const statusItem = await resolveListItemForOrg(tenant.organizationId, 'appointment_status', appointment.status)
+    if (!statusItem?.isInvoicingTrigger) {
       throw NextResponse.json(
-        { error: 'Invoice can only be generated once the appointment is completed' },
+        { error: 'Invoice can only be generated once the appointment reaches an invoicing status' },
         { status: 400 },
       )
     }
@@ -377,9 +382,10 @@ export class AppointmentsService {
   async delete(tenant: TenantContext, id: string) {
     requireOp(tenant, 'appointmentsUpdate')
     const appointment = await this.getById(tenant, id)
-    if (appointment.status === 'completed') {
+    const statusItem = await resolveListItemForOrg(tenant.organizationId, 'appointment_status', appointment.status)
+    if (statusItem?.isInvoicingTrigger) {
       throw NextResponse.json(
-        { error: 'A completed appointment cannot be deleted' },
+        { error: 'An invoiced appointment cannot be deleted' },
         { status: 400 },
       )
     }
@@ -404,7 +410,8 @@ export class AppointmentsService {
   ) {
     requireOp(tenant, 'appointmentsAddPayment')
     const appointment = await this.getById(tenant, appointmentId)
-    if (appointment.status === 'cancelled' || appointment.status === 'no_show') {
+    const statusItem = await resolveListItemForOrg(tenant.organizationId, 'appointment_status', appointment.status)
+    if (statusItem?.isTerminal && !statusItem.isInvoicingTrigger) {
       badRequest(`A ${appointment.status.replace('_', '-')} appointment cannot take payments`)
     }
     const updated = await repo.addPayment(tenant, appointmentId, amount, paymentMethod, note)

@@ -35,6 +35,9 @@ export async function GET(
           color: p.color,
           isSystem: p.isSystem,
           isCustom: false,
+          isInvoicingTrigger: p.isInvoicingTrigger,
+          isBlocking: p.isBlocking,
+          isTerminal: p.isTerminal,
         }));
     }
 

@@ -15,6 +15,7 @@ import {
   useUpdateAppointmentStatus,
   useGenerateAppointmentInvoice,
 } from '@/hooks/haraka';
+import { useList } from '@/hooks/lists';
 import { useModuleGuard, toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { useAuthStore } from '@/store/auth.store';
@@ -23,9 +24,16 @@ import { formatCurrency } from '@/lib/utils/format';
 import { formatDateTime } from '@/lib/utils/date';
 import type { AppointmentStatus } from '@/types';
 
-// The happy path, rendered as a stepper. Cancelled / no_show are shown
-// separately because they leave the flow rather than advancing it.
-const STATUS_FLOW: AppointmentStatus[] = ['scheduled', 'confirmed', 'completed'];
+// The 4 built-in status codes each carry their own permission (see
+// requireStatusChange in appointments.service.ts); any status an org added
+// beyond the platform defaults falls back to the general update permission.
+function permOpForStatus(status: AppointmentStatus): string {
+  return status === 'confirmed' ? 'appointmentsConfirm'
+    : status === 'completed' ? 'appointmentsComplete'
+    : status === 'cancelled' ? 'appointmentsCancel'
+    : status === 'no_show'   ? 'appointmentsMarkNoShow'
+    : 'appointmentsUpdate';
+}
 
 export default function AppointmentDetailPage() {
   const { isAllowed } = useModuleGuard({
@@ -36,11 +44,13 @@ export default function AppointmentDetailPage() {
   });
   const params = useParams<{ locale: string; orgSlug: string; space: string; appointmentId: string }>();
   const router = useRouter();
-  const { t } = useT();
+  const { t, locale } = useT();
+  const isAr = locale === 'ar';
   const { data: orgInfo } = useOrgInfo();
   const { user } = useAuthStore();
 
   const { data, isLoading } = useAppointment(params.appointmentId);
+  const { data: statusList = [] } = useList('appointment_status');
   const updateStatus = useUpdateAppointmentStatus();
   const updateAppointment = useUpdateAppointment();
   const generateInvoice = useGenerateAppointmentInvoice();
@@ -67,18 +77,16 @@ export default function AppointmentDetailPage() {
   }
   if (!appointment) return <div className="text-sm text-gray-400 p-6">{t('common.noResults')}</div>;
 
-  const currentIdx = STATUS_FLOW.indexOf(appointment.status);
-  const terminal =
-    appointment.status === 'cancelled' ||
-    appointment.status === 'no_show' ||
-    appointment.status === 'completed';
-  const nextStatus = currentIdx >= 0 && currentIdx < STATUS_FLOW.length - 1
-    ? STATUS_FLOW[currentIdx + 1]
-    : null;
-
-  const canAdvance =
-    !!nextStatus &&
-    can(nextStatus === 'confirmed' ? 'appointmentsConfirm' : 'appointmentsComplete');
+  const currentStatusItem = statusList.find((s) => s.value === appointment.status);
+  // Falls back to the platform-default codes until the org's list resolves,
+  // so the page isn't fully blocked on that request.
+  const terminal = currentStatusItem
+    ? currentStatusItem.isTerminal
+    : appointment.status === 'cancelled' || appointment.status === 'no_show' || appointment.status === 'completed';
+  const isInvoicingStatus = currentStatusItem
+    ? currentStatusItem.isInvoicingTrigger
+    : appointment.status === 'completed';
+  const otherStatuses = statusList.filter((s) => s.value !== appointment.status);
   // scheduledAt is typed as Date but arrives from the API as an ISO string;
   // new Date() normalizes both.
   const startsAt = new Date(appointment.scheduledAt);
@@ -128,7 +136,7 @@ export default function AppointmentDetailPage() {
         description={`${t('appointments.title')}${appointment.serviceName ? ` — ${appointment.serviceName}` : ''}`}
         actions={
           <div className="flex items-center gap-2">
-            {appointment.status === 'completed' &&
+            {isInvoicingStatus &&
               (appointment.invoiceNumber || can('appointmentsGenerateInvoice')) && (
                 <Button
                   variant="outline"
@@ -159,74 +167,43 @@ export default function AppointmentDetailPage() {
             )}
           </div>
           <div className="flex gap-2 flex-wrap">
-            {canAdvance && nextStatus && (
-              <Button
-                size="sm"
-                onClick={() =>
-                  changeStatus(
-                    nextStatus,
-                    nextStatus === 'confirmed'
-                      ? t('appointments.markConfirmed')
-                      : t('appointments.markCompleted'),
-                  )
-                }
-                disabled={updateStatus.isPending}
-                style={{ background: 'var(--mod-haraka)' }}
-              >
-                {nextStatus === 'confirmed'
-                  ? t('appointments.markConfirmed')
-                  : t('appointments.markCompleted')}
-              </Button>
-            )}
-            {!terminal && can('appointmentsMarkNoShow') && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-orange-600 border-orange-200"
-                onClick={() => changeStatus('no_show', t('appointments.markNoShow'))}
-                disabled={updateStatus.isPending}
-              >
-                {t('appointments.markNoShow')}
-              </Button>
-            )}
-            {!terminal && can('appointmentsCancel') && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-red-500 border-red-200"
-                onClick={() => changeStatus('cancelled', t('appointments.markCancelled'))}
-                disabled={updateStatus.isPending}
-              >
-                {t('appointments.markCancelled')}
-              </Button>
-            )}
+            {otherStatuses.map((s) => (
+              can(permOpForStatus(s.value)) && (
+                <Button
+                  key={s.value}
+                  size="sm"
+                  variant="outline"
+                  style={{ color: s.color ?? undefined, borderColor: s.color ? `${s.color}40` : undefined }}
+                  onClick={() => changeStatus(s.value, isAr ? s.labelAr || s.label : s.label)}
+                  disabled={updateStatus.isPending}
+                >
+                  {isAr ? s.labelAr || s.label : s.label}
+                </Button>
+              )
+            ))}
           </div>
         </div>
 
-        <div className="flex items-center gap-1 overflow-x-auto">
-          {STATUS_FLOW.map((s, i) => {
-            const done = currentIdx > i;
-            const current = s === appointment.status;
-            return (
-              <div key={s} className="flex items-center gap-1">
+        {statusList.length > 0 && (
+          <div className="flex items-center gap-1 overflow-x-auto">
+            {statusList.map((s) => {
+              const current = s.value === appointment.status;
+              return (
                 <div
-                  className={`text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition-colors ${
-                    current ? 'text-white' : done ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'
-                  }`}
-                  style={current ? { background: 'var(--mod-haraka)' } : undefined}
+                  key={s.value}
+                  className="text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition-colors"
+                  style={
+                    current
+                      ? { background: s.color ?? 'var(--mod-haraka)', color: '#fff' }
+                      : { background: `${s.color ?? '#9ca3af'}18`, color: s.color ?? '#9ca3af' }
+                  }
                 >
-                  {s}
+                  {isAr ? s.labelAr || s.label : s.label}
                 </div>
-                {i < STATUS_FLOW.length - 1 && <div className="h-px w-4 bg-gray-200 flex-shrink-0" />}
-              </div>
-            );
-          })}
-          {(appointment.status === 'cancelled' || appointment.status === 'no_show') && (
-            <div className="text-xs px-2.5 py-1 rounded-full font-medium bg-red-100 text-red-600 ms-1">
-              {appointment.status.replace('_', ' ')}
-            </div>
-          )}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

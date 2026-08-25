@@ -9,6 +9,9 @@ interface UpsertInput {
   labelAr?: string | null;
   color?: string | null;
   enabled?: boolean;
+  isInvoicingTrigger?: boolean | null;
+  isBlocking?: boolean | null;
+  isTerminal?: boolean | null;
 }
 
 /** Add or override an item for the caller's own org. */

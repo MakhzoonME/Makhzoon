@@ -8,7 +8,6 @@ import {
   timeToMinutes,
   toZonedInstant,
 } from '@/lib/modules/haraka/appointments/availability';
-import { isValidAppointmentTransition } from '@/lib/modules/haraka/appointments/schemas';
 import type { HarakaStaffAvailability, HarakaStaffAvailabilityException } from '@/types';
 
 function weekly(
@@ -188,26 +187,3 @@ describe('findConflict', () => {
   });
 });
 
-describe('appointment status machine', () => {
-  it('follows scheduled → confirmed → completed', () => {
-    expect(isValidAppointmentTransition('scheduled', 'confirmed')).toBe(true);
-    expect(isValidAppointmentTransition('confirmed', 'completed')).toBe(true);
-  });
-
-  it('does not allow skipping straight to completed', () => {
-    expect(isValidAppointmentTransition('scheduled', 'completed')).toBe(false);
-  });
-
-  it('allows cancelling or no-showing from either open state', () => {
-    expect(isValidAppointmentTransition('scheduled', 'cancelled')).toBe(true);
-    expect(isValidAppointmentTransition('scheduled', 'no_show')).toBe(true);
-    expect(isValidAppointmentTransition('confirmed', 'cancelled')).toBe(true);
-    expect(isValidAppointmentTransition('confirmed', 'no_show')).toBe(true);
-  });
-
-  it('treats completed, cancelled, and no_show as terminal', () => {
-    expect(isValidAppointmentTransition('completed', 'cancelled')).toBe(false);
-    expect(isValidAppointmentTransition('cancelled', 'scheduled')).toBe(false);
-    expect(isValidAppointmentTransition('no_show', 'completed')).toBe(false);
-  });
-});

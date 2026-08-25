@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { AppointmentStatusBadge } from '@/components/haraka/AppointmentStatusBadge';
 import { AppointmentInvoiceDialog } from '@/components/haraka/AppointmentInvoiceDialog';
@@ -20,6 +21,7 @@ import { useModuleGuard, toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { useAuthStore } from '@/store/auth.store';
 import { hasPermByKey } from '@/lib/permissions';
+import { formatCurrency } from '@/lib/utils/format';
 import { formatDateTime } from '@/lib/utils/date';
 import type { AppointmentStatus } from '@/types';
 
@@ -57,6 +59,8 @@ export default function AppointmentDetailPage() {
   const [rescheduling, setRescheduling] = useState(false);
   const [newTime, setNewTime] = useState('');
   const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [editingDiscount, setEditingDiscount] = useState(false);
+  const [discountInput, setDiscountInput] = useState('');
 
   if (!isAllowed) return null;
 
@@ -107,6 +111,22 @@ export default function AppointmentDetailPage() {
       await updateAppointment.mutateAsync({ id: appointment.id, body: { scheduledAt: newTime } });
       toast.success(t('common.updated'));
       setRescheduling(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong'));
+    }
+  }
+
+  async function handleDiscountSave() {
+    if (!appointment) return;
+    const discountAmount = discountInput.trim() ? Number(discountInput) : 0;
+    if (Number.isNaN(discountAmount) || discountAmount < 0) {
+      toast.error(t('appointments.errInvalidDiscount'));
+      return;
+    }
+    try {
+      await updateAppointment.mutateAsync({ id: appointment.id, body: { discountAmount } });
+      toast.success(t('common.updated'));
+      setEditingDiscount(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong'));
     }
@@ -252,6 +272,61 @@ export default function AppointmentDetailPage() {
                   {formatDateTime(endsAt)}
                   <span className="text-gray-400"> · {appointment.durationMinutes} min</span>
                 </span>
+              </div>
+            </div>
+
+            <div className="pt-2 space-y-1 text-sm border-t border-border">
+              <div className="flex justify-between text-gray-500">
+                <span>{t('appointments.labelPrice')}</span>
+                <span className="font-mono">{formatCurrency(appointment.price, currency)}</span>
+              </div>
+
+              <div className="flex justify-between items-center text-gray-500">
+                <span>{t('appointments.labelDiscount')}</span>
+                {!editingDiscount ? (
+                  <button
+                    type="button"
+                    disabled={terminal || !can('appointmentsUpdate')}
+                    onClick={() => {
+                      setDiscountInput(appointment.discountAmount ? String(appointment.discountAmount) : '');
+                      setEditingDiscount(true);
+                    }}
+                    className="font-mono text-gray-500 hover:text-primary-600 disabled:hover:text-gray-500 disabled:cursor-default"
+                  >
+                    {appointment.discountAmount > 0
+                      ? `− ${formatCurrency(appointment.discountAmount, currency)}`
+                      : '—'}
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      autoFocus
+                      value={discountInput}
+                      onChange={(e) => setDiscountInput(e.target.value)}
+                      className="h-7 w-24 font-mono text-end"
+                    />
+                    <Button size="sm" className="h-7 px-2" onClick={handleDiscountSave} disabled={updateAppointment.isPending}>
+                      {t('common.save')}
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setEditingDiscount(false)}>
+                      {t('common.cancel')}
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {appointment.taxAmount > 0 && (
+                <div className="flex justify-between text-gray-500">
+                  <span>{t('invoicePreview.tax')}</span>
+                  <span className="font-mono">{formatCurrency(appointment.taxAmount, currency)}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-semibold text-gray-900 border-t border-border pt-2">
+                <span>{t('invoicePreview.total')}</span>
+                <span className="font-mono">{formatCurrency(appointment.total, currency)}</span>
               </div>
             </div>
 

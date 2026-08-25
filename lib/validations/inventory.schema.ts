@@ -30,7 +30,6 @@ export const inventoryItemSchema = z.object({
     .or(z.literal('')),
   posEnabled: z.coerce.boolean().optional(),
   posPrice: z.coerce.number().min(0).optional().or(z.literal('')),
-  taxRateId: z.string().optional().or(z.literal('')),
   expiryDate: z.string().optional().or(z.literal('')),
   documents: documentsSchema,
 });

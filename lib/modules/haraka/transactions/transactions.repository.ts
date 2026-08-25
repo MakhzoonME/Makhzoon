@@ -14,8 +14,6 @@ function toLine(d: Row): PosLineItem {
     barcode: (d.barcode as string) ?? null,
     quantity: Number(d.quantity ?? 0),
     unitPrice: Number(d.unitPrice ?? 0),
-    taxRateId: (d.taxRateId as string) ?? null,
-    taxRate: Number(d.taxRate ?? 0),
     taxAmount: Number(d.taxAmount ?? 0),
     discountAmount: Number(d.discountAmount ?? 0),
     lineTotal: Number(d.lineTotal ?? 0),
@@ -55,7 +53,6 @@ function toTransaction(r: Row): PosTransaction {
     offlineId: (r.offline_id as string) ?? '',
     syncedAt: r.synced_at ? new Date(r.synced_at as string) : null,
     parentTransactionId: (r.parent_transaction_id as string) ?? null,
-    fawtara: (r.fawtara as PosTransaction['fawtara']) ?? null,
     createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
     updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
   }
@@ -66,9 +63,8 @@ export interface CompleteSaleInput {
   customerId?: string | null
   customerName?: string | null
   lines: CartLineInput[]
-  payments: Array<{ method: 'cash' | 'card' | 'cliq' | 'other'; amount: number; reference?: string | null; cardLast4?: string | null }>
+  payments: Array<{ method: string; amount: number; reference?: string | null; cardLast4?: string | null }>
   offlineId: string
-  skipFawtara?: boolean
   discountApprovedBy?: string | null
   discountApprovedByName?: string | null
 }
@@ -362,9 +358,7 @@ export class TransactionsRepository {
       barcode: l.barcode,
       quantity: l.quantity,
       unitPrice: l.unitPrice,
-      taxRateId: l.taxRateId,
-      taxRate: l.taxRate,
-      taxAmount: l.taxAmount,
+      taxAmount: 0,
       discountAmount: l.discount,
       lineTotal: l.lineTotal,
     }))
@@ -393,7 +387,7 @@ export class TransactionsRepository {
         customer_name: input.customerName ?? null,
         items,
         subtotal: priced.totals.subtotal,
-        tax_amount: priced.totals.taxTotal,
+        tax_amount: 0,
         discount_amount: priced.totals.discountTotal,
         total: priced.totals.total,
         payments: input.payments.map((p) => ({
@@ -408,7 +402,6 @@ export class TransactionsRepository {
         offline_id: input.offlineId,
         synced_at: now,
         parent_transaction_id: null,
-        fawtara: null,
         discount_approved_by: input.discountApprovedBy ?? null,
         discount_approved_by_name: input.discountApprovedByName ?? null,
       },
@@ -551,8 +544,6 @@ export class TransactionsRepository {
           barcode: l.barcode,
           quantity: l.quantity,
           unitPrice: l.unitPrice,
-          taxRateId: l.taxRateId,
-          taxRate: l.taxRate,
           taxAmount: l.taxAmount,
           discountAmount: l.discountAmount,
           lineTotal: l.lineTotal,
@@ -568,7 +559,6 @@ export class TransactionsRepository {
         offline_id: `refund-${id}-${Date.now()}`,
         synced_at: new Date().toISOString(),
         parent_transaction_id: id,
-        fawtara: null,
         refund_reason: opts.reason ?? null,
       })
       .select('id')

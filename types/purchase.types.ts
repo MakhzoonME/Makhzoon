@@ -10,7 +10,6 @@ export interface PurchaseLine {
   barcode: string | null;
   quantity: number;
   unitCost: number;
-  taxRateId: string | null;
   taxAmount: number;
   lineTotal: number;
   notes: string | null;

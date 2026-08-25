@@ -31,8 +31,6 @@ export async function POST(
         barcode:   null,
         quantity:  l.quantity,
         unitPrice: l.unitPrice,
-        taxRateId: null,
-        taxRate:   l.taxRate ?? 0,
         discount:  l.discountAmount ?? 0,
       })),
     )

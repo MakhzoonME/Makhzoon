@@ -11,14 +11,11 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
     'settingsLists.view',
     'settingsSubscription.view',
     'settingsUsers.view',
-    'settingsTaxRates.view',
-    'settingsFawtara.view',
     'settingsReceipt.view',
     'settingsInvoice.view',
     'settingsWarrantyCert.view',
     'settingsNotifications.view',
     'settingsCashDrawer.view',
-    'settingsCardTerminal.view',
   ]);
 
   const { t } = useT();

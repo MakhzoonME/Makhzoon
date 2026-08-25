@@ -20,7 +20,6 @@ export interface InventoryItem {
   stockStatus: StockStatus;
   posEnabled?: boolean;
   barcode?: string | null;
-  taxRateId?: string | null;
   posPrice?: number | null;
   expiryDate?: Date | null;
   /** Purchase receipts/invoices (private inventory-receipts bucket). */

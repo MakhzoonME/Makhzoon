@@ -15,7 +15,7 @@ import type { ReceiptLang } from '@/lib/receipts/labels';
  *     what prints — logo, QR, wrapping and all;
  *   • Arabic has no font ROM / shaping / RTL on any thermal printer, so text
  *     mode could never have handled it anyway;
- *   • the logo and the Fawtara QR are images regardless.
+ *   • the logo is an image regardless.
  *
  * Callers that already rendered the raster for the preview should pass its
  * `matrix` straight to `buildReceiptFromMatrix` rather than re-rendering.

@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useSession, useCloseSession, useTransactions } from '@/hooks/haraka';
+import { useList } from '@/hooks/lists';
 import { closeSessionSchema, type CloseSessionFormData } from '@/lib/modules/haraka/sessions/schemas';
 import { toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
@@ -312,6 +313,7 @@ function SessionTransactions({
 }) {
   const router = useRouter();
   const { data, isLoading } = useTransactions({ sessionId, pageSize: 50 });
+  const { data: pmItems = [] } = useList('payment_method');
   const rows = data?.items ?? [];
   const base = `/${locale}/${orgSlug}/${space}/haraka/transactions`;
 
@@ -331,7 +333,6 @@ function SessionTransactions({
               <th className="text-start px-3 py-2 font-medium">Customer</th>
               <th className="text-end px-3 py-2 font-medium">Total</th>
               <th className="text-start px-3 py-2 font-medium">Payment</th>
-              <th className="text-start px-3 py-2 font-medium">Fawtara</th>
               <th className="text-start px-3 py-2 font-medium">Status</th>
               <th className="text-end px-4 py-2 font-medium">Time</th>
             </tr>
@@ -353,32 +354,23 @@ function SessionTransactions({
                 <td className="px-3 py-2.5 text-gray-600">{tx.customerName ?? '—'}</td>
                 <td className="px-3 py-2.5 text-end font-mono font-semibold">{tx.total.toFixed(2)}</td>
                 <td className="px-3 py-2.5">
-                  {tx.payments?.[0] && (
+                  {tx.payments?.[0] && (() => {
+                    const method = tx.payments[0].method;
+                    const item = pmItems.find((i) => i.value === method);
+                    const label = PAYMENT_METHOD_LABEL[method]
+                      ?? (item ? (locale === 'ar' ? item.labelAr || item.label : item.label) : method);
+                    const style = PAYMENT_METHOD_STYLE[method]
+                      ?? (item?.color ? { background: `${item.color}22`, color: item.color } : PAYMENT_METHOD_STYLE.other);
+                    return (
                     <span
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
-                      style={PAYMENT_METHOD_STYLE[tx.payments[0].method] ?? PAYMENT_METHOD_STYLE.other}
+                      style={style}
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                      {PAYMENT_METHOD_LABEL[tx.payments[0].method] ?? 'Other'}
+                      {label}
                     </span>
-                  )}
-                </td>
-                <td className="px-3 py-2.5">
-                  {tx.fawtara ? (
-                    tx.fawtara.status === 'submitted' ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--green-100)] text-[var(--green-700)]">
-                        <span className="w-1.5 h-1.5 rounded-full bg-current" /> Submitted
-                      </span>
-                    ) : tx.fawtara.status === 'failed' ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--red-100)] text-[var(--red-700)]">
-                        <span className="w-1.5 h-1.5 rounded-full bg-current" /> Failed
-                      </span>
-                    ) : (
-                      <span className="text-xs text-gray-400">{tx.fawtara.status}</span>
-                    )
-                  ) : (
-                    <span className="text-xs text-gray-400">—</span>
-                  )}
+                    );
+                  })()}
                 </td>
                 <td className="px-3 py-2.5">
                   <span

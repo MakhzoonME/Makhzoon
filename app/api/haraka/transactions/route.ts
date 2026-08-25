@@ -55,8 +55,6 @@ export async function POST(req: NextRequest) {
         barcode: l.barcode ?? null,
         quantity: l.quantity,
         unitPrice: l.unitPrice,
-        taxRateId: l.taxRateId ?? null,
-        taxRate: l.taxRate,
         discount: l.discount,
       })),
       payments: d.payments.map((p) => ({
@@ -65,7 +63,6 @@ export async function POST(req: NextRequest) {
         reference: p.reference ?? null,
         cardLast4: p.cardLast4 || null,
       })),
-      skipFawtara: d.skipFawtara ?? false,
       approverPin: d.approverPin,
     })
     return NextResponse.json({ transaction: tx }, { status: 201 })

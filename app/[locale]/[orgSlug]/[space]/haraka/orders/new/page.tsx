@@ -32,13 +32,11 @@ interface LineItem {
   sku: string | null;
   quantity: number;
   unitPrice: number;
-  taxRate: number;
   discountAmount: number;
 }
 
 function lineTotal(l: LineItem) {
-  const sub = l.quantity * l.unitPrice - l.discountAmount;
-  return sub + sub * l.taxRate;
+  return l.quantity * l.unitPrice - l.discountAmount;
 }
 
 export default function NewOrderPage() {
@@ -87,7 +85,7 @@ export default function NewOrderPage() {
     form.setValue('items', items as CreateOrderPayload['items'], { shouldValidate: true });
   }, [items, form]);
 
-  function addItem(inv: { id: string; name: string; sku?: string; posPrice?: number | null; taxRateId?: string | null; unitCost?: number }) {
+  function addItem(inv: { id: string; name: string; sku?: string; posPrice?: number | null; unitCost?: number }) {
     const existing = items.find((l) => l.inventoryItemId === inv.id);
     if (existing) {
       setItems((prev) => prev.map((l) => l.inventoryItemId === inv.id ? { ...l, quantity: l.quantity + 1 } : l));
@@ -98,7 +96,6 @@ export default function NewOrderPage() {
         sku:               inv.sku ?? null,
         quantity:          1,
         unitPrice:         inv.posPrice ?? inv.unitCost ?? 0,
-        taxRate:           0,
         discountAmount:    0,
       }]);
     }
@@ -133,7 +130,6 @@ export default function NewOrderPage() {
           sku:               l.sku,
           quantity:          l.quantity,
           unitPrice:         l.unitPrice,
-          taxRate:           l.taxRate,
           discountAmount:    l.discountAmount,
         })),
       };

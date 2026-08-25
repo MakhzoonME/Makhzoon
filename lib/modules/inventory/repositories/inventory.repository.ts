@@ -28,7 +28,6 @@ function toItem(r: Row, computedQty?: number): InventoryItem {
     stockStatus: status,
     posEnabled: r.pos_enabled as boolean,
     barcode: (r.barcode as string) ?? null,
-    taxRateId: (r.tax_rate_id as string) ?? null,
     posPrice: (r.pos_price as number) ?? null,
     expiryDate: r.expiry_date ? new Date(r.expiry_date as string) : null,
     createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
@@ -315,7 +314,7 @@ export class InventoryRepository {
       name: string; category: string; sku?: string; unit: string
       quantityOnHand: number; minimumThreshold: number
       location?: string; supplier?: string; unitCost?: number; notes?: string
-      barcode?: string | null; posEnabled?: boolean; posPrice?: number | null; taxRateId?: string | null
+      barcode?: string | null; posEnabled?: boolean; posPrice?: number | null
       expiryDate?: string | null
       documents?: InventoryItem['documents']
     },
@@ -338,7 +337,6 @@ export class InventoryRepository {
         barcode: barcode || null,
         pos_enabled: input.posEnabled ?? false,
         pos_price: input.posPrice ?? null,
-        tax_rate_id: input.taxRateId ?? null,
         expiry_date: input.expiryDate || null,
         documents: input.documents ?? [],
         // quantity_on_hand intentionally left at default; on-hand is ledger-derived
@@ -388,7 +386,7 @@ export class InventoryRepository {
       name?: string; category?: string; sku?: string; unit?: string
       minimumThreshold?: number; location?: string
       supplier?: string; unitCost?: number; notes?: string
-      barcode?: string | null; posEnabled?: boolean; posPrice?: number | null; taxRateId?: string | null
+      barcode?: string | null; posEnabled?: boolean; posPrice?: number | null
       expiryDate?: string | null
       documents?: InventoryItem['documents']
     },
@@ -406,7 +404,7 @@ export class InventoryRepository {
       minimumThreshold: 'minimum_threshold',
       location: 'location', supplier: 'supplier', unitCost: 'unit_cost',
       notes: 'notes', posEnabled: 'pos_enabled', posPrice: 'pos_price',
-      taxRateId: 'tax_rate_id', expiryDate: 'expiry_date',
+      expiryDate: 'expiry_date',
     }
     for (const [k, col] of Object.entries(map)) {
       const v = (input as Record<string, unknown>)[k]

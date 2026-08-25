@@ -126,13 +126,6 @@ export default function TransactionsListPage() {
       render: (tx) => <StatusBadge status={tx.parentTransactionId ? 'credit_note' : tx.status} />,
     },
     {
-      key: 'fawtara',
-      header: 'Fawtara',
-      render: (tx) => tx.fawtara
-        ? <StatusBadge status={tx.fawtara.status} />
-        : <span className="text-gray-400 text-xs">—</span>,
-    },
-    {
       key: 'createdAt',
       header: 'Time',
       sortable: true,

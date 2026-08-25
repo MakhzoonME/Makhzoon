@@ -5,12 +5,12 @@ import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { Switch } from '@/components/ui/switch';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useT } from '@/hooks/ui';
 import { slugifyKey, dedupeKey } from '@/lib/utils/format';
-import type { CustomFieldType, CustomField, CustomFieldOption } from '@/types/banna.types';
+import type { CustomFieldType, CustomField, CustomFieldOption, CustomFieldCondition } from '@/types/banna.types';
 
 const MAX_OPTIONS = 50;
 
@@ -20,7 +20,7 @@ const BASE_FIELD_TYPES: { value: CustomFieldType; label: string }[] = [
   { value: 'select', label: 'Select' },
   { value: 'multi_select', label: 'Multi Select' },
   { value: 'date', label: 'Date' },
-  { value: 'boolean', label: 'Yes/No' },
+  { value: 'boolean', label: 'Toggle' },
   { value: 'user', label: 'User' },
 ];
 
@@ -48,6 +48,7 @@ export interface CustomFieldFormData {
   options?: CustomFieldOption[];
   placeholder: string;
   placeholderAr: string;
+  condition?: CustomFieldCondition | null;
   sortOrder: number;
 }
 
@@ -57,12 +58,28 @@ interface CustomFieldFormProps {
    *  (used when creating a field inline from within another entity's form,
    *  e.g. the customer-creation modal). */
   fixedModule?: string;
+  /** Other fields already defined (any module) — used to populate the
+   *  "show this field only if…" parent picker, filtered down to the
+   *  currently-selected module and minus this field itself. */
+  siblingFields?: CustomField[];
   onSubmit: (data: CustomFieldFormData) => Promise<void>;
   onCancel: () => void;
   submitting?: boolean;
 }
 
-export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, submitting }: CustomFieldFormProps) {
+const CONDITION_OPERATORS_BY_TYPE: Record<string, { value: CustomFieldCondition['operator']; label: string }[]> = {
+  boolean: [
+    { value: 'is_true', label: 'Is Yes' },
+    { value: 'is_false', label: 'Is No' },
+  ],
+  multi_select: [{ value: 'in', label: 'Includes' }],
+};
+const DEFAULT_OPERATORS: { value: CustomFieldCondition['operator']; label: string }[] = [
+  { value: 'equals', label: 'Equals' },
+  { value: 'not_equals', label: 'Not equals' },
+];
+
+export function CustomFieldForm({ initial, fixedModule, siblingFields, onSubmit, onCancel, submitting }: CustomFieldFormProps) {
   const { t } = useT();
   const [module, setModule] = useState(initial?.module ?? fixedModule ?? 'assets');
   const [type, setType] = useState<CustomFieldType>(initial?.type ?? 'text');
@@ -72,8 +89,24 @@ export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, subm
   const [options, setOptions] = useState<CustomFieldOption[]>(initial?.options ?? []);
   const [placeholder, setPlaceholder] = useState(initial?.placeholder ?? '');
   const [placeholderAr, setPlaceholderAr] = useState(initial?.placeholderAr ?? '');
+  const [condition, setCondition] = useState<CustomFieldCondition | null>(initial?.condition ?? null);
 
   const fieldTypes = module === 'customers' ? [...BASE_FIELD_TYPES, PLATE_READER_TYPE] : BASE_FIELD_TYPES;
+
+  const parentCandidates = (siblingFields ?? []).filter(
+    (f) => f.module === module && f.fieldKey !== initial?.fieldKey,
+  );
+  const conditionParent = parentCandidates.find((f) => f.fieldKey === condition?.parentFieldKey);
+  const conditionOperators = conditionParent
+    ? (CONDITION_OPERATORS_BY_TYPE[conditionParent.type] ?? DEFAULT_OPERATORS)
+    : DEFAULT_OPERATORS;
+
+  function setConditionParent(parentFieldKey: string | null) {
+    if (!parentFieldKey) { setCondition(null); return; }
+    const parent = parentCandidates.find((f) => f.fieldKey === parentFieldKey);
+    const operators = parent ? (CONDITION_OPERATORS_BY_TYPE[parent.type] ?? DEFAULT_OPERATORS) : DEFAULT_OPERATORS;
+    setCondition({ parentFieldKey, operator: operators[0].value, value: undefined });
+  }
 
   function addOption() {
     setOptions((prev) => (prev.length >= MAX_OPTIONS ? prev : [...prev, { value: '', label: '', labelAr: '' }]));
@@ -103,10 +136,19 @@ export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, subm
         return { value: key, ...o };
       });
     const fieldKey = initial?.fieldKey ?? slugifyKey(label, 'field');
+    // is_true/is_false carry no value; everything else needs one to be a
+    // real condition, so an unfinished picker (parent chosen, value not yet)
+    // is dropped rather than saved as "always hidden".
+    const needsValue = condition && condition.operator !== 'is_true' && condition.operator !== 'is_false';
+    const hasValue = Array.isArray(condition?.value) ? condition.value.length > 0 : !!condition?.value;
+    const cleanCondition = condition && (!needsValue || hasValue)
+      ? { ...condition, value: needsValue ? condition.value : undefined }
+      : null;
     await onSubmit({
       module, fieldKey, type, label, labelAr, required,
       options: isChoiceType && cleanOptions.length > 0 ? cleanOptions : undefined,
       placeholder, placeholderAr,
+      condition: cleanCondition,
       // Order is server-assigned on create (always appended to the bottom)
       // and untouched on edit — only drag-reordering on the fields list
       // changes it after that.
@@ -120,26 +162,26 @@ export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, subm
         {!fixedModule && (
           <div className="space-y-1.5">
             <Label>{t('banna.fieldModule')}</Label>
-            <Select value={module} onValueChange={setModule} disabled={!!initial}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {MODULES.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={module}
+              onChange={(v) => { setModule(v ?? module); setCondition(null); }}
+              options={MODULES}
+              disabled={!!initial}
+              searchable={false}
+              clearable={false}
+            />
           </div>
         )}
         <div className="space-y-1.5">
           <Label>{t('banna.fieldType')}</Label>
-          <Select value={type} onValueChange={(v) => setType(v as CustomFieldType)} disabled={!!initial}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {fieldTypes.map((ft) => (
-                <SelectItem key={ft.value} value={ft.value}>{ft.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            value={type}
+            onChange={(v) => setType((v ?? type) as CustomFieldType)}
+            options={fieldTypes}
+            disabled={!!initial}
+            searchable={false}
+            clearable={false}
+          />
         </div>
       </div>
 
@@ -206,6 +248,45 @@ export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, subm
       <div className="flex items-center gap-2">
         <Switch checked={required} onCheckedChange={setRequired} id="field-required" />
         <Label htmlFor="field-required">{t('banna.fieldRequired')}</Label>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label>{t('banna.fieldConditional')}</Label>
+        <Combobox
+          value={condition?.parentFieldKey ?? null}
+          onChange={setConditionParent}
+          options={parentCandidates.map((f) => ({ value: f.fieldKey, label: f.label }))}
+          placeholder={t('banna.fieldConditionalNone')}
+          searchable
+        />
+        {condition && conditionParent && (
+          <div className="grid grid-cols-2 gap-2 rounded-lg border border-border p-2.5">
+            <Combobox
+              value={condition.operator}
+              onChange={(v) => setCondition({ ...condition, operator: (v ?? condition.operator) as CustomFieldCondition['operator'], value: undefined })}
+              options={conditionOperators}
+              searchable={false}
+              clearable={false}
+            />
+            {condition.operator !== 'is_true' && condition.operator !== 'is_false' && (
+              conditionParent.type === 'select' || conditionParent.type === 'multi_select' ? (
+                <Combobox
+                  value={typeof condition.value === 'string' ? condition.value : null}
+                  onChange={(v) => setCondition({ ...condition, value: condition.operator === 'in' ? (v ? [v] : []) : (v ?? undefined) })}
+                  options={(conditionParent.options ?? []).map((o) => ({ value: o.value, label: o.label }))}
+                  placeholder="Value"
+                  searchable={false}
+                />
+              ) : (
+                <Input
+                  value={typeof condition.value === 'string' ? condition.value : ''}
+                  onChange={(e) => setCondition({ ...condition, value: e.target.value })}
+                  placeholder="Value"
+                />
+              )
+            )}
+          </div>
+        )}
       </div>
 
       <DialogFooter>

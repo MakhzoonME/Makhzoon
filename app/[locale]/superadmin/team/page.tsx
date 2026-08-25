@@ -13,9 +13,7 @@ import { formatDate } from '@/lib/utils/date';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { SuperAdminPermissionsEditor } from '@/components/super-admin/SuperAdminPermissionsEditor';
 import {
   SuperAdminPermissions,
@@ -507,24 +505,22 @@ export default function SuperAdminTeamPage() {
             </div>
             <div className="space-y-1.5">
               <Label>{t('team.role')} *</Label>
-              <Select
+              <Combobox
                 value={addForm.role}
-                onValueChange={(v) => {
-                  const role = v as MakhzoonRole;
+                onChange={(v) => {
+                  const role = (v ?? addForm.role) as MakhzoonRole;
                   setAddForm((f) => ({ ...f, role }));
                   setAddPermissions(defaultPermsForRole(role));
                   setShowAddPerms(false);
                 }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {isSuperAdmin && <SelectItem value="super_admin">{t('role.superAdmin')}</SelectItem>}
-                  {isSuperAdmin && <SelectItem value="makhzoon_admin">{t('role.makhzoonAdmin')}</SelectItem>}
-                  <SelectItem value="makhzoon_support">{t('role.makhzoonSupport')}</SelectItem>
-                </SelectContent>
-              </Select>
+                options={[
+                  ...(isSuperAdmin ? [{ value: 'super_admin', label: t('role.superAdmin') }] : []),
+                  ...(isSuperAdmin ? [{ value: 'makhzoon_admin', label: t('role.makhzoonAdmin') }] : []),
+                  { value: 'makhzoon_support', label: t('role.makhzoonSupport') },
+                ]}
+                searchable={false}
+                clearable={false}
+              />
               {addForm.role && (
                 <p className="text-xs text-gray-400">{ROLE_DESCRIPTION[addForm.role]}</p>
               )}
@@ -605,22 +601,22 @@ export default function SuperAdminTeamPage() {
 
             <div className="space-y-1.5">
               <Label>{t('team.role')}</Label>
-              <Select
+              <Combobox
                 value={editForm.role}
-                onValueChange={(v) => {
-                  const role = v as MakhzoonRole;
+                onChange={(v) => {
+                  const role = (v ?? editForm.role) as MakhzoonRole;
                   setEditForm((f) => ({ ...f, role }));
                   setEditPermissions(defaultPermsForRole(role));
                   setShowEditPerms(false);
                 }}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {isSuperAdmin && <SelectItem value="super_admin">{t('role.superAdmin')}</SelectItem>}
-                  {isSuperAdmin && <SelectItem value="makhzoon_admin">{t('role.makhzoonAdmin')}</SelectItem>}
-                  <SelectItem value="makhzoon_support">{t('role.makhzoonSupport')}</SelectItem>
-                </SelectContent>
-              </Select>
+                options={[
+                  ...(isSuperAdmin ? [{ value: 'super_admin', label: t('role.superAdmin') }] : []),
+                  ...(isSuperAdmin ? [{ value: 'makhzoon_admin', label: t('role.makhzoonAdmin') }] : []),
+                  { value: 'makhzoon_support', label: t('role.makhzoonSupport') },
+                ]}
+                searchable={false}
+                clearable={false}
+              />
               {editForm.role && (
                 <p className="text-xs text-gray-400">{ROLE_DESCRIPTION[editForm.role]}</p>
               )}

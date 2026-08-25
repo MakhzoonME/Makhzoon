@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Combobox } from '@/components/ui/combobox';
 import { computeChange } from '@/lib/modules/haraka/pricing/calc';
 
 export interface PaymentLine {
@@ -381,16 +382,19 @@ export function PaymentDialog({
 
                   return (
                     <div key={idx} className="flex gap-2 items-center">
-                      <select
-                        className="rounded-lg border border-border px-2 py-2 text-sm bg-surface-card w-24 flex-shrink-0"
+                      <Combobox
+                        className="w-24 flex-shrink-0"
                         value={r.method}
-                        onChange={(e) => setSplitRow(idx, { method: e.target.value as PaymentLine['method'] })}
-                      >
-                        <option value="cash">Cash</option>
-                        <option value="card">Card</option>
-                        <option value="cliq">Cliq</option>
-                        <option value="other">Other</option>
-                      </select>
+                        onChange={(v) => setSplitRow(idx, { method: (v ?? 'cash') as PaymentLine['method'] })}
+                        options={[
+                          { value: 'cash', label: 'Cash' },
+                          { value: 'card', label: 'Card' },
+                          { value: 'cliq', label: 'Cliq' },
+                          { value: 'other', label: 'Other' },
+                        ]}
+                        searchable={false}
+                        clearable={false}
+                      />
                       <Input
                         type="number"
                         step="0.01"

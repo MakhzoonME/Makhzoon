@@ -27,6 +27,15 @@ export interface CustomFieldOption {
   labelAr?: string;
 }
 
+/** Shows this field only when `parentFieldKey` (a field in the same module)
+ *  currently holds a value matching `operator`/`value`. Chains are allowed:
+ *  the parent may itself have a condition. */
+export interface CustomFieldCondition {
+  parentFieldKey: string;
+  operator: 'equals' | 'not_equals' | 'in' | 'is_true' | 'is_false';
+  value?: string | string[];
+}
+
 export interface CustomField {
   id: string;
   organizationId: string;
@@ -40,6 +49,7 @@ export interface CustomField {
   options?: CustomFieldOption[];
   placeholder?: string;
   placeholderAr?: string;
+  condition?: CustomFieldCondition | null;
   sortOrder: number;
   active: boolean;
   /** True for the built-in Name/Phone/Email/Tax number/Notes rows — real
@@ -60,6 +70,7 @@ export interface CreateCustomFieldPayload {
   options?: CustomFieldOption[];
   placeholder?: string;
   placeholderAr?: string;
+  condition?: CustomFieldCondition | null;
   sortOrder: number;
 }
 
@@ -70,6 +81,7 @@ export interface UpdateCustomFieldPayload {
   options?: CustomFieldOption[];
   placeholder?: string;
   placeholderAr?: string;
+  condition?: CustomFieldCondition | null;
   sortOrder?: number;
   active?: boolean;
 }
@@ -83,6 +95,7 @@ export interface UpdateCustomFieldInput {
   options?: CustomFieldOption[];
   placeholder?: string;
   placeholderAr?: string;
+  condition?: CustomFieldCondition | null;
   sortOrder?: number;
   isActive?: boolean;
 }

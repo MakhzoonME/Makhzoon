@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { useList } from '@/hooks/lists';
 import { useServices, useCreateService, useUpdateService, useDeleteService, useTaxRates } from '@/hooks/haraka';
@@ -224,24 +224,20 @@ export default function ServiceCatalogPage() {
             <FormField control={form.control} name="taxRateId" render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('inventory.taxRate')}</FormLabel>
-                <Select
-                  onValueChange={(v) => field.onChange(v === '__none__' ? '' : v)}
-                  value={field.value || '__none__'}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="No tax" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="__none__">No tax</SelectItem>
-                    {taxRates.map((tr) => (
-                      <SelectItem key={tr.id} value={tr.id}>
-                        {tr.name} ({(tr.rate * 100).toFixed(2)}%){tr.isDefault ? ' • default' : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Combobox
+                    onChange={(v) => field.onChange(!v || v === '__none__' ? '' : v)}
+                    value={field.value || '__none__'}
+                    options={[
+                      { value: '__none__', label: 'No tax' },
+                      ...taxRates.map((tr) => ({
+                        value: tr.id,
+                        label: `${tr.name} (${(tr.rate * 100).toFixed(2)}%)${tr.isDefault ? ' • default' : ''}`,
+                      })),
+                    ]}
+                    clearable={false}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -257,23 +253,14 @@ export default function ServiceCatalogPage() {
             <FormField control={form.control} name="durationMinutes" render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('services.labelDuration')}</FormLabel>
-                <Select
-                  value={field.value ? String(field.value) : ''}
-                  onValueChange={(v) => field.onChange(v ? Number(v) : null)}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('services.durationPlaceholder')} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {DURATION_OPTIONS.map((minutes) => (
-                      <SelectItem key={minutes} value={String(minutes)}>
-                        {formatDuration(minutes)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Combobox
+                    value={field.value ? String(field.value) : null}
+                    onChange={(v) => field.onChange(v ? Number(v) : null)}
+                    options={DURATION_OPTIONS.map((minutes) => ({ value: String(minutes), label: formatDuration(minutes) }))}
+                    placeholder={t('services.durationPlaceholder')}
+                  />
+                </FormControl>
                 <p className="text-xs text-gray-500">{t('services.durationHelp')}</p>
                 <FormMessage />
               </FormItem>

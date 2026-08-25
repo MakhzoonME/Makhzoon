@@ -7,6 +7,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { requireFeature } from '@/lib/permissions/require-feature';
 import { requireAddOn } from '@/lib/permissions/require-module';
 import { ServiceVehiclesService } from '@/lib/modules/haraka/service-vehicles/service-vehicles.service';
+import { isFieldVisible, type ConditionEvalEntry } from '@/lib/modules/banna/condition-eval';
 
 const vehiclesService = new ServiceVehiclesService();
 
@@ -32,11 +33,48 @@ export class BannaValuesService {
     if (!hasPermission(tenant, 'banna', 'update'))
       throw NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+    const clearedValues = await this.applyConditionClearing(tenant, recordType, values);
+
     if (recordType === 'customers') {
-      await this.syncPlateReaderFields(tenant, recordId, values);
+      await this.syncPlateReaderFields(tenant, recordId, clearedValues);
     }
 
-    await this.repo.upsert(tenant, recordType, recordId, values);
+    await this.repo.upsert(tenant, recordType, recordId, clearedValues);
+  }
+
+  /**
+   * Authoritative enforcement of "clear a field's value when its condition
+   * no longer matches" — the UI clears it too, but a value could still
+   * arrive here for a field the client thinks is hidden (stale draft, direct
+   * API call), so it's re-checked against the *incoming* values before
+   * persisting. Fields not covered by `condition` pass through untouched.
+   */
+  private async applyConditionClearing(
+    tenant: TenantContext,
+    recordType: CustomFieldRecordType,
+    values: UpsertCustomFieldValueInput[],
+  ): Promise<UpsertCustomFieldValueInput[]> {
+    if (values.length === 0) return values;
+
+    const { data: fieldRows, error } = await supabaseAdmin
+      .from('custom_fields')
+      .select('id, field_key, condition')
+      .eq('organization_id', tenant.organizationId)
+      .eq('module', recordType);
+    if (error) throw error;
+    if (!fieldRows || fieldRows.every((f) => !f.condition)) return values;
+
+    const valueByFieldId = new Map(values.map((v) => [v.fieldId, v.value]));
+    const byKey = new Map<string, ConditionEvalEntry>(
+      fieldRows.map((f) => [f.field_key as string, { condition: f.condition as never, value: valueByFieldId.get(f.id as string) }]),
+    );
+    const fieldKeyById = new Map(fieldRows.map((f) => [f.id as string, f.field_key as string]));
+
+    return values.map((v) => {
+      const fieldKey = fieldKeyById.get(v.fieldId);
+      if (!fieldKey || isFieldVisible(fieldKey, byKey)) return v;
+      return { ...v, value: null };
+    });
   }
 
   /**

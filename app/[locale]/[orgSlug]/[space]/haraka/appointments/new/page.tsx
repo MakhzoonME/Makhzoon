@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { CustomerSelect, type SelectedCustomer } from '@/components/haraka/CustomerSelect';
 import { StaffPicker } from '@/components/haraka/StaffPicker';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { useCreateAppointment, useServices } from '@/hooks/haraka';
 import { useModuleGuard, toast, useT } from '@/hooks/ui';
 import { useOrgInfo, useActiveAddOns } from '@/hooks/org';
@@ -33,12 +34,20 @@ export default function NewAppointmentPage() {
   const currency = orgInfo?.currency ?? 'JOD';
 
   // Only services an admin has explicitly marked bookable appear here.
-  const { data: servicesData } = useServices({
+  const { data: servicesData, isPending: servicesLoading } = useServices({
     active: true,
     appointmentBookable: true,
     pageSize: 100,
   });
   const services = useMemo(() => servicesData?.items ?? [], [servicesData]);
+  const serviceOptions: ComboboxOption[] = useMemo(
+    () =>
+      services.map((s) => ({
+        value: s.id,
+        label: s.durationMinutes ? `${s.name} — ${s.durationMinutes} min` : s.name,
+      })),
+    [services],
+  );
 
   const [customer, setCustomer] = useState<SelectedCustomer | null>(null);
   const [customerName, setCustomerName] = useState('');
@@ -58,6 +67,10 @@ export default function NewAppointmentPage() {
   const effectiveDuration = duration.trim()
     ? Number(duration)
     : selectedService?.durationMinutes ?? null;
+  const discountAmount = discount.trim() ? Number(discount) : 0;
+  const discountedPrice = selectedService
+    ? Math.max(0, selectedService.price - (Number.isNaN(discountAmount) ? 0 : discountAmount))
+    : 0;
 
   async function handleSubmit() {
     const name = customer?.name || customerName.trim();
@@ -98,7 +111,7 @@ export default function NewAppointmentPage() {
         }
       />
 
-      {services.length === 0 && (
+      {!servicesLoading && services.length === 0 && (
         <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800">
           {t('appointments.errNoBookableServices')}
         </div>
@@ -148,19 +161,13 @@ export default function NewAppointmentPage() {
             <label className="text-xs font-medium text-gray-600">
               {t('appointments.labelService')} *
             </label>
-            <select
-              value={serviceId}
-              onChange={(e) => setServiceId(e.target.value)}
-              className="h-9 w-full rounded-md border border-border bg-surface-card px-2 text-sm"
-            >
-              <option value="">{t('common.selectPlaceholder')}</option>
-              {services.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                  {s.durationMinutes ? ` — ${s.durationMinutes} min` : ''}
-                </option>
-              ))}
-            </select>
+            <Combobox
+              value={serviceId || null}
+              onChange={(id) => setServiceId(id ?? '')}
+              options={serviceOptions}
+              placeholder={t('common.selectPlaceholder')}
+              searchable
+            />
           </div>
 
           {hasWorkers && (
@@ -216,12 +223,26 @@ export default function NewAppointmentPage() {
         </div>
 
         {selectedService && (
-          <div className="rounded-lg bg-surface-card border border-border p-3 text-sm flex items-center justify-between">
-            <span className="text-gray-500">{t('appointments.labelPrice')}</span>
-            <span className="font-mono font-semibold text-gray-800">
-              {formatCurrency(selectedService.price, currency)}
-              {effectiveDuration ? <span className="text-gray-400 font-normal"> · {effectiveDuration} min</span> : null}
-            </span>
+          <div className="rounded-lg bg-surface-card border border-border p-3 text-sm space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-500">{t('appointments.labelPrice')}</span>
+              <span className="font-mono font-semibold text-gray-800">
+                {formatCurrency(selectedService.price, currency)}
+                {effectiveDuration ? <span className="text-gray-400 font-normal"> · {effectiveDuration} min</span> : null}
+              </span>
+            </div>
+            {discountAmount > 0 && (
+              <>
+                <div className="flex items-center justify-between text-gray-500">
+                  <span>{t('appointments.labelDiscount')}</span>
+                  <span className="font-mono">− {formatCurrency(discountAmount, currency)}</span>
+                </div>
+                <div className="flex items-center justify-between font-semibold text-gray-900 border-t border-border pt-1.5">
+                  <span>{t('invoicePreview.total')}</span>
+                  <span className="font-mono">{formatCurrency(discountedPrice, currency)}</span>
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -234,7 +255,7 @@ export default function NewAppointmentPage() {
       <div className="flex gap-2">
         <Button
           onClick={handleSubmit}
-          disabled={createMut.isPending || services.length === 0}
+          disabled={createMut.isPending || servicesLoading || services.length === 0}
           style={{ background: 'var(--mod-haraka)' }}
         >
           {createMut.isPending ? t('common.saving') : t('appointments.bookBtn')}

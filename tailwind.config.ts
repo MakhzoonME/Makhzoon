@@ -96,6 +96,14 @@ const config: Config = {
           from: { height: 'var(--radix-accordion-content-height)' },
           to:   { height: '0' },
         },
+        'collapsible-down': {
+          from: { height: '0' },
+          to:   { height: 'var(--radix-collapsible-content-height)' },
+        },
+        'collapsible-up': {
+          from: { height: 'var(--radix-collapsible-content-height)' },
+          to:   { height: '0' },
+        },
         shimmer: {
           '0%':   { transform: 'translateX(-100%)' },
           '100%': { transform: 'translateX(100%)' },
@@ -112,6 +120,8 @@ const config: Config = {
       animation: {
         'accordion-down':  'accordion-down 0.2s ease-out',
         'accordion-up':    'accordion-up 0.2s ease-out',
+        'collapsible-down': 'collapsible-down 0.2s ease-out',
+        'collapsible-up':   'collapsible-up 0.2s ease-out',
         shimmer:           'shimmer 1.5s infinite',
         float:             'float 6s ease-in-out infinite',
         'gradient-shift':  'gradient-shift 8s ease infinite',

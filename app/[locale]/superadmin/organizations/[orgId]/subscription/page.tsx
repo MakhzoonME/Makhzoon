@@ -25,7 +25,7 @@ import { UsageBar } from '@/components/features/subscription';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { PaymentLogForm, type PaymentLogFormPayload } from '@/components/super-admin/PaymentLogForm';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { usePackages } from '@/hooks/superadmin';
 import {
   usePaymentLogs,
@@ -611,14 +611,13 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
             <div className="flex items-end gap-3">
               <div className="space-y-1.5 flex-1 max-w-xs">
                 <Label>{t('nav.packages')}</Label>
-                <Select value={createPackageId} onValueChange={setCreatePackageId}>
-                  <SelectTrigger><SelectValue placeholder={t('common.selectPlaceholder')} /></SelectTrigger>
-                  <SelectContent>
-                    {packages.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  value={createPackageId || null}
+                  onChange={(v) => setCreatePackageId(v ?? '')}
+                  placeholder={t('common.selectPlaceholder')}
+                  options={packages.map((p) => ({ value: p.id, label: p.name }))}
+                  searchable
+                />
               </div>
               <Button onClick={handleCreateSubscription} disabled={!createPackageId || creatingSub}>
                 {creatingSub ? t('common.creating') : t('subscription.createSubscription')}
@@ -697,14 +696,13 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
               <DialogBody className="space-y-4">
                 <div className="space-y-1.5">
                   <Label>{t('subscription.newPackage')}</Label>
-                  <Select value={changePlanPackageId} onValueChange={setChangePlanPackageId}>
-                    <SelectTrigger><SelectValue placeholder={t('common.selectPlaceholder')} /></SelectTrigger>
-                    <SelectContent>
-                      {packages.filter((p) => p.id !== sub.packageId).map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    value={changePlanPackageId || null}
+                    onChange={(v) => setChangePlanPackageId(v ?? '')}
+                    placeholder={t('common.selectPlaceholder')}
+                    options={packages.filter((p) => p.id !== sub.packageId).map((p) => ({ value: p.id, label: p.name }))}
+                    searchable
+                  />
                 </div>
                 {changePlanPackageId && (
                   <div className="rounded-lg bg-gray-50 border border-border px-3 py-2 text-xs text-gray-600">
@@ -809,15 +807,17 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                 </div>
                 <div className="space-y-1.5">
                   <Label>{t('subscription.status')}</Label>
-                  <select
+                  <Combobox
                     value={status}
-                    onChange={(e) => setStatus(e.target.value as SubscriptionStatus)}
-                    className="flex h-9 w-full rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
-                  >
-                    <option value="ACTIVE">{t('status.active')}</option>
-                    <option value="EXPIRED">{t('status.expired')}</option>
-                    <option value="SUSPENDED">{t('subscription.suspended')}</option>
-                  </select>
+                    onChange={(v) => setStatus((v ?? 'ACTIVE') as SubscriptionStatus)}
+                    options={[
+                      { value: 'ACTIVE', label: t('status.active') },
+                      { value: 'EXPIRED', label: t('status.expired') },
+                      { value: 'SUSPENDED', label: t('subscription.suspended') },
+                    ]}
+                    searchable={false}
+                    clearable={false}
+                  />
                 </div>
                 <Button size="sm" onClick={handleSaveMeta} disabled={savingMeta || !endDate}>
                   {savingMeta ? t('common.saving') : t('subscription.saveStatusDate')}
@@ -829,18 +829,13 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
           <Card>
             <CardContent className="p-5 space-y-3">
               <h3 className="text-sm font-semibold text-gray-900">{t('nav.packages')}</h3>
-              <select
-                value={packageId}
-                onChange={(e) => handlePackageChange(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
-              >
-                <option value="">— Unassigned —</option>
-                {packages.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+              <Combobox
+                value={packageId || null}
+                onChange={(v) => handlePackageChange(v ?? '')}
+                options={packages.map((p) => ({ value: p.id, label: p.name }))}
+                placeholder="— Unassigned —"
+                searchable
+              />
               {selectedPackage && (
                 <div className="space-y-2">
                   <p className="text-xs text-gray-500 line-clamp-3">{selectedPackage.description}</p>
@@ -1161,15 +1156,17 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
             )}
             <div className="space-y-1.5">
               <Label>{t('subscription.paymentMethod')}</Label>
-              <select
+              <Combobox
                 value={payMethod}
-                onChange={(e) => setPayMethod(e.target.value as InvoicePaymentMethod)}
-                className="flex h-9 w-full rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
-              >
-                <option value="CASH">Cash</option>
-                <option value="CHEQUE">Cheque</option>
-                <option value="BANK_TRANSFER">Bank transfer</option>
-              </select>
+                onChange={(v) => setPayMethod((v ?? 'CASH') as InvoicePaymentMethod)}
+                options={[
+                  { value: 'CASH', label: 'Cash' },
+                  { value: 'CHEQUE', label: 'Cheque' },
+                  { value: 'BANK_TRANSFER', label: 'Bank transfer' },
+                ]}
+                searchable={false}
+                clearable={false}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>{t('col.date')}</Label>

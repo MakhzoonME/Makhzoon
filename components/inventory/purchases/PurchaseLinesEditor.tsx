@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { Plus, Trash2, ScanBarcode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { BarcodeInput } from '@/components/shared';
 import { useBarcodeLookup } from '@/hooks/inventory';
 import { useTaxRates } from '@/hooks/haraka';
@@ -215,22 +215,15 @@ export function PurchaseLinesEditor({ value, onChange }: Props) {
                     />
                   </td>
                   <td className="px-3 py-2">
-                    <Select
+                    <Combobox
                       value={line.taxRateId || '__none__'}
-                      onValueChange={(v) => updateLine(idx, { taxRateId: v === '__none__' ? '' : v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__">No tax</SelectItem>
-                        {taxRates.map((tr) => (
-                          <SelectItem key={tr.id} value={tr.id}>
-                            {tr.name} ({(tr.rate * 100).toFixed(1)}%)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      onChange={(v) => updateLine(idx, { taxRateId: !v || v === '__none__' ? '' : v })}
+                      options={[
+                        { value: '__none__', label: 'No tax' },
+                        ...taxRates.map((tr) => ({ value: tr.id, label: `${tr.name} (${(tr.rate * 100).toFixed(1)}%)` })),
+                      ]}
+                      clearable={false}
+                    />
                   </td>
                   <td className="px-3 py-2 text-end font-mono">{lineTotal.toFixed(2)}</td>
                   <td className="px-3 py-2">

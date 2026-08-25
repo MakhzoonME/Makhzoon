@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
 import { PermissionsEditor } from './PermissionsEditor';
 import { UserSpaceAccess } from './UserSpaceAccess';
@@ -56,14 +56,13 @@ export function UserAccessForm({
     <div className="space-y-6">
       <div className="space-y-1.5">
         <Label>{t('users.role')} *</Label>
-        <Select value={role} onValueChange={onRoleChange}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {roleOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Combobox
+          value={role}
+          onChange={(v) => onRoleChange(v ?? role)}
+          options={roleOptions}
+          searchable={false}
+          clearable={false}
+        />
       </div>
 
       <div className="space-y-3 rounded-lg border border-border p-4">

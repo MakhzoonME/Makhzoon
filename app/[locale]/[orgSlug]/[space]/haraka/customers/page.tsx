@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Plus, Pencil, Trash2, ArrowRight, Copy, Settings2 } from 'lucide-react';
-import { PageHeader, DataTable, FilterBar, ConfirmDialog, BulkActionsBar } from '@/components/shared';
+import { PageHeader, DataTable, FilterBar, ConfirmDialog, BulkActionsBar, ExportButton } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { useCustomers, useDeleteCustomer } from '@/hooks/haraka';
@@ -39,6 +39,7 @@ export default function CustomersListPage() {
   const canBulkMove = !!user && hasPermission(user, 'haraka', 'customersUpdate');
   const canBulkDuplicate = !!user && hasPermission(user, 'haraka', 'customersCreate');
   const canManageFields = !!user && hasPermission(user, 'banna', 'create');
+  const canExport = !!user && hasPermission(user, 'haraka', 'customersExport');
   const showSelection = canBulkDelete || canBulkMove || canBulkDuplicate;
   const { data: spaceList } = useAccessibleSpaces();
   const hasMultipleSpaces = (spaceList?.items?.length ?? 0) > 1;
@@ -127,6 +128,19 @@ export default function CustomersListPage() {
               <Button size="sm" variant="outline" onClick={() => router.push(`${base}/fields`)}>
                 <Settings2 size={16} className="me-1" /> {t('customers.customFields')}
               </Button>
+            )}
+            {canExport && (
+              <ExportButton
+                filename="customers"
+                label="customers"
+                ext="csv"
+                showFiltered={false}
+                getUrl={() => {
+                  const p = new URLSearchParams();
+                  if (search) p.set('search', search);
+                  return `/api/haraka/customers/export?${p.toString()}`;
+                }}
+              />
             )}
             <Button size="sm" onClick={() => router.push(`${base}/new`)}>
               <Plus size={16} className="me-1" /> {t('customers.addCustomer')}

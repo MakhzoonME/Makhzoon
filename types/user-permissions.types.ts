@@ -103,6 +103,7 @@ export interface HarakaPermissions {
   customersCreate: boolean;
   customersUpdate: boolean;
   customersDelete: boolean;
+  customersExport: boolean;
   customersHistoryView: boolean;
   customerFieldsView: boolean;
   customerFieldsCreate: boolean;
@@ -312,7 +313,7 @@ const HARAKA_KEYS: (keyof HarakaPermissions)[] = [
   'sessionsView', 'sessionsOpen', 'sessionsCloseOwn', 'sessionsCloseOthers', 'sessionsEnterOthers', 'sessionsViewOthers',
   'registerOpen', 'applyDiscount', 'approveDiscount', 'removeReceiptItems', 'receiptRemoveCustomer', 'holdReceipts', 'recallReceipts', 'removeReceipts', 'chargeReceipt', 'printerSettings',
   'ordersView', 'ordersCreate', 'ordersRemoveCustomer', 'ordersGenerateInvoice', 'ordersGenerateWarranty', 'ordersShare', 'ordersMarkConfirmed', 'ordersCancel', 'ordersMarkAssigned', 'ordersMarkInTransit', 'ordersMarkDelivered', 'ordersAddPayment',
-  'customersView', 'customersCreate', 'customersUpdate', 'customersDelete', 'customersHistoryView', 'customerFieldsView', 'customerFieldsCreate', 'customerFieldsUpdate', 'customerFieldsDelete',
+  'customersView', 'customersCreate', 'customersUpdate', 'customersDelete', 'customersExport', 'customersHistoryView', 'customerFieldsView', 'customerFieldsCreate', 'customerFieldsUpdate', 'customerFieldsDelete',
   'deliveryAgentsView', 'deliveryAgentsCreate', 'deliveryAgentsUpdate', 'deliveryAgentsDelete',
   'warrantyCertsView',
   'transactionsView', 'transactionsPrint', 'transactionsShare', 'transactionsRefund', 'transactionsVoid',
@@ -518,6 +519,7 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'customersCreate', label: 'Add Customers', labelKey: 'permOp.haraka.customersCreate', requiresKey: 'customersView' },
       { key: 'customersUpdate', label: 'Edit Customers', labelKey: 'permOp.haraka.customersUpdate', requiresKey: 'customersView' },
       { key: 'customersDelete', label: 'Delete Customers', labelKey: 'permOp.haraka.customersDelete', requiresKey: 'customersView' },
+      { key: 'customersExport', label: 'Export Customers (CSV)', labelKey: 'permOp.haraka.customersExport', requiresKey: 'customersView' },
       { key: 'customersHistoryView', label: 'View Customer History', labelKey: 'permOp.haraka.customersHistoryView', requiresKey: 'customersView' },
       { key: 'customerFieldsView', label: 'View Customer Fields', labelKey: 'permOp.haraka.customerFieldsView', requiresKey: 'customersView' },
       { key: 'customerFieldsCreate', label: 'Add Customer Fields', labelKey: 'permOp.haraka.customerFieldsCreate', requiresKey: 'customerFieldsView' },

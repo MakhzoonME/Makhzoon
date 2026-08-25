@@ -1,4 +1,4 @@
-import { Asset, Warranty } from '@/types';
+import { Asset, Warranty, PosCustomer } from '@/types';
 import { formatDate } from '@/lib/utils/date';
 import type { ExportColumn } from './xlsx';
 
@@ -75,6 +75,30 @@ export function warrantiesToRows(
     createdAt: formatDate(w.createdAt),
     updatedBy: w.updatedBy,
     updatedAt: formatDate(w.updatedAt),
+  }));
+}
+
+export const CUSTOMER_COLUMNS: ExportColumn[] = [
+  { header: 'ID', key: 'id' },
+  { header: 'Name', key: 'name' },
+  { header: 'Phone', key: 'phone' },
+  { header: 'Email', key: 'email' },
+  { header: 'Tax Number', key: 'taxNumber' },
+  { header: 'Notes', key: 'notes' },
+  { header: 'Created At', key: 'createdAt' },
+  { header: 'Updated At', key: 'updatedAt' },
+];
+
+export function customersToRows(customers: PosCustomer[]): Record<string, unknown>[] {
+  return customers.map((c) => ({
+    id: c.id,
+    name: c.name,
+    phone: c.phone ?? '',
+    email: c.email ?? '',
+    taxNumber: c.taxNumber ?? '',
+    notes: c.notes ?? '',
+    createdAt: formatDate(c.createdAt),
+    updatedAt: formatDate(c.updatedAt),
   }));
 }
 

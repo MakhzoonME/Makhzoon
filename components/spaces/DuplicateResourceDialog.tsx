@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { toast } from '@/hooks/ui';
 
 interface Props {
@@ -90,19 +90,14 @@ export function DuplicateResourceDialog({
             </p>
             <div>
               <Label htmlFor="duplicate-target">{t('move.target')}</Label>
-              <Select value={target} onValueChange={setTarget}>
-                <SelectTrigger id="duplicate-target">
-                  <SelectValue placeholder={t('move.pickSpace')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {eligible.length === 0 && (
-                    <div className="px-2.5 py-2 text-sm text-gray-500">{t('move.noOther')}</div>
-                  )}
-                  {eligible.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                id="duplicate-target"
+                value={target || null}
+                onChange={(v) => setTarget(v ?? '')}
+                placeholder={t('move.pickSpace')}
+                emptyMessage={t('move.noOther')}
+                options={eligible.map((s) => ({ value: s.id, label: s.name }))}
+              />
             </div>
             <p className="text-xs text-gray-500">{cascadeHint}</p>
           </DialogBody>

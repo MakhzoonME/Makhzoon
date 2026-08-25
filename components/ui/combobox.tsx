@@ -99,7 +99,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(funct
           id={id}
           type="button"
           disabled={disabled}
-          aria-invalid={ariaInvalid}
+          aria-invalid={ariaInvalid || undefined}
           aria-describedby={ariaDescribedby}
           className={cn(
             'flex h-9 w-full items-center justify-between gap-2 rounded-md border border-border bg-surface-card px-3 text-[14px] transition-colors',

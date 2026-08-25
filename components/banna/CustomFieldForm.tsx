@@ -5,7 +5,7 @@ import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { Switch } from '@/components/ui/switch';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useT } from '@/hooks/ui';
@@ -120,26 +120,26 @@ export function CustomFieldForm({ initial, fixedModule, onSubmit, onCancel, subm
         {!fixedModule && (
           <div className="space-y-1.5">
             <Label>{t('banna.fieldModule')}</Label>
-            <Select value={module} onValueChange={setModule} disabled={!!initial}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {MODULES.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={module}
+              onChange={(v) => setModule(v ?? module)}
+              options={MODULES}
+              disabled={!!initial}
+              searchable={false}
+              clearable={false}
+            />
           </div>
         )}
         <div className="space-y-1.5">
           <Label>{t('banna.fieldType')}</Label>
-          <Select value={type} onValueChange={(v) => setType(v as CustomFieldType)} disabled={!!initial}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {fieldTypes.map((ft) => (
-                <SelectItem key={ft.value} value={ft.value}>{ft.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            value={type}
+            onChange={(v) => setType((v ?? type) as CustomFieldType)}
+            options={fieldTypes}
+            disabled={!!initial}
+            searchable={false}
+            clearable={false}
+          />
         </div>
       </div>
 

@@ -18,16 +18,8 @@ import { useState, useMemo, useEffect } from 'react';
 import { useAssets } from '@/hooks/assets';
 import { useInventoryItems } from '@/hooks/inventory';
 import { useActiveWarrantyIds } from '@/hooks/warranties';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
-function AlertTriangleSVG() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path d="M8 2L1.5 13h13L8 2z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" fill="none" />
-      <path d="M8 6.5v3M8 11v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
 function ShieldOffSVG() {
   return (
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden>
@@ -193,17 +185,19 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId, defaultInven
         {!warranty && !defaultAssetId && !defaultInventoryItemId && (
           <FormItem>
             <FormLabel>Warranty for *</FormLabel>
-            <Select value={itemType} onValueChange={(v) => setItemType(v as 'asset' | 'inventory')} disabled={isLoadingData}>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value="asset">Asset</SelectItem>
-                <SelectItem value="inventory">Inventory Item</SelectItem>
-              </SelectContent>
-            </Select>
+            <FormControl>
+              <Combobox
+                value={itemType}
+                onChange={(v) => setItemType((v ?? itemType) as 'asset' | 'inventory')}
+                disabled={isLoadingData}
+                options={[
+                  { value: 'asset', label: 'Asset' },
+                  { value: 'inventory', label: 'Inventory Item' },
+                ]}
+                searchable={false}
+                clearable={false}
+              />
+            </FormControl>
           </FormItem>
         )}
 
@@ -229,29 +223,17 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId, defaultInven
             return (
               <FormItem>
                 <FormLabel>Asset *</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  disabled={isLoadingData}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={isLoadingData ? 'Loading assets…' : 'Select asset'} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {assetOptions.length === 0 ? (
-                      <div className="flex items-center gap-2 px-3 py-4 text-sm text-gray-500">
-                        <AlertTriangleSVG />
-                        No assets available
-                      </div>
-                    ) : (
-                      assetOptions.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Combobox
+                    value={field.value ?? null}
+                    onChange={(v) => field.onChange(v)}
+                    disabled={isLoadingData}
+                    placeholder={isLoadingData ? 'Loading assets…' : 'Select asset'}
+                    emptyMessage="No assets available"
+                    options={assetOptions.map((a) => ({ value: a.id, label: a.name }))}
+                    searchable
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             );
@@ -280,29 +262,17 @@ export function WarrantyForm({ warranty, onSuccess, defaultAssetId, defaultInven
             return (
               <FormItem>
                 <FormLabel>Inventory Item *</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  disabled={isLoadingData}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={isLoadingData ? 'Loading items…' : 'Select item'} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {inventoryOptions.length === 0 ? (
-                      <div className="flex items-center gap-2 px-3 py-4 text-sm text-gray-500">
-                        <AlertTriangleSVG />
-                        No items available
-                      </div>
-                    ) : (
-                      inventoryOptions.map((i) => (
-                        <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <Combobox
+                    value={field.value ?? null}
+                    onChange={(v) => field.onChange(v)}
+                    disabled={isLoadingData}
+                    placeholder={isLoadingData ? 'Loading items…' : 'Select item'}
+                    emptyMessage="No items available"
+                    options={inventoryOptions.map((i) => ({ value: i.id, label: i.name }))}
+                    searchable
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             );

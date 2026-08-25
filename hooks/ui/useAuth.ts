@@ -21,6 +21,7 @@ export function useAuth() {
     ) {
       let features: Record<string, boolean> = {};
       let activeHarakaModules: AuthUser['activeHarakaModules'] = [];
+      let activeAddOns: AuthUser['activeAddOns'];
       let permissions = null;
       let saPermissions = null;
       let orgSlug: string | null = null;
@@ -37,6 +38,7 @@ export function useAuth() {
           resolvedRole = data.role ?? role;
           features = data.features ?? {};
           activeHarakaModules = data.activeHarakaModules ?? [];
+          activeAddOns = data.activeAddOns ?? undefined;
           permissions = data.permissions ?? null;
           saPermissions = data.saPermissions ?? null;
           orgSlug = data.orgSlug ?? null;
@@ -60,6 +62,7 @@ export function useAuth() {
         saPermissions,
         features,
         activeHarakaModules,
+        activeAddOns,
       } as AuthUser;
       setUser(authUser);
       setLoading(false);
@@ -98,6 +101,7 @@ export function useAuth() {
               saPermissions: data.saPermissions ?? null,
               features: data.features ?? {},
               activeHarakaModules: data.activeHarakaModules ?? [],
+              activeAddOns: data.activeAddOns ?? undefined,
             } as AuthUser);
           } else {
             setUser(null);

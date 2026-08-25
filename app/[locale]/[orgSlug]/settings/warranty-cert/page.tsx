@@ -6,14 +6,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { WarrantyCertPreview } from '@/components/haraka/WarrantyCertPreview';
 import { useWarrantyConfig, useUpdateWarrantyConfig } from '@/hooks/haraka';
-import { useAdminGuard, toast } from '@/hooks/ui';
+import { useAdminGuard, useModuleGuard, toast } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import type { HarakaWarrantyConfig } from '@/types';
 
 export default function WarrantyCertSettingsPage() {
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', harakaAddOn: 'warrantyCerts' });
   const { isAllowed } = useAdminGuard('settingsWarrantyCert.view');
   const { data, isLoading } = useWarrantyConfig();
   const updateMut = useUpdateWarrantyConfig();
@@ -38,7 +39,7 @@ export default function WarrantyCertSettingsPage() {
     if (data?.config) setCfg(data.config);
   }, [data]);
 
-  if (!isAllowed) return null;
+  if (!featureAllowed || !isAllowed) return null;
 
   const previewConfig: HarakaWarrantyConfig = {
     organizationId:      '',
@@ -101,26 +102,34 @@ export default function WarrantyCertSettingsPage() {
           </div>
           <div className="space-y-1.5">
             <Label>Language</Label>
-            <Select value={cfg.language ?? 'en'} onValueChange={(v) => setCfg((c) => ({ ...c, language: v as 'en'|'ar'|'both' }))}>
-              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="ar">Arabic</SelectItem>
-                <SelectItem value="both">Bilingual (EN/AR)</SelectItem>
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={cfg.language ?? 'en'}
+              onChange={(v) => setCfg((c) => ({ ...c, language: (v ?? 'en') as 'en'|'ar'|'both' }))}
+              options={[
+                { value: 'en', label: 'English' },
+                { value: 'ar', label: 'Arabic' },
+                { value: 'both', label: 'Bilingual (EN/AR)' },
+              ]}
+              searchable={false}
+              clearable={false}
+              className="w-44"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Template</Label>
-            <Select value={cfg.template ?? 'a4-modern'} onValueChange={(v) => setCfg((c) => ({ ...c, template: v }))}>
-              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="a4-modern">A4 Modern</SelectItem>
-                <SelectItem value="a4-certificate">A4 Certificate</SelectItem>
-                <SelectItem value="thermal-58">Thermal 58mm</SelectItem>
-                <SelectItem value="thermal-80">Thermal 80mm</SelectItem>
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={cfg.template ?? 'a4-modern'}
+              onChange={(v) => setCfg((c) => ({ ...c, template: v ?? 'a4-modern' }))}
+              options={[
+                { value: 'a4-modern', label: 'A4 Modern' },
+                { value: 'a4-certificate', label: 'A4 Certificate' },
+                { value: 'thermal-58', label: 'Thermal 58mm' },
+                { value: 'thermal-80', label: 'Thermal 80mm' },
+              ]}
+              searchable={false}
+              clearable={false}
+              className="w-44"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Accent color</Label>

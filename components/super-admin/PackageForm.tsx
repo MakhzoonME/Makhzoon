@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Combobox } from '@/components/ui/combobox';
 import {
   INCLUSION_KEYS,
   INCLUSION_LABELS,
@@ -39,9 +40,6 @@ const LIMIT_LABELS: Record<(typeof LIMIT_KEYS)[number], string> = {
 };
 
 const CURRENCIES = ['USD', 'JOD', 'SAR', 'AED', 'EUR'] as const;
-
-const selectClass =
-  'flex h-9 w-full rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600';
 
 // Sub-features gated under the Usool umbrella (module color/grouping mirrors
 // lib/nav/index.ts so package config matches what an org actually sees in
@@ -333,13 +331,14 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="pkg-currency">Currency</Label>
-            <select id="pkg-currency" className={selectClass} value={currency} onChange={(e) => setCurrency(e.target.value)}>
-              {CURRENCIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+            <Combobox
+              id="pkg-currency"
+              value={currency}
+              onChange={(v) => setCurrency(v ?? currency)}
+              options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+              searchable={false}
+              clearable={false}
+            />
           </div>
         </div>
         {annualSaving != null && annualSaving > 0 && (

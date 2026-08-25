@@ -66,6 +66,7 @@ export class BannaValuesRepository {
         options:        (f.options as unknown[]) ?? [],
         placeholder:    (f.placeholder as string) ?? undefined,
         placeholderAr:  (f.placeholder_ar as string) ?? undefined,
+        condition:      (f.condition as CustomFieldWithValue['condition']) ?? null,
         sortOrder:      f.sort_order as number,
         active:         f.is_active as boolean,
         isDefault:      f.is_default as boolean,

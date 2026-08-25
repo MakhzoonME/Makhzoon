@@ -25,6 +25,17 @@ export const HARAKA_MODULE_LABELS: Record<HarakaModule, string> = {
   appointments: 'Appointments',
 };
 
+// Independent add-ons (not Haraka sub-modules) that can be plan-included or
+// purchased separately. Shared between server entitlement checks
+// (lib/permissions/require-module.ts) and client nav/guard gating.
+export type AddOnKey =
+  | 'deliveryAgents'
+  | 'warrantyCerts'
+  | 'customization'
+  | 'purchasesRequests'
+  | 'vehicleIntake'
+  | 'loyalty';
+
 // Purchased add-ons layered on top of the plan's included allowances.
 export interface SubscriptionAddOns {
   deliveryAgents: boolean;

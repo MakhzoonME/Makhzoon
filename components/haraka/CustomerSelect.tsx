@@ -11,6 +11,8 @@ import { useDebounce } from '@/hooks/ui';
 import { useCustomers, useCreateCustomer } from '@/hooks/haraka';
 import { CustomerForm } from '@/components/haraka/CustomerForm';
 import { toast } from '@/hooks/ui';
+import { useAuthStore } from '@/store/auth.store';
+import { hasPermission } from '@/lib/permissions';
 import { cn } from '@/lib/utils/cn';
 import type { CustomerFormData } from '@/lib/modules/haraka/customers/schemas';
 import type { PosCustomer } from '@/types';
@@ -104,6 +106,8 @@ function CustomerSelectDialog({
   const [search, setSearch] = useState('');
   const debounced = useDebounce(search, 200);
   const createMut = useCreateCustomer();
+  const { user } = useAuthStore();
+  const canCreate = !!user && hasPermission(user, 'haraka', 'customersCreate');
 
   const { data, isLoading } = useCustomers({
     search: debounced || undefined,
@@ -160,7 +164,9 @@ function CustomerSelectDialog({
                   <div className="px-4 py-5 text-sm text-gray-500 text-center">Loading…</div>
                 ) : (data?.items ?? []).length === 0 ? (
                   <div className="px-4 py-5 text-sm text-gray-500 text-center">
-                    {debounced ? 'No matches — create a new customer below.' : 'No customers yet.'}
+                    {debounced
+                      ? canCreate ? 'No matches — create a new customer below.' : 'No matches.'
+                      : 'No customers yet.'}
                   </div>
                 ) : (
                   (data?.items ?? []).map((c) => (
@@ -180,13 +186,15 @@ function CustomerSelectDialog({
               </div>
             </DialogBody>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setMode('new')}>
-                <UserPlus size={14} className="me-1" /> New customer
-              </Button>
+              {canCreate && (
+                <Button type="button" variant="outline" onClick={() => setMode('new')}>
+                  <UserPlus size={14} className="me-1" /> New customer
+                </Button>
+              )}
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
             </DialogFooter>
           </>
-        ) : (
+        ) : canCreate ? (
           <DialogBody>
             <CustomerForm
               initial={{ name: search.trim() || '' }}
@@ -196,7 +204,7 @@ function CustomerSelectDialog({
               onCancel={() => setMode('search')}
             />
           </DialogBody>
-        )}
+        ) : null}
       </DialogContent>
     </Dialog>
   );

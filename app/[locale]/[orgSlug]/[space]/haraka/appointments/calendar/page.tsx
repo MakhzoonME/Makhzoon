@@ -21,7 +21,7 @@ import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import { WeekPicker, MonthPicker } from '@/components/haraka/CalendarPeriodPicker';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppointments, useStaff } from '@/hooks/haraka';
 import { useList } from '@/hooks/lists';
@@ -137,12 +137,14 @@ export default function AppointmentsCalendarPage() {
 
   const appointments = data?.items ?? [];
 
+  const UNASSIGNED_KEY = '__unassigned__';
   const byProvider = useMemo(() => {
     const map = new Map<string, HarakaAppointment[]>();
     for (const a of appointments) {
-      const list = map.get(a.staffId) ?? [];
+      const key = a.staffId ?? UNASSIGNED_KEY;
+      const list = map.get(key) ?? [];
       list.push(a);
-      map.set(a.staffId, list);
+      map.set(key, list);
     }
     return map;
   }, [appointments]);
@@ -219,17 +221,15 @@ export default function AppointmentsCalendarPage() {
         </div>
 
         <div className="w-48">
-          <Select value={staffId || '__all__'} onValueChange={(v) => goTo({ staffId: v === '__all__' ? null : v })}>
-            <SelectTrigger>
-              <SelectValue placeholder={t('appointments.filterProvider')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{t('appointments.filterProvider')}</SelectItem>
-              {allProviders.map((p) => (
-                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            value={staffId || '__all__'}
+            onChange={(v) => goTo({ staffId: !v || v === '__all__' ? null : v })}
+            options={[
+              { value: '__all__', label: t('appointments.filterProvider') },
+              ...allProviders.map((p) => ({ value: p.id, label: p.name })),
+            ]}
+            clearable={false}
+          />
         </div>
 
         {isLoading && (
@@ -237,11 +237,7 @@ export default function AppointmentsCalendarPage() {
         )}
       </div>
 
-      {providers.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface-page p-8 text-center text-sm text-gray-400">
-          {t('appointments.noProvidersForDay')}
-        </div>
-      ) : view === 'month' ? (
+      {view === 'month' ? (
         <MonthGrid
           day={day}
           range={range}
@@ -258,7 +254,17 @@ export default function AppointmentsCalendarPage() {
             {view === 'day' ? (
               <DayColumns
                 hours={hours}
-                columns={providers.map((p) => ({ key: p.id, label: p.name, items: byProvider.get(p.id) ?? [] }))}
+                columns={
+                  providers.length === 0
+                    ? [{ key: UNASSIGNED_KEY, label: '', items: appointments }]
+                    : [
+                        ...providers.map((p) => ({ key: p.id, label: p.name, items: byProvider.get(p.id) ?? [] })),
+                        ...(byProvider.get(UNASSIGNED_KEY)?.length
+                          ? [{ key: UNASSIGNED_KEY, label: t('appointments.unassigned'), items: byProvider.get(UNASSIGNED_KEY) ?? [] }]
+                          : []),
+                      ]
+                }
+                showProvider={providers.length === 0}
                 onOpen={(id) => router.push(`${base}/appointments/${id}`)}
                 statusList={statusList}
               />

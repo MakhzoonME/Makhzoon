@@ -10,7 +10,7 @@ import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { InventoryTransaction, Warranty } from '@/types';
@@ -511,31 +511,45 @@ export default function InventoryItemDetailPage() {
 
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('inventory.txType')}</label>
-                    <Select value={txType} onValueChange={(v) => setTxType(v as typeof txType)}>
-                      <SelectTrigger className="cursor-pointer">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="in">
-                          <span className="flex items-center gap-2 text-[var(--green-700)]">
-                            <TrendingUp aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
-                            {t('inventory.stockIn')}
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="out">
-                          <span className="flex items-center gap-2 text-red-600">
-                            <TrendingDown aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
-                            {t('inventory.stockOut')}
-                          </span>
-                        </SelectItem>
-                        <SelectItem value="adjustment">
-                          <span className="flex items-center gap-2 text-primary-600">
-                            <RefreshCw aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
-                            {t('inventory.setAbsolute')}
-                          </span>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Combobox
+                      value={txType}
+                      onChange={(v) => setTxType((v ?? txType) as typeof txType)}
+                      searchable={false}
+                      clearable={false}
+                      className="cursor-pointer"
+                      options={[
+                        {
+                          value: 'in',
+                          searchText: t('inventory.stockIn'),
+                          label: (
+                            <span className="flex items-center gap-2 text-[var(--green-700)]">
+                              <TrendingUp aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
+                              {t('inventory.stockIn')}
+                            </span>
+                          ),
+                        },
+                        {
+                          value: 'out',
+                          searchText: t('inventory.stockOut'),
+                          label: (
+                            <span className="flex items-center gap-2 text-red-600">
+                              <TrendingDown aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
+                              {t('inventory.stockOut')}
+                            </span>
+                          ),
+                        },
+                        {
+                          value: 'adjustment',
+                          searchText: t('inventory.setAbsolute'),
+                          label: (
+                            <span className="flex items-center gap-2 text-primary-600">
+                              <RefreshCw aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
+                              {t('inventory.setAbsolute')}
+                            </span>
+                          ),
+                        },
+                      ]}
+                    />
                   </div>
 
                   <div>

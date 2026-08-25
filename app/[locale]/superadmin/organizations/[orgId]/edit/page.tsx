@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { toast, useT } from '@/hooks/ui';
 import { SuperAdminPermissionGate } from '@/components/shared/SuperAdminPermissionGate';
 import { ORG_CATEGORIES, type Organization, type OrgCategory } from '@/types';
@@ -224,17 +224,15 @@ function EditOrgForm({
       </div>
       <div className="space-y-1.5">
         <Label>{t('orgs.category')}</Label>
-        <Select value={category || NONE} onValueChange={(v) => setCategory(v === NONE ? '' : v as OrgCategory)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={NONE}>— None —</SelectItem>
-            {ORG_CATEGORIES.map((c) => (
-              <SelectItem key={c} value={c}>{c}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Combobox
+          value={category || NONE}
+          onChange={(v) => setCategory(!v || v === NONE ? '' : v as OrgCategory)}
+          options={[
+            { value: NONE, label: '— None —' },
+            ...ORG_CATEGORIES.map((c) => ({ value: c, label: c })),
+          ]}
+          clearable={false}
+        />
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="description">{t('orgs.description')}</Label>
@@ -249,19 +247,15 @@ function EditOrgForm({
       </div>
       <div className="space-y-1.5">
         <Label>{t('settings.accountManager')}</Label>
-        <Select value={assignedMemberId || NONE} onValueChange={(v) => setAssignedMemberId(v === NONE ? '' : v)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={NONE}>— Unassigned —</SelectItem>
-            {activeMembers.map((m) => (
-              <SelectItem key={m.id} value={m.id}>
-                {m.displayName} ({m.email})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Combobox
+          value={assignedMemberId || NONE}
+          onChange={(v) => setAssignedMemberId(!v || v === NONE ? '' : v)}
+          options={[
+            { value: NONE, label: '— Unassigned —' },
+            ...activeMembers.map((m) => ({ value: m.id, label: `${m.displayName} (${m.email})` })),
+          ]}
+          clearable={false}
+        />
         <p className="text-xs text-gray-500">{t('orgs.accountManagerHint')}</p>
       </div>
       <div className="flex gap-2 pt-2">

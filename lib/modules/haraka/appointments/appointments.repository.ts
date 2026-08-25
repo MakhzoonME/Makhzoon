@@ -28,12 +28,13 @@ function toAppointment(r: Row): HarakaAppointment {
     customerPhone:     (r.customer_phone as string) ?? null,
 
     serviceId:         r.service_id as string,
-    staffId:           r.staff_id as string,
+    staffId:           (r.staff_id as string) ?? null,
 
     scheduledAt:       r.scheduled_at ? new Date(r.scheduled_at as string) : new Date(),
     durationMinutes:   Number(r.duration_minutes ?? 0),
     price:             Number(r.price ?? 0),
     taxRate:           r.tax_rate == null ? null : Number(r.tax_rate),
+    discountAmount:    Number(r.discount_amount ?? 0),
 
     status:            (r.status as AppointmentStatus) ?? 'scheduled',
     taxAmount:         Number(r.tax_amount ?? 0),
@@ -91,11 +92,12 @@ export interface CreateAppointmentInput {
   customerName:     string
   customerPhone?:   string | null
   serviceId:        string
-  staffId:          string
+  staffId?:         string | null
   scheduledAt:      string
   durationMinutes:  number
   price:            number
   taxRate:          number | null
+  discountAmount?:  number
   notes?:           string | null
 }
 
@@ -104,7 +106,11 @@ export interface UpdateAppointmentInput {
   customerPhone?:   string | null
   scheduledAt?:     string
   durationMinutes?: number
-  staffId?:         string
+  staffId?:         string | null
+  /** Set together with taxAmount/total, recomputed by the service layer. */
+  discountAmount?:  number
+  taxAmount?:       number
+  total?:           number
   notes?:           string | null
 }
 
@@ -125,11 +131,13 @@ export class AppointmentsRepository {
   private async enrichNames(appointments: HarakaAppointment[]): Promise<void> {
     if (appointments.length === 0) return
     const serviceIds = [...new Set(appointments.map((a) => a.serviceId))]
-    const staffIds = [...new Set(appointments.map((a) => a.staffId))]
+    const staffIds = [...new Set(appointments.map((a) => a.staffId).filter((id): id is string => !!id))]
 
     const [servicesRes, staffRes] = await Promise.all([
       supabaseAdmin.from('haraka_services').select('id, name').in('id', serviceIds),
-      supabaseAdmin.from('haraka_staff').select('id, name').in('id', staffIds),
+      staffIds.length > 0
+        ? supabaseAdmin.from('haraka_staff').select('id, name').in('id', staffIds)
+        : Promise.resolve({ data: [] as Row[] }),
     ])
 
     const serviceNames = new Map<string, string>()
@@ -143,7 +151,7 @@ export class AppointmentsRepository {
 
     for (const a of appointments) {
       a.serviceName = serviceNames.get(a.serviceId) ?? null
-      a.staffName = staffNames.get(a.staffId) ?? null
+      a.staffName = a.staffId ? (staffNames.get(a.staffId) ?? null) : null
     }
   }
 
@@ -231,8 +239,10 @@ export class AppointmentsRepository {
       tenant.organizationId,
       tenant.spaceId,
     )
-    const taxAmount = money(input.price * (input.taxRate ?? 0))
-    const total = money(input.price + taxAmount)
+    const discountAmount = money(input.discountAmount ?? 0)
+    const subtotal = money(input.price - discountAmount)
+    const taxAmount = money(subtotal * (input.taxRate ?? 0))
+    const total = money(subtotal + taxAmount)
 
     const { data, error } = await supabaseAdmin
       .from('haraka_appointments')
@@ -244,11 +254,12 @@ export class AppointmentsRepository {
         customer_name:      input.customerName,
         customer_phone:     input.customerPhone ?? null,
         service_id:         input.serviceId,
-        staff_id:           input.staffId,
+        staff_id:           input.staffId ?? null,
         scheduled_at:       input.scheduledAt,
         duration_minutes:   input.durationMinutes,
         price:              input.price,
         tax_rate:           input.taxRate,
+        discount_amount:    discountAmount,
         tax_amount:         taxAmount,
         total,
         status:             'scheduled',
@@ -276,6 +287,9 @@ export class AppointmentsRepository {
     if (patch.scheduledAt !== undefined) update.scheduled_at = patch.scheduledAt
     if (patch.durationMinutes !== undefined) update.duration_minutes = patch.durationMinutes
     if (patch.staffId !== undefined) update.staff_id = patch.staffId
+    if (patch.discountAmount !== undefined) update.discount_amount = patch.discountAmount
+    if (patch.taxAmount !== undefined) update.tax_amount = patch.taxAmount
+    if (patch.total !== undefined) update.total = patch.total
     if (patch.notes !== undefined) update.notes = patch.notes
 
     const { data, error } = await supabaseAdmin

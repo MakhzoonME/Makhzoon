@@ -18,10 +18,13 @@ export const createAppointmentSchema = z.object({
   customerName:   z.string().trim().min(1, 'Customer name is required').max(120),
   customerPhone:  z.string().trim().max(30).nullable().optional(),
   serviceId:      z.string().uuid('Pick a bookable service'),
-  staffId:        z.string().uuid('Pick a provider'),
+  /** Optional — orgs without the Workers add-on book appointments without a provider. */
+  staffId:        z.string().uuid().nullable().optional(),
   scheduledAt:    z.preprocess(coerceLocalDatetime, z.string().datetime()),
   /** Overrides the catalog duration for this one booking. */
   durationMinutes: z.number().int().min(1).max(24 * 60).nullable().optional(),
+  /** Flat amount subtracted from the service price before tax. */
+  discountAmount: z.number().min(0).nullable().optional(),
   notes:          z.string().trim().max(2000).nullable().optional(),
 })
 
@@ -30,7 +33,8 @@ export const updateAppointmentSchema = z.object({
   customerPhone:   z.string().trim().max(30).nullable().optional(),
   scheduledAt:     z.preprocess(coerceLocalDatetime, z.string().datetime().optional()),
   durationMinutes: z.number().int().min(1).max(24 * 60).optional(),
-  staffId:         z.string().uuid().optional(),
+  staffId:         z.string().uuid().nullable().optional(),
+  discountAmount:  z.number().min(0).optional(),
   notes:           z.string().trim().max(2000).nullable().optional(),
 })
 

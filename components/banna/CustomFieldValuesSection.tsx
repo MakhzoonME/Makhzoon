@@ -1,12 +1,13 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useCustomFieldValues, useSaveCustomFieldValues } from '@/hooks/banna';
+import { isFieldVisible, type ConditionEvalEntry } from '@/lib/modules/banna/condition-eval';
 import type { CustomFieldWithValue, CustomFieldRecordType, UpsertCustomFieldValueInput, PlateReaderEntry } from '@/types/banna.types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { useT, toast } from '@/hooks/ui';
 import { Loader2, Camera, X, Plus } from 'lucide-react';
 import { PlateCaptureDialog } from '@/components/haraka/PlateCaptureDialog';
@@ -170,24 +171,16 @@ export function FieldInput({
       )}
 
       {field.type === 'select' && (
-        <Select
-          value={typeof value === 'string' ? value : ''}
-          onValueChange={(v) => onChange(v)}
-        >
-          <SelectTrigger className="h-8 text-sm">
-            <SelectValue placeholder={placeholder || 'Select…'} />
-          </SelectTrigger>
-          <SelectContent>
-            {(field.options ?? []).map((opt) => {
-              const optLabel = (locale === 'ar' && opt.labelAr) ? opt.labelAr : opt.label;
-              return (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {optLabel}
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
+        <Combobox
+          value={typeof value === 'string' && value ? value : null}
+          onChange={(v) => onChange(v ?? '')}
+          placeholder={placeholder || 'Select…'}
+          className="h-8 text-sm"
+          options={(field.options ?? []).map((opt) => ({
+            value: opt.value,
+            label: (locale === 'ar' && opt.labelAr) ? opt.labelAr : opt.label,
+          }))}
+        />
       )}
 
       {field.type === 'multi_select' && (
@@ -250,7 +243,18 @@ export function CustomFieldValuesSection({ recordType, recordId }: Props) {
   if (!fields.length) return null;
 
   function handleChange(fieldId: string, value: unknown) {
-    setDraft((prev) => ({ ...prev, [fieldId]: value }));
+    setDraft((prev) => {
+      const next = { ...prev, [fieldId]: value };
+      // Changing a field can flip another field's condition — clear any
+      // field that just became hidden so a stale answer doesn't linger in
+      // the draft (the save path enforces this too, but doing it live keeps
+      // the UI honest before the user even hits Save).
+      const byKey = new Map<string, ConditionEvalEntry>(fields.map((f) => [f.fieldKey, { condition: f.condition, value: next[f.id] }]));
+      for (const f of fields) {
+        if (next[f.id] !== null && !isFieldVisible(f.fieldKey, byKey)) next[f.id] = null;
+      }
+      return next;
+    });
     setDirty(true);
   }
 
@@ -284,7 +288,10 @@ export function CustomFieldValuesSection({ recordType, recordId }: Props) {
         )}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {fields.map((field) => (
+        {(() => {
+          const byKey = new Map<string, ConditionEvalEntry>(fields.map((f) => [f.fieldKey, { condition: f.condition, value: draft[f.id] }]));
+          return fields.filter((field) => isFieldVisible(field.fieldKey, byKey));
+        })().map((field) => (
           <FieldInput
             key={field.id}
             field={field}

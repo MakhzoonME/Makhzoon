@@ -6,8 +6,12 @@ import { PageHeader, ExportButton, LoadingSkeleton } from '@/components/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useAdminGuard, useT, useModuleGuard } from '@/hooks/ui';
-import { useHarakaReport, buildReportExportUrl, type AggregateGroupBy, type AggregateBucket } from '@/hooks/haraka';
-import { useOrgInfo } from '@/hooks/org';
+import {
+  useHarakaReport, type AggregateBucket,
+  useHarakaAnalytics, buildAnalyticsExportUrl, type AnalyticsModuleKey,
+} from '@/hooks/haraka';
+import { useOrgInfo, useActiveHarakaModules } from '@/hooks/org';
+import type { MessageKey } from '@/locales/messages';
 
 interface DateRange {
   from: Date;
@@ -31,18 +35,39 @@ function toInput(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+// Modules beyond the always-on POS base — each only shows a card when the
+// org's subscription has that Haraka sub-module active.
+const MODULE_LABEL_KEYS: Record<Exclude<AnalyticsModuleKey, 'pos'>, MessageKey> = {
+  orders: 'nav.harakaOrders',
+  serviceJobs: 'nav.harakaServiceJobs',
+  retainers: 'nav.harakaRetainers',
+  appointments: 'nav.harakaAppointments',
+};
+const MODULE_HARAKA_KEY: Record<Exclude<AnalyticsModuleKey, 'pos'>, string> = {
+  orders: 'orders',
+  serviceJobs: 'services',
+  retainers: 'retainers',
+  appointments: 'appointments',
+};
+
 export default function HarakaReportsPage() {
   const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
-  const { isAllowed } = useAdminGuard('pos.view_reports');
+  const { isAllowed } = useAdminGuard('haraka.analyticsView');
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
   const { data: orgInfo } = useOrgInfo();
+  const activeHarakaModules = useActiveHarakaModules();
 
   const [range, setRange] = useState<DateRange>(() => {
     const to = new Date();
     const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
     return { from: startOfDay(from), to: endOfDay(to) };
   });
+
+  const exportUrl = useMemo(
+    () => buildAnalyticsExportUrl({ from: range.from, to: range.to }),
+    [range.from, range.to],
+  );
 
   if (!featureAllowed || !isAllowed) {
     return (
@@ -63,22 +88,162 @@ export default function HarakaReportsPage() {
           { label: t('nav.pos'), href: `/${params.locale}/${params.orgSlug}/${params.space}/haraka` },
           { label: t('nav.harakaReports') },
         ]}
+        actions={
+          <ExportButton
+            filename="haraka-analytics"
+            ext="csv"
+            getUrl={() => exportUrl}
+            showFiltered={false}
+          />
+        }
       />
 
       <DateRangePicker range={range} onChange={setRange} />
 
-      {/* Hero row: sales chart (1.6fr) + top items (1fr) — matches design */}
+      <OverviewSection range={range} activeHarakaModules={activeHarakaModules} />
+
+      {/* Existing POS-specific detail — unchanged, no per-widget export (whole-page export above covers it) */}
       <div className="grid gap-6" style={{ gridTemplateColumns: '1.6fr 1fr' }}>
         <SalesByDayWidget range={range} />
         <TopItemsWidget range={range} />
       </div>
-      {/* Secondary widgets */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SalesByCashierWidget range={range} />
         <SalesByPaymentMethodWidget range={range} />
         <SessionSummariesWidget range={range} />
       </div>
     </div>
+  );
+}
+
+/* ── Overview: combined KPIs + revenue-by-day + per-module cards ────── */
+function OverviewSection({
+  range,
+  activeHarakaModules,
+}: {
+  range: DateRange;
+  activeHarakaModules: string[];
+}) {
+  const { t } = useT();
+  const { data: orgInfo } = useOrgInfo();
+  const currency = orgInfo?.currency ?? 'JOD';
+  const { data, isLoading } = useHarakaAnalytics({ from: range.from, to: range.to });
+
+  const buckets = data?.byDay ?? [];
+  const maxRevenue = buckets.reduce((acc, b) => Math.max(acc, b.revenue), 0) || 1;
+
+  const moduleKeys = (Object.keys(MODULE_LABEL_KEYS) as Exclude<AnalyticsModuleKey, 'pos'>[]).filter(
+    (k) => activeHarakaModules.includes(MODULE_HARAKA_KEY[k]),
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <StatCard
+          label={t('reports.totalSales')}
+          value={isLoading ? '—' : String(data?.totals.count ?? 0)}
+        />
+        <StatCard
+          label={t('reports.totalRevenue')}
+          value={isLoading ? '—' : `${fmt(data?.totals.revenue ?? 0)} ${currency}`}
+        />
+      </div>
+
+      <Card>
+        <CardContent className="p-5">
+          <div className="mb-4">
+            <h3 className="font-medium text-gray-900">{t('reports.revenueByDay')}</h3>
+            <p className="text-xs text-gray-500 mt-0.5">{t('reports.revenueByDayDesc')}</p>
+          </div>
+          {isLoading ? (
+            <LoadingSkeleton rows={5} columns={1} />
+          ) : buckets.length === 0 ? (
+            <div className="text-sm text-gray-500 py-8 text-center">{t('reports.noData')}</div>
+          ) : (
+            <div className="flex items-end gap-2 h-40 overflow-x-auto">
+              {buckets.map((b, i) => {
+                const pct = (b.revenue / maxRevenue) * 100;
+                const isLast = i === buckets.length - 1;
+                return (
+                  <div key={b.date} className="flex-1 flex flex-col items-center gap-1 min-w-[2rem]">
+                    <span className="text-[10px] font-semibold text-gray-500 font-mono">{fmt(b.revenue)}</span>
+                    <div
+                      className="w-full rounded-t-md"
+                      style={{
+                        height: `${Math.max(pct, 4)}%`,
+                        background: isLast ? 'var(--mod-haraka)' : 'color-mix(in srgb, var(--mod-haraka) 45%, var(--surface-inset))',
+                      }}
+                    />
+                    <span className="text-[10px] text-gray-400 truncate w-full text-center">{b.date.slice(5)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <ModuleCard
+          label={t('nav.harakaPos')}
+          count={data?.modules.pos.count}
+          revenue={data?.modules.pos.revenue}
+          currency={currency}
+          isLoading={isLoading}
+        />
+        {moduleKeys.map((k) => (
+          <ModuleCard
+            key={k}
+            label={t(MODULE_LABEL_KEYS[k])}
+            count={data?.modules[k].count}
+            revenue={data?.modules[k].revenue}
+            currency={currency}
+            isLoading={isLoading}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <Card>
+      <CardContent className="p-5">
+        <div className="text-xs text-gray-500">{label}</div>
+        <div className="text-2xl font-semibold text-gray-900 mt-1 font-mono">{value}</div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ModuleCard({
+  label,
+  count,
+  revenue,
+  currency,
+  isLoading,
+}: {
+  label: string;
+  count?: number;
+  revenue?: number;
+  currency: string;
+  isLoading: boolean;
+}) {
+  const { t } = useT();
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="text-xs font-medium text-gray-500 truncate">{label}</div>
+        <div className="text-lg font-semibold text-gray-900 mt-1 font-mono">
+          {isLoading ? '—' : (count ?? 0).toLocaleString()}
+        </div>
+        <div className="text-[11px] text-gray-400">{t('reports.sales')}</div>
+        <div className="text-sm font-mono text-gray-700 mt-2">
+          {isLoading ? '—' : `${fmt(revenue ?? 0)} ${currency}`}
+        </div>
+        <div className="text-[11px] text-gray-400">{t('col.total')}</div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -144,38 +309,18 @@ interface WidgetProps {
 function WidgetShell({
   title,
   description,
-  range,
-  groupBy,
-  topN,
-  filename,
   children,
 }: {
   title: string;
   description: string;
-  range: DateRange;
-  groupBy: AggregateGroupBy;
-  topN?: number;
-  filename: string;
   children: React.ReactNode;
 }) {
-  const exportUrl = useMemo(
-    () => buildReportExportUrl({ groupBy, from: range.from, to: range.to, topN }),
-    [groupBy, range.from, range.to, topN],
-  );
   return (
     <Card>
       <CardContent className="p-5">
-        <div className="flex items-start justify-between mb-4 gap-3">
-          <div className="min-w-0">
-            <h3 className="font-medium text-gray-900">{title}</h3>
-            <p className="text-xs text-gray-500 mt-0.5">{description}</p>
-          </div>
-          <ExportButton
-            filename={filename.replace(/\.(csv|xlsx)$/i, '')}
-            ext="csv"
-            getUrl={() => exportUrl}
-            showFiltered={false}
-          />
+        <div className="mb-4">
+          <h3 className="font-medium text-gray-900">{title}</h3>
+          <p className="text-xs text-gray-500 mt-0.5">{description}</p>
         </div>
         {children}
       </CardContent>
@@ -209,9 +354,6 @@ function SalesByDayWidget({ range }: WidgetProps) {
     <WidgetShell
       title={t('reports.salesByDay')}
       description={t('reports.salesByDayDesc').replace('{count}', String(buckets.length))}
-      range={range}
-      groupBy="day"
-      filename="sales-by-day.csv"
     >
       <EmptyOrLoading isLoading={isLoading} empty={buckets.length === 0}>
         {/* Vertical bar chart matching the design */}
@@ -242,14 +384,7 @@ function TopItemsWidget({ range }: WidgetProps) {
   const { data, isLoading } = useHarakaReport({ groupBy: 'item', from: range.from, to: range.to, topN: 10 });
   const buckets = data?.buckets ?? [];
   return (
-    <WidgetShell
-      title={t('reports.topItems')}
-      description={t('reports.topItemsDesc')}
-      range={range}
-      groupBy="item"
-      topN={10}
-      filename="top-items.csv"
-    >
+    <WidgetShell title={t('reports.topItems')} description={t('reports.topItemsDesc')}>
       <EmptyOrLoading isLoading={isLoading} empty={buckets.length === 0}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -276,37 +411,12 @@ function TopItemsWidget({ range }: WidgetProps) {
   );
 }
 
-function SalesByCashierWidget({ range }: WidgetProps) {
-  const { t } = useT();
-  const { data, isLoading } = useHarakaReport({ groupBy: 'cashier', from: range.from, to: range.to });
-  const buckets = data?.buckets ?? [];
-  return (
-    <WidgetShell
-      title={t('reports.salesByCashier')}
-      description={t('reports.salesByCashierDesc')}
-      range={range}
-      groupBy="cashier"
-      filename="sales-by-cashier.csv"
-    >
-      <EmptyOrLoading isLoading={isLoading} empty={buckets.length === 0}>
-        <BucketTable buckets={buckets} keyHeader={t('reports.cashier')} />
-      </EmptyOrLoading>
-    </WidgetShell>
-  );
-}
-
 function SalesByPaymentMethodWidget({ range }: WidgetProps) {
   const { t } = useT();
   const { data, isLoading } = useHarakaReport({ groupBy: 'paymentMethod', from: range.from, to: range.to });
   const buckets = data?.buckets ?? [];
   return (
-    <WidgetShell
-      title={t('reports.salesByPayment')}
-      description={t('reports.salesByPaymentDesc')}
-      range={range}
-      groupBy="paymentMethod"
-      filename="sales-by-payment-method.csv"
-    >
+    <WidgetShell title={t('reports.salesByPayment')} description={t('reports.salesByPaymentDesc')}>
       <EmptyOrLoading isLoading={isLoading} empty={buckets.length === 0}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -338,13 +448,7 @@ function SessionSummariesWidget({ range }: WidgetProps) {
   const { data, isLoading } = useHarakaReport({ groupBy: 'session', from: range.from, to: range.to });
   const buckets = data?.buckets ?? [];
   return (
-    <WidgetShell
-      title={t('reports.sessionSummaries')}
-      description={t('reports.sessionSummariesDesc')}
-      range={range}
-      groupBy="session"
-      filename="session-summaries.csv"
-    >
+    <WidgetShell title={t('reports.sessionSummaries')} description={t('reports.sessionSummariesDesc')}>
       <EmptyOrLoading isLoading={isLoading} empty={buckets.length === 0}>
         <BucketTable buckets={buckets} keyHeader={t('reports.session')} mono />
       </EmptyOrLoading>

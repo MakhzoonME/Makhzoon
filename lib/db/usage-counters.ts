@@ -2,8 +2,8 @@ import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // Denormalized per-org counts maintained by DB triggers (migration 0049).
-// space_count is not trigger-maintained yet (no first-class spaces table); the
-// app computes spaces live via lib/db/usage.ts until one exists.
+// space_count is not trigger-maintained; the app computes spaces live via
+// lib/db/usage.ts (counts public.spaces directly) instead.
 export interface UsageCounters {
   organizationId: string;
   usoolAssetCount: number;

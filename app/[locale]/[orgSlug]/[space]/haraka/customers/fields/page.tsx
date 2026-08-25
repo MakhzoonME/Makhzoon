@@ -31,7 +31,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Switch } from '@/components/ui/switch';
 import { CustomFieldForm, type CustomFieldFormData } from '@/components/banna/CustomFieldForm';
 import { useCreateCustomField, useUpdateCustomField } from '@/hooks/banna';
-import type { CustomField, CustomFieldType, CustomFieldOption } from '@/types/banna.types';
+import type { CustomField, CustomFieldType, CustomFieldOption, CustomFieldCondition } from '@/types/banna.types';
 
 function mapDbField(raw: Record<string, unknown>): CustomField {
   return {
@@ -46,6 +46,7 @@ function mapDbField(raw: Record<string, unknown>): CustomField {
     options: raw.options as CustomFieldOption[] | undefined,
     placeholder: raw.placeholder as string | undefined,
     placeholderAr: raw.placeholder_ar as string | undefined,
+    condition: (raw.condition as CustomFieldCondition | null) ?? null,
     sortOrder: raw.sort_order as number,
     active: raw.is_active as boolean,
     isDefault: raw.is_default as boolean,
@@ -234,6 +235,7 @@ export default function CustomerFieldsPage() {
           <CustomFieldForm
             initial={editing ?? undefined}
             fixedModule="customers"
+            siblingFields={fields}
             onSubmit={handleFormSubmit}
             onCancel={closeForm}
             submitting={createMut.isPending || updateMut.isPending}
@@ -297,8 +299,8 @@ function FieldRow({
       <td className="px-4 py-3">
         <Switch
           checked={field.required}
-          disabled={isLocked || !field.isDefault}
-          onCheckedChange={field.isDefault && !isLocked ? onToggleRequired : undefined}
+          disabled={isLocked}
+          onCheckedChange={isLocked ? undefined : onToggleRequired}
           aria-label={t('banna.fieldRequired')}
         />
       </td>

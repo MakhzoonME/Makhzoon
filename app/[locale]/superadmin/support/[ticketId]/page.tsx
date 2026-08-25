@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Combobox } from '@/components/ui/combobox';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import {
   useSupportTicket,
@@ -103,33 +104,27 @@ export default function SuperAdminTicketDetailPage(props: { params: Promise<{ ti
           <CardContent className="p-5 space-y-4">
             <div>
               <label className="text-xs uppercase tracking-wide text-gray-500">{t('support.status')}</label>
-              <select
+              <Combobox
                 value={ticket.status}
-                onChange={(e) => handleStatus(e.target.value as TicketStatus)}
-                className="mt-1 w-full h-9 rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
+                onChange={(v) => handleStatus((v ?? ticket.status) as TicketStatus)}
+                options={STATUSES.map((s) => ({ value: s, label: s.replace('_', ' ') }))}
+                searchable={false}
+                clearable={false}
                 disabled={updateMut.isPending}
-              >
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s.replace('_', ' ')}
-                  </option>
-                ))}
-              </select>
+                className="mt-1"
+              />
             </div>
             <div>
               <label className="text-xs uppercase tracking-wide text-gray-500">{t('support.priority')}</label>
-              <select
+              <Combobox
                 value={ticket.priority}
-                onChange={(e) => handlePriority(e.target.value as TicketPriority)}
-                className="mt-1 w-full h-9 rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
+                onChange={(v) => handlePriority((v ?? ticket.priority) as TicketPriority)}
+                options={PRIORITIES.map((p) => ({ value: p, label: p }))}
+                searchable={false}
+                clearable={false}
                 disabled={updateMut.isPending}
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+                className="mt-1"
+              />
             </div>
           </CardContent>
         </Card>

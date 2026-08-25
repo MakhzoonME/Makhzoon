@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { DatePicker } from '@/components/ui/date-picker';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { WarrantyCertificatePreview, type WarrantyCertificateData } from '@/components/haraka/WarrantyCertificatePreview';
 import { toast } from '@/hooks/ui';
 import { apiFetch } from '@/lib/utils/api-fetch';
@@ -207,15 +207,13 @@ export function OrderWarrantyDialog({ open, onOpenChange, order, orgName, orgSlu
                 <Input value={vendor} onChange={(e) => setVendor(e.target.value)} placeholder={orgName} />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Start date *</label>
-                  <DatePicker value={startDate} onChange={setStartDate} />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">End date *</label>
-                  <DatePicker value={endDate} onChange={setEndDate} />
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Warranty period *</label>
+                <DateRangePicker
+                  startDate={startDate}
+                  endDate={endDate}
+                  onChange={({ startDate: s, endDate: e }) => { setStartDate(s); setEndDate(e); }}
+                />
               </div>
 
               <div className="space-y-1.5">

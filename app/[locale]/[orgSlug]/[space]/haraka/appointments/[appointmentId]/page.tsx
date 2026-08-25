@@ -20,7 +20,6 @@ import { useModuleGuard, toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { useAuthStore } from '@/store/auth.store';
 import { hasPermByKey } from '@/lib/permissions';
-import { formatCurrency } from '@/lib/utils/format';
 import { formatDateTime } from '@/lib/utils/date';
 import type { AppointmentStatus } from '@/types';
 
@@ -224,6 +223,7 @@ export default function AppointmentDetailPage() {
             appointment={appointment}
             currency={currency}
             readOnly={!can('appointmentsAddPayment')}
+            canEditDiscount={!terminal && can('appointmentsUpdate')}
           />
         </div>
 
@@ -252,23 +252,6 @@ export default function AppointmentDetailPage() {
                   {formatDateTime(endsAt)}
                   <span className="text-gray-400"> · {appointment.durationMinutes} min</span>
                 </span>
-              </div>
-            </div>
-
-            <div className="pt-2 space-y-1 text-sm border-t border-border">
-              <div className="flex justify-between text-gray-500">
-                <span>{t('appointments.labelPrice')}</span>
-                <span className="font-mono">{formatCurrency(appointment.price, currency)}</span>
-              </div>
-              {appointment.taxAmount > 0 && (
-                <div className="flex justify-between text-gray-500">
-                  <span>{t('invoicePreview.tax')}</span>
-                  <span className="font-mono">{formatCurrency(appointment.taxAmount, currency)}</span>
-                </div>
-              )}
-              <div className="flex justify-between font-semibold text-gray-900 border-t border-border pt-2">
-                <span>{t('invoicePreview.total')}</span>
-                <span className="font-mono">{formatCurrency(appointment.total, currency)}</span>
               </div>
             </div>
 

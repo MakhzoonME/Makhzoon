@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { ExternalLink, Link2 } from 'lucide-react'
 import { PageHeader, DocumentUpload, DocumentList } from '@/components/shared'
 import { Button } from '@/components/ui/button'
@@ -22,7 +22,6 @@ export default function DocumentReportDetailPage() {
     harakaAddOn: 'documentReports',
   })
   const params = useParams<{ orgSlug: string; reportId: string }>()
-  const router = useRouter()
   const { user } = useAuthStore()
   const { data, isLoading } = useReportInstance(params.reportId)
   const updateMutation = useUpdateReportInstance()

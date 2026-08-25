@@ -168,7 +168,7 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/settings/jo-fotara',    label: 'Jo Fotara',         labelKey: 'nav.fawtara',       permissionKey: 'settingsFawtara.view',       featureKey: 'pos', scope: 'org' },
       { href: '/settings/receipt',         label: 'Receipt',          labelKey: 'nav.receipt',          permissionKey: 'settingsReceipt.view',       featureKey: 'pos', scope: 'org' },
       { href: '/settings/invoice',       label: 'Invoice',       labelKey: 'nav.orderDocuments', permissionKey: 'settingsInvoice.view',       featureKey: 'pos', scope: 'org' },
-      { href: '/settings/warranty-cert',   label: 'Warranty Cert',       labelKey: 'nav.warrantyCert',         permissionKey: 'settingsWarrantyCert.view',  featureKey: 'pos', scope: 'org' },
+      { href: '/settings/warranty-cert',   label: 'Warranty Cert',       labelKey: 'nav.warrantyCert',         permissionKey: 'settingsWarrantyCert.view',  featureKey: 'pos', harakaAddOn: 'warrantyCerts', scope: 'org' },
       { href: '/settings/notifications',   label: 'Notifications',       labelKey: 'nav.notificationSettings', permissionKey: 'settingsNotifications.view', scope: 'org' },
       { href: '/settings/cash-drawer',   label: 'Cash Drawer',   labelKey: 'nav.cashDrawer',     permissionKey: 'settingsCashDrawer.view',    featureKey: 'pos', scope: 'org' },
       { href: '/settings/card-terminal', label: 'Card Terminal', labelKey: 'nav.cardTerminal',   permissionKey: 'settingsCardTerminal.view',  featureKey: 'pos', scope: 'org' },

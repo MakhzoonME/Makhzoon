@@ -98,6 +98,7 @@ export class BannaRepository {
         options: input.options ?? null,
         placeholder: input.placeholder ?? null,
         placeholder_ar: input.placeholderAr ?? null,
+        condition: input.condition ?? null,
         sort_order: input.sortOrder ?? 0,
       })
       .select()
@@ -114,6 +115,7 @@ export class BannaRepository {
     if (input.options !== undefined) patches.options = input.options;
     if (input.placeholder !== undefined) patches.placeholder = input.placeholder;
     if (input.placeholderAr !== undefined) patches.placeholder_ar = input.placeholderAr;
+    if (input.condition !== undefined) patches.condition = input.condition;
     if (input.sortOrder !== undefined) patches.sort_order = input.sortOrder;
     if (input.isActive !== undefined) patches.is_active = input.isActive;
 

@@ -34,7 +34,7 @@ export default function NewAppointmentPage() {
   const currency = orgInfo?.currency ?? 'JOD';
 
   // Only services an admin has explicitly marked bookable appear here.
-  const { data: servicesData } = useServices({
+  const { data: servicesData, isPending: servicesLoading } = useServices({
     active: true,
     appointmentBookable: true,
     pageSize: 100,
@@ -67,6 +67,10 @@ export default function NewAppointmentPage() {
   const effectiveDuration = duration.trim()
     ? Number(duration)
     : selectedService?.durationMinutes ?? null;
+  const discountAmount = discount.trim() ? Number(discount) : 0;
+  const discountedPrice = selectedService
+    ? Math.max(0, selectedService.price - (Number.isNaN(discountAmount) ? 0 : discountAmount))
+    : 0;
 
   async function handleSubmit() {
     const name = customer?.name || customerName.trim();
@@ -107,7 +111,7 @@ export default function NewAppointmentPage() {
         }
       />
 
-      {services.length === 0 && (
+      {!servicesLoading && services.length === 0 && (
         <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800">
           {t('appointments.errNoBookableServices')}
         </div>
@@ -219,12 +223,26 @@ export default function NewAppointmentPage() {
         </div>
 
         {selectedService && (
-          <div className="rounded-lg bg-surface-card border border-border p-3 text-sm flex items-center justify-between">
-            <span className="text-gray-500">{t('appointments.labelPrice')}</span>
-            <span className="font-mono font-semibold text-gray-800">
-              {formatCurrency(selectedService.price, currency)}
-              {effectiveDuration ? <span className="text-gray-400 font-normal"> · {effectiveDuration} min</span> : null}
-            </span>
+          <div className="rounded-lg bg-surface-card border border-border p-3 text-sm space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-500">{t('appointments.labelPrice')}</span>
+              <span className="font-mono font-semibold text-gray-800">
+                {formatCurrency(selectedService.price, currency)}
+                {effectiveDuration ? <span className="text-gray-400 font-normal"> · {effectiveDuration} min</span> : null}
+              </span>
+            </div>
+            {discountAmount > 0 && (
+              <>
+                <div className="flex items-center justify-between text-gray-500">
+                  <span>{t('appointments.labelDiscount')}</span>
+                  <span className="font-mono">− {formatCurrency(discountAmount, currency)}</span>
+                </div>
+                <div className="flex items-center justify-between font-semibold text-gray-900 border-t border-border pt-1.5">
+                  <span>{t('invoicePreview.total')}</span>
+                  <span className="font-mono">{formatCurrency(discountedPrice, currency)}</span>
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -237,7 +255,7 @@ export default function NewAppointmentPage() {
       <div className="flex gap-2">
         <Button
           onClick={handleSubmit}
-          disabled={createMut.isPending || services.length === 0}
+          disabled={createMut.isPending || servicesLoading || services.length === 0}
           style={{ background: 'var(--mod-haraka)' }}
         >
           {createMut.isPending ? t('common.saving') : t('appointments.bookBtn')}

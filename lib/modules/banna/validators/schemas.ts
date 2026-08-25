@@ -7,6 +7,12 @@ export const customFieldOptionSchema = z.object({
   color: z.string().optional(),
 });
 
+export const customFieldConditionSchema = z.object({
+  parentFieldKey: z.string().min(1),
+  operator: z.enum(['equals', 'not_equals', 'in', 'is_true', 'is_false']),
+  value: z.union([z.string(), z.array(z.string())]).optional(),
+});
+
 export const createCustomFieldSchema = z.object({
   module: z.enum(['assets', 'inventory', 'customers']),
   fieldKey: z.string().min(1).max(50).regex(/^[a-z_][a-z0-9_]*$/, 'Must be snake_case'),
@@ -17,6 +23,7 @@ export const createCustomFieldSchema = z.object({
   options: z.array(customFieldOptionSchema).optional(),
   placeholder: z.string().max(200).optional(),
   placeholderAr: z.string().max(200).optional(),
+  condition: customFieldConditionSchema.nullable().optional(),
   sortOrder: z.number().int().min(0).default(0),
 });
 
@@ -27,6 +34,7 @@ export const updateCustomFieldSchema = z.object({
   options: z.array(customFieldOptionSchema).optional(),
   placeholder: z.string().max(200).optional(),
   placeholderAr: z.string().max(200).optional(),
+  condition: customFieldConditionSchema.nullable().optional(),
   sortOrder: z.number().int().min(0).optional(),
   isActive: z.boolean().optional(),
 });

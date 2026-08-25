@@ -9,6 +9,7 @@ import {
   useAppointmentPayments,
   useAddAppointmentPayment,
   useRemoveAppointmentPayment,
+  useUpdateAppointment,
 } from '@/hooks/haraka';
 import { toast, useT } from '@/hooks/ui';
 import { formatCurrency } from '@/lib/utils/format';
@@ -19,6 +20,9 @@ interface Props {
   appointment: HarakaAppointment;
   currency?: string;
   readOnly?: boolean;
+  /** Separate from `readOnly` (which gates payment entries) — discount edits
+   *  require `appointmentsUpdate`, not `appointmentsAddPayment`. */
+  canEditDiscount?: boolean;
 }
 
 const PAY_STATUS_STYLE: Record<string, string> = {
@@ -30,20 +34,38 @@ const PAY_STATUS_STYLE: Record<string, string> = {
 /** Split-payment ledger for one appointment. Mirrors ServiceJobPaymentsPanel —
  *  appointments reuse the `service_job_payment_method` managed list so an org
  *  configures its payment methods in one place. */
-export function AppointmentPaymentsPanel({ appointment, currency = 'JOD', readOnly }: Props) {
+export function AppointmentPaymentsPanel({ appointment, currency = 'JOD', readOnly, canEditDiscount }: Props) {
   const { data } = useAppointmentPayments(appointment.id);
   const addMut = useAddAppointmentPayment();
   const removeMut = useRemoveAppointmentPayment();
+  const updateMut = useUpdateAppointment();
   const { t } = useT();
 
   const [showForm, setShowForm] = useState(false);
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('');
   const [note, setNote] = useState('');
+  const [editingDiscount, setEditingDiscount] = useState(false);
+  const [discountInput, setDiscountInput] = useState('');
 
   const payments = data?.payments ?? [];
   const remaining = appointment.total - appointment.amountPaid;
   const terminal = appointment.status === 'cancelled' || appointment.status === 'no_show';
+
+  async function handleDiscountSave() {
+    const discountAmount = discountInput.trim() ? Number(discountInput) : 0;
+    if (Number.isNaN(discountAmount) || discountAmount < 0) {
+      toast.error(t('appointments.errInvalidDiscount'));
+      return;
+    }
+    try {
+      await updateMut.mutateAsync({ id: appointment.id, body: { discountAmount } });
+      toast.success(t('common.updated'));
+      setEditingDiscount(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong'));
+    }
+  }
 
   async function handleAdd() {
     const amt = parseFloat(amount);
@@ -119,6 +141,52 @@ export function AppointmentPaymentsPanel({ appointment, currency = 'JOD', readOn
 
       <div className="rounded-lg bg-surface-card border border-border p-3 space-y-1.5 text-sm">
         <div className="flex justify-between text-gray-500">
+          <span>{t('appointments.labelPrice')}</span>
+          <span className="font-mono">{formatCurrency(appointment.price, currency)}</span>
+        </div>
+        <div className="flex justify-between items-center text-gray-500">
+          <span>{t('appointments.labelDiscount')}</span>
+          {!editingDiscount ? (
+            <button
+              type="button"
+              disabled={terminal || !canEditDiscount}
+              onClick={() => {
+                setDiscountInput(appointment.discountAmount ? String(appointment.discountAmount) : '');
+                setEditingDiscount(true);
+              }}
+              className="font-mono text-gray-500 hover:text-primary-600 disabled:hover:text-gray-500 disabled:cursor-default"
+            >
+              {appointment.discountAmount > 0
+                ? `− ${formatCurrency(appointment.discountAmount, currency)}`
+                : '—'}
+            </button>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                autoFocus
+                value={discountInput}
+                onChange={(e) => setDiscountInput(e.target.value)}
+                className="h-7 w-24 font-mono text-end"
+              />
+              <Button size="sm" className="h-7 px-2" onClick={handleDiscountSave} disabled={updateMut.isPending}>
+                {t('common.save')}
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setEditingDiscount(false)}>
+                {t('common.cancel')}
+              </Button>
+            </div>
+          )}
+        </div>
+        {appointment.taxAmount > 0 && (
+          <div className="flex justify-between text-gray-500">
+            <span>{t('invoicePreview.tax')}</span>
+            <span className="font-mono">{formatCurrency(appointment.taxAmount, currency)}</span>
+          </div>
+        )}
+        <div className="flex justify-between font-semibold text-gray-900 border-t border-border pt-1.5">
           <span>{t('invoicePreview.total')}</span>
           <span className="font-mono">{formatCurrency(appointment.total, currency)}</span>
         </div>

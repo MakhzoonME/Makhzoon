@@ -9,11 +9,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Combobox } from '@/components/ui/combobox';
 import { WarrantyCertPreview } from '@/components/haraka/WarrantyCertPreview';
 import { useWarrantyConfig, useUpdateWarrantyConfig } from '@/hooks/haraka';
-import { useAdminGuard, toast } from '@/hooks/ui';
+import { useAdminGuard, useModuleGuard, toast } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import type { HarakaWarrantyConfig } from '@/types';
 
 export default function WarrantyCertSettingsPage() {
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', harakaAddOn: 'warrantyCerts' });
   const { isAllowed } = useAdminGuard('settingsWarrantyCert.view');
   const { data, isLoading } = useWarrantyConfig();
   const updateMut = useUpdateWarrantyConfig();
@@ -38,7 +39,7 @@ export default function WarrantyCertSettingsPage() {
     if (data?.config) setCfg(data.config);
   }, [data]);
 
-  if (!isAllowed) return null;
+  if (!featureAllowed || !isAllowed) return null;
 
   const previewConfig: HarakaWarrantyConfig = {
     organizationId:      '',

@@ -37,7 +37,8 @@ export default function CustomersListPage() {
   // action — no separate bulk permission.
   const canBulkDelete = !!user && hasPermission(user, 'haraka', 'customersDelete');
   const canBulkMove = !!user && hasPermission(user, 'haraka', 'customersUpdate');
-  const canBulkDuplicate = !!user && hasPermission(user, 'haraka', 'customersCreate');
+  const canCreate = !!user && hasPermission(user, 'haraka', 'customersCreate');
+  const canBulkDuplicate = canCreate;
   const canManageFields = !!user && hasPermission(user, 'banna', 'create');
   const canExport = !!user && hasPermission(user, 'haraka', 'customersExport');
   const showSelection = canBulkDelete || canBulkMove || canBulkDuplicate;
@@ -142,9 +143,11 @@ export default function CustomersListPage() {
                 }}
               />
             )}
-            <Button size="sm" onClick={() => router.push(`${base}/new`)}>
-              <Plus size={16} className="me-1" /> {t('customers.addCustomer')}
-            </Button>
+            {canCreate && (
+              <Button size="sm" onClick={() => router.push(`${base}/new`)}>
+                <Plus size={16} className="me-1" /> {t('customers.addCustomer')}
+              </Button>
+            )}
           </div>
         }
       />

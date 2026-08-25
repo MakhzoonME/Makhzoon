@@ -113,7 +113,7 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/haraka/transactions', label: 'Transactions', labelKey: 'nav.transactions',
         featureKey: 'pos', permissionKey: 'haraka.posReportView',
         moduleColor: '#AD1457', moduleName: 'معاملات' },
-      { href: '/haraka/reports', label: 'Analytics', labelKey: 'nav.harakaReports',
+      { href: '/haraka/analytics', label: 'Analytics', labelKey: 'nav.harakaReports',
         featureKey: 'pos', permissionKey: 'haraka.analyticsView',
         moduleColor: '#AD1457', moduleName: 'تحليلات' },
       { type: 'section-header', label: 'Services', labelKey: 'nav.sectionServices' },

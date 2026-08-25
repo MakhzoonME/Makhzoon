@@ -1730,8 +1730,6 @@ const en = {
   'services.durationHelp':   'How long one appointment for this service takes.',
   'services.labelBookable':  'Bookable as appointment',
   'services.bookableHelp':   'Shows this service in the Appointments booking form. Requires a duration.',
-  'services.labelActive':    'Active',
-  'services.activeHelp':     'When off, this service is hidden from the POS register.',
   'services.deleteTitle':    'Delete Service',
   'services.deleteDesc':     'Delete "{name}"? This cannot be undone.',
   // Service Job Payments Panel
@@ -3793,8 +3791,6 @@ const ar: Record<keyof typeof en, string> = {
   'services.durationHelp':   'المدة التي يستغرقها موعد واحد لهذه الخدمة.',
   'services.labelBookable':  'قابلة للحجز كموعد',
   'services.bookableHelp':   'تُظهر هذه الخدمة في نموذج حجز المواعيد. تتطلّب تحديد مدة.',
-  'services.labelActive':    'مفعّلة',
-  'services.activeHelp':     'عند الإيقاف، تختفي هذه الخدمة من جهاز نقاط البيع.',
   'services.deleteTitle':    'حذف الخدمة',
   'services.deleteDesc':     'حذف "{name}"؟ لا يمكن التراجع عن هذا الإجراء.',
   // Service Job Payments Panel

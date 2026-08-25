@@ -18,17 +18,17 @@ function requireView(tenant: TenantContext) {
 }
 
 /**
- * POS register lookup (item picker): a cashier who can build a receipt
- * (registerOpen) but has no Services-catalog management access should
- * still be able to read the active services list. Full catalog browsing
- * (the default, non-POS-scoped call) still requires serviceCatalogView.
+ * Active-services lookup (e.g. the Appointments booking picker, or the
+ * Service Jobs/Retainers catalog picker): a staff member who can use those
+ * flows but has no Services-catalog management access should still be able
+ * to read the active services list. Full catalog browsing (the default,
+ * non-scoped call) still requires serviceCatalogView. Services are no
+ * longer sold through the POS register, so registerOpen no longer grants
+ * this lookup.
  */
-function requireViewForPosLookup(tenant: TenantContext) {
+function requireViewForActiveLookup(tenant: TenantContext) {
   if (
     hasPermission(tenant, 'haraka', 'serviceCatalogView') ||
-    hasPermission(tenant, 'haraka', 'registerOpen') ||
-    // The Appointments booking form reads the same active-services list to
-    // populate its picker.
     hasPermission(tenant, 'haraka', 'appointmentsView')
   ) return
   throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -42,15 +42,15 @@ function requireOp(tenant: TenantContext, op: 'serviceCatalogCreate' | 'serviceC
 
 export class ServicesService {
   async list(tenant: TenantContext, opts?: ListServicesOpts) {
-    // A POS lookup for active services (the register's picker) is allowed
-    // for anyone who can build a receipt, not just catalog managers.
-    if (opts?.active === true) requireViewForPosLookup(tenant)
+    // An active-services lookup (e.g. the Appointments booking picker) is
+    // allowed for anyone who can use those flows, not just catalog managers.
+    if (opts?.active === true) requireViewForActiveLookup(tenant)
     else requireView(tenant)
     return repo.list(tenant, opts)
   }
 
   async getCategories(tenant: TenantContext) {
-    requireViewForPosLookup(tenant)
+    requireViewForActiveLookup(tenant)
     return repo.getCategories(tenant)
   }
 

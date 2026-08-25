@@ -292,19 +292,6 @@ export default function ServiceCatalogPage() {
               </FormItem>
             )} />
 
-            <FormField control={form.control} name="active" render={({ field }) => (
-              <FormItem className="flex items-center gap-3">
-                <FormControl>
-                  <Switch checked={!!field.value} onCheckedChange={field.onChange} />
-                </FormControl>
-                <div>
-                  <FormLabel className="!mt-0">{t('services.labelActive')}</FormLabel>
-                  <p className="text-xs text-gray-500">{t('services.activeHelp')}</p>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )} />
-
             <div className="flex gap-2 pt-2">
               <Button type="submit" disabled={createMut.isPending || updateMut.isPending}>
                 {createMut.isPending || updateMut.isPending ? t('common.saving') : editing ? t('common.saveChanges') : t('common.create')}

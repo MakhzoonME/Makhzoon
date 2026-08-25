@@ -108,7 +108,6 @@ export default function HarakaReportsPage() {
         <TopItemsWidget range={range} />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SalesByCashierWidget range={range} />
         <SalesByPaymentMethodWidget range={range} />
         <SessionSummariesWidget range={range} />
       </div>
@@ -185,7 +184,7 @@ function OverviewSection({
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         <ModuleCard
-          label={t('nav.pos')}
+          label={t('nav.harakaPos')}
           count={data?.modules.pos.count}
           revenue={data?.modules.pos.revenue}
           currency={currency}
@@ -407,19 +406,6 @@ function TopItemsWidget({ range }: WidgetProps) {
             </tbody>
           </table>
         </div>
-      </EmptyOrLoading>
-    </WidgetShell>
-  );
-}
-
-function SalesByCashierWidget({ range }: WidgetProps) {
-  const { t } = useT();
-  const { data, isLoading } = useHarakaReport({ groupBy: 'cashier', from: range.from, to: range.to });
-  const buckets = data?.buckets ?? [];
-  return (
-    <WidgetShell title={t('reports.salesByCashier')} description={t('reports.salesByCashierDesc')}>
-      <EmptyOrLoading isLoading={isLoading} empty={buckets.length === 0}>
-        <BucketTable buckets={buckets} keyHeader={t('reports.cashier')} />
       </EmptyOrLoading>
     </WidgetShell>
   );

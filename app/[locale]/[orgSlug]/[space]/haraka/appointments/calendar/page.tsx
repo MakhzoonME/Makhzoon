@@ -237,11 +237,7 @@ export default function AppointmentsCalendarPage() {
         )}
       </div>
 
-      {providers.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface-page p-8 text-center text-sm text-gray-400">
-          {t('appointments.noProvidersForDay')}
-        </div>
-      ) : view === 'month' ? (
+      {view === 'month' ? (
         <MonthGrid
           day={day}
           range={range}
@@ -258,12 +254,17 @@ export default function AppointmentsCalendarPage() {
             {view === 'day' ? (
               <DayColumns
                 hours={hours}
-                columns={[
-                  ...providers.map((p) => ({ key: p.id, label: p.name, items: byProvider.get(p.id) ?? [] })),
-                  ...(byProvider.get(UNASSIGNED_KEY)?.length
-                    ? [{ key: UNASSIGNED_KEY, label: t('appointments.unassigned'), items: byProvider.get(UNASSIGNED_KEY) ?? [] }]
-                    : []),
-                ]}
+                columns={
+                  providers.length === 0
+                    ? [{ key: UNASSIGNED_KEY, label: '', items: appointments }]
+                    : [
+                        ...providers.map((p) => ({ key: p.id, label: p.name, items: byProvider.get(p.id) ?? [] })),
+                        ...(byProvider.get(UNASSIGNED_KEY)?.length
+                          ? [{ key: UNASSIGNED_KEY, label: t('appointments.unassigned'), items: byProvider.get(UNASSIGNED_KEY) ?? [] }]
+                          : []),
+                      ]
+                }
+                showProvider={providers.length === 0}
                 onOpen={(id) => router.push(`${base}/appointments/${id}`)}
                 statusList={statusList}
               />

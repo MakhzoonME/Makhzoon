@@ -203,6 +203,7 @@ function HistoryRow({
     order: `${harakaBase}/orders/${entry.id}`,
     appointment: `${harakaBase}/appointments/${entry.id}`,
     service_job: `${harakaBase}/service-jobs/${entry.id}`,
+    document_report: `${harakaBase}/reports/${entry.id}`,
   };
   const href = hrefByKind[entry.kind];
   const iconByKind: Record<CustomerHistoryEntry['kind'], typeof Receipt> = {
@@ -210,13 +211,15 @@ function HistoryRow({
     order: ShoppingBag,
     appointment: CalendarClock,
     service_job: Wrench,
+    document_report: FileText,
   };
   const Icon = iconByKind[entry.kind];
   const kindLabel =
     entry.kind === 'transaction' ? (entry.isRefund ? 'Refund' : 'Sale')
     : entry.kind === 'order' ? 'Order'
     : entry.kind === 'appointment' ? 'Appointment'
-    : 'Service Job';
+    : entry.kind === 'service_job' ? 'Service Job'
+    : 'Report';
 
   return (
     <li>

@@ -48,7 +48,6 @@ import {
   RASEED_BASE_FEATURE,
   HARAKA_BASE_FEATURE,
   BANNA_FEATURE,
-  LOYALTY_FEATURE,
 } from '@/lib/config/package-feature-groups';
 import {
   FEATURE_KEYS,
@@ -1028,23 +1027,6 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                   onToggleEnabled={(v) => handleFeatureToggle(BANNA_FEATURE, v)}
                 >
                   <p className="text-xs text-gray-500">Custom fields for assets, inventory, and customers.</p>
-                </ModuleCard>
-
-                <ModuleCard
-                  label="Loyalty"
-                  enabled={features[LOYALTY_FEATURE]}
-                  onToggleEnabled={(v) => handleFeatureToggle(LOYALTY_FEATURE, v)}
-                  countLabel={addOns.loyalty ? '1 of 1 add-on' : '0 of 1 add-on'}
-                >
-                  <label className="flex items-center gap-2 text-xs cursor-pointer hover:text-gray-900">
-                    <input
-                      type="checkbox"
-                      checked={addOns.loyalty}
-                      onChange={(e) => setAddOns((a) => ({ ...a, loyalty: e.target.checked }))}
-                      className="w-3.5 h-3.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                    />
-                    <span className={cn('text-gray-600', addOns.loyalty && 'text-gray-900 font-medium')}>Loyalty program</span>
-                  </label>
                 </ModuleCard>
               </div>
 

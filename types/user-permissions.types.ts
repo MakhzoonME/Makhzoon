@@ -165,8 +165,15 @@ export interface HarakaPermissions {
   analyticsView: boolean;
 }
 
-export interface ReportsPermissions {
-  view: boolean;
+// Document Reports: generic, org-templated report generation (e.g. a
+// doctor's patient report), separate from template building so a role can
+// fill out reports without being able to change what templates look like.
+// No delete op — reports are a retained record.
+export interface DocumentReportsPermissions {
+  reportsView: boolean;
+  reportsCreate: boolean;
+  reportsEdit: boolean;
+  reportsManageTemplates: boolean;
 }
 
 export interface SupportPermissions {
@@ -192,10 +199,6 @@ export interface BannaPermissions {
   create: boolean;
   update: boolean;
   delete: boolean;
-}
-
-export interface LoyaltyPermissions {
-  view: boolean;
 }
 
 // ── Settings — one module per page ──────────────────────────────────────
@@ -229,16 +232,6 @@ export interface SettingsUsersPermissions {
   resetPassword: boolean;
   delete: boolean;
 }
-export interface SettingsTaxRatesPermissions {
-  view: boolean;
-  create: boolean;
-  update: boolean;
-  delete: boolean;
-}
-export interface SettingsFawtaraPermissions {
-  view: boolean;
-  update: boolean;
-}
 export interface SettingsReceiptPermissions {
   view: boolean;
   update: boolean;
@@ -259,35 +252,26 @@ export interface SettingsCashDrawerPermissions {
   view: boolean;
   update: boolean;
 }
-export interface SettingsCardTerminalPermissions {
-  view: boolean;
-  update: boolean;
-}
-
 export interface UserPermissions {
   dashboard: DashboardPermissions;
   usool: UsoolPermissions;
   raseed: RaseedPermissions;
   haraka: HarakaPermissions;
-  reports: ReportsPermissions;
+  documentReports: DocumentReportsPermissions;
   support: SupportPermissions;
   auditLogs: AuditLogsPermissions;
   leads: LeadsPermissions;
   banna: BannaPermissions;
-  loyalty: LoyaltyPermissions;
   settingsOrgInfo: SettingsOrgInfoPermissions;
   settingsSpaces: SettingsSpacesPermissions;
   settingsLists: SettingsListsPermissions;
   settingsSubscription: SettingsSubscriptionPermissions;
   settingsUsers: SettingsUsersPermissions;
-  settingsTaxRates: SettingsTaxRatesPermissions;
-  settingsFawtara: SettingsFawtaraPermissions;
   settingsReceipt: SettingsReceiptPermissions;
   settingsInvoice: SettingsInvoicePermissions;
   settingsWarrantyCert: SettingsWarrantyCertPermissions;
   settingsNotifications: SettingsNotificationsPermissions;
   settingsCashDrawer: SettingsCashDrawerPermissions;
-  settingsCardTerminal: SettingsCardTerminalPermissions;
 }
 
 function allTrue<T>(keys: (keyof T)[]): T {
@@ -334,25 +318,21 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   usool: allTrue<UsoolPermissions>(USOOL_KEYS),
   raseed: allTrue<RaseedPermissions>(RASEED_KEYS),
   haraka: allTrue<HarakaPermissions>(HARAKA_KEYS),
-  reports: { view: true },
+  documentReports: { reportsView: true, reportsCreate: true, reportsEdit: true, reportsManageTemplates: true },
   support: { view: true, viewOthers: true, submit: true, replyOwn: true, replyOthers: true },
   auditLogs: { view: true, viewSpace: true, viewAllSpaces: true },
   leads: { view: true },
   banna: { view: true, create: true, update: true, delete: true },
-  loyalty: { view: true },
   settingsOrgInfo: { view: true, editName: true, editBranding: true },
   settingsSpaces: { view: true, create: true, update: true, grantAccess: true, archive: true, restore: true },
   settingsLists: { view: true, create: true, update: true, delete: true },
   settingsSubscription: { view: true },
   settingsUsers: { view: true, invite: true, update: true, revoke: true, resetPassword: true, delete: true },
-  settingsTaxRates: { view: true, create: true, update: true, delete: true },
-  settingsFawtara: { view: true, update: true },
   settingsReceipt: { view: true, update: true },
   settingsInvoice: { view: true, update: true },
   settingsWarrantyCert: { view: true, update: true },
   settingsNotifications: { view: true, update: true },
   settingsCashDrawer: { view: true, update: true },
-  settingsCardTerminal: { view: true, update: true },
 };
 
 export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
@@ -360,25 +340,21 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   usool: { ...allFalse<UsoolPermissions>(USOOL_KEYS), view: true, warrantiesView: true, maintenanceView: true, checkoutView: true, notesView: true, auditTrailView: true },
   raseed: { ...allFalse<RaseedPermissions>(RASEED_KEYS), view: true, transactionsView: true },
   haraka: allFalse<HarakaPermissions>(HARAKA_KEYS),
-  reports: { view: false },
+  documentReports: { reportsView: false, reportsCreate: false, reportsEdit: false, reportsManageTemplates: false },
   support: { view: true, viewOthers: false, submit: true, replyOwn: true, replyOthers: false },
   auditLogs: { view: false, viewSpace: false, viewAllSpaces: false },
   leads: { view: true },
   banna: { view: true, create: false, update: false, delete: false },
-  loyalty: { view: false },
   settingsOrgInfo: { view: false, editName: false, editBranding: false },
   settingsSpaces: { view: false, create: false, update: false, grantAccess: false, archive: false, restore: false },
   settingsLists: { view: false, create: false, update: false, delete: false },
   settingsSubscription: { view: false },
   settingsUsers: { view: false, invite: false, update: false, revoke: false, resetPassword: false, delete: false },
-  settingsTaxRates: { view: false, create: false, update: false, delete: false },
-  settingsFawtara: { view: false, update: false },
   settingsReceipt: { view: false, update: false },
   settingsInvoice: { view: false, update: false },
   settingsWarrantyCert: { view: false, update: false },
   settingsNotifications: { view: false, update: false },
   settingsCashDrawer: { view: false, update: false },
-  settingsCardTerminal: { view: false, update: false },
 };
 
 export interface ModuleOperationConfig {
@@ -574,10 +550,13 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     ],
   },
   {
-    key: 'reports', label: 'Reports', labelKey: 'permModule.reports',
-    featureKey: 'reports', group: 'platform',
+    key: 'documentReports', label: 'Document Reports', labelKey: 'permModule.documentReports',
+    featureKey: 'pos', group: 'haraka',
     operations: [
-      { key: 'view', label: 'View Reports', labelKey: 'permOp.reports.view' },
+      { key: 'reportsView', label: 'View Reports', labelKey: 'permOp.documentReports.reportsView' },
+      { key: 'reportsCreate', label: 'Generate Reports', labelKey: 'permOp.documentReports.reportsCreate', requiresKey: 'reportsView' },
+      { key: 'reportsEdit', label: 'Edit Reports', labelKey: 'permOp.documentReports.reportsEdit', requiresKey: 'reportsView' },
+      { key: 'reportsManageTemplates', label: 'Manage Report Templates', labelKey: 'permOp.documentReports.reportsManageTemplates', requiresKey: 'reportsView' },
     ],
   },
   {
@@ -615,13 +594,6 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'create', label: 'Create', labelKey: 'permOp.banna.create', requiresView: true },
       { key: 'update', label: 'Update', labelKey: 'permOp.banna.update', requiresView: true },
       { key: 'delete', label: 'Delete', labelKey: 'permOp.banna.delete', requiresView: true },
-    ],
-  },
-  {
-    key: 'loyalty', label: 'Loyalty', labelKey: 'permModule.loyalty',
-    featureKey: 'loyalty', group: 'platform',
-    operations: [
-      { key: 'view', label: 'View', labelKey: 'permOp.loyalty.view' },
     ],
   },
   {
@@ -675,24 +647,6 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     ],
   },
   {
-    key: 'settingsTaxRates', label: 'Tax Rates', labelKey: 'permModule.settingsTaxRates',
-    group: 'settings',
-    operations: [
-      { key: 'view', label: 'View Tax Rates', labelKey: 'permOp.settingsTaxRates.view' },
-      { key: 'create', label: 'Add Tax Rates', labelKey: 'permOp.settingsTaxRates.create', requiresView: true },
-      { key: 'update', label: 'Edit Tax Rates', labelKey: 'permOp.settingsTaxRates.update', requiresView: true },
-      { key: 'delete', label: 'Delete Tax Rates', labelKey: 'permOp.settingsTaxRates.delete', requiresView: true },
-    ],
-  },
-  {
-    key: 'settingsFawtara', label: 'JoFotara', labelKey: 'permModule.settingsFawtara',
-    group: 'settings',
-    operations: [
-      { key: 'view', label: 'View JoFotara Settings', labelKey: 'permOp.settingsFawtara.view' },
-      { key: 'update', label: 'Edit JoFotara Settings', labelKey: 'permOp.settingsFawtara.update', requiresView: true },
-    ],
-  },
-  {
     key: 'settingsReceipt', label: 'Receipt Customization', labelKey: 'permModule.settingsReceipt',
     group: 'settings',
     operations: [
@@ -730,14 +684,6 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     operations: [
       { key: 'view', label: 'View Cash Drawer Settings', labelKey: 'permOp.settingsCashDrawer.view' },
       { key: 'update', label: 'Edit Cash Drawer Settings', labelKey: 'permOp.settingsCashDrawer.update', requiresView: true },
-    ],
-  },
-  {
-    key: 'settingsCardTerminal', label: 'Card Terminal', labelKey: 'permModule.settingsCardTerminal',
-    group: 'settings',
-    operations: [
-      { key: 'view', label: 'View Card Terminal Settings', labelKey: 'permOp.settingsCardTerminal.view' },
-      { key: 'update', label: 'Edit Card Terminal Settings', labelKey: 'permOp.settingsCardTerminal.update', requiresView: true },
     ],
   },
 ];

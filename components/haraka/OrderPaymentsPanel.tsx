@@ -139,7 +139,7 @@ export function OrderPaymentsPanel({ order, currency = 'JOD', onUpdated }: Props
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-600">Method</label>
-                  <ConfigSelect listKey="order_payment_method" value={method} onValueChange={setMethod} placeholder="Select…" />
+                  <ConfigSelect listKey="payment_method" value={method} onValueChange={setMethod} placeholder="Select…" />
                 </div>
               </div>
               <div className="space-y-1.5">

@@ -21,7 +21,6 @@ export const createRetainerSchema = z.object({
   staffMemberName:  z.string().trim().max(120).nullable().optional(),
   billingCycle:     z.enum(['monthly', 'quarterly', 'annual']),
   amountPerCycle:   z.number().positive(),
-  taxRate:          z.number().min(0).max(1).default(0),
   startDate:        z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD'),
   endDate:          z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   notes:            z.string().trim().max(2000).nullable().optional(),

@@ -12,13 +12,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Combobox } from '@/components/ui/combobox';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { DocumentUpload } from '@/components/shared';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
-import { useTaxRates } from '@/hooks/haraka';
 interface Props { item?: InventoryItem; onSuccess?: () => void; onCancel?: () => void; onDirtyChange?: (dirty: boolean) => void; }
 
 export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: Props) {
@@ -28,8 +26,6 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
   const { locale } = useT();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const { data: taxRatesData } = useTaxRates();
-  const taxRates = taxRatesData?.taxRates ?? [];
 
   const form = useForm<InventoryItemFormData>({
     resolver: zodResolver(inventoryItemSchema),
@@ -47,7 +43,6 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
       barcode: item?.barcode ?? '',
       posEnabled: item?.posEnabled ?? false,
       posPrice: item?.posPrice ?? '',
-      taxRateId: item?.taxRateId ?? '',
       expiryDate: item?.expiryDate ? String(item.expiryDate).split('T')[0] : '',
       documents: item?.documents ?? [],
     },
@@ -207,27 +202,6 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
                     }}
                   />
                 </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-
-          <FormField control={form.control} name="taxRateId" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tax Rate</FormLabel>
-              <FormControl>
-                <Combobox
-                  onChange={(v) => field.onChange(!v || v === '__none__' ? '' : v)}
-                  value={field.value || '__none__'}
-                  options={[
-                    { value: '__none__', label: 'No tax' },
-                    ...taxRates.map((tr) => ({
-                      value: tr.id,
-                      label: `${tr.name} (${(tr.rate * 100).toFixed(2)}%)${tr.isDefault ? ' • default' : ''}`,
-                    })),
-                  ]}
-                  clearable={false}
-                />
               </FormControl>
               <FormMessage />
             </FormItem>

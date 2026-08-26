@@ -21,7 +21,7 @@ export function PrintButton() {
     <button
       type="button"
       onClick={() => window.print()}
-      className="print:hidden fixed top-4 end-4 flex items-center gap-2 rounded-full bg-gray-900 text-white px-4 py-2 text-sm font-medium shadow-lg hover:bg-gray-700 transition-colors"
+      className="print:hidden fixed top-4 end-4 flex items-center gap-2 rounded-full bg-[#111827] text-white px-4 py-2 text-sm font-medium shadow-lg hover:bg-[#374151] transition-colors"
     >
       <Printer className="h-4 w-4" strokeWidth={1.75} />
       Print

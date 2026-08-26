@@ -35,7 +35,6 @@ const addOnsSchema = z
     customization: z.boolean().optional(),
     purchasesRequests: z.boolean().optional(),
     vehicleIntake: z.boolean().optional(),
-    loyalty: z.boolean().optional(),
     extraHarakaModules: z.array(harakaModuleEnum).optional(),
     extraUsers: z.number().int().min(0).optional(),
     extraSpaces: z.number().int().min(0).optional(),

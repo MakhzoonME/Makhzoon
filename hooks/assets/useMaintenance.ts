@@ -30,7 +30,6 @@ export function useCreateMaintenance(assetId: string) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['maintenance', assetId] });
-      qc.invalidateQueries({ queryKey: ['reports'] });
     },
   });
 }
@@ -45,7 +44,6 @@ export function useDeleteMaintenance(assetId: string) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['maintenance', assetId] });
-      qc.invalidateQueries({ queryKey: ['reports'] });
     },
   });
 }

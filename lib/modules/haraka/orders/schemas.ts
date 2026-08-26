@@ -33,7 +33,6 @@ const orderLineSchema = z.object({
   sku:               z.string().max(100).nullable().optional(),
   quantity:          z.number().positive(),
   unitPrice:         z.number().min(0),
-  taxRate:           z.number().min(0).max(1).default(0),
   discountAmount:    z.number().min(0).default(0),
 })
 

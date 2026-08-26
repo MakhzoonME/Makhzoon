@@ -13,7 +13,6 @@ function toLine(d: Row): PurchaseLine {
     barcode: (d.barcode as string) ?? null,
     quantity: Number(d.quantity ?? 0),
     unitCost: Number(d.unitCost ?? 0),
-    taxRateId: (d.taxRateId as string) ?? null,
     taxAmount: Number(d.taxAmount ?? 0),
     lineTotal: Number(d.lineTotal ?? 0),
     notes: (d.notes as string) ?? null,
@@ -57,7 +56,6 @@ export interface PurchaseLineInput {
   barcode?: string | null
   quantity: number
   unitCost: number
-  taxRateId?: string | null
   notes?: string | null
 }
 
@@ -72,36 +70,16 @@ export interface PurchaseInput {
   lines: PurchaseLineInput[]
 }
 
-interface TaxRateLookup {
-  rates: Map<string, number>
-}
-
-async function loadTaxRates(tenant: TenantContext): Promise<TaxRateLookup> {
-  const { data } = await supabaseAdmin
-    .from('tax_rates')
-    .select('id, rate')
-    .eq('organization_id', tenant.organizationId)
-  const map = new Map<string, number>()
-  for (const d of data ?? []) {
-    const r = (d as Row).rate
-    if (typeof r === 'number') map.set((d as Row).id as string, r)
-  }
-  return { rates: map }
-}
-
 function priceLines(
   lines: PurchaseLineInput[],
-  taxes: TaxRateLookup,
 ): { lines: PurchaseLine[]; subtotal: number; taxTotal: number; total: number } {
   let subtotal = 0
-  let taxTotal = 0
+  const taxTotal = 0
   const priced: PurchaseLine[] = lines.map((line) => {
     const lineSubtotal = line.quantity * line.unitCost
-    const taxRate = line.taxRateId ? taxes.rates.get(line.taxRateId) ?? 0 : 0
-    const taxAmount = +(lineSubtotal * taxRate).toFixed(4)
+    const taxAmount = 0
     const lineTotal = +(lineSubtotal + taxAmount).toFixed(4)
     subtotal += lineSubtotal
-    taxTotal += taxAmount
     return {
       itemId: line.itemId ?? null,
       itemName: line.itemName,
@@ -109,7 +87,6 @@ function priceLines(
       barcode: line.barcode ?? null,
       quantity: line.quantity,
       unitCost: line.unitCost,
-      taxRateId: line.taxRateId ?? null,
       taxAmount,
       lineTotal,
       notes: line.notes ?? null,
@@ -167,8 +144,7 @@ export class PurchasesRepository {
   }
 
   async create(tenant: TenantContext, input: PurchaseInput): Promise<string> {
-    const taxes = await loadTaxRates(tenant)
-    const priced = priceLines(input.lines, taxes)
+    const priced = priceLines(input.lines)
     const { data, error } = await supabaseAdmin
       .from('purchases')
       .insert({
@@ -219,8 +195,7 @@ export class PurchasesRepository {
     if (input.updateItemUnitCost !== undefined) patch.update_item_unit_cost = input.updateItemUnitCost
 
     if (input.lines) {
-      const taxes = await loadTaxRates(tenant)
-      const priced = priceLines(input.lines, taxes)
+      const priced = priceLines(input.lines)
       patch.lines = priced.lines
       patch.subtotal = priced.subtotal
       patch.tax_total = priced.taxTotal

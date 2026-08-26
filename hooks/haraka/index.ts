@@ -1,7 +1,5 @@
-export { useTaxRates, useCreateTaxRate, useUpdateTaxRate, useDeleteTaxRate } from './useTaxRates';
 export { useSessions, useCurrentSession, useSession, useSessionForRegister, useOpenSession, useCloseSession } from './useSessions';
 export { useTransactions, useTransaction, useCompleteSale, useVoidSale, useRefundSale, CompleteSaleError } from './useTransactions';
-export { useFawtaraConfig, useUpdateFawtaraConfig, useResubmitFawtara } from './useFawtara';
 export { useHarakaReport, buildReportExportUrl } from './useReports';
 export type { AggregateGroupBy, AggregateBucket, AggregateResult, UseHarakaReportParams } from './useReports';
 export { useHarakaAnalytics, buildAnalyticsExportUrl } from './useAnalytics';
@@ -62,13 +60,6 @@ export type { UseAppointmentsParams } from './useAppointments';
 export { useCashDrawerConfig, useUpdateCashDrawerConfig, useVerifyDrawerPin } from './useCashDrawer';
 export type { CashDrawerConfig } from './useCashDrawer';
 export { useDiscountApprovalPin, useSetDiscountApprovalPin } from './useDiscountApproval';
-export {
-  useCardTerminalConfig,
-  useUpdateCardTerminalConfig,
-  useInitiateCharge,
-  useChargeStatus,
-  useUpdateChargeStatus,
-} from './useCardTerminal';
 export {
   useWarrantyCerts,
   useWarrantyCert,

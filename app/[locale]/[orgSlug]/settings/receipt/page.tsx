@@ -72,7 +72,7 @@ const LANGUAGE_OPTIONS: { value: ReceiptConfig['language']; label: string }[] = 
 // Receipt-specific settings (no branding fields — those live in org info)
 type ReceiptSettings = Pick<ReceiptConfig,
   'template' | 'language' |
-  'showLogo' | 'showTaxNumber' | 'showCashier' | 'showFawtaraQr' |
+  'showLogo' | 'showTaxNumber' | 'showCashier' |
   'showItemizedTax' | 'showAddress' | 'showPhone' | 'showWebsite' |
   'footerText' | 'footerTextAr' | 'copies' | 'cutFeed'
 >;
@@ -83,7 +83,6 @@ const DEFAULT_SETTINGS: ReceiptSettings = {
   showLogo:        DEFAULT_RECEIPT_CONFIG.showLogo,
   showTaxNumber:   DEFAULT_RECEIPT_CONFIG.showTaxNumber,
   showCashier:     DEFAULT_RECEIPT_CONFIG.showCashier,
-  showFawtaraQr:   DEFAULT_RECEIPT_CONFIG.showFawtaraQr,
   showItemizedTax: DEFAULT_RECEIPT_CONFIG.showItemizedTax,
   showAddress:     DEFAULT_RECEIPT_CONFIG.showAddress,
   showPhone:       DEFAULT_RECEIPT_CONFIG.showPhone,
@@ -130,7 +129,6 @@ export default function ReceiptSettingsPage() {
       showLogo:        c.showLogo        ?? s.showLogo,
       showTaxNumber:   c.showTaxNumber   ?? s.showTaxNumber,
       showCashier:     c.showCashier     ?? s.showCashier,
-      showFawtaraQr:   c.showFawtaraQr  ?? s.showFawtaraQr,
       showItemizedTax: c.showItemizedTax ?? s.showItemizedTax,
       showAddress:     c.showAddress     ?? s.showAddress,
       showPhone:       c.showPhone       ?? s.showPhone,
@@ -361,7 +359,6 @@ export default function ReceiptSettingsPage() {
                 { key: 'showAddress',     label: 'Show address' },
                 { key: 'showPhone',       label: 'Show phone' },
                 { key: 'showWebsite',     label: 'Show website' },
-                { key: 'showFawtaraQr',  label: 'Fawtara QR code' },
                 { key: 'showItemizedTax', label: 'Itemized tax breakdown' },
               ] as const).map(({ key, label }) => (
                 <div key={key} className="flex items-center justify-between">

@@ -15,7 +15,7 @@ import { PrinterSettingsDialog } from '@/components/haraka/PrinterSettingsDialog
 import { ReceiptShareDialog } from '@/components/haraka/ReceiptShareDialog';
 import { usePosCart, setActivePosCartSession, type PosPickableItem } from '@/store/pos-cart.store';
 import { useBarcodeLookup } from '@/hooks/inventory';
-import { useTaxRates, useCurrentSession, useSessionForRegister, useCompleteSale, useFawtaraConfig, CompleteSaleError } from '@/hooks/haraka';
+import { useCurrentSession, useSessionForRegister, useCompleteSale, CompleteSaleError } from '@/hooks/haraka';
 import { useAuthStore } from '@/store/auth.store';
 import { hasPermission } from '@/lib/permissions';
 import { priceCart } from '@/lib/modules/haraka/pricing/calc';
@@ -47,9 +47,6 @@ export default function RegisterPage() {
     isFetched: otherSessionFetched,
     isError: otherSessionError,
   } = useSessionForRegister(isOwnSessionUrl ? undefined : params.sessionId);
-  const { data: taxData } = useTaxRates();
-  const { data: fawtaraCfg } = useFawtaraConfig();
-  const fawtaraEnabled = fawtaraCfg?.config?.enabled === true;
   const { data: cashDrawerData } = useCashDrawerConfig();
   const { lookup } = useBarcodeLookup({ posLookup: true });
 
@@ -100,8 +97,8 @@ export default function RegisterPage() {
   const [payOpen, setPayOpen] = useState(false);
   const [approvalOpen, setApprovalOpen] = useState(false);
   const [approvalError, setApprovalError] = useState<string | null>(null);
-  const [pendingSale, setPendingSale] = useState<{ payments: PaymentLine[]; skipFawtara: boolean } | null>(null);
-  const [payTab, setPayTab] = useState<'cash' | 'card' | 'cliq' | 'other'>('cash');
+  const [pendingSale, setPendingSale] = useState<{ payments: PaymentLine[] } | null>(null);
+  const [payTab, setPayTab] = useState<string>('cash');
   const [printerOpen, setPrinterOpen] = useState(false);
   const [lastTx, setLastTx] = useState<PosTransaction | null>(null);
   const [pendingDrawerPayments, setPendingDrawerPayments] = useState<PaymentLine[] | null>(null);
@@ -140,18 +137,9 @@ export default function RegisterPage() {
     }
   }, [sessionFetched, sessionLoading, isOwnSessionUrl, otherSessionFetched, otherSessionError, otherSessionData, ownSession, canCheckout, router, base]);
 
-  const taxRateById = useCallback(
-    (id: string | null | undefined): number => {
-      if (!id) return 0;
-      const tr = taxData?.taxRates.find((r) => r.id === id);
-      return tr?.rate ?? 0;
-    },
-    [taxData],
-  );
-
   function pickItem(item: PosPickableItem) {
     if (!canAddItems) { toast.error("You don't have permission to add items to a receipt"); return; }
-    addItem(item, taxRateById(item.taxRateId));
+    addItem(item);
   }
 
   function inventoryItemToPickable(item: InventoryItem): PosPickableItem {
@@ -161,7 +149,6 @@ export default function RegisterPage() {
       sku: item.sku ?? null,
       barcode: item.barcode ?? null,
       unitPrice: typeof item.posPrice === 'number' && item.posPrice > 0 ? item.posPrice : item.unitCost ?? 0,
-      taxRateId: item.taxRateId ?? null,
     };
   }
 
@@ -175,7 +162,7 @@ export default function RegisterPage() {
     } else {
       toast.error('Item not found');
     }
-  }, [lookup, taxRateById, canAddItems]);
+  }, [lookup, canAddItems]);
 
   function resolvePendingDrawer() {
     if (!pendingDrawerPayments) return;
@@ -195,7 +182,7 @@ export default function RegisterPage() {
     }).catch(() => undefined); // silent — never block the sale flow
   }
 
-  async function handleConfirmSale(payments: PaymentLine[], skipFawtara: boolean, approverPin?: string) {
+  async function handleConfirmSale(payments: PaymentLine[], approverPin?: string) {
     if (!currentSession) { toast.error('No open session'); return; }
     const offlineId = crypto.randomUUID();
     try {
@@ -206,14 +193,12 @@ export default function RegisterPage() {
         customerName: customer?.name ?? null,
         lines: lines.map((l) => ({
           itemId: l.itemId, itemName: l.itemName, sku: l.sku, barcode: l.barcode,
-          quantity: l.quantity, unitPrice: l.unitPrice, taxRateId: l.taxRateId,
-          taxRate: l.taxRate, discount: l.discount,
+          quantity: l.quantity, unitPrice: l.unitPrice, discount: l.discount,
         })),
         payments: payments.map((p) => ({
           method: p.method, amount: p.amount,
           reference: p.reference ?? null, cardLast4: p.cardLast4 || null,
         })),
-        skipFawtara,
         approverPin,
       });
       setLastTx(result.transaction);
@@ -228,7 +213,7 @@ export default function RegisterPage() {
       setPendingDrawerPayments(payments);
     } catch (err) {
       if (err instanceof CompleteSaleError && err.code === 'DISCOUNT_APPROVAL_REQUIRED') {
-        setPendingSale({ payments, skipFawtara });
+        setPendingSale({ payments });
         setApprovalError(approverPin ? 'Incorrect PIN' : null);
         setApprovalOpen(true);
         return;
@@ -239,7 +224,7 @@ export default function RegisterPage() {
 
   function handleApprovalPinSubmit(pin: string) {
     if (!pendingSale) return;
-    handleConfirmSale(pendingSale.payments, pendingSale.skipFawtara, pin);
+    handleConfirmSale(pendingSale.payments, pin);
   }
 
   const totals = priceCart(lines).totals;
@@ -404,12 +389,6 @@ export default function RegisterPage() {
                   <span>{t('reports.subtotal')}</span>
                   <span>{totals.subtotal.toFixed(2)}</span>
                 </div>
-                {totals.taxTotal > 0 && (
-                  <div className="flex justify-between text-xs text-gray-500 font-mono">
-                    <span>{t('reports.tax')}</span>
-                    <span>{totals.taxTotal.toFixed(2)}</span>
-                  </div>
-                )}
                 {totals.discountTotal > 0 && (
                   <div className="flex justify-between text-xs text-amber-600 font-mono">
                     <span>{t('cart.discount')}</span>
@@ -497,7 +476,6 @@ export default function RegisterPage() {
         onConfirm={handleConfirmSale}
         loading={completeMut.isPending}
         initialTab={payTab}
-        fawtaraEnabled={fawtaraEnabled}
       />
       <DiscountApprovalPinDialog
         open={approvalOpen}

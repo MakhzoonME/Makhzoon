@@ -26,7 +26,6 @@ function toRetainer(r: Row): HarakaRetainer {
     staffMemberName:  (r.staff_member_name as string) ?? null,
     billingCycle:     (r.billing_cycle as BillingCycle) ?? 'monthly',
     amountPerCycle:   Number(r.amount_per_cycle ?? 0),
-    taxRate:          Number(r.tax_rate ?? 0),
     startDate:        r.start_date as string,
     endDate:          (r.end_date as string) ?? null,
     status:           (r.status as RetainerStatus) ?? 'active',
@@ -78,7 +77,6 @@ export interface CreateRetainerInput {
   staffMemberName?: string | null
   billingCycle:     BillingCycle
   amountPerCycle:   number
-  taxRate:          number
   startDate:        string
   endDate?:         string | null
   notes?:           string | null
@@ -146,7 +144,6 @@ export class RetainersRepository {
         staff_member_name: input.staffMemberName ?? null,
         billing_cycle:     input.billingCycle,
         amount_per_cycle:  input.amountPerCycle,
-        tax_rate:          input.taxRate,
         start_date:        input.startDate,
         end_date:          input.endDate ?? null,
         status:            'active',
@@ -237,7 +234,7 @@ export class RetainersRepository {
     if (existing) throw new Error('An invoice already exists for this billing period')
 
     const invoiceNumber = await allocateRetainerInvoiceNumber(tenant.organizationId)
-    const taxAmount = retainer.amountPerCycle * retainer.taxRate
+    const taxAmount = 0
     const total     = retainer.amountPerCycle + taxAmount
 
     const { data, error } = await supabaseAdmin

@@ -16,7 +16,6 @@ export const purchaseLineSchema = z.object({
     .or(z.literal('')),
   quantity: z.coerce.number().positive('Quantity must be greater than zero'),
   unitCost: z.coerce.number().min(0, 'Unit cost cannot be negative'),
-  taxRateId: z.string().optional().nullable().or(z.literal('')),
   notes: z.string().optional().nullable(),
 })
 

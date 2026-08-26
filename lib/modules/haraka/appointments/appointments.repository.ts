@@ -33,7 +33,6 @@ function toAppointment(r: Row): HarakaAppointment {
     scheduledAt:       r.scheduled_at ? new Date(r.scheduled_at as string) : new Date(),
     durationMinutes:   Number(r.duration_minutes ?? 0),
     price:             Number(r.price ?? 0),
-    taxRate:           r.tax_rate == null ? null : Number(r.tax_rate),
     discountAmount:    Number(r.discount_amount ?? 0),
 
     status:            (r.status as AppointmentStatus) ?? 'scheduled',
@@ -96,7 +95,6 @@ export interface CreateAppointmentInput {
   scheduledAt:      string
   durationMinutes:  number
   price:            number
-  taxRate:          number | null
   discountAmount?:  number
   notes?:           string | null
 }
@@ -241,7 +239,7 @@ export class AppointmentsRepository {
     )
     const discountAmount = money(input.discountAmount ?? 0)
     const subtotal = money(input.price - discountAmount)
-    const taxAmount = money(subtotal * (input.taxRate ?? 0))
+    const taxAmount = 0
     const total = money(subtotal + taxAmount)
 
     const { data, error } = await supabaseAdmin
@@ -258,7 +256,6 @@ export class AppointmentsRepository {
         scheduled_at:       input.scheduledAt,
         duration_minutes:   input.durationMinutes,
         price:              input.price,
-        tax_rate:           input.taxRate,
         discount_amount:    discountAmount,
         tax_amount:         taxAmount,
         total,

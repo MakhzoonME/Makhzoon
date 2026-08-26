@@ -13,7 +13,6 @@ export interface ReceiptConfig {
   showLogo: boolean;
   showTaxNumber: boolean;
   showCashier: boolean;
-  showFawtaraQr: boolean;
   showItemizedTax: boolean;
   showAddress: boolean;
   showPhone: boolean;
@@ -62,8 +61,6 @@ export interface ReceiptData {
   total: number;
   currency: string;
   status?: 'completed' | 'refunded' | 'voided';
-  /** Pre-rendered Fawtara QR (data URL). Null → render a placeholder box. */
-  qrCodeDataUrl?: string | null;
 }
 
 const SAMPLE_DATA: ReceiptData = {
@@ -104,17 +101,6 @@ interface PreviewProps {
 function resolveLang(props: PreviewProps): ReceiptLang {
   if (props.lang) return props.lang;
   return props.config.language === 'ar' ? 'ar' : 'en';
-}
-
-/* Small QR slot: real code when provided, placeholder box otherwise. */
-function QrSlot({ dataUrl }: { dataUrl?: string | null }) {
-  return (
-    <div className="flex justify-center mt-3">
-      {dataUrl
-        ? <img src={dataUrl} alt="QR" className="w-16 h-16" />
-        : <div className="w-14 h-14 border border-gray-300 bg-gray-50 flex items-center justify-center text-[7px] text-gray-400">QR</div>}
-    </div>
-  );
 }
 
 /* ── Thermal receipt (58mm / 80mm) ───────────────────────────── */
@@ -201,8 +187,6 @@ export function ThermalPreview(props: PreviewProps) {
       {config.showTaxNumber && taxNumber && (
         <div className="text-[9px] text-gray-400 mt-1">{L.taxNo}: {taxNumber}</div>
       )}
-
-      {config.showFawtaraQr && <QrSlot dataUrl={d.qrCodeDataUrl} />}
 
       {footer && (
         <>
@@ -315,7 +299,6 @@ export function A4ModernPreview(props: PreviewProps) {
           </div>
         )}
 
-        {config.showFawtaraQr && <QrSlot dataUrl={d.qrCodeDataUrl} />}
       </div>
     </div>
   );
@@ -416,7 +399,6 @@ export function A4InvoicePreview(props: PreviewProps) {
           </div>
         )}
 
-        {config.showFawtaraQr && <QrSlot dataUrl={d.qrCodeDataUrl} />}
       </div>
     </div>
   );

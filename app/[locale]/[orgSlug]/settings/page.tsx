@@ -19,14 +19,11 @@ const SETTINGS_ORDER: Array<{ permKey: string; path: string }> = [
   { permKey: 'settingsLists.view',        path: '/settings/lists' },
   { permKey: 'settingsSubscription.view', path: '/subscription' },
   { permKey: 'settingsUsers.view',        path: '/users' },
-  { permKey: 'settingsTaxRates.view',     path: '/settings/tax-rates' },
-  { permKey: 'settingsFawtara.view',      path: '/settings/jo-fotara' },
   { permKey: 'settingsReceipt.view',      path: '/settings/receipt' },
   { permKey: 'settingsInvoice.view',      path: '/settings/invoice' },
   { permKey: 'settingsWarrantyCert.view', path: '/settings/warranty-cert' },
   { permKey: 'settingsNotifications.view',path: '/settings/notifications' },
   { permKey: 'settingsCashDrawer.view',   path: '/settings/cash-drawer' },
-  { permKey: 'settingsCardTerminal.view', path: '/settings/card-terminal' },
 ];
 
 export default function SettingsIndexPage() {

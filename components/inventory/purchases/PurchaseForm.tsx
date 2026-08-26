@@ -60,7 +60,6 @@ export function PurchaseForm({ purchase, onSuccess, onCancel }: Props) {
         barcode: l.barcode ?? '',
         quantity: l.quantity,
         unitCost: l.unitCost,
-        taxRateId: l.taxRateId ?? '',
         notes: l.notes,
       })) ?? [],
     },

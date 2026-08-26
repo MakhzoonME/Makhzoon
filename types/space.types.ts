@@ -4,7 +4,7 @@
  *
  * Data ownership: assets, inventory, requests, POS sessions/customers,
  * audit logs and their child tables are scoped by space_id. Org-wide
- * things (users, billing, settings, managed lists, tax, Fawtara) are not.
+ * things (users, billing, settings, managed lists, tax) are not.
  */
 export type SpaceStatus = 'active' | 'archived';
 

@@ -68,9 +68,6 @@ export function AppointmentInvoicePreview({
           </div>
           <div style={{ fontSize: '9pt', color: '#444', marginTop: 4 }}><strong>#{docNumber}</strong></div>
           <div style={{ fontSize: '9pt', color: '#666', marginTop: 2 }}>{fmtDate(a.createdAt)}</div>
-          <div style={{ fontSize: '9pt', color: '#666', marginTop: 2 }}>
-            {t('invoicePreview.scheduled')}: {fmtDate(a.scheduledAt)} {fmtTime(a.scheduledAt)}
-          </div>
         </div>
       </div>
 
@@ -100,7 +97,12 @@ export function AppointmentInvoicePreview({
         </thead>
         <tbody>
           <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-            <td style={{ padding: '5px 8px', verticalAlign: 'top', fontWeight: 500 }}>{a.serviceName ?? t('appointments.title')}</td>
+            <td style={{ padding: '5px 8px', verticalAlign: 'top', fontWeight: 500 }}>
+              {a.serviceName ?? t('appointments.title')}
+              <div style={{ fontSize: '8pt', fontWeight: 400, color: '#888', marginTop: 2 }}>
+                {t('invoicePreview.scheduled')}: {fmtDate(a.scheduledAt)} {fmtTime(a.scheduledAt)}
+              </div>
+            </td>
             <td style={{ padding: '5px 8px', textAlign: 'right', fontFamily: 'monospace' }}>{a.durationMinutes} min</td>
             <td style={{ padding: '5px 8px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(a.price, currency)}</td>
           </tr>

@@ -44,9 +44,6 @@ export default function RetainerDetailPage() {
     } catch (err) { toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong')); }
   }
 
-  const taxAmount     = retainer.amountPerCycle * retainer.taxRate;
-  const totalPerCycle = retainer.amountPerCycle + taxAmount;
-
   return (
     <div className="space-y-6 max-w-4xl">
       <PageHeader
@@ -97,18 +94,6 @@ export default function RetainerDetailPage() {
                 <div className="text-xs text-gray-400">{t('retainers.labelAmountCycle')}</div>
                 <div className="font-mono font-semibold">{formatCurrency(retainer.amountPerCycle, currency)}</div>
               </div>
-              {retainer.taxRate > 0 && (
-                <>
-                  <div>
-                    <div className="text-xs text-gray-400">{t('retainers.labelTax')}</div>
-                    <div className="font-mono">{(retainer.taxRate * 100).toFixed(0)}% ({formatCurrency(taxAmount, currency)})</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-400">{t('retainers.labelTotalCycle')}</div>
-                    <div className="font-mono font-semibold">{formatCurrency(totalPerCycle, currency)}</div>
-                  </div>
-                </>
-              )}
               <div>
                 <div className="text-xs text-gray-400">{t('retainers.labelStartDateVal')}</div>
                 <div>{retainer.startDate}</div>

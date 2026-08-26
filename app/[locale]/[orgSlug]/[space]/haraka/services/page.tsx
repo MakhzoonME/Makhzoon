@@ -14,7 +14,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Combobox } from '@/components/ui/combobox';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { useList } from '@/hooks/lists';
-import { useServices, useCreateService, useUpdateService, useDeleteService, useTaxRates } from '@/hooks/haraka';
+import { useServices, useCreateService, useUpdateService, useDeleteService } from '@/hooks/haraka';
 import { createServiceSchema, type CreateServicePayload } from '@/lib/modules/haraka/services/schemas';
 import { useAdminGuard, useModuleGuard, toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
@@ -40,8 +40,6 @@ export default function ServiceCatalogPage() {
   const currency = orgInfo?.currency ?? 'JOD';
 
   const { data, isLoading } = useServices();
-  const { data: taxRatesData } = useTaxRates();
-  const taxRates = taxRatesData?.taxRates ?? [];
   const { data: categoryItems = [] } = useList('service_category');
   const categoryLabel = (value: string | null) => {
     if (!value) return null;
@@ -60,12 +58,12 @@ export default function ServiceCatalogPage() {
 
   const form = useForm<CreateServicePayload>({
     resolver: zodResolver(createServiceSchema),
-    defaultValues: { name: '', category: '', description: '', price: 0, taxRateId: '', active: true, durationMinutes: null, appointmentBookable: false },
+    defaultValues: { name: '', category: '', description: '', price: 0, active: true, durationMinutes: null, appointmentBookable: false },
   });
 
   function openCreate() {
     setEditing(null);
-    form.reset({ name: '', category: '', description: '', price: 0, taxRateId: '', active: true, durationMinutes: null, appointmentBookable: false });
+    form.reset({ name: '', category: '', description: '', price: 0, active: true, durationMinutes: null, appointmentBookable: false });
     setDrawerOpen(true);
   }
 
@@ -76,7 +74,6 @@ export default function ServiceCatalogPage() {
       category: service.category ?? '',
       description: service.description ?? '',
       price: service.price,
-      taxRateId: service.taxRateId ?? '',
       active: service.active,
       durationMinutes: service.durationMinutes,
       appointmentBookable: service.appointmentBookable,
@@ -89,7 +86,6 @@ export default function ServiceCatalogPage() {
       ...values,
       category: values.category || null,
       description: values.description || null,
-      taxRateId: values.taxRateId || null,
       // Blank input clears the duration rather than saving NaN.
       durationMinutes: values.durationMinutes ? Number(values.durationMinutes) : null,
     };
@@ -215,27 +211,6 @@ export default function ServiceCatalogPage() {
                     type="number" step="0.01" min="0" {...field}
                     value={field.value ?? 0}
                     onChange={(e) => field.onChange(e.target.value === '' ? 0 : Number(e.target.value))}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            <FormField control={form.control} name="taxRateId" render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('inventory.taxRate')}</FormLabel>
-                <FormControl>
-                  <Combobox
-                    onChange={(v) => field.onChange(!v || v === '__none__' ? '' : v)}
-                    value={field.value || '__none__'}
-                    options={[
-                      { value: '__none__', label: 'No tax' },
-                      ...taxRates.map((tr) => ({
-                        value: tr.id,
-                        label: `${tr.name} (${(tr.rate * 100).toFixed(2)}%)${tr.isDefault ? ' • default' : ''}`,
-                      })),
-                    ]}
-                    clearable={false}
                   />
                 </FormControl>
                 <FormMessage />

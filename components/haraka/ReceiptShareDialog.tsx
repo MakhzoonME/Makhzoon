@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toPng, toJpeg } from 'html-to-image';
-import QRCode from 'qrcode';
 import { Copy, Check, Mail, Download, Printer, Receipt, FileImage, Loader2 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogIconHeader, DialogBody, DialogFooter,
@@ -94,7 +93,6 @@ export function ReceiptShareDialog({
   const [copied, setCopied] = useState(false);
   const [capturing, setCapturing] = useState<'png' | 'jpg' | null>(null);
   const [printing, setPrinting] = useState(false);
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const captureRef = useRef<HTMLDivElement>(null);
   const autoPrintedFor = useRef<string | null>(null);
   const { hydrate } = usePrinterStore();
@@ -114,17 +112,6 @@ export function ReceiptShareDialog({
   const shareLink = transaction ? `${receiptBase}/r/${orgSlug}/${transaction.id}` : '';
 
   const isThermal = config.template === 'thermal-58' || config.template === 'thermal-80';
-
-  // Render the real Fawtara QR (not a placeholder) for the A4 templates, which
-  // still preview and print as DOM. The thermal raster draws its own QR from
-  // the payload, so it does not need this.
-  useEffect(() => {
-    const payload = transaction?.fawtara?.status === 'submitted' ? transaction.fawtara.qrPayload : null;
-    if (!payload) { setQrDataUrl(null); return; }
-    let cancelled = false;
-    QRCode.toDataURL(payload, { margin: 0 }).then((url) => { if (!cancelled) setQrDataUrl(url); }).catch(() => undefined);
-    return () => { cancelled = true; };
-  }, [transaction?.fawtara?.status, transaction?.fawtara?.qrPayload]);
 
   // Thermal preview = the printer bitmap itself. Rendering it while an A4
   // template is selected would be wasted work, so gate on the template.
@@ -154,9 +141,8 @@ export function ReceiptShareDialog({
       total: transaction.total,
       currency: CURRENCY,
       status: transaction.status,
-      qrCodeDataUrl: qrDataUrl,
     };
-  }, [transaction, qrDataUrl]);
+  }, [transaction]);
 
   /**
    * Print exactly what the preview shows. Thermal templates already exist as

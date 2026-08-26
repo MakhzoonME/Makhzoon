@@ -9,7 +9,6 @@ export const DEFAULT_RECEIPT_CONFIG: ReceiptConfig = {
   showLogo: true,
   showTaxNumber: true,
   showCashier: true,
-  showFawtaraQr: true,
   showItemizedTax: true,
   showAddress: true,
   showPhone: true,
@@ -69,7 +68,6 @@ export function toPrintText(
     showWebsite: c.showWebsite ?? false,
     showCashier: c.showCashier ?? true,
     showTaxNumber: c.showTaxNumber ?? true,
-    showFawtaraQr: c.showFawtaraQr ?? true,
     showItemizedTax: c.showItemizedTax ?? true,
   };
 }

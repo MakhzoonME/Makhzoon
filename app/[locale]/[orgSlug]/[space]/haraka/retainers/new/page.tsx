@@ -10,7 +10,7 @@ import { CustomerSelect } from '@/components/haraka/CustomerSelect';
 import { ServicePicker } from '@/components/haraka/ServicePicker';
 import { Combobox } from '@/components/ui/combobox';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { useCreateRetainer, useTaxRates } from '@/hooks/haraka';
+import { useCreateRetainer } from '@/hooks/haraka';
 import { useAdminGuard, useModuleGuard, toast, useT } from '@/hooks/ui';
 import type { HarakaService } from '@/types';
 
@@ -21,8 +21,6 @@ export default function NewRetainerPage() {
   const params    = useParams<{ locale: string; orgSlug: string; space: string }>();
   const createMut = useCreateRetainer();
   const { t }     = useT();
-  const { data: taxRatesData } = useTaxRates();
-  const taxRates  = taxRatesData?.taxRates ?? [];
 
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
 
@@ -32,7 +30,6 @@ export default function NewRetainerPage() {
   const [customerId,     setCustomerId]     = useState<string | null>(null);
   const [billingCycle,   setBillingCycle]   = useState<'monthly' | 'quarterly' | 'annual'>('monthly');
   const [amountPerCycle, setAmountPerCycle] = useState('');
-  const [taxRate,        setTaxRate]        = useState('0');
   const [startDate,      setStartDate]      = useState(new Date().toISOString().slice(0, 10));
   const [endDate,        setEndDate]        = useState('');
   const [notes,          setNotes]          = useState('');
@@ -41,10 +38,6 @@ export default function NewRetainerPage() {
 
   function applyServicePick(service: HarakaService) {
     setAmountPerCycle(String(service.price));
-    if (service.taxRateId) {
-      const rate = taxRates.find((r) => r.id === service.taxRateId)?.rate;
-      if (rate != null) setTaxRate(String(rate * 100));
-    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -62,7 +55,6 @@ export default function NewRetainerPage() {
         customerId:     customerId || undefined,
         billingCycle,
         amountPerCycle: amount,
-        taxRate:        parseFloat(taxRate) / 100 || 0,
         startDate,
         endDate:        endDate || undefined,
         notes:          notes.trim() || undefined,
@@ -126,7 +118,7 @@ export default function NewRetainerPage() {
         {/* Billing */}
         <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
           <h3 className="text-sm font-semibold text-gray-700">{t('retainers.sectionBilling')}</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-600">{t('retainers.labelBillingCycle')} *</label>
               <Combobox
@@ -151,14 +143,6 @@ export default function NewRetainerPage() {
                 />
                 <ServicePicker onPick={applyServicePick} label={t('serviceLine.pickFromCatalog')} />
               </div>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-600">{t('retainers.labelTaxPercent')}</label>
-              <Input
-                type="number" min="0" max="100" step="0.01"
-                value={taxRate} onChange={(e) => setTaxRate(e.target.value)}
-                placeholder="0" className="font-mono"
-              />
             </div>
           </div>
           <div className="space-y-1.5">

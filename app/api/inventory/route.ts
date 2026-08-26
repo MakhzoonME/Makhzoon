@@ -90,7 +90,6 @@ export async function POST(req: NextRequest) {
       barcode: data.barcode ? data.barcode.trim() : null,
       posEnabled: data.posEnabled ?? undefined,
       posPrice: data.posPrice === undefined ? null : Number(data.posPrice),
-      taxRateId: data.taxRateId || null,
       expiryDate: data.expiryDate || null,
       documents: data.documents ?? [],
     })

@@ -21,7 +21,6 @@ function toServiceLine(d: Row): ServiceLine {
     description:    (d.description as string) ?? null,
     quantity:       Number(d.quantity ?? 0),
     unitPrice:      Number(d.unitPrice ?? 0),
-    taxRate:        Number(d.taxRate ?? 0),
     taxAmount:      Number(d.taxAmount ?? 0),
     discountAmount: Number(d.discountAmount ?? 0),
     lineTotal:      Number(d.lineTotal ?? 0),
@@ -198,8 +197,7 @@ export class ServiceJobsRepository {
       description:    null,
       quantity:       l.quantity,
       unitPrice:      l.unitPrice,
-      taxRate:        l.taxRate,
-      taxAmount:      l.taxAmount,
+      taxAmount:      0,
       discountAmount: l.discount,
       lineTotal:      l.lineTotal,
     }))
@@ -221,7 +219,7 @@ export class ServiceJobsRepository {
         items,
         subtotal:         priced.totals.subtotal,
         discount_amount:  priced.totals.discountTotal,
-        tax_amount:       priced.totals.taxTotal,
+        tax_amount:       0,
         total:            priced.totals.total,
         payment_status:   'unpaid',
         amount_paid:      0,
@@ -284,8 +282,7 @@ export class ServiceJobsRepository {
       description:    null,
       quantity:       l.quantity,
       unitPrice:      l.unitPrice,
-      taxRate:        l.taxRate,
-      taxAmount:      l.taxAmount,
+      taxAmount:      0,
       discountAmount: l.discount,
       lineTotal:      l.lineTotal,
     }))
@@ -295,7 +292,7 @@ export class ServiceJobsRepository {
         items,
         subtotal:        priced.totals.subtotal,
         discount_amount: priced.totals.discountTotal,
-        tax_amount:      priced.totals.taxTotal,
+        tax_amount:      0,
         total:           priced.totals.total,
         updated_by:      tenant.userId,
       })
@@ -322,8 +319,6 @@ export class ServiceJobsRepository {
       barcode:   null,
       quantity:  it.quantity,
       unitPrice: it.unitPrice,
-      taxRateId: null,
-      taxRate:   it.taxRate,
       discount:  it.discountAmount,
     }))
     const priced = priceCart([...existingLines, ...newLines])
@@ -332,8 +327,7 @@ export class ServiceJobsRepository {
       description:    null,
       quantity:       l.quantity,
       unitPrice:      l.unitPrice,
-      taxRate:        l.taxRate,
-      taxAmount:      l.taxAmount,
+      taxAmount:      0,
       discountAmount: l.discount,
       lineTotal:      l.lineTotal,
     }))
@@ -343,7 +337,7 @@ export class ServiceJobsRepository {
         items,
         subtotal:        priced.totals.subtotal,
         discount_amount: priced.totals.discountTotal,
-        tax_amount:      priced.totals.taxTotal,
+        tax_amount:      0,
         total:           priced.totals.total,
         updated_by:      tenant.userId,
       })

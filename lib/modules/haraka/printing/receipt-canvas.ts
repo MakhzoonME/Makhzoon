@@ -1,6 +1,5 @@
 'use client';
 
-import QRCode from 'qrcode';
 import type { PosTransaction } from '@/types';
 import { receiptLabels, isRtl, type ReceiptLang } from '@/lib/receipts/labels';
 
@@ -41,7 +40,6 @@ export interface ReceiptPrintText {
   showWebsite: boolean;
   showCashier: boolean;
   showTaxNumber: boolean;
-  showFawtaraQr: boolean;
   showItemizedTax: boolean;
 }
 
@@ -81,19 +79,6 @@ function pick(lang: ReceiptLang, en: string, ar: string): string {
   const e = (en ?? '').trim();
   const a = (ar ?? '').trim();
   return lang === 'ar' ? (a || e) : (e || a);
-}
-
-async function qrMatrix(payload: string): Promise<boolean[][]> {
-  const qr = QRCode.create(payload, { errorCorrectionLevel: 'M' });
-  const size = qr.modules.size;
-  const data = qr.modules.data as unknown as Uint8Array;
-  const m: boolean[][] = [];
-  for (let y = 0; y < size; y++) {
-    const row: boolean[] = [];
-    for (let x = 0; x < size; x++) row.push(data[y * size + x] === 1);
-    m.push(row);
-  }
-  return m;
 }
 
 /**
@@ -145,16 +130,6 @@ export async function renderReceiptRaster(
   const endAlign: CanvasTextAlign = rtl ? 'left' : 'right';
   const contentW = W - pad * 2;
 
-  // Async prep, before the synchronous paint passes. A malformed QR payload
-  // must not blank the whole receipt — skip it and keep going.
-  let qr: boolean[][] | null = null;
-  if (t.showFawtaraQr && transaction.fawtara?.status === 'submitted' && transaction.fawtara.qrPayload) {
-    try {
-      qr = await qrMatrix(transaction.fawtara.qrPayload);
-    } catch (err) {
-      console.error('[receipt raster] QR generation failed, omitting it', err);
-    }
-  }
   const logo = t.showLogo && t.logo ? await loadLogo(t.logo) : null;
 
   const canvas = document.createElement('canvas');
@@ -334,29 +309,6 @@ export async function renderReceiptRaster(
 
     if (t.showTaxNumber && t.taxNumber) { gap(); start(`${L.taxNo}: ${t.taxNumber}`, F_SMALL); }
 
-    // ── Fawtara QR ──
-    if (qr) {
-      gap();
-      const modules = qr.length;
-      const target = Math.round(W * 0.42);
-      const cell = Math.max(1, Math.floor(target / modules));
-      const qrPx = cell * modules;
-      const ox = Math.round((W - qrPx) / 2);
-      if (draw) {
-        c.fillStyle = '#000';
-        for (let r = 0; r < modules; r++) {
-          for (let cc = 0; cc < modules; cc++) {
-            if (qr[r][cc]) c.fillRect(ox + cc * cell, y + r * cell, cell, cell);
-          }
-        }
-      }
-      y += qrPx + lineGap;
-      if (transaction.fawtara?.invoiceNumber) center(`${L.invoice} ${transaction.fawtara.invoiceNumber}`, F_SMALL);
-    } else if (transaction.fawtara?.status === 'pending' || transaction.fawtara?.status === 'failed') {
-      gap();
-      center(L.fawtaraPending, F_SMALL);
-    }
-
     // ── Footer ──
     // Balanced: the divider supplies equal space above and below the rule, then
     // the thank-you sits on the same `pad` margin the receipt opened with. No
@@ -444,14 +396,14 @@ export function sampleReceiptTransaction(): PosTransaction {
     cashierId: '', cashierName: 'Ahmad K.',
     customerId: null, customerName: null,
     items: [
-      { inventoryItemId: '1', inventoryItemName: 'Product A', sku: null, barcode: null, quantity: 2, unitPrice: 4.5, taxRateId: null, taxRate: 0.16, taxAmount: 1.44, discountAmount: 0, lineTotal: 9 },
-      { inventoryItemId: '2', inventoryItemName: 'Product B', sku: null, barcode: null, quantity: 1, unitPrice: 4.5, taxRateId: null, taxRate: 0.16, taxAmount: 0.72, discountAmount: 0, lineTotal: 4.5 },
+      { inventoryItemId: '1', inventoryItemName: 'Product A', sku: null, barcode: null, quantity: 2, unitPrice: 4.5, taxAmount: 0, discountAmount: 0, lineTotal: 9 },
+      { inventoryItemId: '2', inventoryItemName: 'Product B', sku: null, barcode: null, quantity: 1, unitPrice: 4.5, taxAmount: 0, discountAmount: 0, lineTotal: 4.5 },
     ],
     subtotal: 13.5, taxAmount: 2.16, discountAmount: 0, total: 15.66,
     payments: [{ method: 'cash', amount: 20, reference: null, cardLast4: null }],
     change: 4.34,
     status: 'completed', receiptNumber: '1042', offlineId: 'preview',
-    syncedAt: null, parentTransactionId: null, fawtara: null,
+    syncedAt: null, parentTransactionId: null,
     discountApprovedBy: null, discountApprovedByName: null,
     createdAt: now, updatedAt: now,
   };

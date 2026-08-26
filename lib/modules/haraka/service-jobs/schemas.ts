@@ -27,7 +27,6 @@ const serviceLineSchema = z.object({
   description:    z.string().trim().max(1000).nullable().optional(),
   quantity:       z.number().positive(),
   unitPrice:      z.number().min(0),
-  taxRate:        z.number().min(0).max(1).default(0),
   discountAmount: z.number().min(0).default(0),
 })
 

@@ -34,7 +34,6 @@ export interface ReceiptLabels {
   taxNo: string;       // short, thermal/compact
   taxReg: string;      // longer, A4
   thankYou: string;    // default footer fallback
-  fawtaraPending: string;
   status: {
     completed: string;
     refunded: string;
@@ -66,7 +65,6 @@ const RECEIPT_LABELS: Record<ReceiptLang, ReceiptLabels> = {
     taxNo: 'Tax #',
     taxReg: 'Tax Reg. #',
     thankYou: 'Thank you for your purchase!',
-    fawtaraPending: 'Fawtara: pending e-invoicing',
     status: { completed: 'Completed', refunded: 'Refunded', voided: 'Voided' },
   },
   ar: {
@@ -92,7 +90,6 @@ const RECEIPT_LABELS: Record<ReceiptLang, ReceiptLabels> = {
     taxNo: 'الرقم الضريبي',
     taxReg: 'رقم التسجيل الضريبي',
     thankYou: 'شكراً لتسوقكم معنا!',
-    fawtaraPending: 'فوترة: قيد الإصدار الإلكتروني',
     status: { completed: 'مكتمل', refunded: 'مرتجع', voided: 'ملغى' },
   },
 };

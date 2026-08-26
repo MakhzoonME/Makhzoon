@@ -80,7 +80,7 @@ export default function ServiceJobDetailPage() {
     try {
       await addItems.mutateAsync({
         id:    job.id,
-        items: [{ name: newItemName.trim(), description: null, quantity: qty, unitPrice: price, taxRate: 0, discountAmount: 0 }],
+        items: [{ name: newItemName.trim(), description: null, quantity: qty, unitPrice: price, discountAmount: 0 }],
       });
       setNewItemName(''); setNewItemQty('1'); setNewItemPrice('0'); setShowAddItem(false);
     } catch (err) { toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong')); }

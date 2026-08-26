@@ -12,7 +12,6 @@ export interface PosPickableItem {
   sku?: string | null;
   barcode?: string | null;
   unitPrice: number;
-  taxRateId?: string | null;
 }
 
 /**
@@ -32,8 +31,8 @@ interface PosCartState {
   lines: CartLineInput[];
   customer: { id: string; name: string } | null;
   held: HeldCart[];
-  /** Add or increment-existing by itemId. Snapshots price/tax at add-time. */
-  addItem: (item: PosPickableItem, taxRate: number) => void;
+  /** Add or increment-existing by itemId. Snapshots price at add-time. */
+  addItem: (item: PosPickableItem) => void;
   /** Set absolute qty for a line. Qty<=0 removes. */
   setQty: (itemId: string, qty: number) => void;
   /** Increment current qty by delta (can be negative). */
@@ -74,7 +73,7 @@ export const usePosCart = create<PosCartState>()(
   lines: [],
   customer: null,
   held: [],
-  addItem: (item, taxRate) =>
+  addItem: (item) =>
     set((state) => {
       const idx = state.lines.findIndex((l) => l.itemId === item.id);
       if (idx >= 0) {
@@ -89,8 +88,6 @@ export const usePosCart = create<PosCartState>()(
         barcode: item.barcode ?? null,
         quantity: 1,
         unitPrice: item.unitPrice,
-        taxRate,
-        taxRateId: item.taxRateId ?? null,
         discount: 0,
       };
       return { lines: [...state.lines, line] };

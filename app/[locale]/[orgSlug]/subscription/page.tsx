@@ -26,7 +26,6 @@ const FEATURE_LABEL_KEY: Record<string, MessageKey> = {
   inventory:     'nav.inventory',
   warranties:    'subscription.warranties',
   requests:      'subscription.requests',
-  reports:       'subscription.feature.reports',
   maintenance:   'subscription.feature.maintenance',
   assetCheckouts:'subscription.feature.checkouts',
   assetNotes:    'subscription.feature.notes',

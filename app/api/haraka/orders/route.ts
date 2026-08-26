@@ -58,8 +58,6 @@ export async function POST(req: NextRequest) {
         barcode:   null,
         quantity:  l.quantity,
         unitPrice: l.unitPrice,
-        taxRateId: null,
-        taxRate:   l.taxRate,
         discount:  l.discountAmount ?? 0,
       })),
       salesAgentId:          d.salesAgentId,

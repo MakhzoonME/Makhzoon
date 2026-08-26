@@ -5,9 +5,6 @@ export interface PosLineItem {
   barcode: string | null;
   quantity: number;
   unitPrice: number;
-  /** Resolved snapshot of the tax rate applied to this line at sale time. */
-  taxRateId: string | null;
-  taxRate: number;
   taxAmount: number;
   /** Per-line discount amount (absolute, after percent resolution). */
   discountAmount: number;
@@ -15,26 +12,14 @@ export interface PosLineItem {
 }
 
 export interface PosPayment {
-  method: 'cash' | 'card' | 'cliq' | 'other';
+  /** Org-configurable via the shared `payment_method` managed list. 'cash' and
+   *  'card' stay code-significant (cash-drawer math, terminal integration)
+   *  — anything else is a free label. */
+  method: string;
   amount: number;
   reference: string | null;
   /** Last 4 digits of card, when method === 'card'. */
   cardLast4: string | null;
-}
-
-export type FawtaraSubmissionStatus = 'pending' | 'submitted' | 'failed' | 'skipped';
-
-export interface FawtaraSubmission {
-  status: FawtaraSubmissionStatus;
-  uuid: string | null;
-  /** Raw payload string returned by Fawtara, to be encoded as QR on the receipt. */
-  qrPayload: string | null;
-  /** Sequential per-org invoice number required by Fawtara. */
-  invoiceNumber: string | null;
-  submittedAt: Date | null;
-  errorCode: string | null;
-  errorMessage: string | null;
-  attempts: number;
 }
 
 export interface PosTransaction {
@@ -61,7 +46,6 @@ export interface PosTransaction {
   offlineId: string;
   syncedAt: Date | null;
   parentTransactionId: string | null;
-  fawtara: FawtaraSubmission | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -84,29 +68,6 @@ export interface PosSession {
   updatedAt: Date;
 }
 
-export interface PosTaxRate {
-  id: string;
-  name: string;
-  rate: number;
-}
-
-/**
- * Tax rate stored at the organization level. Shared between Raseed (item default),
- * Purchases (cost lines), and Haraka (sale lines).
- */
-export interface TaxRate {
-  id: string;
-  organizationId: string;
-  name: string;
-  /** Percentage as a decimal fraction, e.g. 0.16 for 16%. */
-  rate: number;
-  isDefault: boolean;
-  createdAt: Date;
-  createdBy: string;
-  updatedAt: Date;
-  updatedBy: string;
-}
-
 export interface PosCustomer {
   id: string;
   organizationId: string;
@@ -123,8 +84,6 @@ export interface PosCustomer {
 
 export interface PosConfig {
   organizationId: string;
-  taxRates: PosTaxRate[];
-  defaultTaxRateId: string | null;
   receiptHeader: string | null;
   receiptFooter: string | null;
   allowDiscounts: boolean;
@@ -161,7 +120,8 @@ export type OrderFulfillmentType = 'delivery' | 'pickup';
 
 export type OrderPaymentStatus = 'unpaid' | 'partial' | 'paid';
 
-export type OrderPaymentMethod = 'cash_on_delivery' | 'bank_transfer' | 'card' | 'other';
+/** Org-configurable via the shared `payment_method` managed list — not a closed set. */
+export type OrderPaymentMethod = string;
 
 export interface OrderDeliveryAddress {
   street?: string | null;
@@ -176,7 +136,6 @@ export interface OrderLineItem {
   sku: string | null;
   quantity: number;
   unitPrice: number;
-  taxRate: number;
   taxAmount: number;
   discountAmount: number;
   lineTotal: number;
@@ -353,39 +312,6 @@ export interface HarakaWarrantyConfig {
   accentColor: string;
 }
 
-// ── Haraka Card Terminal ──────────────────────────────────────────────────
-
-export type CardTerminalMode = 'display' | 'local_bridge' | 'cloud' | 'webhook';
-export type CardTerminalProvider = 'sumup' | 'square' | 'paymob' | 'custom';
-export type CardChargeStatus = 'pending' | 'approved' | 'declined' | 'timeout' | 'cancelled';
-
-export interface HarakaCardTerminalConfig {
-  organizationId: string;
-  enabled: boolean;
-  mode: CardTerminalMode;
-  bridgeUrl: string | null;
-  provider: CardTerminalProvider | null;
-  /** api_key_enc is never returned to the client — only a boolean `apiKeySet` */
-  apiKeySet: boolean;
-  terminalId: string | null;
-  /** webhook_secret is never returned to the client */
-  webhookSecretSet: boolean;
-  currency: string;
-  timeoutSeconds: number;
-}
-
-export interface HarakaCardCharge {
-  id: string;
-  organizationId: string;
-  reference: string;
-  amount: number;
-  currency: string;
-  status: CardChargeStatus;
-  providerRef: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 // ── Haraka Service Jobs ───────────────────────────────────────────────────
 
 export type ServiceJobStatus = 'new' | 'confirmed' | 'in_progress' | 'done' | 'cancelled';
@@ -395,7 +321,6 @@ export interface ServiceLine {
   description: string | null;
   quantity: number;
   unitPrice: number;
-  taxRate: number;
   taxAmount: number;
   discountAmount: number;
   lineTotal: number;
@@ -454,7 +379,6 @@ export interface HarakaRetainer {
   staffMemberName: string | null;
   billingCycle: BillingCycle;
   amountPerCycle: number;
-  taxRate: number;
   startDate: string;
   endDate: string | null;
   status: RetainerStatus;
@@ -496,7 +420,6 @@ export interface HarakaService {
   category: string | null;
   description: string | null;
   price: number;
-  taxRateId: string | null;
   active: boolean;
   /** Nullable — only appointment-bookable services need one. Required by the
    *  zod schema whenever appointmentBookable is true. */
@@ -545,9 +468,8 @@ export interface HarakaAppointment {
   scheduledAt: Date;
   /** Snapshot of haraka_services.duration_minutes at booking time. */
   durationMinutes: number;
-  /** Snapshots of the catalog price / tax rate at booking time. */
+  /** Snapshot of the catalog price at booking time. */
   price: number;
-  taxRate: number | null;
   /** Flat amount subtracted from price before tax, same convention as Orders/Service Jobs. */
   discountAmount: number;
 
@@ -576,7 +498,7 @@ export interface HarakaAppointmentPayment {
   createdBy: string | null;
 }
 
-/** A Service Job line that references the catalog by FK, with price/tax
+/** A Service Job line that references the catalog by FK, with price
  *  snapshotted at the time the line was added (migration 0068). */
 export interface HarakaServiceJobItem {
   id: string;
@@ -587,7 +509,6 @@ export interface HarakaServiceJobItem {
   serviceName?: string | null;
   quantity: number;
   unitPrice: number;
-  taxRate: number | null;
   discountAmount: number;
   createdAt: Date;
   createdBy: string | null;

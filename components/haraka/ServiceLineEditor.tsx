@@ -4,7 +4,6 @@ import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useT } from '@/hooks/ui';
-import { useTaxRates } from '@/hooks/haraka';
 import { ServicePicker } from './ServicePicker';
 import type { HarakaService } from '@/types';
 
@@ -13,7 +12,6 @@ export interface ServiceLineItem {
   description:    string;
   quantity:       number;
   unitPrice:      number;
-  taxRate:        number;
   discountAmount: number;
 }
 
@@ -22,18 +20,16 @@ interface Props {
   onChange:  (lines: ServiceLineItem[]) => void;
   currency?: string;
   disabled?: boolean;
-  /** When true, price/tax/discount inputs and totals are hidden (name/qty stay editable). */
+  /** When true, price/discount inputs and totals are hidden (name/qty stay editable). */
   readOnlyPricing?: boolean;
 }
 
 function emptyLine(): ServiceLineItem {
-  return { name: '', description: '', quantity: 1, unitPrice: 0, taxRate: 0, discountAmount: 0 };
+  return { name: '', description: '', quantity: 1, unitPrice: 0, discountAmount: 0 };
 }
 
 export function ServiceLineEditor({ lines, onChange, currency = 'JOD', disabled, readOnlyPricing }: Props) {
   const { t } = useT();
-  const { data: taxRatesData } = useTaxRates();
-  const taxRates = taxRatesData?.taxRates ?? [];
 
   function update(index: number, patch: Partial<ServiceLineItem>) {
     onChange(lines.map((l, i) => (i === index ? { ...l, ...patch } : l)));
@@ -43,21 +39,18 @@ export function ServiceLineEditor({ lines, onChange, currency = 'JOD', disabled,
   function removeLine(index: number) { onChange(lines.filter((_, i) => i !== index)); }
 
   function addLineFromCatalog(service: HarakaService) {
-    const taxRate = service.taxRateId ? taxRates.find((r) => r.id === service.taxRateId)?.rate ?? 0 : 0;
     onChange([...lines, {
       name: service.name,
       description: service.description ?? '',
       quantity: 1,
       unitPrice: service.price,
-      taxRate,
       discountAmount: 0,
     }]);
   }
 
   const lineTotal = (l: ServiceLineItem) => {
     const gross = l.quantity * l.unitPrice;
-    const net   = Math.max(0, gross - l.discountAmount);
-    return net + net * l.taxRate;
+    return Math.max(0, gross - l.discountAmount);
   };
 
   const grandTotal = lines.reduce((acc, l) => acc + lineTotal(l), 0);
@@ -100,7 +93,7 @@ export function ServiceLineEditor({ lines, onChange, currency = 'JOD', disabled,
             />
           </div>
 
-          <div className={`grid grid-cols-2 gap-3 ${readOnlyPricing ? '' : 'sm:grid-cols-4'}`}>
+          <div className={`grid grid-cols-2 gap-3 ${readOnlyPricing ? '' : 'sm:grid-cols-3'}`}>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-gray-600">{t('serviceLine.labelQty')}</label>
               <Input
@@ -122,17 +115,6 @@ export function ServiceLineEditor({ lines, onChange, currency = 'JOD', disabled,
                     disabled={disabled}
                     className="font-mono text-sm"
                     placeholder="0.000"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-gray-600">{t('serviceLine.labelTax')}</label>
-                  <Input
-                    type="number" min="0" max="100" step="0.01"
-                    value={line.taxRate * 100}
-                    onChange={(e) => update(idx, { taxRate: (parseFloat(e.target.value) || 0) / 100 })}
-                    disabled={disabled}
-                    className="font-mono text-sm"
-                    placeholder="0"
                   />
                 </div>
                 <div className="space-y-1.5">

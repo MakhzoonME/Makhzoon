@@ -28,16 +28,14 @@ function pkg(overrides: Partial<Package> = {}): Package {
       customizationIncluded: false,
       spacesIncluded: null,
       usersIncluded: null,
-      reportsAvailable: false,
       vehicleIntakeIncluded: false,
-      loyaltyIncluded: false,
+      documentReportsIncluded: false,
     },
     addOnPrices: {
       deliveryAgents: 10,
       warrantyCerts: 5,
       customization: 15,
       vehicleIntake: 20,
-      loyalty: 12,
     },
     isCustom: false,
     createdAt: new Date(),
@@ -77,21 +75,13 @@ function sub(overrides: Partial<Subscription> = {}): Subscription {
   };
 }
 
-describe('computeInvoice — vehicleIntake / loyalty add-ons', () => {
+describe('computeInvoice — vehicleIntake add-on', () => {
   it('adds a vehicleIntake line item when the add-on is active and not plan-included', () => {
     const s = sub({ activeAddOns: { ...EMPTY_ADD_ONS, vehicleIntake: true } });
     const invoice = computeInvoice(s, pkg());
     const line = invoice.lineItems.find((l) => l.description === 'Vehicle intake');
     expect(line).toBeDefined();
     expect(line!.total).toBe(20);
-  });
-
-  it('adds a loyalty line item when the add-on is active and not plan-included', () => {
-    const s = sub({ activeAddOns: { ...EMPTY_ADD_ONS, loyalty: true } });
-    const invoice = computeInvoice(s, pkg());
-    const line = invoice.lineItems.find((l) => l.description === 'Loyalty program');
-    expect(line).toBeDefined();
-    expect(line!.total).toBe(12);
   });
 
   it('does not charge for vehicleIntake when the plan already includes it', () => {
@@ -101,16 +91,15 @@ describe('computeInvoice — vehicleIntake / loyalty add-ons', () => {
     expect(invoice.lineItems.find((l) => l.description === 'Vehicle intake')).toBeUndefined();
   });
 
-  it('does not add either line item when neither add-on is active', () => {
+  it('does not add a line item when the add-on is not active', () => {
     const invoice = computeInvoice(sub(), pkg());
     expect(invoice.lineItems.find((l) => l.description === 'Vehicle intake')).toBeUndefined();
-    expect(invoice.lineItems.find((l) => l.description === 'Loyalty program')).toBeUndefined();
   });
 
-  it('includes both add-ons in the subtotal alongside the base plan price', () => {
-    const s = sub({ activeAddOns: { ...EMPTY_ADD_ONS, vehicleIntake: true, loyalty: true } });
+  it('includes the add-on in the subtotal alongside the base plan price', () => {
+    const s = sub({ activeAddOns: { ...EMPTY_ADD_ONS, vehicleIntake: true } });
     const invoice = computeInvoice(s, pkg());
-    expect(invoice.subtotal).toBe(50 + 20 + 12);
-    expect(invoice.total).toBe(82);
+    expect(invoice.subtotal).toBe(50 + 20);
+    expect(invoice.total).toBe(70);
   });
 });

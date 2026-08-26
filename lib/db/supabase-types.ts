@@ -510,132 +510,6 @@ export type Database = {
         }
         Relationships: []
       }
-      fawtara_counters: {
-        Row: {
-          last_sequence: number
-          organization_id: string
-          updated_at: string
-          year: number | null
-        }
-        Insert: {
-          last_sequence?: number
-          organization_id: string
-          updated_at?: string
-          year?: number | null
-        }
-        Update: {
-          last_sequence?: number
-          organization_id?: string
-          updated_at?: string
-          year?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fawtara_counters_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: true
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      haraka_card_charges: {
-        Row: {
-          amount: number
-          created_at: string
-          currency: string
-          id: string
-          organization_id: string
-          provider_ref: string | null
-          reference: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          currency?: string
-          id?: string
-          organization_id: string
-          provider_ref?: string | null
-          reference: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          currency?: string
-          id?: string
-          organization_id?: string
-          provider_ref?: string | null
-          reference?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "haraka_card_charges_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      haraka_card_terminal_config: {
-        Row: {
-          api_key_enc: string | null
-          bridge_url: string | null
-          currency: string
-          enabled: boolean
-          mode: string
-          organization_id: string
-          provider: string | null
-          terminal_id: string | null
-          timeout_seconds: number
-          updated_at: string
-          updated_by: string | null
-          webhook_secret: string | null
-        }
-        Insert: {
-          api_key_enc?: string | null
-          bridge_url?: string | null
-          currency?: string
-          enabled?: boolean
-          mode?: string
-          organization_id: string
-          provider?: string | null
-          terminal_id?: string | null
-          timeout_seconds?: number
-          updated_at?: string
-          updated_by?: string | null
-          webhook_secret?: string | null
-        }
-        Update: {
-          api_key_enc?: string | null
-          bridge_url?: string | null
-          currency?: string
-          enabled?: boolean
-          mode?: string
-          organization_id?: string
-          provider?: string | null
-          terminal_id?: string | null
-          timeout_seconds?: number
-          updated_at?: string
-          updated_by?: string | null
-          webhook_secret?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "haraka_card_terminal_config_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: true
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       haraka_cash_drawer_config: {
         Row: {
           auto_open_on_cash: boolean
@@ -871,7 +745,6 @@ export type Database = {
           space_id: string | null
           status: string
           subtotal: number
-          tax_amount: number
           total: number
           updated_at: string
           updated_by: string | null
@@ -907,7 +780,6 @@ export type Database = {
           space_id?: string | null
           status?: string
           subtotal?: number
-          tax_amount?: number
           total?: number
           updated_at?: string
           updated_by?: string | null
@@ -943,7 +815,6 @@ export type Database = {
           space_id?: string | null
           status?: string
           subtotal?: number
-          tax_amount?: number
           total?: number
           updated_at?: string
           updated_by?: string | null
@@ -1189,7 +1060,6 @@ export type Database = {
           payment_method: string | null
           payment_status: string
           retainer_id: string
-          tax_amount: number
           total: number
         }
         Insert: {
@@ -1208,7 +1078,6 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string
           retainer_id: string
-          tax_amount?: number
           total: number
         }
         Update: {
@@ -1227,7 +1096,6 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string
           retainer_id?: string
-          tax_amount?: number
           total?: number
         }
         Relationships: [
@@ -1268,7 +1136,6 @@ export type Database = {
           staff_member_name: string | null
           start_date: string
           status: string
-          tax_rate: number
           updated_at: string
           updated_by: string | null
         }
@@ -1292,7 +1159,6 @@ export type Database = {
           staff_member_name?: string | null
           start_date: string
           status?: string
-          tax_rate?: number
           updated_at?: string
           updated_by?: string | null
         }
@@ -1316,7 +1182,6 @@ export type Database = {
           staff_member_name?: string | null
           start_date?: string
           status?: string
-          tax_rate?: number
           updated_at?: string
           updated_by?: string | null
         }
@@ -1471,7 +1336,6 @@ export type Database = {
           staff_member_name: string | null
           status: string
           subtotal: number
-          tax_amount: number
           total: number
           updated_at: string
           updated_by: string | null
@@ -1500,7 +1364,6 @@ export type Database = {
           staff_member_name?: string | null
           status?: string
           subtotal?: number
-          tax_amount?: number
           total?: number
           updated_at?: string
           updated_by?: string | null
@@ -1529,7 +1392,6 @@ export type Database = {
           staff_member_name?: string | null
           status?: string
           subtotal?: number
-          tax_amount?: number
           total?: number
           updated_at?: string
           updated_by?: string | null
@@ -1893,7 +1755,6 @@ export type Database = {
           space_id: string
           stock_status: string
           supplier: string | null
-          tax_rate_id: string | null
           unit: string | null
           unit_cost: number | null
           updated_at: string
@@ -1924,7 +1785,6 @@ export type Database = {
           space_id: string
           stock_status?: string
           supplier?: string | null
-          tax_rate_id?: string | null
           unit?: string | null
           unit_cost?: number | null
           updated_at?: string
@@ -1955,7 +1815,6 @@ export type Database = {
           space_id?: string
           stock_status?: string
           supplier?: string | null
-          tax_rate_id?: string | null
           unit?: string | null
           unit_cost?: number | null
           updated_at?: string
@@ -2417,7 +2276,6 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
-          fawtara: Json | null
           id: string
           name: string
           package_details: Json
@@ -2432,7 +2290,6 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
-          fawtara?: Json | null
           id?: string
           name: string
           package_details?: Json
@@ -2447,7 +2304,6 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
-          fawtara?: Json | null
           id?: string
           name?: string
           package_details?: Json
@@ -2456,32 +2312,6 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
-      }
-      organizations_private: {
-        Row: {
-          fawtara: Json | null
-          organization_id: string
-          updated_at: string
-        }
-        Insert: {
-          fawtara?: Json | null
-          organization_id: string
-          updated_at?: string
-        }
-        Update: {
-          fawtara?: Json | null
-          organization_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organizations_private_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: true
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       packages: {
         Row: {
@@ -2848,7 +2678,6 @@ export type Database = {
           customer_id: string | null
           customer_name: string | null
           discount_amount: number
-          fawtara: Json | null
           id: string
           items: Json
           location_id: string
@@ -2863,7 +2692,6 @@ export type Database = {
           status: string
           subtotal: number
           synced_at: string | null
-          tax_amount: number
           total: number
           updated_at: string
           voided_at: string | null
@@ -2877,7 +2705,6 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string | null
           discount_amount?: number
-          fawtara?: Json | null
           id?: string
           items?: Json
           location_id?: string
@@ -2892,7 +2719,6 @@ export type Database = {
           status?: string
           subtotal?: number
           synced_at?: string | null
-          tax_amount?: number
           total?: number
           updated_at?: string
           voided_at?: string | null
@@ -2906,7 +2732,6 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string | null
           discount_amount?: number
-          fawtara?: Json | null
           id?: string
           items?: Json
           location_id?: string
@@ -2921,7 +2746,6 @@ export type Database = {
           status?: string
           subtotal?: number
           synced_at?: string | null
-          tax_amount?: number
           total?: number
           updated_at?: string
           voided_at?: string | null
@@ -3565,50 +3389,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "support_tickets_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tax_rates: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          is_default: boolean
-          name: string
-          organization_id: string
-          rate: number
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_default?: boolean
-          name: string
-          organization_id: string
-          rate?: number
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_default?: boolean
-          name?: string
-          organization_id?: string
-          rate?: number
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tax_rates_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"

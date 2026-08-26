@@ -89,9 +89,6 @@ export function computeInvoice(
   if (sub.activeAddOns.vehicleIntake && !a.vehicleIntakeIncluded && p.vehicleIntake) {
     items.push(line('Vehicle intake', 1, p.vehicleIntake));
   }
-  if (sub.activeAddOns.loyalty && !a.loyaltyIncluded && p.loyalty) {
-    items.push(line('Loyalty program', 1, p.loyalty));
-  }
 
   // Extra users / spaces.
   if (sub.activeAddOns.extraUsers > 0 && p.extraUser) {

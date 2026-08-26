@@ -34,6 +34,9 @@ const MODULES = [
   { value: 'assets', label: 'Assets' },
   { value: 'inventory', label: 'Inventory' },
   { value: 'customers', label: 'Customers' },
+  // Zeyara scopes — fields on a booking and on a clinical record.
+  { value: 'appointments', label: 'Appointments' },
+  { value: 'visits', label: 'Clinical Records' },
 ];
 
 export interface CustomFieldFormData {

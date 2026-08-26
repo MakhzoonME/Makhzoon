@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
-import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireAnyVerticalFeature } from '@/lib/permissions/require-feature'
 import { requireHarakaModule } from '@/lib/permissions/require-module'
 import { ServicesService } from '@/lib/modules/haraka/services/services.service'
 import { updateServiceSchema } from '@/lib/modules/haraka/services/schemas'
@@ -13,7 +13,7 @@ export async function GET(
 ) {
   try {
     const tenant = await resolveTenant()
-    requireFeature(tenant, 'pos')
+    requireAnyVerticalFeature(tenant)
     await requireHarakaModule(tenant, 'services')
     const { serviceId } = await params
     const result = await service.getById(tenant, serviceId)
@@ -31,7 +31,7 @@ export async function PATCH(
 ) {
   try {
     const tenant = await resolveTenant()
-    requireFeature(tenant, 'pos')
+    requireAnyVerticalFeature(tenant)
     await requireHarakaModule(tenant, 'services')
     const { serviceId } = await params
     const body = await req.json()
@@ -53,7 +53,7 @@ export async function DELETE(
 ) {
   try {
     const tenant = await resolveTenant()
-    requireFeature(tenant, 'pos')
+    requireAnyVerticalFeature(tenant)
     await requireHarakaModule(tenant, 'services')
     const { serviceId } = await params
     await service.delete(tenant, serviceId)

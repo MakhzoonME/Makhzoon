@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
-import { hasPermission } from '@/lib/platform/permissions'
+import { hasVerticalPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
 import { StaffRepository, type CreateStaffInput, type ListStaffOpts } from './staff.repository'
 import {
@@ -19,7 +19,7 @@ function requireOp(
   tenant: TenantContext,
   op: 'deliveryAgentsCreate' | 'deliveryAgentsUpdate' | 'deliveryAgentsDelete',
 ) {
-  if (!hasPermission(tenant, 'haraka', op)) {
+  if (!hasVerticalPermission(tenant, op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -29,8 +29,8 @@ function requireOp(
 // doesn't manage delivery agents couldn't see any providers.
 function requireView(tenant: TenantContext) {
   if (
-    hasPermission(tenant, 'haraka', 'deliveryAgentsView') ||
-    hasPermission(tenant, 'haraka', 'appointmentsView')
+    hasVerticalPermission(tenant, 'deliveryAgentsView') ||
+    hasVerticalPermission(tenant, 'appointmentsView')
   ) return
   throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 }
@@ -38,13 +38,13 @@ function requireView(tenant: TenantContext) {
 /** Capability tags decide which modules a person can be assigned to, so
  *  editing them is gated separately from plain name/phone edits. */
 function requireCapabilityManage(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'haraka', 'staffManage')) {
+  if (!hasVerticalPermission(tenant, 'staffManage')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
 
 function requireAvailabilityManage(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'haraka', 'staffAvailabilityManage')) {
+  if (!hasVerticalPermission(tenant, 'staffAvailabilityManage')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }

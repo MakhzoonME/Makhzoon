@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
-import { hasPermission } from '@/lib/platform/permissions'
+import { hasVerticalPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
 import {
   ServicesRepository,
@@ -12,7 +12,7 @@ import {
 const repo = new ServicesRepository()
 
 function requireView(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'haraka', 'serviceCatalogView')) {
+  if (!hasVerticalPermission(tenant, 'serviceCatalogView')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -28,14 +28,14 @@ function requireView(tenant: TenantContext) {
  */
 function requireViewForActiveLookup(tenant: TenantContext) {
   if (
-    hasPermission(tenant, 'haraka', 'serviceCatalogView') ||
-    hasPermission(tenant, 'haraka', 'appointmentsView')
+    hasVerticalPermission(tenant, 'serviceCatalogView') ||
+    hasVerticalPermission(tenant, 'appointmentsView')
   ) return
   throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 }
 
 function requireOp(tenant: TenantContext, op: 'serviceCatalogCreate' | 'serviceCatalogUpdate' | 'serviceCatalogDelete') {
-  if (!hasPermission(tenant, 'haraka', op)) {
+  if (!hasVerticalPermission(tenant, op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }

@@ -2,7 +2,7 @@ import 'server-only'
 
 import { NextResponse } from 'next/server'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
-import { hasPermission } from '@/lib/platform/permissions'
+import { hasVerticalPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
 import { notificationQueue } from '@/lib/notifications/notification-queue'
 import { supabaseAdmin } from '@/lib/supabase/admin'
@@ -32,7 +32,7 @@ function money(n: number): number {
 }
 
 function requireView(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'haraka', 'appointmentsView')) {
+  if (!hasVerticalPermission(tenant, 'appointmentsView')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -45,7 +45,7 @@ function requireOp(
     | 'appointmentsGenerateInvoice'
     | 'appointmentsAddPayment',
 ) {
-  if (!hasPermission(tenant, 'haraka', op)) {
+  if (!hasVerticalPermission(tenant, op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -61,7 +61,7 @@ function requireStatusChange(tenant: TenantContext, to: AppointmentStatus) {
     : to === 'cancelled' ? 'appointmentsCancel'
     : to === 'no_show'   ? 'appointmentsMarkNoShow'
     : 'appointmentsUpdate'
-  if (!hasPermission(tenant, 'haraka', op)) {
+  if (!hasVerticalPermission(tenant, op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }

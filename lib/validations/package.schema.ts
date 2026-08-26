@@ -46,6 +46,7 @@ export const packageAllowancesSchema = z
     warrantyCertsIncluded: z.boolean().optional(),
     customizationIncluded: z.boolean().optional(),
     vehicleIntakeIncluded: z.boolean().optional(),
+    documentReportsIncluded: z.boolean().optional(),
   })
   .optional();
 
@@ -56,6 +57,7 @@ export const packageAddOnPricesSchema = z
     warrantyCerts: z.number().min(0).optional(),
     customization: z.number().min(0).optional(),
     vehicleIntake: z.number().min(0).optional(),
+    documentReports: z.number().min(0).optional(),
     harakaModules: z
       .object({
         pos: z.number().min(0).optional(),

@@ -157,6 +157,9 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
   const [assets,     setAssets]     = useState(initial?.features?.assets     ?? true);
   const [inventory,  setInventory]  = useState(initial?.features?.inventory  ?? true);
   const [pos,        setPos]        = useState(initial?.features?.pos       ?? true);
+  // Zeyara defaults OFF: it is a separate vertical a clinic buys deliberately,
+  // not something every package should carry.
+  const [zeyara,     setZeyara]     = useState(initial?.features?.zeyara    ?? false);
   const [banna,      setBanna]      = useState(initial?.features?.banna     ?? true);
   const [vehicleIntakeFeature, setVehicleIntakeFeature] = useState(initial?.features?.vehicleIntake ?? false);
 
@@ -242,7 +245,7 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
       limits: finalLimits,
       features: {
         dashboard, support, auditLogs,
-        assets, inventory, pos, banna,
+        assets, inventory, pos, zeyara, banna,
         vehicleIntake: vehicleIntakeFeature,
         ...usoolSub,
       },
@@ -500,6 +503,21 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
             <AddOnRow addonKey="vehicleIntake" state={addOns.vehicleIntake} onChange={(patch) => updateAddOn("vehicleIntake", patch)} />
             <AddOnRow addonKey="documentReports" state={addOns.documentReports} onChange={(patch) => updateAddOn("documentReports", patch)} />
           </div>
+        </fieldset>
+
+        {/* Zeyara — clinic vertical over the same appointment engine as Haraka.
+            Sold as its own base module, not as a Haraka slot: a clinic package
+            typically ships Zeyara ON and Point of Sale OFF. */}
+        <fieldset className="space-y-2 border-s-4 border border-border rounded-lg p-4" style={{ borderInlineStartColor: '#0F766E' }}>
+          <legend className="px-2 text-sm font-medium text-gray-700">Zeyara — Clinics</legend>
+          <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-page cursor-pointer font-medium">
+            <input type="checkbox" checked={zeyara} onChange={(e) => setZeyara(e.target.checked)} />
+            <span className="text-sm text-gray-800">Zeyara (base module)</span>
+          </label>
+          <p className="ps-6 text-xs text-gray-500">
+            Appointments, patients, service catalog, providers, and appointment invoicing.
+            Includes the provider directory — no separate Workers add-on needed.
+          </p>
         </fieldset>
 
         {/* Banna */}

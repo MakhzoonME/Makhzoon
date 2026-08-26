@@ -2,7 +2,7 @@ import 'server-only'
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
-import { hasPermission } from '@/lib/platform/permissions'
+import { hasVerticalPermission } from '@/lib/platform/permissions'
 
 type Row = Record<string, unknown>
 
@@ -32,7 +32,7 @@ function dayKey(iso: string): string {
 }
 
 function requireAnalyticsAccess(tenant: TenantContext) {
-  if (!hasPermission(tenant, 'haraka', 'analyticsView')) {
+  if (!hasVerticalPermission(tenant, 'analyticsView')) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }

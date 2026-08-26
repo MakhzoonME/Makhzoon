@@ -26,7 +26,6 @@ import { Pencil, AlertTriangle, TrendingUp, TrendingDown, RefreshCw, ArrowRight,
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
 import { useAccessibleSpaces } from '@/hooks/spaces';
-import { useTaxRates } from '@/hooks/haraka';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
 import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
@@ -108,8 +107,6 @@ export default function InventoryItemDetailPage() {
   const { data: item, isLoading }             = useInventoryItem(itemId);
   const { data: txData,  isLoading: txLoading } = useInventoryTransactions(itemId);
   const { data: warrantiesResponse, isLoading: wLoading } = useWarranties({ inventoryItemId: itemId });
-  const { data: taxRatesData } = useTaxRates();
-  const taxRates = taxRatesData?.taxRates ?? [];
   const transactions = txData?.transactions ?? [];
   const warranties   = warrantiesResponse?.items ?? [];
 
@@ -340,14 +337,6 @@ export default function InventoryItemDetailPage() {
                 <span className="font-mono tabular-nums">{item.posPrice.toFixed(2)} JOD</span>
               </KVRow>
             )}
-            {item.posEnabled && item.taxRateId && (() => {
-              const tr = taxRates.find((r) => r.id === item.taxRateId);
-              return tr ? (
-                <KVRow label={t('inventory.taxRate')}>
-                  {tr.name} ({(tr.rate * 100).toFixed(2)}%)
-                </KVRow>
-              ) : null;
-            })()}
             {item.notes && (
               <div className="mt-4 pt-4 border-t border-border">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{t('col.notes')}</p>

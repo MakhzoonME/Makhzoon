@@ -4,10 +4,8 @@ import { useCallback, useState } from 'react';
 import { Plus, Trash2, ScanBarcode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Combobox } from '@/components/ui/combobox';
 import { BarcodeInput } from '@/components/shared';
 import { useBarcodeLookup } from '@/hooks/inventory';
-import { useTaxRates } from '@/hooks/haraka';
 import { toast, useT } from '@/hooks/ui';
 import type { PurchaseLineFormData } from '@/lib/modules/inventory/purchases/schemas';
 import { InventoryItemPicker } from './InventoryItemPicker';
@@ -25,7 +23,6 @@ function emptyLine(): PurchaseLineFormData {
     barcode: '',
     quantity: 1,
     unitCost: 0,
-    taxRateId: '',
     notes: null,
   };
 }
@@ -43,8 +40,6 @@ function emptyLine(): PurchaseLineFormData {
 export function PurchaseLinesEditor({ value, onChange }: Props) {
   const { t } = useT();
   const { lookup } = useBarcodeLookup();
-  const { data: taxData } = useTaxRates();
-  const taxRates = taxData?.taxRates ?? [];
   const [scanning, setScanning] = useState(false);
 
   const handleScan = useCallback(
@@ -72,7 +67,6 @@ export function PurchaseLinesEditor({ value, onChange }: Props) {
                 barcode: item.barcode ?? code,
                 quantity: 1,
                 unitCost: item.unitCost ?? 0,
-                taxRateId: item.taxRateId ?? '',
                 notes: null,
               },
             ]);
@@ -89,7 +83,6 @@ export function PurchaseLinesEditor({ value, onChange }: Props) {
               barcode: code,
               quantity: 1,
               unitCost: 0,
-              taxRateId: '',
               notes: 'New item — set name before receiving',
             },
           ]);
@@ -143,7 +136,6 @@ export function PurchaseLinesEditor({ value, onChange }: Props) {
               <th className="px-3 py-2 font-medium">Item / Barcode</th>
               <th className="px-3 py-2 font-medium w-24">Qty</th>
               <th className="px-3 py-2 font-medium w-28">Unit cost</th>
-              <th className="px-3 py-2 font-medium w-40">Tax rate</th>
               <th className="px-3 py-2 font-medium w-24 text-end">Line total</th>
               <th className="px-3 py-2 w-8"></th>
             </tr>
@@ -151,16 +143,13 @@ export function PurchaseLinesEditor({ value, onChange }: Props) {
           <tbody>
             {value.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-3 py-6 text-center text-gray-500">
+                <td colSpan={6} className="px-3 py-6 text-center text-gray-500">
                   No lines yet — scan a barcode above or add a line manually.
                 </td>
               </tr>
             )}
             {value.map((line, idx) => {
-              const lineSubtotal = line.quantity * line.unitCost;
-              const taxRate = line.taxRateId ? taxRates.find((tr) => tr.id === line.taxRateId)?.rate ?? 0 : 0;
-              const taxAmount = lineSubtotal * taxRate;
-              const lineTotal = lineSubtotal + taxAmount;
+              const lineTotal = line.quantity * line.unitCost;
               const unresolved = !line.itemId;
               return (
                 <tr key={idx} className="border-t">
@@ -183,7 +172,6 @@ export function PurchaseLinesEditor({ value, onChange }: Props) {
                               sku: it.sku ?? null,
                               barcode: it.barcode ?? line.barcode ?? '',
                               unitCost: line.unitCost > 0 ? line.unitCost : (it.unitCost ?? 0),
-                              taxRateId: line.taxRateId || (it.taxRateId ?? ''),
                             })
                           }
                         />
@@ -214,17 +202,6 @@ export function PurchaseLinesEditor({ value, onChange }: Props) {
                       onChange={(e) => updateLine(idx, { unitCost: Number(e.target.value || 0) })}
                     />
                   </td>
-                  <td className="px-3 py-2">
-                    <Combobox
-                      value={line.taxRateId || '__none__'}
-                      onChange={(v) => updateLine(idx, { taxRateId: !v || v === '__none__' ? '' : v })}
-                      options={[
-                        { value: '__none__', label: 'No tax' },
-                        ...taxRates.map((tr) => ({ value: tr.id, label: `${tr.name} (${(tr.rate * 100).toFixed(1)}%)` })),
-                      ]}
-                      clearable={false}
-                    />
-                  </td>
                   <td className="px-3 py-2 text-end font-mono">{lineTotal.toFixed(2)}</td>
                   <td className="px-3 py-2">
                     <Button
@@ -244,8 +221,8 @@ export function PurchaseLinesEditor({ value, onChange }: Props) {
           {value.length > 0 && (
             <tfoot>
               <tr className="border-t bg-gray-50 dark:bg-gray-800">
-                <td colSpan={5} className="px-3 py-2 text-end font-medium">
-                  Subtotal (excl. tax)
+                <td colSpan={4} className="px-3 py-2 text-end font-medium">
+                  Subtotal
                 </td>
                 <td className="px-3 py-2 text-end font-mono font-semibold">{subtotal.toFixed(2)}</td>
                 <td />

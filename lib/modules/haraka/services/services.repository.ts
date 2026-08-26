@@ -14,7 +14,6 @@ function toService(r: Row): HarakaService {
     category:         (r.category as string) ?? null,
     description:      (r.description as string) ?? null,
     price:            Number(r.price ?? 0),
-    taxRateId:        (r.tax_rate_id as string) ?? null,
     active:           (r.active as boolean) ?? true,
     durationMinutes:  r.duration_minutes == null ? null : Number(r.duration_minutes),
     appointmentBookable: (r.appointment_bookable as boolean) ?? false,
@@ -44,7 +43,6 @@ export interface CreateServiceInput {
   category?:   string | null
   description?: string | null
   price:       number
-  taxRateId?:  string | null
   active?:     boolean
   durationMinutes?: number | null
   appointmentBookable?: boolean
@@ -55,7 +53,6 @@ export interface UpdateServiceInput {
   category?:    string | null
   description?: string | null
   price?:       number
-  taxRateId?:   string | null
   active?:      boolean
   durationMinutes?: number | null
   appointmentBookable?: boolean
@@ -119,7 +116,6 @@ export class ServicesRepository {
         category:         input.category ?? null,
         description:      input.description ?? null,
         price:            input.price,
-        tax_rate_id:      input.taxRateId ?? null,
         active:           input.active ?? true,
         duration_minutes: input.durationMinutes ?? null,
         appointment_bookable: input.appointmentBookable ?? false,
@@ -144,7 +140,7 @@ export class ServicesRepository {
     }
     const map: Record<string, string> = {
       name: 'name', category: 'category', description: 'description',
-      price: 'price', taxRateId: 'tax_rate_id', active: 'active',
+      price: 'price', active: 'active',
       durationMinutes: 'duration_minutes', appointmentBookable: 'appointment_bookable',
     }
     for (const [k, col] of Object.entries(map)) {

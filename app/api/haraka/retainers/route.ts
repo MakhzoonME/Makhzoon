@@ -49,7 +49,6 @@ export async function POST(req: NextRequest) {
       staffMemberName:  d.staffMemberName ?? null,
       billingCycle:     d.billingCycle,
       amountPerCycle:   d.amountPerCycle,
-      taxRate:          d.taxRate,
       startDate:        d.startDate,
       endDate:          d.endDate ?? null,
       notes:            d.notes ?? null,

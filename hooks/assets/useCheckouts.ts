@@ -35,7 +35,6 @@ export function useCheckoutAsset(assetId: string) {
       qc.invalidateQueries({ queryKey: ['checkouts', assetId] });
       qc.invalidateQueries({ queryKey: ['assets', assetId] });
       qc.invalidateQueries({ queryKey: ['assets'] });
-      qc.invalidateQueries({ queryKey: ['reports'] });
     },
   });
 }
@@ -52,7 +51,6 @@ export function useReturnAsset(assetId: string) {
       qc.invalidateQueries({ queryKey: ['checkouts', assetId] });
       qc.invalidateQueries({ queryKey: ['assets', assetId] });
       qc.invalidateQueries({ queryKey: ['assets'] });
-      qc.invalidateQueries({ queryKey: ['reports'] });
     },
   });
 }

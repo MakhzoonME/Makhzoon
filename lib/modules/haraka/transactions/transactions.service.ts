@@ -10,23 +10,10 @@ import {
   type AggregateResult,
   type CompleteSaleInput,
 } from './transactions.repository'
-import { FawtaraService } from '@/lib/modules/haraka/fawtara/service'
 import { DiscountApprovalService } from '@/lib/modules/haraka/discount-approval/discount-approval.service'
 
 const repo = new TransactionsRepository()
-const fawtara = new FawtaraService()
 const discountApproval = new DiscountApprovalService()
-
-/**
- * Submit a transaction to Fawtara asynchronously without blocking the caller.
- * Errors are recorded on the transaction doc (status: 'failed') and surfaced
- * via the retry queue — they never bubble up to the cashier.
- */
-function fireAndForgetFawtara(tenant: TenantContext, transactionId: string) {
-  fawtara
-    .submitTransaction(tenant, transactionId)
-    .catch((err) => console.error('[Fawtara] async submit failed', err))
-}
 
 function requirePos(tenant: TenantContext, op: keyof Required<NonNullable<TenantContext['user']['permissions']>>['haraka']) {
   if (!hasPermission(tenant, 'haraka', op as string)) {
@@ -92,10 +79,6 @@ export class TransactionsService {
       newValue: { receiptNumber: tx.receiptNumber, total: tx.total, lineCount: tx.items.length },
     })
     await eventBus.emit('pos.transaction.completed', { tenant, transaction: tx })
-    // Fawtara submission is async unless the cashier explicitly bypassed it.
-    if (!input.skipFawtara) {
-      fireAndForgetFawtara(tenant, tx.id)
-    }
     return tx
   }
 
@@ -127,9 +110,6 @@ export class TransactionsService {
     })
     await eventBus.emit('pos.transaction.refunded', { tenant, id, ...result })
     notificationQueue.enqueue({ tenant, eventType: 'pos.refund_issued', data: { id, reason: opts.reason ?? null }, link: `/haraka/transactions/${id}`, titleOverride: 'Refund issued' })
-    // A refund creates a new transaction with parentTransactionId set — submit it
-    // as a credit-note to Fawtara (the mapper picks up the parent reference).
-    if (result.refundTransactionId) fireAndForgetFawtara(tenant, result.refundTransactionId)
     return result
   }
 }

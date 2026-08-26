@@ -57,7 +57,6 @@ export async function POST(req: NextRequest) {
       category:    d.category ?? null,
       description: d.description ?? null,
       price:       d.price,
-      taxRateId:   d.taxRateId || null,
       active:      d.active,
       durationMinutes: d.durationMinutes ?? null,
       appointmentBookable: d.appointmentBookable,

@@ -49,7 +49,7 @@ export default function NewServiceJobPage() {
   const [scheduledAt,     setScheduledAt]     = useState(() => new Date().toISOString());
   const [notes,           setNotes]           = useState('');
   const [lines, setLines] = useState<ServiceLineItem[]>([
-    { name: '', description: '', quantity: 1, unitPrice: 0, taxRate: 0, discountAmount: 0 },
+    { name: '', description: '', quantity: 1, unitPrice: 0, discountAmount: 0 },
   ]);
 
   // Vehicle intake (car-care add-on)
@@ -160,7 +160,6 @@ export default function NewServiceJobPage() {
           description:    l.description || null,
           quantity:       l.quantity,
           unitPrice:      l.unitPrice,
-          taxRate:        l.taxRate,
           discountAmount: l.discountAmount,
         })),
       } as Parameters<typeof createMut.mutateAsync>[0]);

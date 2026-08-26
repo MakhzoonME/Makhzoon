@@ -55,7 +55,7 @@ export function Cart({ canRemoveItems = true, canApplyDiscount = true }: CartPro
 }
 
 interface CartLineProps {
-  line: { itemId: string; itemName: string; unitPrice: number; taxRate: number; discount: number; quantity: number; lineTotal: number };
+  line: { itemId: string; itemName: string; unitPrice: number; discount: number; quantity: number; lineTotal: number };
   canRemove: boolean;
   canApplyDiscount: boolean;
   onInc: () => void;
@@ -81,7 +81,6 @@ function CartLine({ line, canRemove, canApplyDiscount, onInc, onDec, onQty, onDi
             onClick={() => canApplyDiscount && setDiscOpen((o) => !o)}
           >
             <span className="font-mono">JOD {line.unitPrice.toFixed(2)}</span>
-            {line.taxRate > 0 && <span className="font-mono">+{(line.taxRate * 100).toFixed(0)}%</span>}
             {line.discount > 0 && (
               <span className="text-amber-600 font-mono">−{line.discount.toFixed(2)}</span>
             )}

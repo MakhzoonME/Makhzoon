@@ -15,33 +15,25 @@ function line(overrides: Partial<CartLineInput> = {}): CartLineInput {
     barcode: null,
     quantity: 1,
     unitPrice: 10,
-    taxRate: 0,
-    taxRateId: null,
     discount: 0,
     ...overrides,
   };
 }
 
 describe('priceLine', () => {
-  it('handles a plain untaxed line', () => {
+  it('handles a plain line', () => {
     const p = priceLine(line({ quantity: 3, unitPrice: 5 }));
-    expect(p.subtotalBeforeTax).toBe(15);
-    expect(p.taxAmount).toBe(0);
     expect(p.lineTotal).toBe(15);
   });
 
-  it('applies tax after discount, pre-tax discount semantics', () => {
-    const p = priceLine(line({ quantity: 2, unitPrice: 10, discount: 4, taxRate: 0.16 }));
-    expect(p.subtotalBeforeTax).toBe(16);
-    expect(p.taxAmount).toBeCloseTo(2.56, 4);
-    expect(p.lineTotal).toBeCloseTo(18.56, 4);
+  it('applies discount after quantity × unit-price', () => {
+    const p = priceLine(line({ quantity: 2, unitPrice: 10, discount: 4 }));
+    expect(p.lineTotal).toBe(16);
   });
 
   it('clamps a discount that exceeds gross to the gross amount (no negative lines)', () => {
-    const p = priceLine(line({ quantity: 1, unitPrice: 10, discount: 50, taxRate: 0.1 }));
+    const p = priceLine(line({ quantity: 1, unitPrice: 10, discount: 50 }));
     expect(p.discount).toBe(10);
-    expect(p.subtotalBeforeTax).toBe(0);
-    expect(p.taxAmount).toBe(0);
     expect(p.lineTotal).toBe(0);
   });
 
@@ -52,9 +44,7 @@ describe('priceLine', () => {
   });
 
   it('keeps four-decimal precision internally', () => {
-    const p = priceLine(line({ quantity: 1, unitPrice: 0.0001, taxRate: 0.16 }));
-    expect(p.subtotalBeforeTax).toBe(0.0001);
-    expect(p.taxAmount).toBe(0);
+    const p = priceLine(line({ quantity: 1, unitPrice: 0.0001 }));
     expect(p.lineTotal).toBe(0.0001);
   });
 });
@@ -62,23 +52,19 @@ describe('priceLine', () => {
 describe('priceCart', () => {
   it('sums lines and totals correctly', () => {
     const result = priceCart([
-      line({ quantity: 2, unitPrice: 10, taxRate: 0.16 }),
-      line({ itemId: 'i2', quantity: 1, unitPrice: 5, taxRate: 0 }),
-      line({ itemId: 'i3', quantity: 1, unitPrice: 8, discount: 3, taxRate: 0.16 }),
+      line({ quantity: 2, unitPrice: 10 }),
+      line({ itemId: 'i2', quantity: 1, unitPrice: 5 }),
+      line({ itemId: 'i3', quantity: 1, unitPrice: 8, discount: 3 }),
     ]);
     expect(result.totals.subtotal).toBeCloseTo(20 + 5 + 5, 4);
-    expect(result.totals.taxTotal).toBeCloseTo(20 * 0.16 + 5 * 0.16, 4);
     expect(result.totals.discountTotal).toBe(3);
-    expect(result.totals.total).toBeCloseTo(
-      result.totals.subtotal + result.totals.taxTotal,
-      4,
-    );
+    expect(result.totals.total).toBeCloseTo(result.totals.subtotal, 4);
   });
 
   it('returns empty totals for an empty cart', () => {
     const result = priceCart([]);
     expect(result.lines).toEqual([]);
-    expect(result.totals).toEqual({ subtotal: 0, taxTotal: 0, discountTotal: 0, total: 0 });
+    expect(result.totals).toEqual({ subtotal: 0, discountTotal: 0, total: 0 });
   });
 });
 

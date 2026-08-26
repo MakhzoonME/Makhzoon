@@ -157,18 +157,18 @@ export class AppointmentsService {
     }
   }
 
-  /** Catalog + provider validation, plus the price/duration/tax snapshot that
+  /** Catalog + provider validation, plus the price/duration snapshot that
    *  gets frozen onto the appointment row. */
   private async resolveBookingSnapshot(
     tenant: TenantContext,
     serviceId: string,
     staffId: string | null | undefined,
     durationOverride?: number | null,
-  ): Promise<{ durationMinutes: number; price: number; taxRate: number | null }> {
+  ): Promise<{ durationMinutes: number; price: number }> {
     const [serviceRes, staffRes] = await Promise.all([
       supabaseAdmin
         .from('haraka_services')
-        .select('id, organization_id, price, tax_rate_id, active, duration_minutes, appointment_bookable')
+        .select('id, organization_id, price, active, duration_minutes, appointment_bookable')
         .eq('id', serviceId)
         .maybeSingle(),
       staffId
@@ -206,20 +206,7 @@ export class AppointmentsService {
       badRequest('This service has no duration set — add one before booking it.')
     }
 
-    // Tax is snapshotted as a plain rate so a later tax-rate edit never
-    // rewrites a past booking's total.
-    let taxRate: number | null = null
-    if (service.tax_rate_id) {
-      const { data: rate } = await supabaseAdmin
-        .from('tax_rates')
-        .select('rate, organization_id')
-        .eq('id', service.tax_rate_id as string)
-        .maybeSingle()
-      const r = rate as Row | null
-      if (r && r.organization_id === tenant.organizationId) taxRate = Number(r.rate ?? 0)
-    }
-
-    return { durationMinutes, price: Number(service.price ?? 0), taxRate }
+    return { durationMinutes, price: Number(service.price ?? 0) }
   }
 
   async create(
@@ -263,7 +250,6 @@ export class AppointmentsService {
       scheduledAt:     input.scheduledAt,
       durationMinutes: snapshot.durationMinutes,
       price:           snapshot.price,
-      taxRate:         snapshot.taxRate,
       discountAmount,
       notes:           input.notes ?? null,
     })
@@ -345,7 +331,7 @@ export class AppointmentsService {
         badRequest('Discount cannot exceed the service price')
       }
       const subtotal = money(current.price - patch.discountAmount)
-      const taxAmount = money(subtotal * (current.taxRate ?? 0))
+      const taxAmount = 0
       totals = { discountAmount: patch.discountAmount, taxAmount, total: money(subtotal + taxAmount) }
     }
 

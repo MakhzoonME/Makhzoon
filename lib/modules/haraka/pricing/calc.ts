@@ -5,10 +5,8 @@
  *
  * Conventions:
  *  - All monetary values are in the org's currency unit (JOD by default).
- *  - Tax rates are decimal fractions (0.16 == 16%).
  *  - Per-line discounts are absolute amounts (not percentages) applied AFTER
- *    quantity × unit-price and BEFORE tax. Keeping discounts pre-tax matches
- *    Fawtara expectations.
+ *    quantity × unit-price.
  *  - Rounding: 4 decimals internally (avoid floating-point creep), then 2
  *    decimals when displayed. The repository persists 4 to keep audit math exact.
  */
@@ -20,22 +18,16 @@ export interface CartLineInput {
   barcode: string | null;
   quantity: number;
   unitPrice: number;
-  /** Resolved tax rate as a decimal fraction (0.16 for 16%). 0 = untaxed. */
-  taxRate: number;
-  taxRateId: string | null;
-  /** Absolute discount applied to the line (post-quantity, pre-tax). */
+  /** Absolute discount applied to the line (post-quantity). */
   discount: number;
 }
 
 export interface PricedLine extends CartLineInput {
-  subtotalBeforeTax: number;
-  taxAmount: number;
   lineTotal: number;
 }
 
 export interface CartTotals {
   subtotal: number;
-  taxTotal: number;
   discountTotal: number;
   total: number;
 }
@@ -47,37 +39,29 @@ function r4(n: number): number {
 export function priceLine(line: CartLineInput): PricedLine {
   const gross = line.quantity * line.unitPrice;
   const discount = Math.max(0, Math.min(line.discount, gross));
-  const subtotalBeforeTax = r4(gross - discount);
-  const taxAmount = r4(subtotalBeforeTax * line.taxRate);
-  const lineTotal = r4(subtotalBeforeTax + taxAmount);
+  const lineTotal = r4(gross - discount);
   return {
     ...line,
     discount,
-    subtotalBeforeTax,
-    taxAmount,
     lineTotal,
   };
 }
 
 export function priceCart(lines: CartLineInput[]): { lines: PricedLine[]; totals: CartTotals } {
   let subtotal = 0;
-  let taxTotal = 0;
   let discountTotal = 0;
   const priced = lines.map((l) => {
     const p = priceLine(l);
-    subtotal += p.subtotalBeforeTax;
-    taxTotal += p.taxAmount;
+    subtotal += p.lineTotal;
     discountTotal += p.discount;
     return p;
   });
-  const total = r4(subtotal + taxTotal);
   return {
     lines: priced,
     totals: {
       subtotal: r4(subtotal),
-      taxTotal: r4(taxTotal),
       discountTotal: r4(discountTotal),
-      total,
+      total: r4(subtotal),
     },
   };
 }

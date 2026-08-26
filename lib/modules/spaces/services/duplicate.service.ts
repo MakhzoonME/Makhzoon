@@ -167,7 +167,7 @@ export async function duplicateInventoryItems(
 
   const { data: srcRows } = await supabaseAdmin
     .from('inventory_items')
-    .select('id, organization_id, space_id, name, category, sku, unit, minimum_threshold, location, supplier, unit_cost, notes, barcode, pos_enabled, pos_price, tax_rate_id')
+    .select('id, organization_id, space_id, name, category, sku, unit, minimum_threshold, location, supplier, unit_cost, notes, barcode, pos_enabled, pos_price')
     .in('id', itemIds);
   type ItemRow = {
     id: string; organization_id: string; space_id: string;
@@ -177,7 +177,6 @@ export async function duplicateInventoryItems(
     supplier: string | null; unit_cost: number | null;
     notes: string | null; barcode: string | null;
     pos_enabled: boolean | null; pos_price: number | null;
-    tax_rate_id: string | null;
   };
   const rows = (srcRows ?? []) as ItemRow[];
   if (rows.length !== itemIds.length || rows.some((r) => r.organization_id !== tenant.organizationId)) {
@@ -204,7 +203,6 @@ export async function duplicateInventoryItems(
     barcode: r.barcode,
     pos_enabled: r.pos_enabled ?? false,
     pos_price: r.pos_price,
-    tax_rate_id: r.tax_rate_id,
     quantity_on_hand: 0,
     stock_status: 'out',
     created_by: tenant.userId,

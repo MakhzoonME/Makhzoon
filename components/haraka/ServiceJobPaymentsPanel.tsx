@@ -141,7 +141,7 @@ export function ServiceJobPaymentsPanel({ job, currency = 'JOD', onUpdated, read
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-600">{t('paymentPanel.methodLabel')}</label>
-                  <ConfigSelect listKey="service_job_payment_method" value={method} onValueChange={setMethod} placeholder={t('common.selectPlaceholder')} />
+                  <ConfigSelect listKey="payment_method" value={method} onValueChange={setMethod} placeholder={t('common.selectPlaceholder')} />
                 </div>
               </div>
               <div className="space-y-1.5">

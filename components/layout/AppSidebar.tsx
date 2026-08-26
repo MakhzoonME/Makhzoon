@@ -62,16 +62,6 @@ function WarrantySVG() {
     </svg>
   );
 }
-function ReportsSVG() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-      <rect x="2" y="13" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6" />
-      <rect x="7.5" y="9" width="3" height="7" rx="0.5" fill="currentColor" opacity="0.75" />
-      <rect x="13" y="5" width="3" height="11" rx="0.5" fill="currentColor" />
-      <path d="M3.5 11L7.5 7l4 3L16 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 function SupportSVG() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -132,16 +122,6 @@ function ChevronRightSVG() {
     </svg>
   );
 }
-function LoyaltySVG() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-      <path
-        d="M9 2.5l1.9 3.85 4.25.62-3.08 3 .73 4.23L9 12.15l-3.8 2.05.73-4.23-3.08-3 4.25-.62L9 2.5z"
-        stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 function ChevronDownSVG() {
   return (
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
@@ -155,12 +135,10 @@ const NAV_ICONS: Record<string, React.FC> = {
   '/usool':        AssetsSVG,
   '/raseed':       InventorySVG,
   '/warranties':   WarrantySVG,
-  '/reports':      ReportsSVG,
   '/support':      SupportSVG,
   '/audit-logs':   AuditSVG,
   '/haraka':       PosSVG,
   '/banna':        BannaSVG,
-  '/loyalty':      LoyaltySVG,
   '/settings':     SettingsSVG,
 };
 

@@ -1,6 +1,6 @@
 /**
- * Envelope encryption for secrets stored at rest (currently: Fawtara client
- * credentials in `organizationsPrivate/{orgId}.fawtara.*`).
+ * Envelope encryption for secrets stored at rest (e.g. integration
+ * credentials in `organizationsPrivate/{orgId}.<integration>.*`).
  *
  * Scheme: AES-256-GCM with a per-record random 12-byte nonce. Ciphertext is
  * encoded as `enc:v1:<base64(nonce|ciphertext|authTag)>` so the on-disk format

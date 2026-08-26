@@ -38,10 +38,7 @@ export async function PATCH(
     const parsed = updateServiceSchema.safeParse(body)
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
     const d = parsed.data
-    const result = await service.update(tenant, serviceId, {
-      ...d,
-      taxRateId: d.taxRateId === undefined ? undefined : d.taxRateId || null,
-    })
+    const result = await service.update(tenant, serviceId, d)
     return NextResponse.json({ service: result })
   } catch (err) {
     if (err instanceof NextResponse) return err

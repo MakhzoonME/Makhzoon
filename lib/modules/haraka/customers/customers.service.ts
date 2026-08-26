@@ -13,6 +13,7 @@ import { OrdersRepository } from '@/lib/modules/haraka/orders/orders.repository'
 import { AppointmentsRepository } from '@/lib/modules/haraka/appointments/appointments.repository'
 import { ServiceJobsRepository } from '@/lib/modules/haraka/service-jobs/service-jobs.repository'
 import { BannaRepository } from '@/lib/modules/banna/repositories/banna.repository'
+import { ReportInstancesRepository } from '@/lib/modules/document-reports/instances.repository'
 import { findMissingRequiredFields } from './required-fields'
 
 const repo = new CustomersRepository()
@@ -21,14 +22,16 @@ const ordersRepo = new OrdersRepository()
 const appointmentsRepo = new AppointmentsRepository()
 const serviceJobsRepo = new ServiceJobsRepository()
 const bannaRepo = new BannaRepository()
+const reportInstancesRepo = new ReportInstancesRepository()
 
 /**
  * A single entry in a customer's activity timeline — a POS sale/refund, a
- * Haraka order, a booked appointment, or a service job. All carry enough
- * detail for the UI to render the row and link through to the underlying record.
+ * Haraka order, a booked appointment, a service job, or a generated document
+ * report. All carry enough detail for the UI to render the row and link
+ * through to the underlying record.
  */
 export interface CustomerHistoryEntry {
-  kind: 'transaction' | 'order' | 'appointment' | 'service_job'
+  kind: 'transaction' | 'order' | 'appointment' | 'service_job' | 'document_report'
   id: string
   /** ISO timestamp used for sorting and display. */
   date: string
@@ -37,7 +40,7 @@ export interface CustomerHistoryEntry {
   status: string
   total: number
   itemCount: number
-  /** Fawtara e-invoice number (transactions) or order invoice number (orders), when issued. */
+  /** Order invoice number, when issued. */
   invoiceNumber: string | null
   /** Payment method labels — 'cash', 'card', etc. */
   paymentMethods: string[]
@@ -115,7 +118,7 @@ export class CustomersService {
 
     // Match by id, plus a fallback on the snapshotted name/phone so legacy
     // sales/orders taken before this customer was linked still surface.
-    const [txs, orders, appointmentsRes, serviceJobsRes] = await Promise.all([
+    const [txs, orders, appointmentsRes, serviceJobsRes, reportsRes] = await Promise.all([
       txRepo.listByCustomer(tenant, { id: customerId, name: customer.name }),
       ordersRepo.listByCustomer(tenant, {
         id: customerId,
@@ -124,6 +127,7 @@ export class CustomersService {
       }),
       appointmentsRepo.list(tenant, { customerId, pageSize: 200 }),
       serviceJobsRepo.list(tenant, { customerId, pageSize: 200 }),
+      reportInstancesRepo.list(tenant, { customerId, pageSize: 200 }),
     ])
 
     const entries: CustomerHistoryEntry[] = [
@@ -135,7 +139,7 @@ export class CustomersService {
         status: t.status,
         total: t.total,
         itemCount: t.items.length,
-        invoiceNumber: t.fawtara?.invoiceNumber ?? null,
+        invoiceNumber: null,
         paymentMethods: Array.from(new Set(t.payments.map((p) => p.method))),
         paymentStatus: null,
         amountPaid: null,
@@ -181,6 +185,20 @@ export class CustomersService {
         paymentMethods: j.paymentMethod ? [j.paymentMethod] : [],
         paymentStatus: j.paymentStatus,
         amountPaid: j.amountPaid,
+        isRefund: false,
+      })),
+      ...reportsRes.items.map((r): CustomerHistoryEntry => ({
+        kind: 'document_report',
+        id: r.id,
+        date: r.createdAt.toISOString(),
+        reference: r.templateName,
+        status: r.isEditable ? 'editable' : 'locked',
+        total: 0,
+        itemCount: 1,
+        invoiceNumber: null,
+        paymentMethods: [],
+        paymentStatus: null,
+        amountPaid: null,
         isRefund: false,
       })),
     ]

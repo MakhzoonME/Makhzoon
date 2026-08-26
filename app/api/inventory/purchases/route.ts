@@ -58,7 +58,6 @@ export async function POST(req: NextRequest) {
         barcode: l.barcode ? l.barcode : null,
         quantity: l.quantity,
         unitCost: l.unitCost,
-        taxRateId: l.taxRateId || null,
         notes: l.notes ?? null,
       })),
     })

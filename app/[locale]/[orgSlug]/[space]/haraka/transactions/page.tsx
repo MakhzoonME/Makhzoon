@@ -7,6 +7,7 @@ import { PageHeader, DataTable, FilterBar, StatusBadge, StatCard } from '@/compo
 import type { ColumnDef } from '@/components/shared';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { useTransactions, useHarakaReport } from '@/hooks/haraka';
+import { useList } from '@/hooks/lists';
 import { useAdminGuard, useT, useModuleGuard } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { formatCurrency } from '@/lib/utils/format';
@@ -30,8 +31,9 @@ export default function TransactionsListPage() {
   const { isAllowed } = useAdminGuard('haraka.posReportView');
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
-  const { t } = useT();
+  const { t, locale } = useT();
   const { data: orgInfo } = useOrgInfo();
+  const { data: pmItems = [] } = useList('payment_method');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [page, setPage] = useState(1);
   const { data, isLoading } = useTransactions({
@@ -102,13 +104,18 @@ export default function TransactionsListPage() {
       render: (tx) => {
         const method = tx.payments?.[0]?.method;
         if (!method) return <span className="text-gray-400 text-xs">—</span>;
+        const item = pmItems.find((i) => i.value === method);
+        const label = PAYMENT_METHOD_LABEL[method]
+          ?? (item ? (locale === 'ar' ? item.labelAr || item.label : item.label) : method);
+        const style = PAYMENT_METHOD_STYLE[method]
+          ?? (item?.color ? { background: `${item.color}22`, color: item.color } : PAYMENT_METHOD_STYLE.other);
         return (
           <span
             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
-            style={PAYMENT_METHOD_STYLE[method] ?? PAYMENT_METHOD_STYLE.other}
+            style={style}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-current" />
-            {PAYMENT_METHOD_LABEL[method] ?? 'Other'}
+            {label}
           </span>
         );
       },
@@ -117,13 +124,6 @@ export default function TransactionsListPage() {
       key: 'status',
       header: 'Status',
       render: (tx) => <StatusBadge status={tx.parentTransactionId ? 'credit_note' : tx.status} />,
-    },
-    {
-      key: 'fawtara',
-      header: 'Fawtara',
-      render: (tx) => tx.fawtara
-        ? <StatusBadge status={tx.fawtara.status} />
-        : <span className="text-gray-400 text-xs">—</span>,
     },
     {
       key: 'createdAt',

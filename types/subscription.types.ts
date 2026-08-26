@@ -34,7 +34,7 @@ export type AddOnKey =
   | 'customization'
   | 'purchasesRequests'
   | 'vehicleIntake'
-  | 'loyalty';
+  | 'documentReports';
 
 // Purchased add-ons layered on top of the plan's included allowances.
 export interface SubscriptionAddOns {
@@ -43,7 +43,7 @@ export interface SubscriptionAddOns {
   customization: boolean;
   purchasesRequests: boolean;
   vehicleIntake: boolean;
-  loyalty: boolean;
+  documentReports: boolean;
   // Haraka modules active beyond the plan's included slot count — each billed
   // at the standalone add-on price.
   extraHarakaModules: HarakaModule[];
@@ -57,7 +57,7 @@ export const EMPTY_ADD_ONS: SubscriptionAddOns = {
   customization: false,
   purchasesRequests: false,
   vehicleIntake: false,
-  loyalty: false,
+  documentReports: false,
   extraHarakaModules: [],
   extraUsers: 0,
   extraSpaces: 0,

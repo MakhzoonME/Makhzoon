@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import QRCode from 'qrcode';
 import { ReceiptPublicView } from '@/components/settings/receipt/ReceiptPublicView';
 import type { ReceiptData, ReceiptLine } from '@/components/settings/receipt/ReceiptPreview';
 import { loadOrgReceiptContext } from '@/lib/receipts/public-receipt';
@@ -17,11 +16,6 @@ interface RawLine {
   lineTotal?: number;
 }
 
-interface RawFawtara {
-  status?: string;
-  qrPayload?: string | null;
-}
-
 function formatDate(iso: string | null): string {
   if (!iso) return '';
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -35,7 +29,7 @@ async function loadReceipt(orgSlug: string, receiptId: string) {
   // The id is an unguessable UUID — acts as the share capability token.
   const { data: tx } = await supabaseAdmin
     .from('pos_transactions')
-    .select('organization_id, items, subtotal, tax_amount, discount_amount, total, status, receipt_number, cashier_name, fawtara, created_at')
+    .select('organization_id, items, subtotal, tax_amount, discount_amount, total, status, receipt_number, cashier_name, created_at')
     .eq('id', receiptId)
     .maybeSingle();
 
@@ -48,12 +42,6 @@ async function loadReceipt(orgSlug: string, receiptId: string) {
     lineTotal: Number(l.lineTotal ?? 0),
   }));
 
-  const fawtara = (tx.fawtara ?? null) as RawFawtara | null;
-  let qrCodeDataUrl: string | null = null;
-  if (fawtara?.status === 'submitted' && fawtara.qrPayload) {
-    qrCodeDataUrl = await QRCode.toDataURL(fawtara.qrPayload, { margin: 1, width: 160 });
-  }
-
   const data: ReceiptData = {
     receiptNumber: (tx.receipt_number as string) ?? receiptId.slice(0, 8),
     dateLabel: formatDate(tx.created_at as string),
@@ -65,7 +53,6 @@ async function loadReceipt(orgSlug: string, receiptId: string) {
     total: Number(tx.total ?? 0),
     currency: CURRENCY,
     status: (tx.status as ReceiptData['status']) ?? 'completed',
-    qrCodeDataUrl,
   };
 
   return { ctx, data };

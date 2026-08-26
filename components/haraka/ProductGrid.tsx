@@ -110,7 +110,6 @@ export function ProductGrid({ onPick }: Props) {
                     sku: item.sku ?? null,
                     barcode: item.barcode ?? null,
                     unitPrice: price,
-                    taxRateId: item.taxRateId ?? null,
                   })}
                   className="text-start rounded-xl border border-border bg-surface-card p-3 flex flex-col gap-1.5 min-h-[88px] transition-all hover:shadow-sm"
                   onMouseEnter={(e) => {

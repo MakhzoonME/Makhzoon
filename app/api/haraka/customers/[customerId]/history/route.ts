@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
-import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireAnyVerticalFeature } from '@/lib/permissions/require-feature'
 import { CustomersService } from '@/lib/modules/haraka/customers/customers.service'
 
 const service = new CustomersService()
@@ -11,7 +11,7 @@ export async function GET(
 ) {
   try {
     const tenant = await resolveTenant()
-    requireFeature(tenant, 'pos')
+    requireAnyVerticalFeature(tenant)
     const { customerId } = await params
     const entries = await service.history(tenant, customerId)
     return NextResponse.json({ entries })

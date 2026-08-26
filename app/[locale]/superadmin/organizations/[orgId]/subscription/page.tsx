@@ -51,6 +51,7 @@ import {
 } from '@/lib/config/package-feature-groups';
 import {
   FEATURE_KEYS,
+  defaultFeatureWhenAbsent,
   FEATURE_LABELS,
   HARAKA_MODULES,
   HARAKA_MODULE_LABELS,
@@ -181,7 +182,7 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
     setPackageId(sub.packageId ?? '');
     setFeatures(
       FEATURE_KEYS.reduce(
-        (acc, k) => ({ ...acc, [k]: sub.features?.[k] ?? true }),
+        (acc, k) => ({ ...acc, [k]: sub.features?.[k] ?? defaultFeatureWhenAbsent(k) }),
         {} as Record<FeatureKey, boolean>,
       ),
     );
@@ -379,7 +380,7 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
   const planDirty = useMemo(() => {
     if (!sub) return false;
     const pkgChanged = packageId !== (sub.packageId ?? '');
-    const featsChanged = FEATURE_KEYS.some((k) => features[k] !== (sub.features?.[k] ?? true));
+    const featsChanged = FEATURE_KEYS.some((k) => features[k] !== (sub.features?.[k] ?? defaultFeatureWhenAbsent(k)));
     const modulesChanged =
       JSON.stringify([...harakaModules].sort()) !==
       JSON.stringify([...(sub.activeHarakaModules ?? [])].sort());
@@ -401,7 +402,7 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
     setPackageId(sub.packageId ?? '');
     setFeatures(
       FEATURE_KEYS.reduce(
-        (acc, k) => ({ ...acc, [k]: sub.features?.[k] ?? true }),
+        (acc, k) => ({ ...acc, [k]: sub.features?.[k] ?? defaultFeatureWhenAbsent(k) }),
         {} as Record<FeatureKey, boolean>,
       ),
     );

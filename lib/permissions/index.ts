@@ -1,5 +1,6 @@
 import { AuthUser } from '@/types/auth.types';
 import { UserPermissions } from '@/types/user-permissions.types';
+import { VERTICAL_PERM_MODULES } from '@/lib/platform/verticals';
 
 // Roles that receive full access when no per-user permissions are stored:
 // org-level owners/admins, plus the platform superadmin family (who get full
@@ -46,6 +47,19 @@ export function hasModuleAccess(user: AuthUser, module: keyof UserPermissions): 
     return Object.values(mod).some((v) => v === true);
   }
   return hasPermission(user, module, 'view');
+}
+
+/**
+ * Client-side twin of lib/platform/permissions' hasVerticalPermission: does the
+ * user hold this operation in ANY vertical namespace (haraka / zeyara)?
+ *
+ * Use it in shared page bodies that serve both surfaces. When the caller knows
+ * which vertical it is rendering, prefer the explicit
+ * hasPermission(user, permModule, op) — this helper is for the handful of
+ * checks that are genuinely namespace-agnostic.
+ */
+export function hasAnyVerticalPermission(user: AuthUser, operation: string): boolean {
+  return VERTICAL_PERM_MODULES.some((m) => hasPermission(user, m, operation));
 }
 
 /** Resolve a dot-separated key like 'settingsOrgInfo.view' against user.permissions */

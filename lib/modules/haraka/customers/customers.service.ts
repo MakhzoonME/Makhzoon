@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
-import { hasPermission } from '@/lib/platform/permissions'
+import { hasVerticalPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
 import { eventBus } from '@/lib/platform/events/event-bus'
 import {
@@ -56,7 +56,7 @@ function requireCustomers(
   tenant: TenantContext,
   op: 'customersView' | 'customersCreate' | 'customersUpdate' | 'customersDelete' | 'customersExport',
 ) {
-  if (!hasPermission(tenant, 'haraka', op)) {
+  if (!hasVerticalPermission(tenant, op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }

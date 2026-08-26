@@ -2,8 +2,9 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { ReceiptPublicView } from '@/components/settings/receipt/ReceiptPublicView';
 import type { ReceiptData, ReceiptLine } from '@/components/settings/receipt/ReceiptPreview';
-import { loadOrgReceiptContext } from '@/lib/receipts/public-receipt';
+import { loadOrgReceiptContext, publicDocumentBaseUrl } from '@/lib/receipts/public-receipt';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { documentPublicUrl } from '@/lib/qr';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,11 @@ export default async function ReceiptPage(
   const res = await loadReceipt(orgSlug, receiptId);
   if (!res) notFound();
 
+  // The QR on the printed page points back at this page.
+  const documentUrl = documentPublicUrl(
+    'pos-receipt', orgSlug, receiptId, await publicDocumentBaseUrl(),
+  );
+
   return (
     <ReceiptPublicView
       orgName={res.ctx.orgName}
@@ -85,6 +91,7 @@ export default async function ReceiptPage(
       taglineAr={res.ctx.taglineAr}
       config={res.ctx.config}
       data={res.data}
+      documentUrl={documentUrl}
     />
   );
 }

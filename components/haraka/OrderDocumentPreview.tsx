@@ -3,6 +3,8 @@
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import type { OrderDocumentConfig } from '@/lib/modules/haraka/orders/order-document-config';
 import type { OrderDocumentOrder } from '@/lib/modules/haraka/orders/order-document-loader';
+import { resolveDocumentQr } from '@/lib/qr';
+import { DocumentQr } from '@/components/shared/DocumentQr';
 
 export type DocumentType = 'invoice' | 'receipt';
 
@@ -23,6 +25,10 @@ interface Props {
   receiptConfig: ReceiptConfig;
   docConfig: OrderDocumentConfig;
   currency?: string;
+  /** Public URL of this document; encoded when docConfig.qrSource is on. */
+  documentUrl?: string | null;
+  /** E-invoicing payload, when a compliance adapter produced one. */
+  compliancePayload?: string | null;
 }
 
 function fmt(n: number, currency = 'JOD') {
@@ -40,12 +46,14 @@ function capFirst(s: string) {
 export function OrderDocumentPreview({
   type, order, payments, orgName, tagline, taxNumber,
   receiptConfig, docConfig, currency = 'JOD',
+  documentUrl, compliancePayload,
 }: Props) {
   const isReceipt = type === 'receipt';
   const title = isReceipt ? docConfig.receiptTitle : docConfig.invoiceTitle;
   const accent = receiptConfig.accentColor || '#1d4ed8';
   const docNumber = order.invoiceNumber ?? order.orderNumber;
   const remaining = order.total - order.amountPaid;
+  const qr = resolveDocumentQr(docConfig, { documentUrl, compliancePayload });
 
   return (
     <div
@@ -157,8 +165,10 @@ export function OrderDocumentPreview({
         </tbody>
       </table>
 
-      {/* Totals */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '6mm' }}>
+      {/* Totals — the QR sits opposite them rather than in the footer, which
+          already carries free-text terms that can run to several lines. */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8mm', marginBottom: '6mm' }}>
+        <div>{qr && <DocumentQr qr={qr} size="24mm" />}</div>
         <table style={{ fontSize: '9pt', borderCollapse: 'collapse', minWidth: 220 }}>
           <tbody>
             <tr>

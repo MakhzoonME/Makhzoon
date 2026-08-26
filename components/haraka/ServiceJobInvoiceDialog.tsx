@@ -13,8 +13,7 @@ import { toast, useT } from '@/hooks/ui';
 import type { HarakaServiceJob } from '@/types';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import type { ServiceJobDocumentConfig } from '@/lib/modules/haraka/service-jobs/service-job-document-config';
-import { DEFAULT_SERVICE_JOB_DOCUMENT_CONFIG } from '@/lib/modules/haraka/service-jobs/service-job-document-config';
-import { DEFAULT_RECEIPT_CONFIG } from '@/lib/receipts/receipt-config';
+import { useReceiptConfig, useServiceJobDocumentConfig } from '@/hooks/haraka';
 import { getReceiptBaseUrl } from '@/lib/app-env';
 import { cn } from '@/lib/utils/cn';
 
@@ -35,11 +34,21 @@ type DocType = 'invoice' | 'receipt';
 
 export function ServiceJobInvoiceDialog({
   open, onOpenChange, job, orgSlug, orgName,
-  tagline = '', taxNumber = '',
-  receiptConfig = DEFAULT_RECEIPT_CONFIG,
-  docConfig = DEFAULT_SERVICE_JOB_DOCUMENT_CONFIG,
+  tagline: taglineProp, taxNumber: taxNumberProp,
+  receiptConfig: receiptConfigProp,
+  docConfig: docConfigProp,
   currency = 'JOD',
 }: Props) {
+  // No caller passes these today, and falling back to the DEFAULT_* constants
+  // rendered a preview that disagreed with the document that actually prints —
+  // no logo, stock titles, and no QR even when the org had switched one on.
+  const saved            = useReceiptConfig();
+  const savedDocConfig   = useServiceJobDocumentConfig();
+  const receiptConfig    = receiptConfigProp ?? saved.receiptConfig;
+  const docConfig        = docConfigProp ?? savedDocConfig;
+  const tagline          = taglineProp ?? saved.tagline;
+  const taxNumber        = taxNumberProp ?? saved.taxNumber;
+
   const [type, setType]               = useState<DocType>('invoice');
   const [copiedLink, setCopiedLink]   = useState(false);
   const [capturing,  setCapturing]    = useState(false);
@@ -160,6 +169,7 @@ export function ServiceJobInvoiceDialog({
                 receiptConfig={receiptConfig}
                 docConfig={docConfig}
                 currency={currency}
+                documentUrl={publicUrl}
               />
             </div>
           </div>

@@ -79,7 +79,6 @@ export function AppointmentDetailPage() {
   const currency = orgInfo?.currency ?? 'JOD';
   const base = basePath;
   // Document Reports live only under /haraka — there is no Zeyara route for them.
-  const harakaBase = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
   const appointment = data?.appointment;
 
   if (isLoading) {
@@ -180,8 +179,8 @@ export function AppointmentDetailPage() {
                     : t('appointments.generateInvoice')}
                 </Button>
               )}
-            {/* Document Reports is a Haraka add-on; it has no Zeyara surface,
-                so this stays gated on the add-on rather than the vertical. */}
+            {/* Document Reports is cross-vertical — the add-on is the gate, and
+                the report opens on whichever surface generated it. */}
             {appointment.customerId && user?.activeAddOns?.documentReports && hasPermByKey(user, 'documentReports.reportsCreate') && (
               <Button variant="outline" onClick={() => setReportDrawerOpen(true)}>
                 <FileText className="h-4 w-4 me-2" /> Generate Report
@@ -286,7 +285,7 @@ export function AppointmentDetailPage() {
               customerId={appointment.customerId}
               encounterType="appointment"
               encounterId={appointment.id}
-              onCreated={(report) => router.push(`${harakaBase}/reports/${report.id}`)}
+              onCreated={(report) => router.push(`${basePath}/reports/${report.id}`)}
             />
           )}
 

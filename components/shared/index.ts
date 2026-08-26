@@ -27,4 +27,5 @@ export { AvatarUpload } from './AvatarUpload';
 export { DocumentUpload } from './DocumentUpload';
 export type { DocRef } from './DocumentUpload';
 export { DocumentList } from './DocumentList';
+export { DocumentQr } from './DocumentQr';
 export { BulkActionsBar } from './BulkActionsBar';

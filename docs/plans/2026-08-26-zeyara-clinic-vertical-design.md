@@ -309,3 +309,32 @@ so the hourly cron would have re-messaged every patient every hour. The sweep
 now filters candidates through `withoutAlreadyReminded()` before sending; the
 unique index on `(appointment_id, reminder_kind)` is the backstop, not the
 mechanism.
+
+## 12. Document Reports (added 2026-08-26)
+
+Zeyara reaches the generic Document Reports module rather than growing its own.
+It is the same templates + instances engine a Haraka retailer uses; only the
+route root and the wording differ. See
+[2026-08-26-reports-module-design.md §7](./2026-08-26-reports-module-design.md)
+for the gate-by-gate change list. What it means here:
+
+- `/zeyara/reports` and `/zeyara/reports/[reportId]` mount the same shared page
+  bodies as their `/haraka` counterparts, via `VerticalProvider`.
+- Reports are granted through the **`documentReports`** permission namespace on
+  both surfaces, not a duplicated `zeyara.reports*` — the operation is
+  identical and the module is not owned by either vertical. This is the
+  documented exception to §4's "operation keys live in the vertical's
+  namespace" rule, and the nav contract test names it explicitly.
+- The `documentReports` **add-on** still gates the module. A clinic that holds
+  `zeyara` but not the add-on sees no Reports nav item, no template builder,
+  and no report section on the clinical record.
+- The clinical record panel generates and lists reports anchored on the visit
+  (`encounter_type = 'visit'`, migration 0085), so "what paperwork came out of
+  this consultation" is answerable from the record itself.
+
+Superadmin surfaces changed alongside: the per-org subscription page had **no
+Zeyara toggle at all** — the feature key existed in `FEATURE_KEYS` and in the
+package form, but the org-level Feature Overrides card never rendered it, so a
+superadmin could ship a clinic package and still had no way to switch a single
+existing org onto it. It now has its own module card, next to a cross-module
+Document Reports card.

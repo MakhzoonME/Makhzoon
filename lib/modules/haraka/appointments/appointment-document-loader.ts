@@ -4,6 +4,10 @@ import { getOrganizationBySubdomain } from '@/lib/db/organizations'
 import { loadOrgReceiptContext } from '@/lib/receipts/public-receipt'
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview'
 import { DEFAULT_RECEIPT_CONFIG } from '@/lib/receipts/receipt-config'
+import {
+  DEFAULT_APPOINTMENT_DOCUMENT_CONFIG,
+  type AppointmentDocumentConfig,
+} from './appointment-document-config'
 
 type Row = Record<string, unknown>
 
@@ -14,6 +18,7 @@ export interface AppointmentDocumentContext {
   tagline: string
   taxNumber: string
   receiptConfig: ReceiptConfig
+  docConfig: AppointmentDocumentConfig
 }
 
 export interface AppointmentDocumentAppointment {
@@ -42,7 +47,7 @@ export async function loadAppointmentDocument(
   const org = await getOrganizationBySubdomain(orgSlug)
   if (!org) return null
 
-  const [receiptCtx, apptRes] = await Promise.all([
+  const [receiptCtx, apptRes, configRes] = await Promise.all([
     loadOrgReceiptContext(orgSlug),
     supabaseAdmin
       .from('haraka_appointments')
@@ -54,10 +59,17 @@ export async function loadAppointmentDocument(
       .eq('id', appointmentId)
       .eq('organization_id', org.id)
       .maybeSingle(),
+    supabaseAdmin
+      .from('organization_configs')
+      .select('appointment_document_config')
+      .eq('organization_id', org.id)
+      .maybeSingle(),
   ])
 
   if (!apptRes.data || apptRes.error) return null
   const raw = apptRes.data as unknown as Row
+  const configData = configRes.data as unknown as Row | null
+  const savedDocConfig = (configData?.appointment_document_config ?? {}) as Partial<AppointmentDocumentConfig>
 
   const [serviceRes, staffRes] = await Promise.all([
     raw.service_id
@@ -85,6 +97,7 @@ export async function loadAppointmentDocument(
       tagline: rc.tagline,
       taxNumber: rc.taxNumber,
       receiptConfig: rc.config,
+      docConfig: { ...DEFAULT_APPOINTMENT_DOCUMENT_CONFIG, ...savedDocConfig },
     },
     appointment: {
       id: raw.id as string,

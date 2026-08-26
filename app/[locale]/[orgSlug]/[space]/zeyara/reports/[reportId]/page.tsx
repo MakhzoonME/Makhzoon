@@ -3,9 +3,9 @@
 import { VerticalProvider } from '@/components/vertical/VerticalProvider';
 import { DocumentReportDetailPage } from '@/components/vertical/pages/DocumentReportDetailPage';
 
-export default function HarakaDocumentReportDetailPage() {
+export default function ZeyaraDocumentReportDetailPage() {
   return (
-    <VerticalProvider vertical="haraka">
+    <VerticalProvider vertical="zeyara">
       <DocumentReportDetailPage />
     </VerticalProvider>
   );

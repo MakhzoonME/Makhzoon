@@ -16,11 +16,14 @@ import {
 } from '@/hooks/document-reports/useReportTemplates'
 import { useModuleGuard } from '@/hooks/ui'
 import { toast } from '@/hooks/ui'
+import { VERTICAL_FEATURE_KEYS } from '@/lib/platform/verticals'
 import type { DocumentReportTemplate, ReportFieldDef } from '@/types'
 
 export default function ReportTemplatesSettingsPage() {
+  // Org-scoped page shared by both verticals — a clinic holding 'zeyara' but
+  // not 'pos' builds its patient-report templates here too.
   const { isAllowed } = useModuleGuard({
-    featureKey: 'pos',
+    featureKeys: VERTICAL_FEATURE_KEYS,
     moduleKey: 'documentReports',
     permOp: 'reportsManageTemplates',
     harakaAddOn: 'documentReports',

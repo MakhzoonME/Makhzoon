@@ -110,3 +110,9 @@ export {
   useDeleteService,
 } from './useServices';
 export type { UseServicesParams } from './useServices';
+export {
+  useReceiptConfig,
+  useOrderDocumentConfig,
+  useServiceJobDocumentConfig,
+  useAppointmentDocumentConfig,
+} from './useDocumentConfigs';

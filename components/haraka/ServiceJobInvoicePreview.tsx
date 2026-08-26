@@ -4,6 +4,8 @@ import { useT } from '@/hooks/ui';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import type { ServiceJobDocumentConfig } from '@/lib/modules/haraka/service-jobs/service-job-document-config';
 import type { ServiceJobDocumentJob } from '@/lib/modules/haraka/service-jobs/service-job-document-loader';
+import { resolveDocumentQr } from '@/lib/qr';
+import { DocumentQr } from '@/components/shared/DocumentQr';
 
 interface Props {
   job:           ServiceJobDocumentJob;
@@ -14,6 +16,10 @@ interface Props {
   docConfig:     ServiceJobDocumentConfig;
   currency?:     string;
   locale?:       string;
+  /** Public URL of this invoice; encoded when docConfig.qrSource is on. */
+  documentUrl?:  string | null;
+  /** E-invoicing payload, when a compliance adapter produced one. */
+  compliancePayload?: string | null;
 }
 
 function fmt(n: number, currency = 'JOD') {
@@ -30,11 +36,13 @@ function capFirst(s: string) {
 
 export function ServiceJobInvoicePreview({
   job, orgName, tagline, taxNumber, receiptConfig, docConfig, currency = 'JOD',
+  documentUrl, compliancePayload,
 }: Props) {
   const { t } = useT();
   const accent    = receiptConfig.accentColor || '#1d4ed8';
   const docNumber = job.invoiceNumber ?? job.jobNumber;
   const remaining = job.total - job.amountPaid;
+  const qr        = resolveDocumentQr(docConfig, { documentUrl, compliancePayload });
 
   return (
     <div
@@ -139,8 +147,10 @@ export function ServiceJobInvoicePreview({
         </tbody>
       </table>
 
-      {/* Totals */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8mm' }}>
+      {/* Totals — the QR sits opposite them rather than in the footer, which
+          already carries free-text terms that can run to several lines. */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8mm', marginBottom: '8mm' }}>
+        <div>{qr && <DocumentQr qr={qr} size="24mm" />}</div>
         <div style={{ width: '55mm', fontSize: '9.5pt' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', color: '#555' }}>
             <span>{t('invoicePreview.subtotal')}</span><span style={{ fontFamily: 'monospace' }}>{fmt(job.subtotal, currency)}</span>

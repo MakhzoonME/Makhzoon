@@ -47,6 +47,7 @@ import {
   USOOL_SUB_FEATURES,
   RASEED_BASE_FEATURE,
   HARAKA_BASE_FEATURE,
+  ZEYARA_BASE_FEATURE,
   BANNA_FEATURE,
 } from '@/lib/config/package-feature-groups';
 import {
@@ -1007,8 +1008,7 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                         ['deliveryAgents', 'Workers'],
                         ['warrantyCerts', 'Warranty certificates'],
                         ['customization', 'Customization'],
-                        ['documentReports', 'Document reports'],
-                      ] as ['deliveryAgents' | 'warrantyCerts' | 'customization' | 'documentReports', string][]
+                      ] as ['deliveryAgents' | 'warrantyCerts' | 'customization', string][]
                     ).map(([key, label]) => (
                       <label key={key} className="flex items-center gap-2 text-xs cursor-pointer hover:text-gray-900">
                         <input
@@ -1021,6 +1021,39 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                       </label>
                     ))}
                   </div>
+                </ModuleCard>
+
+                {/* Zeyara — clinic vertical over the SAME appointment engine as
+                    Haraka, sold as its own base module. A clinic package ships
+                    zeyara ON and pos OFF, so this cannot live inside the Haraka
+                    card. See docs/plans/2026-08-26-zeyara-clinic-vertical-design.md §3. */}
+                <ModuleCard
+                  label="Zeyara — Clinics"
+                  enabled={features[ZEYARA_BASE_FEATURE]}
+                  onToggleEnabled={(v) => handleFeatureToggle(ZEYARA_BASE_FEATURE, v)}
+                >
+                  <p className="text-xs text-gray-500">
+                    Appointments, patients, clinical records, providers, follow-ups, reminders, and
+                    appointment invoicing. Includes the provider directory — no separate Workers
+                    add-on needed. Turning this on adds the Zeyara sidebar group and its permission
+                    group to the organization; staff still need those permissions granted per role.
+                  </p>
+                </ModuleCard>
+
+                {/* Document Reports is cross-vertical — a Haraka retailer's
+                    inspection report and a Zeyara clinic's patient report are
+                    the same engine — so it is its own row rather than a
+                    Haraka-only add-on. */}
+                <ModuleCard
+                  label="Document Reports"
+                  enabled={addOns.documentReports}
+                  onToggleEnabled={(v) => setAddOns((a) => ({ ...a, documentReports: v }))}
+                >
+                  <p className="text-xs text-gray-500">
+                    Org-defined report templates filled per customer encounter, printable and
+                    shareable by no-login link. Available on whichever vertical the org holds
+                    (Haraka and/or Zeyara).
+                  </p>
                 </ModuleCard>
 
                 <ModuleCard

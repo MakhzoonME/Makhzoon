@@ -22,6 +22,8 @@ import { sampleReceiptTransaction } from '@/lib/modules/haraka/printing/receipt-
 import { DEFAULT_RECEIPT_CONFIG, toPrintText, paperWidthFor } from '@/lib/receipts/receipt-config';
 import type { ReceiptLang } from '@/lib/receipts/labels';
 import { getReceiptBaseUrl } from '@/lib/app-env';
+import { documentPublicUrl } from '@/lib/qr';
+import { DocumentQrCard } from '@/components/settings/DocumentQrCard';
 
 interface TemplateOption { id: TemplateId; label: string; desc: string; icon: string }
 const TEMPLATES: TemplateOption[] = [
@@ -74,7 +76,8 @@ type ReceiptSettings = Pick<ReceiptConfig,
   'template' | 'language' |
   'showLogo' | 'showTaxNumber' | 'showCashier' |
   'showItemizedTax' | 'showAddress' | 'showPhone' | 'showWebsite' |
-  'footerText' | 'footerTextAr' | 'copies' | 'cutFeed'
+  'footerText' | 'footerTextAr' | 'copies' | 'cutFeed' |
+  'qrSource' | 'qrCaption'
 >;
 
 const DEFAULT_SETTINGS: ReceiptSettings = {
@@ -91,6 +94,8 @@ const DEFAULT_SETTINGS: ReceiptSettings = {
   footerTextAr:    DEFAULT_RECEIPT_CONFIG.footerTextAr,
   copies:          DEFAULT_RECEIPT_CONFIG.copies,
   cutFeed:         DEFAULT_RECEIPT_CONFIG.cutFeed,
+  qrSource:        DEFAULT_RECEIPT_CONFIG.qrSource,
+  qrCaption:       DEFAULT_RECEIPT_CONFIG.qrCaption,
 };
 
 export default function ReceiptSettingsPage() {
@@ -137,6 +142,8 @@ export default function ReceiptSettingsPage() {
       footerTextAr:    c.footerTextAr    ?? s.footerTextAr,
       copies:          c.copies          ?? s.copies,
       cutFeed:         c.cutFeed         ?? s.cutFeed,
+      qrSource:        c.qrSource        ?? s.qrSource,
+      qrCaption:       c.qrCaption       ?? s.qrCaption,
     }));
   }, [saved]);
 
@@ -159,6 +166,15 @@ export default function ReceiptSettingsPage() {
   // Thermal designs preview as the actual printer bitmap, driven by a stand-in
   // sale — so tweaking a toggle shows the real paper, not an HTML lookalike.
   const sampleTx = useMemo(() => sampleReceiptTransaction(), []);
+  // The designer has no real sale to link to. Stand in a UUID-shaped id rather
+  // than sampleTx.id ('preview'): a QR's density follows its payload length, so
+  // a short id would preview a noticeably coarser code than the one that prints.
+  const previewDocumentUrl = useMemo(
+    () => documentPublicUrl(
+      'pos-receipt', orgSlug, '00000000-0000-0000-0000-000000000000', receiptBase,
+    ),
+    [orgSlug, receiptBase],
+  );
   const { raster, loading: rasterLoading } = useReceiptRaster({
     transaction: isThermal ? sampleTx : null,
     text: toPrintText(previewConfig, {
@@ -166,6 +182,7 @@ export default function ReceiptSettingsPage() {
       tagline: saved?.tagline ?? '',
       taglineAr: saved?.taglineAr ?? '',
       taxNumber: saved?.taxNumber ?? '',
+      documentUrl: previewDocumentUrl,
     }),
     paperWidth: paperWidthFor(settings.template),
     lang: effPreviewLang,
@@ -391,6 +408,12 @@ export default function ReceiptSettingsPage() {
               )}
             </CardContent>
           </Card>
+
+          <DocumentQrCard
+            value={settings}
+            onChange={(patch) => setSettings((s) => ({ ...s, ...patch }))}
+            hint="Printed near the bottom of POS receipts — on the thermal roll and on the shared web receipt."
+          />
         </div>
 
         {/* ── Right: preview + share (sticky) ── */}
@@ -431,6 +454,7 @@ export default function ReceiptSettingsPage() {
                 taglineAr={saved?.taglineAr ?? ''}
                 lang={effPreviewLang}
                 config={previewConfig}
+                documentUrl={previewDocumentUrl}
               />
             )}
           </div>

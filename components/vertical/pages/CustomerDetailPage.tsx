@@ -202,17 +202,16 @@ function HistoryRow({
 }) {
   const { basePath } = useVertical();
   // The timeline merges records from every module the org runs, but only
-  // appointments have a page under BOTH verticals. Transactions, orders, and
-  // service jobs are Haraka-only surfaces, so they always link into Haraka —
-  // linking them at the Zeyara base would 404. (Reachable only for a mixed org
-  // holding both verticals; a clinic-only org has no such rows.)
+  // appointments and reports have a page under BOTH verticals. Transactions,
+  // orders, and service jobs are Haraka-only surfaces, so they always link into
+  // Haraka — linking them at the Zeyara base would 404. (Reachable only for a
+  // mixed org holding both verticals; a clinic-only org has no such rows.)
   const hrefByKind: Record<CustomerHistoryEntry['kind'], string> = {
     transaction: `${harakaBase}/transactions/${entry.id}`,
     order: `${harakaBase}/orders/${entry.id}`,
     appointment: `${basePath}/appointments/${entry.id}`,
     service_job: `${harakaBase}/service-jobs/${entry.id}`,
-    // Document Reports is a Haraka surface too — it has no /zeyara route.
-    document_report: `${harakaBase}/reports/${entry.id}`,
+    document_report: `${basePath}/reports/${entry.id}`,
   };
   const href = hrefByKind[entry.kind];
   const iconByKind: Record<CustomerHistoryEntry['kind'], typeof Receipt> = {

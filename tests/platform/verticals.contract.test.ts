@@ -151,11 +151,18 @@ describe('the Zeyara vertical is additive', () => {
     if (!group || !('items' in group)) return;
 
     expect(group.featureKey).toBe('zeyara');
+    // Cross-vertical modules keep their OWN permission namespace on both
+    // surfaces — Document Reports is one engine sold to retailers and clinics
+    // alike, so /zeyara/reports is granted through 'documentReports.*', not a
+    // duplicated 'zeyara.reports*'. Everything genuinely owned by the vertical
+    // must still live in the zeyara namespace.
+    const CROSS_VERTICAL_PERM_MODULES = ['documentReports'];
     for (const item of group.items) {
       if ('type' in item) continue; // section header
       expect(item.featureKey, `'${item.href}' is not gated on the zeyara feature`).toBe('zeyara');
+      const permModule = item.permissionKey?.split('.')[0];
       expect(
-        item.permissionKey?.startsWith('zeyara.'),
+        permModule === 'zeyara' || CROSS_VERTICAL_PERM_MODULES.includes(permModule ?? ''),
         `'${item.href}' uses permission key '${item.permissionKey}' outside the zeyara namespace`,
       ).toBe(true);
       // Zeyara is its own entitlement — it must never additionally require a

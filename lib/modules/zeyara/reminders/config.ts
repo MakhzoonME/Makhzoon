@@ -9,7 +9,7 @@ import { z } from 'zod'
  * Meta requires every WhatsApp template to be pre-approved in the org's
  * WhatsApp Business account, as Utility category. These two must exist there
  * before anything sends; until they do, sends fail and are logged with
- * status='failed' (visible, and never retried — see the unique index in 0081).
+ * status='failed' (visible, and never retried — see the unique index in 0084).
  *
  * Positional body params, in order:
  *   appointment_reminder → {{1}} patient, {{2}} date/time, {{3}} service

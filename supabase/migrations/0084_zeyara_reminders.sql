@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════════════════════════════════
--- 0081_zeyara_reminders.sql
+-- 0084_zeyara_reminders.sql
 -- Phase 4 of the Zeyara rollout
 -- (docs/plans/2026-08-26-zeyara-clinic-vertical-design.md §1.2).
 --

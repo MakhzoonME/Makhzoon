@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════════════════════════════════
--- 0079_zeyara_visits.sql
+-- 0082_zeyara_visits.sql
 -- Phase 2 of the Zeyara rollout
 -- (docs/plans/2026-08-26-zeyara-clinic-vertical-design.md §5).
 --

@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════════════════════════════════
--- 0080_zeyara_custom_fields.sql
+-- 0083_zeyara_custom_fields.sql
 -- Phase 3 of the Zeyara rollout
 -- (docs/plans/2026-08-26-zeyara-clinic-vertical-design.md §6).
 --

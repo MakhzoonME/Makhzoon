@@ -1006,7 +1006,8 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                         ['deliveryAgents', 'Workers'],
                         ['warrantyCerts', 'Warranty certificates'],
                         ['customization', 'Customization'],
-                      ] as ['deliveryAgents' | 'warrantyCerts' | 'customization', string][]
+                        ['documentReports', 'Document reports'],
+                      ] as ['deliveryAgents' | 'warrantyCerts' | 'customization' | 'documentReports', string][]
                     ).map(([key, label]) => (
                       <label key={key} className="flex items-center gap-2 text-xs cursor-pointer hover:text-gray-900">
                         <input

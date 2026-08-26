@@ -3,7 +3,8 @@ import { useVertical } from '@/components/vertical/VerticalProvider';
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, FileText } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, FileText, ChevronRight } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,7 +42,7 @@ function permOpForStatus(status: AppointmentStatus): string {
 }
 
 export function AppointmentDetailPage() {
-  const { vertical, featureKey, permModule, basePath, colorVar } = useVertical();
+  const { vertical, featureKey, permModule, basePath, customersSegment, colorVar } = useVertical();
   const { isAllowed } = useModuleGuard({
     featureKey,
     harakaModule: vertical === 'haraka' ? 'appointments' : undefined,
@@ -248,12 +249,27 @@ export function AppointmentDetailPage() {
             <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">
               {t('appointments.sectionCustomer')}
             </div>
-            <div>
-              <div className="font-medium text-gray-800">{appointment.customerName}</div>
-              {appointment.customerPhone && (
-                <div className="text-sm text-gray-500 mt-0.5">{appointment.customerPhone}</div>
-              )}
-            </div>
+            {appointment.customerId && can('customersView') ? (
+              <Link
+                href={`${basePath}/${customersSegment}/${appointment.customerId}`}
+                className="flex items-center justify-between gap-3 -m-1 p-1 rounded-lg transition-colors hover:bg-surface-hover"
+              >
+                <div>
+                  <div className="font-medium text-gray-800">{appointment.customerName}</div>
+                  {appointment.customerPhone && (
+                    <div className="text-sm text-gray-500 mt-0.5">{appointment.customerPhone}</div>
+                  )}
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-gray-400 rtl:rotate-180" />
+              </Link>
+            ) : (
+              <div>
+                <div className="font-medium text-gray-800">{appointment.customerName}</div>
+                {appointment.customerPhone && (
+                  <div className="text-sm text-gray-500 mt-0.5">{appointment.customerPhone}</div>
+                )}
+              </div>
+            )}
           </div>
 
           <AppointmentPaymentsPanel

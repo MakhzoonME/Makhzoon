@@ -86,3 +86,47 @@ Key rules:
 - Attachment storage mechanism (which existing file-upload path to reuse).
 - Whether `report_audit_log` becomes its own table or a new entry type feeding into the existing `lib/audit/logger.ts` infra.
 - Multi-language rendering of templates (org locale vs. patient-facing locale on the share page).
+
+## 7. Cross-vertical integration (shipped 2026-08-26)
+
+The module shipped gated on `pos` everywhere — routes, nav, permission module,
+settings page. That contradicted §1's own premise: the worked example is *"a
+clinic's Patient Report / Hospital Referral pair"*, and a clinic org holds
+`zeyara`, not `pos`. Every gate 403'd or hid the feature from the customer it
+was designed for. Fixed by making the module vertical-agnostic:
+
+| Layer | Was | Now |
+|---|---|---|
+| API routes | `requireFeature(tenant, 'pos')` | `requireAnyVerticalFeature(tenant)` |
+| Permission module | `featureKey: 'pos'`, group `haraka` | `featureKeys: VERTICAL_FEATURE_KEYS`, own group `reports` |
+| Reports page | `/haraka/reports` only | shared body under `/haraka/reports` **and** `/zeyara/reports` |
+| Template builder | `featureKey: 'pos'` | `featureKeys: VERTICAL_FEATURE_KEYS` |
+| Report links | hard-coded `…/haraka/reports/:id` | `${basePath}/reports/:id` from `useVertical()` |
+| Package / org add-on | inside the Haraka fieldset | its own cross-module row |
+
+The add-on (`documentReports`) remains the thing that sells the module; the
+vertical only decides which route renders it. A permission group of its own
+matters because the alternative — leaving it under the "Haraka" heading — shows
+a clinic admin a permission group named after a product they never bought,
+which is the same objection §2.3 of the Zeyara design raised against sharing a
+namespace.
+
+Two mechanisms were added rather than duplicating the gate per surface:
+`navFeatureAllowed()` (lib/nav) and `moduleFeatureAllowed()`
+(types/user-permissions.types.ts) — an any-of `featureKeys` array that wins over
+the single `featureKey`, honored by the sidebar, the mobile drawer,
+`getFirstAccessiblePath`, `useModuleGuard`, and the permissions editor. Adding
+the array to a config without teaching every filter about it was the real risk;
+one helper per layer is what prevents an entry that is visible in the sidebar
+and invisible on the page it links to.
+
+### 7.1 The clinical anchor
+
+`encounter_type` gained a fourth value, `'visit'` (migration 0085), so a report
+written during a consultation anchors on `zeyara_visits` rather than on the
+appointment that scheduled it. The distinction is the one migration 0082 already
+drew: an appointment is a scheduling + billing object whose lifecycle ends at
+`completed`, while the visit is the clinical object that is amended afterwards.
+Reports generated from the clinical-record panel pass the visit id directly;
+the manual picker in `ReportGenerateDrawer` still offers only the three
+encounter types the customer-history timeline can resolve.

@@ -117,7 +117,8 @@ export function ReceiptShareDialog({
   // template is selected would be wasted work, so gate on the template.
   const { raster, loading: rasterLoading } = useReceiptRaster({
     transaction: isThermal ? transaction : null,
-    text: toPrintText(config, { orgName, tagline, taglineAr, taxNumber }),
+    // shareLink is the same public receipt the QR sends the customer to.
+    text: toPrintText(config, { orgName, tagline, taglineAr, taxNumber, documentUrl: shareLink }),
     paperWidth,
     lang,
     currency: CURRENCY,
@@ -273,6 +274,7 @@ export function ReceiptShareDialog({
                         lang={lang}
                         config={config}
                         data={data}
+                        documentUrl={shareLink}
                       />
                     )}
                   </div>

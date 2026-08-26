@@ -1,4 +1,7 @@
 import type { MessageKey } from '@/locales/messages';
+// Value import, and deliberately one-way: verticals.ts only imports TYPES from
+// this file, so nothing is evaluated in a cycle at runtime.
+import { VERTICAL_FEATURE_KEYS } from '@/lib/platform/verticals';
 
 // ─────────────────────────────────────────────────────────────────────────
 // Per-module permission shapes. Modules are organized around the pricing
@@ -441,17 +444,35 @@ export interface ModuleOperationConfig {
   featureKey?: string;
 }
 
-export type ModuleGroup = 'usool' | 'raseed' | 'haraka' | 'zeyara' | 'platform' | 'settings';
+export type ModuleGroup = 'usool' | 'raseed' | 'haraka' | 'zeyara' | 'reports' | 'platform' | 'settings';
 
 export interface ModuleConfig {
   key: keyof UserPermissions;
   label: string;
   labelKey: MessageKey;
   featureKey?: string;
+  /**
+   * ANY-OF feature gate, for a module that more than one vertical reaches.
+   * Document Reports is bought by a Haraka retailer ('pos') and by a Zeyara
+   * clinic ('zeyara') alike, so a single `featureKey` would hide it from
+   * whichever vertical it wasn't named after. When set, `featureKey` is
+   * ignored. See lib/platform/verticals.ts.
+   */
+  featureKeys?: string[];
   group?: ModuleGroup;
   /** When true, this module is hidden from the org-user PermissionsEditor. */
   hideFromEditor?: boolean;
   operations: ModuleOperationConfig[];
+}
+
+/** Does the org's feature map satisfy this module's (any-of) feature gate? */
+export function moduleFeatureAllowed(
+  mod: Pick<ModuleConfig, 'featureKey' | 'featureKeys'>,
+  features: Record<string, boolean>,
+): boolean {
+  if (mod.featureKeys?.length) return mod.featureKeys.some((k) => !!features[k]);
+  if (mod.featureKey) return !!features[mod.featureKey];
+  return true;
 }
 
 export const MODULE_GROUP_LABELS: Record<ModuleGroup, string> = {
@@ -459,6 +480,7 @@ export const MODULE_GROUP_LABELS: Record<ModuleGroup, string> = {
   raseed: 'Raseed',
   haraka: 'Haraka',
   zeyara: 'Zeyara',
+  reports: 'Reports',
   platform: 'Platform',
   settings: 'Settings',
 };
@@ -468,11 +490,12 @@ export const MODULE_GROUP_LABEL_KEYS: Record<ModuleGroup, MessageKey> = {
   raseed: 'permGroup.raseed',
   haraka: 'permGroup.haraka',
   zeyara: 'permGroup.zeyara',
+  reports: 'permGroup.reports',
   platform: 'permGroup.platform',
   settings: 'permGroup.settings',
 };
 
-export const MODULE_GROUP_ORDER: ModuleGroup[] = ['usool', 'raseed', 'haraka', 'zeyara', 'platform', 'settings'];
+export const MODULE_GROUP_ORDER: ModuleGroup[] = ['usool', 'raseed', 'haraka', 'zeyara', 'reports', 'platform', 'settings'];
 
 export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
   {
@@ -664,8 +687,12 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
     ],
   },
   {
+    // Cross-vertical: a Haraka retailer generates inspection reports, a Zeyara
+    // clinic generates patient reports and referrals — same engine, same
+    // permission namespace, so it gets its own group rather than living under
+    // one vertical's heading.
     key: 'documentReports', label: 'Document Reports', labelKey: 'permModule.documentReports',
-    featureKey: 'pos', group: 'haraka',
+    featureKeys: VERTICAL_FEATURE_KEYS, group: 'reports',
     operations: [
       { key: 'reportsView', label: 'View Reports', labelKey: 'permOp.documentReports.reportsView' },
       { key: 'reportsCreate', label: 'Generate Reports', labelKey: 'permOp.documentReports.reportsCreate', requiresKey: 'reportsView' },

@@ -9,13 +9,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { toast, useAdminGuard } from '@/hooks/ui';
+import { toast, useAdminGuard, useOrgSlug } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { apiFetch } from '@/lib/utils/api-fetch';
 import { DEFAULT_ORDER_DOCUMENT_CONFIG, type OrderDocumentConfig } from '@/lib/modules/haraka/orders/order-document-config';
+import {
+  DEFAULT_SERVICE_JOB_DOCUMENT_CONFIG, type ServiceJobDocumentConfig,
+} from '@/lib/modules/haraka/service-jobs/service-job-document-config';
+import {
+  DEFAULT_APPOINTMENT_DOCUMENT_CONFIG, type AppointmentDocumentConfig,
+} from '@/lib/modules/haraka/appointments/appointment-document-config';
 import { OrderDocumentPreview } from '@/components/haraka/OrderDocumentPreview';
+import { DocumentQrCard } from '@/components/settings/DocumentQrCard';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import { DEFAULT_RECEIPT_CONFIG } from '@/lib/receipts/receipt-config';
+import { documentPublicUrl, type DocumentQrConfig } from '@/lib/qr';
+import { getReceiptBaseUrl } from '@/lib/app-env';
 
 const MOCK_ORDER = {
   id: 'preview',
@@ -52,9 +61,18 @@ const MOCK_PAYMENTS = [
 export default function InvoiceSettingsPage() {
   const { isAllowed } = useAdminGuard('settingsInvoice.view');
   const { data: orgInfo } = useOrgInfo();
+  const orgSlug = useOrgSlug();
   const [config, setConfig] = useState<OrderDocumentConfig>(DEFAULT_ORDER_DOCUMENT_CONFIG);
+  // Service-job and appointment invoices are separate documents with their own
+  // config blobs — this page only exposes their QR choice, since neither has
+  // any other per-org setting yet.
+  const [serviceJobConfig, setServiceJobConfig] =
+    useState<ServiceJobDocumentConfig>(DEFAULT_SERVICE_JOB_DOCUMENT_CONFIG);
+  const [appointmentConfig, setAppointmentConfig] =
+    useState<AppointmentDocumentConfig>(DEFAULT_APPOINTMENT_DOCUMENT_CONFIG);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [receiptBase] = useState(() => getReceiptBaseUrl());
 
   const { data: receiptSaved } = useQuery<{ tagline?: string; taxNumber?: string; config?: ReceiptConfig }>({
     queryKey: ['receipt-config'],
@@ -70,14 +88,19 @@ export default function InvoiceSettingsPage() {
     : DEFAULT_RECEIPT_CONFIG;
 
   useEffect(() => {
-    apiFetch('/api/organizations/order-document-config')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data && typeof data === 'object') {
-          setConfig((c) => ({ ...c, ...data }));
-        }
+    const load = (url: string) =>
+      apiFetch(url).then((r) => r.json()).catch(() => null);
+
+    Promise.all([
+      load('/api/organizations/order-document-config'),
+      load('/api/organizations/service-job-document-config'),
+      load('/api/organizations/appointment-document-config'),
+    ])
+      .then(([order, serviceJob, appointment]) => {
+        if (order && typeof order === 'object') setConfig((c) => ({ ...c, ...order }));
+        if (serviceJob && typeof serviceJob === 'object') setServiceJobConfig((c) => ({ ...c, ...serviceJob }));
+        if (appointment && typeof appointment === 'object') setAppointmentConfig((c) => ({ ...c, ...appointment }));
       })
-      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
@@ -88,18 +111,33 @@ export default function InvoiceSettingsPage() {
   async function handleSave() {
     setSaving(true);
     try {
-      const res = await apiFetch('/api/organizations/order-document-config', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
-      });
-      if (!res.ok) throw new Error((await res.json()).error ?? 'Failed to save');
+      // One Save button, three documents — a partial failure would leave the
+      // page showing settings that are not what is stored, so surface it.
+      const saves: Array<[string, unknown]> = [
+        ['/api/organizations/order-document-config', config],
+        ['/api/organizations/service-job-document-config', serviceJobConfig],
+        ['/api/organizations/appointment-document-config', appointmentConfig],
+      ];
+      for (const [url, body] of saves) {
+        const res = await apiFetch(url, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'Failed to save');
+      }
       toast.success('Settings saved');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setSaving(false);
     }
+  }
+
+  function patchQr<T extends DocumentQrConfig>(
+    setter: (fn: (c: T) => T) => void,
+  ) {
+    return (patch: Partial<DocumentQrConfig>) => setter((c) => ({ ...c, ...patch }));
   }
 
   if (!isAllowed || loading) {
@@ -193,6 +231,27 @@ export default function InvoiceSettingsPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* One QR choice per document type — an org may want a scannable link
+              on order invoices but nothing on the others, or vice versa. */}
+          <DocumentQrCard
+            title="QR code — order invoices"
+            hint="Shown beside the totals on order invoices and receipts."
+            value={config}
+            onChange={patchQr(setConfig)}
+          />
+          <DocumentQrCard
+            title="QR code — service job invoices"
+            hint="Shown beside the totals on service job invoices."
+            value={serviceJobConfig}
+            onChange={patchQr(setServiceJobConfig)}
+          />
+          <DocumentQrCard
+            title="QR code — appointment invoices"
+            hint="Shown beside the totals on appointment invoices."
+            value={appointmentConfig}
+            onChange={patchQr(setAppointmentConfig)}
+          />
         </div>
 
         {/* ── Right: live preview (sticky) ── */}
@@ -213,6 +272,9 @@ export default function InvoiceSettingsPage() {
                 receiptConfig={receiptConfig}
                 docConfig={config}
                 currency="JOD"
+                documentUrl={documentPublicUrl(
+                  'order', orgSlug, '00000000-0000-0000-0000-000000000000', receiptBase,
+                )}
               />
             </div>
           </div>

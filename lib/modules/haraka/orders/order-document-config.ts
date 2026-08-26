@@ -1,6 +1,8 @@
+import { DEFAULT_DOCUMENT_QR, type DocumentQrConfig } from '@/lib/qr';
+
 /** Config for Haraka order invoices/receipts — stored in
  *  organization_configs.order_document_config (JSONB). */
-export interface OrderDocumentConfig {
+export interface OrderDocumentConfig extends DocumentQrConfig {
   /** Shown at top of invoice. Default: "TAX INVOICE" */
   invoiceTitle: string;
   /** Shown at top of receipt. Default: "RECEIPT" */
@@ -28,4 +30,5 @@ export const DEFAULT_ORDER_DOCUMENT_CONFIG: OrderDocumentConfig = {
   showDeliveryAgent:   false,
   termsText:           '',
   thankYouText:        'Thank you for your order!',
+  ...DEFAULT_DOCUMENT_QR,
 };

@@ -15,10 +15,12 @@ interface Props {
   taxNumber: string;
   receiptConfig: ReceiptConfig;
   docConfig: OrderDocumentConfig;
+  /** Public URL of this document; encoded when docConfig.qrSource is on. */
+  documentUrl?: string | null;
   autoDownload?: boolean;
 }
 
-export function OrderDocumentPublicView({ type, order, payments, orgName, tagline, taxNumber, receiptConfig, docConfig, autoDownload }: Props) {
+export function OrderDocumentPublicView({ type, order, payments, orgName, tagline, taxNumber, receiptConfig, docConfig, documentUrl, autoDownload }: Props) {
   useEffect(() => {
     if (autoDownload) {
       const id = setTimeout(() => window.print(), 400);
@@ -46,6 +48,7 @@ export function OrderDocumentPublicView({ type, order, payments, orgName, taglin
           taxNumber={taxNumber}
           receiptConfig={receiptConfig}
           docConfig={docConfig}
+          documentUrl={documentUrl}
         />
       </div>
       <style>{`@media print { body * { visibility: hidden } #order-document, #order-document * { visibility: visible } #order-document { position: fixed; top: 0; left: 0; width: 100%; } }`}</style>

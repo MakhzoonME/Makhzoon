@@ -8,6 +8,7 @@
 // it never edits. Corrections are new notes, so what was believed at the time
 // stays on the record.
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   Stethoscope, Plus, Paperclip, Trash2, FileText, CalendarClock, Loader2,
 } from 'lucide-react';
@@ -27,8 +28,10 @@ import {
   useUploadVisitAttachment,
   useDeleteVisitAttachment,
 } from '@/hooks/zeyara';
+import { ReportGenerateDrawer } from '@/components/document-reports/ReportGenerateDrawer';
+import { useReportInstances } from '@/hooks/document-reports/useReportInstances';
 import { useAuthStore } from '@/store/auth.store';
-import { hasPermission } from '@/lib/permissions';
+import { hasPermByKey, hasPermission } from '@/lib/permissions';
 import { toast, useT } from '@/hooks/ui';
 import { formatDateTime } from '@/lib/utils/date';
 import type { ZeyaraVisit } from '@/types';
@@ -201,7 +204,82 @@ export function ClinicalRecordPanel({
 
           <VisitNotes visitId={visit.id} />
           <VisitAttachments visitId={visit.id} patientName={patientName} />
+          <VisitReports visit={visit} />
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Document Reports generated out of this consultation — the patient report a
+ * clinic hands over, the referral a hospital receives. Anchored on the VISIT
+ * (encounterType 'visit', migration 0085) rather than the appointment, so the
+ * clinical record owns the paperwork it produced.
+ *
+ * Gated by the same add-on the rest of the module uses: a clinic that didn't
+ * buy Document Reports sees nothing here.
+ */
+function VisitReports({ visit }: { visit: ZeyaraVisit }) {
+  const { basePath } = useVertical();
+  const { user } = useAuthStore();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const addOnActive = !!user?.activeAddOns?.documentReports;
+  const canView = !!user && hasPermByKey(user, 'documentReports.reportsView');
+  const canCreate = !!user && hasPermByKey(user, 'documentReports.reportsCreate');
+
+  const { data } = useReportInstances({
+    encounterType: 'visit',
+    encounterId: visit.id,
+    pageSize: 50,
+    enabled: addOnActive && canView,
+  });
+
+  if (!addOnActive || !canView) return null;
+
+  const reports = data?.items ?? [];
+
+  return (
+    <div className="border-t border-border pt-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-gray-400" strokeWidth={1.75} />
+          <h3 className="text-xs font-medium uppercase tracking-wide text-gray-500">Reports</h3>
+        </div>
+        {canCreate && visit.customerId && (
+          <Button size="sm" variant="outline" onClick={() => setDrawerOpen(true)}>
+            <Plus className="h-4 w-4 me-1" /> Generate Report
+          </Button>
+        )}
+      </div>
+
+      {reports.length === 0 ? (
+        <p className="text-sm text-gray-500">No reports generated from this visit yet.</p>
+      ) : (
+        <ul className="divide-y divide-border rounded-lg border border-border">
+          {reports.map((r) => (
+            <li key={r.id}>
+              <Link
+                href={`${basePath}/reports/${r.id}`}
+                className="flex items-center justify-between gap-3 px-3 py-2 text-sm transition-colors hover:bg-surface-hover"
+              >
+                <span className="font-medium text-gray-800">{r.templateName}</span>
+                <span className="text-xs text-gray-400">{formatDateTime(r.createdAt)}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {visit.customerId && (
+        <ReportGenerateDrawer
+          open={drawerOpen}
+          onOpenChange={setDrawerOpen}
+          customerId={visit.customerId}
+          encounterType="visit"
+          encounterId={visit.id}
+        />
       )}
     </div>
   );

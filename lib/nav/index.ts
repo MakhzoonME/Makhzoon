@@ -1,5 +1,6 @@
 import type { MessageKey } from '@/locales/messages';
 import type { AddOnKey, HarakaModule } from '@/types/subscription.types';
+import { VERTICAL_FEATURE_KEYS } from '@/lib/platform/verticals';
 
 /**
  * Route scope:
@@ -15,6 +16,12 @@ export interface NavItemConfig {
   labelKey: MessageKey;
   adminOnly?: boolean;
   featureKey?: string;
+  /**
+   * ANY-OF feature gate for a page more than one vertical reaches (the report
+   * template builder is bought by a Haraka retailer and a Zeyara clinic
+   * alike). Wins over `featureKey` when set. See navFeatureAllowed().
+   */
+  featureKeys?: string[];
   /** Haraka sub-module (Orders/Services/Appointments/Retainers) this item requires be active on the subscription. */
   harakaModule?: HarakaModule;
   /** Independent add-on (Workers/Warranty Certs/…) this item requires be active on the subscription. */
@@ -48,6 +55,8 @@ export interface NavGroupConfig {
   labelKey: MessageKey;
   adminOnly?: boolean;
   featureKey?: string;
+  /** ANY-OF feature gate; see NavItemConfig.featureKeys. */
+  featureKeys?: string[];
   /** dot-separated permission key gating the group root, e.g. 'usool.view'. */
   permissionKey?: string;
   moduleColor?: string;
@@ -58,6 +67,20 @@ export interface NavGroupConfig {
 
 export interface NavSeparator { type: 'separator' }
 export type NavEntry = NavItemConfig | NavGroupConfig | NavSeparator;
+
+/**
+ * Single place every nav filter (sidebar, mobile drawer, first-accessible-path)
+ * asks "does the org's subscription unlock this entry?" — so an any-of gate
+ * can't be honored in one surface and silently ignored in another.
+ */
+export function navFeatureAllowed(
+  entry: { featureKey?: string; featureKeys?: string[] },
+  features: Record<string, boolean>,
+): boolean {
+  if (entry.featureKeys?.length) return entry.featureKeys.some((k) => !!features[k]);
+  if (entry.featureKey) return !!features[entry.featureKey];
+  return true;
+}
 
 export const ORG_NAV_ENTRIES: NavEntry[] = [
   { href: '/dashboard',    label: 'Dashboard',    labelKey: 'nav.dashboard',    featureKey: 'dashboard' },
@@ -178,6 +201,12 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/zeyara/reminders', label: 'Reminders', labelKey: 'nav.zeyaraReminders',
         featureKey: 'zeyara', permissionKey: 'zeyara.staffManage',
         moduleColor: '#0F766E', moduleName: 'التذكيرات' },
+      // Document Reports is cross-vertical: same templates, same instances,
+      // reached from whichever surface the org bought. The add-on gate is what
+      // sells it; the vertical only decides which route renders it.
+      { href: '/zeyara/reports', label: 'Reports', labelKey: 'nav.zeyaraReports',
+        featureKey: 'zeyara', harakaAddOn: 'documentReports', permissionKey: 'documentReports.reportsView',
+        moduleColor: '#0F766E', moduleName: 'تقارير' },
     ],
   },
   {
@@ -210,7 +239,7 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/settings/warranty-cert',   label: 'Warranty Cert',       labelKey: 'nav.warrantyCert',         permissionKey: 'settingsWarrantyCert.view',  featureKey: 'pos', harakaAddOn: 'warrantyCerts', scope: 'org' },
       { href: '/settings/notifications',   label: 'Notifications',       labelKey: 'nav.notificationSettings', permissionKey: 'settingsNotifications.view', scope: 'org' },
       { href: '/settings/cash-drawer',   label: 'Cash Drawer',   labelKey: 'nav.cashDrawer',     permissionKey: 'settingsCashDrawer.view',    featureKey: 'pos', scope: 'org' },
-      { href: '/settings/reports',       label: 'Report Templates', labelKey: 'nav.reportTemplates', permissionKey: 'documentReports.reportsManageTemplates', featureKey: 'pos', harakaAddOn: 'documentReports', scope: 'org' },
+      { href: '/settings/reports',       label: 'Report Templates', labelKey: 'nav.reportTemplates', permissionKey: 'documentReports.reportsManageTemplates', featureKeys: VERTICAL_FEATURE_KEYS, harakaAddOn: 'documentReports', scope: 'org' },
     ],
   },
 ];
@@ -225,6 +254,7 @@ const ORG_NAV_FLAT: NavItemConfig[] = ORG_NAV_ENTRIES.flatMap((entry) => {
       labelKey: entry.labelKey,
       adminOnly: entry.adminOnly,
       featureKey: entry.featureKey,
+      featureKeys: entry.featureKeys,
       permissionKey: entry.permissionKey,
       moduleColor: entry.moduleColor,
       moduleName: entry.moduleName,
@@ -284,7 +314,7 @@ export function getFirstAccessiblePath(opts: {
   const activeHarakaModules = opts.activeHarakaModules ?? [];
   for (const item of ORG_NAV_FLAT) {
     if (item.adminOnly && !isAdmin) continue;
-    if (item.featureKey && !opts.features[item.featureKey]) continue;
+    if (!navFeatureAllowed(item, opts.features)) continue;
     if (item.harakaModule && !activeHarakaModules.includes(item.harakaModule)) continue;
     if (item.harakaAddOn && opts.activeAddOns && !opts.activeAddOns[item.harakaAddOn]) continue;
     if (!isAdmin && opts.permissions) {

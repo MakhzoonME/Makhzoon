@@ -16,7 +16,7 @@ import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { SpaceSwitcher } from '@/components/layout/SpaceSwitcher';
 import { useT, useSpace } from '@/hooks/ui';
 import {
-  ORG_NAV_ENTRIES, buildNavUrl,
+  ORG_NAV_ENTRIES, buildNavUrl, navFeatureAllowed,
   type NavEntry, type NavGroupConfig, type NavItemConfig, type NavSectionHeader,
 } from '@/lib/nav';
 import type { MessageKey } from '@/locales/messages';
@@ -78,7 +78,7 @@ export function MobileDrawer() {
   const visibleEntries = ORG_NAV_ENTRIES.filter((entry): entry is NavEntry => {
     if ('type' in entry && entry.type === 'separator') return false;
     if ('type' in entry && entry.type === 'group') {
-      if (entry.featureKey && !features[entry.featureKey]) return false;
+      if (!navFeatureAllowed(entry, features)) return false;
       if (entry.adminOnly && !canSeeAdmin) {
         return user?.role === 'staff' && !!user && entry.items.some(
           (sub) => !('type' in sub) && sub.permissionKey && hasPermByKey(user, sub.permissionKey),
@@ -94,9 +94,9 @@ export function MobileDrawer() {
       }
       return true;
     }
-    const item = entry as { adminOnly?: boolean; featureKey?: string; harakaModule?: HarakaModule; harakaAddOn?: AddOnKey; permissionKey?: string };
+    const item = entry as { adminOnly?: boolean; featureKey?: string; featureKeys?: string[]; harakaModule?: HarakaModule; harakaAddOn?: AddOnKey; permissionKey?: string };
     if (item.adminOnly && !canSeeAdmin) return false;
-    if (item.featureKey && !features[item.featureKey]) return false;
+    if (!navFeatureAllowed(item, features)) return false;
     if (item.harakaModule && !activeHarakaModules.includes(item.harakaModule)) return false;
     if (item.harakaAddOn && !activeAddOns[item.harakaAddOn]) return false;
     if (user && (user.role === 'staff' || adminHasCustomPerms)) {
@@ -210,7 +210,7 @@ export function MobileDrawer() {
                   const visibleSubItems = (group.items as (NavItemConfig | NavSectionHeader)[])
                     .filter((sub): sub is NavItemConfig => !('type' in sub))
                     .filter((sub) => {
-                      if (sub.featureKey && !features[sub.featureKey]) return false;
+                      if (!navFeatureAllowed(sub, features)) return false;
                       if (sub.harakaModule && !activeHarakaModules.includes(sub.harakaModule)) return false;
                       if (sub.harakaAddOn && !activeAddOns[sub.harakaAddOn]) return false;
                       if (canSeeAdmin || !sub.permissionKey) return true;

@@ -7,8 +7,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFoo
 import { Button } from '@/components/ui/button';
 import { AppointmentInvoicePreview } from './AppointmentInvoicePreview';
 import { toast, useT } from '@/hooks/ui';
+import { useReceiptConfig, useAppointmentDocumentConfig } from '@/hooks/haraka';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
-import { DEFAULT_RECEIPT_CONFIG } from '@/lib/receipts/receipt-config';
+import type { AppointmentDocumentConfig } from '@/lib/modules/haraka/appointments/appointment-document-config';
 import { getReceiptBaseUrl } from '@/lib/app-env';
 import type { HarakaAppointment } from '@/types';
 
@@ -21,16 +22,27 @@ interface Props {
   tagline?: string;
   taxNumber?: string;
   receiptConfig?: ReceiptConfig;
+  docConfig?: AppointmentDocumentConfig;
   currency?: string;
 }
 
 export function AppointmentInvoiceDialog({
   open, onOpenChange, appointment, orgSlug, orgName,
-  tagline = '', taxNumber = '',
-  receiptConfig = DEFAULT_RECEIPT_CONFIG,
+  tagline: taglineProp, taxNumber: taxNumberProp,
+  receiptConfig: receiptConfigProp,
+  docConfig: docConfigProp,
   currency = 'JOD',
 }: Props) {
   const { t } = useT();
+  // No caller passes these today, and falling back to the DEFAULT_* constants
+  // rendered a preview that disagreed with the document that actually prints —
+  // no logo, stock wording, and no QR even when the org had switched one on.
+  const saved = useReceiptConfig();
+  const savedDocConfig = useAppointmentDocumentConfig();
+  const receiptConfig = receiptConfigProp ?? saved.receiptConfig;
+  const docConfig = docConfigProp ?? savedDocConfig;
+  const tagline = taglineProp ?? saved.tagline;
+  const taxNumber = taxNumberProp ?? saved.taxNumber;
   const [copiedLink, setCopiedLink] = useState(false);
   const [capturing, setCapturing] = useState<'png' | 'jpg' | null>(null);
   const captureRef = useRef<HTMLDivElement>(null);
@@ -107,7 +119,9 @@ export function AppointmentInvoiceDialog({
                 tagline={tagline}
                 taxNumber={taxNumber}
                 receiptConfig={receiptConfig}
+                docConfig={docConfig}
                 currency={currency}
+                documentUrl={publicUrl}
               />
             </div>
           </div>

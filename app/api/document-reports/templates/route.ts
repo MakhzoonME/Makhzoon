@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
-import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireAnyVerticalFeature } from '@/lib/permissions/require-feature'
 import { requireAddOn } from '@/lib/permissions/require-module'
 import { ReportTemplatesService } from '@/lib/modules/document-reports/templates.service'
 import { createTemplateSchema } from '@/lib/modules/document-reports/schemas'
@@ -10,7 +10,7 @@ const service = new ReportTemplatesService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    requireFeature(tenant, 'pos')
+    requireAnyVerticalFeature(tenant)
     await requireAddOn(tenant, 'documentReports')
     const params = new URL(req.url).searchParams
     const items = await service.list(tenant, { activeOnly: params.get('activeOnly') === 'true' })
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    requireFeature(tenant, 'pos')
+    requireAnyVerticalFeature(tenant)
     await requireAddOn(tenant, 'documentReports')
     const body = await req.json()
     const parsed = createTemplateSchema.safeParse(body)

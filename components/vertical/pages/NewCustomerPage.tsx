@@ -1,0 +1,52 @@
+'use client';
+import { useVertical } from '@/components/vertical/VerticalProvider';
+
+import { useParams, useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/shared';
+import { CustomerForm } from '@/components/haraka/CustomerForm';
+import { useCreateCustomer } from '@/hooks/haraka';
+import { toast, useT } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
+import type { CustomerFormData } from '@/lib/modules/haraka/customers/schemas';
+
+export function NewCustomerPage() {
+  const { basePath, customersSegment, navLabelKey } = useVertical();
+  const router = useRouter();
+  const params = useParams<{ locale: string; orgSlug: string; space: string }>();
+  const { t } = useT();
+  const { data: orgInfo } = useOrgInfo();
+  const createMut = useCreateCustomer();
+  const base = `${basePath}/${customersSegment}`;
+
+  async function handleSubmit(values: CustomerFormData) {
+    try {
+      const { id } = await createMut.mutateAsync(values);
+      toast.success(t('customers.addCustomer'));
+      router.replace(`${base}/${id}`);
+      return { id };
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.saveFailed'));
+    }
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto">
+      <PageHeader
+        title={t('customers.addCustomer')}
+        breadcrumb={[
+          { label: orgInfo?.name ?? params.orgSlug },
+          { label: params.space },
+          { label: t(navLabelKey), href: basePath },
+          { label: t('customers.title'), href: base },
+          { label: t('customers.addCustomer') },
+        ]}
+      />
+      <CustomerForm
+        submitLabel={t('customers.addCustomer')}
+        loading={createMut.isPending}
+        onSubmit={handleSubmit}
+        onCancel={() => router.push(base)}
+      />
+    </div>
+  );
+}

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
-import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireAnyVerticalFeature } from '@/lib/permissions/require-feature'
 import { requireStaffAccess } from '@/lib/permissions/require-module'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { StaffService } from '@/lib/modules/haraka/staff/staff.service'
@@ -11,7 +11,7 @@ const service = new StaffService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    requireFeature(tenant, 'pos')
+    requireAnyVerticalFeature(tenant)
     await requireStaffAccess(tenant)
     const limited = await rateLimitTenant(tenant, 'haraka-staff', 60, 60_000)
     if (limited) return limited
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    requireFeature(tenant, 'pos')
+    requireAnyVerticalFeature(tenant)
     await requireStaffAccess(tenant)
     const body = await req.json()
     const parsed = staffSchema.safeParse(body)

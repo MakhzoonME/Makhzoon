@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
-import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireAnyVerticalFeature } from '@/lib/permissions/require-feature'
 import { requireHarakaModule } from '@/lib/permissions/require-module'
 import { AppointmentsService } from '@/lib/modules/haraka/appointments/appointments.service'
 
@@ -12,7 +12,7 @@ export async function DELETE(
 ) {
   try {
     const tenant = await resolveTenant()
-    requireFeature(tenant, 'pos')
+    requireAnyVerticalFeature(tenant)
     await requireHarakaModule(tenant, 'appointments')
     const { appointmentId, paymentId } = await params
     const appointment = await service.removePayment(tenant, appointmentId, paymentId)

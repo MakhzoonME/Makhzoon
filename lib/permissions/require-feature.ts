@@ -2,6 +2,7 @@ import 'server-only';
 import { NextResponse } from 'next/server';
 import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
 import type { TenantContext } from '@/lib/platform/tenancy/types';
+import { VERTICAL_FEATURE_KEYS } from '@/lib/platform/verticals';
 
 /**
  * Server-side subscription feature-flag enforcement (audit finding S3).
@@ -20,6 +21,27 @@ export function requireFeature(tenant: TenantContext, featureKey: string): void 
       { status: 403 },
     );
   }
+}
+
+/**
+ * Gate a route on the SHARED appointment/catalog/customer engine, which more
+ * than one vertical is entitled to reach (Haraka via 'pos', Zeyara via
+ * 'zeyara'). Passes when the org holds any one of them.
+ *
+ * Use this only on genuinely shared routes. Haraka-exclusive surfaces —
+ * register, orders, warranty certs, cash drawer, card terminal — keep the
+ * strict requireFeature(tenant, 'pos') gate, because a clinic never buys them.
+ */
+export function requireAnyVerticalFeature(tenant: TenantContext): void {
+  const features = tenant.subscription?.features ?? {};
+  if (VERTICAL_FEATURE_KEYS.some((k) => features[k])) return;
+  throw NextResponse.json(
+    {
+      error: 'Feature not enabled for this organization',
+      feature: VERTICAL_FEATURE_KEYS.join('|'),
+    },
+    { status: 403 },
+  );
 }
 
 /**

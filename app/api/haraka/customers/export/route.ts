@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { format } from 'date-fns'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
-import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireAnyVerticalFeature } from '@/lib/permissions/require-feature'
 import { CustomersService } from '@/lib/modules/haraka/customers/customers.service'
 import { exportCustomersToCSV } from '@/lib/export/csv'
 
@@ -10,7 +10,7 @@ const service = new CustomersService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    requireFeature(tenant, 'pos')
+    requireAnyVerticalFeature(tenant)
     // CustomersService.listAllForExport() enforces haraka.customersExport.
     const { searchParams } = new URL(req.url)
     const customers = await service.listAllForExport(tenant, searchParams.get('search') ?? undefined)

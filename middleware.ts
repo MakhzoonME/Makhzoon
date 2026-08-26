@@ -13,7 +13,7 @@ const MARKETING_ONLY_PATHS = new Set([
   '/home', '/product', '/pricing', '/customers', '/security', '/about', '/contact',
 ]);
 
-const AUTH_PATHS = new Set(['/login', '/signup']);
+const AUTH_PATHS = new Set(['/login', '/signup', '/reset-password']);
 
 function detectLocale(req: NextRequest): string {
   const cookieLocale = req.cookies.get(LOCALE_COOKIE)?.value;
@@ -38,12 +38,29 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const hostname = req.headers.get('host')?.split(':')[0] ?? '';
 
+  // API routes: pass through, but forward the request method as a header so
+  // server code (resolveTenant) can enforce read-only mode on mutations
+  // without threading the method through every handler. `set` overwrites any
+  // client-supplied value, so it can't be spoofed.
+  if (pathname.startsWith('/api/')) {
+    const headers = new Headers(req.headers);
+    headers.set('x-http-method', req.method);
+    return NextResponse.next({ request: { headers } });
+  }
+
   if (SKIP_PREFIXES.some((p) => pathname.startsWith(p)) || pathname === '/favicon.ico') {
     return NextResponse.next();
   }
 
-  // Public shareable receipts (rcpt.makhzoon.me/r/...) — no locale prefix, no session
-  if (pathname.startsWith('/r/')) {
+  // Public shareable pages — no locale prefix, no session required
+  if (
+    pathname.startsWith('/r/') ||
+    pathname.startsWith('/inv/') ||
+    pathname.startsWith('/delivery/') ||
+    pathname.startsWith('/w/') ||
+    pathname.startsWith('/service-job-invoice/') ||
+    pathname.startsWith('/appointment-invoice/')
+  ) {
     return NextResponse.next();
   }
 
@@ -81,7 +98,7 @@ export async function middleware(req: NextRequest) {
   }
 
   const session = req.cookies.getAll().some(
-    (c) => c.name.startsWith('sb-') && c.name.endsWith('-auth-token') && c.value
+    (c) => c.name.startsWith('sb-') && /-auth-token(\.\d+)?$/.test(c.name) && c.value
   );
 
   // Auth pages are always accessible

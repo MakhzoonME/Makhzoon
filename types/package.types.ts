@@ -5,29 +5,34 @@ export type FeatureKey =
   | 'assets'
   | 'inventory'
   | 'warranties'
-  | 'requests'
-  | 'reports'
   | 'support'
   | 'auditLogs'
   | 'maintenance'
   | 'assetCheckouts'
   | 'assetNotes'
-  | 'pos';
+  | 'pos'
+  | 'zeyara'
+  | 'banna'
+  | 'vehicleIntake';
 
-// Order here drives the order of checkboxes in the package + org subscription forms.
+// Order here drives the order of checkboxes in the package + org subscription
+// forms. Grouping (Platform / Usool / Raseed / Haraka / Banna) lives in the
+// UI layer (PackageForm) — it mirrors lib/nav/index.ts's module groups so
+// package config matches what an org actually sees in the sidebar.
 export const FEATURE_KEYS: FeatureKey[] = [
   'dashboard',
-  'assets',
-  'inventory',
-  'warranties',
-  'requests',
-  'reports',
   'support',
   'auditLogs',
+  'assets',
+  'warranties',
   'maintenance',
   'assetCheckouts',
   'assetNotes',
+  'inventory',
   'pos',
+  'zeyara',
+  'banna',
+  'vehicleIntake',
 ];
 
 export const FEATURE_LABELS: Record<FeatureKey, string> = {
@@ -35,14 +40,15 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   assets: 'Assets',
   inventory: 'Inventory',
   warranties: 'Warranties',
-  requests: 'Requests',
-  reports: 'Reports',
   support: 'Support',
   auditLogs: 'Audit Logs',
   maintenance: 'Maintenance Records',
   assetCheckouts: 'Asset Checkouts',
   assetNotes: 'Asset Notes',
   pos: 'Point of Sale',
+  zeyara: 'Zeyara (Clinics)',
+  banna: 'Banna (Custom Fields)',
+  vehicleIntake: 'Vehicle Intake',
 };
 
 export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
@@ -50,21 +56,21 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
   assets: 'Asset register: create, edit, retire, and import assets.',
   inventory: 'Track stocked items, reorder thresholds, and stock movements.',
   warranties: 'Track vendor warranties and expiry dates per asset.',
-  requests: 'Allow staff to submit new-asset, retire, or extend requests.',
-  reports: 'Visibility into utilisation, depreciation, and cost reports.',
   support: 'In-app ticketing channel to the platform team.',
   auditLogs: 'View and export the immutable audit trail for the organization.',
   maintenance: 'Record service / repair / inspection events on assets.',
   assetCheckouts: 'Loan-out and return tracking for shared inventory.',
   assetNotes: 'Free-form notes attached to individual assets.',
   pos: 'Point of sale terminal for processing sales transactions.',
+  zeyara: 'Appointment-based service providers (clinics): bookings, patients, visits, and invoicing.',
+  banna: 'Custom fields for assets, inventory, and customers.',
+  vehicleIntake: 'Plate-photo intake for Haraka Service Jobs.',
 };
 
 export interface PackageLimits {
   maxAssets: number;
   maxUsers: number;
   maxWarranties: number;
-  maxRequests: number;
   maxSpaces: number;
   maxInventoryItems: number;
 }
@@ -114,6 +120,46 @@ export interface PackagePricing {
   isCustom: boolean;
 }
 
+// Extra Usool/Raseed capacity is sold in fixed blocks (block model: buy
+// capacity, don't meter). These are the block sizes the prices below apply to.
+export const USOOL_BLOCK_SIZE = 10;
+export const RASEED_BLOCK_SIZE = 20;
+
+// Monthly prices (in the package currency) for capacity bought beyond the
+// plan's included allowances. Absent/0 = not separately priced. Add-ons are
+// plan-agnostic (same price on any tier).
+export interface AddOnPrices {
+  usoolBlock?: number;   // per +USOOL_BLOCK_SIZE assets
+  raseedBlock?: number;  // per +RASEED_BLOCK_SIZE items
+  purchasesRequests?: number;
+  // Per-module monthly price for a Haraka module active beyond the plan's
+  // included slot count.
+  harakaModules?: { pos?: number; services?: number; orders?: number; retainers?: number; appointments?: number };
+  deliveryAgents?: number;
+  warrantyCerts?: number;
+  customization?: number;
+  extraUser?: number;
+  extraSpace?: number;
+  vehicleIntake?: number; // plate-photo intake for Haraka Service Jobs
+  documentReports?: number;
+}
+
+// Structured, per-module allowances for the new pricing model. Distinct from
+// the legacy `limits` jsonb (kept for back-compat during the transition).
+export interface PackageAllowances {
+  usoolIncluded: number | null;              // included Usool assets (null = unset)
+  raseedIncluded: number | null;             // included Raseed inventory items
+  purchasesRequestsIncluded: boolean;        // Purchases & Requests bundled in
+  harakaIncludedModuleSlots: number;         // free Haraka modules ("Choose N")
+  deliveryAgentsIncluded: boolean;
+  warrantyCertsIncluded: boolean;
+  customizationIncluded: boolean;
+  spacesIncluded: number | null;
+  usersIncluded: number | null;
+  vehicleIntakeIncluded: boolean;
+  documentReportsIncluded: boolean;
+}
+
 export interface Package {
   id: string;
   name: string;
@@ -127,8 +173,31 @@ export interface Package {
   limits: PackageLimits;
   features: Record<FeatureKey, boolean>;
   inclusions: Record<InclusionKey, boolean>;
+  // Pricing-model fields (Phase 1+).
+  allowances: PackageAllowances;
+  addOnPrices: AddOnPrices;
+  isCustom: boolean;
   createdAt: Date;
   createdBy: string;
   updatedAt: Date;
   updatedBy: string;
+}
+
+/**
+ * Feature keys that must default OFF when absent from a stored feature map.
+ *
+ * The general convention elsewhere is the opposite: a key missing from an org's
+ * subscription defaults ON, so adding a key to an already-sold module never
+ * silently removes access for orgs that pre-date it.
+ *
+ * A NEW VERTICAL inverts that reasoning. Zeyara is a separate product a clinic
+ * buys deliberately; defaulting it on would put the clinic sidebar, patients
+ * directory, and permission group in front of every existing retail org the
+ * first time a superadmin opened and saved their subscription form.
+ */
+export const OPT_IN_FEATURE_KEYS: FeatureKey[] = ['zeyara'];
+
+/** What an absent feature key resolves to. See OPT_IN_FEATURE_KEYS. */
+export function defaultFeatureWhenAbsent(key: FeatureKey): boolean {
+  return !OPT_IN_FEATURE_KEYS.includes(key);
 }

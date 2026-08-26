@@ -7,7 +7,7 @@ import { useOrgSlug, useSpace, useT, toast } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 
 /* ── Icons ─────────────────────────────────────────────────────── */
 function UploadCloudSVG() {
@@ -353,6 +353,7 @@ export default function ImportAssetsPage() {
             <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('import.mapColumns')}</h3>
               <div className="border border-border rounded-xl overflow-hidden">
+                <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-surface-page border-b border-border">
                     <tr>
@@ -368,15 +369,14 @@ export default function ImportAssetsPage() {
                           <span className="font-mono text-xs bg-surface-inset px-2 py-1 rounded text-gray-700">{header}</span>
                         </td>
                         <td className="px-4 py-2.5">
-                          <Select value={mapping[header] ?? '__skip'}
-                            onValueChange={(v) => setMapping((prev) => ({ ...prev, [header]: v }))}>
-                            <SelectTrigger className="h-8 text-xs w-full max-w-[200px]"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {APP_FIELDS.map((f) => (
-                                <SelectItem key={f.value} value={f.value} className="text-xs">{f.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Combobox
+                            value={mapping[header] ?? '__skip'}
+                            onChange={(v) => setMapping((prev) => ({ ...prev, [header]: v ?? '__skip' }))}
+                            options={APP_FIELDS}
+                            searchable={false}
+                            clearable={false}
+                            className="h-8 text-xs w-full max-w-[200px]"
+                          />
                         </td>
                         <td className="px-4 py-2.5 hidden sm:table-cell">
                           <span className="font-mono text-xs text-gray-400 truncate max-w-[120px] block">
@@ -387,6 +387,7 @@ export default function ImportAssetsPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
 

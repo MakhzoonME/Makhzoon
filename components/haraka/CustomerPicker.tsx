@@ -122,7 +122,7 @@ function CustomerPickerDialog({
         name: values.name,
         phone: values.phone ?? null,
         email: values.email ?? null,
-        taxNumber: values.taxNumber ?? null,
+        taxNumber: null,
         notes: values.notes ?? null,
         createdAt: new Date(),
         createdBy: '',
@@ -131,6 +131,7 @@ function CustomerPickerDialog({
       });
       toast.success('Customer created');
       onOpenChange(false);
+      return { id };
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Save failed');
     }

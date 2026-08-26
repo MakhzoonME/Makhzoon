@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { queueAuditLog } from '@/lib/audit/logger';
+import { z } from 'zod';
+
+const configObjectSchema = z.record(z.string(), z.unknown());
 
 const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin']);
 
@@ -36,16 +39,35 @@ export async function PATCH(req: NextRequest) {
     const orgId = user.organizationId;
     if (!orgId) return NextResponse.json({ error: 'No organization' }, { status: 403 });
 
-    const body = await req.json();
-    if (typeof body !== 'object' || body === null) {
+    const parsedBody = configObjectSchema.safeParse(await req.json().catch(() => null));
+    if (!parsedBody.success) {
       return NextResponse.json({ error: 'Invalid body' }, { status: 422 });
     }
+    const body = parsedBody.data;
 
-    // Upsert: create the row if it doesn't exist yet, then set receipt_config
+    // Load existing config so we can merge instead of replace — this lets
+    // the org-info branding section and the receipt settings page each save
+    // their own slice without clobbering the other's fields.
+    const { data: existing } = await supabaseAdmin
+      .from('organization_configs')
+      .select('receipt_config')
+      .eq('organization_id', orgId)
+      .maybeSingle();
+
+    const prev = (existing?.receipt_config ?? {}) as Record<string, unknown>;
+    const merged = {
+      ...prev,
+      ...body,
+      config: {
+        ...(prev.config as Record<string, unknown> ?? {}),
+        ...((body.config as Record<string, unknown>) ?? {}),
+      },
+    };
+
     const { error } = await supabaseAdmin
       .from('organization_configs')
       .upsert(
-        { organization_id: orgId, receipt_config: body, updated_by: user.uid },
+        { organization_id: orgId, receipt_config: merged, updated_by: user.uid },
         { onConflict: 'organization_id' },
       );
 

@@ -6,13 +6,19 @@ import { updateAuthUser, setAuthUserActive, revokeAuthUserSessions, deleteAuthUs
 import { getUserById, updateUser } from '@/lib/db/users';
 import { auditLog } from '@/lib/platform/audit';
 import { invalidateCachedPermissions, invalidateCachedSessionsForUser } from '@/lib/supabase/session-cache';
+import { z } from 'zod';
+
+const userPatchSchema = z.object({
+  role: z.enum(['org_owner', 'admin', 'staff']),
+  permissions: z.record(z.string(), z.unknown()).nullish(),
+});
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ userId: string }> }) {
   const params = await props.params;
   const tenant = await resolveTenant().catch(() => null);
   const caller = tenant?.user;
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!hasPermission(caller, 'settings', 'users'))
+  if (!hasPermission(caller, 'settingsUsers', 'update'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   if (tenant?.subscription?.status && tenant.subscription.status !== 'ACTIVE')
@@ -38,9 +44,10 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ userId:
     return NextResponse.json({ error: 'Admins cannot modify Owner accounts' }, { status: 403 });
   }
 
-  const body = await req.json();
-  const { role, permissions } = body;
-  if (!['org_owner', 'admin', 'staff'].includes(role)) return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+  const parsed = userPatchSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+  const role = parsed.data.role;
+  const permissions = parsed.data.permissions as Parameters<typeof updateUser>[1]['permissions'];
 
   if (role === 'org_owner' && caller.role !== 'super_admin' && caller.role !== 'org_owner') {
     return NextResponse.json({ error: 'Only an Owner or Super Admin can grant the Owner role' }, { status: 403 });
@@ -48,7 +55,12 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ userId:
 
   await updateUser(userId, { role, permissions: permissions ?? undefined, updatedBy: caller.uid });
   await updateAuthUser(userId, { role });
-  await revokeAuthUserSessions(userId);
+  // Only revoke sessions when editing someone else — revoking your own session
+  // forces an immediate logout, making it impossible to see the updated state.
+  // The caller's client refreshes its auth store separately.
+  if (userId !== caller.uid) {
+    await revokeAuthUserSessions(userId);
+  }
   invalidateCachedPermissions(userId);
   invalidateCachedSessionsForUser(userId);
 
@@ -70,7 +82,7 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ userId
   const tenant = await resolveTenant().catch(() => null);
   const caller = tenant?.user;
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!hasPermission(caller, 'settings', 'users'))
+  if (!hasPermission(caller, 'settingsUsers', 'delete'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   if (tenant?.subscription?.status && tenant.subscription.status !== 'ACTIVE')

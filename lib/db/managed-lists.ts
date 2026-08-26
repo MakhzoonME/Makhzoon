@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import type {
   ListKey,
@@ -23,6 +24,9 @@ function toPlatform(r: Row): PlatformListItem {
     sortOrder: (r.sort_order as number) ?? 0,
     enabled: r.enabled as boolean,
     isSystem: r.is_system as boolean,
+    isInvoicingTrigger: !!r.is_invoicing_trigger,
+    isBlocking: !!r.is_blocking,
+    isTerminal: !!r.is_terminal,
     createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
     createdBy: (r.created_by as string) ?? null,
     updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
@@ -42,6 +46,9 @@ function toOrg(r: Row): OrgListItem {
     sortOrder: (r.sort_order as number) ?? null,
     enabled: r.enabled as boolean,
     isCustom: r.is_custom as boolean,
+    isInvoicingTrigger: r.is_invoicing_trigger == null ? null : !!r.is_invoicing_trigger,
+    isBlocking: r.is_blocking == null ? null : !!r.is_blocking,
+    isTerminal: r.is_terminal == null ? null : !!r.is_terminal,
     createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
     createdBy: (r.created_by as string) ?? null,
     updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
@@ -84,6 +91,9 @@ export async function createPlatformListItem(input: {
   sortOrder?: number;
   enabled?: boolean;
   isSystem?: boolean;
+  isInvoicingTrigger?: boolean;
+  isBlocking?: boolean;
+  isTerminal?: boolean;
   userId?: string;
 }): Promise<PlatformListItem> {
   const { data, error } = await supabaseAdmin
@@ -97,6 +107,9 @@ export async function createPlatformListItem(input: {
       sort_order: input.sortOrder ?? 0,
       enabled: input.enabled ?? true,
       is_system: input.isSystem ?? false,
+      is_invoicing_trigger: input.isInvoicingTrigger ?? false,
+      is_blocking: input.isBlocking ?? false,
+      is_terminal: input.isTerminal ?? false,
       created_by: input.userId ?? null,
       updated_by: input.userId ?? null,
     })
@@ -115,6 +128,9 @@ export async function updatePlatformListItem(
     sortOrder?: number;
     enabled?: boolean;
     value?: string;
+    isInvoicingTrigger?: boolean;
+    isBlocking?: boolean;
+    isTerminal?: boolean;
     userId?: string;
   },
 ): Promise<void> {
@@ -125,6 +141,9 @@ export async function updatePlatformListItem(
   if (patch.sortOrder !== undefined) attrs.sort_order = patch.sortOrder;
   if (patch.enabled !== undefined) attrs.enabled = patch.enabled;
   if (patch.value !== undefined) attrs.value = patch.value;
+  if (patch.isInvoicingTrigger !== undefined) attrs.is_invoicing_trigger = patch.isInvoicingTrigger;
+  if (patch.isBlocking !== undefined) attrs.is_blocking = patch.isBlocking;
+  if (patch.isTerminal !== undefined) attrs.is_terminal = patch.isTerminal;
   const { error } = await supabaseAdmin
     .from('platform_list_items')
     .update(attrs)
@@ -166,6 +185,9 @@ export async function upsertOrgListItem(input: {
   sortOrder?: number | null;
   enabled?: boolean;
   isCustom?: boolean;
+  isInvoicingTrigger?: boolean | null;
+  isBlocking?: boolean | null;
+  isTerminal?: boolean | null;
   userId?: string;
 }): Promise<void> {
   const { error } = await supabaseAdmin.from('org_list_items').upsert(
@@ -179,6 +201,9 @@ export async function upsertOrgListItem(input: {
       sort_order: input.sortOrder ?? null,
       enabled: input.enabled ?? true,
       is_custom: input.isCustom ?? true,
+      is_invoicing_trigger: input.isInvoicingTrigger ?? null,
+      is_blocking: input.isBlocking ?? null,
+      is_terminal: input.isTerminal ?? null,
       updated_by: input.userId ?? null,
     },
     { onConflict: 'organization_id,list_key,value' },
@@ -228,6 +253,9 @@ export async function resolveListForOrg(
       color: o?.color ?? p.color,
       isSystem: p.isSystem,
       isCustom: !!o,
+      isInvoicingTrigger: o?.isInvoicingTrigger ?? p.isInvoicingTrigger,
+      isBlocking: o?.isBlocking ?? p.isBlocking,
+      isTerminal: o?.isTerminal ?? p.isTerminal,
     });
     sortMap.set(p.value, o?.sortOrder ?? p.sortOrder);
   }
@@ -243,6 +271,9 @@ export async function resolveListForOrg(
       color: o.color,
       isSystem: false,
       isCustom: true,
+      isInvoicingTrigger: !!o.isInvoicingTrigger,
+      isBlocking: !!o.isBlocking,
+      isTerminal: !!o.isTerminal,
     });
     sortMap.set(o.value, o.sortOrder ?? 999);
   }
@@ -252,4 +283,38 @@ export async function resolveListForOrg(
     const sb = sortMap.get(b.value) ?? 0;
     return sa - sb || a.label.localeCompare(b.label);
   });
+}
+
+/** A single resolved item, e.g. to look up one appointment's status flags. */
+export async function resolveListItemForOrg(
+  orgId: string,
+  listKey: ListKey,
+  value: string,
+): Promise<ResolvedListItem | null> {
+  const items = await resolveListForOrg(orgId, listKey);
+  return items.find((i) => i.value === value) ?? null;
+}
+
+/** Guards against an org disabling/removing its last item carrying a given
+ *  behavior flag (e.g. no enabled status left that triggers invoicing). A
+ *  no-op unless the item being removed currently carries the flag. */
+export async function assertKeepsBehaviorFlag(
+  orgId: string,
+  listKey: ListKey,
+  flag: 'isInvoicingTrigger' | 'isBlocking' | 'isTerminal',
+  excludingValue: string,
+): Promise<void> {
+  const items = await resolveListForOrg(orgId, listKey);
+  const target = items.find((i) => i.value === excludingValue);
+  if (!target?.[flag]) return; // this item doesn't carry the flag — nothing to protect
+
+  const remaining = items.filter((i) => i.value !== excludingValue && i[flag]);
+  if (remaining.length === 0) {
+    const label = flag === 'isInvoicingTrigger'
+      ? 'that triggers invoicing'
+      : flag === 'isBlocking'
+        ? 'that blocks the calendar'
+        : 'that is terminal';
+    throw new Error(`At least one enabled status ${label} is required.`);
+  }
 }

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export interface EarlyAccessLead {
   id: string;
@@ -28,7 +28,7 @@ interface LeadsResponse {
 }
 
 export function useLeads(type?: 'early-access' | 'contact-sales') {
-  return useQuery<LeadsResponse | EarlyAccessLead[] | ContactSalesLead[]>({
+  return useQuery<LeadsResponse>({
     queryKey: ['superadmin-leads', type],
     queryFn: async () => {
       const url = type ? `/api/superadmin/leads?type=${type}` : '/api/superadmin/leads';
@@ -37,5 +37,25 @@ export function useLeads(type?: 'early-access' | 'contact-sales') {
       return res.json();
     },
     staleTime: 30_000,
+  });
+}
+
+export function useDeleteLead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, type }: { id: string; type: 'early-access' | 'contact-sales' }) => {
+      const res = await fetch('/api/superadmin/leads', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, type }),
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(typeof e.error === 'string' ? e.error : 'Failed to delete');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['superadmin-leads'] });
+    },
   });
 }

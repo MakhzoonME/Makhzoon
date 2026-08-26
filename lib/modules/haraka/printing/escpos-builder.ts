@@ -17,6 +17,14 @@ const LF = 0x0a
 
 export type Align = 'left' | 'center' | 'right'
 
+/**
+ * Dot rows the last printed line must travel to clear the cutter blade.
+ * Head-to-blade is ~15–25 mm depending on model; 200 dots ≈ 25 mm at 203 dpi
+ * covers the range. Overshooting only adds blank tail to the receipt being
+ * cut — undershooting silently eats the footer, so err long.
+ */
+const BLADE_CLEARANCE_DOTS = 200
+
 export class EscPosBuilder {
   private parts: Uint8Array[] = []
 
@@ -66,16 +74,37 @@ export class EscPosBuilder {
     return this.push(bytes)
   }
 
+  /**
+   * Print and feed an exact number of dot rows (ESC J n).
+   *
+   * Preferred over `feed()` for anything that has to travel a known physical
+   * distance: LF advances by whatever line spacing is currently set, which is
+   * not something we control after a raster bit-image. ESC J is in dots, so
+   * 203 dots ≈ 1 inch regardless of printer state. Split across several
+   * commands because n is a single byte.
+   */
+  feedDots(dots: number) {
+    let left = Math.max(0, Math.round(dots))
+    while (left > 0) {
+      const n = Math.min(255, left)
+      this.push([ESC, 0x4a, n])
+      left -= n
+    }
+    return this
+  }
+
   /** Solid divider line of `width` chars. */
   divider(char = '-', width = 32) {
     return this.line(char.repeat(width))
   }
 
   /**
-   * Print a 1-bit raster bitmap (`true` = black dot) as a GS v 0 bit-image.
-   * Used for QR codes and — crucially — for Arabic receipts, which the printer
-   * cannot render as text (no Arabic font / shaping / RTL), so we rasterize the
-   * whole receipt to a canvas bitmap and send it here.
+   * Print a 1-bit raster bitmap (`true` = black dot) as a single GS v 0
+   * bit-image command. Fine for small images (QR codes), but many thermal
+   * printers cap how much data a single GS v 0 command can hold in its print
+   * buffer — a full receipt rendered as one tall image can exceed that and
+   * get silently truncated or spill into the next job. Use
+   * `rasterImageChunked` for anything that could be tall (a whole receipt).
    */
   rasterImage(matrix: boolean[][]) {
     if (matrix.length === 0 || matrix[0].length === 0) return this
@@ -104,14 +133,58 @@ export class EscPosBuilder {
     return this.push([...header, ...data])
   }
 
+  /**
+   * Same as `rasterImage`, but splits tall images into multiple GS v 0
+   * commands of at most `maxRows` rows each, sent back to back with no feed
+   * in between — visually one continuous image, but each command stays
+   * small enough to fit typical printer raster buffers. Use this for a
+   * whole rendered receipt; use plain `rasterImage`/`qrRaster` for small
+   * one-off images like a QR code.
+   */
+  rasterImageChunked(matrix: boolean[][], maxRows = 200) {
+    for (let start = 0; start < matrix.length; start += maxRows) {
+      this.rasterImage(matrix.slice(start, start + maxRows))
+    }
+    return this
+  }
+
   /** Print a QR image as raw GS v 0 raster bit-image. */
   qrRaster(matrix: boolean[][]) {
     return this.rasterImage(matrix)
   }
 
-  cut() {
-    // GS V 0 = full cut
-    return this.push([GS, 0x56, 0x00]).feed(2)
+  /**
+   * Feed the paper clear of the cutter, then full-cut (GS V 0).
+   *
+   * BLADE_CLEARANCE_DOTS is not a preference — the blade sits a fixed distance
+   * past the print head, and the last printed row has to physically travel that
+   * far before the cut or it stays inside the printer. That is what "the footer
+   * is missing" looks like: the cut lands above the footer, and the orphaned
+   * strip is then ejected as the leading blank of the *next* receipt.
+   *
+   * So the clearance is always applied and `extraLines` can only add to it.
+   * Previously this was fully caller-controlled, which let an org-wide
+   * `cutFeed` of 2 (≈ 8 mm) sit below the physical minimum and lose the footer.
+   */
+  cut(extraLines = 0) {
+    this.feedDots(BLADE_CLEARANCE_DOTS)
+    if (extraLines > 0) this.feed(extraLines)
+    return this.push([GS, 0x56, 0x00])
+  }
+
+  /**
+   * Kick the cash drawer connected to the printer's RJ11 port.
+   * ESC p m t1 t2 — standard ESC/POS cash drawer command.
+   *
+   * @param port     0 = pin 2 (drawer 1), 1 = pin 5 (drawer 2)
+   * @param onTimeMs solenoid fire duration in ms (converted: t1 = onTimeMs / 2, clamped 1–255)
+   * @param offTimeMs recovery time in ms (converted: t2 = offTimeMs / 2, clamped 1–255)
+   */
+  kickDrawer(port: 0 | 1 = 0, onTimeMs = 100, offTimeMs = 100) {
+    const m  = port & 0x01
+    const t1 = Math.max(1, Math.min(255, Math.round(onTimeMs  / 2)))
+    const t2 = Math.max(1, Math.min(255, Math.round(offTimeMs / 2)))
+    return this.push([ESC, 0x70, m, t1, t2])
   }
 
   build(): Uint8Array {

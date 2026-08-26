@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth, useAuthStore } from '@/hooks/ui';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -8,7 +8,6 @@ import {
   SIDEBAR_WIDTH_COLLAPSED,
   SIDEBAR_WIDTH_EXPANDED,
 } from '@/components/layout/AppSidebar';
-import { useT } from '@/hooks/ui';
 import { TransferModeBanner } from '@/components/layout/TransferModeBanner';
 import { ExpiryWarningBanner } from '@/components/features/subscription';
 import { PageTransition } from '@/components/layout/PageTransition';
@@ -26,8 +25,27 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   const { active, setTransfer } = useTransferStore();
   const { sidebarCollapsed } = useUiStore();
   const refreshFromServer = useAuthStore((s) => s.refreshFromServer);
-  const { dir } = useT();
-  const isRtl = dir === 'rtl';
+
+  // The transfer-mode banner is `position: fixed` (stays visible on scroll),
+  // so it's out of document flow — <main> can't push itself down under it
+  // automatically. Measure its real rendered height (org name length, line
+  // wrapping, locale, etc. all affect it) instead of guessing a fixed
+  // offset, which previously caused the banner to overlap page content.
+  const bannerRef = useRef<HTMLDivElement>(null);
+  const [bannerHeight, setBannerHeight] = useState(0);
+
+  useEffect(() => {
+    const el = bannerRef.current;
+    if (!el) {
+      setBannerHeight(0);
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => setBannerHeight(entry.contentRect.height));
+    observer.observe(el);
+    return () => observer.disconnect();
+    // Re-attach whenever the banner mounts/unmounts (its ref only changes then).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
 
   useEffect(() => {
     if (loading) return;
@@ -67,19 +85,20 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-surface-page">
       <AppHeader />
-      {showBanner && <TransferModeBanner />}
+      {showBanner && <TransferModeBanner ref={bannerRef} />}
       <AppSidebar />
       <MobileDrawer />
       <BottomNav />
       <main
-        className={`pt-14 ${showBanner ? 'mt-10' : ''} min-h-screen pb-16 md:pb-0`}
+        className="pt-14 min-h-screen pb-16 md:pb-0 ms-0 md:ms-[var(--sw)]"
         style={{
-          [isRtl ? 'marginRight' : 'marginLeft']: `${sidebarWidth}px`,
-          transition: 'margin 0.28s cubic-bezier(0.4,0,0.2,1)',
-        }}
+          '--sw': `${sidebarWidth}px`,
+          marginTop: showBanner ? bannerHeight : 0,
+          transition: 'margin-inline-start 0.28s cubic-bezier(0.4,0,0.2,1)',
+        } as React.CSSProperties}
       >
         <ExpiryWarningBanner />
-        <div className="px-6 py-6 max-w-7xl">
+        <div className="px-6 py-6 max-w-7xl 2xl:max-w-[1600px] mx-auto">
           <PageTransition>{children}</PageTransition>
         </div>
       </main>

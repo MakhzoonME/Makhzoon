@@ -13,73 +13,55 @@ The Dashboard is the landing page for each space. It gives a quick health snapsh
 ## Page & UI
 
 **Route**: `/{locale}/{orgSlug}/{space}/dashboard`
+**Implementation**: `app/[locale]/[orgSlug]/[space]/dashboard/page.tsx`. Gated by `useModuleGuard({ featureKey: 'dashboard', moduleKey: 'dashboard' })`.
 
 **Layout**:
-- `PageHeader` with org name + space name + current date.
+- A greeting header ("Good morning/afternoon/evening, {firstName}") plus a subtitle and a relative "synced Xm ago" badge — there is no `PageHeader` with org name/space name/date on this page.
+
+### Alert Banners (top)
+
+Non-dismissable banners (no × button), shown above the greeting when applicable:
+- **Low stock**: shown when `lowStockCount > 0` (only if the user can view inventory). Text: "X item(s) are low or out of stock." → links to `raseed/list`.
+- **Expiring warranties**: shown when there are warranties expiring within **30 days** (not 14) — fetched via `/api/warranties?expiringSoon=true`. Text includes a "(N critical)" suffix when any expire within 7 days. → links to `warranties?expiring=30`.
+
+> Known issue: the "low stock" count is not actually computed from inventory stock levels — `lowStockCount` is derived from the **assets** array (`totalAssets.filter(a => a.status === 'Pending').length`), a leftover proxy. It has nothing to do with Raseed stock quantities.
 
 ### Metric Cards (top row)
 
-Each card is shown only if the corresponding feature/permission is active:
-- **Assets** — total count, active count, retired count.
-- **Inventory** — total items, out-of-stock count, low-stock count.
-- **Warranties** — expiring within 30 days, expired count.
-- **Requests** — pending requests count.
-- **POS** — today's revenue (if Haraka enabled).
+Up to three cards, each shown only if the user can view that module — there is **no POS/revenue card** on the dashboard:
+- **Total Assets** — total count + "N active" delta. Click → `usool/list`.
+- **Inventory** (label says "Inventory Items", value is actually the low-stock count described above) — click → `raseed/list`.
+- **Warranties Expiring** — count of warranties expiring within 30 days, "N critical" delta for ≤7 days. Click → `warranties?expiring=30`.
 
-Cards are responsive: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`.
-
-Each card has:
-- An icon in the module brand color.
-- Primary metric (large number).
-- Sub-metrics (smaller text below).
-- "View all" link to the module.
-- Hover lift animation (Framer Motion).
+Grid is `grid-cols-2 lg:grid-cols-4` (not `grid-cols-1 sm:grid-cols-2`). Each card has an icon, a primary number, an optional delta pill, and is clickable (no explicit "View all" link text). No Framer Motion — hover uses a plain CSS `hover:shadow-md` transition.
 
 ### Quick Actions
 
-A row of shortcut buttons below the cards:
-- "Add Asset" → `/usool/new`
-- "Record Transaction" → inventory transaction modal
-- "Submit Request" → requests new
-- "Open Register" → Haraka register
+A row of shortcut buttons below the cards (shown only if the user can view assets/inventory or has the `pos` feature):
+- "Add Asset" → `usool/list?new=true` (not `/usool/new` — opens the create form via a query param on the list page)
+- "Record Transaction" → `raseed/purchases/new` (not a modal)
+- "Open Register" → `haraka/register`, pushed to the end of the row (`ms-auto`)
 
-Buttons are shown only if the user has the relevant `create` / `open_session` permission.
+There is **no "Submit Request" button** — the Requests module does not exist in this codebase.
 
-### Recent Activity Feed
+### Recent Assets Table / Asset Breakdown / Activity Feed
 
-A short list of the 10 most recent audit log entries for the current space:
-- Timestamp (relative: "2 hours ago")
-- Actor name + role badge
-- Human-readable action ("Added asset 'MacBook Pro'")
-- Module badge
+Two more rows exist below Quick Actions, not documented before:
+- **Recent Assets** table (up to 5 most recently created assets) next to an **Expiring Warranties** list (up to 5).
+- **Asset Breakdown** (bar chart of the top 4 non-retired asset categories) next to the **Activity Feed**.
 
-Clicking an entry navigates to the full audit logs page with that record pre-filtered.
-
-### Low Stock Alert Banner
-
-If there are any `out` or `low` stock items:
-- A dismissable amber/red banner at the top: "X items are low or out of stock."
-- "View Items" link → Raseed list filtered to low/out.
-
-### Expiring Warranties Banner
-
-If there are warranties expiring within 14 days:
-- A dismissable amber banner: "X warranties expiring within 14 days."
-- "View Warranties" link.
+The Activity Feed shows the **4** most recent audit log entries (`/api/audit-logs?limit=4`, not 10): relative timestamp, actor initials, raw `log.action` text (not a composed human-readable sentence like "Added asset 'MacBook Pro'"), and module name. There are no role badges. Clicking "View all" on the section header navigates to `audit-logs`.
 
 ---
 
 ## Responsiveness
 
-- Full single-column stack on mobile.
-- Two-column card grid on SM+.
-- Four-column card grid on LG+.
-- Banners stack vertically on mobile.
+- Metric cards: 2 columns by default, 4 columns at `lg:`.
+- Recent Assets / Warranties and Asset Breakdown / Activity rows: single column, becoming a 5-column grid (3/2 split) at `lg:`.
+- Quick action buttons wrap on narrow viewports.
 
 ---
 
 ## Dark Mode
 
-- Cards use `bg-surface-card dark:bg-gray-800` with `dark:border-gray-700` borders.
-- Metric values use the primary color tone.
-- Activity feed uses alternating row shading in dark mode.
+Uses CSS custom properties (`--yellow-50`, `--blue-700`, `--mod-usool`, etc.) rather than hardcoded Tailwind `dark:` classes for most of the page — colors are theme-aware via the token system, not via a documented `bg-surface-card dark:bg-gray-800` pattern.

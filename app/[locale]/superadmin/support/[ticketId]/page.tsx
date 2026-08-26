@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Combobox } from '@/components/ui/combobox';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import {
   useSupportTicket,
@@ -33,17 +34,17 @@ export default function SuperAdminTicketDetailPage(props: { params: Promise<{ ti
   async function handleStatus(status: TicketStatus) {
     try {
       await updateMut.mutateAsync({ status });
-      toast.success('Status updated');
+      toast.success(t('ticket.statusUpdated'));
     } catch {
-      toast.error('Failed to update status');
+      toast.error(t('ticket.statusUpdateFailed'));
     }
   }
   async function handlePriority(priority: TicketPriority) {
     try {
       await updateMut.mutateAsync({ priority });
-      toast.success('Priority updated');
+      toast.success(t('ticket.priorityUpdated'));
     } catch {
-      toast.error('Failed to update priority');
+      toast.error(t('ticket.priorityUpdateFailed'));
     }
   }
   async function handleReply() {
@@ -53,15 +54,15 @@ export default function SuperAdminTicketDetailPage(props: { params: Promise<{ ti
       await replyMut.mutateAsync(body);
       setReply('');
     } catch {
-      toast.error('Failed to send reply');
+      toast.error(t('ticket.replyFailed'));
     }
   }
 
   if (isLoading || !ticket) {
     return (
       <div>
-        <PageHeader title="Support Ticket" />
-        <p className="text-gray-500 text-sm">Loading…</p>
+        <PageHeader title={t('ticket.detail')} />
+        <p className="text-gray-500 text-sm">{t('common.loading')}</p>
       </div>
     );
   }
@@ -77,7 +78,7 @@ export default function SuperAdminTicketDetailPage(props: { params: Promise<{ ti
         ]}
         actions={
           <Button size="sm" variant="outline" onClick={() => router.back()}>
-            Back
+            {t('common.back')}
           </Button>
         }
       />
@@ -89,12 +90,12 @@ export default function SuperAdminTicketDetailPage(props: { params: Promise<{ ti
               <StatusBadge status={ticket.status} />
               <StatusBadge status={ticket.priority} />
               <span className="text-xs text-gray-500 ms-auto">
-                Created {formatDate(new Date(ticket.createdAt))}
+                {t('support.created')} {formatDate(new Date(ticket.createdAt))}
               </span>
             </div>
             <p className="text-sm text-gray-700 whitespace-pre-wrap">{ticket.description}</p>
             <p className="text-xs text-gray-500 pt-2 border-t border-border">
-              Org: <span className="font-mono">{ticket.organizationId}</span>
+              {t('common.organization')}: <span className="font-mono">{ticket.organizationId}</span>
             </p>
           </CardContent>
         </Card>
@@ -102,34 +103,28 @@ export default function SuperAdminTicketDetailPage(props: { params: Promise<{ ti
         <Card>
           <CardContent className="p-5 space-y-4">
             <div>
-              <label className="text-xs uppercase tracking-wide text-gray-500">Status</label>
-              <select
+              <label className="text-xs uppercase tracking-wide text-gray-500">{t('support.status')}</label>
+              <Combobox
                 value={ticket.status}
-                onChange={(e) => handleStatus(e.target.value as TicketStatus)}
-                className="mt-1 w-full h-9 rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
+                onChange={(v) => handleStatus((v ?? ticket.status) as TicketStatus)}
+                options={STATUSES.map((s) => ({ value: s, label: s.replace('_', ' ') }))}
+                searchable={false}
+                clearable={false}
                 disabled={updateMut.isPending}
-              >
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s.replace('_', ' ')}
-                  </option>
-                ))}
-              </select>
+                className="mt-1"
+              />
             </div>
             <div>
-              <label className="text-xs uppercase tracking-wide text-gray-500">Priority</label>
-              <select
+              <label className="text-xs uppercase tracking-wide text-gray-500">{t('support.priority')}</label>
+              <Combobox
                 value={ticket.priority}
-                onChange={(e) => handlePriority(e.target.value as TicketPriority)}
-                className="mt-1 w-full h-9 rounded-md border border-border bg-surface-card px-3 text-[14px] text-gray-700 focus:outline-none focus:ring-[3px] focus:ring-primary-500/20 focus:border-primary-600"
+                onChange={(v) => handlePriority((v ?? ticket.priority) as TicketPriority)}
+                options={PRIORITIES.map((p) => ({ value: p, label: p }))}
+                searchable={false}
+                clearable={false}
                 disabled={updateMut.isPending}
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+                className="mt-1"
+              />
             </div>
           </CardContent>
         </Card>
@@ -137,13 +132,13 @@ export default function SuperAdminTicketDetailPage(props: { params: Promise<{ ti
 
       <Card>
         <CardContent className="p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-gray-900">Conversation</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t('ticket.conversation')}</h3>
           <div className="space-y-3">
             {messagesLoading && (
-              <p className="text-sm text-gray-500 italic">Loading…</p>
+              <p className="text-sm text-gray-500 italic">{t('common.loading')}</p>
             )}
             {!messagesLoading && messages.length === 0 && (
-              <p className="text-sm text-gray-500 italic">No replies yet.</p>
+              <p className="text-sm text-gray-500 italic">{t('ticket.noReplies')}</p>
             )}
             {messages.map((m) => {
               const isAdmin = m.authorRole === 'SUPER_ADMIN' || m.authorRole === 'super_admin';
@@ -161,7 +156,7 @@ export default function SuperAdminTicketDetailPage(props: { params: Promise<{ ti
                         isAdmin ? 'bg-primary-100/60 text-primary-700' : 'bg-surface-page text-gray-600'
                       }`}
                     >
-                      {isAdmin ? 'Super Admin' : 'Org User'}
+                      {isAdmin ? t('support.superAdmin') : t('support.orgUser')}
                     </span>
                     <span className="text-xs text-gray-500 ms-auto">
                       {formatDate(new Date(m.createdAt))}
@@ -177,12 +172,12 @@ export default function SuperAdminTicketDetailPage(props: { params: Promise<{ ti
             <Textarea
               value={reply}
               onChange={(e) => setReply(e.target.value)}
-              placeholder="Type a reply…"
+              placeholder={t('ticket.writeReply')}
               rows={4}
             />
             <div className="flex justify-end">
               <Button onClick={handleReply} disabled={replyMut.isPending || !reply.trim()}>
-                {replyMut.isPending ? 'Sending…' : 'Send Reply'}
+                {replyMut.isPending ? t('ticket.sending') : t('ticket.sendReply')}
               </Button>
             </div>
           </div>

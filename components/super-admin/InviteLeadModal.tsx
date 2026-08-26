@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -5,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -18,7 +19,7 @@ const inviteLeadSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(100).optional(),
   lastName: z.string().min(1, 'Last name is required').max(100).optional(),
   orgId: z.string().min(1, 'Please select an organization'),
-  role: z.enum(['admin', 'staff']),
+  role: z.enum(['org_owner', 'admin', 'staff']),
 });
 
 type InviteLeadFormData = z.infer<typeof inviteLeadSchema>;
@@ -33,7 +34,7 @@ function CopySVG() {
 }
 
 function defaultPermissionsForRole(role: string): UserPermissions {
-  if (role === 'admin') return DEFAULT_ADMIN_PERMISSIONS;
+  if (role === 'org_owner' || role === 'admin') return DEFAULT_ADMIN_PERMISSIONS;
   return DEFAULT_STAFF_PERMISSIONS;
 }
 
@@ -47,7 +48,7 @@ interface InviteLeadModalProps {
 export function InviteLeadModal({ open, onOpenChange, leadEmail, leadName }: InviteLeadModalProps) {
   const features = useSubscriptionFeatures();
   const [loading, setLoading] = useState(false);
-  const [permissions, setPermissions] = useState<UserPermissions>(DEFAULT_STAFF_PERMISSIONS);
+  const [permissions, setPermissions] = useState<UserPermissions>(DEFAULT_ADMIN_PERMISSIONS);
   const [showPermissions, setShowPermissions] = useState(false);
   const [result, setResult] = useState<{ acceptUrl: string; qrDataUrl?: string; expiresAt: string; messageSent: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -64,21 +65,21 @@ export function InviteLeadModal({ open, onOpenChange, leadEmail, leadName }: Inv
 
   const form = useForm<InviteLeadFormData>({
     resolver: zodResolver(inviteLeadSchema),
-    defaultValues: { firstName: '', lastName: '', orgId: '', role: 'staff' },
+    defaultValues: { firstName: '', lastName: '', orgId: '', role: 'org_owner' },
   });
 
   function handleClose() {
     setResult(null);
-    setPermissions(DEFAULT_STAFF_PERMISSIONS);
+    setPermissions(DEFAULT_ADMIN_PERMISSIONS);
     setShowPermissions(false);
     setCopied(false);
-    form.reset({ firstName: '', lastName: '', orgId: '', role: 'staff' });
+    form.reset({ firstName: '', lastName: '', orgId: '', role: 'org_owner' });
     onOpenChange(false);
   }
 
   function handleInviteAnother() {
     setResult(null);
-    setPermissions(DEFAULT_STAFF_PERMISSIONS);
+    setPermissions(DEFAULT_ADMIN_PERMISSIONS);
     setCopied(false);
   }
 
@@ -135,6 +136,8 @@ export function InviteLeadModal({ open, onOpenChange, leadEmail, leadName }: Inv
   const selectedRole = form.watch('role');
   const permissionsLabel = selectedRole === 'staff'
     ? 'Staff has limited default access — customise below.'
+    : selectedRole === 'org_owner'
+    ? 'Owner has full access to the organization — customise below.'
     : 'All permissions enabled by default — customise below.';
 
   return (
@@ -155,12 +158,17 @@ export function InviteLeadModal({ open, onOpenChange, leadEmail, leadName }: Inv
                 <p>Invitation sent to <strong>{leadEmail}</strong>. You can also share the link or QR code below.</p>
               </div>
             ) : (
-              <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+              <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5" aria-hidden>
-                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.3" fill="none" />
-                  <path d="M8 5v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                  <path d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM8 5v3.5M8 10.5v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
-                <p>Email delivery is not configured. Share the link or QR code manually.</p>
+                <div className="flex-1">
+                  <p>Email could not be delivered. Copy the link below and share it manually.</p>
+                  <Button size="sm" variant="outline" onClick={() => copyLink(result!.acceptUrl)} className="mt-2 gap-1.5 border-amber-300 text-amber-800 hover:bg-amber-100">
+                    <CopySVG />
+                    {copied ? 'Copied!' : 'Copy Link'}
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -228,14 +236,15 @@ export function InviteLeadModal({ open, onOpenChange, leadEmail, leadName }: Inv
               <FormField control={form.control} name="orgId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Organization *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select organization..." /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      {orgs?.map((org) => (
-                        <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Combobox
+                      value={field.value ?? null}
+                      onChange={(v) => field.onChange(v)}
+                      placeholder="Select organization..."
+                      options={(orgs ?? []).map((org) => ({ value: org.id, label: org.name }))}
+                      searchable
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -243,13 +252,19 @@ export function InviteLeadModal({ open, onOpenChange, leadEmail, leadName }: Inv
               <FormField control={form.control} name="role" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role *</FormLabel>
-                  <Select onValueChange={handleRoleChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="staff">Staff</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Combobox
+                      value={field.value ?? null}
+                      onChange={(v) => v && handleRoleChange(v)}
+                      options={[
+                        { value: 'org_owner', label: 'Owner' },
+                        { value: 'admin', label: 'Admin' },
+                        { value: 'staff', label: 'Staff' },
+                      ]}
+                      searchable={false}
+                      clearable={false}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />

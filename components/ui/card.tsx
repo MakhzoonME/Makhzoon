@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils/cn';
 
-/* DS spec: rounded-lg (10px), border-border, bg-surface-card, shadow-xs, padding 24px
-   accent = absolute 3px left border strip */
+/* DS spec: rounded-xl (14px), border-border, bg-surface-card, shadow-xs, padding 24px
+   accent = absolute 3px left border strip
+   (rounded-xl matches the design prototype and the app's dominant card pattern) */
 
 const Card = React.forwardRef<
   HTMLDivElement,
@@ -11,7 +12,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'rounded-lg border border-border bg-surface-card shadow-xs relative overflow-hidden',
+      'rounded-xl border border-border bg-surface-card shadow-xs relative overflow-hidden',
       padded && 'p-6',
       className
     )}
@@ -20,7 +21,7 @@ const Card = React.forwardRef<
   >
     {accent && (
       <span
-        className="absolute inset-y-0 start-0 w-[3px] rounded-s-lg"
+        className="absolute inset-y-0 start-0 w-[3px] rounded-s-xl"
         style={{ background: accent }}
         aria-hidden
       />

@@ -10,15 +10,14 @@ import { FilterBar } from '@/components/shared/FilterBar';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
 import { useOrgInfo } from '@/hooks/org';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { ConfirmDialog, SubscriptionGate, BulkActionsBar } from '@/components/shared';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/ui';
 import { InventoryItem } from '@/types';
-import { RequestInventoryModal } from '@/components/inventory/RequestInventoryModal';
 import { useT } from '@/hooks/ui';
-import { Plus, Pencil, Trash2, AlertTriangle, FileText, X, ArrowRight, Copy } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, X, ArrowRight, Copy, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { MoveResourceDialog } from '@/components/spaces/MoveResourceDialog';
 import { DuplicateResourceDialog } from '@/components/spaces/DuplicateResourceDialog';
@@ -108,6 +107,8 @@ export default function InventoryListPage() {
   const search = searchParams.get('search') ?? '';
   const category = searchParams.get('category') ?? '';
   const stockFilter = searchParams.get('stockStatus') ?? '';
+  const expiringWithinParam = searchParams.get('expiringWithin') ? parseInt(searchParams.get('expiringWithin')!, 10) : undefined;
+  const expiredParam = searchParams.get('expired') === 'true' ? true : undefined;
   const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
   const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 10;
   const sortBy = searchParams.get('sortBy') ?? 'createdAt';
@@ -116,7 +117,6 @@ export default function InventoryListPage() {
   const [searchInput, setSearchInput] = useState(search);
   const [deleteTarget, setDeleteTarget] = useState<InventoryItem | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [reqTarget, setReqTarget] = useState<InventoryItem | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [moveOpen, setMoveOpen] = useState(false);
   const [dupeOpen, setDupeOpen] = useState(false);
@@ -131,6 +131,8 @@ export default function InventoryListPage() {
     category: category || undefined,
     stockStatus: stockFilter || undefined,
     search: search || undefined,
+    expiringWithin: expiringWithinParam,
+    expired: expiredParam,
     page,
     pageSize,
     sortBy: sortDir === 'none' ? undefined : sortBy,
@@ -167,9 +169,11 @@ export default function InventoryListPage() {
   }, [debouncedSearchInput]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
-  const canBulkDelete = !!user && hasPermission(user, 'inventory', 'bulk_delete');
-  const canBulkMove = !!user && hasPermission(user, 'inventory', 'bulk_move');
-  const canBulkDuplicate = !!user && hasPermission(user, 'inventory', 'bulk_duplicate');
+  // Bulk actions are available to anyone who can do the equivalent single-item
+  // action — no separate bulk permission.
+  const canBulkDelete = !!user && hasPermission(user, 'raseed', 'delete');
+  const canBulkMove = !!user && hasPermission(user, 'raseed', 'update');
+  const canBulkDuplicate = !!user && hasPermission(user, 'raseed', 'create');
   const showSelection = canBulkDelete || canBulkMove || canBulkDuplicate;
 
   const stockLabels = { inStock: t('inventory.inStock'), lowStock: t('inventory.lowStock'), outOfStock: t('inventory.outOfStock') };
@@ -236,11 +240,6 @@ export default function InventoryListPage() {
               </SubscriptionGate>
             </>
           )}
-          <Button size="sm" variant="ghost" aria-label={t('inventory.request')}
-            className="text-primary-500 hover:text-primary-600 hover:bg-primary-50 transition-colors duration-150"
-            onClick={(e) => { e.stopPropagation(); setReqTarget(i); }}>
-            <FileText aria-hidden className="h-4 w-4" strokeWidth={1.75} />
-          </Button>
         </div>
       ),
     },
@@ -278,13 +277,19 @@ export default function InventoryListPage() {
             ? 'inventory.deleteBlockedOpenRequests'
             : body.code === 'INVENTORY_DELETE_ACTIVE_WARRANTY'
               ? 'inventory.deleteBlockedActiveWarranty'
-              : null;
+              : body.code === 'INVENTORY_NOT_FOUND'
+                ? 'inventory.itemNotFound'
+                : null;
         toast.error(key ? t(key) : (body.error || t('inventory.itemDeleteFailed')));
         setDeleteTarget(null);
+        // Already gone server-side — refresh so the stale row disappears too.
+        if (body.code === 'INVENTORY_NOT_FOUND') {
+          qc.invalidateQueries({ queryKey: ['inventory'] });
+        }
         return;
       }
       toast.success(t('inventory.itemDeleted'));
-      qc.invalidateQueries({ queryKey: ['inventory'] });
+      await qc.invalidateQueries({ queryKey: ['inventory'] });
       qc.invalidateQueries({ queryKey: ['inventory-categories'] });
       setDeleteTarget(null);
     } catch {
@@ -296,6 +301,18 @@ export default function InventoryListPage() {
 
   const lowCount = items.filter((i) => i.stockStatus === 'low').length;
   const outCount = items.filter((i) => i.stockStatus === 'out').length;
+  const today = new Date();
+  const expiredCount = items.filter((i) => {
+    if (!i.expiryDate) return false;
+    const d = i.expiryDate instanceof Date ? i.expiryDate : new Date(i.expiryDate as unknown as string);
+    return d < today;
+  }).length;
+  const expiringSoonCount = items.filter((i) => {
+    if (!i.expiryDate) return false;
+    const d = i.expiryDate instanceof Date ? i.expiryDate : new Date(i.expiryDate as unknown as string);
+    const days = Math.ceil((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return days >= 0 && days <= 30;
+  }).length;
 
   const stockValue = items.reduce((sum, i) => sum + (i.quantityOnHand * (i.unitCost ?? 0)), 0);
   const stockValueDisplay = stockValue >= 1000
@@ -405,8 +422,40 @@ export default function InventoryListPage() {
         </div>
       )}
 
-      {(lowCount > 0 || outCount > 0) && (
+      {(lowCount > 0 || outCount > 0 || expiredCount > 0 || expiringSoonCount > 0) && (
         <div className="mb-4 flex gap-3 flex-wrap items-center">
+          {expiredCount > 0 && (
+            <button
+              type="button"
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list?expired=true`)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors cursor-pointer',
+                'bg-red-50 border-red-200 text-red-700 dark:text-red-700',
+                'hover:bg-red-100 hover:border-red-300',
+                expiredParam && 'ring-2 ring-red-400 bg-red-100',
+              )}
+            >
+              <AlertTriangle aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+              <span>{expiredCount > 1 ? t('inventory.expiredItemsPlural').replace('{count}', String(expiredCount)) : t('inventory.expiredItems').replace('{count}', String(expiredCount))}</span>
+              {expiredParam && <X className="h-3.5 w-3.5 ms-1 opacity-70" strokeWidth={2} aria-hidden />}
+            </button>
+          )}
+          {expiringSoonCount > 0 && (
+            <button
+              type="button"
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list?expiringWithin=30`)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors cursor-pointer',
+                'bg-amber-50 border-amber-200 text-amber-700 dark:text-amber-700',
+                'hover:bg-amber-100 hover:border-amber-300',
+                expiringWithinParam != null && 'ring-2 ring-amber-400 bg-amber-100',
+              )}
+            >
+              <Clock aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+              <span>{expiringSoonCount > 1 ? t('inventory.expiringSoonItemsPlural').replace('{count}', String(expiringSoonCount)) : t('inventory.expiringSoonItems').replace('{count}', String(expiringSoonCount))}</span>
+              {expiringWithinParam != null && <X className="h-3.5 w-3.5 ms-1 opacity-70" strokeWidth={2} aria-hidden />}
+            </button>
+          )}
           {outCount > 0 && (
             <button
               type="button"
@@ -452,27 +501,30 @@ export default function InventoryListPage() {
         onSearchChange={handleSearchChange}
         filters={
           <div className="flex items-center gap-2">
-            <Select value={category || 'all'} onValueChange={handleCategoryChange}>
-              <SelectTrigger className="w-40"><SelectValue placeholder={t('inventory.allCategories')} /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('inventory.allCategories')}</SelectItem>
-                {(categories ?? []).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select
+            <Combobox
+              value={category || 'all'}
+              onChange={(v) => handleCategoryChange(v ?? 'all')}
+              options={[
+                { value: 'all', label: t('inventory.allCategories') },
+                ...(categories ?? []).map((c) => ({ value: c, label: c })),
+              ]}
+              clearable={false}
+              className="w-40"
+            />
+            <Combobox
               value={stockMultiActive ? stockFilter : (stockFilter || 'all')}
-              onValueChange={handleStockChange}
-            >
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder={stockMultiActive ? t('inventory.multipleStock') : t('inventory.allStock')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('inventory.allStock')}</SelectItem>
-                <SelectItem value="ok">{t('inventory.inStock')}</SelectItem>
-                <SelectItem value="low">{t('inventory.lowStock')}</SelectItem>
-                <SelectItem value="out">{t('inventory.outOfStock')}</SelectItem>
-              </SelectContent>
-            </Select>
+              onChange={(v) => handleStockChange(v ?? 'all')}
+              placeholder={stockMultiActive ? t('inventory.multipleStock') : t('inventory.allStock')}
+              options={[
+                { value: 'all', label: t('inventory.allStock') },
+                { value: 'ok', label: t('inventory.inStock') },
+                { value: 'low', label: t('inventory.lowStock') },
+                { value: 'out', label: t('inventory.outOfStock') },
+              ]}
+              searchable={false}
+              clearable={false}
+              className="w-44"
+            />
           </div>
         }
       />
@@ -541,13 +593,6 @@ export default function InventoryListPage() {
         confirmLabel={t('common.delete')}
         onConfirm={handleDelete}
         loading={deleting}
-      />
-
-      <RequestInventoryModal
-        open={!!reqTarget}
-        onOpenChange={(o) => !o && setReqTarget(null)}
-        itemId={reqTarget?.id ?? ''}
-        itemName={reqTarget?.name ?? ''}
       />
 
       <MoveResourceDialog

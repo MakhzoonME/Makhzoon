@@ -1,4 +1,5 @@
 import type { MessageKey } from '@/locales/messages';
+import type { AddOnKey, HarakaModule } from '@/types/subscription.types';
 
 /**
  * Route scope:
@@ -14,7 +15,11 @@ export interface NavItemConfig {
   labelKey: MessageKey;
   adminOnly?: boolean;
   featureKey?: string;
-  /** dot-separated permission key, e.g. 'settings.orgInfo' — grants access to staff with that specific permission */
+  /** Haraka sub-module (Orders/Services/Appointments/Retainers) this item requires be active on the subscription. */
+  harakaModule?: HarakaModule;
+  /** Independent add-on (Workers/Warranty Certs/…) this item requires be active on the subscription. */
+  harakaAddOn?: AddOnKey;
+  /** dot-separated permission key, e.g. 'settingsOrgInfo.view' — grants access to staff with that specific permission */
   permissionKey?: string;
   /** Module brand color (hex). Present only on named Makhzoon modules (Usool, Raseed, etc.) */
   moduleColor?: string;
@@ -29,6 +34,13 @@ export interface NavItemConfig {
   children?: NavItemConfig[];
 }
 
+/** Visual section divider inside a group's sub-item list */
+export interface NavSectionHeader {
+  type: 'section-header';
+  label: string;
+  labelKey: MessageKey;
+}
+
 export interface NavGroupConfig {
   type: 'group';
   href: string;
@@ -36,10 +48,12 @@ export interface NavGroupConfig {
   labelKey: MessageKey;
   adminOnly?: boolean;
   featureKey?: string;
+  /** dot-separated permission key gating the group root, e.g. 'usool.view'. */
+  permissionKey?: string;
   moduleColor?: string;
   moduleName?: string;
   scope?: NavScope;
-  items: NavItemConfig[];
+  items: (NavItemConfig | NavSectionHeader)[];
 }
 
 export interface NavSeparator { type: 'separator' }
@@ -49,59 +63,135 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
   { href: '/dashboard',    label: 'Dashboard',    labelKey: 'nav.dashboard',    featureKey: 'dashboard' },
   {
     type: 'group', href: '/usool', label: 'Usool', labelKey: 'nav.assets',
-    featureKey: 'assets', moduleColor: '#00695C', moduleName: 'أصول',
+    featureKey: 'assets', permissionKey: 'usool.view', moduleColor: '#00695C', moduleName: 'أصول',
     items: [
-      { href: '/usool', label: 'Overview', labelKey: 'nav.overview',
-        featureKey: 'assets', moduleColor: '#00695C', moduleName: 'أصول' },
       { href: '/usool/list', label: 'Asset Register', labelKey: 'nav.assetsList',
-        featureKey: 'assets', moduleColor: '#00695C', moduleName: 'أصول' },
+        featureKey: 'assets', permissionKey: 'usool.view',
+        moduleColor: '#00695C', moduleName: 'أصول' },
       { href: '/usool/audits', label: 'Audits', labelKey: 'nav.assetAudits',
-        featureKey: 'assets', permissionKey: 'inventory.audits',
+        featureKey: 'assets', permissionKey: 'usool.assetAuditsView',
         moduleColor: '#00695C', moduleName: 'أصول' },
     ],
   },
   {
     type: 'group', href: '/raseed', label: 'Raseed', labelKey: 'nav.inventory',
-    featureKey: 'inventory', moduleColor: '#E65100', moduleName: 'رصيد',
+    featureKey: 'inventory', permissionKey: 'raseed.view', moduleColor: '#E65100', moduleName: 'رصيد',
     items: [
-      { href: '/raseed', label: 'Overview', labelKey: 'nav.overview',
-        featureKey: 'inventory', moduleColor: '#E65100', moduleName: 'رصيد' },
       { href: '/raseed/list', label: 'Stock Items', labelKey: 'nav.inventoryList',
-        featureKey: 'inventory', moduleColor: '#E65100', moduleName: 'رصيد' },
+        featureKey: 'inventory', permissionKey: 'raseed.view',
+        moduleColor: '#E65100', moduleName: 'رصيد' },
       { href: '/raseed/purchases', label: 'Purchases', labelKey: 'nav.purchases',
-        featureKey: 'inventory', permissionKey: 'purchases.view',
+        featureKey: 'inventory', permissionKey: 'raseed.purchasesView',
         moduleColor: '#BF360C', moduleName: 'مشتريات' },
       { href: '/raseed/audits', label: 'Stock Audits', labelKey: 'nav.stockAudits',
-        featureKey: 'inventory', permissionKey: 'inventory.audits',
+        featureKey: 'inventory', permissionKey: 'raseed.stockAuditView',
         moduleColor: '#BF360C', moduleName: 'مراجعات' },
     ],
   },
   {
     type: 'group', href: '/haraka', label: 'Haraka', labelKey: 'nav.pos',
-    featureKey: 'pos', moduleColor: '#C2185B', moduleName: 'حركة',
+    featureKey: 'pos', permissionKey: 'haraka.view', moduleColor: '#C2185B', moduleName: 'حركة',
     items: [
-      { href: '/haraka', label: 'Overview', labelKey: 'nav.overview',
-        featureKey: 'pos', moduleColor: '#C2185B', moduleName: 'حركة' },
+      { type: 'section-header', label: 'Operations', labelKey: 'nav.sectionOperations' },
+      { href: '/haraka/sessions', label: 'Sessions', labelKey: 'nav.sessions',
+        featureKey: 'pos', permissionKey: 'haraka.sessionsView',
+        moduleColor: '#AD1457', moduleName: 'جلسات' },
+      { type: 'section-header', label: 'Commerce', labelKey: 'nav.sectionCommerce' },
+      { href: '/haraka/orders', label: 'Orders', labelKey: 'nav.harakaOrders',
+        featureKey: 'pos', harakaModule: 'orders', permissionKey: 'haraka.ordersView',
+        moduleColor: '#AD1457', moduleName: 'طلبات' },
       { href: '/haraka/customers', label: 'Customers', labelKey: 'nav.customers',
-        featureKey: 'pos', permissionKey: 'pos.process_sale',
+        featureKey: 'pos', permissionKey: 'haraka.customersView',
         moduleColor: '#AD1457', moduleName: 'عملاء' },
-      { href: '/haraka/reports', label: 'Reports', labelKey: 'nav.harakaReports',
-        featureKey: 'pos', permissionKey: 'pos.view_reports',
+      { href: '/haraka/staff', label: 'Workers', labelKey: 'nav.harakaStaff',
+        featureKey: 'pos', harakaAddOn: 'deliveryAgents', permissionKey: 'haraka.deliveryAgentsView',
+        moduleColor: '#AD1457', moduleName: 'موزعون' },
+      { href: '/haraka/warranty-certs', label: 'Warranty Certs', labelKey: 'nav.harakaWarrantyCerts',
+        featureKey: 'pos', harakaAddOn: 'warrantyCerts', permissionKey: 'haraka.warrantyCertsView',
+        moduleColor: '#AD1457', moduleName: 'ضمانات' },
+      { type: 'section-header', label: 'Finance', labelKey: 'nav.sectionFinance' },
+      { href: '/haraka/transactions', label: 'Transactions', labelKey: 'nav.transactions',
+        featureKey: 'pos', permissionKey: 'haraka.posReportView',
+        moduleColor: '#AD1457', moduleName: 'معاملات' },
+      { href: '/haraka/analytics', label: 'Analytics', labelKey: 'nav.harakaReports',
+        featureKey: 'pos', permissionKey: 'haraka.analyticsView',
+        moduleColor: '#AD1457', moduleName: 'تحليلات' },
+      { type: 'section-header', label: 'Services', labelKey: 'nav.sectionServices' },
+      { href: '/haraka/service-jobs', label: 'Services', labelKey: 'nav.harakaServiceJobs',
+        featureKey: 'pos', harakaModule: 'services', permissionKey: 'haraka.servicesView',
+        moduleColor: '#AD1457', moduleName: 'خدمات' },
+      { href: '/haraka/appointments', label: 'Appointments', labelKey: 'nav.harakaAppointments',
+        featureKey: 'pos', harakaModule: 'appointments', permissionKey: 'haraka.appointmentsView',
+        moduleColor: '#AD1457', moduleName: 'مواعيد',
+        children: [
+          { href: '/haraka/appointments/calendar', label: 'Calendar', labelKey: 'nav.harakaAppointmentsCalendar',
+            featureKey: 'pos', harakaModule: 'appointments', permissionKey: 'haraka.appointmentsView',
+            moduleColor: '#AD1457', moduleName: 'تقويم' },
+        ],
+      },
+      { href: '/haraka/retainers', label: 'Retainers', labelKey: 'nav.harakaRetainers',
+        featureKey: 'pos', harakaModule: 'retainers', permissionKey: 'haraka.retainersView',
+        moduleColor: '#AD1457', moduleName: 'عقود' },
+      { href: '/haraka/services', label: 'Service Catalog', labelKey: 'nav.harakaServiceCatalog',
+        featureKey: 'pos', harakaModule: 'services', permissionKey: 'haraka.serviceCatalogView',
+        moduleColor: '#AD1457', moduleName: 'كتالوج الخدمات' },
+      { href: '/haraka/reports', label: 'Reports', labelKey: 'nav.documentReports',
+        featureKey: 'pos', harakaAddOn: 'documentReports', permissionKey: 'documentReports.reportsView',
         moduleColor: '#AD1457', moduleName: 'تقارير' },
     ],
   },
   {
-    type: 'group', href: '/requests', label: 'Requests', labelKey: 'nav.requests',
-    featureKey: 'requests',
+    // Zeyara (زيارة) — the clinic vertical. Rides the SAME engine as Haraka's
+    // appointments/catalog/customers, so it deliberately carries no
+    // `harakaModule` gate: buying Zeyara IS the entitlement. See
+    // docs/plans/2026-08-26-zeyara-clinic-vertical-design.md §3.
+    type: 'group', href: '/zeyara', label: 'Zeyara', labelKey: 'nav.zeyara',
+    featureKey: 'zeyara', permissionKey: 'zeyara.view', moduleColor: '#0F766E', moduleName: 'زيارة',
     items: [
-      { href: '/requests', label: 'Overview', labelKey: 'nav.overview', featureKey: 'requests' },
-      { href: '/requests/list', label: 'All Requests', labelKey: 'nav.requestsList', featureKey: 'requests' },
+      { href: '/zeyara/appointments', label: 'Appointments', labelKey: 'nav.zeyaraAppointments',
+        featureKey: 'zeyara', permissionKey: 'zeyara.appointmentsView',
+        moduleColor: '#0F766E', moduleName: 'مواعيد',
+        children: [
+          { href: '/zeyara/appointments/calendar', label: 'Calendar', labelKey: 'nav.zeyaraCalendar',
+            featureKey: 'zeyara', permissionKey: 'zeyara.appointmentsView',
+            moduleColor: '#0F766E', moduleName: 'تقويم' },
+        ],
+      },
+      { href: '/zeyara/patients', label: 'Patients', labelKey: 'nav.zeyaraPatients',
+        featureKey: 'zeyara', permissionKey: 'zeyara.customersView',
+        moduleColor: '#0F766E', moduleName: 'مرضى' },
+      { href: '/zeyara/visits', label: 'Clinical Records', labelKey: 'nav.zeyaraVisits',
+        featureKey: 'zeyara', permissionKey: 'zeyara.visitsView',
+        moduleColor: '#0F766E', moduleName: 'السجلات السريرية' },
+      { href: '/zeyara/follow-ups', label: 'Follow-ups', labelKey: 'nav.zeyaraFollowUps',
+        featureKey: 'zeyara', permissionKey: 'zeyara.followUpsView',
+        moduleColor: '#0F766E', moduleName: 'متابعات' },
+      { href: '/zeyara/providers', label: 'Providers', labelKey: 'nav.zeyaraProviders',
+        featureKey: 'zeyara', permissionKey: 'zeyara.staffManage',
+        moduleColor: '#0F766E', moduleName: 'مقدمو الخدمة' },
+      { href: '/zeyara/services', label: 'Service Catalog', labelKey: 'nav.zeyaraServiceCatalog',
+        featureKey: 'zeyara', permissionKey: 'zeyara.serviceCatalogView',
+        moduleColor: '#0F766E', moduleName: 'كتالوج الخدمات' },
+      { href: '/zeyara/analytics', label: 'Analytics', labelKey: 'nav.zeyaraAnalytics',
+        featureKey: 'zeyara', permissionKey: 'zeyara.analyticsView',
+        moduleColor: '#0F766E', moduleName: 'تحليلات' },
+      { href: '/zeyara/reminders', label: 'Reminders', labelKey: 'nav.zeyaraReminders',
+        featureKey: 'zeyara', permissionKey: 'zeyara.staffManage',
+        moduleColor: '#0F766E', moduleName: 'التذكيرات' },
     ],
   },
-  { href: '/reports',      label: 'Reports',      labelKey: 'nav.reports',      adminOnly: true, featureKey: 'reports' },
+  {
+    type: 'group', href: '/banna', label: 'Banna', labelKey: 'nav.banna',
+    featureKey: 'banna', permissionKey: 'banna.view', moduleColor: '#1565C0', moduleName: 'بنّا',
+    items: [
+      { href: '/banna/custom-fields', label: 'Custom Fields', labelKey: 'banna.customFields',
+        featureKey: 'banna', permissionKey: 'banna.view',
+        moduleColor: '#1565C0', moduleName: 'بنّا' },
+    ],
+  },
   { type: 'separator' } as NavSeparator,
-  { href: '/support',      label: 'Support',      labelKey: 'nav.support',      featureKey: 'support' },
-  { href: '/audit-logs',   label: 'Audit Logs',   labelKey: 'nav.auditLogs',    adminOnly: true, featureKey: 'auditLogs' },
+  { href: '/support',      label: 'Support',      labelKey: 'nav.support',      featureKey: 'support', permissionKey: 'support.view' },
+  { href: '/audit-logs',   label: 'Audit Logs',   labelKey: 'nav.auditLogs',    adminOnly: true, featureKey: 'auditLogs', permissionKey: 'auditLogs.view' },
   {
     type: 'group',
     href: '/settings',
@@ -110,27 +200,44 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
     adminOnly: true,
     scope: 'org',
     items: [
-      { href: '/settings/organization', label: 'Organization Info', labelKey: 'nav.orgInfo',       permissionKey: 'settings.orgInfo',   scope: 'org' },
-      { href: '/settings/spaces',       label: 'Spaces',            labelKey: 'nav.spaces',        permissionKey: 'settings.orgInfo',   scope: 'org' },
-      { href: '/settings/lists',        label: 'Lists',             labelKey: 'nav.lists',         permissionKey: 'settings.orgInfo',   scope: 'org' },
-      { href: '/subscription',          label: 'Subscription',      labelKey: 'nav.subscription',  permissionKey: 'settings.subscription', scope: 'org' },
-      { href: '/users',                 label: 'Users',             labelKey: 'nav.users',         permissionKey: 'settings.users',     scope: 'org' },
-      { href: '/settings/tax-rates',    label: 'Tax Rates',         labelKey: 'nav.taxRates',      permissionKey: 'settings.taxRates',  featureKey: 'pos', scope: 'org' },
-      { href: '/settings/jo-fotara',    label: 'Jo Fotara',         labelKey: 'nav.fawtara',       permissionKey: 'settings.fawtara',   featureKey: 'pos', scope: 'org' },
-      { href: '/settings/receipt',      label: 'Receipt',           labelKey: 'nav.receipt',       permissionKey: 'settings.fawtara',   featureKey: 'pos', scope: 'org' },
+      { href: '/settings/organization', label: 'Organization Info', labelKey: 'nav.orgInfo',       permissionKey: 'settingsOrgInfo.view',       scope: 'org' },
+      { href: '/settings/spaces',       label: 'Spaces',            labelKey: 'nav.spaces',        permissionKey: 'settingsSpaces.view',        scope: 'org' },
+      { href: '/settings/lists',        label: 'Lists',             labelKey: 'nav.lists',         permissionKey: 'settingsLists.view',         scope: 'org' },
+      { href: '/subscription',          label: 'Subscription',      labelKey: 'nav.subscription',  permissionKey: 'settingsSubscription.view',  scope: 'org' },
+      { href: '/users',                 label: 'Users',             labelKey: 'nav.users',         permissionKey: 'settingsUsers.view',         scope: 'org' },
+      { href: '/settings/receipt',         label: 'Receipt',          labelKey: 'nav.receipt',          permissionKey: 'settingsReceipt.view',       featureKey: 'pos', scope: 'org' },
+      { href: '/settings/invoice',       label: 'Invoice',       labelKey: 'nav.orderDocuments', permissionKey: 'settingsInvoice.view',       featureKey: 'pos', scope: 'org' },
+      { href: '/settings/warranty-cert',   label: 'Warranty Cert',       labelKey: 'nav.warrantyCert',         permissionKey: 'settingsWarrantyCert.view',  featureKey: 'pos', harakaAddOn: 'warrantyCerts', scope: 'org' },
+      { href: '/settings/notifications',   label: 'Notifications',       labelKey: 'nav.notificationSettings', permissionKey: 'settingsNotifications.view', scope: 'org' },
+      { href: '/settings/cash-drawer',   label: 'Cash Drawer',   labelKey: 'nav.cashDrawer',     permissionKey: 'settingsCashDrawer.view',    featureKey: 'pos', scope: 'org' },
+      { href: '/settings/reports',       label: 'Report Templates', labelKey: 'nav.reportTemplates', permissionKey: 'documentReports.reportsManageTemplates', featureKey: 'pos', harakaAddOn: 'documentReports', scope: 'org' },
     ],
   },
 ];
 
-/** Flat list of all nav items (groups expanded); sub-items inherit group's adminOnly + scope */
+/** Flat list of all nav items (groups expanded to include group root + children); section headers skipped */
 const ORG_NAV_FLAT: NavItemConfig[] = ORG_NAV_ENTRIES.flatMap((entry) => {
   if ('type' in entry && entry.type === 'separator') return [];
   if ('type' in entry && entry.type === 'group') {
-    return entry.items.map((item) => ({
-      ...item,
-      adminOnly: item.adminOnly ?? entry.adminOnly,
-      scope: item.scope ?? entry.scope,
-    }));
+    const groupAsItem: NavItemConfig = {
+      href: entry.href,
+      label: entry.label,
+      labelKey: entry.labelKey,
+      adminOnly: entry.adminOnly,
+      featureKey: entry.featureKey,
+      permissionKey: entry.permissionKey,
+      moduleColor: entry.moduleColor,
+      moduleName: entry.moduleName,
+      scope: entry.scope,
+    };
+    const children = entry.items
+      .filter((sub): sub is NavItemConfig => !('type' in sub))
+      .map((sub) => ({
+        ...sub,
+        adminOnly: sub.adminOnly ?? entry.adminOnly,
+        scope: sub.scope ?? entry.scope,
+      }));
+    return [groupAsItem, ...children];
   }
   return [entry as NavItemConfig];
 });
@@ -169,15 +276,30 @@ export function getFirstAccessiblePath(opts: {
   space?: string;
   role: string;
   features: Record<string, boolean>;
+  activeHarakaModules?: string[];
+  activeAddOns?: Record<string, boolean>;
   permissions?: Record<string, Record<string, boolean>> | null;
 }): string {
   const isAdmin = opts.role === 'admin' || opts.role === 'super_admin' || opts.role === 'org_owner';
+  const activeHarakaModules = opts.activeHarakaModules ?? [];
   for (const item of ORG_NAV_FLAT) {
     if (item.adminOnly && !isAdmin) continue;
     if (item.featureKey && !opts.features[item.featureKey]) continue;
-    if (!isAdmin && item.featureKey && opts.permissions) {
-      const mod = opts.permissions[item.featureKey];
-      if (mod && mod['view'] === false) continue;
+    if (item.harakaModule && !activeHarakaModules.includes(item.harakaModule)) continue;
+    if (item.harakaAddOn && opts.activeAddOns && !opts.activeAddOns[item.harakaAddOn]) continue;
+    if (!isAdmin && opts.permissions) {
+      // Use permissionKey's module when available (e.g. 'purchases.view' → 'purchases'),
+      // otherwise fall back to featureKey. Prevents 'inventory' featureKey from being
+      // incorrectly used to look up 'purchases' permissions.
+      const permKey = item.permissionKey ?? (item.featureKey ? `${item.featureKey}.view` : null);
+      if (permKey) {
+        const [modKey, opKey = 'view'] = permKey.split('.');
+        const mod = opts.permissions[modKey];
+        // Require an explicit grant when the module block exists — an absent
+        // key (e.g. 'pos.view', which doesn't exist as an op) means no access
+        // for staff, so don't land them on a page their guard will blank out.
+        if (mod && mod[opKey] !== true) continue;
+      }
     }
     // If the caller passed orgSlug + space, build a full per-tenant URL.
     // Otherwise return the locale-prefixed nav href as before (legacy callers).

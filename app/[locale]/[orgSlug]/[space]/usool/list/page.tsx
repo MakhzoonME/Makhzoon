@@ -18,7 +18,7 @@ import { DataTable, ColumnDef } from '@/components/shared/DataTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { ExportButton } from '@/components/shared/ExportButton';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { Asset } from '@/types';
 import { hasPermission } from '@/lib/permissions';
@@ -26,7 +26,6 @@ import { formatDate } from '@/lib/utils/date';
 import { ConfirmDialog, SubscriptionGate, BulkActionsBar } from '@/components/shared';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
 import { useDebounce } from '@/hooks/ui';
 import { useAssetCategories } from '@/hooks/assets';
 import { useList } from '@/hooks/lists';
@@ -151,10 +150,12 @@ export default function AssetsListPage() {
   }, [debouncedSearchInput]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
-  const canCreateAsset = !!user && hasPermission(user, 'assets', 'create');
-  const canBulkDelete = !!user && hasPermission(user, 'assets', 'bulk_delete');
-  const canBulkMove = !!user && hasPermission(user, 'assets', 'bulk_move');
-  const canBulkDuplicate = !!user && hasPermission(user, 'assets', 'bulk_duplicate');
+  const canCreateAsset = !!user && hasPermission(user, 'usool', 'create');
+  // Bulk actions are available to anyone who can do the equivalent single-item
+  // action — no separate bulk permission.
+  const canBulkDelete = !!user && hasPermission(user, 'usool', 'delete');
+  const canBulkMove = !!user && hasPermission(user, 'usool', 'update');
+  const canBulkDuplicate = !!user && hasPermission(user, 'usool', 'create');
   const showSelection = canBulkDelete || canBulkMove || canBulkDuplicate;
 
   const columns: ColumnDef<Asset>[] = [
@@ -371,18 +372,42 @@ export default function AssetsListPage() {
         filters={
           <div className="flex items-center gap-2">
             <ConfigSelect listKey="asset_status" value={status || 'all'} onValueChange={handleStatusChange} includeAll allLabel={t('assets.allStatuses')} className="w-44" />
-            <Select value={category || 'all'} onValueChange={handleCategoryChange}>
-              <SelectTrigger className="w-44"><SelectValue placeholder={t('col.category')} /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('assets.allCategories')}</SelectItem>
-                {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={category || 'all'}
+              onChange={(v) => handleCategoryChange(v ?? 'all')}
+              placeholder={t('col.category')}
+              options={[
+                { value: 'all', label: t('assets.allCategories') },
+                ...categories.map((c) => ({ value: c, label: c })),
+              ]}
+              clearable={false}
+              className="w-44"
+            />
           </div>
         }
         actions={isAdmin ? (
           <SubscriptionGate>
-            <ExportButton exportUrl="/api/assets/export" filename={`assets-${format(new Date(), 'yyyy-MM-dd')}.csv`} />
+            <ExportButton
+              filename="assets"
+              label="assets"
+              getUrl={(scope) => {
+                const p = new URLSearchParams({ format: 'xlsx' });
+                if (scope === 'filtered') {
+                  if (sortDir !== 'none') { p.set('sortBy', sortBy); p.set('sortDir', sortDir); }
+                  const hasFilters = !!(status || category || search);
+                  if (hasFilters) {
+                    if (status) p.set('status', status);
+                    if (category) p.set('category', category);
+                    if (search) p.set('search', search);
+                  } else {
+                    // No filters → export exactly what's visible on this page.
+                    p.set('page', String(page));
+                    p.set('pageSize', String(pageSize));
+                  }
+                }
+                return `/api/assets/export?${p.toString()}`;
+              }}
+            />
           </SubscriptionGate>
         ) : undefined}
       />

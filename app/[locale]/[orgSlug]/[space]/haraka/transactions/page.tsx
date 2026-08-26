@@ -7,7 +7,8 @@ import { PageHeader, DataTable, FilterBar, StatusBadge, StatCard } from '@/compo
 import type { ColumnDef } from '@/components/shared';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { useTransactions, useHarakaReport } from '@/hooks/haraka';
-import { useAdminGuard, useT } from '@/hooks/ui';
+import { useList } from '@/hooks/lists';
+import { useAdminGuard, useT, useModuleGuard } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { formatCurrency } from '@/lib/utils/format';
 import { startOfDay, endOfDay } from 'date-fns';
@@ -15,12 +16,24 @@ import type { PosTransaction } from '@/types';
 
 type StatusFilter = 'all' | 'completed' | 'refunded' | 'voided';
 
+const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  cash: 'Cash', card: 'Card', cliq: 'Cliq', other: 'Other',
+};
+const PAYMENT_METHOD_STYLE: Record<string, React.CSSProperties> = {
+  cash:  { background: 'var(--green-100)', color: 'var(--green-700)' },
+  card:  { background: 'var(--blue-100)', color: 'var(--blue-700)' },
+  cliq:  { background: 'var(--purple-100)', color: 'var(--purple-700)' },
+  other: { background: 'var(--surface-inset)', color: 'var(--text-secondary)' },
+};
+
 export default function TransactionsListPage() {
+  const { isAllowed: featureAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
+  const { isAllowed } = useAdminGuard('haraka.posReportView');
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
-  const { t } = useT();
+  const { t, locale } = useT();
   const { data: orgInfo } = useOrgInfo();
-  const { isAllowed } = useAdminGuard('pos.view_reports');
+  const { data: pmItems = [] } = useList('payment_method');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [page, setPage] = useState(1);
   const { data, isLoading } = useTransactions({
@@ -46,7 +59,7 @@ export default function TransactionsListPage() {
   const cardTotal = payReport?.buckets.find((b) => b.key === 'card')?.total ?? 0;
   const cardShare = todaySales > 0 ? Math.round((cardTotal / todaySales) * 100) : 0;
 
-  if (!isAllowed) {
+  if (!featureAllowed || !isAllowed) {
     return (
       <div className="flex items-center justify-center h-48">
         <div className="h-7 w-7 rounded-full border-2 border-primary-600 border-t-transparent animate-spin" />
@@ -91,15 +104,18 @@ export default function TransactionsListPage() {
       render: (tx) => {
         const method = tx.payments?.[0]?.method;
         if (!method) return <span className="text-gray-400 text-xs">—</span>;
+        const item = pmItems.find((i) => i.value === method);
+        const label = PAYMENT_METHOD_LABEL[method]
+          ?? (item ? (locale === 'ar' ? item.labelAr || item.label : item.label) : method);
+        const style = PAYMENT_METHOD_STYLE[method]
+          ?? (item?.color ? { background: `${item.color}22`, color: item.color } : PAYMENT_METHOD_STYLE.other);
         return (
           <span
             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
-            style={method === 'card'
-              ? { background: 'var(--blue-100)', color: 'var(--blue-700)' }
-              : { background: 'var(--green-100)', color: 'var(--green-700)' }}
+            style={style}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-current" />
-            {method === 'card' ? 'Card' : 'Cash'}
+            {label}
           </span>
         );
       },
@@ -108,13 +124,6 @@ export default function TransactionsListPage() {
       key: 'status',
       header: 'Status',
       render: (tx) => <StatusBadge status={tx.parentTransactionId ? 'credit_note' : tx.status} />,
-    },
-    {
-      key: 'fawtara',
-      header: 'Fawtara',
-      render: (tx) => tx.fawtara
-        ? <StatusBadge status={tx.fawtara.status} />
-        : <span className="text-gray-400 text-xs">—</span>,
     },
     {
       key: 'createdAt',

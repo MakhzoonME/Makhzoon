@@ -7,13 +7,11 @@ export const cartLineSchema = z.object({
   barcode: z.string().nullable().optional(),
   quantity: z.coerce.number().positive(),
   unitPrice: z.coerce.number().min(0),
-  taxRateId: z.string().nullable().optional(),
-  taxRate: z.coerce.number().min(0).max(1),
   discount: z.coerce.number().min(0),
 })
 
 export const paymentSchema = z.object({
-  method: z.enum(['cash', 'card', 'other']),
+  method: z.string().min(1).max(60),
   amount: z.coerce.number().min(0),
   reference: z.string().nullable().optional(),
   cardLast4: z
@@ -32,8 +30,8 @@ export const completeSaleSchema = z.object({
   payments: z.array(paymentSchema).min(1, 'At least one payment is required'),
   /** Client-supplied idempotency key (UUID) so a duplicate Submit doesn't double-charge. */
   offlineId: z.string().min(8),
-  /** When true the cashier has chosen to bypass Fawtara for this sale. */
-  skipFawtara: z.boolean().optional(),
+  /** Required when the sale has a discount and the charging user cannot self-approve. */
+  approverPin: z.string().regex(/^\d{4}$/, 'PIN must be exactly 4 digits').optional(),
 })
 
 export const refundSchema = z.object({

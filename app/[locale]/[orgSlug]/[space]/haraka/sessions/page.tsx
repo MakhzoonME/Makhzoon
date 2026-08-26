@@ -2,24 +2,34 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, ArrowRight, Lock } from 'lucide-react';
-import { PageHeader, DataTable, FilterBar, StatusBadge, SubscriptionGate } from '@/components/shared';
+import { PageHeader, DataTable, FilterBar, StatusBadge } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
-import { useSessions, useCurrentSession } from '@/hooks/haraka';
+import { SessionControls } from '@/components/haraka/SessionControls';
+import { useSessions } from '@/hooks/haraka';
 import { useOrgInfo } from '@/hooks/org';
-import { useT } from '@/hooks/ui';
-import { formatDate } from '@/lib/utils/date';
-import { formatCurrency } from '@/lib/utils/format';
+import { useT, useModuleGuard } from '@/hooks/ui';
+import { useAuthStore } from '@/store/auth.store';
+import { hasPermission } from '@/lib/permissions';
 import type { PosSession } from '@/types';
 
 export default function SessionsListPage() {
+  const { isAllowed } = useModuleGuard({ featureKey: 'pos', moduleKey: 'haraka' });
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
   const { data: orgInfo } = useOrgInfo();
+  const { user } = useAuthStore();
+  // Someone with no oversight capability (can't see other cashiers' sessions
+  // and can't close one) shouldn't land on the cash/discrepancy detail page
+  // for their own open session — send them to the register to keep working
+  // instead of showing figures they have no reason to see.
+  const canSeeSessionDetail =
+    !!user && (hasPermission(user, 'haraka', 'sessionsViewOthers') || hasPermission(user, 'haraka', 'sessionsCloseOwn'));
+  // Lets someone enter and operate a DIFFERENT cashier's open register
+  // (e.g. a supervisor covering a busy till), independent of whether they
+  // also hold oversight (sessionsViewOthers) into the cash/discrepancy detail.
+  const canEnterOthers = !!user && hasPermission(user, 'haraka', 'sessionsEnterOthers');
   const [status, setStatus] = useState<'open' | 'closed' | 'all'>('all');
   const [page, setPage] = useState(1);
 
@@ -29,8 +39,9 @@ export default function SessionsListPage() {
     pageSize: 20,
   });
 
+  if (!isAllowed) return null;
+
   const base = `/${params.locale}/${params.orgSlug}/${params.space}/haraka`;
-  const { data: currentData, isLoading: currentLoading } = useCurrentSession();
 
   const columns: ColumnDef<PosSession>[] = [
     {
@@ -40,6 +51,13 @@ export default function SessionsListPage() {
         <span className="font-mono text-xs font-semibold" style={{ color: 'var(--mod-haraka)' }}>
           #{s.id.slice(0, 8)}
         </span>
+      ),
+    },
+    {
+      key: 'tillName',
+      header: t('haraka.register'),
+      render: (s) => (
+        <span className="text-sm text-gray-700">{s.tillName || <span className="text-gray-400">—</span>}</span>
       ),
     },
     {
@@ -105,52 +123,10 @@ export default function SessionsListPage() {
           { label: t('nav.pos'), href: base },
           { label: t('haraka.sessions') },
         ]}
-        actions={
-          <SubscriptionGate>
-            <Button
-              onClick={() => router.push(`${base}/sessions/new`)}
-              style={{ background: 'var(--mod-haraka)' }}
-            >
-              <Plus size={16} className="me-1" /> {t('haraka.openNewSession')}
-            </Button>
-          </SubscriptionGate>
-        }
       />
 
-      {/* Active session highlight card */}
-      {!currentLoading && currentData?.session && (
-        <Card className="mb-4 border-[var(--green-100)] bg-[var(--green-50)]">
-          <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[var(--green-700)] animate-pulse" />
-                <span className="text-sm font-semibold text-[var(--green-700)]">{t('haraka.activeSession')}</span>
-              </div>
-              <p className="text-sm text-gray-600 mt-1">
-                {t('haraka.openedBy').replace('{name}', currentData.session.cashierName)}
-                {' · '}{formatDate(currentData.session.openedAt)}
-                {' · '}{formatCurrency(currentData.session.openingFloat)}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push(`${base}/sessions/${currentData.session!.id}`)}
-              >
-                <Lock size={14} className="me-1" /> {t('register.closeSession')}
-              </Button>
-              <Button
-                size="sm"
-                style={{ background: 'var(--mod-haraka)' }}
-                onClick={() => router.push(`${base}/register`)}
-              >
-                {t('haraka.openRegister')} <ArrowRight className="h-4 w-4 ms-1" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Open / close lifecycle + active-session banner — managed inline here */}
+      <SessionControls base={base} />
 
       <FilterBar
         filters={
@@ -171,7 +147,17 @@ export default function SessionsListPage() {
         keyExtractor={(s) => s.id}
         isLoading={isLoading}
         emptyMessage={t('haraka.noSessions')}
-        onRowClick={(s) => router.push(`${base}/sessions/${s.id}`)}
+        onRowClick={(s) => {
+          const isOwn = s.cashierId === user?.uid;
+          const goToRegister = isOwn
+            ? s.status === 'open' && !canSeeSessionDetail
+            : s.status === 'open' && canEnterOthers;
+          if (goToRegister) {
+            router.push(`${base}/sessions/${s.id}/register`);
+          } else {
+            router.push(`${base}/sessions/${s.id}`);
+          }
+        }}
         pagination={
           data
             ? {

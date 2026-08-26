@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { Warranty, DocumentRef } from '@/types';
 
@@ -151,8 +152,8 @@ export async function createWarranty(
     .insert({
       organization_id: data.organizationId,
       space_id: data.spaceId,
-      asset_id: data.assetId ?? null,
-      inventory_item_id: data.inventoryItemId ?? null,
+      asset_id: data.assetId || null,
+      inventory_item_id: data.inventoryItemId || null,
       vendor: data.vendor,
       start_date: new Date(data.startDate).toISOString(),
       end_date: new Date(data.endDate).toISOString(),
@@ -198,6 +199,39 @@ export async function deleteWarranty(id: string): Promise<void> {
     .delete()
     .eq('id', id);
   if (error) throw error;
+}
+
+/**
+ * Returns the SET of asset IDs and inventory item IDs that have at least one
+ * active (non-expired) warranty.  Used by the WarrantyForm to show only
+ * assets/items that are eligible for a NEW warranty.
+ *
+ * Unlike getWarranties(), this queries at the DB level and returns lightweight
+ * ID-only data — no full warranty objects, no name resolution, no in-memory
+ * pagination.
+ */
+export async function getActiveWarrantyIds(
+  orgId: string,
+  spaceId?: string,
+): Promise<{ assetIds: string[]; inventoryItemIds: string[] }> {
+  const now = new Date().toISOString();
+  let q = supabaseAdmin
+    .from('warranties')
+    .select('asset_id, inventory_item_id')
+    .eq('organization_id', orgId)
+    .gte('end_date', now);
+  if (spaceId) q = q.eq('space_id', spaceId);
+  const { data, error } = await q;
+  if (error) throw error;
+
+  const assetIds = new Set<string>();
+  const inventoryItemIds = new Set<string>();
+  for (const row of data ?? []) {
+    const r = row as Row;
+    if (r.asset_id) assetIds.add(r.asset_id as string);
+    if (r.inventory_item_id) inventoryItemIds.add(r.inventory_item_id as string);
+  }
+  return { assetIds: Array.from(assetIds), inventoryItemIds: Array.from(inventoryItemIds) };
 }
 
 export async function getExpiringWarranties(

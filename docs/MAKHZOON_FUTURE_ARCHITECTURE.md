@@ -1,3 +1,7 @@
+> ⚠️ **DEPRECATED** — This document describes the pre-migration Firebase architecture.
+> The current stack is Supabase (Postgres + Auth + RLS) + Cloudflare Workers (via OpenNext).
+> See `docs/Context.md` and `docs/PROJECT_STATUS.md` for the current architecture.
+
 # Makhzoon — Future Architecture & Expansion Roadmap
 
 > **Purpose:** This document is the authoritative reference for planned architectural expansions to the Makhzoon platform. It covers three major areas: (1) environment separation, (2) POS module, and (3) offline support. It is written for Claude Code to use as implementation context when building or preparing any of these features. Do not treat anything in this document as already implemented unless explicitly confirmed.

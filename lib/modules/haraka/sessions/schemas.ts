@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const openSessionSchema = z.object({
   openingFloat: z.coerce.number().min(0, 'Opening float cannot be negative'),
   locationId: z.string().optional(),
+  tillName: z.string().trim().min(1, 'Till name is required').max(80, 'Till name is too long'),
 })
 
 export const closeSessionSchema = z.object({

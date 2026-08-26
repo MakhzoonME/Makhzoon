@@ -3,6 +3,7 @@ import type { TenantContext } from '@/lib/platform/tenancy/types'
 import { hasPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
 import { eventBus } from '@/lib/platform/events/event-bus'
+import { notificationQueue } from '@/lib/notifications/notification-queue'
 import {
   PurchasesRepository,
   type ListOpts,
@@ -11,8 +12,16 @@ import {
 
 const repo = new PurchasesRepository()
 
+const PURCHASE_OP = {
+  view: 'purchasesView',
+  create: 'purchasesCreate',
+  update: 'purchasesUpdate',
+  delete: 'purchasesDelete',
+  receive: 'purchasesReceive',
+} as const
+
 function require(tenant: TenantContext, op: 'view' | 'create' | 'update' | 'delete' | 'receive') {
-  if (!hasPermission(tenant, 'purchases', op)) {
+  if (!hasPermission(tenant, 'raseed', PURCHASE_OP[op])) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -105,6 +114,13 @@ export class PurchasesService {
       },
     })
     await eventBus.emit('inventory.purchase.received', { tenant, id, results })
+    notificationQueue.enqueue({
+      tenant,
+      eventType: 'inventory.purchase_received',
+      data: { itemCount: results.length },
+      link: `/raseed/purchases/${id}`,
+      titleOverride: 'Purchase received',
+    })
     return { results }
   }
 }

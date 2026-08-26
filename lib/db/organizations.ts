@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { Organization, OrgCategory } from '@/types';
 
@@ -17,6 +18,7 @@ function toOrg(r: Row): Organization {
     contactEmail: r.contact_email as string,
     description: (r.description as string) ?? null,
     category: (r.category as OrgCategory) ?? null,
+    currency: (r.currency as string) ?? 'JOD',
     packageDetails: (r.package_details ?? {}) as Organization['packageDetails'],
     assignedMemberId: (r.assigned_member_id as string) ?? null,
     createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
@@ -57,6 +59,7 @@ export async function createOrganization(
       contact_email: data.contactEmail,
       description: data.description ?? null,
       category: data.category ?? null,
+      currency: data.currency ?? 'JOD',
       package_details: data.packageDetails ?? {},
       assigned_member_id: data.assignedMemberId ?? null,
       created_by: data.createdBy,
@@ -78,6 +81,7 @@ export async function updateOrganization(
   if (data.contactEmail !== undefined) patch.contact_email = data.contactEmail;
   if (data.description !== undefined) patch.description = data.description;
   if (data.category !== undefined) patch.category = data.category;
+  if (data.currency !== undefined) patch.currency = data.currency;
   if (data.packageDetails !== undefined)
     patch.package_details = data.packageDetails;
   if (data.assignedMemberId !== undefined)
@@ -110,6 +114,33 @@ export async function getOrganizationBySubdomain(
     .limit(1)
     .maybeSingle();
   return data ? toOrg(data) : null;
+}
+
+export async function deleteOrganizationWithData(
+  id: string,
+): Promise<{ deletedUserUids: string[] }> {
+  // Collect auth UIDs before the org row is gone
+  const { data: userRows } = await supabaseAdmin
+    .from('users')
+    .select('id')
+    .eq('organization_id', id);
+  const uids = (userRows ?? []).map((r) => r.id as string);
+
+  // Deleting the org cascades to all child tables (assets, inventory, haraka, etc.)
+  const { error } = await supabaseAdmin
+    .from('organizations')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+
+  // Remove auth identities — best-effort per user
+  await Promise.all(
+    uids.map((uid) =>
+      supabaseAdmin.auth.admin.deleteUser(uid).catch(() => undefined),
+    ),
+  );
+
+  return { deletedUserUids: uids };
 }
 
 export async function getOrganizationsWithSearch(filters?: {

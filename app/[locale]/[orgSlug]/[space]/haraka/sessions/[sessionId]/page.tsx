@@ -12,13 +12,26 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useSession, useCloseSession, useTransactions } from '@/hooks/haraka';
+import { useList } from '@/hooks/lists';
 import { closeSessionSchema, type CloseSessionFormData } from '@/lib/modules/haraka/sessions/schemas';
 import { toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
+import { useAuthStore } from '@/store/auth.store';
+import { hasPermission } from '@/lib/permissions';
 
 interface Props {
   params: Promise<{ locale: string; orgSlug: string; space: string; sessionId: string }>;
 }
+
+const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  cash: 'Cash', card: 'Card', cliq: 'Cliq', other: 'Other',
+};
+const PAYMENT_METHOD_STYLE: Record<string, React.CSSProperties> = {
+  cash:  { background: 'var(--green-100)', color: 'var(--green-700)' },
+  card:  { background: 'var(--blue-100)', color: 'var(--blue-700)' },
+  cliq:  { background: 'var(--purple-100)', color: 'var(--purple-700)' },
+  other: { background: 'var(--surface-inset)', color: 'var(--text-secondary)' },
+};
 
 function fmt(n: number) {
   return n.toFixed(2);
@@ -29,6 +42,7 @@ export default function SessionDetailPage(props: Props) {
   const router = useRouter();
   const { t } = useT();
   const { data: orgInfo } = useOrgInfo();
+  const { user } = useAuthStore();
   const { data, isLoading } = useSession(params.sessionId);
   const closeMut = useCloseSession(params.sessionId);
   const [closing, setClosing] = useState(false);
@@ -61,6 +75,10 @@ export default function SessionDetailPage(props: Props) {
 
   const { session, expectedCashSoFar } = data;
   const isOpen = session.status === 'open';
+  const isOwnSession = session.cashierId === user?.uid;
+  const canEnterRegister = !!user && (isOwnSession
+    ? hasPermission(user, 'haraka', 'registerOpen')
+    : hasPermission(user, 'haraka', 'sessionsEnterOthers'));
   const sessionSalesTotal = (txData?.items ?? [])
     .filter((tx) => tx.status === 'completed')
     .reduce((sum, tx) => sum + tx.total, 0);
@@ -81,9 +99,9 @@ export default function SessionDetailPage(props: Props) {
         actions={
           <div className="flex items-center gap-2">
             <StatusBadge status={session.status} />
-            {isOpen && (
+            {isOpen && canEnterRegister && (
               <Button
-                onClick={() => router.push(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/register`)}
+                onClick={() => router.push(`/${params.locale}/${params.orgSlug}/${params.space}/haraka/sessions/${session.id}/register`)}
               >
                 <ShoppingCart size={14} className="me-1" /> Open register
               </Button>
@@ -167,7 +185,7 @@ export default function SessionDetailPage(props: Props) {
       </div>
 
       {/* Transactions sub-table */}
-      <SessionTransactions sessionId={params.sessionId} locale={params.locale} orgSlug={params.orgSlug} space={params.space} />
+      <SessionTransactions sessionId={params.sessionId} locale={params.locale} orgSlug={params.orgSlug} space={params.space} userId={user?.uid} canViewOthersReport={!!user && hasPermission(user, 'haraka', 'posReportView')} />
 
       {/* Close session — modal dialog matching the design */}
       <Dialog open={closing && isOpen} onOpenChange={(v) => !v && setClosing(false)}>
@@ -278,9 +296,24 @@ export default function SessionDetailPage(props: Props) {
   );
 }
 
-function SessionTransactions({ sessionId, locale, orgSlug, space }: { sessionId: string; locale: string; orgSlug: string; space: string }) {
+function SessionTransactions({
+  sessionId,
+  locale,
+  orgSlug,
+  space,
+  userId,
+  canViewOthersReport,
+}: {
+  sessionId: string;
+  locale: string;
+  orgSlug: string;
+  space: string;
+  userId?: string;
+  canViewOthersReport: boolean;
+}) {
   const router = useRouter();
   const { data, isLoading } = useTransactions({ sessionId, pageSize: 50 });
+  const { data: pmItems = [] } = useList('payment_method');
   const rows = data?.items ?? [];
   const base = `/${locale}/${orgSlug}/${space}/haraka/transactions`;
 
@@ -300,17 +333,18 @@ function SessionTransactions({ sessionId, locale, orgSlug, space }: { sessionId:
               <th className="text-start px-3 py-2 font-medium">Customer</th>
               <th className="text-end px-3 py-2 font-medium">Total</th>
               <th className="text-start px-3 py-2 font-medium">Payment</th>
-              <th className="text-start px-3 py-2 font-medium">Fawtara</th>
               <th className="text-start px-3 py-2 font-medium">Status</th>
               <th className="text-end px-4 py-2 font-medium">Time</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {rows.map((tx) => (
+            {rows.map((tx) => {
+              const canView = tx.cashierId === userId || canViewOthersReport;
+              return (
               <tr
                 key={tx.id}
-                className="hover:bg-surface-hover cursor-pointer transition-colors"
-                onClick={() => router.push(`${base}/${tx.id}`)}
+                className={canView ? 'hover:bg-surface-hover cursor-pointer transition-colors' : ''}
+                onClick={canView ? () => router.push(`${base}/${tx.id}`) : undefined}
               >
                 <td className="px-4 py-2.5">
                   <span className="font-mono text-xs font-semibold" style={{ color: 'var(--mod-haraka)' }}>
@@ -320,34 +354,23 @@ function SessionTransactions({ sessionId, locale, orgSlug, space }: { sessionId:
                 <td className="px-3 py-2.5 text-gray-600">{tx.customerName ?? '—'}</td>
                 <td className="px-3 py-2.5 text-end font-mono font-semibold">{tx.total.toFixed(2)}</td>
                 <td className="px-3 py-2.5">
-                  {tx.payments?.[0] && (
+                  {tx.payments?.[0] && (() => {
+                    const method = tx.payments[0].method;
+                    const item = pmItems.find((i) => i.value === method);
+                    const label = PAYMENT_METHOD_LABEL[method]
+                      ?? (item ? (locale === 'ar' ? item.labelAr || item.label : item.label) : method);
+                    const style = PAYMENT_METHOD_STYLE[method]
+                      ?? (item?.color ? { background: `${item.color}22`, color: item.color } : PAYMENT_METHOD_STYLE.other);
+                    return (
                     <span
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
-                      style={tx.payments[0].method === 'card'
-                        ? { background: 'var(--blue-100)', color: 'var(--blue-700)' }
-                        : { background: 'var(--green-100)', color: 'var(--green-700)' }}
+                      style={style}
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                      {tx.payments[0].method === 'card' ? 'Card' : 'Cash'}
+                      {label}
                     </span>
-                  )}
-                </td>
-                <td className="px-3 py-2.5">
-                  {tx.fawtara ? (
-                    tx.fawtara.status === 'submitted' ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--green-100)] text-[var(--green-700)]">
-                        <span className="w-1.5 h-1.5 rounded-full bg-current" /> Submitted
-                      </span>
-                    ) : tx.fawtara.status === 'failed' ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--red-100)] text-[var(--red-700)]">
-                        <span className="w-1.5 h-1.5 rounded-full bg-current" /> Failed
-                      </span>
-                    ) : (
-                      <span className="text-xs text-gray-400">{tx.fawtara.status}</span>
-                    )
-                  ) : (
-                    <span className="text-xs text-gray-400">—</span>
-                  )}
+                    );
+                  })()}
                 </td>
                 <td className="px-3 py-2.5">
                   <span
@@ -365,7 +388,8 @@ function SessionTransactions({ sessionId, locale, orgSlug, space }: { sessionId:
                   {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

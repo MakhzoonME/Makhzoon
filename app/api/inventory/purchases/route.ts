@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireAddOn } from '@/lib/permissions/require-module'
 import { requirePermission } from '@/lib/permissions/require'
 import { PurchasesService } from '@/lib/modules/inventory/purchases/purchases.service'
 import { createPurchaseSchema } from '@/lib/modules/inventory/purchases/schemas'
@@ -10,6 +12,8 @@ const service = new PurchasesService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
+    requireFeature(tenant, 'inventory')
+    await requireAddOn(tenant, 'purchasesRequests')
     const { searchParams } = new URL(req.url)
     const result = await service.list(tenant, {
       status: (searchParams.get('status') as PurchaseStatus | null) ?? undefined,
@@ -30,7 +34,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    requirePermission(tenant.user, 'purchases', 'create')
+    requireFeature(tenant, 'inventory')
+    await requireAddOn(tenant, 'purchasesRequests')
+    requirePermission(tenant.user, 'raseed', 'purchasesCreate')
     const body = await req.json()
     const parsed = createPurchaseSchema.safeParse(body)
     if (!parsed.success) {
@@ -52,7 +58,6 @@ export async function POST(req: NextRequest) {
         barcode: l.barcode ? l.barcode : null,
         quantity: l.quantity,
         unitCost: l.unitCost,
-        taxRateId: l.taxRateId || null,
         notes: l.notes ?? null,
       })),
     })

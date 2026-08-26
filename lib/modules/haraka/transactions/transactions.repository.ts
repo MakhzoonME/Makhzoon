@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import type { PosLineItem, PosPayment, PosTransaction } from '@/types'
@@ -13,8 +14,6 @@ function toLine(d: Row): PosLineItem {
     barcode: (d.barcode as string) ?? null,
     quantity: Number(d.quantity ?? 0),
     unitPrice: Number(d.unitPrice ?? 0),
-    taxRateId: (d.taxRateId as string) ?? null,
-    taxRate: Number(d.taxRate ?? 0),
     taxAmount: Number(d.taxAmount ?? 0),
     discountAmount: Number(d.discountAmount ?? 0),
     lineTotal: Number(d.lineTotal ?? 0),
@@ -47,12 +46,13 @@ function toTransaction(r: Row): PosTransaction {
     total: Number(r.total ?? 0),
     payments: Array.isArray(r.payments) ? (r.payments as Row[]).map(toPayment) : [],
     change: Number(r.change ?? 0),
+    discountApprovedBy: (r.discount_approved_by as string) ?? null,
+    discountApprovedByName: (r.discount_approved_by_name as string) ?? null,
     status: (r.status as PosTransaction['status']) ?? 'completed',
     receiptNumber: (r.receipt_number as string) ?? '',
     offlineId: (r.offline_id as string) ?? '',
     syncedAt: r.synced_at ? new Date(r.synced_at as string) : null,
     parentTransactionId: (r.parent_transaction_id as string) ?? null,
-    fawtara: (r.fawtara as PosTransaction['fawtara']) ?? null,
     createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
     updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
   }
@@ -63,9 +63,10 @@ export interface CompleteSaleInput {
   customerId?: string | null
   customerName?: string | null
   lines: CartLineInput[]
-  payments: Array<{ method: 'cash' | 'card' | 'other'; amount: number; reference?: string | null; cardLast4?: string | null }>
+  payments: Array<{ method: string; amount: number; reference?: string | null; cardLast4?: string | null }>
   offlineId: string
-  skipFawtara?: boolean
+  discountApprovedBy?: string | null
+  discountApprovedByName?: string | null
 }
 
 interface ListOpts {
@@ -104,32 +105,18 @@ export interface AggregateResult {
 }
 
 /**
- * Allocate the next per-org receipt number. Was a Firestore transaction;
- * read-modify-write on the single pos_receipt_counters row — acceptable for
- * the internal/staging scope (harden via an RPC for concurrent registers).
+ * Allocate the next per-org receipt number. Uses the atomic
+ * `next_receipt_number` RPC (migration 0047) which performs INSERT … ON
+ * CONFLICT DO UPDATE in a single statement, preventing duplicate receipt
+ * numbers from concurrent registers.
  */
 async function allocateReceiptNumber(orgId: string, spaceId?: string): Promise<string> {
-  // Receipt counter is per-space (each branch has its own sequence). For
-  // backward compatibility before Script 3 runs, when spaceId is absent we
-  // fall back to a single org-wide row (legacy behavior).
-  let readQ = supabaseAdmin
-    .from('pos_receipt_counters')
-    .select('last_receipt_number')
-    .eq('organization_id', orgId)
-  if (spaceId) readQ = readQ.eq('space_id', spaceId)
-  const { data } = await readQ.maybeSingle()
-  const next = (data ? Number(data.last_receipt_number ?? 0) : 0) + 1
-  const { error } = await supabaseAdmin.from('pos_receipt_counters').upsert(
-    {
-      organization_id: orgId,
-      space_id: spaceId,
-      last_receipt_number: next,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: spaceId ? 'organization_id,space_id' : 'organization_id' },
-  )
+  const { data, error } = await supabaseAdmin.rpc('next_receipt_number', {
+    p_org_id: orgId,
+    p_space_id: spaceId ?? null,
+  })
   if (error) throw error
-  return `R-${String(next).padStart(6, '0')}`
+  return `R-${String(data).padStart(6, '0')}`
 }
 
 function startOfDayUTC(d: Date): Date {
@@ -137,24 +124,6 @@ function startOfDayUTC(d: Date): Date {
 }
 function dayKey(d: Date): string {
   return startOfDayUTC(d).toISOString().slice(0, 10)
-}
-
-/** Latest ledger on-hand for an item, else its cached quantity_on_hand. */
-async function currentQty(itemId: string): Promise<number> {
-  const { data: lastTx } = await supabaseAdmin
-    .from('inventory_transactions')
-    .select('quantity_after')
-    .eq('item_id', itemId)
-    .order('performed_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  if (lastTx) return Number(lastTx.quantity_after ?? 0)
-  const { data: item } = await supabaseAdmin
-    .from('inventory_items')
-    .select('quantity_on_hand')
-    .eq('id', itemId)
-    .maybeSingle()
-  return Number(item?.quantity_on_hand ?? 0)
 }
 
 
@@ -262,6 +231,44 @@ export class TransactionsRepository {
     return { items: items.slice(start, start + pageSize), total, page: safePage, pageSize, totalPages }
   }
 
+  /**
+   * Every POS transaction ever recorded for a given customer (sales, refunds
+   * and voids), newest first. Used by the customer profile's history timeline.
+   *
+   * Primarily matches on `customer_id`. As a fallback it also picks up legacy
+   * rows that were rung up name-only (no linked customer) by matching the
+   * snapshotted `customer_name` — but only among rows with a null customer_id,
+   * so a sale explicitly attached to a different customer is never mis-claimed.
+   * (pos_transactions has no phone snapshot, so name is the only fallback key.)
+   */
+  async listByCustomer(
+    tenant: TenantContext,
+    match: { id: string; name?: string | null },
+  ): Promise<PosTransaction[]> {
+    const base = () =>
+      supabaseAdmin
+        .from('pos_transactions')
+        .select('*')
+        .eq('organization_id', tenant.organizationId)
+
+    const queries = [base().eq('customer_id', match.id)]
+    const name = match.name?.trim()
+    if (name) queries.push(base().is('customer_id', null).eq('customer_name', name))
+
+    const results = await Promise.all(queries)
+    const byId = new Map<string, PosTransaction>()
+    for (const { data, error } of results) {
+      if (error) throw error
+      for (const row of data ?? []) {
+        const tx = toTransaction(row)
+        byId.set(tx.id, tx)
+      }
+    }
+    return Array.from(byId.values()).sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    )
+  }
+
   async getById(tenant: TenantContext, id: string): Promise<PosTransaction | null> {
     const { data } = await supabaseAdmin
       .from('pos_transactions')
@@ -284,10 +291,12 @@ export class TransactionsRepository {
   }
 
   /**
-   * Complete a sale. Idempotent on offlineId. Was one Firestore transaction;
-   * here: validate → write the pos_transactions row → per-line stock-OUT
-   * ledger rows → refresh item stock_status. Read-modify-write (race caveat
-   * the original flagged as acceptable for v1).
+   * Complete a sale. Idempotent on offlineId. Pricing, session/item validation
+   * and receipt-number allocation happen here; the actual write (insert the
+   * pos_transactions row + per-line stock-OUT + stock_status refresh) is done
+   * atomically in the `haraka_complete_sale` RPC (migration 0055), so a line
+   * with insufficient stock rolls the whole sale back instead of leaving an
+   * orphaned 'completed' transaction behind.
    */
   async completeSale(tenant: TenantContext, input: CompleteSaleInput): Promise<PosTransaction> {
     const existing = await this.findByOfflineId(tenant, input.offlineId)
@@ -313,20 +322,31 @@ export class TransactionsRepository {
       throw new Error('Session is closed — open a new session before selling')
     }
 
-    // Verify every item belongs to this org before writing anything. The RPC
-    // will also catch this, but an early read-only check surfaces a clear 400
-    // rather than a Postgres exception.
+    // Verify every item belongs to this org before writing anything. Lines
+    // may reference either a Raseed stock item (inventory_items) or a POS
+    // Services catalog entry (haraka_services) — the latter never carries
+    // stock, so it joins serviceItemIds and skips the stock-out RPC below.
+    // The RPC will also catch org mismatches, but this early read-only check
+    // surfaces a clear 400 rather than a Postgres exception.
     const uniqueItemIds = Array.from(new Set(input.lines.map((l) => l.itemId)))
-    const { data: itemRows, error: itemErr } = await supabaseAdmin
-      .from('inventory_items')
-      .select('id, organization_id')
-      .in('id', uniqueItemIds)
+    const [{ data: itemRows, error: itemErr }, { data: serviceRows, error: serviceErr }] = await Promise.all([
+      supabaseAdmin.from('inventory_items').select('id, organization_id').in('id', uniqueItemIds),
+      supabaseAdmin.from('haraka_services').select('id, organization_id').in('id', uniqueItemIds),
+    ])
     if (itemErr) throw itemErr
+    if (serviceErr) throw serviceErr
+    const serviceItemIds = new Set<string>()
     for (const iid of uniqueItemIds) {
-      const r = (itemRows ?? []).find((row) => (row as Row).id === iid) as Row | undefined
-      if (!r || r.organization_id !== tenant.organizationId) {
-        throw new Error(`Inventory item not found: ${iid}`)
+      const item = (itemRows ?? []).find((row) => (row as Row).id === iid) as Row | undefined
+      if (item) {
+        if (item.organization_id !== tenant.organizationId) throw new Error(`Inventory item not found: ${iid}`)
+        continue
       }
+      const svc = (serviceRows ?? []).find((row) => (row as Row).id === iid) as Row | undefined
+      if (!svc || svc.organization_id !== tenant.organizationId) {
+        throw new Error(`Item not found: ${iid}`)
+      }
+      serviceItemIds.add(iid)
     }
 
     const receiptNumber = await allocateReceiptNumber(tenant.organizationId, tenant.spaceId)
@@ -338,16 +358,25 @@ export class TransactionsRepository {
       barcode: l.barcode,
       quantity: l.quantity,
       unitPrice: l.unitPrice,
-      taxRateId: l.taxRateId,
-      taxRate: l.taxRate,
-      taxAmount: l.taxAmount,
+      taxAmount: 0,
       discountAmount: l.discount,
       lineTotal: l.lineTotal,
     }))
 
-    const { data: tx, error: txErr } = await supabaseAdmin
-      .from('pos_transactions')
-      .insert({
+    // The pos_transactions insert and every per-line stock-OUT run inside a
+    // single Postgres transaction via the `haraka_complete_sale` RPC (migration
+    // 0055). If any line has insufficient stock the RPC raises and the whole
+    // transaction — including the inserted 'completed' row — is rolled back, so
+    // a failed charge can never leave an orphaned completed transaction behind.
+    // Service catalog lines carry no stock and are excluded from the stock-out
+    // list. `inventory_apply_stock_out` still row-locks each item, so concurrent
+    // sales of the same item cannot oversell.
+    const stockLines = priced.lines
+      .filter((line) => !serviceItemIds.has(line.itemId))
+      .map((line) => ({ item_id: line.itemId, qty: line.quantity, item_name: line.itemName }))
+
+    const { data: tx, error: saleErr } = await supabaseAdmin.rpc('haraka_complete_sale', {
+      p_tx: {
         organization_id: tenant.organizationId,
         space_id: tenant.spaceId,
         session_id: input.sessionId,
@@ -358,7 +387,7 @@ export class TransactionsRepository {
         customer_name: input.customerName ?? null,
         items,
         subtotal: priced.totals.subtotal,
-        tax_amount: priced.totals.taxTotal,
+        tax_amount: 0,
         discount_amount: priced.totals.discountTotal,
         total: priced.totals.total,
         payments: input.payments.map((p) => ({
@@ -373,53 +402,32 @@ export class TransactionsRepository {
         offline_id: input.offlineId,
         synced_at: now,
         parent_transaction_id: null,
-        fawtara: null,
-      })
-      .select('*')
-      .single()
-    if (txErr) throw txErr
-    const posTxId = tx.id as string
-
-    // Each line decrements stock atomically via the `inventory_apply_stock_out`
-    // RPC (migration 0016). The function row-locks the item before reading the
-    // current quantity, then inserts the ledger row and updates stock_status in
-    // one transaction — preventing oversell from concurrent sales of the same
-    // item. Lines for different items run in parallel; lines sharing an item
-    // are serialised by Postgres's row lock (the second caller waits for the
-    // first to commit, then reads the already-updated quantity_after).
-    const stockResults = await Promise.allSettled(
-      priced.lines.map((line) =>
-        supabaseAdmin.rpc('inventory_apply_stock_out', {
-          p_org:      tenant.organizationId,
-          p_space:    tenant.spaceId ?? null,
-          p_item:     line.itemId,
-          p_qty:      line.quantity,
-          p_item_name: line.itemName,
-          p_reason:   'POS sale',
-          p_note:     `Receipt ${receiptNumber}`,
-          p_source:   'pos',
-          p_pos_tx:   posTxId,
-          p_by:       tenant.userId,
-          p_by_email: tenant.user.email ?? null,
-          p_by_name:  tenant.user.displayName ?? null,
-          p_by_role:  tenant.role ?? null,
-        }),
-      ),
-    )
-    for (const result of stockResults) {
-      if (result.status === 'rejected') throw result.reason
-      if (result.value.error) {
-        const msg = result.value.error.message ?? ''
-        if (msg.includes('INSUFFICIENT_STOCK')) {
-          const itemId = msg.split(':')[1]?.trim() ?? ''
-          const name = priced.lines.find((l) => l.itemId === itemId)?.itemName ?? itemId
-          throw new Error(`Insufficient stock for ${name}`)
-        }
-        throw result.value.error
+        discount_approved_by: input.discountApprovedBy ?? null,
+        discount_approved_by_name: input.discountApprovedByName ?? null,
+      },
+      p_stock_lines: stockLines,
+      p_actor: {
+        by: tenant.userId,
+        by_email: tenant.user.email ?? null,
+        by_name: tenant.user.displayName ?? null,
+        by_role: tenant.role ?? null,
+      },
+    })
+    if (saleErr) {
+      const msg = saleErr.message ?? ''
+      if (msg.includes('INSUFFICIENT_STOCK')) {
+        const itemId = msg.split('INSUFFICIENT_STOCK:')[1]?.split(/[\s"]/)[0]?.trim() ?? ''
+        const name = priced.lines.find((l) => l.itemId === itemId)?.itemName ?? itemId
+        throw new Error(`Insufficient stock for ${name}`)
       }
+      if (msg.includes('INVENTORY_ITEM_NOT_FOUND')) {
+        const itemId = msg.split('INVENTORY_ITEM_NOT_FOUND:')[1]?.split(/[\s"]/)[0]?.trim() ?? ''
+        throw new Error(`Item not found: ${itemId}`)
+      }
+      throw saleErr
     }
 
-    return toTransaction(tx)
+    return toTransaction(tx as Row)
   }
 
   /**
@@ -440,35 +448,33 @@ export class TransactionsRepository {
     }
 
     for (const line of tx.items) {
+      // Check if this is a stock item (Services catalog lines are not
+      // stock-decremented, so there's nothing to restock).
       const { data: item } = await supabaseAdmin
         .from('inventory_items')
-        .select('id, minimum_threshold')
+        .select('id')
         .eq('id', line.inventoryItemId)
         .maybeSingle()
       if (!item) continue
-      const before = await currentQty(line.inventoryItemId)
-      const after = before + line.quantity
-      const threshold = Number(item.minimum_threshold ?? 0)
-      const { error: invErr } = await supabaseAdmin.from('inventory_transactions').insert({
-        organization_id: tenant.organizationId,
-        space_id: tenant.spaceId,
-        item_id: line.inventoryItemId,
-        item_name: line.inventoryItemName,
-        type: 'in',
-        quantity: line.quantity,
-        quantity_before: before,
-        quantity_after: after,
-        reason: 'POS void',
-        note: `Voided ${tx.receiptNumber}`,
-        source: 'pos-void',
-        pos_transaction_id: id,
-        performed_by: tenant.userId,
+      // Atomic stock-in via the `inventory_apply_stock_in` RPC (migration 0047).
+      // Serializes concurrent voids on the same item via FOR UPDATE.
+      const { error: rpcErr } = await supabaseAdmin.rpc('inventory_apply_stock_in', {
+        p_org:         tenant.organizationId,
+        p_space:       tenant.spaceId ?? null,
+        p_item:        line.inventoryItemId,
+        p_qty:         line.quantity,
+        p_item_name:   line.inventoryItemName,
+        p_reason:      'POS void',
+        p_note:        `Voided ${tx.receiptNumber}`,
+        p_source:      'pos-void',
+        p_purchase_id: null,
+        p_pos_tx:      id,
+        p_by:          tenant.userId,
+        p_by_email:    null,
+        p_by_name:     null,
+        p_by_role:     null,
       })
-      if (invErr) throw invErr
-      await supabaseAdmin
-        .from('inventory_items')
-        .update({ stock_status: after === 0 ? 'out' : after < threshold ? 'low' : 'ok' })
-        .eq('id', line.inventoryItemId)
+      if (rpcErr) throw rpcErr
     }
 
     const { error } = await supabaseAdmin
@@ -538,8 +544,6 @@ export class TransactionsRepository {
           barcode: l.barcode,
           quantity: l.quantity,
           unitPrice: l.unitPrice,
-          taxRateId: l.taxRateId,
-          taxRate: l.taxRate,
           taxAmount: l.taxAmount,
           discountAmount: l.discountAmount,
           lineTotal: l.lineTotal,
@@ -555,7 +559,6 @@ export class TransactionsRepository {
         offline_id: `refund-${id}-${Date.now()}`,
         synced_at: new Date().toISOString(),
         parent_transaction_id: id,
-        fawtara: null,
         refund_reason: opts.reason ?? null,
       })
       .select('id')
@@ -564,35 +567,33 @@ export class TransactionsRepository {
     const refundId = refund.id as string
 
     for (const line of refundedLines) {
+      // Check if this is a stock item (Services catalog lines are not
+      // stock-decremented, so there's nothing to restock).
       const { data: item } = await supabaseAdmin
         .from('inventory_items')
-        .select('id, minimum_threshold')
+        .select('id')
         .eq('id', line.inventoryItemId)
         .maybeSingle()
       if (!item) continue
-      const before = await currentQty(line.inventoryItemId)
-      const after = before + line.quantity
-      const threshold = Number(item.minimum_threshold ?? 0)
-      const { error: invErr } = await supabaseAdmin.from('inventory_transactions').insert({
-        organization_id: tenant.organizationId,
-        space_id: tenant.spaceId,
-        item_id: line.inventoryItemId,
-        item_name: line.inventoryItemName,
-        type: 'in',
-        quantity: line.quantity,
-        quantity_before: before,
-        quantity_after: after,
-        reason: 'POS refund',
-        note: `Refund of ${orig.receiptNumber}${opts.reason ? ` — ${opts.reason}` : ''}`,
-        source: 'pos-refund',
-        pos_transaction_id: refundId,
-        performed_by: tenant.userId,
+      // Atomic stock-in via the `inventory_apply_stock_in` RPC (migration 0047).
+      // Serializes concurrent refunds on the same item via FOR UPDATE.
+      const { error: rpcErr } = await supabaseAdmin.rpc('inventory_apply_stock_in', {
+        p_org:         tenant.organizationId,
+        p_space:       tenant.spaceId ?? null,
+        p_item:        line.inventoryItemId,
+        p_qty:         line.quantity,
+        p_item_name:   line.inventoryItemName,
+        p_reason:      'POS refund',
+        p_note:        `Refund of ${orig.receiptNumber}${opts.reason ? ` — ${opts.reason}` : ''}`,
+        p_source:      'pos-refund',
+        p_purchase_id: null,
+        p_pos_tx:      refundId,
+        p_by:          tenant.userId,
+        p_by_email:    null,
+        p_by_name:     null,
+        p_by_role:     null,
       })
-      if (invErr) throw invErr
-      await supabaseAdmin
-        .from('inventory_items')
-        .update({ stock_status: after === 0 ? 'out' : after < threshold ? 'low' : 'ok' })
-        .eq('id', line.inventoryItemId)
+      if (rpcErr) throw rpcErr
     }
 
     const { error: upErr } = await supabaseAdmin

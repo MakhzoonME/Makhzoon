@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { requirePermission } from '@/lib/permissions/require';
 import { getAssetById } from '@/lib/db/assets';
 import { getMaintenanceRecords, createMaintenanceRecord } from '@/lib/db/maintenance-records';
@@ -10,7 +11,9 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ assetId:
   const params = await props.params;
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'assets');
     const user = tenant.user;
+    requirePermission(user, 'usool', 'maintenanceView');
 
     const asset = await getAssetById(params.assetId);
     if (!asset || asset.organizationId !== user.organizationId) {
@@ -29,8 +32,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ assetId:
   const params = await props.params;
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'assets');
     const user = tenant.user;
-    requirePermission(user, 'assets', 'maintenance');
+    requirePermission(user, 'usool', 'maintenanceCreate');
 
     const asset = await getAssetById(params.assetId);
     if (!asset || asset.organizationId !== user.organizationId) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import { requirePermission } from '@/lib/permissions/require';
 import { getInventoryAudits, createInventoryAudit } from '@/lib/db/inventory-audits';
 import { getAssets } from '@/lib/db/assets';
@@ -9,6 +10,8 @@ import { inventoryAuditSchema } from '@/lib/validations/inventory.schema';
 export async function GET() {
   try {
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'inventory');
+    requirePermission(tenant.user, 'usool', 'assetAuditsView');
     const audits = await getInventoryAudits(tenant.organizationId, tenant.spaceId);
     return NextResponse.json({ audits });
   } catch (err) {
@@ -21,14 +24,33 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant();
-    requirePermission(tenant.user, 'inventory', 'audits');
+    requireFeature(tenant, 'inventory');
+    requirePermission(tenant.user, 'usool', 'assetAuditStart');
 
     const body = await req.json();
     const parsed = inventoryAuditSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
-    // Load all active assets to seed the audit
-    const { items: assets } = await getAssets(tenant.organizationId, { status: 'Active', pageSize: 1000 });
+    // Load ALL active assets to seed the audit, narrowed by the chosen scope
+    const { scope, category, location } = parsed.data;
+    const allAssets: Awaited<ReturnType<typeof getAssets>>['items'] = [];
+    let page = 1;
+    const pageSize = 500;
+    while (true) {
+      const { items, totalPages } = await getAssets(tenant.organizationId, {
+        spaceId: tenant.spaceId,
+        status: 'Active',
+        category: scope === 'category' ? category : undefined,
+        page,
+        pageSize,
+      });
+      allAssets.push(...items);
+      if (page >= totalPages) break;
+      page++;
+    }
+    const assets = scope === 'location' && location
+      ? allAssets.filter((a) => a.location === location)
+      : allAssets;
 
     const id = await createInventoryAudit({
       organizationId: tenant.organizationId,
@@ -47,7 +69,7 @@ export async function POST(req: NextRequest) {
       })),
     });
 
-    auditLog.queue({
+    await auditLog.create({
       tenant,
       action: 'INVENTORY_AUDIT_STARTED',
       module: 'inventory',

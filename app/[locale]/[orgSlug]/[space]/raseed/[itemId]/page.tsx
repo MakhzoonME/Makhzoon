@@ -10,7 +10,7 @@ import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { InventoryTransaction, Warranty } from '@/types';
@@ -18,7 +18,6 @@ import { FormDrawer } from '@/components/shared/FormDrawer';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { DocumentList } from '@/components/shared';
 import { useOrgInfo } from '@/hooks/org';
-import { RequestInventoryModal } from '@/components/inventory/RequestInventoryModal';
 import { WarrantyForm } from '@/components/warranties/WarrantyForm';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataTable, ColumnDef } from '@/components/shared/DataTable';
@@ -30,6 +29,7 @@ import { useAccessibleSpaces } from '@/hooks/spaces';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
 import { formatDate, isExpired, getWarrantyStatus } from '@/lib/utils/date';
+import { CustomFieldValuesSection } from '@/components/banna/CustomFieldValuesSection';
 
 /* ── Icons ───────────────────────────────────────────────────────── */
 function BoxIcon() {
@@ -118,7 +118,6 @@ export default function InventoryItemDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [moveOpen, setMoveOpen]   = useState(false);
   const [dupeOpen, setDupeOpen]   = useState(false);
-  const [reqOpen, setReqOpen]     = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting]   = useState(false);
   const [editWarrantyTarget, setEditWarrantyTarget] = useState<Warranty | null>(null);
@@ -135,12 +134,19 @@ export default function InventoryItemDetailPage() {
         const key =
           body.code === 'INVENTORY_DELETE_OPEN_REQUESTS'   ? 'inventory.deleteBlockedOpenRequests'
           : body.code === 'INVENTORY_DELETE_ACTIVE_WARRANTY' ? 'inventory.deleteBlockedActiveWarranty'
+          : body.code === 'INVENTORY_NOT_FOUND'              ? 'inventory.itemNotFound'
           : null;
         toast.error(key ? t(key) : (body.error || t('inventory.itemDeleteFailed')));
+        // Already gone server-side — bounce back to the list instead of
+        // leaving the cashier stuck on a detail page for a deleted item.
+        if (body.code === 'INVENTORY_NOT_FOUND') {
+          qc.invalidateQueries({ queryKey: ['inventory'] });
+          router.push(`/${locale}/${orgSlug}/${space}/raseed`);
+        }
         return;
       }
       toast.success(t('inventory.itemDeleted'));
-      qc.invalidateQueries({ queryKey: ['inventory'] });
+      await qc.invalidateQueries({ queryKey: ['inventory'] });
       router.push(`/${locale}/${orgSlug}/${space}/raseed`);
     } catch {
       toast.error(t('inventory.itemDeleteFailed'));
@@ -238,9 +244,6 @@ export default function InventoryItemDetailPage() {
         ]}
         actions={(
           <div className="flex items-center gap-2 flex-wrap">
-            <Button size="sm" variant="outline" onClick={() => setReqOpen(true)} className="cursor-pointer transition-colors duration-150">
-              {t('inventory.requestRefill')}
-            </Button>
             {isAdmin && (
               <>
                 <Button size="sm" variant="outline" onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/${itemId}/edit`)} className="cursor-pointer transition-colors duration-150">
@@ -300,13 +303,13 @@ export default function InventoryItemDetailPage() {
             <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('assetDetail.detailsTitle')}</h3>
             <KVRow label={t('col.category')}>{item.category}</KVRow>
             {item.sku && <KVRow label={t('inventory.sku')}><span className="font-mono text-xs">{item.sku}</span></KVRow>}
+            {item.barcode && (
+              <KVRow label={t('inventory.barcode')}><span className="font-mono text-xs">{item.barcode}</span></KVRow>
+            )}
             <KVRow label={t('inventory.onHand')}>
               <span className={`font-semibold tabular-nums ${stockNumColor}`}>{item.quantityOnHand} {item.unit}</span>
             </KVRow>
             <KVRow label={t('inventory.threshold')}>{item.minimumThreshold} {item.unit}</KVRow>
-            {item.reorderQuantity != null && (
-              <KVRow label={t('inventory.reorderQty')}>{item.reorderQuantity} {item.unit}</KVRow>
-            )}
             {item.unitCost != null && (
               <KVRow label={t('inventory.unitCost')}>
                 <span className="font-mono tabular-nums">{item.unitCost.toFixed(3)} JOD</span>
@@ -314,6 +317,26 @@ export default function InventoryItemDetailPage() {
             )}
             {item.location && <KVRow label={t('col.location')}>{item.location}</KVRow>}
             {item.supplier && <KVRow label={t('inventory.supplier')}>{item.supplier}</KVRow>}
+            {item.expiryDate != null && (() => {
+              const expDate = item.expiryDate instanceof Date ? item.expiryDate : new Date(item.expiryDate as unknown as string);
+              return (
+                <KVRow label={t('inventory.expiryDate')}>
+                  <span className={`font-mono tabular-nums text-sm ${expDate < new Date() ? 'text-red-600 font-semibold' : ''}`}>
+                    {formatDate(expDate)}
+                  </span>
+                </KVRow>
+              );
+            })()}
+            <KVRow label={t('inventory.sellInPos')}>
+              <span className={item.posEnabled ? 'text-[var(--green-700)]' : 'text-gray-400'}>
+                {item.posEnabled ? t('common.yes') : t('common.no')}
+              </span>
+            </KVRow>
+            {item.posEnabled && item.posPrice != null && (
+              <KVRow label={t('inventory.posPrice')}>
+                <span className="font-mono tabular-nums">{item.posPrice.toFixed(2)} JOD</span>
+              </KVRow>
+            )}
             {item.notes && (
               <div className="mt-4 pt-4 border-t border-border">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{t('col.notes')}</p>
@@ -325,84 +348,85 @@ export default function InventoryItemDetailPage() {
                 <DocumentList value={item.documents} label="Purchase receipts / invoices" />
               </div>
             )}
+            <CustomFieldValuesSection recordType="inventory" recordId={itemId} />
           </div>
 
           {/* Transaction history */}
           <div className="bg-surface-card rounded-xl border border-border">
-            {/* Header + segment tabs */}
-            <div className="px-5 py-3.5 border-b border-border">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('inventory.txHistory')}</h3>
-              <div className="flex gap-1">
-                {TX_TABS.map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setTxFilter(tab.key)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors duration-150 ${
-                      txFilter === tab.key
-                        ? 'bg-primary-600 text-white'
-                        : 'text-gray-500 hover:text-gray-800 hover:bg-surface-page'
-                    }`}
-                  >
-                    {tab.label}
-                    {tab.key !== 'all' && (
-                      <span className={`ms-1.5 tabular-nums ${txFilter === tab.key ? 'opacity-80' : 'text-gray-400'}`}>
-                        ({transactions.filter((tx: InventoryTransaction) => tx.type === tab.key).length})
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {txLoading ? (
-              <div className="p-5 space-y-3">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="flex gap-3 items-center">
-                    <div className="h-4 w-16 bg-surface-sidebar rounded animate-pulse" />
-                    <div className="h-4 flex-1 bg-surface-sidebar rounded animate-pulse" />
-                    <div className="h-4 w-12 bg-surface-sidebar rounded animate-pulse" />
-                  </div>
-                ))}
-              </div>
-            ) : filteredTx.length === 0 ? (
-              <p className="p-5 text-sm text-gray-400">{t('inventory.noTransactions')}</p>
-            ) : (
-              <div className="divide-y divide-border">
-                {filteredTx.map((tx: InventoryTransaction) => (
-                  <div key={tx.id} className="px-5 py-3 flex items-center gap-3 hover:bg-surface-page transition-colors duration-100">
-                    <TxBadge type={tx.type} t={t} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-gray-700 truncate">{tx.reason}</span>
-                      </div>
-                      {tx.note && (
-                        <TooltipProvider delayDuration={300}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <p className="text-xs text-gray-400 truncate cursor-default">{tx.note}</p>
-                            </TooltipTrigger>
-                            <TooltipContent>{tx.note}</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+              {/* Header + segment tabs */}
+              <div className="px-5 py-3.5 border-b border-border">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('inventory.txHistory')}</h3>
+                <div className="flex gap-1">
+                  {TX_TABS.map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setTxFilter(tab.key)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors duration-150 ${
+                        txFilter === tab.key
+                          ? 'bg-primary-600 text-white'
+                          : 'text-gray-500 hover:text-gray-800 hover:bg-surface-page'
+                      }`}
+                    >
+                      {tab.label}
+                      {tab.key !== 'all' && (
+                        <span className={`ms-1.5 tabular-nums ${txFilter === tab.key ? 'opacity-80' : 'text-gray-400'}`}>
+                          ({transactions.filter((tx: InventoryTransaction) => tx.type === tab.key).length})
+                        </span>
                       )}
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {tx.performedByName || tx.performedByEmail} · <span className="tabular-nums font-mono">{formatDate(tx.performedAt)}</span>
-                      </p>
-                    </div>
-                    <div className="text-end flex-shrink-0">
-                      <p className={cn('text-sm font-bold tabular-nums',
-                        tx.type === 'in' ? 'text-[var(--green-700)]'
-                        : tx.type === 'out' ? 'text-red-600'
-                        : 'text-primary-600')}>
-                        {tx.type === 'in' ? '+' : tx.type === 'out' ? '−' : ''}{tx.quantity} {item.unit}
-                      </p>
-                      <p className="text-xs text-gray-400 tabular-nums font-mono">{tx.quantityBefore} → {tx.quantityAfter}</p>
-                    </div>
-                  </div>
-                ))}
+                    </button>
+                  ))}
+                </div>
               </div>
-            )}
-          </div>
+
+              {txLoading ? (
+                <div className="p-5 space-y-3">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="flex gap-3 items-center">
+                      <div className="h-4 w-16 bg-surface-sidebar rounded animate-pulse" />
+                      <div className="h-4 flex-1 bg-surface-sidebar rounded animate-pulse" />
+                      <div className="h-4 w-12 bg-surface-sidebar rounded animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              ) : filteredTx.length === 0 ? (
+                <p className="p-5 text-sm text-gray-400">{t('inventory.noTransactions')}</p>
+              ) : (
+                <div className="divide-y divide-border">
+                  {filteredTx.map((tx: InventoryTransaction) => (
+                    <div key={tx.id} className="px-5 py-3 flex items-center gap-3 hover:bg-surface-page transition-colors duration-100">
+                      <TxBadge type={tx.type} t={t} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-gray-700 truncate">{tx.reason}</span>
+                        </div>
+                        {tx.note && (
+                          <TooltipProvider delayDuration={300}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <p className="text-xs text-gray-400 truncate cursor-default">{tx.note}</p>
+                              </TooltipTrigger>
+                              <TooltipContent>{tx.note}</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {tx.performedByName || tx.performedByEmail} · <span className="tabular-nums font-mono">{formatDate(tx.performedAt)}</span>
+                        </p>
+                      </div>
+                      <div className="text-end flex-shrink-0">
+                        <p className={cn('text-sm font-bold tabular-nums',
+                          tx.type === 'in' ? 'text-[var(--green-700)]'
+                          : tx.type === 'out' ? 'text-red-600'
+                          : 'text-primary-600')}>
+                          {tx.type === 'in' ? '+' : tx.type === 'out' ? '−' : ''}{tx.quantity} {item.unit}
+                        </p>
+                        <p className="text-xs text-gray-400 tabular-nums font-mono">{tx.quantityBefore} → {tx.quantityAfter}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
           {/* Warranties */}
           <Card>
@@ -433,7 +457,7 @@ export default function InventoryItemDetailPage() {
         {/* ── Right: stock alert + adjust form ────────────────────── */}
         {isAdmin && (
           <div className="space-y-5">
-            {/* Alert banner */}
+            {/* Stock alert banner */}
             {item.stockStatus !== 'ok' && (
               <div className={cn('flex items-start gap-2.5 p-4 rounded-xl border text-sm', stockColor)}>
                 <AlertTriangle aria-hidden className="h-4 w-4 flex-shrink-0 mt-0.5" strokeWidth={1.75} />
@@ -445,64 +469,102 @@ export default function InventoryItemDetailPage() {
               </div>
             )}
 
+            {/* Expiry alert banner */}
+            {item.expiryDate != null && (() => {
+              const now = new Date();
+              const exp = item.expiryDate instanceof Date ? item.expiryDate : new Date(item.expiryDate as unknown as string);
+              const daysLeft = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+              if (daysLeft < 0) {
+                return (
+                  <div className="flex items-start gap-2.5 p-4 rounded-xl border text-sm bg-[var(--red-100)] text-[var(--red-700)] border-[var(--red-100)]">
+                    <AlertTriangle aria-hidden className="h-4 w-4 flex-shrink-0 mt-0.5" strokeWidth={1.75} />
+                    <span>{t('inventory.expiryExpired')} ({formatDate(exp)})</span>
+                  </div>
+                );
+              }
+              if (daysLeft <= 30) {
+                return (
+                  <div className="flex items-start gap-2.5 p-4 rounded-xl border text-sm bg-[var(--yellow-100)] text-[var(--yellow-700)] border-[var(--yellow-100)]">
+                    <AlertTriangle aria-hidden className="h-4 w-4 flex-shrink-0 mt-0.5" strokeWidth={1.75} />
+                    <span>{t('inventory.expiryWarn').replace('{days}', String(daysLeft))} ({formatDate(exp)})</span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
             {/* Adjust stock form */}
             <div className="bg-surface-card rounded-xl border border-border p-5">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">{t('inventory.adjustStock')}</h3>
-              <form onSubmit={handleTransaction} className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-4">{t('inventory.adjustStock')}</h3>
+                <form onSubmit={handleTransaction} className="space-y-4">
 
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('inventory.txType')}</label>
-                  <Select value={txType} onValueChange={(v) => setTxType(v as typeof txType)}>
-                    <SelectTrigger className="cursor-pointer">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="in">
-                        <span className="flex items-center gap-2 text-[var(--green-700)]">
-                          <TrendingUp aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
-                          {t('inventory.stockIn')}
-                        </span>
-                      </SelectItem>
-                      <SelectItem value="out">
-                        <span className="flex items-center gap-2 text-red-600">
-                          <TrendingDown aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
-                          {t('inventory.stockOut')}
-                        </span>
-                      </SelectItem>
-                      <SelectItem value="adjustment">
-                        <span className="flex items-center gap-2 text-primary-600">
-                          <RefreshCw aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
-                          {t('inventory.setAbsolute')}
-                        </span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('inventory.txType')}</label>
+                    <Combobox
+                      value={txType}
+                      onChange={(v) => setTxType((v ?? txType) as typeof txType)}
+                      searchable={false}
+                      clearable={false}
+                      className="cursor-pointer"
+                      options={[
+                        {
+                          value: 'in',
+                          searchText: t('inventory.stockIn'),
+                          label: (
+                            <span className="flex items-center gap-2 text-[var(--green-700)]">
+                              <TrendingUp aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
+                              {t('inventory.stockIn')}
+                            </span>
+                          ),
+                        },
+                        {
+                          value: 'out',
+                          searchText: t('inventory.stockOut'),
+                          label: (
+                            <span className="flex items-center gap-2 text-red-600">
+                              <TrendingDown aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
+                              {t('inventory.stockOut')}
+                            </span>
+                          ),
+                        },
+                        {
+                          value: 'adjustment',
+                          searchText: t('inventory.setAbsolute'),
+                          label: (
+                            <span className="flex items-center gap-2 text-primary-600">
+                              <RefreshCw aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
+                              {t('inventory.setAbsolute')}
+                            </span>
+                          ),
+                        },
+                      ]}
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                    {txType === 'adjustment' ? `${t('inventory.txQty')} (${item.unit}) — ${t('inventory.setAbsolute')}` : `${t('inventory.txQty')} (${item.unit})`}
-                  </label>
-                  <Input type="number" min="1" value={txQty} onChange={(e) => setTxQty(e.target.value)} placeholder="0" required />
-                </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                      {txType === 'adjustment' ? `${t('inventory.txQty')} (${item.unit}) — ${t('inventory.setAbsolute')}` : `${t('inventory.txQty')} (${item.unit})`}
+                    </label>
+                    <Input type="number" min="1" value={txQty} onChange={(e) => setTxQty(e.target.value)} placeholder="0" required />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('inventory.txReason')} *</label>
-                  <Input value={txReason} onChange={(e) => setTxReason(e.target.value)} placeholder="e.g. Received from supplier" required />
-                </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('inventory.txReason')} *</label>
+                    <Input value={txReason} onChange={(e) => setTxReason(e.target.value)} placeholder="e.g. Received from supplier" required />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('inventory.txNoteOptional')}</label>
-                  <Input value={txNote} onChange={(e) => setTxNote(e.target.value)} placeholder={t('inventory.additionalDetails')} />
-                </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('inventory.txNoteOptional')}</label>
+                    <Input value={txNote} onChange={(e) => setTxNote(e.target.value)} placeholder={t('inventory.additionalDetails')} />
+                  </div>
 
-                <Button type="submit" className="w-full cursor-pointer transition-colors duration-150" disabled={submitting}>
-                  {submitting
-                    ? <span className="inline-flex items-center gap-2"><LoaderSVG />{t('common.saving')}</span>
-                    : t('inventory.updateStock')}
-                </Button>
-              </form>
-            </div>
+                  <Button type="submit" className="w-full cursor-pointer transition-colors duration-150" disabled={submitting}>
+                    {submitting
+                      ? <span className="inline-flex items-center gap-2"><LoaderSVG />{t('common.saving')}</span>
+                      : t('inventory.updateStock')}
+                  </Button>
+                </form>
+              </div>
           </div>
         )}
       </div>
@@ -516,13 +578,6 @@ export default function InventoryItemDetailPage() {
         confirmLabel={t('common.delete')}
         onConfirm={handleDelete}
         loading={deleting}
-      />
-
-      <RequestInventoryModal
-        open={reqOpen}
-        onOpenChange={setReqOpen}
-        itemId={item.id}
-        itemName={item.name}
       />
 
       <FormDrawer open={!!editWarrantyTarget} onOpenChange={(o) => { if (!o) setEditWarrantyTarget(null); }} title={t('warranties.editWarranty')}>

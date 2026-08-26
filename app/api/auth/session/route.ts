@@ -8,7 +8,18 @@ import { getUserById } from '@/lib/db/users';
 import { invalidateCachedSession } from '@/lib/supabase/session-cache';
 import { revokeSession } from '@/lib/supabase/session-revocation';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
-import type { UserRole } from '@/types';
+import { getPackageById } from '@/lib/db/packages';
+import { getActiveAddOns } from '@/lib/platform/entitlements';
+import type { AddOnKey, UserRole } from '@/types';
+
+const EMPTY_ACTIVE_ADD_ONS: Record<AddOnKey, boolean> = {
+  deliveryAgents: false,
+  warrantyCerts: false,
+  customization: false,
+  purchasesRequests: false,
+  vehicleIntake: false,
+  documentReports: false,
+};
 
 const ORG_ROLES = new Set<UserRole>(['org_owner', 'admin', 'staff']);
 
@@ -35,7 +46,7 @@ function decodeJwt(token: string): Record<string, unknown> {
 export async function POST(req: NextRequest) {
   try {
     const clientIp = getClientIp(req);
-    const rl = checkRateLimit(`session:${clientIp}`, 5, 15 * 60 * 1000, {
+    const rl = await checkRateLimit(`session:${clientIp}`, 5, 15 * 60 * 1000, {
       action: 'sign in',
     });
     if (rl) return rl;
@@ -84,6 +95,8 @@ export async function POST(req: NextRequest) {
 
     let orgSlug: string | null = null;
     let features: Record<string, boolean> = {};
+    let activeHarakaModules: string[] = [];
+    let activeAddOns: Record<AddOnKey, boolean> = { ...EMPTY_ACTIVE_ADD_ONS };
     let orgSuspended = false;
 
     if (orgId) {
@@ -94,6 +107,14 @@ export async function POST(req: NextRequest) {
       orgSlug = org?.subdomain ?? null;
       if (subscription?.features)
         features = subscription.features as Record<string, boolean>;
+      if (subscription) {
+        activeHarakaModules = [
+          ...(subscription.activeHarakaModules ?? []),
+          ...(subscription.activeAddOns?.extraHarakaModules ?? []),
+        ];
+        const pkg = subscription.packageId ? await getPackageById(subscription.packageId) : null;
+        activeAddOns = getActiveAddOns(subscription, pkg);
+      }
       if (subscription?.status === 'SUSPENDED' && role !== 'super_admin') {
         orgSuspended = true;
       }
@@ -106,14 +127,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Load org-scoped permissions for ALL org roles (not just staff) so the
+    // frontend can correctly gate UI for admins with custom restrictions.
     let permissions = null;
-    if (role === 'staff' && orgId) {
+    const ORG_ROLES_SET = new Set(['org_owner', 'admin', 'staff']);
+    if (ORG_ROLES_SET.has(role) && orgId) {
       const u = await getUserById(user.id);
       permissions = u?.permissions ?? null;
     }
 
+    // Load platform-scoped permissions for superadmin team members.
+    let saPermissions = null;
+    const SUPERADMIN_ROLES_SET = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
+    if (SUPERADMIN_ROLES_SET.has(role)) {
+      const { data: saRow } = await supabaseAdmin
+        .from('superadmin_users')
+        .select('permissions')
+        .eq('id', user.id)
+        .maybeSingle();
+      saPermissions = (saRow?.permissions as Record<string, unknown> | null) ?? null;
+    }
+
     return NextResponse.json(
-      { role, orgSlug, features, permissions },
+      { role, orgSlug, features, activeHarakaModules, activeAddOns, permissions, saPermissions },
       { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (err) {

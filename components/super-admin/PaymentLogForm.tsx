@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Combobox } from '@/components/ui/combobox';
 import type { PaymentLogMethod } from '@/types';
 
 const METHODS: PaymentLogMethod[] = ['CARD', 'BANK_TRANSFER', 'MANUAL', 'OTHER'];
@@ -30,11 +31,16 @@ export function PaymentLogForm({ onSubmit, onCancel, submitting }: PaymentLogFor
   const [reference, setReference] = useState('');
   const [paidAt, setPaidAt] = useState(new Date().toISOString().slice(0, 16));
   const [notes, setNotes] = useState('');
+  const [amountError, setAmountError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setAmountError(null);
     const amt = parseFloat(amount);
-    if (!Number.isFinite(amt) || amt <= 0) return;
+    if (!Number.isFinite(amt) || amt <= 0) {
+      setAmountError('Please enter a valid amount greater than 0.');
+      return;
+    }
     await onSubmit({
       amount: amt,
       currency: currency.toUpperCase(),
@@ -59,6 +65,7 @@ export function PaymentLogForm({ onSubmit, onCancel, submitting }: PaymentLogFor
             onChange={(e) => setAmount(e.target.value)}
             required
           />
+          {amountError && <p className="text-xs text-red-500">{amountError}</p>}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="pmt-currency">Currency</Label>
@@ -75,18 +82,14 @@ export function PaymentLogForm({ onSubmit, onCancel, submitting }: PaymentLogFor
 
       <div className="space-y-1.5">
         <Label htmlFor="pmt-method">Method</Label>
-        <select
+        <Combobox
           id="pmt-method"
           value={method}
-          onChange={(e) => setMethod(e.target.value as PaymentLogMethod)}
-          className="flex h-9 w-full rounded-md border border-gray-300 bg-surface-card px-3 text-sm"
-        >
-          {METHODS.map((m) => (
-            <option key={m} value={m}>
-              {m.replace('_', ' ')}
-            </option>
-          ))}
-        </select>
+          onChange={(v) => setMethod((v ?? method) as PaymentLogMethod)}
+          options={METHODS.map((m) => ({ value: m, label: m.replace('_', ' ') }))}
+          searchable={false}
+          clearable={false}
+        />
       </div>
 
       <div className="space-y-1.5">

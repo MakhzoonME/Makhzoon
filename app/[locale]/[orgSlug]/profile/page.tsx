@@ -1,15 +1,17 @@
 'use client';
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
 import { useOrgSlug, useT } from '@/hooks/ui';
+import { useOrgInfo } from '@/hooks/org';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { AvatarUpload } from '@/components/shared/AvatarUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/ui';
 import { createClient } from '@/lib/supabase/client';
-import { Save, KeyRound } from 'lucide-react';
+import { Save, KeyRound, ShieldCheck } from 'lucide-react';
+import { hasPermission } from '@/lib/permissions';
+import { useDiscountApprovalPin, useSetDiscountApprovalPin } from '@/hooks/haraka';
 
 /** Display email/username without the synthetic @makhzoon.local suffix */
 function displayIdentity(email?: string | null): string {
@@ -22,16 +24,7 @@ export default function ProfilePage() {
   const { user, setUser } = useAuthStore();
   const orgSlug = useOrgSlug();
   const { t } = useT();
-  const { data: orgData } = useQuery({
-    queryKey: ['org-by-slug', orgSlug],
-    queryFn: async () => {
-      const res = await fetch(`/api/organizations/by-subdomain/${orgSlug}`);
-      if (!res.ok) return null;
-      return res.json() as Promise<{ name: string }>;
-    },
-    enabled: !!orgSlug,
-    staleTime: 60_000,
-  });
+  const { data: orgData } = useOrgInfo();
 
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
   const [savingName, setSavingName] = useState(false);
@@ -54,6 +47,43 @@ export default function ProfilePage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
+
+  const canApproveDiscount = !!user && hasPermission(user, 'haraka', 'approveDiscount');
+  const { data: pinData } = useDiscountApprovalPin();
+  const setPinMut = useSetDiscountApprovalPin();
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+
+  async function handleSetPin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!/^\d{4}$/.test(newPin)) {
+      toast.error('PIN must be exactly 4 digits');
+      return;
+    }
+    if (newPin !== confirmPin) {
+      toast.error(t('profile.passwordsDontMatch'));
+      return;
+    }
+    try {
+      await setPinMut.mutateAsync(newPin);
+      toast.success(t('common.updated'));
+      setNewPin('');
+      setConfirmPin('');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.updateFailed'));
+    }
+  }
+
+  async function handleClearPin() {
+    try {
+      await setPinMut.mutateAsync(null);
+      toast.success(t('common.updated'));
+      setNewPin('');
+      setConfirmPin('');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.updateFailed'));
+    }
+  }
 
   async function handleSaveName(e: React.FormEvent) {
     e.preventDefault();
@@ -172,6 +202,64 @@ export default function ProfilePage() {
             </Button>
           </form>
         </div>
+
+        {canApproveDiscount && (
+          <div className="bg-surface-card rounded-lg border border-border p-6">
+            <h2 className="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4" strokeWidth={1.75} /> Discount Approval PIN
+            </h2>
+            <p className="text-xs text-gray-500 mb-4">
+              {pinData?.hasPin
+                ? 'A PIN is set. Cashiers without discount-approval rights will ask you for it at checkout.'
+                : 'Set a 4-digit PIN so cashiers can request your approval for discounts at checkout.'}
+            </p>
+            <form onSubmit={handleSetPin} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    {pinData?.hasPin ? 'New PIN' : 'PIN'}
+                  </label>
+                  <Input
+                    type="password"
+                    inputMode="numeric"
+                    pattern="\d*"
+                    maxLength={4}
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="••••"
+                    className="text-center tracking-widest"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{t('profile.confirmPassword')}</label>
+                  <Input
+                    type="password"
+                    inputMode="numeric"
+                    pattern="\d*"
+                    maxLength={4}
+                    value={confirmPin}
+                    onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="••••"
+                    className="text-center tracking-widest"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" size="sm" disabled={setPinMut.isPending || newPin.length !== 4}>
+                  <Save className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  <span className="ms-1">{setPinMut.isPending ? t('common.saving') : t('common.save')}</span>
+                </Button>
+                {pinData?.hasPin && (
+                  <Button type="button" size="sm" variant="outline" onClick={handleClearPin} disabled={setPinMut.isPending}>
+                    Clear PIN
+                  </Button>
+                )}
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );

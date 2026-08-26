@@ -23,7 +23,21 @@ export type ListKey =
   | 'pos_session_status'
   | 'warranty_status'
   | 'warranty_target'
-  | 'maintenance_type';
+  | 'maintenance_type'
+  // Haraka Orders
+  | 'order_status'
+  | 'order_channel'
+  // Haraka Service Jobs & Retainers
+  | 'service_job_status'
+  | 'service_job_type'
+  | 'retainer_status'
+  | 'service_category'
+  // Haraka Appointments
+  | 'appointment_status'
+  // Shared across Orders, Service Jobs, Appointments, Retainers, and the POS
+  // register — one org-configurable list so a method (e.g. an insurance
+  // company) added once shows up everywhere payments are recorded.
+  | 'payment_method';
 
 /** Where a list is administered. 'org' lists support per-org overrides;
  *  'platform' lists are global (e.g. org_industry, system enums). */
@@ -38,6 +52,9 @@ export interface ListMeta {
   scope: ListScope;
   /** true → SYSTEM list: value locked, no add/remove (label/color/order only). */
   isSystem: boolean;
+  /** true → items carry behavior flags (isInvoicingTrigger/isBlocking/isTerminal)
+   *  that the portal should expose as toggles, not just label/color. */
+  supportsBehaviorFlags?: boolean;
   /** Optional note shown in the portal. */
   description?: string;
 }
@@ -62,6 +79,18 @@ export const LIST_REGISTRY: Record<ListKey, ListMeta> = {
   warranty_status:    { key: 'warranty_status',    label: 'Warranty Statuses',   labelKey: 'managedList.warranty_status',    scope: 'platform', isSystem: true,  description: 'Computed from dates — values locked.' },
   warranty_target:    { key: 'warranty_target',    label: 'Warranty Coverage',   labelKey: 'managedList.warranty_target',    scope: 'platform', isSystem: true,  description: 'Asset vs inventory — values locked.' },
   maintenance_type:   { key: 'maintenance_type',   label: 'Maintenance Types',   labelKey: 'managedList.maintenance_type',   scope: 'platform', isSystem: true,  description: 'Has color logic — values locked.' },
+
+  order_status:         { key: 'order_status',         label: 'Order Statuses',        labelKey: 'managedList.order_status',         scope: 'org', isSystem: true,  description: 'Order lifecycle — values locked, labels/colors customizable.' },
+  order_channel:        { key: 'order_channel',        label: 'Order Channels',        labelKey: 'managedList.order_channel',        scope: 'org', isSystem: false, description: 'Source channels for orders (phone, WhatsApp, etc.). Orgs can add custom channels.' },
+
+  service_job_status:         { key: 'service_job_status',         label: 'Service Job Statuses',        labelKey: 'managedList.service_job_status',         scope: 'org', isSystem: true,  description: 'Service job lifecycle — values locked.' },
+  service_job_type:           { key: 'service_job_type',           label: 'Service Job Types',           labelKey: 'managedList.service_job_type',           scope: 'org', isSystem: false, description: 'Categories of service work (repair, consultation, etc.).' },
+  retainer_status:            { key: 'retainer_status',            label: 'Retainer Statuses',           labelKey: 'managedList.retainer_status',            scope: 'org', isSystem: true,  description: 'Retainer lifecycle — values locked.' },
+  service_category:           { key: 'service_category',           label: 'Service Categories',          labelKey: 'managedList.service_category',           scope: 'org', isSystem: false, description: 'Categories for the Services catalog. Orgs can add custom categories.' },
+
+  appointment_status:         { key: 'appointment_status',         label: 'Appointment Statuses',        labelKey: 'managedList.appointment_status',         scope: 'org', isSystem: false, supportsBehaviorFlags: true, description: 'Appointment lifecycle. Add, rename, reorder, or hide statuses; flag which ones trigger invoicing or hold the calendar slot.' },
+
+  payment_method:              { key: 'payment_method',              label: 'Payment Methods',              labelKey: 'managedList.payment_method',              scope: 'org', isSystem: false, description: 'Shared across Orders, Service Jobs, Appointments, Retainers, and the POS register. Orgs can add custom methods (e.g. insurance company names). "Cash" and "Card" stay locked — POS reconciliation and e-invoicing key off them.' },
 };
 
 export const LIST_KEYS = Object.keys(LIST_REGISTRY) as ListKey[];
@@ -77,6 +106,10 @@ export interface PlatformListItem {
   sortOrder: number;
   enabled: boolean;
   isSystem: boolean;
+  /** Behavior flags, meaningful only for lists with supportsBehaviorFlags. */
+  isInvoicingTrigger: boolean;
+  isBlocking: boolean;
+  isTerminal: boolean;
   createdAt: Date;
   createdBy: string | null;
   updatedAt: Date;
@@ -95,6 +128,9 @@ export interface OrgListItem {
   sortOrder: number | null;
   enabled: boolean;
   isCustom: boolean;
+  isInvoicingTrigger: boolean | null;
+  isBlocking: boolean | null;
+  isTerminal: boolean | null;
   createdAt: Date;
   createdBy: string | null;
   updatedAt: Date;
@@ -111,4 +147,8 @@ export interface ResolvedListItem {
   isSystem: boolean;
   /** true when contributed/overridden by the org (vs a pure platform default). */
   isCustom: boolean;
+  /** Behavior flags, meaningful only for lists with supportsBehaviorFlags. */
+  isInvoicingTrigger: boolean;
+  isBlocking: boolean;
+  isTerminal: boolean;
 }

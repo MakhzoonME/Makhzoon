@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { requireFeature } from '@/lib/permissions/require-feature';
 import {
   getSupportTicketById,
   getSupportTicketByIdAny,
@@ -13,6 +14,8 @@ import {
   supportTicketAdminUpdateSchema,
   supportTicketOrgUpdateSchema,
 } from '@/lib/validations/support-ticket.schema';
+import { notificationQueue } from '@/lib/notifications/notification-queue';
+import { dispatchSupportTicketWebhook } from '@/lib/webhooks/support-ticket-webhooks';
 
 const SUPERADMIN_ROLES = new Set(['super_admin', 'makhzoon_admin', 'makhzoon_support']);
 
@@ -74,12 +77,32 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
         newValue: parsed.data as Record<string, unknown>,
       });
 
+      if (parsed.data.status) {
+        notificationQueue.enqueue({
+          tenant: { organizationId: ticket.organizationId },
+          eventType: 'support.ticket_status_changed',
+          data: { ticketId, subject: ticket.subject, status: parsed.data.status },
+          link: `/support/${ticketId}`,
+          titleOverride: `Ticket "${ticket.subject}" marked ${parsed.data.status.toLowerCase()}`,
+        });
+
+        dispatchSupportTicketWebhook({
+          event: 'ticket.status_changed',
+          ticketId,
+          oldStatus: ticket.status,
+          newStatus: parsed.data.status,
+          changedById: user.uid,
+          changedByName: user.displayName || user.email || user.uid,
+        });
+      }
+
       return NextResponse.json({ success: true });
     }
 
     if (!user.organizationId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const tenant = await resolveTenant();
+    requireFeature(tenant, 'support');
     const parsed = supportTicketOrgUpdateSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 

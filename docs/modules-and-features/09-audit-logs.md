@@ -25,8 +25,12 @@ AuditLog
   timestamp
   transferMode? (bool — true if action was taken by a superadmin in transfer mode)
   userDisplayName? (enriched)
+  recordName? (enriched)
   orgName? (enriched — for superadmin global view)
+  spaceName? (enriched)
 ```
+
+`spaceId` is typed optional (`types/audit-log.types.ts`), but `lib/audit/logger.ts` documents it as required in practice ("Required after Script 3 (audit_logs.space_id NOT NULL)") — org-level actions without a space are effectively no longer expected.
 
 ---
 
@@ -77,21 +81,20 @@ Every API route that mutates data calls `lib/audit/logger.ts → writeAuditLog()
 | `ASSET_UPDATED` | Asset fields changed (old/new values stored) |
 | `ASSET_DELETED` | Asset removed |
 | `ASSET_CHECKED_OUT` | Asset checked out to someone |
-| `INVENTORY_TRANSACTION_RECORDED` | Stock in/out/adjustment |
+| `INVENTORY_TRANSACTION_CREATED` | Stock in/out/adjustment |
 | `PURCHASE_RECEIVED` | Purchase order marked received |
 | `STOCK_AUDIT_COMPLETED` | Stock audit finalized |
 | `WARRANTY_CREATED` | New warranty added |
 | `WARRANTY_UPDATED` | Warranty edited |
-| `REQUEST_SUBMITTED` | Staff submitted a request |
-| `REQUEST_APPROVED` | Admin approved a request |
-| `REQUEST_REJECTED` | Admin rejected a request |
 | `POS_SESSION_OPENED` | Cashier started a session |
 | `POS_SESSION_CLOSED` | Cashier closed a session |
-| `POS_TRANSACTION_COMPLETED` | Sale completed |
-| `POS_REFUND_ISSUED` | Refund issued |
+| `POS_SALE_COMPLETED` | Sale completed |
+| `POS_SALE_REFUNDED` | Refund issued |
 | `USER_INVITED` | New user invite sent |
 | `USER_DEACTIVATED` | User account deactivated |
 | `WARRANTY_ALERT_SENT` | Cron sent expiry alert emails |
+
+> Full enum: `lib/audit/logger.ts` (`AuditAction`). It has grown well beyond this sample list — e.g. `ORDER_*`, `SERVICE_JOB_*`, `RETAINER_*`, `APPOINTMENT_*`, `LOYALTY_*` actions for the expanded Haraka module (see `05-haraka-pos.md`). `REQUEST_SUBMITTED`/`REQUEST_APPROVED`/`REQUEST_REJECTED` still exist in the enum but the Requests module itself was removed (see `07-requests.md`), so they are effectively dead and no longer fire.
 
 ---
 
@@ -106,3 +109,5 @@ Every API route that mutates data calls `lib/audit/logger.ts → writeAuditLog()
 | Key | Admin | Staff | Description |
 |-----|-------|-------|-------------|
 | `auditLogs.view` | ✅ | ❌ | View audit logs (org portal) |
+
+The permission catalog (`types/user-permissions.types.ts`) also defines `auditLogs.viewSpace` and `auditLogs.viewAllSpaces` (both `requiresView`), presumably for the scope toggle. In practice `app/api/audit-logs/route.ts` only checks `auditLogs.view` — the two sub-keys aren't separately enforced there.

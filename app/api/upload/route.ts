@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { uploadToStorage, type UploadKind } from '@/lib/storage/upload';
+import { z } from 'zod';
+
+const uploadTypeSchema = z.enum(['avatar', 'logo', 'asset-receipt', 'inventory-receipt', 'warranty-document', 'purchase-invoice', 'report-attachment']);
 
 const IMG = ['image/jpeg', 'image/png', 'image/webp'];
 const DOC = [...IMG, 'application/pdf'];
@@ -13,6 +16,10 @@ const ALLOWED_TYPES: Record<UploadKind, string[]> = {
   'inventory-receipt': DOC,
   'warranty-document': DOC,
   'purchase-invoice': DOC,
+  'report-attachment': DOC,
+  // Clinical attachments accept HEIC too — phone cameras on iOS default to it,
+  // and a provider photographing a chart shouldn't have to convert first.
+  'zeyara-visit-file': [...DOC, 'image/heic'],
 };
 
 const MB = 1024 * 1024;
@@ -23,15 +30,18 @@ const MAX_SIZES: Record<UploadKind, number> = {
   'inventory-receipt': 10 * MB,
   'warranty-document': 10 * MB,
   'purchase-invoice': 10 * MB,
+  'report-attachment': 10 * MB,
+  // Scans and imaging run larger than a receipt photo.
+  'zeyara-visit-file': 20 * MB,
 };
 
 function isUploadKind(v: unknown): v is UploadKind {
-  return typeof v === 'string' && v in ALLOWED_TYPES;
+  return uploadTypeSchema.safeParse(v).success;
 }
 
 export async function POST(req: NextRequest) {
   const clientIp = getClientIp(req);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `upload:${clientIp}`,
     20,
     60 * 60 * 1000,

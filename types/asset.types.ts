@@ -8,6 +8,7 @@ import { DocumentRef } from './document.types';
 export interface Asset {
   id: string;
   organizationId: string;
+  spaceId?: string;
   name: string;
   category: string;
   status: AssetStatus;

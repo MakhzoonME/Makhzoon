@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { ScanBarcode } from 'lucide-react';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useOrgSlug, useSpace, useT } from '@/hooks/ui';
 import { inventoryItemSchema, InventoryItemFormData } from '@/lib/validations/inventory.schema';
 import { InventoryItem } from '@/types';
@@ -11,13 +12,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { DocumentUpload } from '@/components/shared';
 import { toast } from '@/hooks/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
-import { useTaxRates } from '@/hooks/haraka';
 interface Props { item?: InventoryItem; onSuccess?: () => void; onCancel?: () => void; onDirtyChange?: (dirty: boolean) => void; }
 
 export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: Props) {
@@ -27,8 +26,6 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
   const { locale } = useT();
   const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const { data: taxRatesData } = useTaxRates();
-  const taxRates = taxRatesData?.taxRates ?? [];
 
   const form = useForm<InventoryItemFormData>({
     resolver: zodResolver(inventoryItemSchema),
@@ -39,7 +36,6 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
       unit: item?.unit ?? 'each',
       quantityOnHand: item?.quantityOnHand ?? 0,
       minimumThreshold: item?.minimumThreshold ?? 5,
-      reorderQuantity: item?.reorderQuantity ?? '',
       location: item?.location ?? '',
       supplier: item?.supplier ?? '',
       unitCost: item?.unitCost ?? '',
@@ -47,7 +43,7 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
       barcode: item?.barcode ?? '',
       posEnabled: item?.posEnabled ?? false,
       posPrice: item?.posPrice ?? '',
-      taxRateId: item?.taxRateId ?? '',
+      expiryDate: item?.expiryDate ? String(item.expiryDate).split('T')[0] : '',
       documents: item?.documents ?? [],
     },
   });
@@ -145,14 +141,6 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
             </FormItem>
           )} />
 
-          <FormField control={form.control} name="reorderQuantity" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Reorder Quantity</FormLabel>
-              <FormControl><Input type="number" min="0" {...field} placeholder="Suggested reorder amount" /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-
           <FormField control={form.control} name="unitCost" render={({ field }) => (
             <FormItem>
               <FormLabel>Unit Cost (JOD)</FormLabel>
@@ -184,6 +172,16 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
             </FormItem>
           )} />
 
+          <FormField control={form.control} name="expiryDate" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Expiry Date</FormLabel>
+              <FormControl>
+                <DatePicker value={field.value ?? ''} onChange={field.onChange} placeholder="Select expiry date" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+
           {/* Barcode — supports both manual entry and HID scanners. Enter is swallowed so a scan doesn't submit the form. */}
           <FormField control={form.control} name="barcode" render={({ field }) => (
             <FormItem className="sm:col-span-2">
@@ -209,35 +207,10 @@ export function InventoryItemForm({ item, onSuccess, onCancel, onDirtyChange }: 
             </FormItem>
           )} />
 
-          <FormField control={form.control} name="taxRateId" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tax Rate</FormLabel>
-              <Select
-                onValueChange={(v) => field.onChange(v === '__none__' ? '' : v)}
-                value={field.value || '__none__'}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="No tax" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="__none__">No tax</SelectItem>
-                  {taxRates.map((tr) => (
-                    <SelectItem key={tr.id} value={tr.id}>
-                      {tr.name} ({(tr.rate * 100).toFixed(2)}%){tr.isDefault ? ' • default' : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )} />
-
           <FormField control={form.control} name="posEnabled" render={({ field }) => (
             <FormItem className="flex items-end gap-3">
               <div className="flex-1">
-                <FormLabel>Sell in Haraka (POS)</FormLabel>
+                <FormLabel>Sell in Haraka</FormLabel>
                 <p className="text-xs text-gray-500">When on, this item appears in the POS register and can be sold.</p>
               </div>
               <FormControl>

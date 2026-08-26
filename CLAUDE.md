@@ -150,6 +150,18 @@ Any string works as a custom agent type.
 npm run build && npm test
 ```
 
+## Deploying (GitHub Actions)
+
+Pushing to any of these branches automatically triggers a deploy via GitHub Actions:
+
+| Branch | Environment | URL |
+|--------|-------------|-----|
+| `DevBranch` | dev | dev.makhzoon.me |
+| `STGBranch` | staging | stg.makhzoon.me |
+| `main` | production | app.makhzoon.me |
+
+Monitor runs at **github.com/MakhzoonME/Makhzoon/actions**.
+
 ## CLI Quick Reference
 
 ```bash

@@ -3,6 +3,7 @@ import type { TenantContext } from '@/lib/platform/tenancy/types'
 import { hasPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
 import { eventBus } from '@/lib/platform/events/event-bus'
+import { notificationQueue } from '@/lib/notifications/notification-queue'
 import {
   StockAuditRepository,
   type CreateStockAuditInput,
@@ -11,9 +12,15 @@ import type { StockAuditAdjustment } from '@/types/stock-audit.types'
 
 const repo = new StockAuditRepository()
 
+// Distinct from asset audits (usool.assetAudits*) — this is the Raseed
+// stock-take feature (stock_audits table).
+const STOCK_AUDIT_OP: Record<string, string> = {
+  view: 'stockAuditView',
+  audits: 'stockAuditStart',
+}
+
 function require_(tenant: TenantContext, op: string): void {
-  // Stock audits live under the 'inventory' module, same as asset audits.
-  if (!hasPermission(tenant, 'inventory', op)) {
+  if (!hasPermission(tenant, 'raseed', STOCK_AUDIT_OP[op] ?? op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 }
@@ -79,6 +86,13 @@ export class StockAuditService {
       newValue: { adjustmentsApplied: result.applied },
     })
     await eventBus.emit('inventory.stock-audit.completed', { tenant, id: auditId, result })
+    notificationQueue.enqueue({
+      tenant,
+      eventType: 'inventory.audit_completed',
+      data: { adjustmentsApplied: result.applied },
+      link: `/raseed/audits/${auditId}`,
+      titleOverride: 'Stock audit completed',
+    })
     return result
   }
 }

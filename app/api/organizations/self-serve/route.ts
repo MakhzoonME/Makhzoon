@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAuthUser, deleteAuthUser, authEmailExists } from '@/lib/supabase/auth-admin';
-import { createOrganization, subdomainExists } from '@/lib/db/organizations';
+import {
+  createOrganization,
+  deleteOrganizationWithData,
+  subdomainExists,
+} from '@/lib/db/organizations';
 import { createSubscription } from '@/lib/db/subscriptions';
-import { createUser } from '@/lib/db/users';
+import { createUser, deleteUser } from '@/lib/db/users';
 import { selfServeSignupSchema } from '@/lib/validations/signup.schema';
 import { queueAuditLog } from '@/lib/audit/logger';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
@@ -12,7 +16,7 @@ const TRIAL_DAYS = 14;
 export async function POST(req: NextRequest) {
   // SECURITY: Rate limit signup (3 orgs per IP per 24 hours)
   const clientIp = getClientIp(req);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `signup:${clientIp}`,
     3,
     24 * 60 * 60 * 1000,
@@ -46,7 +50,11 @@ export async function POST(req: NextRequest) {
     organizationId: null,
   });
 
-  let organizationId = '';
+  // --- Compensating cleanup state ---
+  // Track which resources were created so we can undo them on failure.
+  let organizationId: string | null = null;
+  let userCreated = false;
+
   try {
     organizationId = await createOrganization({
       name: orgName,
@@ -59,35 +67,60 @@ export async function POST(req: NextRequest) {
       createdBy: newUser.uid,
       updatedBy: newUser.uid,
     });
+
+    await createUser(newUser.uid, {
+      organizationId,
+      email,
+      displayName,
+      role: 'org_owner',
+      status: 'active',
+      createdBy: newUser.uid,
+      updatedBy: newUser.uid,
+    });
+    userCreated = true;
+
+    const now = new Date();
+    const trialEnd = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+    await createSubscription({
+      organizationId,
+      packageId: null,
+      features: {
+        dashboard: true,
+        assets: true,
+        inventory: true,
+        requests: true,
+        support: true,
+        auditLogs: true,
+        pos: false,
+        banna: false,
+      },
+      notes: null,
+      packageDetails: { tier: 'trial', trialDays: TRIAL_DAYS },
+      startDate: now,
+      endDate: trialEnd,
+      status: 'ACTIVE',
+      createdBy: newUser.uid,
+      updatedBy: newUser.uid,
+    });
   } catch (e) {
+    // --- Compensating cleanup: undo resources in reverse order ---
+    // Best-effort: individual cleanup failures are logged but do not mask
+    // the original error.
+    if (userCreated) {
+      await deleteUser(newUser.uid).catch((cleanupErr) =>
+        console.error('[self-serve cleanup] failed to delete user record:', cleanupErr),
+      );
+    }
+    if (organizationId) {
+      await deleteOrganizationWithData(organizationId).catch((cleanupErr) =>
+        console.error('[self-serve cleanup] failed to delete organization:', cleanupErr),
+      );
+    }
+    // Always attempt to delete the auth user — it is the most dangerous
+    // orphan because it blocks re-registration with the same email.
     await deleteAuthUser(newUser.uid);
     throw e;
   }
-
-  await createUser(newUser.uid, {
-    organizationId,
-    email,
-    displayName,
-    role: 'org_owner',
-    status: 'active',
-    createdBy: newUser.uid,
-    updatedBy: newUser.uid,
-  });
-
-  const now = new Date();
-  const trialEnd = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
-  await createSubscription({
-    organizationId,
-    packageId: null,
-    features: { pos: false },
-    notes: null,
-    packageDetails: { tier: 'trial', trialDays: TRIAL_DAYS },
-    startDate: now,
-    endDate: trialEnd,
-    status: 'ACTIVE',
-    createdBy: newUser.uid,
-    updatedBy: newUser.uid,
-  });
 
   queueAuditLog({
     organizationId,

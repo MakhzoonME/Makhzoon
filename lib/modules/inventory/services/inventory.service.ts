@@ -1,7 +1,9 @@
+import 'server-only';
 import { NextResponse } from 'next/server'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import { hasPermission } from '@/lib/platform/permissions'
 import { auditLog } from '@/lib/platform/audit'
+import { notificationQueue } from '@/lib/notifications/notification-queue'
 import { eventBus } from '@/lib/platform/events/event-bus'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { InventoryRepository, GetAllOpts } from '../repositories/inventory.repository'
@@ -9,10 +11,22 @@ import type { TransactionType } from '../types'
 
 const repo = new InventoryRepository()
 
-function requirePermission(tenant: TenantContext, module: 'inventory', operation: string): void {
+function requirePermission(tenant: TenantContext, module: 'raseed', operation: string): void {
   if (!hasPermission(tenant, module, operation)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
+}
+
+/**
+ * Read gate for the POS-scoped catalog (posEnabled items / barcode scan on
+ * the register). A user with `pos.add_receipt_items` but no Inventory-module
+ * access still needs to read the posEnabled subset of the catalog — full
+ * `inventory.view` is one way in, but not the only one here.
+ */
+function requireInventoryReadForPos(tenant: TenantContext): void {
+  if (hasPermission(tenant, 'raseed', 'view')) return
+  if (hasPermission(tenant, 'haraka', 'registerOpen')) return
+  throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 }
 
 function requireActiveSubscription(tenant: TenantContext): void {
@@ -23,17 +37,21 @@ function requireActiveSubscription(tenant: TenantContext): void {
 
 export class InventoryService {
   async getAll(tenant: TenantContext, opts?: GetAllOpts) {
-    requirePermission(tenant, 'inventory', 'view')
+    if (opts?.posEnabled === true) {
+      requireInventoryReadForPos(tenant)
+    } else {
+      requirePermission(tenant, 'raseed', 'view')
+    }
     return repo.getAll(tenant, opts)
   }
 
   async getCategories(tenant: TenantContext) {
-    requirePermission(tenant, 'inventory', 'view')
+    requirePermission(tenant, 'raseed', 'view')
     return repo.getCategories(tenant)
   }
 
   async getById(tenant: TenantContext, id: string) {
-    requirePermission(tenant, 'inventory', 'view')
+    requirePermission(tenant, 'raseed', 'view')
     const item = await repo.getById(tenant, id)
     if (!item) {
       throw NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -44,13 +62,23 @@ export class InventoryService {
   /**
    * Resolve a barcode to an inventory item within the caller's organization.
    * Returns null on miss so the caller (POS register, purchase line editor)
-   * can offer a "create new item" fallback. Requires only `inventory.view`.
+   * can offer a "create new item" fallback.
+   *
+   * `posLookup: true` (register scan-to-cart) relaxes the gate to also accept
+   * `pos.add_receipt_items` instead of full `inventory.view`, but in that mode
+   * only posEnabled items are matched — a POS-only user still can't probe the
+   * full catalog by barcode, only the subset already exposed to the register.
    */
-  async findByBarcode(tenant: TenantContext, barcode: string) {
-    requirePermission(tenant, 'inventory', 'view')
+  async findByBarcode(tenant: TenantContext, barcode: string, opts?: { posLookup?: boolean }) {
+    const posLookup = opts?.posLookup === true
+    if (posLookup) {
+      requireInventoryReadForPos(tenant)
+    } else {
+      requirePermission(tenant, 'raseed', 'view')
+    }
     const code = barcode.trim()
     if (!code) return null
-    return repo.findByBarcode(tenant, code)
+    return repo.findByBarcode(tenant, code, { posEnabledOnly: posLookup && !hasPermission(tenant, 'raseed', 'view') })
   }
 
   private async ensureBarcodeUnique(
@@ -79,7 +107,6 @@ export class InventoryService {
       unit: string
       quantityOnHand: number
       minimumThreshold: number
-      reorderQuantity?: number
       location?: string
       supplier?: string
       unitCost?: number
@@ -87,11 +114,11 @@ export class InventoryService {
       barcode?: string | null
       posEnabled?: boolean
       posPrice?: number | null
-      taxRateId?: string | null
+      expiryDate?: string | null
       documents?: import('@/types').DocumentRef[]
     }
   ) {
-    requirePermission(tenant, 'inventory', 'create')
+    requirePermission(tenant, 'raseed', 'create')
     requireActiveSubscription(tenant)
 
     await this.ensureBarcodeUnique(tenant, input.barcode)
@@ -120,7 +147,6 @@ export class InventoryService {
       sku?: string
       unit?: string
       minimumThreshold?: number
-      reorderQuantity?: number
       location?: string
       supplier?: string
       unitCost?: number
@@ -128,11 +154,11 @@ export class InventoryService {
       barcode?: string | null
       posEnabled?: boolean
       posPrice?: number | null
-      taxRateId?: string | null
+      expiryDate?: string | null
       documents?: import('@/types').DocumentRef[]
     }
   ) {
-    requirePermission(tenant, 'inventory', 'update')
+    requirePermission(tenant, 'raseed', 'update')
     if (input.barcode !== undefined) {
       await this.ensureBarcodeUnique(tenant, input.barcode, id)
     }
@@ -150,7 +176,7 @@ export class InventoryService {
   }
 
   async delete(tenant: TenantContext, id: string) {
-    requirePermission(tenant, 'inventory', 'delete')
+    requirePermission(tenant, 'raseed', 'delete')
 
     // Cross-module reference integrity — block deletion while live references exist.
     const now = new Date().toISOString()
@@ -204,7 +230,7 @@ export class InventoryService {
   }
 
   async getTransactions(tenant: TenantContext, itemId: string) {
-    requirePermission(tenant, 'inventory', 'view')
+    requirePermission(tenant, 'raseed', 'view')
     return repo.getTransactions(tenant, itemId)
   }
 
@@ -216,7 +242,7 @@ export class InventoryService {
     reason: string,
     note?: string
   ) {
-    requirePermission(tenant, 'inventory', 'update')
+    requirePermission(tenant, 'raseed', 'update')
     const result = await repo.applyTransaction(tenant, itemId, type, quantity, reason, note)
 
     auditLog.queue({
@@ -228,6 +254,45 @@ export class InventoryService {
     })
 
     await eventBus.emit('inventory.transaction.created', { tenant, itemId, type, quantity, reason, result })
+
+    // Fire stock alerts after OUT transactions — fetch item metadata for the notification title
+    if (type === 'out') {
+      const after  = Number(result.quantityAfter);
+      const before = after + quantity; // 'out' deducts `quantity`, so this recovers the pre-transaction level
+      // Async but fire-and-forget — never blocks the caller
+      (async () => {
+        try {
+          const { data: item } = await supabaseAdmin
+            .from('inventory_items')
+            .select('name, minimum_threshold')
+            .eq('id', itemId)
+            .maybeSingle()
+          const itemName  = (item?.name as string) ?? itemId
+          const threshold = Number(item?.minimum_threshold ?? 0)
+          // Only notify on the transaction that crosses the threshold, not every
+          // subsequent 'out' while stock stays below it — avoids alert spam.
+          if (after === 0 && before > 0) {
+            notificationQueue.enqueue({
+              tenant,
+              eventType: 'inventory.out_of_stock',
+              data: { itemId, itemName },
+              link: `/raseed/${itemId}`,
+              titleOverride: `${itemName} is out of stock`,
+            })
+          } else if (after > 0 && after <= threshold && before > threshold) {
+            notificationQueue.enqueue({
+              tenant,
+              eventType: 'inventory.low_stock',
+              data: { itemId, itemName, quantityOnHand: after, minimumThreshold: threshold },
+              link: `/raseed/${itemId}`,
+              titleOverride: `${itemName} stock is low (${after} remaining)`,
+            })
+          }
+        } catch {
+          // never surface to caller
+        }
+      })()
+    }
 
     return result
   }

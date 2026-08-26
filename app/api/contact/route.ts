@@ -3,18 +3,16 @@ import { z } from 'zod';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { checkOrigin } from '@/lib/csrf';
 import { createContactSalesEntry } from '@/lib/db/contact-sales';
-
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
+import { sendEmail } from '@/lib/email/resend';
 
 // Validate contact form input
 const contactSchema = z.object({
-  firstName: z.string().min(1).max(100).optional(),
-  lastName: z.string().min(1).max(100).optional(),
-  name: z.string().min(1).max(200),
-  organizationName: z.string().min(1).max(255),
-  phone: z.string().min(1).max(30),
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().min(1).max(100),
   email: z.string().email(),
-  notes: z.string().max(2000).optional(),
+  organization: z.string().max(255).optional(),
+  assetCount: z.string().max(50).optional(),
+  message: z.string().min(1).max(2000),
 });
 
 /**
@@ -33,7 +31,7 @@ export async function POST(req: NextRequest) {
   try {
     // SECURITY: Rate limit contact form (5 per IP per hour, 1 per email per day)
     const clientIp = getClientIp(req);
-    const rateLimitIp = checkRateLimit(
+    const rateLimitIp = await checkRateLimit(
       `contact:ip:${clientIp}`,
       5,
       60 * 60 * 1000,
@@ -56,10 +54,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { firstName, lastName, name, organizationName, phone, email, notes } = parsed.data;
+    const { firstName, lastName, email, organization, assetCount, message } = parsed.data;
+    const name = `${firstName} ${lastName}`.trim();
 
     // Rate limit by email as well
-    const rateLimitEmail = checkRateLimit(
+    const rateLimitEmail = await checkRateLimit(
       `contact:email:${email}`,
       1,
       24 * 60 * 60 * 1000,
@@ -67,52 +66,36 @@ export async function POST(req: NextRequest) {
     );
     if (rateLimitEmail) return rateLimitEmail;
 
-    if (!RESEND_API_KEY) {
-      console.warn('RESEND_API_KEY not configured. Storing message for manual review.');
-    } else {
-
-    const { Resend } = await import('resend');
-    const resend = new Resend(RESEND_API_KEY);
-
-    const sanitizedFirstName = firstName ? sanitizeText(firstName) : '';
-    const sanitizedLastName = lastName ? sanitizeText(lastName) : '';
     const sanitizedName = sanitizeText(name);
-    const sanitizedOrg = sanitizeText(organizationName);
-    const sanitizedPhone = sanitizeText(phone);
+    const sanitizedOrg = sanitizeText(organization ?? '');
     const sanitizedEmail = sanitizeText(email);
-    const sanitizedNotes = notes ? sanitizeText(notes).replace(/\n/g, '<br>') : 'None';
+    const sanitizedAssetCount = sanitizeText(assetCount ?? 'Not specified');
+    const sanitizedMessage = sanitizeText(message).replace(/\n/g, '<br>');
 
-    const emailRes = await resend.emails.send({
-      from: 'noreply@makhzoon.com',
-      to: 'sales@makhzoon.com',
-      subject: `New sales inquiry from ${sanitizedName} — ${sanitizedOrg}`,
+    await sendEmail({
+      to: 'info@makhzoon.me',
+      subject: `New contact inquiry from ${sanitizedName}${sanitizedOrg ? ` — ${sanitizedOrg}` : ''}`,
       html: `
-        <h2>New Sales Inquiry</h2>
-        ${sanitizedFirstName || sanitizedLastName ? `<p><strong>Name:</strong> ${sanitizedFirstName} ${sanitizedLastName}</p>` : `<p><strong>Name:</strong> ${sanitizedName}</p>`}
-        <p><strong>Organization:</strong> ${sanitizedOrg}</p>
-        <p><strong>Phone:</strong> ${sanitizedPhone}</p>
+        <h2>New Contact Inquiry</h2>
+        <p><strong>Name:</strong> ${sanitizedName}</p>
+        ${sanitizedOrg ? `<p><strong>Organization:</strong> ${sanitizedOrg}</p>` : ''}
         <p><strong>Email:</strong> ${sanitizedEmail}</p>
-        <p><strong>Additional Notes:</strong></p>
-        <p>${sanitizedNotes}</p>
+        <p><strong>Approximate asset count:</strong> ${sanitizedAssetCount}</p>
+        <p><strong>Message:</strong></p>
+        <p>${sanitizedMessage}</p>
       `,
+      text: `New Contact Inquiry\nName: ${name}\n${organization ? `Organization: ${organization}\n` : ''}Email: ${email}\nAsset count: ${assetCount ?? 'Not specified'}\n\nMessage:\n${message}`,
     });
-
-    if (emailRes.error) {
-      return NextResponse.json(
-        { error: 'Failed to send message' },
-        { status: 500 }
-      );
-    }
-    }
 
     await createContactSalesEntry({
       name,
       firstName,
       lastName,
-      organizationName,
-      phone,
+      organizationName: organization ?? '',
+      phone: '',
       email,
-      notes: notes || undefined,
+      assetCount: assetCount || undefined,
+      notes: message,
       ip: clientIp,
     });
 

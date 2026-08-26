@@ -10,6 +10,8 @@
 
 Haraka is a full point-of-sale module. It supports cashier sessions, product scanning (barcode or manual search), multi-payment methods (cash, card, other), discounts, tax rates, refunds, voids, customer tracking, receipt printing, and optional integration with Jordan's **Fawtara** (ISTD e-invoicing) system.
 
+> Scope note: this doc covers the original register/session/customer/transaction workflow. Haraka has since grown substantially beyond what's documented here — Orders, Service Jobs, Retainers, Appointments, Delivery Agents/Staff, Service Vehicles, Warranty Certificates, Loyalty, and till/discount-approval flows all now live under `haraka.*` permissions and `/haraka/*` routes (see `supabase/migrations/0017`, `0034`, `0035`, `0038`, `0053`, `0056`, `0059`, `0060`, `0070`, and `types/user-permissions.types.ts`). None of that is described below; treat this doc as covering only the register/POS core.
+
 ---
 
 ## Data Models
@@ -76,7 +78,7 @@ The main selling interface. Opens a new session (or resumes an existing open one
 **Left panel — Cart**:
 - Cart line items: product name, qty, unit price, discount, line total.
 - Qty +/- buttons and delete per line.
-- Discount field per line (if `pos.apply_discount` permission granted).
+- Discount field per line (if `haraka.applyDiscount` permission granted).
 - Cart footer: subtotal, tax, total discount, **Grand Total**.
 - Customer picker (search or create new customer inline) — optional.
 - **Charge** button → opens Payment Dialog.
@@ -131,9 +133,9 @@ Lists all POS sessions with columns: Cashier, Opened At, Closed At, Status badge
 
 Lists all POS customers with columns: Name, Phone, Email, Tax Number, Created At, Actions.
 
-Gated by `pos.process_sale` permission.
+Gated by `haraka.customersView` permission.
 
-Bulk actions: delete, move to space, duplicate to space (gated by `pos.customers_bulk_delete/move/duplicate`).
+Bulk actions: delete, move to space, duplicate to space. See Known Issues — no dedicated permission keys back these bulk actions.
 
 **Customer Detail / Edit**:
 **Route**: `/{locale}/{orgSlug}/{space}/haraka/customers/[customerId]`
@@ -146,10 +148,29 @@ Bulk actions: delete, move to space, duplicate to space (gated by `pos.customers
 
 - Same form as edit.
 
+### Transactions
+**Route**: `/{locale}/{orgSlug}/{space}/haraka/transactions`
+
+A cross-session view of all POS transactions for this space, gated by `haraka.transactionsView`.
+
+**Layout**:
+- Summary stat cards for today: Total Revenue, Transaction Count, Average Basket, Top Payment Method.
+- Status filter: All / Completed / Refunded / Voided.
+- `DataTable` with columns: Receipt No., Customer, Items, Total, Payment Method, Status badge, Cashier, Time.
+- Row click → Transaction Detail page.
+
+**Transaction Detail**:
+**Route**: `/{locale}/{orgSlug}/{space}/haraka/transactions/[transactionId]`
+
+- Full transaction breakdown: line items, payments, totals, tax, discount, change.
+- Status badge + refund/void actions if applicable.
+- Fawtara submission status.
+- Receipt share/print buttons.
+
 ### Reports
 **Route**: `/{locale}/{orgSlug}/{space}/haraka/reports`
 
-Gated by `pos.view_reports` permission.
+Gated by `haraka.posReportView` permission.
 
 - Date range picker.
 - Summary cards: total revenue, total transactions, average basket, total tax collected, total discounts.
@@ -167,18 +188,20 @@ Fawtara is Jordan's electronic invoicing mandate (ISTD). When enabled in org set
 - Each completed POS transaction is submitted to the Fawtara API.
 - `FawtaraSubmission` is stored on the transaction: `status` (pending / submitted / failed / skipped), `uuid`, `qrPayload`, `invoiceNumber`, `errorCode`.
 - The Fawtara QR payload is printed on the receipt.
-- Failed submissions can be manually resubmitted (gated by `pos.fawtara_submit` permission).
+- Failed submissions can be manually resubmitted (gated by `haraka.transactionsView` permission — see Known Issues).
 
 **Fawtara config lives in Settings → Jo-Fotara** (see Settings module doc).
 
 ---
 
-## Printer Settings
+## Printer & Receipt Settings
 
-`components/haraka/PrinterSettingsDialog.tsx` — available from the register toolbar.
+Accessible from the register toolbar (quick printer connect/disconnect) and fully from **Settings → Receipt** (`/{locale}/{orgSlug}/settings/receipt`).
 
-- Configure receipt width, font size, and whether to auto-print after each sale.
-- Settings stored in `store/printer.store.ts` (persisted to `localStorage`).
+- Thermal printer: WebUSB connect/disconnect, paper width (58mm / 80mm), font size, auto-print toggle.
+- Receipt template, language (EN/AR/both), logo, header/footer text, accent color.
+- Live preview via `ReceiptPreview` component.
+- Settings stored in `store/printer.store.ts` (persisted to `localStorage`) for printer hardware; receipt visual settings persisted to `organization_configs` via `/api/organizations/receipt-config`.
 
 ---
 
@@ -194,16 +217,22 @@ Fawtara is Jordan's electronic invoicing mandate (ISTD). When enabled in org set
 
 ## Permissions
 
-| Key | Admin | Staff | Description |
-|-----|-------|-------|-------------|
-| `pos.open_session` | ✅ | ❌ | Start a register session |
-| `pos.close_session` | ✅ | ❌ | Close a register session |
-| `pos.process_sale` | ✅ | ❌ | Complete a sale |
-| `pos.apply_discount` | ✅ | ❌ | Apply line/cart discounts |
-| `pos.issue_refund` | ✅ | ❌ | Issue a refund on a transaction |
-| `pos.void_transaction` | ✅ | ❌ | Void a completed transaction |
-| `pos.view_reports` | ✅ | ❌ | View POS reports |
-| `pos.fawtara_submit` | ✅ | ❌ | Manually resubmit to Fawtara |
-| `pos.customers_bulk_delete` | ✅ | ❌ | Bulk delete customers |
-| `pos.customers_bulk_move` | ✅ | ❌ | Bulk move customers to space |
-| `pos.customers_bulk_duplicate` | ✅ | ❌ | Bulk duplicate customers |
+The permission keys below are wrong in earlier versions of this doc — there is no `pos.*` permission module. Haraka permissions live under a single `haraka` module key in `types/user-permissions.types.ts` (`featureKey: 'pos'`), and routes call `requirePermission(user, 'haraka', '<opKey>')`. The register/session/transaction-relevant subset:
+
+| Key | Description |
+|-----|-------------|
+| `haraka.sessionsOpen` | Start a register session (requires `sessionsView`) |
+| `haraka.sessionsCloseOwn` / `sessionsCloseOthers` | Close own / others' register sessions |
+| `haraka.registerOpen` | Open the register screen |
+| `haraka.chargeReceipt` | Complete a sale |
+| `haraka.applyDiscount` | Apply line/cart discounts (requires `chargeReceipt`) |
+| `haraka.approveDiscount` | Approve a discount via manager PIN |
+| `haraka.transactionsRefund` | Issue a refund on a transaction |
+| `haraka.transactionsVoid` | Void a completed transaction |
+| `haraka.posReportView` / `posReportExport` | View / export POS reports |
+| `haraka.customersView` / `customersCreate` / `customersUpdate` / `customersDelete` | Manage POS customers |
+| `haraka.printerSettings` | Access printer settings |
+
+There is no `pos.fawtara_submit` key — manual Fawtara resubmission (`app/api/jo-fotara/submit/[transactionId]/route.ts`) is gated by `haraka.transactionsView` instead. There are also no dedicated bulk-delete/move/duplicate permission keys for POS customers; the bulk actions section further up in this doc describing them is not backed by any permission op in the current catalog.
+
+The `haraka` module has many more operations beyond this table (orders, service jobs, retainers, appointments, delivery agents, staff) — see the scope note at the top of this doc and `types/user-permissions.types.ts` for the full list.

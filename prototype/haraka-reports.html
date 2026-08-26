@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reports — Makhzoon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Capriola&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <link rel="stylesheet" href="css/tokens.css" />
+</head>
+<body data-page="reports" data-portal="org" class="bg-slate-50 text-slate-800 antialiased">
+  <div id="app" class="flex h-screen overflow-hidden">
+    <aside id="sidebar" class="shrink-0 bg-white border-r border-slate-200 flex flex-col"></aside>
+    <div class="flex-1 flex flex-col min-w-0">
+      <header id="topbar" class="shrink-0 bg-white border-b border-slate-200"></header>
+      <main id="outlet" class="flex-1 overflow-auto">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <div><h1 class="text-xl font-semibold text-slate-900">Reports <span class="text-slate-400 font-normal text-base">· Haraka</span></h1></div>
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="h-9 px-3 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1.5 cursor-pointer">
+                <input type="date" value="2026-06-01" class="border-0 p-0 bg-transparent text-sm focus:outline-none text-slate-600" />
+                <span class="text-slate-400">–</span>
+                <input type="date" value="2026-06-13" class="border-0 p-0 bg-transparent text-sm focus:outline-none text-slate-600" />
+              </label>
+              <button class="h-9 px-3 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 inline-flex items-center gap-1.5"><i data-lucide="download" class="!w-4 !h-4"></i>Export CSV</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
+              <h2 class="font-semibold text-slate-800 mb-4">Sales by Day</h2>
+              <canvas id="byDay" height="110"></canvas>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h2 class="font-semibold text-slate-800 mb-4">By Payment Method</h2>
+              <canvas id="byPayment" height="200"></canvas>
+            </div>
+            <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
+              <h2 class="font-semibold text-slate-800 mb-4">Top Items</h2>
+              <canvas id="topItems" height="120"></canvas>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h2 class="font-semibold text-slate-800 mb-4">By Cashier</h2>
+              <canvas id="byCashier" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/data/seed-core.js"></script>
+  <script src="js/core/components.js"></script>
+  <script src="js/core/sidebar.js"></script>
+  <script src="js/core/header.js"></script>
+  <script src="js/shell.js"></script>
+  <script>
+    const pink = '#C2185B', palette = ['#C2185B', '#4F46E5', '#E65100', '#00695C', '#1565C0'];
+    const noGrid = { grid: { display: false } };
+    new Chart(byDay, { type: 'bar', data: { labels: ['Jun 7', 'Jun 8', 'Jun 9', 'Jun 10', 'Jun 11', 'Jun 12', 'Jun 13'], datasets: [{ label: 'Sales', data: [820, 940, 1100, 760, 1280, 1450, 1284], backgroundColor: pink, borderRadius: 6 }] }, options: { plugins: { legend: { display: false } }, scales: { x: noGrid, y: { beginAtZero: true } } } });
+    new Chart(byPayment, { type: 'doughnut', data: { labels: ['Cash', 'Card', 'Other'], datasets: [{ data: [54, 38, 8], backgroundColor: palette }] }, options: { plugins: { legend: { position: 'bottom' } } } });
+    new Chart(topItems, { type: 'bar', data: { labels: ['Chicken Shawarma', 'Cappuccino', 'Beef Burger', 'Iced Latte', 'Margherita Pizza'], datasets: [{ data: [142, 118, 96, 88, 64], backgroundColor: '#E65100', borderRadius: 6 }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { y: noGrid } } });
+    new Chart(byCashier, { type: 'pie', data: { labels: ['Nour Saleh', 'Sara Khalil', 'Yousef Ali'], datasets: [{ data: [48, 39, 13], backgroundColor: palette }] }, options: { plugins: { legend: { position: 'bottom' } } } });
+    App.ui.icons();
+  </script>
+</body>
+</html>

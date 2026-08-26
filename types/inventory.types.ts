@@ -13,7 +13,6 @@ export interface InventoryItem {
   unit: InventoryUnit;
   quantityOnHand: number;
   minimumThreshold: number;
-  reorderQuantity?: number;
   location?: string;
   supplier?: string;
   unitCost?: number;
@@ -21,8 +20,8 @@ export interface InventoryItem {
   stockStatus: StockStatus;
   posEnabled?: boolean;
   barcode?: string | null;
-  taxRateId?: string | null;
   posPrice?: number | null;
+  expiryDate?: Date | null;
   /** Purchase receipts/invoices (private inventory-receipts bucket). */
   documents?: DocumentRef[];
   createdAt: Date;

@@ -12,11 +12,11 @@
 |---|---|---|
 | **Build** | ✅ Healthy | `npm run build` — 8.4s, 36 static pages generated |
 | **Type check** | ✅ 0 errors | `npx tsc --noEmit` — clean |
-| **Lint** | ✅ 0 errors | 1 known library warning (`react-hook-form` `watch()`) |
-| **Production CVEs** | ✅ 0 high/critical | 10 low/moderate, all non-exploitable in current usage |
-| **Tests** | ⚠ None | `vitest` configured, `TEST_CASES.md` describes scenarios, zero `*.test.ts` files written |
+| **Lint** | ✅ 0 errors | Was silently broken (script referenced deleted `proxy.ts`); fixed 2026-07-09, exposing + fixing 146 latent errors incl. 100 hook-order bugs. 57 warnings remain (mostly hydrate-form set-state-in-effect). |
+| **Production CVEs** | ✅ 0 high/critical | 2 moderate (postcss transitive under `next`, needs breaking bump). Build tools moved to devDependencies. |
+| **Tests** | ⚠ Growing | 55 tests (was 29). Security foundation added: rate-limit, require-feature, csrf-cron, delivery-token, secret-cipher, pricing. Broad money/tenancy coverage still pending (T2.1). |
 | **Deployment** | ✅ Live | Cloudflare Workers via `@opennextjs/cloudflare`; `main` → `app.makhzoon.me`, `DevBranch` → `dev.makhzoon.me` |
-| **Last security review** | ✅ 2026-05-09 | See `SECURITY_REVIEW_2026-05-09.md`. 0 high/critical findings. |
+| **Last security review** | ✅ 2026-07-05 | See `AUDIT_ACTION_PLAN_2026-07-05.md` + `SECURITY.md`. Phase 1 fixes applied 2026-07-09 (durable rate limiting, server-side feature flags, zod coverage, delivery-token lifecycle, CSRF/cron hardening). |
 
 ---
 
@@ -34,7 +34,7 @@
   - Supabase Auth for authentication
   - RLS for multi-tenant isolation
 - **Email**: Resend (`@resend/node`)
-- **Error tracking**: Sentry (`@sentry/nextjs`)
+- **Error tracking**: PostHog + LogRocket + Microsoft Clarity (client-side; Sentry removed)
 
 ### UI
 - **Tailwind CSS** 3.4.1

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
-import { upsertOrgListItem, deleteOrgListItem } from '@/lib/db/managed-lists';
+import { upsertOrgListItem, deleteOrgListItem, assertKeepsBehaviorFlag } from '@/lib/db/managed-lists';
 import {
   orgListItemSchema,
   orgListItemDeleteSchema,
@@ -29,6 +29,16 @@ export async function POST(req: NextRequest) {
 
     const parsed = orgListItemSchema.safeParse(await req.json());
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
+
+    if (parsed.data.enabled === false) {
+      for (const flag of ['isInvoicingTrigger', 'isBlocking'] as const) {
+        try {
+          await assertKeepsBehaviorFlag(tenant.organizationId, parsed.data.listKey as ListKey, flag, parsed.data.value);
+        } catch (e) {
+          return NextResponse.json({ error: e instanceof Error ? e.message : 'Cannot disable this status' }, { status: 400 });
+        }
+      }
+    }
 
     await upsertOrgListItem({
       ...parsed.data,
@@ -60,6 +70,14 @@ export async function DELETE(req: NextRequest) {
 
     const parsed = orgListItemDeleteSchema.safeParse(await req.json());
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
+
+    for (const flag of ['isInvoicingTrigger', 'isBlocking'] as const) {
+      try {
+        await assertKeepsBehaviorFlag(tenant.organizationId, parsed.data.listKey as ListKey, flag, parsed.data.value);
+      } catch (e) {
+        return NextResponse.json({ error: e instanceof Error ? e.message : 'Cannot remove this status' }, { status: 400 });
+      }
+    }
 
     await deleteOrgListItem(
       tenant.organizationId,

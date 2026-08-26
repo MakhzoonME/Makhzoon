@@ -1,18 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { requirePermission } from '@/lib/permissions/require'
+import { hasPermission } from '@/lib/permissions'
 import { InventoryService } from '@/lib/modules/inventory/services/inventory.service'
 import { createInventoryItemSchema } from '@/lib/modules/inventory/validators/schemas'
 
 const service = new InventoryService()
 
+/**
+ * POS product lookup (register cart): a staff member who can build a
+ * receipt (add_receipt_items) but has no Inventory-module access should
+ * still be able to read the posEnabled catalog. Full inventory browsing
+ * (the default, non-POS-scoped call) still requires the Inventory module.
+ */
+function requireInventoryReadForPosLookup(tenant: Awaited<ReturnType<typeof resolveTenant>>): void {
+  if (hasPermission(tenant.user, 'raseed', 'view')) {
+    requireFeature(tenant, 'inventory')
+    return
+  }
+  requireFeature(tenant, 'pos')
+  requirePermission(tenant.user, 'haraka', 'registerOpen')
+}
+
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    const limited = rateLimitTenant(tenant, 'inventory', 60, 60_000)
-    if (limited) return limited
     const { searchParams } = new URL(req.url)
+    const posLookup = searchParams.get('posEnabled') === 'true'
+
+    if (posLookup) {
+      requireInventoryReadForPosLookup(tenant)
+    } else {
+      requireFeature(tenant, 'inventory')
+      requirePermission(tenant.user, 'raseed', 'view')
+    }
+    const limited = await rateLimitTenant(tenant, 'inventory', 60, 60_000)
+    if (limited) return limited
 
     if (searchParams.get('categoriesOnly') === 'true') {
       const categories = await service.getCategories(tenant)
@@ -24,6 +49,8 @@ export async function GET(req: NextRequest) {
       stockStatus: searchParams.get('stockStatus') ?? undefined,
       search: searchParams.get('search') ?? undefined,
       posEnabled: searchParams.get('posEnabled') === 'true' ? true : undefined,
+      expiringWithin: searchParams.get('expiringWithin') ? parseInt(searchParams.get('expiringWithin')!, 10) : undefined,
+      expired: searchParams.get('expired') === 'true' ? true : undefined,
       page: searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined,
       pageSize: searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : undefined,
       sortBy: searchParams.get('sortBy') as never ?? undefined,
@@ -42,7 +69,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    requirePermission(tenant.user, 'inventory', 'create')
+    requireFeature(tenant, 'inventory')
+    requirePermission(tenant.user, 'raseed', 'create')
     const body = await req.json()
     const parsed = createInventoryItemSchema.safeParse(body)
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
@@ -55,7 +83,6 @@ export async function POST(req: NextRequest) {
       unit: data.unit,
       quantityOnHand: data.quantityOnHand,
       minimumThreshold: data.minimumThreshold,
-      reorderQuantity: data.reorderQuantity === undefined ? undefined : Number(data.reorderQuantity),
       location: data.location || undefined,
       supplier: data.supplier || undefined,
       unitCost: data.unitCost === undefined ? undefined : Number(data.unitCost),
@@ -63,7 +90,7 @@ export async function POST(req: NextRequest) {
       barcode: data.barcode ? data.barcode.trim() : null,
       posEnabled: data.posEnabled ?? undefined,
       posPrice: data.posPrice === undefined ? null : Number(data.posPrice),
-      taxRateId: data.taxRateId || null,
+      expiryDate: data.expiryDate || null,
       documents: data.documents ?? [],
     })
 

@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { OrgUser, UserPermissions } from '@/types';
 
@@ -83,6 +84,16 @@ export async function updateUser(
   const { error } = await supabaseAdmin
     .from('users')
     .update(patch)
+    .eq('id', id);
+  if (error) throw error;
+}
+
+/** Delete a user row from public.users. Used for compensating cleanup when a
+ *  multi-step account creation sequence fails partway through. */
+export async function deleteUser(id: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('users')
+    .delete()
     .eq('id', id);
   if (error) throw error;
 }

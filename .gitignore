@@ -63,6 +63,7 @@ ruvector.db-*
 functions/ruvector.db
 functions/ruvector.db-*
 .swarm/
+.claude-flow/
 agentdb.rvf
 agentdb.rvf.lock
 
@@ -74,7 +75,17 @@ Makhzoon-handoff.zip
 x.collectionGroup
 *.bak
 *.orig
+/acc
+/PublicCompositeTypeNameOrOptions
+/DefaultSchemaTableNameOrOptions
 
 # Design canvas files (handoff reference — not production code)
 *Journeys.html
+
+# Database backups / exports — contain real production data, never commit
+db-backups/
+*_rows.csv
+
+# one-off admin scripts with hardcoded prod org ids — not for the repo history
+scripts/delete-orgs.sql
 

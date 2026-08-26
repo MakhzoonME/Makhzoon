@@ -19,6 +19,12 @@ interface ScheduledController {
 const SCHEDULE: Record<string, string> = {
   '0 9 * * 1': '/api/cron/warranty-alerts',
   '0 1 * * *': '/api/cron/subscription-status',
+  '0 2 * * *': '/api/cron/monthly-billing',
+  '0 3 * * *': '/api/cron/grace-enforcement',
+  // Hourly: a clinic can set any reminder lead time without the sweep cadence
+  // becoming the limiting factor. Safe to run often — every send is guarded by
+  // a per-(appointment, kind) row, so nobody is messaged twice.
+  '30 * * * *': '/api/cron/appointment-reminders',
 };
 
 export default {

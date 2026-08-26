@@ -4,6 +4,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import type { PosCustomer } from '@/types';
 import type { CustomerFormData } from '@/lib/modules/haraka/customers/schemas';
+import type { CustomerHistoryEntry } from '@/lib/modules/haraka/customers/customers.service';
+
+export type { CustomerHistoryEntry };
 
 const LIST_KEY = ['haraka', 'customers'] as const;
 
@@ -56,6 +59,21 @@ export function useCustomer(id: string | undefined) {
   });
 }
 
+export function useCustomerHistory(id: string | undefined) {
+  const { space } = useParams<{ space?: string }>();
+  return useQuery<{ entries: CustomerHistoryEntry[] }>({
+    queryKey: ['haraka', 'customers', space, id, 'history'],
+    enabled: !!id && !!space,
+    queryFn: async () => {
+      const headers: HeadersInit = space ? { 'x-space-slug': space } : {};
+      const res = await fetch(`/api/haraka/customers/${id}/history`, { headers });
+      if (!res.ok) throw new Error('Failed to fetch customer history');
+      return res.json();
+    },
+    staleTime: 30_000,
+  });
+}
+
 export function useCreateCustomer() {
   const qc = useQueryClient();
   return useMutation({
@@ -77,6 +95,7 @@ export function useCreateCustomer() {
 
 export function useUpdateCustomer() {
   const qc = useQueryClient();
+  const { space } = useParams<{ space?: string }>();
   return useMutation({
     mutationFn: async (vars: { id: string; patch: Partial<CustomerFormData> }) => {
       const res = await fetch(`/api/haraka/customers/${vars.id}`, {
@@ -92,7 +111,7 @@ export function useUpdateCustomer() {
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: LIST_KEY });
-      qc.invalidateQueries({ queryKey: ['haraka', 'customers', vars.id] });
+      qc.invalidateQueries({ queryKey: ['haraka', 'customers', space, vars.id] });
     },
   });
 }

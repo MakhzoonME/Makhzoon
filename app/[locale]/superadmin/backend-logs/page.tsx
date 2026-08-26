@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { RefreshCw, X } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -7,9 +8,7 @@ import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { useT } from '@/hooks/ui';
 
 interface BackendLog {
@@ -43,6 +42,7 @@ const METHOD_STYLES: Record<string, string> = {
   PATCH:  'text-yellow-700',
   PUT:    'text-orange-700',
   DELETE: 'text-red-700',
+  SYSTEM: 'text-purple-700',
 };
 
 function statusColor(code: number) {
@@ -81,41 +81,26 @@ export default function BackendLogsPage() {
   const dateFrom = searchParams.get('dateFrom') ?? '';
   const dateTo = searchParams.get('dateTo') ?? '';
 
-  const [logs, setLogs] = useState<BackendLog[]>([]);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
-    try {
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['superadmin-backend-logs', level, orgId, page, pageSize, userSearch, dateFrom, dateTo],
+    queryFn: async () => {
       const params = new URLSearchParams({ level, page: String(page), pageSize: String(pageSize) });
       if (orgId.trim()) params.set('orgId', orgId.trim());
+      if (userSearch.trim()) params.set('userSearch', userSearch.trim());
+      if (dateFrom) params.set('dateFrom', dateFrom);
+      if (dateTo) params.set('dateTo', dateTo);
       const res = await fetch(`/api/superadmin/backend-logs?${params}`);
-      if (res.ok) {
-        const data = await res.json();
-        setLogs(data.items ?? []);
-        setTotal(data.total ?? 0);
-        setTotalPages(data.totalPages ?? 1);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [level, orgId, page, pageSize]);
-
-  // TODO: migrate fetchLogs to useQuery so loading/logs/total/totalPages
-  // become derived rather than kept in local state. Until then this effect
-  // legitimately needs to setState on filter change.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { fetchLogs(); }, [fetchLogs]);
-
-  useEffect(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    if (autoRefresh) intervalRef.current = setInterval(fetchLogs, 10_000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [autoRefresh, fetchLogs]);
+      if (!res.ok) throw new Error('Failed to fetch logs');
+      return res.json();
+    },
+    placeholderData: (prev) => prev,
+    refetchInterval: autoRefresh ? 10_000 : false,
+  });
+  const logs: BackendLog[] = data?.items ?? [];
+  const total: number = data?.total ?? 0;
+  const totalPages: number = data?.totalPages ?? 1;
 
   const updateUrl = useCallback((params: Record<string, string>) => {
     const url = syncFiltersToUrl(pathname, params);
@@ -135,26 +120,7 @@ export default function BackendLogsPage() {
     });
   }
 
-  const filteredLogs = useMemo(() => {
-    let result = logs;
-    if (userSearch.trim()) {
-      const q = userSearch.trim().toLowerCase();
-      result = result.filter(
-        (l) =>
-          l.userDisplayName?.toLowerCase().includes(q) ||
-          l.userId?.toLowerCase().includes(q)
-      );
-    }
-    if (dateFrom) {
-      const from = new Date(dateFrom).getTime();
-      result = result.filter((l) => new Date(l.timestamp).getTime() >= from);
-    }
-    if (dateTo) {
-      const to = new Date(dateTo).getTime();
-      result = result.filter((l) => new Date(l.timestamp).getTime() <= to);
-    }
-    return result;
-  }, [logs, userSearch, dateFrom, dateTo]);
+
 
   const levels = ['all', 'success', 'warning', 'error', 'info'];
 
@@ -181,12 +147,12 @@ export default function BackendLogsPage() {
               />
               {t('backendLogs.autoRefresh')}
             </label>
-            <Button size="sm" variant="outline" onClick={fetchLogs} disabled={loading}>
-              <RefreshCw className={cn('h-4 w-4 me-1.5', loading && 'animate-spin')} />
+            <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isLoading}>
+              <RefreshCw className={cn('h-4 w-4 me-1.5', isLoading && 'animate-spin')} />
               {t('backendLogs.refresh')}
             </Button>
           </div>
-        }
+  }
       />
 
       <div className="bg-surface-card rounded-lg border border-border p-4 space-y-4">
@@ -267,16 +233,14 @@ export default function BackendLogsPage() {
 
           <div className="space-y-1">
             <Label className="text-xs">{t('backendLogs.limit')}</Label>
-            <Select value={String(pageSize)} onValueChange={(v) => syncAllToUrl({ pageSize: v, page: '1' })}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {['20', '50', '100', '200'].map((n) => (
-                  <SelectItem key={n} value={n}>{n} per page</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              value={String(pageSize)}
+              onChange={(v) => syncAllToUrl({ pageSize: v ?? String(pageSize), page: '1' })}
+              options={['20', '50', '100', '200'].map((n) => ({ value: n, label: `${n} per page` }))}
+              searchable={false}
+              clearable={false}
+              className="h-8 text-xs"
+            />
           </div>
         </div>
 
@@ -362,14 +326,14 @@ export default function BackendLogsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredLogs.length === 0 && (
+              {logs.length === 0 && (
                 <tr>
                   <td colSpan={10} className="px-4 py-10 text-center text-gray-400">
-                    {loading ? t('common.loading') : t('backendLogs.noLogs')}
+                    {isLoading ? t('common.loading') : t('backendLogs.noLogs')}
                   </td>
                 </tr>
               )}
-              {filteredLogs.map((log) => (
+              {logs.map((log) => (
                 <>
                   <tr
                     key={log.id}
@@ -383,7 +347,7 @@ export default function BackendLogsPage() {
                     <td className="px-3 py-2 font-mono text-gray-500 whitespace-nowrap">{fmt(log.timestamp)}</td>
                     <td className={cn('px-3 py-2 font-mono font-semibold', METHOD_STYLES[log.method] ?? 'text-gray-600')}>{log.method}</td>
                     <td className="px-3 py-2 font-mono text-gray-700 max-w-[220px] truncate" title={log.path}>{log.path}</td>
-                    <td className={cn('px-3 py-2 font-mono', statusColor(log.statusCode))}>{log.statusCode}</td>
+                    <td className={cn('px-3 py-2 font-mono', statusColor(log.statusCode))}>{log.statusCode || '—'}</td>
                     <td className="px-3 py-2">
                       <span className={cn('px-1.5 py-0.5 rounded text-xs font-medium capitalize', LEVEL_STYLES[log.level] ?? 'bg-surface-page text-gray-600')}>
                         {log.level}
@@ -402,7 +366,7 @@ export default function BackendLogsPage() {
                   {expanded === log.id && (
                     <tr key={`${log.id}-detail`} className="bg-[var(--primary-50)]">
                       <td colSpan={10} className="px-4 py-3">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <p className="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wide">{t('backendLogs.details')}</p>
                             <dl className="space-y-1 text-xs">

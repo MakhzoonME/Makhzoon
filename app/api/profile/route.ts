@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant';
+import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { updateAuthUser } from '@/lib/supabase/auth-admin';
 import { updateUser } from '@/lib/db/users';
+import { z } from 'zod';
+
+const profilePatchSchema = z.object({
+  displayName: z.string().trim().min(1).max(120).optional(),
+  avatarUrl: z.string().max(2000).nullable().optional(),
+});
 
 export async function PATCH(req: NextRequest) {
   // SECURITY: Rate limit profile updates (20 per IP per hour)
   const clientIp = getClientIp(req);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `profile:${clientIp}`,
     20,
     60 * 60 * 1000,
@@ -16,10 +22,12 @@ export async function PATCH(req: NextRequest) {
   if (rateLimitResult) return rateLimitResult;
 
   try {
-    const tenant = await resolveTenant();
-    const user = tenant.user;
+    const user = await verifySessionCookie();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { displayName, avatarUrl } = await req.json();
+    const parsed = profilePatchSchema.safeParse(await req.json().catch(() => null));
+    if (!parsed.success) return NextResponse.json({ error: 'Invalid body', details: parsed.error.flatten() }, { status: 422 });
+    const { displayName, avatarUrl } = parsed.data;
     if (!displayName && avatarUrl === undefined) {
       return NextResponse.json({ ok: true });
     }

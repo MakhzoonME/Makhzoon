@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { Asset, DocumentRef } from '@/types';
 
@@ -7,6 +8,7 @@ function toAsset(r: Row): Asset {
   return {
     id: r.id as string,
     organizationId: r.organization_id as string,
+    spaceId: r.space_id as string | undefined,
     name: r.name as string,
     category: r.category as string,
     status: r.status as Asset['status'],

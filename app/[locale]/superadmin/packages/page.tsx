@@ -1,16 +1,26 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Plus, Pencil, Power, PowerOff, Check, X } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
+import { PackageForm } from '@/components/super-admin/PackageForm';
 import { useT } from '@/hooks/ui';
 import { toast } from '@/hooks/ui';
-import { usePackages, useDeletePackage } from '@/hooks/superadmin';
+import { usePackages, useCreatePackage, useUpdatePackage, useDeletePackage } from '@/hooks/superadmin';
 import type { Package } from '@/types';
+import type { PackageFormData } from '@/lib/validations/package.schema';
 
 function PricingCell({ pkg }: { pkg: Package }) {
   if (pkg.pricing.isCustom) return <span className="text-sm text-gray-500 italic">Custom</span>;
@@ -39,18 +49,67 @@ function LimitsCell({ pkg }: { pkg: Package }) {
 
 export default function PackagesPage() {
   const { t } = useT();
+  // Show inactive too: "delete" is a soft delete (is_active=false) surfaced in
+  // the UI as Deactivate, so deactivated packages stay listed (as Inactive) and
+  // can be reactivated.
   const { data: packages = [], isLoading } = usePackages({ includeInactive: true });
   const deleteMut = useDeletePackage();
-  const [confirmDelete, setConfirmDelete] = useState<Package | null>(null);
+  const qc = useQueryClient();
+  const [confirmDeactivate, setConfirmDeactivate] = useState<Package | null>(null);
+  const [reactivatingId, setReactivatingId] = useState<string | null>(null);
 
-  async function handleDelete() {
-    if (!confirmDelete) return;
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editing, setEditing] = useState<Package | null>(null);
+  const createMut = useCreatePackage();
+  const updateMut = useUpdatePackage(editing?.id ?? '');
+
+  async function handleCreate(data: PackageFormData) {
     try {
-      await deleteMut.mutateAsync(confirmDelete.id);
-      toast.success(t('common.deleted'));
-      setConfirmDelete(null);
+      await createMut.mutateAsync(data);
+      toast.success(t('config.packageCreated'));
+      setCreateOpen(false);
+    } catch {
+      toast.error(t('config.packageCreateFailed'));
+    }
+  }
+
+  async function handleUpdate(data: PackageFormData) {
+    if (!editing) return;
+    try {
+      await updateMut.mutateAsync(data);
+      toast.success(t('config.packageUpdated'));
+      setEditing(null);
+    } catch {
+      toast.error(t('config.packageUpdateFailed'));
+    }
+  }
+
+  async function handleDeactivate() {
+    if (!confirmDeactivate) return;
+    try {
+      await deleteMut.mutateAsync(confirmDeactivate.id);
+      toast.success('Package deactivated');
+      setConfirmDeactivate(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('common.deleteFailed'));
+    }
+  }
+
+  async function handleReactivate(pkg: Package) {
+    setReactivatingId(pkg.id);
+    try {
+      const res = await fetch(`/api/packages/${pkg.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: true }),
+      });
+      if (!res.ok) throw new Error('Failed to reactivate');
+      toast.success('Package reactivated');
+      qc.invalidateQueries({ queryKey: ['packages'] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to reactivate');
+    } finally {
+      setReactivatingId(null);
     }
   }
 
@@ -62,13 +121,14 @@ export default function PackagesPage() {
         title={t('nav.packages')}
         breadcrumb={[{ label: t('nav.packages') }]}
         actions={
-          <Button size="sm">
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
             <Plus size={14} className="me-1" /> Add package
           </Button>
         }
       />
 
       <div className="bg-surface-card rounded-xl border border-border overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-surface-page border-b border-border">
             <tr>
@@ -115,36 +175,80 @@ export default function PackagesPage() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1 justify-end">
-                    <Button size="sm" variant="ghost" aria-label={t('common.edit')}>
+                    <Button size="sm" variant="ghost" aria-label={t('common.edit')} onClick={() => setEditing(pkg)}>
                       <Pencil size={13} />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      aria-label={t('common.delete')}
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                      onClick={() => setConfirmDelete(pkg)}
-                    >
-                      <Trash2 size={13} />
-                    </Button>
+                    {pkg.isActive ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50 gap-1"
+                        onClick={() => setConfirmDeactivate(pkg)}
+                      >
+                        <PowerOff size={13} /> Deactivate
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50 gap-1"
+                        disabled={reactivatingId === pkg.id}
+                        onClick={() => handleReactivate(pkg)}
+                      >
+                        <Power size={13} /> {reactivatingId === pkg.id ? '…' : 'Reactivate'}
+                      </Button>
+                    )}
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <ConfirmDialog
-        open={!!confirmDelete}
-        onOpenChange={(o) => !o && setConfirmDelete(null)}
-        title="Delete package?"
-        description={`"${confirmDelete?.name}" will be permanently removed. Organizations on this package will not be affected.`}
-        confirmLabel={t('common.delete')}
+        open={!!confirmDeactivate}
+        onOpenChange={(o) => !o && setConfirmDeactivate(null)}
+        title="Deactivate package?"
+        description={`"${confirmDeactivate?.name}" will be hidden from new assignments. Organizations already on it are unaffected, and you can reactivate it anytime.`}
+        confirmLabel="Deactivate"
         variant="destructive"
-        onConfirm={handleDelete}
+        onConfirm={handleDeactivate}
         loading={deleteMut.isPending}
       />
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('config.newPackageTitle')}</DialogTitle>
+            <DialogDescription>{t('config.newPackageDesc')}</DialogDescription>
+          </DialogHeader>
+          <PackageForm
+            onCancel={() => setCreateOpen(false)}
+            onSubmit={handleCreate}
+            submitting={createMut.isPending}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('config.editPackage')}</DialogTitle>
+            <DialogDescription>{editing?.name}</DialogDescription>
+          </DialogHeader>
+          {editing && (
+            <PackageForm
+              key={editing.id}
+              initial={editing}
+              onCancel={() => setEditing(null)}
+              onSubmit={handleUpdate}
+              submitting={updateMut.isPending}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

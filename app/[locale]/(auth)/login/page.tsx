@@ -3,13 +3,14 @@ import { useState, useEffect, useSyncExternalStore } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
+import { analytics } from '@/lib/analytics';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { MakhzoonMark } from '@/components/ui/MakhzoonLogo';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { LanguageToggle } from '@/components/shared/LanguageToggle';
-import { buildOrgPath, buildSuperAdminPath } from '@/lib/utils/tenant-url';
+import { buildSuperAdminPath } from '@/lib/utils/tenant-url';
 import { getFirstAccessiblePath } from '@/lib/nav';
 import { cn } from '@/lib/utils/cn';
 import { toast, useT } from '@/hooks/ui';
@@ -115,17 +116,12 @@ function ForgotPasswordModal({ open, onClose }: { open: boolean; onClose: () => 
         return;
       }
 
-      const supabase = await createClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(
-        resetEmail.trim(),
-        {
-          redirectTo:
-            typeof window !== 'undefined'
-              ? `${window.location.origin}/reset-password`
-              : undefined,
-        },
-      );
-      if (error && error.status === 429) {
+      const res = await fetch('/api/auth/send-password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail.trim() }),
+      });
+      if (res.status === 429) {
         setError('Too many attempts. Please wait a moment before trying again.');
       } else {
         setSubmitted(true);
@@ -372,12 +368,11 @@ export default function LoginPage() {
       if (!res.ok) return;
       const body = await res.json().catch(() => null);
       if (!body) return;
-      const { role, orgSlug, features = {}, permissions = null } = body;
+      const { role, orgSlug, features = {}, activeHarakaModules = [], activeAddOns, permissions = null } = body;
       if (SUPERADMIN_ROLES.has(role)) {
         router.replace(buildSuperAdminPath(locale, '/dashboard'));
       } else if (orgSlug) {
-        const firstPath = getFirstAccessiblePath({ locale, role, features, permissions });
-        router.replace(buildOrgPath(locale, orgSlug, firstPath));
+        router.replace(getFirstAccessiblePath({ locale, orgSlug, role, features, activeHarakaModules, activeAddOns, permissions }));
       }
     }).catch(() => {});
   }, [locale, router, sessionExpiredMessage]);
@@ -412,12 +407,11 @@ export default function LoginPage() {
       if (body.orgSuspended) toast.error('This workspace is suspended. Please contact support to restore access.');
       throw new Error(body.error || 'Session creation failed');
     }
-    const { role, orgSlug, features = {}, permissions = null } = body;
+    const { role, orgSlug, features = {}, activeHarakaModules = [], activeAddOns, permissions = null } = body;
     if (SUPERADMIN_ROLES.has(role)) {
       router.push(buildSuperAdminPath(locale, '/dashboard'));
     } else if (orgSlug) {
-      const firstPath = getFirstAccessiblePath({ locale, role, features, permissions });
-      router.push(buildOrgPath(locale, orgSlug, firstPath));
+      router.push(getFirstAccessiblePath({ locale, orgSlug, role, features, activeHarakaModules, activeAddOns, permissions }));
     } else {
       throw new Error('Your workspace could not be found. Please contact support.');
     }
@@ -435,6 +429,7 @@ export default function LoginPage() {
         password: emailPassword,
       });
       if (error) throw error;
+      analytics.track('user_signed_in', { method: 'email' });
       await redirectFromSession();
     } catch (err: unknown) {
       setEmailError(getAuthErrorMessage(err, 'email'));
@@ -458,6 +453,7 @@ export default function LoginPage() {
         password: usernamePassword,
       });
       if (error) throw error;
+      analytics.track('user_signed_in', { method: 'username' });
       await redirectFromSession();
     } catch (err: unknown) {
       setUsernameError(getAuthErrorMessage(err, 'username'));

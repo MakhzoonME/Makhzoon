@@ -14,11 +14,16 @@ const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin']);
  * instead of bouncing to /organization → useAdminGuard → /dashboard.
  */
 const SETTINGS_ORDER: Array<{ permKey: string; path: string }> = [
-  { permKey: 'settings.orgInfo',      path: '/settings/organization' },
-  { permKey: 'settings.subscription', path: '/subscription' },
-  { permKey: 'settings.users',        path: '/users' },
-  { permKey: 'settings.taxRates',     path: '/settings/tax-rates' },
-  { permKey: 'settings.fawtara',      path: '/settings/jo-fotara' },
+  { permKey: 'settingsOrgInfo.view',      path: '/settings/organization' },
+  { permKey: 'settingsSpaces.view',       path: '/settings/spaces' },
+  { permKey: 'settingsLists.view',        path: '/settings/lists' },
+  { permKey: 'settingsSubscription.view', path: '/subscription' },
+  { permKey: 'settingsUsers.view',        path: '/users' },
+  { permKey: 'settingsReceipt.view',      path: '/settings/receipt' },
+  { permKey: 'settingsInvoice.view',      path: '/settings/invoice' },
+  { permKey: 'settingsWarrantyCert.view', path: '/settings/warranty-cert' },
+  { permKey: 'settingsNotifications.view',path: '/settings/notifications' },
+  { permKey: 'settingsCashDrawer.view',   path: '/settings/cash-drawer' },
 ];
 
 export default function SettingsIndexPage() {

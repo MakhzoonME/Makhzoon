@@ -1,8 +1,11 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import type {
   Package,
   PackageLimits,
   PackagePricing,
+  PackageAllowances,
+  AddOnPrices,
   FeatureKey,
   InclusionKey,
 } from '@/types';
@@ -34,12 +37,26 @@ function toPackage(r: Row): Package {
       maxAssets: limits.maxAssets ?? -1,
       maxUsers: limits.maxUsers ?? -1,
       maxWarranties: limits.maxWarranties ?? -1,
-      maxRequests: limits.maxRequests ?? -1,
       maxSpaces: limits.maxSpaces ?? -1,
       maxInventoryItems: limits.maxInventoryItems ?? -1,
     },
     features: (r.features ?? {}) as Record<FeatureKey, boolean>,
     inclusions: (r.inclusions ?? {}) as Record<InclusionKey, boolean>,
+    allowances: {
+      usoolIncluded: toNumberOrNull(r.usool_included),
+      raseedIncluded: toNumberOrNull(r.raseed_included),
+      purchasesRequestsIncluded: (r.purchases_requests_included as boolean) ?? false,
+      harakaIncludedModuleSlots: (r.haraka_included_module_slots as number) ?? 0,
+      deliveryAgentsIncluded: (r.delivery_agents_included as boolean) ?? false,
+      warrantyCertsIncluded: (r.warranty_certs_included as boolean) ?? false,
+      customizationIncluded: (r.customization_included as boolean) ?? false,
+      spacesIncluded: toNumberOrNull(r.spaces_included),
+      usersIncluded: toNumberOrNull(r.users_included),
+      vehicleIntakeIncluded: (r.vehicle_intake_included as boolean) ?? false,
+      documentReportsIncluded: (r.document_reports_included as boolean) ?? false,
+    },
+    addOnPrices: (r.add_on_prices ?? {}) as import('@/types').AddOnPrices,
+    isCustom: (r.is_custom as boolean) ?? false,
     createdAt: r.created_at ? new Date(r.created_at as string) : new Date(),
     createdBy: (r.created_by as string) ?? '',
     updatedAt: r.updated_at ? new Date(r.updated_at as string) : new Date(),
@@ -82,6 +99,24 @@ export async function getPackagesByIds(ids: string[]): Promise<Package[]> {
   return (data ?? []).map(toPackage);
 }
 
+// Maps the structured allowances onto their snake_case columns. Only defined
+// keys are emitted so partial updates don't clobber unrelated columns.
+function allowanceColumns(a: Partial<PackageAllowances>): Row {
+  const out: Row = {};
+  if (a.usoolIncluded !== undefined) out.usool_included = a.usoolIncluded;
+  if (a.raseedIncluded !== undefined) out.raseed_included = a.raseedIncluded;
+  if (a.purchasesRequestsIncluded !== undefined) out.purchases_requests_included = a.purchasesRequestsIncluded;
+  if (a.harakaIncludedModuleSlots !== undefined) out.haraka_included_module_slots = a.harakaIncludedModuleSlots;
+  if (a.deliveryAgentsIncluded !== undefined) out.delivery_agents_included = a.deliveryAgentsIncluded;
+  if (a.warrantyCertsIncluded !== undefined) out.warranty_certs_included = a.warrantyCertsIncluded;
+  if (a.customizationIncluded !== undefined) out.customization_included = a.customizationIncluded;
+  if (a.spacesIncluded !== undefined) out.spaces_included = a.spacesIncluded;
+  if (a.usersIncluded !== undefined) out.users_included = a.usersIncluded;
+  if (a.vehicleIntakeIncluded !== undefined) out.vehicle_intake_included = a.vehicleIntakeIncluded;
+  if (a.documentReportsIncluded !== undefined) out.document_reports_included = a.documentReportsIncluded;
+  return out;
+}
+
 export async function createPackage(
   userId: string,
   payload: {
@@ -94,6 +129,9 @@ export async function createPackage(
     limits: PackageLimits;
     features: Record<FeatureKey, boolean>;
     inclusions: Record<InclusionKey, boolean>;
+    allowances?: Partial<PackageAllowances>;
+    addOnPrices?: AddOnPrices;
+    isCustom?: boolean;
   },
 ): Promise<Package> {
   const { data, error } = await supabaseAdmin
@@ -111,6 +149,9 @@ export async function createPackage(
       limits: payload.limits,
       features: payload.features,
       inclusions: payload.inclusions,
+      ...allowanceColumns(payload.allowances ?? {}),
+      ...(payload.addOnPrices !== undefined ? { add_on_prices: payload.addOnPrices } : {}),
+      ...(payload.isCustom !== undefined ? { is_custom: payload.isCustom } : {}),
       created_by: userId,
       updated_by: userId,
     })
@@ -135,8 +176,10 @@ export async function updatePackage(
       | 'limits'
       | 'features'
       | 'inclusions'
+      | 'addOnPrices'
+      | 'isCustom'
     >
-  >,
+  > & { allowances?: Partial<PackageAllowances> },
 ): Promise<void> {
   const patch: Row = { updated_by: userId };
   if (updates.name !== undefined) patch.name = updates.name;
@@ -153,6 +196,9 @@ export async function updatePackage(
   if (updates.limits !== undefined) patch.limits = updates.limits;
   if (updates.features !== undefined) patch.features = updates.features;
   if (updates.inclusions !== undefined) patch.inclusions = updates.inclusions;
+  if (updates.allowances !== undefined) Object.assign(patch, allowanceColumns(updates.allowances));
+  if (updates.addOnPrices !== undefined) patch.add_on_prices = updates.addOnPrices;
+  if (updates.isCustom !== undefined) patch.is_custom = updates.isCustom;
   const { error } = await supabaseAdmin
     .from('packages')
     .update(patch)

@@ -1,6 +1,7 @@
 'use client';
 import { create } from 'zustand';
 import { AuthUser } from '@/types';
+import type { SuperAdminPermissions } from '@/types/superadmin-permissions.types';
 
 interface AuthState {
   user: AuthUser | null;
@@ -30,7 +31,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           ...current,
           avatarUrl: data.avatarUrl ?? current.avatarUrl ?? null,
           features: data.features ?? {},
+          activeHarakaModules: data.activeHarakaModules ?? current.activeHarakaModules ?? [],
+          activeAddOns: data.activeAddOns ?? current.activeAddOns,
           permissions: data.permissions ?? current.permissions,
+          saPermissions: (data.saPermissions as SuperAdminPermissions | null) ?? current.saPermissions,
         },
       });
     } catch {
@@ -53,7 +57,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           organizationId: data.organizationId ?? current.organizationId,
           orgSlug: data.orgSlug ?? current.orgSlug,
           features: data.features ?? {},
+          activeHarakaModules: data.activeHarakaModules ?? current.activeHarakaModules ?? [],
+          activeAddOns: data.activeAddOns ?? current.activeAddOns,
           permissions: data.permissions ?? current.permissions,
+          saPermissions: (data.saPermissions as SuperAdminPermissions | null) ?? current.saPermissions,
         },
       });
     } catch {

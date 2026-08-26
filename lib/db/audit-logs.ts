@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { AuditLog } from '@/types';
 
@@ -26,6 +27,7 @@ export async function getAuditLogs(opts?: {
   orgId?: string;
   spaceId?: string;
   userId?: string;
+  recordId?: string;
   action?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -43,6 +45,7 @@ export async function getAuditLogs(opts?: {
     if (opts?.orgId) x = x.eq('organization_id', opts.orgId);
     if (opts?.spaceId) x = x.eq('space_id', opts.spaceId);
     if (opts?.userId) x = x.eq('user_id', opts.userId);
+    if (opts?.recordId) x = x.eq('record_id', opts.recordId);
     if (opts?.action) x = x.eq('action', opts.action);
     if (opts?.dateFrom)
       x = x.gte('timestamp', new Date(opts.dateFrom).toISOString());

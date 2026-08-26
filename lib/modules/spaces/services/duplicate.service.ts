@@ -1,3 +1,4 @@
+import 'server-only';
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { TenantContext } from '@/lib/platform/tenancy/types';
@@ -166,17 +167,16 @@ export async function duplicateInventoryItems(
 
   const { data: srcRows } = await supabaseAdmin
     .from('inventory_items')
-    .select('id, organization_id, space_id, name, category, sku, unit, minimum_threshold, reorder_quantity, location, supplier, unit_cost, notes, barcode, pos_enabled, pos_price, tax_rate_id')
+    .select('id, organization_id, space_id, name, category, sku, unit, minimum_threshold, location, supplier, unit_cost, notes, barcode, pos_enabled, pos_price')
     .in('id', itemIds);
   type ItemRow = {
     id: string; organization_id: string; space_id: string;
     name: string; category: string | null; sku: string | null;
     unit: string | null; minimum_threshold: number | null;
-    reorder_quantity: number | null; location: string | null;
+    location: string | null;
     supplier: string | null; unit_cost: number | null;
     notes: string | null; barcode: string | null;
     pos_enabled: boolean | null; pos_price: number | null;
-    tax_rate_id: string | null;
   };
   const rows = (srcRows ?? []) as ItemRow[];
   if (rows.length !== itemIds.length || rows.some((r) => r.organization_id !== tenant.organizationId)) {
@@ -196,7 +196,6 @@ export async function duplicateInventoryItems(
     sku: r.sku,
     unit: r.unit,
     minimum_threshold: r.minimum_threshold ?? 0,
-    reorder_quantity: r.reorder_quantity,
     location: r.location,
     supplier: r.supplier,
     unit_cost: r.unit_cost,
@@ -204,7 +203,6 @@ export async function duplicateInventoryItems(
     barcode: r.barcode,
     pos_enabled: r.pos_enabled ?? false,
     pos_price: r.pos_price,
-    tax_rate_id: r.tax_rate_id,
     quantity_on_hand: 0,
     stock_status: 'out',
     created_by: tenant.userId,

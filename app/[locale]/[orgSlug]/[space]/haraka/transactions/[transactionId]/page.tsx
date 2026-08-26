@@ -2,11 +2,11 @@
 
 import { use, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Ban, RotateCcw, Send, Printer, Share2 } from 'lucide-react';
+import { Ban, RotateCcw, Printer, Share2 } from 'lucide-react';
 import { PageHeader, StatusBadge, ConfirmDialog, SubscriptionGate, LoadingSkeleton } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useTransaction, useVoidSale, useRefundSale, useResubmitFawtara } from '@/hooks/haraka';
+import { useTransaction, useVoidSale, useRefundSale } from '@/hooks/haraka';
 import { toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { useAuthStore } from '@/store/auth.store';
@@ -37,7 +37,6 @@ export default function TransactionDetailPage(props: Props) {
   const { data, isLoading } = useTransaction(params.transactionId);
   const voidMut = useVoidSale();
   const refundMut = useRefundSale();
-  const resubmitMut = useResubmitFawtara();
 
   const [confirmVoid, setConfirmVoid] = useState(false);
   const [confirmRefund, setConfirmRefund] = useState(false);
@@ -59,9 +58,8 @@ export default function TransactionDetailPage(props: Props) {
   const isMutable = tx.status === 'completed';
 
   const receiptBase = getReceiptBaseUrl();
-  const canVoid = !!user && hasPermission(user, 'pos', 'void_transaction');
-  const canRefund = !!user && hasPermission(user, 'pos', 'issue_refund');
-  const canResubmitFawtara = !!user && hasPermission(user, 'pos', 'fawtara_submit');
+  const canVoid = !!user && hasPermission(user, 'haraka', 'transactionsVoid');
+  const canRefund = !!user && hasPermission(user, 'haraka', 'transactionsRefund');
 
   async function doVoid() {
     try {
@@ -80,15 +78,6 @@ export default function TransactionDetailPage(props: Props) {
       setConfirmRefund(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Refund failed');
-    }
-  }
-
-  async function doResubmit() {
-    try {
-      await resubmitMut.mutateAsync(tx.id);
-      toast.success('Fawtara resubmission queued');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Resubmit failed');
     }
   }
 
@@ -124,19 +113,6 @@ export default function TransactionDetailPage(props: Props) {
               <SubscriptionGate>
                 <Button variant="destructive" size="sm" onClick={() => setConfirmVoid(true)}>
                   <Ban size={14} className="me-1" /> Void
-                </Button>
-              </SubscriptionGate>
-            )}
-            {canResubmitFawtara && tx.fawtara && tx.fawtara.status !== 'submitted' && (
-              <SubscriptionGate>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={resubmitMut.isPending}
-                  onClick={doResubmit}
-                >
-                  <Send size={14} className="me-1" />
-                  {resubmitMut.isPending ? 'Resubmitting…' : 'Resubmit to Fawtara'}
                 </Button>
               </SubscriptionGate>
             )}
@@ -187,33 +163,35 @@ export default function TransactionDetailPage(props: Props) {
 
       <Card>
         <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b border-border bg-surface-muted/40">
-              <tr className="text-start">
-                <th className="py-2 px-4 font-medium">Item</th>
-                <th className="py-2 px-2 font-medium text-end">Qty</th>
-                <th className="py-2 px-2 font-medium text-end">Unit</th>
-                <th className="py-2 px-2 font-medium text-end">Tax</th>
-                <th className="py-2 px-2 font-medium text-end">Disc.</th>
-                <th className="py-2 px-4 font-medium text-end">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tx.items.map((line, i) => (
-                <tr key={`${line.inventoryItemId}-${i}`} className="border-b border-border last:border-0">
-                  <td className="py-2 px-4">
-                    <div className="font-medium">{line.inventoryItemName}</div>
-                    {line.sku && <div className="text-xs text-gray-500">SKU: {line.sku}</div>}
-                  </td>
-                  <td className="py-2 px-2 text-end font-mono">{line.quantity}</td>
-                  <td className="py-2 px-2 text-end font-mono">{fmt(line.unitPrice)}</td>
-                  <td className="py-2 px-2 text-end font-mono">{fmt(line.taxAmount)}</td>
-                  <td className="py-2 px-2 text-end font-mono">{fmt(line.discountAmount)}</td>
-                  <td className="py-2 px-4 text-end font-mono">{fmt(line.lineTotal)}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-border bg-surface-muted/40">
+                <tr className="text-start">
+                  <th className="py-2 px-4 font-medium">Item</th>
+                  <th className="py-2 px-2 font-medium text-end">Qty</th>
+                  <th className="py-2 px-2 font-medium text-end">Unit</th>
+                  <th className="py-2 px-2 font-medium text-end">Tax</th>
+                  <th className="py-2 px-2 font-medium text-end">Disc.</th>
+                  <th className="py-2 px-4 font-medium text-end">Total</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {tx.items.map((line, i) => (
+                  <tr key={`${line.inventoryItemId}-${i}`} className="border-b border-border last:border-0">
+                    <td className="py-2 px-4">
+                      <div className="font-medium">{line.inventoryItemName}</div>
+                      {line.sku && <div className="text-xs text-gray-500">SKU: {line.sku}</div>}
+                    </td>
+                    <td className="py-2 px-2 text-end font-mono">{line.quantity}</td>
+                    <td className="py-2 px-2 text-end font-mono">{fmt(line.unitPrice)}</td>
+                    <td className="py-2 px-2 text-end font-mono">{fmt(line.taxAmount)}</td>
+                    <td className="py-2 px-2 text-end font-mono">{fmt(line.discountAmount)}</td>
+                    <td className="py-2 px-4 text-end font-mono">{fmt(line.lineTotal)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
 
@@ -222,6 +200,9 @@ export default function TransactionDetailPage(props: Props) {
           <CardContent className="p-4 space-y-1.5 text-sm">
             <Row label="Subtotal" value={fmt(tx.subtotal)} />
             <Row label="Discount" value={fmt(tx.discountAmount)} />
+            {tx.discountAmount > 0 && (
+              <Row label="Approved by" value={tx.discountApprovedByName || '—'} />
+            )}
             <Row label="Tax" value={fmt(tx.taxAmount)} />
             <div className="border-t border-border my-2" />
             <div className="flex justify-between font-semibold">
@@ -260,29 +241,6 @@ export default function TransactionDetailPage(props: Props) {
           </CardContent>
         </Card>
       </div>
-
-      {tx.fawtara && (
-        <Card>
-          <CardContent className="p-4 text-sm space-y-1.5">
-            <div className="font-medium flex items-center gap-2">
-              Fawtara (Jo-Fotara)
-              <StatusBadge status={tx.fawtara.status} />
-              {tx.status === 'voided' && tx.fawtara.status === 'submitted' && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--yellow-100)] text-[var(--yellow-700)]">
-                  Credit note sent
-                </span>
-              )}
-            </div>
-            <Row label="Invoice #" value={tx.fawtara.invoiceNumber ?? '—'} />
-            <Row label="UUID" value={tx.fawtara.uuid ?? '—'} />
-            <Row label="Submitted" value={fmtDate(tx.fawtara.submittedAt)} />
-            <Row label="Attempts" value={String(tx.fawtara.attempts)} />
-            {tx.fawtara.errorCode && (
-              <Row label="Error" value={`${tx.fawtara.errorCode} — ${tx.fawtara.errorMessage ?? ''}`} />
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       <ConfirmDialog
         open={confirmVoid}
@@ -323,7 +281,7 @@ export default function TransactionDetailPage(props: Props) {
         orgSlug={params.orgSlug}
         orgName={orgInfo?.name ?? params.orgSlug}
         receiptBase={receiptBase}
-        config={receiptCfg?.config ?? { template: 'a4-modern', showLogo: false, showTaxNumber: false, showCashier: true, showFawtaraQr: false, showItemizedTax: false, showAddress: false, showPhone: false, showWebsite: false, footerText: '', footerTextAr: '', accentColor: '#000', logo: null, phone: '', address: '', addressAr: '', website: '', orgName: '', orgNameAr: '', language: 'en' } as ReceiptConfig}
+        config={receiptCfg?.config ?? { template: 'a4-modern', showLogo: false, showTaxNumber: false, showCashier: true, showItemizedTax: false, showAddress: false, showPhone: false, showWebsite: false, footerText: '', footerTextAr: '', accentColor: '#000', logo: null, phone: '', address: '', addressAr: '', website: '', orgName: '', orgNameAr: '', language: 'en' } as ReceiptConfig}
         tagline={receiptCfg?.tagline ?? ''}
         taglineAr={receiptCfg?.taglineAr ?? ''}
         taxNumber={receiptCfg?.taxNumber ?? ''}

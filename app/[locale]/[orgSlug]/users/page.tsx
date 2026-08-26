@@ -1,15 +1,16 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useUsers } from '@/hooks/users';
 import { useInvites } from '@/hooks/users';
 import { useAuthStore } from '@/store/auth.store';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Combobox } from '@/components/ui/combobox';
 import { SubscriptionGate } from '@/components/shared';
 import { OrgUser, Invite } from '@/types';
 import { formatDate } from '@/lib/utils/date';
-import { InviteUserModal } from '@/components/users/InviteUserModal';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { toast, useAdminGuard, useOrgSlug } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
@@ -19,14 +20,7 @@ import { apiFetch } from '@/lib/utils/api-fetch';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import { PermissionsEditor } from '@/components/users/PermissionsEditor';
-import { UserSpaceAccess } from '@/components/users/UserSpaceAccess';
-import { useUserSpaceAccess, useUpdateUserSpaceAccess } from '@/hooks/spaces';
-import { useSubscriptionFeatures } from '@/hooks/org';
-import { UserPermissions, DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from '@/types';
+import { DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS, type UserPermissions } from '@/types';
 import { useT } from '@/hooks/ui';
 import type { MessageKey } from '@/locales/messages';
 import { Plus, Pencil, Trash2, MailX, KeyRound, Copy, Check, Search } from 'lucide-react';
@@ -80,6 +74,16 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function isUsernameAccount(u: Pick<OrgUser, 'username' | 'email'>): boolean {
+  return !!u.username && !!u.email?.endsWith('@makhzoon.local');
+}
+
+function displayIdentifier(email?: string | null, username?: string | null): string {
+  if (email && !email.endsWith('@makhzoon.local')) return email;
+  if (username) return `@${username}`;
+  return '—';
+}
+
 function UserAvatar({ name }: { name: string }) {
   const initials = name.split(' ').map((w) => w[0] ?? '').join('').toUpperCase().slice(0, 2);
   return (
@@ -94,10 +98,11 @@ function UserAvatar({ name }: { name: string }) {
 }
 
 export default function UsersPage() {
-  const { t } = useT();
+  const { t, locale } = useT();
   const orgSlug = useOrgSlug();
+  const router = useRouter();
   const { data: orgInfo } = useOrgInfo();
-  const { isAllowed } = useAdminGuard('settings.users');
+  const { isAllowed } = useAdminGuard('settingsUsers.view');
   const { data: users = [], isLoading: usersLoading } = useUsers();
   const { data: invites = [], isLoading: invitesLoading } = useInvites();
   const { user: currentUser } = useAuthStore();
@@ -107,28 +112,13 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  const [showInvite, setShowInvite] = useState(false);
   const [revoking, setRevoking] = useState<string | null>(null);
-  const [editTarget, setEditTarget] = useState<OrgUser | null>(null);
-  const [editRole, setEditRole] = useState<string>('');
-  const [editPermissions, setEditPermissions] = useState<UserPermissions>(DEFAULT_STAFF_PERMISSIONS);
-  const [showEditPerms, setShowEditPerms] = useState(false);
-  const [savingRole, setSavingRole] = useState(false);
-  const [editSpaceAccess, setEditSpaceAccess] = useState<{ allSpaces: boolean; spaceIds: string[] }>({ allSpaces: false, spaceIds: [] });
-  const { data: serverSpaceAccess } = useUserSpaceAccess(editTarget?.id);
-  const updateSpaceAccessMut = useUpdateUserSpaceAccess();
-  useEffect(() => {
-    if (editTarget && serverSpaceAccess) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setEditSpaceAccess(serverSpaceAccess);
-    }
-  }, [editTarget, serverSpaceAccess]);
-  const features = useSubscriptionFeatures();
   const [deleteTarget, setDeleteTarget] = useState<{ user: OrgUser; permanent: boolean } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [resetTarget, setResetTarget] = useState<OrgUser | null>(null);
+  const [resetMode, setResetMode] = useState<'email' | 'temp_password' | 'link'>('email');
   const [resetting, setResetting] = useState(false);
-  const [resetResult, setResetResult] = useState<{ type: 'email_sent' | 'temp_password'; password?: string } | null>(null);
+  const [resetResult, setResetResult] = useState<{ type: 'email_sent' | 'temp_password' | 'reset_link'; password?: string; link?: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [now] = useState(() => Date.now());
   const qc = useQueryClient();
@@ -186,42 +176,6 @@ export default function UsersPage() {
     return role === 'staff' ? DEFAULT_STAFF_PERMISSIONS : DEFAULT_ADMIN_PERMISSIONS;
   }
 
-  function openEditRole(u: OrgUser) {
-    setEditTarget(u);
-    setEditRole(u.role);
-    setEditPermissions(u.permissions ?? defaultPermsForRole(u.role));
-    setShowEditPerms(false);
-    setEditSpaceAccess({ allSpaces: u.role === 'org_owner', spaceIds: [] });
-  }
-
-  async function handleSaveRole() {
-    if (!editTarget) return;
-    setSavingRole(true);
-    try {
-      const res = await apiFetch(`/api/users/${editTarget.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: editRole, permissions: editPermissions }),
-      });
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        throw new Error(e.error ?? 'Failed to update role');
-      }
-      await updateSpaceAccessMut.mutateAsync({
-        userId: editTarget.id,
-        allSpaces: editSpaceAccess.allSpaces,
-        spaceIds: editSpaceAccess.spaceIds,
-      });
-      toast.success(t('common.updated'));
-      qc.invalidateQueries({ queryKey: ['users'] });
-      setEditTarget(null);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('common.updateFailed'));
-    } finally {
-      setSavingRole(false);
-    }
-  }
-
   async function handleDelete() {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -229,7 +183,7 @@ export default function UsersPage() {
     try {
       const url = permanent ? `/api/users/${target.id}?permanent=true` : `/api/users/${target.id}`;
       const res = await apiFetch(url, { method: 'DELETE' });
-      if (!res.ok) {
+      if (!res.ok && res.status !== 404) {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error ?? (permanent ? 'Failed to delete user' : 'Failed to deactivate user'));
       }
@@ -247,11 +201,16 @@ export default function UsersPage() {
     if (!resetTarget) return;
     setResetting(true);
     try {
-      const res = await apiFetch(`/api/users/${resetTarget.id}/reset-password`, { method: 'POST' });
+      const res = await apiFetch(`/api/users/${resetTarget.id}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: resetMode }),
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? 'Failed to reset password');
       setResetResult(data);
       setResetTarget(null);
+      setResetMode('email');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('common.failed'));
     } finally {
@@ -259,8 +218,8 @@ export default function UsersPage() {
     }
   }
 
-  function handleCopyPassword(password: string) {
-    navigator.clipboard.writeText(password).then(() => {
+  function handleCopyText(value: string) {
+    navigator.clipboard.writeText(value).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -283,7 +242,7 @@ export default function UsersPage() {
         actions={
           canInvite ? (
             <SubscriptionGate>
-              <Button size="sm" onClick={() => setShowInvite(true)} className="cursor-pointer transition-colors duration-150">
+              <Button size="sm" onClick={() => router.push(`/${locale}/${orgSlug}/users/invite`)} className="cursor-pointer transition-colors duration-150">
                 <Plus aria-hidden className="h-4 w-4" strokeWidth={1.75} />
                 <span className="ms-1">{t('users.inviteUser')}</span>
               </Button>
@@ -330,29 +289,34 @@ export default function UsersPage() {
           </div>
           {tab === 'members' && (
             <>
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="h-8 text-xs border border-border rounded-md bg-surface-card px-2 text-gray-600 cursor-pointer"
-              >
-                <option value="">{t('users.role')}</option>
-                <option value="org_owner">{t('role.orgOwner')}</option>
-                <option value="admin">{t('role.admin')}</option>
-                <option value="staff">{t('role.staff')}</option>
-              </select>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-8 text-xs border border-border rounded-md bg-surface-card px-2 text-gray-600 cursor-pointer"
-              >
-                <option value="">{t('users.status')}</option>
-                <option value="active">{t('userStatus.active')}</option>
-                <option value="deactivated">{t('userStatus.deactivated')}</option>
-              </select>
+              <Combobox
+                value={roleFilter || null}
+                onChange={(v) => setRoleFilter(v ?? '')}
+                options={[
+                  { value: 'org_owner', label: t('role.orgOwner') },
+                  { value: 'admin', label: t('role.admin') },
+                  { value: 'staff', label: t('role.staff') },
+                ]}
+                placeholder={t('users.role')}
+                searchable={false}
+                className="h-8 w-auto text-xs"
+              />
+              <Combobox
+                value={statusFilter || null}
+                onChange={(v) => setStatusFilter(v ?? '')}
+                options={[
+                  { value: 'active', label: t('userStatus.active') },
+                  { value: 'deactivated', label: t('userStatus.deactivated') },
+                ]}
+                placeholder={t('users.status')}
+                searchable={false}
+                className="h-8 w-auto text-xs"
+              />
             </>
           )}
         </div>
 
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-page">
@@ -399,7 +363,7 @@ export default function UsersPage() {
                         <span className="font-medium text-gray-900">{u.displayName || '—'}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500" dir="ltr">{u.email || (u.username ? `@${u.username}` : '—')}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-500" dir="ltr">{displayIdentifier(u.email, u.username)}</td>
                     <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
                     <td className="px-4 py-3">
                       {isCustom ? (
@@ -423,7 +387,7 @@ export default function UsersPage() {
                                   variant="ghost"
                                   aria-label={t('users.editUser')}
                                   className="text-gray-500 hover:text-primary-600 hover:bg-primary-50 cursor-pointer transition-colors duration-150"
-                                  onClick={() => openEditRole(u)}
+                                  onClick={() => router.push(`/${locale}/${orgSlug}/users/${u.id}/edit`)}
                                 >
                                   <Pencil aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
                                 </Button>
@@ -434,7 +398,10 @@ export default function UsersPage() {
                                   variant="ghost"
                                   aria-label="Reset password"
                                   className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors duration-150"
-                                  onClick={() => setResetTarget(u)}
+                                  onClick={() => {
+                                    setResetTarget(u);
+                                    setResetMode(isUsernameAccount(u) ? 'temp_password' : 'email');
+                                  }}
                                 >
                                   <KeyRound aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />
                                 </Button>
@@ -477,14 +444,14 @@ export default function UsersPage() {
                   <td colSpan={4} className="px-4 py-12 text-center text-sm text-gray-400">{t('users.noPendingInvites')}</td>
                 </tr>
               ) : filteredInvites.map((inv) => (
-                <tr key={`invite-${inv.id}`} className="hover:bg-surface-page transition-colors bg-amber-50/30">
+                <tr key={`invite-${inv.id}`} className="hover:bg-surface-page transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <UserAvatar name={inv.displayName || inv.email || '?'} />
                       <span className="font-medium text-gray-700">{inv.displayName || '—'}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-500" dir="ltr">{inv.email || (inv.username ? `@${inv.username}` : '—')}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-500" dir="ltr">{displayIdentifier(inv.email, inv.username)}</td>
                   <td className="px-4 py-3"><RoleBadge role={inv.role} /></td>
                   <td className="px-4 py-3"><StatusBadge status="pending" /></td>
                   <td className="px-4 py-3 text-end">
@@ -508,77 +475,8 @@ export default function UsersPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
-
-      {canInvite && <InviteUserModal open={showInvite} onOpenChange={setShowInvite} />}
-
-      {/* Edit user dialog */}
-      <Dialog open={!!editTarget} onOpenChange={(o) => !o && setEditTarget(null)}>
-        <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t('users.editUser')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 px-6 pt-4 pb-2">
-            <p className="text-xs text-gray-500">
-              {t('users.editing')} <span className="font-medium text-gray-900">{editTarget?.displayName || editTarget?.email}</span>
-            </p>
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-gray-700">{t('users.role')}</label>
-              <Select
-                value={editRole}
-                onValueChange={(v) => {
-                  setEditRole(v);
-                  setEditPermissions(defaultPermsForRole(v));
-                  setShowEditPerms(false);
-                }}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {isOwnerOrSuperAdmin && <SelectItem value="org_owner">{t('role.orgOwner')}</SelectItem>}
-                  <SelectItem value="admin">{t('role.admin')}</SelectItem>
-                  <SelectItem value="staff">{t('role.staff')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => setShowEditPerms((v) => !v)}
-                className="flex items-center gap-2 text-sm font-medium text-primary-700 hover:text-primary-800 cursor-pointer"
-              >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-                  <rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none" />
-                  <path d="M4 7h6M7 4v6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-                </svg>
-                {showEditPerms ? t('permissions.hideAccess') : t('permissions.editAccess')}
-              </button>
-              {showEditPerms && (
-                <PermissionsEditor
-                  value={editPermissions}
-                  onChange={setEditPermissions}
-                  availableFeatures={features}
-                />
-              )}
-            </div>
-
-            <div className="space-y-2 pt-1">
-              <p className="text-sm font-medium text-gray-900">{t('userSpaces.title')}</p>
-              <UserSpaceAccess
-                value={editSpaceAccess}
-                onChange={setEditSpaceAccess}
-                role={editRole}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditTarget(null)} disabled={savingRole} className="cursor-pointer">{t('common.cancel')}</Button>
-            <Button onClick={handleSaveRole} disabled={savingRole} className="cursor-pointer">
-              {savingRole ? t('users.saving') : t('users.saveChanges')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Reset password confirm dialog */}
       <ConfirmDialog
@@ -586,9 +484,88 @@ export default function UsersPage() {
         onOpenChange={(o) => !o && setResetTarget(null)}
         title="Reset Password"
         description={
-          resetTarget?.username && !resetTarget?.email
-            ? `A new temporary password will be generated for @${resetTarget.username}. Share it with them securely — they should change it after signing in.`
-            : `A password reset link will be sent to ${resetTarget?.email ?? 'this user'}. They will have 24 hours to use it.`
+          resetTarget && isUsernameAccount(resetTarget) ? (
+            <div className="space-y-3">
+              <span className="block">
+                {`@${resetTarget.username} signs in with a username, so a reset link can't be delivered to them. Choose how to reset their password:`}
+              </span>
+              <div className="space-y-2">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="reset-mode"
+                    className="mt-0.5 cursor-pointer"
+                    checked={resetMode === 'temp_password'}
+                    onChange={() => setResetMode('temp_password')}
+                  />
+                  <span className="text-sm">
+                    <span className="font-medium block">Set a temporary password now</span>
+                    <span className="text-gray-500">Generated immediately — share it with the user securely.</span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="reset-mode"
+                    className="mt-0.5 cursor-pointer"
+                    checked={resetMode === 'link'}
+                    onChange={() => setResetMode('link')}
+                  />
+                  <span className="text-sm">
+                    <span className="font-medium block">Generate a reset link to copy</span>
+                    <span className="text-gray-500">Not emailed — copy it and send it to the user yourself.</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <span className="block">
+                {`Choose how to reset the password for ${resetTarget?.email ?? 'this user'}:`}
+              </span>
+              <div className="space-y-2">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="reset-mode"
+                    className="mt-0.5 cursor-pointer"
+                    checked={resetMode === 'email'}
+                    onChange={() => setResetMode('email')}
+                  />
+                  <span className="text-sm">
+                    <span className="font-medium block">Email a reset link</span>
+                    <span className="text-gray-500">Sent directly to the user. Expires in 24 hours.</span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="reset-mode"
+                    className="mt-0.5 cursor-pointer"
+                    checked={resetMode === 'link'}
+                    onChange={() => setResetMode('link')}
+                  />
+                  <span className="text-sm">
+                    <span className="font-medium block">Generate a reset link to copy</span>
+                    <span className="text-gray-500">Not emailed — copy it and send it to the user yourself.</span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="reset-mode"
+                    className="mt-0.5 cursor-pointer"
+                    checked={resetMode === 'temp_password'}
+                    onChange={() => setResetMode('temp_password')}
+                  />
+                  <span className="text-sm">
+                    <span className="font-medium block">Set a temporary password now</span>
+                    <span className="text-gray-500">Generated immediately — share it with the user securely.</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+          )
         }
         confirmLabel="Reset Password"
         onConfirm={handleResetPassword}
@@ -601,10 +578,11 @@ export default function UsersPage() {
           <DialogHeader>
             <DialogTitle>Password Reset</DialogTitle>
           </DialogHeader>
-          <div className="px-6 pt-2 pb-4 space-y-3">
-            {resetResult?.type === 'email_sent' ? (
+          <div className="px-6 py-5 space-y-3">
+            {resetResult?.type === 'email_sent' && (
               <p className="text-sm text-gray-700">A password reset link has been sent. The link expires in 24 hours.</p>
-            ) : (
+            )}
+            {resetResult?.type === 'temp_password' && (
               <>
                 <p className="text-sm text-gray-700">A temporary password has been set. Share it with the user securely and ask them to change it after signing in.</p>
                 <div className="flex items-center gap-2 bg-surface-page border border-border rounded-lg px-3 py-2">
@@ -613,7 +591,23 @@ export default function UsersPage() {
                     type="button"
                     aria-label="Copy password"
                     className="text-gray-400 hover:text-primary-600 transition-colors cursor-pointer"
-                    onClick={() => handleCopyPassword(resetResult?.password ?? '')}
+                    onClick={() => handleCopyText(resetResult?.password ?? '')}
+                  >
+                    {copied ? <Check aria-hidden className="h-4 w-4 text-green-600" /> : <Copy aria-hidden className="h-4 w-4" />}
+                  </button>
+                </div>
+              </>
+            )}
+            {resetResult?.type === 'reset_link' && (
+              <>
+                <p className="text-sm text-gray-700">Copy this link and send it to the user yourself. It expires in 24 hours and can only be used once.</p>
+                <div className="flex items-center gap-2 bg-surface-page border border-border rounded-lg px-3 py-2">
+                  <code className="flex-1 text-xs font-mono text-gray-900 select-all break-all">{resetResult?.link}</code>
+                  <button
+                    type="button"
+                    aria-label="Copy link"
+                    className="shrink-0 text-gray-400 hover:text-primary-600 transition-colors cursor-pointer"
+                    onClick={() => handleCopyText(resetResult?.link ?? '')}
                   >
                     {copied ? <Check aria-hidden className="h-4 w-4 text-green-600" /> : <Copy aria-hidden className="h-4 w-4" />}
                   </button>

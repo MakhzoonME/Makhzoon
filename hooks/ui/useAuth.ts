@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/store/auth.store';
 import { AuthUser, UserRole } from '@/types';
+import { analytics } from '@/lib/analytics';
 
 export function useAuth() {
   const { user, loading, setUser, setLoading } = useAuthStore();
@@ -19,7 +20,10 @@ export function useAuth() {
       organizationId: string | null,
     ) {
       let features: Record<string, boolean> = {};
+      let activeHarakaModules: AuthUser['activeHarakaModules'] = [];
+      let activeAddOns: AuthUser['activeAddOns'];
       let permissions = null;
+      let saPermissions = null;
       let orgSlug: string | null = null;
       let avatarUrl: string | null = null;
       let displayName: string | null = null;
@@ -33,7 +37,10 @@ export function useAuth() {
           const data = await res.json();
           resolvedRole = data.role ?? role;
           features = data.features ?? {};
+          activeHarakaModules = data.activeHarakaModules ?? [];
+          activeAddOns = data.activeAddOns ?? undefined;
           permissions = data.permissions ?? null;
+          saPermissions = data.saPermissions ?? null;
           orgSlug = data.orgSlug ?? null;
           avatarUrl = data.avatarUrl ?? null;
           displayName = data.displayName ?? null;
@@ -43,7 +50,7 @@ export function useAuth() {
       }
 
       if (cancelled) return;
-      setUser({
+      const authUser = {
         uid,
         email,
         displayName: displayName ?? '',
@@ -52,9 +59,21 @@ export function useAuth() {
         organizationId,
         orgSlug,
         permissions,
+        saPermissions,
         features,
-      } as AuthUser);
+        activeHarakaModules,
+        activeAddOns,
+      } as AuthUser;
+      setUser(authUser);
       setLoading(false);
+      analytics.identify({
+        uid,
+        email,
+        displayName: displayName ?? '',
+        role: resolvedRole,
+        orgSlug: orgSlug ?? undefined,
+        organizationId,
+      });
     }
 
     async function setup() {
@@ -79,7 +98,10 @@ export function useAuth() {
               organizationId: data.organizationId ?? null,
               orgSlug: data.orgSlug ?? null,
               permissions: data.permissions ?? null,
+              saPermissions: data.saPermissions ?? null,
               features: data.features ?? {},
+              activeHarakaModules: data.activeHarakaModules ?? [],
+              activeAddOns: data.activeAddOns ?? undefined,
             } as AuthUser);
           } else {
             setUser(null);

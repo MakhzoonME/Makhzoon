@@ -13,7 +13,6 @@ export interface ReceiptConfig {
   showLogo: boolean;
   showTaxNumber: boolean;
   showCashier: boolean;
-  showFawtaraQr: boolean;
   showItemizedTax: boolean;
   showAddress: boolean;
   showPhone: boolean;
@@ -31,6 +30,15 @@ export interface ReceiptConfig {
   orgNameAr: string;
   /** Which language(s) the business issues receipts in. */
   language: ReceiptLanguage;
+  /**
+   * Printer output settings. Org-wide (not per-browser/per-user) — every
+   * cashier's register should print the same way regardless of which
+   * computer they're on. WebUSB pairing itself (which physical device a
+   * given computer talks to) stays local, since that's a hard per-browser
+   * constraint, but paper size/copies/cut-feed are business decisions.
+   */
+  copies: number;
+  cutFeed: number;
 }
 
 /* Real receipt content. When omitted, the templates render SAMPLE_DATA so the
@@ -53,8 +61,6 @@ export interface ReceiptData {
   total: number;
   currency: string;
   status?: 'completed' | 'refunded' | 'voided';
-  /** Pre-rendered Fawtara QR (data URL). Null → render a placeholder box. */
-  qrCodeDataUrl?: string | null;
 }
 
 const SAMPLE_DATA: ReceiptData = {
@@ -97,17 +103,6 @@ function resolveLang(props: PreviewProps): ReceiptLang {
   return props.config.language === 'ar' ? 'ar' : 'en';
 }
 
-/* Small QR slot: real code when provided, placeholder box otherwise. */
-function QrSlot({ dataUrl }: { dataUrl?: string | null }) {
-  return (
-    <div className="flex justify-center mt-3">
-      {dataUrl
-        ? <img src={dataUrl} alt="QR" className="w-16 h-16" />
-        : <div className="w-14 h-14 border border-gray-300 bg-gray-50 flex items-center justify-center text-[7px] text-gray-400">QR</div>}
-    </div>
-  );
-}
-
 /* ── Thermal receipt (58mm / 80mm) ───────────────────────────── */
 export function ThermalPreview(props: PreviewProps) {
   const { taxNumber, config, data } = props;
@@ -121,7 +116,9 @@ export function ThermalPreview(props: PreviewProps) {
   const orgName = pickText(lang, config.orgName?.trim() || props.orgName, props.orgNameAr) || (lang === 'ar' ? 'اسم المتجر' : 'Business Name');
   const tagline = pickText(lang, props.tagline, props.taglineAr);
   const address = pickText(lang, config.address, config.addressAr);
-  const footer = pickText(lang, config.footerText, config.footerTextAr);
+  // Same fallback the thermal raster uses, so the paper and the public page
+  // never disagree about whether there is a closing line.
+  const footer = pickText(lang, config.footerText, config.footerTextAr) || L.thankYou;
   const statusLabel = d.status && d.status !== 'completed' ? L.status[d.status] : '';
 
   return (
@@ -133,7 +130,9 @@ export function ThermalPreview(props: PreviewProps) {
       {config.showLogo && (
         <div className="flex justify-center mb-2">
           {config.logo
-            ? <img src={config.logo} alt="logo" className="max-h-12 max-w-[80px] object-contain" />
+            ? <div className="relative" style={{ width: 80, height: 48 }}>
+                <img src={config.logo} alt="logo" className="object-contain w-full h-full" />
+              </div>
             : <div className="w-10 h-10 rounded bg-gray-100 border border-gray-200 flex items-center justify-center text-[8px] text-gray-400">LOGO</div>}
         </div>
       )}
@@ -189,11 +188,11 @@ export function ThermalPreview(props: PreviewProps) {
         <div className="text-[9px] text-gray-400 mt-1">{L.taxNo}: {taxNumber}</div>
       )}
 
-      {config.showFawtaraQr && <QrSlot dataUrl={d.qrCodeDataUrl} />}
-
       {footer && (
         <>
-          <div className="border-t border-dashed border-gray-300 mt-2 mb-1" />
+          {/* Equal air above and below the rule; the closing line then sits on
+              the same py-5 margin the receipt opened with. */}
+          <div className="border-t border-dashed border-gray-300 my-2" />
           <div className="text-center text-[9px] text-gray-400">{footer}</div>
         </>
       )}
@@ -222,7 +221,9 @@ export function A4ModernPreview(props: PreviewProps) {
         <div className="flex items-center gap-3">
           {config.showLogo && (
             config.logo
-              ? <img src={config.logo} alt="logo" className="w-10 h-10 object-contain bg-white rounded p-0.5" />
+              ? <div className="relative w-10 h-10 bg-white rounded overflow-hidden">
+                  <img src={config.logo} alt="logo" className="object-contain p-0.5 w-full h-full" />
+                </div>
               : <div className="w-10 h-10 rounded bg-white/20 flex items-center justify-center text-[8px]">LOGO</div>
           )}
           <div>
@@ -298,7 +299,6 @@ export function A4ModernPreview(props: PreviewProps) {
           </div>
         )}
 
-        {config.showFawtaraQr && <QrSlot dataUrl={d.qrCodeDataUrl} />}
       </div>
     </div>
   );
@@ -325,7 +325,9 @@ export function A4InvoicePreview(props: PreviewProps) {
         <div className="flex items-center gap-2">
           {config.showLogo && (
             config.logo
-              ? <img src={config.logo} alt="logo" className="w-10 h-10 object-contain" />
+              ? <div className="relative w-10 h-10">
+                  <img src={config.logo} alt="logo" className="object-contain w-full h-full" />
+                </div>
               : <div className="w-10 h-10 border border-gray-200 bg-gray-50 rounded flex items-center justify-center text-[8px] text-gray-400">LOGO</div>
           )}
           <div>
@@ -397,7 +399,6 @@ export function A4InvoicePreview(props: PreviewProps) {
           </div>
         )}
 
-        {config.showFawtaraQr && <QrSlot dataUrl={d.qrCodeDataUrl} />}
       </div>
     </div>
   );

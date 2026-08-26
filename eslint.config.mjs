@@ -33,6 +33,11 @@ const config = [
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
       "@typescript-eslint/no-empty-object-type": "off",
+      // Hydrate-form-state-from-fetch effects trip this compiler rule in ~13
+      // settings/dialog components. It's an extra render pass, not a bug;
+      // proper fix (keyed child components) is scheduled with the T3.0 UI
+      // overhaul — see docs/AUDIT_ACTION_PLAN_2026-07-05.md. Until then: warn.
+      "react-hooks/set-state-in-effect": "warn",
     },
   },
 ];

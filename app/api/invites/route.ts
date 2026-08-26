@@ -16,12 +16,13 @@ import { authEmailExists } from '@/lib/supabase/auth-admin';
 import { sendEmail } from '@/lib/email/resend';
 import { inviteEmail } from '@/lib/email/templates';
 import { auditLog } from '@/lib/platform/audit';
+import { notificationQueue } from '@/lib/notifications/notification-queue';
 import { generateInviteQRDataUrl } from '@/lib/qr';
 
 export async function GET(_req: NextRequest) {
   const tenant = await resolveTenant();
   const user = tenant.user;
-  if (!hasPermission(user, 'settings', 'users'))
+  if (!hasPermission(user, 'settingsUsers', 'view'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const invites = await getInvites(tenant.organizationId);
@@ -31,7 +32,7 @@ export async function GET(_req: NextRequest) {
 export async function POST(req: NextRequest) {
   // SECURITY: Rate limit invite sending (10 per IP per hour)
   const clientIp = getClientIp(req);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `invite:${clientIp}`,
     10,
     60 * 60 * 1000,
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
 
   const tenant = await resolveTenant();
   const user = tenant.user;
-  if (!hasPermission(user, 'settings', 'users'))
+  if (!hasPermission(user, 'settingsUsers', 'invite'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   if (tenant.subscription?.status && tenant.subscription.status !== 'ACTIVE')
@@ -52,29 +53,27 @@ export async function POST(req: NextRequest) {
   const parsed = createInviteSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
 
-  const { email, username, displayName, role, permissions } = parsed.data as typeof parsed.data & { permissions?: unknown };
+  const { email, username, displayName, role, permissions } = parsed.data;
   const normalizedEmail = email || undefined;
   const normalizedUsername = username ? username.toLowerCase() : undefined;
 
   if (normalizedEmail) {
     if (await authEmailExists(normalizedEmail)) {
-      // SECURITY: Don't reveal if user exists (prevents user enumeration)
-      return NextResponse.json({ error: 'This email cannot be invited' }, { status: 409 });
+      return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409 });
     }
     const pending = await getPendingInviteForEmail(tenant.organizationId, normalizedEmail);
     if (pending) {
-      return NextResponse.json({ error: 'This email cannot be invited' }, { status: 409 });
+      return NextResponse.json({ error: 'This email already has a pending invite.' }, { status: 409 });
     }
   }
   if (normalizedUsername) {
     const syntheticEmail = `${normalizedUsername}@makhzoon.local`;
     if (await authEmailExists(syntheticEmail)) {
-      // SECURITY: Don't reveal if username exists
-      return NextResponse.json({ error: 'This username cannot be invited' }, { status: 409 });
+      return NextResponse.json({ error: 'An account with this username already exists.' }, { status: 409 });
     }
     const pending = await getPendingInviteForUsername(tenant.organizationId, normalizedUsername);
     if (pending) {
-      return NextResponse.json({ error: 'This username cannot be invited' }, { status: 409 });
+      return NextResponse.json({ error: 'This username already has a pending invite.' }, { status: 409 });
     }
   }
 
@@ -92,7 +91,7 @@ export async function POST(req: NextRequest) {
     invitedByEmail: user.email,
     invitedByName: user.displayName,
     expiresAt,
-    permissions: (permissions ?? null) as import('@/types').UserPermissions | null,
+    permissions: (permissions as import('@/types').UserPermissions | null | undefined) ?? null,
   });
 
   const org = await getOrganizationById(tenant.organizationId);
@@ -126,6 +125,14 @@ export async function POST(req: NextRequest) {
     module: 'users',
     recordId: id,
     newValue: { email: normalizedEmail, username: normalizedUsername, role, messageSent },
+  });
+
+  notificationQueue.enqueue({
+    tenant,
+    eventType: 'users.invited',
+    data: { role, invitedName: displayName ?? normalizedEmail ?? normalizedUsername },
+    link: '/users',
+    titleOverride: `${displayName ?? normalizedEmail ?? normalizedUsername} was invited to your org`,
   });
 
   const qrDataUrl = await generateInviteQRDataUrl(acceptUrl);

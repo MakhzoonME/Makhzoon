@@ -1,5 +1,5 @@
 import 'server-only';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { createClient } from './server';
 import { supabaseAdmin } from './admin';
 import {
@@ -11,6 +11,7 @@ import {
 import { isSessionRevoked } from './session-revocation';
 import type { AuthUser, UserRole } from '@/types';
 import type { UserPermissions } from '@/types/user-permissions.types';
+import type { SuperAdminPermissions } from '@/types/superadmin-permissions.types';
 
 const SUPERADMIN_ROLES = new Set<UserRole>([
   'super_admin',
@@ -81,6 +82,17 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
   try {
     const bypass = await localAuthBypass();
     if (bypass) return bypass;
+
+    // JWT-first: if the caller presents a bearer token (API clients, Postman,
+    // mobile), authenticate off that token instead of the session cookie. The
+    // bearer path (verifyIdToken) performs the same authoritative role/org
+    // re-read from the database, so the two paths are equivalent.
+    const headerStore = await headers();
+    const authz = headerStore.get('authorization') ?? headerStore.get('Authorization');
+    if (authz && authz.toLowerCase().startsWith('bearer ')) {
+      const token = authz.slice(7).trim();
+      if (token) return verifyIdToken(token);
+    }
 
     const supabase = await createClient();
 
@@ -154,6 +166,7 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
     let displayName = '';
     let email = baseEmail;
     let permissions: UserPermissions | null = null;
+    let saPermissions: SuperAdminPermissions | null = null;
     let allSpaces = false;
 
     // public.users is authoritative for org-scoped accounts (mirrors the
@@ -177,10 +190,23 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
         if (cachedPerms !== undefined) {
           permissions = cachedPerms;
         } else {
-          permissions =
-            ((row?.permissions as UserPermissions | null) ?? null);
+          permissions = ((row?.permissions as UserPermissions | null) ?? null);
           setCachedPermissions(baseUid, permissions);
         }
+      }
+    }
+
+    // Load platform-scoped permissions for superadmin team members.
+    if (SUPERADMIN_ROLES.has(role)) {
+      const { data: saRow } = await supabaseAdmin
+        .from('superadmin_users')
+        .select('display_name, email, permissions')
+        .eq('id', baseUid)
+        .maybeSingle();
+      if (saRow) {
+        displayName = (saRow.display_name as string) ?? displayName;
+        email = (saRow.email as string) ?? email;
+        saPermissions = (saRow.permissions as SuperAdminPermissions | null) ?? null;
       }
     }
 
@@ -191,6 +217,7 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
       role,
       organizationId,
       permissions,
+      saPermissions,
       allSpaces: ORG_ROLES.has(role) ? allSpaces : undefined,
     };
 
@@ -204,19 +231,68 @@ export async function verifySessionCookie(): Promise<AuthUser | null> {
 /**
  * Verify a raw Supabase access token (used where a bearer token is presented
  * instead of the session cookie). Mirrors the Firebase verifyIdToken().
+ *
+ * After validating the JWT against the auth server, we re-read role,
+ * organization_id, permissions, and display_name from the database tables
+ * (superadmin_users / public.users) so that role/org changes take effect
+ * without re-issuing the token — matching verifySessionCookie() behavior.
  */
 export async function verifyIdToken(token: string): Promise<AuthUser | null> {
   try {
     const { data, error } = await supabaseAdmin.auth.getUser(token);
     if (error || !data.user) return null;
-    const claims = decodeJwt(token);
-    const meta = (claims.app_metadata as Record<string, unknown>) ?? {};
+
+    const uid = data.user.id;
+    let email = data.user.email ?? '';
+    let displayName = '';
+    let role: UserRole = 'staff';
+    let organizationId: string | null = null;
+    let permissions: UserPermissions | null = null;
+    let saPermissions: SuperAdminPermissions | null = null;
+    let allSpaces = false;
+
+    // 1. Check superadmin_users first (platform roles).
+    const { data: saRow } = await supabaseAdmin
+      .from('superadmin_users')
+      .select('role, display_name, email, permissions')
+      .eq('id', uid)
+      .maybeSingle();
+
+    if (saRow) {
+      role = (saRow.role as UserRole) ?? 'staff';
+      displayName = (saRow.display_name as string) ?? '';
+      email = (saRow.email as string) ?? email;
+      saPermissions = (saRow.permissions as SuperAdminPermissions | null) ?? null;
+    } else {
+      // 2. Fall back to public.users (org-scoped roles).
+      const { data: appRow } = await supabaseAdmin
+        .from('users')
+        .select('role, organization_id, display_name, email, permissions, all_spaces')
+        .eq('id', uid)
+        .maybeSingle();
+
+      if (appRow) {
+        role = (appRow.role as UserRole) ?? 'staff';
+        organizationId = (appRow.organization_id as string) ?? null;
+        displayName = (appRow.display_name as string) ?? '';
+        email = (appRow.email as string) ?? email;
+        allSpaces = (appRow.all_spaces as boolean | null) ?? false;
+
+        if (organizationId) {
+          permissions = (appRow.permissions as UserPermissions | null) ?? null;
+        }
+      }
+    }
+
     return {
-      uid: data.user.id,
-      email: data.user.email ?? '',
-      displayName: '',
-      role: (meta.role as UserRole) ?? 'staff',
-      organizationId: (meta.organization_id as string) ?? null,
+      uid,
+      email,
+      displayName,
+      role,
+      organizationId,
+      permissions,
+      saPermissions,
+      allSpaces: ORG_ROLES.has(role) ? allSpaces : undefined,
     };
   } catch {
     return null;

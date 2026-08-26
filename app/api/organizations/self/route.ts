@@ -3,8 +3,18 @@ import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getOrganizationById, updateOrganization } from '@/lib/db/organizations';
 import { getSuperAdminUserById } from '@/lib/db/superadmin-users';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import { ORG_CATEGORIES } from '@/types';
+import { ORG_CURRENCIES } from '@/types';
 import { queueAuditLog } from '@/lib/audit/logger';
+import { normalizeCategory } from '@/lib/validations/organization.schema';
+import { z } from 'zod';
+
+const orgSelfPatchSchema = z.object({
+  name: z.string().max(200).optional(),
+  contactEmail: z.string().max(254).optional(),
+  description: z.string().max(2000).optional(),
+  category: z.string().max(100).optional(),
+  currency: z.string().max(10).optional(),
+}).passthrough();
 
 /** Legacy PII-scrub pattern from the Firestore clone scripts. No clone exists
  *  post-migration so this never matches, but the fallback is kept harmless. */
@@ -26,13 +36,9 @@ export async function GET() {
     const user = await verifySessionCookie();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin']);
-    const isAdmin = ADMIN_ROLES.has(user.role);
-    const hasOrgInfoPerm = user.role === 'staff' && user.permissions?.settings?.orgInfo === true;
-    if (!isAdmin && !hasOrgInfoPerm) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
+    // Basic org identity (name, currency, etc.) is shown to every user across
+    // the app regardless of role — breadcrumbs, receipts, the org switcher.
+    // settingsOrgInfo.view only gates the ability to *edit* it (see PATCH below).
     const orgId = user.organizationId;
     if (!orgId) return NextResponse.json({ error: 'No organization associated with this account' }, { status: 403 });
 
@@ -45,8 +51,11 @@ export async function GET() {
       if (ownerEmail) contactEmail = ownerEmail;
     }
 
+    // Unlike the rest of this payload, the assigned Makhzoon account manager
+    // is internal account-management info, not something every cashier needs.
+    const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin']);
     let accountManager: { id: string; name: string; email: string } | null = null;
-    if (org.assignedMemberId) {
+    if (ADMIN_ROLES.has(user.role) && org.assignedMemberId) {
       const member = await getSuperAdminUserById(org.assignedMemberId);
       if (member) {
         accountManager = { id: member.id, name: member.displayName ?? '', email: member.email };
@@ -59,7 +68,8 @@ export async function GET() {
       subdomain: org.subdomain,
       contactEmail,
       description: org.description,
-      category: org.category,
+      category: normalizeCategory(org.category),
+      currency: org.currency ?? 'JOD',
       accountManager,
     });
   } catch (err) {
@@ -81,8 +91,10 @@ export async function PATCH(req: NextRequest) {
     const orgId = user.organizationId;
     if (!orgId) return NextResponse.json({ error: 'No organization associated with this account' }, { status: 403 });
 
-    const body = await req.json();
-    const patch: Partial<{ name: string; contactEmail: string; description: string; category: string | null; updatedBy: string }> = {};
+    const parsedBody = orgSelfPatchSchema.safeParse(await req.json().catch(() => null));
+    if (!parsedBody.success) return NextResponse.json({ error: 'Invalid body', details: parsedBody.error.flatten() }, { status: 422 });
+    const body = parsedBody.data;
+    const patch: Partial<{ name: string; contactEmail: string; description: string; category: string | null; currency: string; updatedBy: string }> = {};
 
     if (typeof body.name === 'string') {
       const name = body.name.trim();
@@ -92,10 +104,17 @@ export async function PATCH(req: NextRequest) {
     if (typeof body.contactEmail === 'string') patch.contactEmail = body.contactEmail.trim() || undefined;
     if (typeof body.description === 'string') patch.description = body.description.trim() || undefined;
     if (typeof body.category === 'string') {
-      if (body.category && !(ORG_CATEGORIES as readonly string[]).includes(body.category)) {
+      const normalized = normalizeCategory(body.category);
+      if (body.category && !normalized) {
         return NextResponse.json({ error: 'Invalid category' }, { status: 422 });
       }
-      patch.category = body.category || null;
+      patch.category = normalized;
+    }
+    if (typeof body.currency === 'string') {
+      if (!(ORG_CURRENCIES as readonly string[]).includes(body.currency)) {
+        return NextResponse.json({ error: 'Invalid currency' }, { status: 422 });
+      }
+      patch.currency = body.currency;
     }
 
     if (!Object.keys(patch).length) return NextResponse.json({ error: 'Nothing to update' }, { status: 422 });

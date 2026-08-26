@@ -2,19 +2,19 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useOrgSlug, useSpace } from '@/hooks/ui';
+import { useOrgSlug, useSpace, useModuleGuard } from '@/hooks/ui';
 import { useAuthStore } from '@/store/auth.store';
 import { useT } from '@/hooks/ui';
 import { Card, CardContent } from '@/components/ui/card';
-import { DataTable, ColumnDef } from '@/components/shared/DataTable';
+import { ColumnDef } from '@/components/shared/DataTable';
 import { formatDate, daysUntil } from '@/lib/utils/date';
-import { Asset, Warranty, Request } from '@/types';
-import { MessageKey } from '@/locales/messages';
+import { Asset, Warranty } from '@/types';
+import { hasModuleAccess, hasPermission } from '@/lib/permissions';
 
 /* ── Inline SVG icons ───────────────────────────────────────────── */
 function ActiveIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden className="w-[18px] h-[18px] 2xl:w-[22px] 2xl:h-[22px]">
       <path d="M15 5.5L9 2 3 5.5v7L9 16l6-3.5v-7z" stroke="currentColor" strokeWidth="1.4" fill="none" />
       <path d="M9 2v14M3 5.5l6 3.5 6-3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
     </svg>
@@ -22,7 +22,7 @@ function ActiveIcon() {
 }
 function WarningIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden className="w-[18px] h-[18px] 2xl:w-[22px] 2xl:h-[22px]">
       <path d="M9 2L1.5 15h15L9 2z" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinejoin="round" />
       <path d="M9 8v3.5M9 13.5v.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
@@ -30,7 +30,7 @@ function WarningIcon() {
 }
 function TotalIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden className="w-[18px] h-[18px] 2xl:w-[22px] 2xl:h-[22px]">
       <rect x="2" y="2" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.4" fill="none" />
       <rect x="10" y="2" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.4" fill="none" />
       <rect x="2" y="10" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.4" fill="none" />
@@ -40,36 +40,22 @@ function TotalIcon() {
 }
 function InboxIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+    <svg viewBox="0 0 18 18" fill="none" aria-hidden className="w-[18px] h-[18px] 2xl:w-[22px] 2xl:h-[22px]">
       <path d="M16 9h-4l-1.5 2.5h-3L6 9H2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M4 4.5l-2 4.5v5a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 16 14V9l-2-4.5a1.5 1.5 0 0 0-1.35-.85H5.35A1.5 1.5 0 0 0 4 4.5z" stroke="currentColor" strokeWidth="1.4" fill="none" />
     </svg>
   );
 }
-function CheckIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-      <path d="M2.5 7l3 3 6-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function XIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
-      <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
 function PlusIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+    <svg viewBox="0 0 14 14" fill="none" aria-hidden className="w-[14px] h-[14px] 2xl:w-4 2xl:h-4">
       <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
 function RefreshIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+    <svg viewBox="0 0 14 14" fill="none" aria-hidden className="w-[14px] h-[14px] 2xl:w-4 2xl:h-4">
       <path d="M2 7a5 5 0 1 0 1-3M2 2v3h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -83,7 +69,7 @@ function ChevronRightIcon() {
 }
 function CartIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+    <svg viewBox="0 0 14 14" fill="none" aria-hidden className="w-[14px] h-[14px] 2xl:w-4 2xl:h-4">
       <path d="M1 1h2l1.5 7h6L12 4H4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
       <circle cx="5.5" cy="11.5" r="1" fill="currentColor" />
       <circle cx="10" cy="11.5" r="1" fill="currentColor" />
@@ -100,27 +86,34 @@ function getGreetingKey(): 'greeting.morning' | 'greeting.afternoon' | 'greeting
 }
 
 /* ── Data fetcher ────────────────────────────────────────────────── */
-function useDashboard(spaceSlug: string | null) {
+type DashboardFetchOpts = { assets: boolean; warranties: boolean; auditLogs: boolean };
+
+function useDashboard(spaceSlug: string | null, opts: DashboardFetchOpts) {
   return useQuery({
-    queryKey: ['dashboard', spaceSlug],
+    queryKey: ['dashboard', spaceSlug, opts.assets, opts.warranties, opts.auditLogs],
     enabled: !!spaceSlug,
     queryFn: async () => {
       const headers: HeadersInit = spaceSlug ? { 'x-space-slug': spaceSlug } : {};
-      const [assetsRes, warrantiesRes, requestsRes, auditRes] = await Promise.all([
-        fetch('/api/assets', { headers }),
-        fetch('/api/warranties?expiringSoon=true', { headers }),
-        fetch('/api/requests?status=PENDING&limit=5', { headers }),
-        fetch('/api/audit-logs?limit=4', { headers }),
+      // BUG-12 fix: fetch with pageSize=1 to get accurate total count,
+      // plus a separate items fetch for display components (RecentAssetsTable, AssetBreakdownBar).
+      const [assetsRes, assetsCountRes, activeCountRes, warrantiesRes, auditRes] = await Promise.all([
+        opts.assets     ? fetch('/api/assets', { headers })                          : Promise.resolve(null),
+        opts.assets     ? fetch('/api/assets?pageSize=1', { headers })               : Promise.resolve(null),
+        opts.assets     ? fetch('/api/assets?status=Active&pageSize=1', { headers }) : Promise.resolve(null),
+        opts.warranties ? fetch('/api/warranties?expiringSoon=true', { headers })    : Promise.resolve(null),
+        opts.auditLogs  ? fetch('/api/audit-logs?limit=4', { headers })              : Promise.resolve(null),
       ]);
-      const assetsBody     = assetsRes.ok     ? await assetsRes.json()     : { items: [] };
-      const warrantiesBody = warrantiesRes.ok ? await warrantiesRes.json() : [];
-      const requestsBody   = requestsRes.ok   ? await requestsRes.json()   : [];
-      const auditBody      = auditRes.ok      ? await auditRes.json()      : [];
+      const assetsBody       = assetsRes?.ok       ? await assetsRes.json()       : { items: [] };
+      const assetsCountBody  = assetsCountRes?.ok  ? await assetsCountRes.json()  : { total: 0 };
+      const activeCountBody  = activeCountRes?.ok  ? await activeCountRes.json()  : { total: 0 };
+      const warrantiesBody   = warrantiesRes?.ok   ? await warrantiesRes.json()   : [];
+      const auditBody        = auditRes?.ok        ? await auditRes.json()        : [];
       const assets: Asset[]         = Array.isArray(assetsBody?.items) ? assetsBody.items : [];
+      const totalAssetCount: number = typeof assetsCountBody?.total === 'number' ? assetsCountBody.total : assets.length;
+      const activeAssetCount: number = typeof activeCountBody?.total === 'number' ? activeCountBody.total : 0;
       const warranties: Warranty[]  = Array.isArray(warrantiesBody) ? warrantiesBody : [];
-      const requests: Request[]     = Array.isArray(requestsBody) ? requestsBody : (Array.isArray(requestsBody?.items) ? requestsBody.items : []);
       const auditLogs: AuditEntry[] = Array.isArray(auditBody) ? auditBody : (Array.isArray(auditBody?.items) ? auditBody.items : []);
-      return { assets, warranties, requests, auditLogs };
+      return { assets, totalAssetCount, activeAssetCount, warranties, auditLogs };
     },
     staleTime: 30_000,
     refetchInterval: 60_000,
@@ -214,24 +207,24 @@ function StatCard({ icon, iconBg, iconColor, accent, label, value, delta, sub, s
       onClick={onClick}
       style={{ borderTop: `3px solid ${accent}` }}
     >
-      <CardContent className="ps-3 pe-4 py-3">
-        <div className="flex items-center gap-3">
+      <CardContent className="ps-3 pe-4 py-3 2xl:ps-4 2xl:pe-5 2xl:py-4">
+        <div className="flex items-center gap-3 2xl:gap-4">
           <div
-            className="p-2 rounded-lg flex items-center justify-center flex-shrink-0"
+            className="p-2 2xl:p-2.5 rounded-lg flex items-center justify-center flex-shrink-0"
             style={{ background: iconBg, color: iconColor }}
           >
             {icon}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5 truncate">{label}</p>
+            <p className="text-[11px] 2xl:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5 truncate">{label}</p>
             {value}
             {delta && (
-              <span className="inline-flex mt-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
+              <span className="inline-flex mt-1 text-[11px] 2xl:text-xs font-semibold px-2 py-0.5 rounded-full"
                 style={{ background: iconBg, color: iconColor }}>
                 {delta}
               </span>
             )}
-            {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+            {sub && <p className="text-xs 2xl:text-sm text-gray-400 mt-0.5">{sub}</p>}
           </div>
           {spark && spark.length > 1 && (
             <Sparkline data={spark} color={accent} />
@@ -302,6 +295,7 @@ function RecentAssetsTable({ assets, isLoading, onViewAll: _onViewAll }: {
   }
 
   return (
+    <div className="overflow-x-auto">
     <table className="w-full border-collapse">
       <thead>
         <tr className="border-b border-border">
@@ -342,6 +336,7 @@ function RecentAssetsTable({ assets, isLoading, onViewAll: _onViewAll }: {
         ))}
       </tbody>
     </table>
+    </div>
   );
 }
 
@@ -367,7 +362,7 @@ function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: 
     return (
       <div className="space-y-3">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="grid grid-cols-[130px_1fr_64px] gap-3 items-center">
+          <div key={i} className="grid grid-cols-1 sm:grid-cols-[130px_1fr_64px] gap-1.5 sm:gap-3 sm:items-center">
             <div className="h-4 bg-surface-sidebar rounded animate-pulse" />
             <div className="h-1.5 bg-surface-sidebar rounded-full animate-pulse" />
             <div className="h-4 w-12 bg-surface-sidebar rounded animate-pulse" />
@@ -387,7 +382,7 @@ function AssetBreakdownBar({ assets, isLoading }: { assets: Asset[]; isLoading: 
         const pct  = Math.round((count / total) * 100);
         const tone = TONES[i] ?? TONES[3];
         return (
-          <div key={cat} className="grid grid-cols-[130px_1fr_64px] gap-3 items-center py-1 border-b border-border last:border-0">
+          <div key={cat} className="grid grid-cols-1 sm:grid-cols-[130px_1fr_64px] gap-1.5 sm:gap-3 sm:items-center py-1 border-b border-border last:border-0">
             <span className="text-sm font-medium text-gray-700 truncate">{cat}</span>
             <div className="h-1.5 rounded-full bg-surface-sidebar overflow-hidden">
               <div className={`h-full rounded-full ${tone.bar} transition-[width] duration-500`} style={{ width: `${pct}%` }} />
@@ -536,88 +531,12 @@ function ActivityFeed({ logs, isLoading }: { logs: AuditEntry[]; isLoading: bool
   );
 }
 
-/* ── PendingRequestsTable ────────────────────────────────────────── */
-const typeKeys: Record<string, MessageKey> = {
-  REFILL:           'requestType.REFILL',
-  RETIRE:           'requestType.RETIRE',
-  BUY_NEW:          'requestType.BUY_NEW',
-  EXTEND_WARRANTY:  'requestType.EXTEND_WARRANTY',
-};
-const typeTones: Record<string, string> = {
-  REFILL:          'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300',
-  RETIRE:          'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300',
-  BUY_NEW:         'bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300',
-  EXTEND_WARRANTY: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
-};
-
-function PendingRequestsTable({ requests, isLoading, orgSlug, locale, space, onApprove, onReject }: {
-  requests: Request[];
-  isLoading: boolean;
-  orgSlug: string;
-  locale: string;
-  space: string;
-  onApprove: (id: string) => void;
-  onReject:  (id: string) => void;
-}) {
-  const router = useRouter();
-  const { t }  = useT();
-  const columns: ColumnDef<Request>[] = [
-    {
-      key: 'type',
-      header: t('requests.type'),
-      render: (r) => (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${typeTones[r.type] ?? 'bg-gray-100 text-gray-700'}`}>
-          {typeKeys[r.type] ? t(typeKeys[r.type]) : r.type}
-        </span>
-      ),
-    },
-    {
-      key: 'asset',
-      header: t('col.asset'),
-      render: (r) => <span className="font-medium text-gray-900 text-sm">{r.assetName ?? r.inventoryItemName ?? '—'}</span>,
-    },
-    {
-      key: 'by',
-      header: t('requests.submittedBy'),
-      render: (r) => <span className="text-sm text-gray-600">{r.createdByName ?? r.createdByEmail ?? r.createdBy}</span>,
-    },
-    {
-      key: 'actions',
-      header: '',
-      render: (r) =>
-        r.status === 'PENDING' ? (
-          <div className="flex items-center gap-1 justify-end">
-            <button onClick={(e) => { e.stopPropagation(); onApprove(r.id); }} aria-label={t('common.approve')}
-              className="h-7 w-7 rounded-md flex items-center justify-center text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors duration-150">
-              <CheckIcon />
-            </button>
-            <button onClick={(e) => { e.stopPropagation(); onReject(r.id); }} aria-label={t('common.reject')}
-              className="h-7 w-7 rounded-md flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors duration-150">
-              <XIcon />
-            </button>
-          </div>
-        ) : null,
-    },
-  ];
-
-  return (
-    <DataTable
-      data={requests}
-      columns={columns}
-      isLoading={isLoading}
-      emptyMessage={t('dashboard.noPendingRequests')}
-      onRowClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list`)}
-      keyExtractor={(r) => r.id}
-    />
-  );
-}
-
 /* ── SectionHeader ───────────────────────────────────────────────── */
 function SectionHeader({ title, count, action, onClick }: { title: string; count?: number; action?: string; onClick?: () => void }) {
   return (
-    <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
+    <div className="px-5 py-3.5 2xl:px-6 2xl:py-4 border-b border-border flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+        <h2 className="text-sm 2xl:text-base font-semibold text-gray-900">{title}</h2>
         {count != null && count > 0 && (
           <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[11px] font-semibold tabular-nums">
             {count}
@@ -636,15 +555,26 @@ function SectionHeader({ title, count, action, onClick }: { title: string; count
 
 /* ── Page ────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
+  const { isAllowed } = useModuleGuard({ featureKey: 'dashboard', moduleKey: 'dashboard' });
   const router  = useRouter();
   const orgSlug = useOrgSlug();
   const space   = useSpace();
   const { user } = useAuthStore();
-  const { data, isLoading, dataUpdatedAt } = useDashboard(space);
   const { t, locale } = useT();
 
-  const firstName  = (user?.displayName || user?.email?.split('@')[0] || '').split(/\s+/)[0] || t('greeting.there');
-  const features   = user?.features ?? {};
+  const features = user?.features ?? {};
+  const canViewAssets    = !!user && features.assets    !== false && hasModuleAccess(user, 'usool');
+  const canViewInventory = !!user && features.inventory !== false && hasModuleAccess(user, 'raseed');
+  const canViewWarranties= !!user && features.warranties!== false && hasPermission(user, 'usool', 'warrantiesView');
+  const canViewAuditLogs = !!user && features.auditLogs !== false && hasModuleAccess(user, 'auditLogs');
+
+  const { data, isLoading, dataUpdatedAt } = useDashboard(space, {
+    assets: canViewAssets,
+    warranties: canViewWarranties,
+    auditLogs: canViewAuditLogs,
+  });
+
+  const firstName = (user?.displayName || user?.email?.split('@')[0] || '').split(/\s+/)[0] || t('greeting.there');
   const syncedAgo  = useMemo(() => {
     if (!dataUpdatedAt) return null;
     // eslint-disable-next-line react-hooks/purity
@@ -653,12 +583,14 @@ export default function DashboardPage() {
     if (diffMin < 60) return `${t('dashboard.synced')} ${diffMin}m ago`;
     return `${t('dashboard.synced')} ${Math.round(diffMin / 60)}h ago`;
   }, [dataUpdatedAt, t]);
-  const isAdmin     = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
+
+  if (!isAllowed) return null;
 
   const activeAssets       = data?.assets.filter((a) => a.status === 'Active')  ?? [];
   const totalAssets        = data?.assets ?? [];
+  const totalAssetCount    = data?.totalAssetCount ?? totalAssets.length;
+  const activeAssetCount   = data?.activeAssetCount ?? activeAssets.length;
   const expiringWarranties = data?.warranties ?? [];
-  const pendingRequests    = data?.requests ?? [];
   const auditLogs          = data?.auditLogs ?? [];
 
   // Low-stock count — assets with status that suggests low inventory
@@ -667,7 +599,6 @@ export default function DashboardPage() {
 
   // Sparkline data — derived from already-fetched arrays (retained for future use)
   const _assetSpark    = weekBuckets(totalAssets);
-  const _pendingSpark  = weekBuckets(pendingRequests);
   // Warranty sparkline: bucket by days-remaining bands (0-7, 7-14, ..., 63-70, 70+)
   const _warrantySpark = (() => {
     const buckets = Array(10).fill(0);
@@ -680,12 +611,6 @@ export default function DashboardPage() {
   })();
   // Inventory sparkline: use same weekly bucketing on all assets (proxy for activity)
   const _inventorySpark = weekBuckets(totalAssets.filter((a) => a.status === 'Pending'));
-
-  async function handleDecision(requestId: string, action: 'approve' | 'reject') {
-    try {
-      await fetch(`/api/requests/${requestId}/${action}`, { method: 'POST' });
-    } catch { /* Silent — full handling in Requests page */ }
-  }
 
   const _warrantyColumns: ColumnDef<Warranty>[] = [
     { key: 'assetId', header: t('col.asset'),     render: (w) => <span className="font-medium text-sm">{w.assetName ?? w.assetId}</span> },
@@ -706,12 +631,12 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 2xl:space-y-6">
 
       {/* ── Alert banners ────────────────────────────────────────────── */}
-      {!isLoading && (lowStockCount > 0 || expiringWarranties.length > 0) && (
+      {!isLoading && ((canViewInventory && lowStockCount > 0) || (canViewWarranties && expiringWarranties.length > 0)) && (
         <div className="space-y-2">
-          {lowStockCount > 0 && (
+          {canViewInventory && lowStockCount > 0 && (
             <AlertBanner tone="warning" icon={<InboxIcon />}>
               <span>
                 <strong>{lowStockCount} {lowStockCount === 1 ? 'item is' : 'items are'} low or out of stock.</strong>{' '}
@@ -722,7 +647,7 @@ export default function DashboardPage() {
               </span>
             </AlertBanner>
           )}
-          {expiringWarranties.length > 0 && (
+          {canViewWarranties && expiringWarranties.length > 0 && (
             <AlertBanner tone="info" icon={<WarningIcon />}>
               <span>
                 <strong>{expiringWarranties.length} {expiringWarranties.length === 1 ? 'warranty' : 'warranties'} expiring within 30 days.</strong>
@@ -741,11 +666,11 @@ export default function DashboardPage() {
       {/* ── Page header ──────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="font-bold tracking-tight text-gray-900"
-            style={{ fontSize: 22, fontFamily: 'var(--font-display)' }}>
+          <h1 className="font-bold tracking-tight text-gray-900 text-[22px] 2xl:text-[26px]"
+            style={{ fontFamily: 'var(--font-display)' }}>
             {t(getGreetingKey())} {firstName}{locale === 'ar' ? '،' : ','}
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">{t('dashboard.subtitle')}</p>
+          <p className="text-sm 2xl:text-base text-gray-500 mt-0.5">{t('dashboard.subtitle')}</p>
         </div>
         {!isLoading && syncedAgo && (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800 flex-shrink-0">
@@ -756,164 +681,151 @@ export default function DashboardPage() {
       </div>
 
       {/* ── KPI cards ────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon={<TotalIcon />}
-          iconBg="rgba(0,105,92,0.08)"
-          iconColor="var(--mod-usool)"
-          accent="var(--mod-usool)"
-          label={t('dashboard.totalAssets')}
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{totalAssets.length}</p>}
-          delta={!isLoading && activeAssets.length > 0 ? `${activeAssets.length} active` : undefined}
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
-        />
-        <StatCard
-          icon={<ActiveIcon />}
-          iconBg="rgba(230,81,0,0.08)"
-          iconColor="var(--mod-raseed)"
-          accent="var(--mod-raseed)"
-          label={t('dashboard.inventoryItems')}
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{lowStockCount}</p>}
-          delta={!isLoading && lowStockCount > 0 ? `${lowStockCount} low` : undefined}
-          sub={!isLoading ? t('dashboard.lowStock') : undefined}
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list`)}
-        />
-        <StatCard
-          icon={<WarningIcon />}
-          iconBg="rgba(245,158,11,0.08)"
-          iconColor="#D97706"
-          accent="#F59E0B"
-          label={t('dashboard.warrantiesExpiring')}
-          value={
-            isLoading ? <SkeletonValue /> : (
-              <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">
-                {expiringWarranties.length}
-              </p>
-            )
-          }
-          sub={!isLoading ? t('dashboard.soon') : undefined}
-          delta={!isLoading && criticalWarrantyCount > 0 ? `${criticalWarrantyCount} critical` : undefined}
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/warranties?expiring=30`)}
-        />
-        <StatCard
-          icon={<InboxIcon />}
-          iconBg="rgba(124,58,237,0.08)"
-          iconColor="#7C3AED"
-          accent="#7C3AED"
-          label={t('dashboard.pendingRequests')}
-          value={isLoading ? <SkeletonValue /> : <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{pendingRequests.length}</p>}
-          delta={!isLoading && pendingRequests.length > 0 ? t('dashboard.needReview') : undefined}
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list?status=PENDING`)}
-        />
-      </div>
+      {(canViewAssets || canViewInventory || canViewWarranties) && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 2xl:gap-6">
+          {canViewAssets && (
+            <StatCard
+              icon={<TotalIcon />}
+              iconBg="rgba(0,105,92,0.08)"
+              iconColor="var(--mod-usool)"
+              accent="var(--mod-usool)"
+              label={t('dashboard.totalAssets')}
+              value={isLoading ? <SkeletonValue /> : <p className="text-2xl 2xl:text-3xl font-bold text-gray-900 tabular-nums leading-tight">{totalAssetCount}</p>}
+              delta={!isLoading && activeAssetCount > 0 ? `${activeAssetCount} active` : undefined}
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
+            />
+          )}
+          {canViewInventory && (
+            <StatCard
+              icon={<ActiveIcon />}
+              iconBg="rgba(230,81,0,0.08)"
+              iconColor="var(--mod-raseed)"
+              accent="var(--mod-raseed)"
+              label={t('dashboard.inventoryItems')}
+              value={isLoading ? <SkeletonValue /> : <p className="text-2xl 2xl:text-3xl font-bold text-gray-900 tabular-nums leading-tight">{lowStockCount}</p>}
+              delta={!isLoading && lowStockCount > 0 ? `${lowStockCount} low` : undefined}
+              sub={!isLoading ? t('dashboard.lowStock') : undefined}
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/list`)}
+            />
+          )}
+          {canViewWarranties && (
+            <StatCard
+              icon={<WarningIcon />}
+              iconBg="rgba(245,158,11,0.08)"
+              iconColor="#D97706"
+              accent="#F59E0B"
+              label={t('dashboard.warrantiesExpiring')}
+              value={
+                isLoading ? <SkeletonValue /> : (
+                  <p className="text-2xl 2xl:text-3xl font-bold text-gray-900 tabular-nums leading-tight">
+                    {expiringWarranties.length}
+                  </p>
+                )
+              }
+              sub={!isLoading ? t('dashboard.soon') : undefined}
+              delta={!isLoading && criticalWarrantyCount > 0 ? `${criticalWarrantyCount} critical` : undefined}
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/warranties?expiring=30`)}
+            />
+          )}
+        </div>
+      )}
 
       {/* ── Quick actions ─────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest me-1 hidden sm:block">
-          {t('dashboard.quickActions')}
-        </span>
-        <button
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list?new=true`)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
-        >
-          <PlusIcon aria-hidden /> {t('dashboard.addAsset')}
-        </button>
-        <button
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/purchases/new`)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
-        >
-          <RefreshIcon aria-hidden /> {t('dashboard.recordTransaction')}
-        </button>
-        <button
-          onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list`)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-card text-sm font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
-        >
-          <InboxIcon aria-hidden /> {t('dashboard.submitRequest')}
-        </button>
-        {features.pos && (
-          <button
-            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/haraka/register`)}
-            className="ms-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors duration-150 cursor-pointer"
-            style={{ color: 'var(--mod-haraka)', borderColor: 'color-mix(in srgb, var(--mod-haraka) 35%, transparent)', background: 'color-mix(in srgb, var(--mod-haraka) 6%, transparent)' }}
-          >
-            <CartIcon aria-hidden /> {t('dashboard.openRegister')}
-          </button>
-        )}
-      </div>
+      {(canViewAssets || canViewInventory || features.pos) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest me-1 hidden sm:block">
+            {t('dashboard.quickActions')}
+          </span>
+          {canViewAssets && (
+            <button
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list?new=true`)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 2xl:px-4 2xl:py-2 rounded-lg border border-border bg-surface-card text-sm 2xl:text-base font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
+            >
+              <PlusIcon aria-hidden /> {t('dashboard.addAsset')}
+            </button>
+          )}
+          {canViewInventory && (
+            <button
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/raseed/purchases/new`)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 2xl:px-4 2xl:py-2 rounded-lg border border-border bg-surface-card text-sm 2xl:text-base font-medium text-gray-700 hover:bg-surface-sidebar hover:border-gray-300 transition-colors duration-150 cursor-pointer"
+            >
+              <RefreshIcon aria-hidden /> {t('dashboard.recordTransaction')}
+            </button>
+          )}
+          {features.pos && (
+            <button
+              onClick={() => router.push(`/${locale}/${orgSlug}/${space}/haraka/register`)}
+              className="ms-auto inline-flex items-center gap-1.5 px-3 py-1.5 2xl:px-4 2xl:py-2 rounded-lg border text-sm 2xl:text-base font-medium transition-colors duration-150 cursor-pointer"
+              style={{ color: 'var(--mod-haraka)', borderColor: 'color-mix(in srgb, var(--mod-haraka) 35%, transparent)', background: 'color-mix(in srgb, var(--mod-haraka) 6%, transparent)' }}
+            >
+              <CartIcon aria-hidden /> {t('dashboard.openRegister')}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ── Row 1: Recent assets (1.5fr) + Expiring warranties (1fr) ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <Card className="lg:col-span-3 p-0">
-          <SectionHeader
-            title={t('dashboard.recentAssets')}
-            action={t('dashboard.viewAll')}
-            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
-          />
-          <RecentAssetsTable
-            assets={totalAssets}
-            isLoading={isLoading}
-            onViewAll={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
-          />
-        </Card>
-
-        <Card className="lg:col-span-2 p-0">
-          <SectionHeader
-            title={t('dashboard.expiringWarranties')}
-            action={t('dashboard.viewAll')}
-            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/warranties`)}
-          />
-          <ExpiringWarrantiesCard
-            warranties={expiringWarranties}
-            isLoading={isLoading}
-            onViewAll={() => router.push(`/${locale}/${orgSlug}/${space}/warranties`)}
-          />
-        </Card>
-      </div>
+      {(canViewAssets || canViewWarranties) && (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 2xl:gap-6">
+          {canViewAssets && (
+            <Card className={`${canViewWarranties ? 'lg:col-span-3' : 'lg:col-span-5'} p-0`}>
+              <SectionHeader
+                title={t('dashboard.recentAssets')}
+                action={t('dashboard.viewAll')}
+                onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
+              />
+              <RecentAssetsTable
+                assets={totalAssets}
+                isLoading={isLoading}
+                onViewAll={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
+              />
+            </Card>
+          )}
+          {canViewWarranties && (
+            <Card className={`${canViewAssets ? 'lg:col-span-2' : 'lg:col-span-5'} p-0`}>
+              <SectionHeader
+                title={t('dashboard.expiringWarranties')}
+                action={t('dashboard.viewAll')}
+                onClick={() => router.push(`/${locale}/${orgSlug}/${space}/warranties`)}
+              />
+              <ExpiringWarrantiesCard
+                warranties={expiringWarranties}
+                isLoading={isLoading}
+                onViewAll={() => router.push(`/${locale}/${orgSlug}/${space}/warranties`)}
+              />
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* ── Row 2: Asset breakdown (3/5) + Activity feed (2/5) ───────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <Card className="lg:col-span-3 p-0">
-          <SectionHeader
-            title={t('dashboard.assetBreakdown')}
-            action={t('dashboard.viewAll')}
-            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
-          />
-          <div className="p-5">
-            <AssetBreakdownBar assets={totalAssets} isLoading={isLoading} />
-          </div>
-        </Card>
-
-        <Card className="lg:col-span-2 p-0">
-          <SectionHeader
-            title={t('dashboard.recentActivity')}
-            action={t('dashboard.viewAll')}
-            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/audit-logs`)}
-          />
-          <div className="p-5">
-            <ActivityFeed logs={auditLogs} isLoading={isLoading} />
-          </div>
-        </Card>
-      </div>
-
-      {/* ── Row 3: Pending requests (admin only) ─────────────────────── */}
-      {isAdmin && (
-        <Card className="p-0">
-          <SectionHeader
-            title={t('dashboard.pendingRequests')}
-            count={!isLoading ? pendingRequests.length : undefined}
-            action={t('dashboard.openQueue')}
-            onClick={() => router.push(`/${locale}/${orgSlug}/${space}/requests/list?status=PENDING`)}
-          />
-          <PendingRequestsTable
-            requests={pendingRequests}
-            isLoading={isLoading}
-            orgSlug={orgSlug}
-            locale={locale}
-            space={space}
-            onApprove={(id) => handleDecision(id, 'approve')}
-            onReject={(id) => handleDecision(id, 'reject')}
-          />
-        </Card>
+      {(canViewAssets || canViewAuditLogs) && (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 2xl:gap-6">
+          {canViewAssets && (
+            <Card className={`${canViewAuditLogs ? 'lg:col-span-3' : 'lg:col-span-5'} p-0`}>
+              <SectionHeader
+                title={t('dashboard.assetBreakdown')}
+                action={t('dashboard.viewAll')}
+                onClick={() => router.push(`/${locale}/${orgSlug}/${space}/usool/list`)}
+              />
+              <div className="p-5 2xl:p-6">
+                <AssetBreakdownBar assets={totalAssets} isLoading={isLoading} />
+              </div>
+            </Card>
+          )}
+          {canViewAuditLogs && (
+            <Card className={`${canViewAssets ? 'lg:col-span-2' : 'lg:col-span-5'} p-0`}>
+              <SectionHeader
+                title={t('dashboard.recentActivity')}
+                action={t('dashboard.viewAll')}
+                onClick={() => router.push(`/${locale}/${orgSlug}/${space}/audit-logs`)}
+              />
+              <div className="p-5 2xl:p-6">
+                <ActivityFeed logs={auditLogs} isLoading={isLoading} />
+              </div>
+            </Card>
+          )}
+        </div>
       )}
 
     </div>

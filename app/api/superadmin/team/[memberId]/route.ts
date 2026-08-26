@@ -12,6 +12,7 @@ import {
   getSuperAdminUsers,
   MakhzoonRole,
 } from '@/lib/db/superadmin-users';
+import { hasSuperAdminPermission } from '@/lib/permissions/superadmin';
 import { z } from 'zod';
 
 const patchSchema = z.object({
@@ -25,7 +26,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ memberI
   const params = await props.params;
   const caller = await verifySessionCookie();
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (caller.role !== 'super_admin' && caller.role !== 'makhzoon_admin')
+  if (!hasSuperAdminPermission(caller, 'team', 'manage'))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   if (params.memberId === caller.uid)
     return NextResponse.json({ error: 'Cannot modify your own account' }, { status: 400 });
@@ -80,7 +81,10 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ membe
   const params = await props.params;
   const caller = await verifySessionCookie();
   if (!caller) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (caller.role !== 'super_admin') return NextResponse.json({ error: 'Only Super Admins can permanently delete team members' }, { status: 403 });
+  // Only super_admin can permanently delete — this is intentional role-level protection,
+  // not permission-level, because delete is destructive and irreversible.
+  if (caller.role !== 'super_admin')
+    return NextResponse.json({ error: 'Only Super Admins can permanently delete team members' }, { status: 403 });
   if (params.memberId === caller.uid)
     return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
 

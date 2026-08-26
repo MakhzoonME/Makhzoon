@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
+import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireHarakaModule } from '@/lib/permissions/require-module'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { requirePermission } from '@/lib/permissions/require'
 import { TransactionsService } from '@/lib/modules/haraka/transactions/transactions.service'
@@ -10,7 +12,9 @@ const service = new TransactionsService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    const limited = rateLimitTenant(tenant, 'haraka-transactions', 120, 60_000)
+    requireFeature(tenant, 'pos')
+    await requireHarakaModule(tenant, 'pos')
+    const limited = await rateLimitTenant(tenant, 'haraka-transactions', 120, 60_000)
     if (limited) return limited
     const { searchParams } = new URL(req.url)
     const result = await service.list(tenant, {
@@ -30,7 +34,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    requirePermission(tenant.user, 'pos', 'process_sale')
+    requireFeature(tenant, 'pos')
+    await requireHarakaModule(tenant, 'pos')
+    requirePermission(tenant.user, 'haraka', 'registerOpen')
     const body = await req.json()
     const parsed = completeSaleSchema.safeParse(body)
     if (!parsed.success) {
@@ -49,8 +55,6 @@ export async function POST(req: NextRequest) {
         barcode: l.barcode ?? null,
         quantity: l.quantity,
         unitPrice: l.unitPrice,
-        taxRateId: l.taxRateId ?? null,
-        taxRate: l.taxRate,
         discount: l.discount,
       })),
       payments: d.payments.map((p) => ({
@@ -59,7 +63,7 @@ export async function POST(req: NextRequest) {
         reference: p.reference ?? null,
         cardLast4: p.cardLast4 || null,
       })),
-      skipFawtara: d.skipFawtara ?? false,
+      approverPin: d.approverPin,
     })
     return NextResponse.json({ transaction: tx }, { status: 201 })
   } catch (err) {

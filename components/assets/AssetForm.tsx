@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import { DocumentUpload } from '@/components/shared';
 import { toast } from '@/hooks/ui';
@@ -56,7 +56,7 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
   function canAccessAssets(u: OrgUser) {
     const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin', 'makhzoon_admin', 'makhzoon_support']);
     if (ADMIN_ROLES.has(u.role)) return true;
-    return u.permissions?.assets?.view === true;
+    return u.permissions?.usool?.view === true;
   }
   const assignableUsers = allUsers.filter(canAccessAssets);
 
@@ -219,19 +219,13 @@ export function AssetForm({ asset, onSuccess, onCancel, onDirtyChange }: AssetFo
             <FormField control={form.control} name="assignedTo" render={({ field }) => (
               <FormItem className="sm:col-span-2">
                 <FormLabel>{t('col.assignedTo')}</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('assets.unassigned')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {assignableUsers.length === 0 && (
-                      <SelectItem value="__none" disabled>{t('assets.noUsersFound')}</SelectItem>
-                    )}
-                    {assignableUsers.map((u: OrgUser) => (
-                      <SelectItem key={u.id} value={u.displayName}>{u.displayName}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  value={field.value || null}
+                  onChange={(v) => field.onChange(v ?? '')}
+                  placeholder={t('assets.unassigned')}
+                  emptyMessage={t('assets.noUsersFound')}
+                  options={assignableUsers.map((u: OrgUser) => ({ value: u.displayName, label: u.displayName }))}
+                />
                 <FormMessage />
               </FormItem>
             )} />

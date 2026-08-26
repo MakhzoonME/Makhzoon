@@ -26,6 +26,7 @@ import {
 import { toast, useT } from '@/hooks/ui';
 import { LIST_REGISTRY, LIST_KEYS, type ListKey, type PlatformListItem, type OrgListItem } from '@/types';
 import { cn } from '@/lib/utils/cn';
+import { slugifyKey, dedupeKey } from '@/lib/utils/format';
 
 const FREE_KEYS = LIST_KEYS.filter((k) => !LIST_REGISTRY[k].isSystem);
 const SYSTEM_KEYS = LIST_KEYS.filter((k) => LIST_REGISTRY[k].isSystem);
@@ -112,20 +113,21 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
           patch: { label: platformEdit.label.trim(), labelAr, color, sortOrder: platformEdit.sortOrder },
         });
       } else {
+        const value = dedupeKey(slugifyKey(platformEdit.label.trim(), selected), new Set(platformItems.map((i) => i.value)));
         await createPlatformMut.mutateAsync({
           listKey: selected,
-          value: platformEdit.value.trim(),
+          value,
           label: platformEdit.label.trim(),
           labelAr,
           color,
           sortOrder: platformEdit.sortOrder,
         });
       }
-      toast.success('Saved');
+      toast.success(t('common.saved'));
       setPlatformEdit(null);
       qc.invalidateQueries({ queryKey: ['sa-org-lists', orgId, selected] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Save failed');
+      toast.error(e instanceof Error ? e.message : t('common.saveFailed'));
     }
   }
 
@@ -134,7 +136,7 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
       await updatePlatformMut.mutateAsync({ id: item.id, patch: { enabled: !item.enabled } });
       qc.invalidateQueries({ queryKey: ['sa-org-lists', orgId, selected] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Update failed');
+      toast.error(e instanceof Error ? e.message : t('common.updateFailed'));
     }
   }
 
@@ -142,11 +144,11 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
     if (!platformDeleteTarget) return;
     try {
       await deletePlatformMut.mutateAsync(platformDeleteTarget.id);
-      toast.success('Deleted');
+      toast.success(t('common.deleted'));
       setPlatformDeleteTarget(null);
       qc.invalidateQueries({ queryKey: ['sa-org-lists', orgId, selected] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Delete failed');
+      toast.error(e instanceof Error ? e.message : t('common.deleteFailed'));
     }
   }
 
@@ -184,7 +186,6 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
   const [orgEdit, setOrgEdit] = useState<OrgEditState | null>(null);
   const [orgDeleteTarget, setOrgDeleteTarget] = useState<OrgListItem | null>(null);
   const [addingCustom, setAddingCustom] = useState(false);
-  const [customValue, setCustomValue] = useState('');
   const [customLabel, setCustomLabel] = useState('');
   const [customLabelAr, setCustomLabelAr] = useState('');
   const [customColor, setCustomColor] = useState('');
@@ -223,10 +224,10 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
         color: orgEdit.color || null,
         isCustom: orgEdit.isCustom,
       });
-      toast.success('Saved');
+      toast.success(t('common.saved'));
       setOrgEdit(null);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Save failed');
+      toast.error(e instanceof Error ? e.message : t('common.saveFailed'));
     }
   }
 
@@ -238,18 +239,18 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
         enabled: false,
         isCustom: false,
       });
-      toast.success('Hidden for this org');
+      toast.success(t('superadminLists.hiddenSuccess'));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed');
+      toast.error(e instanceof Error ? e.message : t('common.failed'));
     }
   }
 
   async function restoreDefault(value: string) {
     try {
       await deleteOrgMut.mutateAsync({ listKey: selected, value });
-      toast.success('Restored');
+      toast.success(t('superadminLists.restored'));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed');
+      toast.error(e instanceof Error ? e.message : t('common.failed'));
     }
   }
 
@@ -257,32 +258,32 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
     if (!orgDeleteTarget) return;
     try {
       await deleteOrgMut.mutateAsync({ listKey: selected, value: orgDeleteTarget.value });
-      toast.success('Deleted');
+      toast.success(t('common.deleted'));
       setOrgDeleteTarget(null);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Delete failed');
+      toast.error(e instanceof Error ? e.message : t('common.deleteFailed'));
     }
   }
 
   async function addCustom() {
-    if (!customValue.trim() || !customLabel.trim()) return;
+    if (!customLabel.trim()) return;
     try {
+      const value = dedupeKey(slugifyKey(customLabel.trim(), selected), new Set(orgItems.map((i) => i.value)));
       await upsertOrgMut.mutateAsync({
         listKey: selected,
-        value: customValue.trim(),
+        value,
         label: customLabel.trim(),
         labelAr: customLabelAr.trim() || null,
         color: customColor || null,
         isCustom: true,
       });
-      toast.success('Added');
+      toast.success(t('common.added'));
       setAddingCustom(false);
-      setCustomValue('');
       setCustomLabel('');
       setCustomLabelAr('');
       setCustomColor('');
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed');
+      toast.error(e instanceof Error ? e.message : t('common.failed'));
     }
   }
 
@@ -294,8 +295,8 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
   return (
     <div>
       <PageHeader
-        title="Lists"
-        description="Manage platform defaults and per-org customizations."
+        title={t('nav.lists')}
+        description={t('superadminLists.descriptionOrg')}
         breadcrumb={[
           { label: t('nav.organizations'), href: `/${locale}/superadmin` },
           { label: t('nav.lists') },
@@ -305,8 +306,8 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
       <div className="flex flex-col md:flex-row gap-6 mt-4">
         {/* List selector */}
         <aside className="md:w-56 flex-shrink-0 space-y-4">
-          <ListGroup title="Business lists" keys={FREE_KEYS} selected={selected} onSelect={setSelected} />
-          <ListGroup title="System lists" keys={SYSTEM_KEYS} selected={selected} onSelect={setSelected} locked />
+          <ListGroup title={t('superadminLists.businessLists')} keys={FREE_KEYS} selected={selected} onSelect={setSelected} />
+          <ListGroup title={t('superadminLists.systemLists')} keys={SYSTEM_KEYS} selected={selected} onSelect={setSelected} locked />
         </aside>
 
         {/* Main content */}
@@ -320,23 +321,23 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
                   {meta.label}
                   {meta.isSystem && (
                     <span className="inline-flex items-center gap-1 text-xs text-amber-600">
-                      <Lock className="h-3 w-3" /> values locked
+                      <Lock className="h-3 w-3" /> {t('superadminLists.valuesLocked')}
                     </span>
                   )}
                 </h2>
-                <p className="text-xs text-gray-500 mt-0.5">Platform defaults — inherited by all organizations</p>
+                <p className="text-xs text-gray-500 mt-0.5">{t('superadminLists.platformDefault')}</p>
               </div>
               {!meta.isSystem && (
                 <Button size="sm" onClick={openPlatformAdd}>
-                  <Plus className="h-4 w-4 me-1" /> Add default
+                  <Plus className="h-4 w-4 me-1" /> {t('superadminLists.addDefault')}
                 </Button>
               )}
             </div>
 
             <div className="rounded-lg border border-border divide-y divide-border">
-              {isLoading && <div className="p-4 text-sm text-gray-500">Loading…</div>}
+              {isLoading && <div className="p-4 text-sm text-gray-500">{t('common.loading')}</div>}
               {!isLoading && platformItems.length === 0 && (
-                <div className="p-4 text-sm text-gray-500">No platform items yet.</div>
+                <div className="p-4 text-sm text-gray-500">{t('superadminLists.noPlatformItems')}</div>
               )}
               {platformItems.map((item) => {
                 const orgOverride = orgByValue.get(item.value);
@@ -352,40 +353,39 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
                     />
                     <div className="flex-1 min-w-0">
                       <span className="text-sm text-gray-900">{orgOverride?.label ?? item.label}</span>
-                      <span className="ms-2 text-xs text-gray-400 font-mono">{item.value}</span>
                       {orgOverride && orgOverride.enabled && (
-                        <Badge variant="blue" className="ms-2">org override</Badge>
+                        <Badge variant="blue" className="ms-2">{t('superadminLists.orgOverride')}</Badge>
                       )}
                       {hiddenForOrg && (
-                        <Badge variant="default" className="ms-2">hidden for org</Badge>
+                        <Badge variant="default" className="ms-2">{t('superadminLists.hiddenForOrg')}</Badge>
                       )}
                     </div>
                     {/* Platform enabled toggle */}
                     <Switch
                       checked={item.enabled}
                       onCheckedChange={() => togglePlatformEnabled(item)}
-                      aria-label="Platform enabled"
+                      aria-label={t('superadminLists.platformEnabled')}
                     />
                     {/* Edit platform item */}
-                    <Button variant="ghost" size="icon" onClick={() => openPlatformEdit(item)} aria-label="Edit platform item">
+                    <Button variant="ghost" size="icon" onClick={() => openPlatformEdit(item)} aria-label={t('superadminLists.editPlatformItem')}>
                       <Pencil className="h-4 w-4" />
                     </Button>
                     {/* Hide/restore for this org */}
                     {hiddenForOrg ? (
                       <Button variant="ghost" size="sm" onClick={() => restoreDefault(item.value)} className="text-xs">
-                        Restore for org
+                        {t('superadminLists.restoreForOrg')}
                       </Button>
                     ) : (
-                      <Button variant="ghost" size="icon" onClick={() => hideDefault(item)} aria-label="Hide for this org">
+                      <Button variant="ghost" size="icon" onClick={() => hideDefault(item)} aria-label={t('superadminLists.hideForOrg')}>
                         <Trash2 className="h-4 w-4 text-orange-400" />
                       </Button>
                     )}
                     {/* Override label/color for this org */}
                     <Button variant="ghost" size="sm" onClick={() => openOrgOverride(item)} className="text-xs text-blue-600">
-                      Override for org
+                      {t('superadminLists.overrideForOrg')}
                     </Button>
                     {!item.isSystem && (
-                      <Button variant="ghost" size="icon" onClick={() => setPlatformDeleteTarget(item)} aria-label="Delete platform item">
+                      <Button variant="ghost" size="icon" onClick={() => setPlatformDeleteTarget(item)} aria-label={t('superadminLists.deletePlatformItem')}>
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
                     )}
@@ -400,17 +400,17 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
             <div>
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h3 className="t-h3 text-gray-900">Org-only custom items</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Items added only for this organization</p>
+                  <h3 className="t-h3 text-gray-900">{t('superadminLists.orgCustomItems')}</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">{t('superadminLists.orgCustomItemsDesc')}</p>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => setAddingCustom(true)}>
-                  <Plus className="h-4 w-4 me-1" /> Add custom item
+                  <Plus className="h-4 w-4 me-1" /> {t('superadminLists.addCustomItem')}
                 </Button>
               </div>
 
               <div className="rounded-lg border border-border divide-y divide-border">
                 {customOrgItems.length === 0 && (
-                  <div className="p-4 text-sm text-gray-500">No custom items for this org.</div>
+                  <div className="p-4 text-sm text-gray-500">{t('superadminLists.noCustomItems')}</div>
                 )}
                 {customOrgItems.map((item) => (
                   <div key={item.value} className={cn('flex items-center gap-3 px-3 py-2.5', !item.enabled && 'opacity-50')}>
@@ -420,13 +420,12 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
                     />
                     <div className="flex-1 min-w-0">
                       <span className="text-sm text-gray-900">{item.label ?? item.value}</span>
-                      <span className="ms-2 text-xs text-gray-400 font-mono">{item.value}</span>
-                      <Badge variant="blue" className="ms-2">custom</Badge>
+                      <Badge variant="blue" className="ms-2">{t('superadminLists.custom')}</Badge>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => openOrgEditCustom(item)} aria-label="Edit">
+                    <Button variant="ghost" size="icon" onClick={() => openOrgEditCustom(item)} aria-label={t('common.edit')}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => setOrgDeleteTarget(item)} aria-label="Delete">
+                    <Button variant="ghost" size="icon" onClick={() => setOrgDeleteTarget(item)} aria-label={t('common.delete')}>
                       <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
                   </div>
@@ -441,33 +440,23 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
       <Dialog open={!!platformEdit} onOpenChange={(o) => !o && setPlatformEdit(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{platformEdit?.id ? 'Edit platform item' : 'Add platform item'}</DialogTitle>
-            <DialogDescription>{meta.label} — platform default</DialogDescription>
+            <DialogTitle>{platformEdit?.id ? t('superadminLists.editPlatformItem') : t('superadminLists.addPlatformItem')}</DialogTitle>
+            <DialogDescription>{meta.label} — {t('superadminLists.platformDefault')}</DialogDescription>
           </DialogHeader>
           {platformEdit && (
             <>
               <DialogBody className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label>Value {(!!platformEdit.id || meta.isSystem) && <span className="text-gray-400">(locked)</span>}</Label>
-                  <Input
-                    value={platformEdit.value}
-                    disabled={!!platformEdit.id || meta.isSystem}
-                    onChange={(e) => setPlatformEdit({ ...platformEdit, value: e.target.value })}
-                    placeholder="Stored value, e.g. active"
-                    className="font-mono"
-                  />
-                </div>
                 <div className="flex gap-3">
                   <div className="flex-1 space-y-1.5">
-                    <Label>Label (English)</Label>
+                    <Label>{t('superadminLists.labelEn')}</Label>
                     <Input
                       value={platformEdit.label}
                       onChange={(e) => setPlatformEdit({ ...platformEdit, label: e.target.value })}
-                      placeholder="Display label"
+                      placeholder={t('superadminLists.displayLabel')}
                     />
                   </div>
                   <div className="flex-1 space-y-1.5">
-                    <Label>Label (Arabic)</Label>
+                    <Label>{t('superadminLists.labelAr')}</Label>
                     <Input
                       value={platformEdit.labelAr}
                       onChange={(e) => setPlatformEdit({ ...platformEdit, labelAr: e.target.value })}
@@ -478,7 +467,7 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
                 </div>
                 <div className="flex gap-3">
                   <div className="flex-1 space-y-1.5">
-                    <Label>Color (hex, optional)</Label>
+                    <Label>{t('superadminLists.colorHex')}</Label>
                     <Input
                       value={platformEdit.color}
                       onChange={(e) => setPlatformEdit({ ...platformEdit, color: e.target.value })}
@@ -487,7 +476,7 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
                     />
                   </div>
                   <div className="w-24 space-y-1.5">
-                    <Label>Order</Label>
+                    <Label>{t('superadminLists.order')}</Label>
                     <Input
                       type="number"
                       value={platformEdit.sortOrder}
@@ -497,17 +486,16 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
                 </div>
               </DialogBody>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setPlatformEdit(null)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setPlatformEdit(null)}>{t('common.cancel')}</Button>
                 <Button
                   onClick={savePlatform}
                   disabled={
                     createPlatformMut.isPending ||
                     updatePlatformMut.isPending ||
-                    !platformEdit.label.trim() ||
-                    (!platformEdit.id && !platformEdit.value.trim())
+                    !platformEdit.label.trim()
                   }
                 >
-                  Save
+                  {t('common.save')}
                 </Button>
               </DialogFooter>
             </>
@@ -519,31 +507,27 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
       <Dialog open={!!orgEdit} onOpenChange={(o) => !o && setOrgEdit(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{orgEdit?.isExistingOverride ? 'Edit org override' : 'Override for this org'}</DialogTitle>
+            <DialogTitle>{orgEdit?.isExistingOverride ? t('superadminLists.editOrgOverride') : t('superadminLists.overrideTitle')}</DialogTitle>
             <DialogDescription>
               {orgEdit?.isCustom
-                ? 'Custom item for this organization only'
-                : 'Override the platform default for this organization only'}
+                ? t('superadminLists.customItemOnly')
+                : t('superadminLists.overridePlatform')}
             </DialogDescription>
           </DialogHeader>
           {orgEdit && (
             <>
               <DialogBody className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label>Value <span className="text-gray-400">(locked)</span></Label>
-                  <Input value={orgEdit.value} disabled className="font-mono" />
-                </div>
                 <div className="flex gap-3">
                   <div className="flex-1 space-y-1.5">
-                    <Label>Label (English)</Label>
+                    <Label>{t('superadminLists.labelEn')}</Label>
                     <Input
                       value={orgEdit.label}
                       onChange={(e) => setOrgEdit({ ...orgEdit, label: e.target.value })}
-                      placeholder="Display label"
+                      placeholder={t('superadminLists.displayLabel')}
                     />
                   </div>
                   <div className="flex-1 space-y-1.5">
-                    <Label>Label (Arabic)</Label>
+                    <Label>{t('superadminLists.labelAr')}</Label>
                     <Input
                       value={orgEdit.labelAr}
                       onChange={(e) => setOrgEdit({ ...orgEdit, labelAr: e.target.value })}
@@ -553,7 +537,7 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Color (hex, optional)</Label>
+                  <Label>{t('superadminLists.colorHex')}</Label>
                   <Input
                     value={orgEdit.color}
                     onChange={(e) => setOrgEdit({ ...orgEdit, color: e.target.value })}
@@ -563,9 +547,9 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
                 </div>
               </DialogBody>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setOrgEdit(null)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setOrgEdit(null)}>{t('common.cancel')}</Button>
                 <Button onClick={saveOrgEdit} disabled={upsertOrgMut.isPending || !orgEdit.label.trim()}>
-                  Save
+                  {t('common.save')}
                 </Button>
               </DialogFooter>
             </>
@@ -577,38 +561,29 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
       <Dialog open={addingCustom} onOpenChange={setAddingCustom}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add custom item for this org</DialogTitle>
-            <DialogDescription>{meta.label} — org only</DialogDescription>
+            <DialogTitle>{t('superadminLists.addCustomItemTitle')}</DialogTitle>
+            <DialogDescription>{meta.label} — {t('superadminLists.orgOnly')}</DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Value <span className="text-xs text-gray-400">(stored key, no spaces)</span></Label>
-              <Input
-                value={customValue}
-                onChange={(e) => setCustomValue(e.target.value)}
-                placeholder="e.g. vehicles"
-                className="font-mono"
-              />
-            </div>
             <div className="flex gap-3">
               <div className="flex-1 space-y-1.5">
-                <Label>Label (English)</Label>
+                <Label>{t('superadminLists.labelEn')}</Label>
                 <Input value={customLabel} onChange={(e) => setCustomLabel(e.target.value)} placeholder="e.g. Vehicles" />
               </div>
               <div className="flex-1 space-y-1.5">
-                <Label>Label (Arabic)</Label>
+                <Label>{t('superadminLists.labelAr')}</Label>
                 <Input value={customLabelAr} onChange={(e) => setCustomLabelAr(e.target.value)} placeholder="التسمية" dir="rtl" />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Color (hex, optional)</Label>
+              <Label>{t('superadminLists.colorHex')}</Label>
               <Input value={customColor} onChange={(e) => setCustomColor(e.target.value)} placeholder="#22c55e" className="font-mono" />
             </div>
           </DialogBody>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddingCustom(false)}>Cancel</Button>
-            <Button onClick={addCustom} disabled={upsertOrgMut.isPending || !customValue.trim() || !customLabel.trim()}>
-              Add
+            <Button variant="outline" onClick={() => setAddingCustom(false)}>{t('common.cancel')}</Button>
+            <Button onClick={addCustom} disabled={upsertOrgMut.isPending || !customLabel.trim()}>
+              {t('common.add')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -618,19 +593,19 @@ export default function OrgListsPage(props: { params: Promise<{ orgId: string; l
       <ConfirmDialog
         open={!!platformDeleteTarget}
         onOpenChange={(o) => !o && setPlatformDeleteTarget(null)}
-        title="Delete platform item"
-        description={`Remove "${platformDeleteTarget?.label}" from ${meta.label}? All organizations will lose this default.`}
-        confirmLabel="Delete"
+        title={t('superadminLists.deletePlatformTitle')}
+        description={t('superadminLists.deletePlatformDesc').replace('{label}', platformDeleteTarget?.label ?? '').replace('{list}', meta.label)}
+        confirmLabel={t('common.delete')}
         onConfirm={confirmPlatformDelete}
       />
-
+      
       {/* Confirm delete org custom item */}
       <ConfirmDialog
         open={!!orgDeleteTarget}
         onOpenChange={(o) => !o && setOrgDeleteTarget(null)}
-        title="Delete custom item"
-        description={`Remove "${orgDeleteTarget?.label ?? orgDeleteTarget?.value}" from this org's ${meta.label}?`}
-        confirmLabel="Delete"
+        title={t('superadminLists.deleteCustomTitle')}
+        description={t('superadminLists.deleteCustomDesc').replace('{label}', orgDeleteTarget?.label ?? orgDeleteTarget?.value ?? '').replace('{list}', meta.label)}
+        confirmLabel={t('common.delete')}
         onConfirm={confirmOrgDelete}
       />
     </div>

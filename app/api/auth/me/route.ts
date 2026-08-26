@@ -3,6 +3,18 @@ import { verifySessionCookie } from '@/lib/supabase/auth-helpers';
 import { getSubscriptionByOrg } from '@/lib/db/subscriptions';
 import { getOrganizationById } from '@/lib/db/organizations';
 import { getUserById } from '@/lib/db/users';
+import { getPackageById } from '@/lib/db/packages';
+import { getActiveAddOns } from '@/lib/platform/entitlements';
+import type { AddOnKey } from '@/types';
+
+const EMPTY_ACTIVE_ADD_ONS: Record<AddOnKey, boolean> = {
+  deliveryAgents: false,
+  warrantyCerts: false,
+  customization: false,
+  purchasesRequests: false,
+  vehicleIntake: false,
+  documentReports: false,
+};
 
 export async function GET() {
   try {
@@ -10,6 +22,8 @@ export async function GET() {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     let features: Record<string, boolean> = {};
+    let activeHarakaModules: string[] = [];
+    let activeAddOns: Record<AddOnKey, boolean> = { ...EMPTY_ACTIVE_ADD_ONS };
     let orgSlug: string | null = null;
     let avatarUrl: string | null = null;
 
@@ -19,6 +33,14 @@ export async function GET() {
       getUserById(user.uid),
     ]);
     if (sub?.features) features = sub.features as Record<string, boolean>;
+    if (sub) {
+      activeHarakaModules = [
+        ...(sub.activeHarakaModules ?? []),
+        ...(sub.activeAddOns?.extraHarakaModules ?? []),
+      ];
+      const pkg = sub.packageId ? await getPackageById(sub.packageId) : null;
+      activeAddOns = getActiveAddOns(sub, pkg);
+    }
     orgSlug = org?.subdomain ?? null;
     avatarUrl = dbUser?.avatarUrl ?? null;
     const displayName = dbUser?.displayName ?? null;
@@ -32,7 +54,10 @@ export async function GET() {
         avatarUrl,
         displayName,
         permissions: user.permissions ?? null,
+        saPermissions: user.saPermissions ?? null,
         features,
+        activeHarakaModules,
+        activeAddOns,
       },
       { headers: { 'Cache-Control': 'no-store' } },
     );

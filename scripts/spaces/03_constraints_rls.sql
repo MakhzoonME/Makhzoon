@@ -188,11 +188,15 @@ create unique index if not exists inv_items_space_sku_uidx
 -- 5. Default-space safety triggers
 -- ──────────────────────────────────────────────────────────────────
 
--- 5a. Prevent deleting the default space.
+-- 5a. Prevent deleting the default space, unless its parent organization is
+--     also being deleted (i.e. we're mid-cascade from ON DELETE CASCADE on
+--     organizations, in the same transaction — the org row is already gone).
 create or replace function public.prevent_default_space_delete()
 returns trigger language plpgsql as $$
 begin
-  if old.is_default then
+  if old.is_default and exists (
+    select 1 from public.organizations where id = old.organization_id
+  ) then
     raise exception 'The default space (% / %) cannot be deleted.', old.organization_id, old.slug
       using errcode = 'restrict_violation';
   end if;

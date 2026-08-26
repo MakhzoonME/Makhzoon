@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import type { Purchase, PurchaseLine, PurchaseStatus, DocumentRef } from '@/types'
@@ -12,7 +13,6 @@ function toLine(d: Row): PurchaseLine {
     barcode: (d.barcode as string) ?? null,
     quantity: Number(d.quantity ?? 0),
     unitCost: Number(d.unitCost ?? 0),
-    taxRateId: (d.taxRateId as string) ?? null,
     taxAmount: Number(d.taxAmount ?? 0),
     lineTotal: Number(d.lineTotal ?? 0),
     notes: (d.notes as string) ?? null,
@@ -56,7 +56,6 @@ export interface PurchaseLineInput {
   barcode?: string | null
   quantity: number
   unitCost: number
-  taxRateId?: string | null
   notes?: string | null
 }
 
@@ -71,36 +70,16 @@ export interface PurchaseInput {
   lines: PurchaseLineInput[]
 }
 
-interface TaxRateLookup {
-  rates: Map<string, number>
-}
-
-async function loadTaxRates(tenant: TenantContext): Promise<TaxRateLookup> {
-  const { data } = await supabaseAdmin
-    .from('tax_rates')
-    .select('id, rate')
-    .eq('organization_id', tenant.organizationId)
-  const map = new Map<string, number>()
-  for (const d of data ?? []) {
-    const r = (d as Row).rate
-    if (typeof r === 'number') map.set((d as Row).id as string, r)
-  }
-  return { rates: map }
-}
-
 function priceLines(
   lines: PurchaseLineInput[],
-  taxes: TaxRateLookup,
 ): { lines: PurchaseLine[]; subtotal: number; taxTotal: number; total: number } {
   let subtotal = 0
-  let taxTotal = 0
+  const taxTotal = 0
   const priced: PurchaseLine[] = lines.map((line) => {
     const lineSubtotal = line.quantity * line.unitCost
-    const taxRate = line.taxRateId ? taxes.rates.get(line.taxRateId) ?? 0 : 0
-    const taxAmount = +(lineSubtotal * taxRate).toFixed(4)
+    const taxAmount = 0
     const lineTotal = +(lineSubtotal + taxAmount).toFixed(4)
     subtotal += lineSubtotal
-    taxTotal += taxAmount
     return {
       itemId: line.itemId ?? null,
       itemName: line.itemName,
@@ -108,7 +87,6 @@ function priceLines(
       barcode: line.barcode ?? null,
       quantity: line.quantity,
       unitCost: line.unitCost,
-      taxRateId: line.taxRateId ?? null,
       taxAmount,
       lineTotal,
       notes: line.notes ?? null,
@@ -166,8 +144,7 @@ export class PurchasesRepository {
   }
 
   async create(tenant: TenantContext, input: PurchaseInput): Promise<string> {
-    const taxes = await loadTaxRates(tenant)
-    const priced = priceLines(input.lines, taxes)
+    const priced = priceLines(input.lines)
     const { data, error } = await supabaseAdmin
       .from('purchases')
       .insert({
@@ -218,15 +195,16 @@ export class PurchasesRepository {
     if (input.updateItemUnitCost !== undefined) patch.update_item_unit_cost = input.updateItemUnitCost
 
     if (input.lines) {
-      const taxes = await loadTaxRates(tenant)
-      const priced = priceLines(input.lines, taxes)
+      const priced = priceLines(input.lines)
       patch.lines = priced.lines
       patch.subtotal = priced.subtotal
       patch.tax_total = priced.taxTotal
       patch.total = priced.total
     }
 
-    const { error } = await supabaseAdmin.from('purchases').update(patch).eq('id', id)
+    const { error } = await supabaseAdmin.from('purchases').update(patch)
+      .eq('id', id)
+      .eq('organization_id', tenant.organizationId)
     if (error) throw error
   }
 
@@ -234,7 +212,9 @@ export class PurchasesRepository {
     const existing = await this.getById(tenant, id)
     if (!existing) throw new Error('Purchase not found')
     if (existing.status === 'received') throw new Error('Cannot delete a received purchase')
-    const { error } = await supabaseAdmin.from('purchases').delete().eq('id', id)
+    const { error } = await supabaseAdmin.from('purchases').delete()
+      .eq('id', id)
+      .eq('organization_id', tenant.organizationId)
     if (error) throw error
   }
 
@@ -246,14 +226,18 @@ export class PurchasesRepository {
       .from('purchases')
       .update({ status: 'cancelled' as PurchaseStatus, updated_by: tenant.userId })
       .eq('id', id)
+      .eq('organization_id', tenant.organizationId)
     if (error) throw error
   }
 
   /**
-   * Receive a draft purchase: append a stock-IN ledger row per line, refresh
-   * each item's stock_status (and optionally unit_cost/supplier), mark the
-   * purchase received. Was a Firestore transaction; read-modify-write here
-   * (same race caveat the original noted as acceptable for v1).
+   * Receive a draft purchase: append a stock-IN ledger row per line via atomic
+   * `inventory_apply_stock_in` RPCs (migration 0047), refresh each item's
+   * stock_status (and optionally unit_cost/supplier), mark the purchase received.
+   *
+   * Each RPC row-locks the inventory_items row before reading the current
+   * quantity, so concurrent receives of the same item are serialized — the
+   * second caller waits for the first to commit before reading the updated qty.
    */
   async receive(
     tenant: TenantContext,
@@ -272,9 +256,10 @@ export class PurchasesRepository {
 
     const uniqueItemIds = Array.from(new Set(purchase.lines.map((l) => l.itemId as string)))
 
+    // Validate all items exist and belong to this tenant.
     const { data: itemRows, error: itemErr } = await supabaseAdmin
       .from('inventory_items')
-      .select('id, name, organization_id, minimum_threshold, quantity_on_hand')
+      .select('id, name, organization_id')
       .in('id', uniqueItemIds)
     if (itemErr) throw itemErr
     const itemById = new Map<string, Row>()
@@ -286,71 +271,52 @@ export class PurchasesRepository {
       }
     }
 
-    // Running on-hand per item, seeded from the latest ledger row.
-    const running = new Map<string, number>()
-    for (const iid of uniqueItemIds) {
-      const { data: lastTx } = await supabaseAdmin
-        .from('inventory_transactions')
-        .select('quantity_after')
-        .eq('item_id', iid)
-        .order('performed_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      const cached = (itemById.get(iid)!.quantity_on_hand as number) ?? 0
-      running.set(iid, lastTx ? ((lastTx.quantity_after as number) ?? cached) : cached)
-    }
-
+    // Apply stock-in atomically per line via RPC. Each RPC handles:
+    // - Row-locking the item (FOR UPDATE)
+    // - Reading the current qty from the latest ledger row
+    // - Inserting the new ledger row
+    // - Updating the item's stock_status
     const results: Array<{ itemId: string; quantityAfter: number }> = []
     for (const line of purchase.lines) {
       const iid = line.itemId as string
-      const before = running.get(iid) ?? 0
-      const after = before + line.quantity
-      running.set(iid, after)
-      results.push({ itemId: iid, quantityAfter: after })
-
-      const { error: txErr } = await supabaseAdmin.from('inventory_transactions').insert({
-        organization_id: tenant.organizationId,
-        space_id: tenant.spaceId,
-        item_id: iid,
-        item_name: line.itemName,
-        type: 'in',
-        quantity: line.quantity,
-        quantity_before: before,
-        quantity_after: after,
-        reason: 'Purchase received',
-        note: purchase.invoiceNumber ? `Invoice ${purchase.invoiceNumber}` : null,
-        source: 'purchase',
-        purchase_id: id,
-        performed_by: tenant.userId,
-        performed_by_email: tenant.user.email ?? null,
-        performed_by_name: tenant.user.displayName ?? null,
-        performed_by_role: tenant.role ?? null,
+      const { data: afterQty, error: rpcErr } = await supabaseAdmin.rpc('inventory_apply_stock_in', {
+        p_org:         tenant.organizationId,
+        p_space:       tenant.spaceId ?? null,
+        p_item:        iid,
+        p_qty:         line.quantity,
+        p_item_name:   line.itemName,
+        p_reason:      'Purchase received',
+        p_note:        purchase.invoiceNumber ? `Invoice ${purchase.invoiceNumber}` : null,
+        p_source:      'purchase',
+        p_purchase_id: id,
+        p_pos_tx:      null,
+        p_by:          tenant.userId,
+        p_by_email:    tenant.user.email ?? null,
+        p_by_name:     tenant.user.displayName ?? null,
+        p_by_role:     tenant.role ?? null,
       })
-      if (txErr) throw txErr
+      if (rpcErr) throw rpcErr
+      results.push({ itemId: iid, quantityAfter: Number(afterQty) })
     }
 
-    for (const iid of uniqueItemIds) {
-      const itemData = itemById.get(iid)!
-      const threshold = (itemData.minimum_threshold as number) ?? 0
-      const finalQty = running.get(iid) ?? 0
-      const statusUpdate: Row = {
-        stock_status: finalQty === 0 ? 'out' : finalQty < threshold ? 'low' : 'ok',
-        updated_by: tenant.userId,
-        updated_by_email: tenant.user.email ?? null,
-        updated_by_name: tenant.user.displayName ?? null,
-      }
-      if (purchase.updateItemUnitCost) {
+    // Update unit_cost and supplier if configured (stock_status already set by RPC).
+    if (purchase.updateItemUnitCost) {
+      for (const iid of uniqueItemIds) {
         const matchingLine = purchase.lines.find((l) => l.itemId === iid)
         if (matchingLine) {
-          statusUpdate.unit_cost = matchingLine.unitCost
-          statusUpdate.supplier = purchase.supplierName
+          const { error: upErr } = await supabaseAdmin
+            .from('inventory_items')
+            .update({
+              unit_cost: matchingLine.unitCost,
+              supplier: purchase.supplierName,
+              updated_by: tenant.userId,
+              updated_by_email: tenant.user.email ?? null,
+              updated_by_name: tenant.user.displayName ?? null,
+            })
+            .eq('id', iid)
+          if (upErr) throw upErr
         }
       }
-      const { error: upErr } = await supabaseAdmin
-        .from('inventory_items')
-        .update(statusUpdate)
-        .eq('id', iid)
-      if (upErr) throw upErr
     }
 
     const { error: pErr } = await supabaseAdmin

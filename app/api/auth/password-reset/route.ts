@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     // guessing and replay of leaked tokens. 5 attempts per IP per 15 minutes
     // (matches the login endpoint's posture for credential-handling actions).
     const clientIp = getClientIp(req);
-    const rateLimitIp = checkRateLimit(
+    const rateLimitIp = await checkRateLimit(
       `password-reset:ip:${clientIp}`,
       5,
       15 * 60 * 1000,
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     // SECURITY: Per-token rate limit — even with a valid leaked token, an
     // attacker can only attempt a small number of resets before being blocked.
-    const rateLimitToken = checkRateLimit(
+    const rateLimitToken = await checkRateLimit(
       `password-reset:token:${token}`,
       3,
       60 * 60 * 1000,

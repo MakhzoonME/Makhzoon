@@ -6,11 +6,16 @@ import { useUiStore } from '@/store/ui.store';
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const { isAllowed } = useAdminGuard([
-    'settings.orgInfo',
-    'settings.subscription',
-    'settings.users',
-    'settings.taxRates',
-    'settings.fawtara',
+    'settingsOrgInfo.view',
+    'settingsSpaces.view',
+    'settingsLists.view',
+    'settingsSubscription.view',
+    'settingsUsers.view',
+    'settingsReceipt.view',
+    'settingsInvoice.view',
+    'settingsWarrantyCert.view',
+    'settingsNotifications.view',
+    'settingsCashDrawer.view',
   ]);
 
   const { t } = useT();

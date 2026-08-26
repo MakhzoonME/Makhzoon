@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toPng, toJpeg } from 'html-to-image';
 import { Copy, Check, Mail, Download, Printer, Receipt, FileImage, Loader2 } from 'lucide-react';
 import {
@@ -8,9 +8,15 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ReceiptPreview, type ReceiptConfig, type ReceiptData } from '@/components/settings/receipt/ReceiptPreview';
+import { ReceiptRasterPreview, useReceiptRaster } from '@/components/haraka/ReceiptRasterPreview';
+import { buildReceiptFromMatrix } from '@/lib/modules/haraka/printing/receipt-template';
+import { printRaw } from '@/lib/modules/haraka/printing/webusb-transport';
+import { toPrintText } from '@/lib/receipts/receipt-config';
 import type { ReceiptLang } from '@/lib/receipts/labels';
 import { cn } from '@/lib/utils/cn';
 import { toast } from '@/hooks/ui';
+import { usePrinterStore } from '@/store/printer.store';
+import { printPreviewNode } from '@/lib/modules/haraka/printing/raster-print';
 import type { PosTransaction } from '@/types';
 
 /** WhatsApp brand glyph (lucide ships no brand icons). */
@@ -30,6 +36,26 @@ function formatDate(value: Date | string): string {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+/** Re-encode the receipt bitmap as JPEG, flattened onto white (JPEG has no alpha). */
+function pngToJpeg(pngDataUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      const ctx = c.getContext('2d');
+      if (!ctx) return reject(new Error('canvas unavailable'));
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0);
+      resolve(c.toDataURL('image/jpeg', 0.95));
+    };
+    img.onerror = () => reject(new Error('could not decode receipt bitmap'));
+    img.src = pngDataUrl;
+  });
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -43,8 +69,13 @@ interface Props {
   tagline: string;
   taglineAr: string;
   taxNumber: string;
-  /** Reprint to the paired thermal printer, if available. */
-  onPrint?: (transaction: PosTransaction) => void;
+  /** Print automatically once, right after opening, in whichever language is
+   *  currently selected (defaults to English for bilingual orgs — the toggle
+   *  below still lets the cashier manually reprint in the other language). */
+  autoPrint?: boolean;
+  /** Called right after a print is sent (auto or manual) — e.g. to fire the
+   *  cash drawer once, in sync with the receipt actually printing. */
+  onPrinted?: () => void;
 }
 
 /**
@@ -57,17 +88,40 @@ interface Props {
  */
 export function ReceiptShareDialog({
   open, onOpenChange, transaction, orgSlug, orgName, receiptBase,
-  config, tagline, taglineAr, taxNumber, onPrint,
+  config, tagline, taglineAr, taxNumber, autoPrint, onPrinted,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [capturing, setCapturing] = useState<'png' | 'jpg' | null>(null);
+  const [printing, setPrinting] = useState(false);
   const captureRef = useRef<HTMLDivElement>(null);
+  const autoPrintedFor = useRef<string | null>(null);
+  const { hydrate } = usePrinterStore();
+  useEffect(() => { hydrate(); }, [hydrate]);
+  // Paper size, copies, and cut feed are org-wide (ReceiptConfig), not local
+  // browser state — every register should print the same way.
+  const paperWidth: 58 | 80 = config.template === 'thermal-80' ? 80 : 58;
+  // Extra tear-off only — blade clearance is handled inside cut(). Orgs whose
+  // saved config predates the field send undefined, which must mean "none".
+  const cutFeed = config.cutFeed ?? 0;
+  const copies = config.copies;
   const bothLangs = config.language === 'both';
   const fixedLang: ReceiptLang = config.language === 'ar' ? 'ar' : 'en';
   const [previewLang, setPreviewLang] = useState<ReceiptLang>(fixedLang);
   const lang = bothLangs ? previewLang : fixedLang;
 
   const shareLink = transaction ? `${receiptBase}/r/${orgSlug}/${transaction.id}` : '';
+
+  const isThermal = config.template === 'thermal-58' || config.template === 'thermal-80';
+
+  // Thermal preview = the printer bitmap itself. Rendering it while an A4
+  // template is selected would be wasted work, so gate on the template.
+  const { raster, loading: rasterLoading } = useReceiptRaster({
+    transaction: isThermal ? transaction : null,
+    text: toPrintText(config, { orgName, tagline, taglineAr, taxNumber }),
+    paperWidth,
+    lang,
+    currency: CURRENCY,
+  });
 
   const data: ReceiptData | undefined = useMemo(() => {
     if (!transaction) return undefined;
@@ -90,6 +144,48 @@ export function ReceiptShareDialog({
     };
   }, [transaction]);
 
+  /**
+   * Print exactly what the preview shows. Thermal templates already exist as
+   * the printer bitmap, so that matrix is sent straight through — same pixels,
+   * same language, no second render that could drift. A4 templates are still
+   * DOM, so they get rasterized from the preview node.
+   */
+  async function handlePrint() {
+    if (printing) return;
+    setPrinting(true);
+    try {
+      let ok: boolean;
+      if (isThermal && raster && raster.matrix.length > 0) {
+        ok = await printRaw(buildReceiptFromMatrix(raster.matrix, cutFeed), copies);
+      } else {
+        const node = captureRef.current;
+        if (!node) return;
+        ok = await printPreviewNode(node, { paperWidth, cutFeed, copies });
+      }
+      if (!ok) toast.info('No printer paired — receipt not printed');
+    } catch (err) {
+      console.error('[print receipt]', err);
+      toast.error('Print failed');
+    } finally {
+      setPrinting(false);
+      onPrinted?.();
+    }
+  }
+
+  // Auto-print once per transaction — including bilingual orgs, in whichever
+  // language is currently selected (defaults to English) — but only once what
+  // we are going to send actually exists: the raster for thermal, the rendered
+  // node (and its QR, if any) for A4. The language toggle above still lets the
+  // cashier reprint in the other language manually afterward.
+  const printable = isThermal ? !!raster : !!data;
+  useEffect(() => {
+    if (!open || !autoPrint || !transaction || !printable) return;
+    if (autoPrintedFor.current === transaction.id) return;
+    autoPrintedFor.current = transaction.id;
+    handlePrint();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, autoPrint, transaction, printable]);
+
   function copyLink() {
     navigator.clipboard.writeText(shareLink).then(() => {
       setCopied(true);
@@ -98,14 +194,24 @@ export function ReceiptShareDialog({
     }).catch(() => toast.error('Could not copy link'));
   }
 
-  /** Capture the receipt DOM to an image and download it. */
+  /**
+   * Download the receipt as an image. Thermal receipts already exist as a
+   * bitmap — hand that over directly rather than re-rasterizing the DOM. A4
+   * templates are still HTML, so they go through html-to-image.
+   */
   async function downloadImage(format: 'png' | 'jpg') {
-    const node = captureRef.current;
-    if (!node || !transaction) return;
+    if (!transaction) return;
     setCapturing(format);
     try {
-      const opts = { pixelRatio: 2, cacheBust: true, backgroundColor: '#ffffff' };
-      const dataUrl = format === 'png' ? await toPng(node, opts) : await toJpeg(node, { ...opts, quality: 0.95 });
+      let dataUrl: string;
+      if (isThermal && raster) {
+        dataUrl = format === 'png' ? raster.dataUrl : await pngToJpeg(raster.dataUrl);
+      } else {
+        const node = captureRef.current;
+        if (!node) return;
+        const opts = { pixelRatio: 2, cacheBust: true, backgroundColor: '#ffffff' };
+        dataUrl = format === 'png' ? await toPng(node, opts) : await toJpeg(node, { ...opts, quality: 0.95 });
+      }
       const a = document.createElement('a');
       a.href = dataUrl;
       a.download = `receipt-${transaction.receiptNumber}.${format}`;
@@ -116,8 +222,6 @@ export function ReceiptShareDialog({
       setCapturing(null);
     }
   }
-
-  const isThermal = config.template === 'thermal-58' || config.template === 'thermal-80';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -145,34 +249,36 @@ export function ReceiptShareDialog({
             </div>
           )}
 
-          {/* Receipt preview */}
+          {/* Receipt preview. Thermal shows the printer bitmap as an image —
+              this container is exactly what the Print button sends. */}
           <div
             className="rounded-xl overflow-hidden border border-border p-4 max-h-[44vh] overflow-y-auto"
             style={{ background: 'repeating-linear-gradient(45deg,#f4f4f4,#f4f4f4 6px,#fafafa 6px,#fafafa 12px)' }}
           >
-            {/* Outer wrapper only scales for display; the captured node renders
-                at native resolution so exported images stay crisp. */}
-            <div
-              className="flex justify-center"
-              style={!isThermal ? { width: 280, overflow: 'hidden', margin: '0 auto' } : undefined}
-            >
-              <div style={!isThermal ? { transform: 'scale(0.875)', transformOrigin: 'top left', width: 320 } : undefined}>
-                <div ref={captureRef} style={{ display: 'inline-block', background: '#fff' }}>
-                  {data && (
-                    <ReceiptPreview
-                      orgName={orgName}
-                      orgNameAr={config.orgNameAr}
-                      taxNumber={taxNumber}
-                      tagline={tagline}
-                      taglineAr={taglineAr}
-                      lang={lang}
-                      config={config}
-                      data={data}
-                    />
-                  )}
+            {isThermal ? (
+              <ReceiptRasterPreview raster={raster} loading={rasterLoading} />
+            ) : (
+              /* Outer wrapper only scales for display; the captured node renders
+                 at native resolution so exported images stay crisp. */
+              <div className="flex justify-center" style={{ width: 280, overflow: 'hidden', margin: '0 auto' }}>
+                <div style={{ transform: 'scale(0.875)', transformOrigin: 'top left', width: 320 }}>
+                  <div ref={captureRef} style={{ display: 'inline-block', background: '#fff' }}>
+                    {data && (
+                      <ReceiptPreview
+                        orgName={orgName}
+                        orgNameAr={config.orgNameAr}
+                        taxNumber={taxNumber}
+                        tagline={tagline}
+                        taglineAr={taglineAr}
+                        lang={lang}
+                        config={config}
+                        data={data}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Share link */}
@@ -204,12 +310,12 @@ export function ReceiptShareDialog({
                 <Download size={13} />PDF
               </Button>
               <Button variant="outline" size="sm" className="gap-1.5 text-xs"
-                disabled={capturing !== null}
+                disabled={capturing !== null || (isThermal && !raster)}
                 onClick={() => downloadImage('png')}>
                 {capturing === 'png' ? <Loader2 size={13} className="animate-spin" /> : <FileImage size={13} />}PNG
               </Button>
               <Button variant="outline" size="sm" className="gap-1.5 text-xs"
-                disabled={capturing !== null}
+                disabled={capturing !== null || (isThermal && !raster)}
                 onClick={() => downloadImage('jpg')}>
                 {capturing === 'jpg' ? <Loader2 size={13} className="animate-spin" /> : <FileImage size={13} />}JPG
               </Button>
@@ -218,9 +324,11 @@ export function ReceiptShareDialog({
         </DialogBody>
 
         <DialogFooter>
-          {onPrint && transaction && (
-            <Button variant="outline" onClick={() => onPrint(transaction)} className="gap-2">
-              <Printer size={14} />Print
+          {transaction && (
+            <Button variant="outline" onClick={handlePrint}
+              disabled={printing || (isThermal && rasterLoading)} className="gap-2">
+              {printing ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
+              {printing ? 'Printing…' : 'Print'}
             </Button>
           )}
           <Button onClick={() => onOpenChange(false)}>Done</Button>

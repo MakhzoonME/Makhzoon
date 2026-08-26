@@ -18,7 +18,6 @@ export const inventoryItemSchema = z.object({
   unit: z.string().min(1, 'Unit is required'),
   quantityOnHand: z.coerce.number().min(0, 'Quantity cannot be negative'),
   minimumThreshold: z.coerce.number().min(0, 'Threshold cannot be negative'),
-  reorderQuantity: z.coerce.number().min(0).optional().or(z.literal('')),
   location: z.string().optional(),
   supplier: z.string().optional(),
   unitCost: z.coerce.number().min(0).optional().or(z.literal('')),
@@ -31,7 +30,7 @@ export const inventoryItemSchema = z.object({
     .or(z.literal('')),
   posEnabled: z.coerce.boolean().optional(),
   posPrice: z.coerce.number().min(0).optional().or(z.literal('')),
-  taxRateId: z.string().optional().or(z.literal('')),
+  expiryDate: z.string().optional().or(z.literal('')),
   documents: documentsSchema,
 });
 
@@ -45,6 +44,9 @@ export const inventoryTransactionSchema = z.object({
 export const inventoryAuditSchema = z.object({
   title: z.string().min(2).max(100),
   notes: z.string().optional(),
+  scope: z.enum(['all', 'category', 'location']).optional(),
+  category: z.string().optional(),
+  location: z.string().optional(),
 });
 
 export type InventoryItemFormData = z.infer<typeof inventoryItemSchema>;

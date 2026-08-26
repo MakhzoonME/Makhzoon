@@ -21,8 +21,11 @@ Warranty
   startDate (required), endDate (required)
   reminder (bool — if true, sends expiry alerts)
   notes?
+  documents? (DocumentRef[] — warranty paper attachments, private `warranty-documents` bucket)
   createdAt/By, updatedAt/By
 ```
+
+Note: `spaceId` and `documents` are not in the committed migration for `public.warranties` (`supabase/migrations/0004_modules.sql`) but are present in production (per `db-backups/*/warranties_rows.csv`) and are read/written by `lib/db/warranties.ts` — schema drift between the migrations directory and the live DB, not a doc error.
 
 A warranty can be attached to either an asset or an inventory item, not both.
 
@@ -44,7 +47,7 @@ A warranty can be attached to either an asset or an inventory item, not both.
 **Route**: `/{locale}/{orgSlug}/{space}/warranties`
 
 **Layout**:
-- `PageHeader` with "Warranties" title + "Add Warranty" button (gated by `warranties.create`).
+- `PageHeader` with "Warranties" title + "Add Warranty" button (gated by `usool.warrantiesCreate`).
 - `FilterBar`: search by vendor name or asset name, status filter (active / expiring soon / expired).
 - `DataTable` with columns:
   - Asset / Item Name (clickable link to asset or inventory item)
@@ -95,9 +98,13 @@ Logic:
 
 ## Permissions
 
+Warranties are not a standalone permission module — they are operations nested inside the **Usool (Assets)** module in `types/user-permissions.types.ts`, and are enforced with those keys (e.g. `requirePermission(tenant.user, 'usool', 'warrantiesView')` in `app/api/warranties/route.ts`):
+
 | Key | Admin | Staff | Description |
 |-----|-------|-------|-------------|
-| `warranties.view` | ✅ | ✅ | View warranties list |
-| `warranties.create` | ✅ | ❌ | Add a new warranty |
-| `warranties.update` | ✅ | ❌ | Edit an existing warranty |
-| `warranties.delete` | ✅ | ❌ | Delete a warranty |
+| `usool.warrantiesView` | ✅ | ✅ | View warranties list |
+| `usool.warrantiesCreate` | ✅ | ❌ | Add a new warranty |
+| `usool.warrantiesUpdate` | ✅ | ❌ | Edit an existing warranty |
+| `usool.warrantiesDelete` | ✅ | ❌ | Delete a warranty |
+
+Each also carries `featureKey: 'warranties'` for the module toggle, so gating still reads as "warranties" in the org's feature list even though the permission keys live under `usool`.

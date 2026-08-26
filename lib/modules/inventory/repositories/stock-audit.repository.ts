@@ -1,3 +1,4 @@
+import 'server-only';
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
 import type {
@@ -47,19 +48,6 @@ function toItem(r: Row): StockAuditItem {
     checkedBy: (r.checked_by as string) ?? undefined,
     checkedByName: (r.checked_by_name as string) ?? undefined,
   }
-}
-
-/** Latest ledger qty for an item, falling back to the cached on-hand. */
-async function computeQuantity(itemId: string, fallback: number): Promise<number> {
-  const { data } = await supabaseAdmin
-    .from('inventory_transactions')
-    .select('quantity_after')
-    .eq('item_id', itemId)
-    .order('performed_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  if (!data) return fallback
-  return (data.quantity_after as number) ?? fallback
 }
 
 export interface CreateStockAuditInput {
@@ -181,9 +169,11 @@ export class StockAuditRepository {
   }
 
   /**
-   * Record a count for a single audit row. Updates audit counters
-   * (counted, pending, varianceTotal). Was a Firestore txn — RMW here is
-   * acceptable for our scope; harden via RPC later.
+   * Record a count for a single audit row. Uses the atomic
+   * `submit_stock_audit_item` RPC (migration 0047) which advisory-locks
+   * the audit, then atomically updates both the audit-item row and the
+   * parent audit's counters (counted_count, pending_count, variance_total)
+   * in one DB transaction — preventing counter drift from concurrent submits.
    */
   async submitItem(
     tenant: TenantContext,
@@ -192,57 +182,23 @@ export class StockAuditRepository {
     countedQuantity: number,
     note: string | undefined,
   ): Promise<void> {
-    const [{ data: item }, { data: audit }] = await Promise.all([
-      supabaseAdmin
-        .from('stock_audit_items')
-        .select('status, expected_quantity, counted_quantity')
-        .eq('id', auditItemId)
-        .maybeSingle(),
-      supabaseAdmin
-        .from('stock_audits')
-        .select('counted_count, pending_count, variance_total, status, organization_id')
-        .eq('id', auditId)
-        .maybeSingle(),
-    ])
-    if (!item || !audit) throw new Error('Not found')
-    if (audit.organization_id !== tenant.organizationId) throw new Error('Not found')
-    if (audit.status === 'completed') throw new Error('Audit already completed')
-
-    const expected = Number(item.expected_quantity ?? 0)
-    const prevCounted = item.counted_quantity == null ? null : Number(item.counted_quantity)
-    const wasCounted = item.status === 'counted'
-
-    const newCountedCount = Number(audit.counted_count ?? 0) + (wasCounted ? 0 : 1)
-    const newPendingCount = Number(audit.pending_count ?? 0) + (wasCounted ? 0 : -1)
-
-    const prevAbs = wasCounted && prevCounted != null ? Math.abs(prevCounted - expected) : 0
-    const nextAbs = Math.abs(countedQuantity - expected)
-    const newVariance = Number(audit.variance_total ?? 0) - prevAbs + nextAbs
-
-    const now = new Date().toISOString()
-    const { error: itemErr } = await supabaseAdmin
-      .from('stock_audit_items')
-      .update({
-        counted_quantity: countedQuantity,
-        note: note ?? null,
-        status: 'counted',
-        checked_at: now,
-        checked_by: tenant.userId,
-        checked_by_name: tenant.user.displayName ?? tenant.user.email ?? null,
-      })
-      .eq('id', auditItemId)
-    if (itemErr) throw itemErr
-
-    const { error: auditErr } = await supabaseAdmin
+    // Validate the audit belongs to this tenant before calling the RPC.
+    const { data: audit } = await supabaseAdmin
       .from('stock_audits')
-      .update({
-        counted_count: newCountedCount,
-        pending_count: newPendingCount,
-        variance_total: newVariance,
-        updated_by: tenant.userId,
-      })
+      .select('organization_id')
       .eq('id', auditId)
-    if (auditErr) throw auditErr
+      .maybeSingle()
+    if (!audit || audit.organization_id !== tenant.organizationId) throw new Error('Not found')
+
+    const { error } = await supabaseAdmin.rpc('submit_stock_audit_item', {
+      p_audit_id:      auditId,
+      p_audit_item_id: auditItemId,
+      p_counted_qty:   countedQuantity,
+      p_note:          note ?? null,
+      p_user_id:       tenant.userId,
+      p_user_name:     tenant.user.displayName ?? tenant.user.email ?? null,
+    })
+    if (error) throw error
   }
 
   /**
@@ -282,47 +238,29 @@ export class StockAuditRepository {
 
       const { data: itemRow } = await supabaseAdmin
         .from('inventory_items')
-        .select('quantity_on_hand, minimum_threshold, name')
+        .select('id, name')
         .eq('id', it.inventoryItemId)
         .maybeSingle()
       if (!itemRow) continue
-      const current = await computeQuantity(
-        it.inventoryItemId,
-        (itemRow.quantity_on_hand as number) ?? 0,
-      )
-      if (current === target) continue
 
-      const { error: txErr } = await supabaseAdmin
-        .from('inventory_transactions')
-        .insert({
-          organization_id: tenant.organizationId,
-          space_id: tenant.spaceId,
-          item_id: it.inventoryItemId,
-          item_name: itemRow.name as string,
-          type: 'adjustment',
-          quantity: target,
-          quantity_before: current,
-          quantity_after: target,
-          reason: `Stock audit reconcile (${audit.title})`,
-          note: it.note ?? null,
-          performed_by: tenant.userId,
-          performed_by_email: tenant.user.email ?? null,
-          performed_by_name: tenant.user.displayName ?? null,
-          performed_by_role: tenant.role ?? null,
-        })
-      if (txErr) throw txErr
-
-      const threshold = (itemRow.minimum_threshold as number) ?? 0
-      const status = target === 0 ? 'out' : target < threshold ? 'low' : 'ok'
-      await supabaseAdmin
-        .from('inventory_items')
-        .update({
-          stock_status: status,
-          updated_by: tenant.userId,
-          updated_by_email: tenant.user.email ?? null,
-          updated_by_name: tenant.user.displayName ?? null,
-        })
-        .eq('id', it.inventoryItemId)
+      // Atomic stock adjustment via the `inventory_apply_stock_adjust` RPC
+      // (migration 0047). Row-locks the item before reading current qty and
+      // inserting the ledger row — prevents concurrent adjustments from
+      // producing incorrect quantity_before/quantity_after.
+      const { error: rpcErr } = await supabaseAdmin.rpc('inventory_apply_stock_adjust', {
+        p_org:       tenant.organizationId,
+        p_space:     tenant.spaceId ?? null,
+        p_item:      it.inventoryItemId,
+        p_target:    target,
+        p_item_name: itemRow.name as string,
+        p_reason:    `Stock audit reconcile (${audit.title})`,
+        p_note:      it.note ?? null,
+        p_by:        tenant.userId,
+        p_by_email:  tenant.user.email ?? null,
+        p_by_name:   tenant.user.displayName ?? null,
+        p_by_role:   tenant.role ?? null,
+      })
+      if (rpcErr) throw rpcErr
 
       applied += 1
     }

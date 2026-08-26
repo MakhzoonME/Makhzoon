@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,15 +8,18 @@ import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { useTransferStore } from '@/store/transfer.store';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, buildNavUrl } from '@/lib/nav';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, NavSectionHeader, buildNavUrl } from '@/lib/nav';
 import { SpaceSwitcher } from '@/components/layout/SpaceSwitcher';
-import { useOrgInfo } from '@/hooks/org';
+import { useOrgInfo, useSubscriptionFeatures, useActiveHarakaModules, useActiveAddOns } from '@/hooks/org';
 import { useSpace } from '@/hooks/ui';
 import { hasModuleAccess, hasPermByKey } from '@/lib/permissions';
 import { UserPermissions } from '@/types';
+import type { AddOnKey, HarakaModule } from '@/types/subscription.types';
 import { useT } from '@/hooks/ui';
 import { createClient } from '@/lib/supabase/client';
 import type { MessageKey } from '@/locales/messages';
+import { analytics } from '@/lib/analytics';
 
 /** Display email/username without the synthetic @makhzoon.local suffix */
 function displayIdentity(email?: string | null): string {
@@ -60,24 +63,6 @@ function WarrantySVG() {
     </svg>
   );
 }
-function RequestsSVG() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-      <rect x="2" y="2" width="14" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.3" fill="none" />
-      <path d="M5 6h8M5 9h6M5 12h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  );
-}
-function ReportsSVG() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-      <rect x="2" y="13" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.6" />
-      <rect x="7.5" y="9" width="3" height="7" rx="0.5" fill="currentColor" opacity="0.75" />
-      <rect x="13" y="5" width="3" height="11" rx="0.5" fill="currentColor" />
-      <path d="M3.5 11L7.5 7l4 3L16 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 function SupportSVG() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -115,6 +100,15 @@ function SettingsSVG() {
     </svg>
   );
 }
+function BannaSVG() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+      <path d="M2.5 3h13v12H2.5V3z" stroke="currentColor" strokeWidth="1.3" fill="none" rx="1.2" />
+      <path d="M5.5 7h7M5.5 10h5M5.5 13h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="14" cy="5" r="1.5" fill="currentColor" opacity="0.6" />
+    </svg>
+  );
+}
 function ChevronLeftSVG() {
   return (
     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
@@ -142,18 +136,18 @@ const NAV_ICONS: Record<string, React.FC> = {
   '/usool':        AssetsSVG,
   '/raseed':       InventorySVG,
   '/warranties':   WarrantySVG,
-  '/requests':     RequestsSVG,
-  '/reports':      ReportsSVG,
   '/support':      SupportSVG,
   '/audit-logs':   AuditSVG,
   '/haraka':       PosSVG,
+  '/banna':        BannaSVG,
   '/settings':     SettingsSVG,
 };
 
 const EASE_OUT   = [0.16, 1, 0.3, 1] as const;
 const EASE_SLIDE = [0.4, 0, 0.2, 1] as const;
-// Icon is 18px. Collapsed sidebar is 68px. Center = (68-18)/2 = 25px inline-start padding.
-const ICON_INDENT = 'ps-[25px]';
+// Icon is 18px. Collapsed sidebar is 68px. Nav has p-2.5 (10px) padding.
+// Center from sidebar edge = (68-18)/2 = 25px → padding from link start = 25-10 = 15px.
+const ICON_INDENT = 'ps-[15px]';
 export const SIDEBAR_WIDTH_EXPANDED  = 240;
 export const SIDEBAR_WIDTH_COLLAPSED = 68;
 
@@ -172,7 +166,7 @@ export function AppSidebar() {
   useRouter();
   const locale    = params?.locale ?? 'en';
   const orgSlug   = (params?.orgSlug as string) ?? '';
-  const { user }  = useAuthStore();
+  const { user, loading: authLoading } = useAuthStore();
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
   const { data: orgInfo } = useOrgInfo();
   const space = useSpace();
@@ -180,8 +174,11 @@ export function AppSidebar() {
   const isRtl = dir === 'rtl';
 
   const [userToggles, setUserToggles] = useState<Record<string, boolean>>({});
+  const [avatarError, setAvatarError] = useState(false);
 
   async function handleSignOut() {
+    analytics.track('user_signed_out');
+    analytics.reset();
     try {
       await fetch('/api/auth/session', { method: 'DELETE' });
       const supabase = await createClient();
@@ -193,37 +190,95 @@ export function AppSidebar() {
     window.location.href = `/${locale}/login`;
   }
 
-  const features    = user?.features ?? {};
+  // Fresh, auto-refetching org subscription flags — not the auth store's
+  // user.features snapshot, which is only refreshed on rare auth events and
+  // can keep showing a module (e.g. Banna) long after it's been disabled for
+  // the org. Matches the pattern already used by MobileDrawer/BottomNav.
+  const features    = useSubscriptionFeatures();
+  const activeHarakaModules = useActiveHarakaModules();
+  const activeAddOns = useActiveAddOns();
   const canSeeAdmin = user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'org_owner';
+  // Admins with stored custom permissions may have module restrictions.
+  const adminHasCustomPerms = canSeeAdmin && !!user?.permissions;
 
   const visibleEntries = ORG_NAV_ENTRIES.filter((entry): entry is NavEntry => {
-    if ('type' in entry && entry.type === 'separator') return true;
+    if ('type' in entry && entry.type === 'separator') return false; // handled in finalEntries
     if ('type' in entry && entry.type === 'group') {
       if (entry.featureKey && !features[entry.featureKey]) return false;
-      if (!entry.adminOnly || canSeeAdmin) return true;
-      // Staff: show group if any sub-item permission is granted
-      return user?.role === 'staff' && !!user && entry.items.some(
-        (sub) => sub.permissionKey && hasPermByKey(user, sub.permissionKey)
-      );
+      if (entry.adminOnly && !canSeeAdmin) {
+        // adminOnly group — staff can see it only if they have a specific sub-perm
+        return user?.role === 'staff' && !!user && entry.items.some(
+          (sub) => !('type' in sub) && sub.permissionKey && hasPermByKey(user, sub.permissionKey)
+        );
+      }
+      // Check permission access for staff, and for admins with custom restrictions.
+      // A module GROUP is reachable if the user holds any granted operation
+      // anywhere in that module — not just its 'view' key, which is only one
+      // specific sub-permission (e.g. 'haraka.view' gates just the Haraka
+      // dashboard). Prefer the module parsed from permissionKey — featureKey
+      // is a subscription-feature name and no longer always matches the
+      // permission module name (e.g. featureKey 'assets' -> module 'usool').
+      if (!user) {
+        // Auth is still resolving — don't flash permission-gated items before
+        // we know whether this account is a restricted staff/custom-admin user.
+        return !authLoading;
+      }
+      if (user.role === 'staff' || adminHasCustomPerms) {
+        const u = { ...user, organizationId: user.organizationId ?? null };
+        if (entry.permissionKey) {
+          const [permModule] = entry.permissionKey.split('.');
+          return hasModuleAccess(u, permModule as keyof UserPermissions);
+        }
+        if (entry.featureKey) return hasModuleAccess(u, entry.featureKey as keyof UserPermissions);
+      }
+      return true;
     }
-    const item = entry as { adminOnly?: boolean; featureKey?: string };
+    const item = entry as { adminOnly?: boolean; featureKey?: string; harakaModule?: HarakaModule; harakaAddOn?: AddOnKey; permissionKey?: string };
     if (item.adminOnly && !canSeeAdmin) return false;
     if (item.featureKey && !features[item.featureKey]) return false;
-    if (user?.role === 'staff' && item.featureKey) {
-      const moduleKey = item.featureKey as keyof UserPermissions;
-      if (!hasModuleAccess({ ...user, organizationId: user.organizationId ?? null }, moduleKey)) return false;
+    if (item.harakaModule && !activeHarakaModules.includes(item.harakaModule)) return false;
+    if (item.harakaAddOn && !activeAddOns[item.harakaAddOn]) return false;
+    if (!user && authLoading && (item.permissionKey || item.featureKey)) {
+      // Auth is still resolving — don't flash permission-gated items before
+      // we know whether this account is a restricted staff/custom-admin user.
+      return false;
+    }
+    if (user && (user.role === 'staff' || adminHasCustomPerms)) {
+      const u = { ...user, organizationId: user.organizationId ?? null };
+      if (item.permissionKey) {
+        if (!hasPermByKey(u, item.permissionKey)) return false;
+      } else if (item.featureKey) {
+        if (!hasModuleAccess(u, item.featureKey as keyof UserPermissions)) return false;
+      }
     }
     return true;
   });
 
+  // Re-insert separators only when at least one visible entry follows them
+  const visibleSet = new Set(visibleEntries);
+  const finalEntries: NavEntry[] = [];
+  for (let i = 0; i < ORG_NAV_ENTRIES.length; i++) {
+    const entry = ORG_NAV_ENTRIES[i];
+    if ('type' in entry && entry.type === 'separator') {
+      const hasFollowing = ORG_NAV_ENTRIES.slice(i + 1).some((e) => visibleSet.has(e as NavEntry));
+      if (hasFollowing && finalEntries.length > 0) finalEntries.push(entry);
+    } else if (visibleSet.has(entry as NavEntry)) {
+      finalEntries.push(entry as NavEntry);
+    }
+  }
+
   // Auto-open groups containing the active route, merged with user toggles
   const autoOpenGroups: Record<string, boolean> = {};
-  for (const entry of visibleEntries) {
+  for (const entry of finalEntries) {
     if (!('type' in entry) || entry.type !== 'group') continue;
-    const hasActive = entry.items.some((sub) => {
-      const full = buildNavUrl({ locale, orgSlug, space, entry: sub });
-      return pathname === full || pathname.startsWith(full + '/');
-    });
+    const groupUrl = buildNavUrl({ locale, orgSlug, space, entry });
+    const hasActive = pathname === groupUrl ||
+      entry.items
+        .filter((sub): sub is NavItemConfig => !('type' in sub))
+        .some((sub) => {
+          const full = buildNavUrl({ locale, orgSlug, space, entry: sub });
+          return pathname === full || pathname.startsWith(full + '/');
+        });
     if (hasActive) autoOpenGroups[entry.href] = true;
   }
   // Auto-open always wins over a manual close (user toggled shut) when the current route is inside the group
@@ -233,14 +288,35 @@ export function AppSidebar() {
   }
   const openGroups: Record<string, boolean> = { ...autoOpenGroups, ...effectiveToggles };
 
-  function toggleGroup(href: string) {
-    if (sidebarCollapsed) {
-      toggleSidebar();
-      setUserToggles((prev) => ({ ...prev, [href]: true }));
-    } else {
-      setUserToggles((prev) => ({ ...prev, [href]: !openGroups[href] }));
+  // Stable list of all group hrefs for accordion logic
+  const allGroupHrefs = useMemo(
+    () => (ORG_NAV_ENTRIES as NavEntry[])
+      .filter((e): e is NavGroupConfig => 'type' in e && e.type === 'group')
+      .map((e) => e.href),
+    [],
+  );
+
+  // The href of the group that contains the current route (if any).
+  // Plain computation — cheap loop; the React Compiler memoizes it and
+  // couldn't preserve the previous manual useMemo.
+  const activeGroupHref = (() => {
+    for (const entry of finalEntries) {
+      if (!('type' in entry) || entry.type !== 'group') continue;
+      const groupUrl = buildNavUrl({ locale, orgSlug, space, entry });
+      if (pathname === groupUrl || pathname.startsWith(groupUrl + '/')) return entry.href;
     }
-  }
+    return null;
+  })();
+
+  // Accordion: when navigation moves into a group, collapse all others
+  useEffect(() => {
+    if (!activeGroupHref) return;
+    setUserToggles((prev) => {
+      const hasOthersOpen = allGroupHrefs.some((h) => h !== activeGroupHref && prev[h]);
+      if (!hasOthersOpen) return prev;
+      return Object.fromEntries(allGroupHrefs.map((h) => [h, h === activeGroupHref]));
+    });
+  }, [activeGroupHref, allGroupHrefs]);
 
   return (
     <TooltipProvider delayDuration={120} skipDelayDuration={200}>
@@ -279,11 +355,25 @@ export function AppSidebar() {
         </div>
 
         <nav className="flex-1 p-2.5 space-y-0.5 overflow-y-auto overflow-x-hidden">
-          {visibleEntries.map((entry, idx) => {
+          {authLoading && !user ? (
+            /* Skeleton rows while permissions resolve — avoids flashing
+               entries the user shouldn't see, and avoids an empty nav. */
+            Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={`nav-skeleton-${i}`}
+                className={cn('flex items-center h-9 rounded-lg gap-2.5', ICON_INDENT)}
+              >
+                <Skeleton className="h-[18px] w-[18px] flex-shrink-0 rounded" />
+                {!sidebarCollapsed && (
+                  <Skeleton className="h-3 flex-1 max-w-[110px] rounded" />
+                )}
+              </div>
+            ))
+          ) : finalEntries.map((entry, idx) => {
             /* ── Separator ──────────────────────────────────────── */
             if ('type' in entry && entry.type === 'separator') {
               return (
-                <div key={`sep-${idx}`} className="my-1.5 mx-2 border-t border-border" />
+                <div key={`sep-${idx}`} className={cn('my-1.5 border-t border-border', sidebarCollapsed ? 'mx-[15px]' : 'mx-2')} />
               );
             }
 
@@ -293,25 +383,82 @@ export function AppSidebar() {
               const Icon = NAV_ICONS[group.href] ?? SettingsSVG;
               const isOpen = openGroups[group.href] ?? false;
               const label  = t(group.labelKey as MessageKey, group.label);
-              const visibleSubItems = group.items.filter((sub) => {
-                if (sub.featureKey && !features[sub.featureKey]) return false;
-                if (canSeeAdmin) return true;
-                if (!sub.permissionKey) return true;
-                return !!user && hasPermByKey(user, sub.permissionKey);
-              });
-              const hasActiveChild = visibleSubItems.some((sub) => {
+              const groupFullHref = buildNavUrl({ locale, orgSlug, space, entry: group });
+              const isOnGroupRoot = pathname === groupFullHref;
+
+              // Determine which regular sub-items are visible
+              const visibleRegularItems = (group.items as (NavItemConfig | NavSectionHeader)[])
+                .filter((sub): sub is NavItemConfig => !('type' in sub))
+                .filter((sub) => {
+                  if (sub.featureKey && !features[sub.featureKey]) return false;
+                  if (sub.harakaModule && !activeHarakaModules.includes(sub.harakaModule)) return false;
+                  if (sub.harakaAddOn && !activeAddOns[sub.harakaAddOn]) return false;
+                  if (canSeeAdmin || !sub.permissionKey) return true;
+                  return !!user && hasPermByKey(user, sub.permissionKey);
+                });
+              const visibleRegularSet = new Set(visibleRegularItems);
+
+              // Build the full sub-item list, keeping section headers only when they have visible items below them
+              const visibleSubItems: (NavItemConfig | NavSectionHeader)[] = [];
+              for (let si = 0; si < group.items.length; si++) {
+                const sub = group.items[si];
+                if ('type' in sub && (sub as NavSectionHeader).type === 'section-header') {
+                  let hasVisible = false;
+                  for (let sj = si + 1; sj < group.items.length; sj++) {
+                    const next = group.items[sj];
+                    if ('type' in next) break;
+                    if (visibleRegularSet.has(next as NavItemConfig)) { hasVisible = true; break; }
+                  }
+                  if (hasVisible) visibleSubItems.push(sub as NavSectionHeader);
+                } else if (visibleRegularSet.has(sub as NavItemConfig)) {
+                  visibleSubItems.push(sub as NavItemConfig);
+                }
+              }
+
+              const hasActiveChild = isOnGroupRoot || visibleRegularItems.some((sub) => {
                 const full = buildNavUrl({ locale, orgSlug, space, entry: sub });
                 return pathname === full || pathname.startsWith(full + '/');
               });
 
-              const groupBtn = (
-                <button
-                  type="button"
-                  onClick={() => toggleGroup(group.href)}
-                  aria-label={label}
+              // Collapsed state: icon is a link (navigates + expands sidebar)
+              if (sidebarCollapsed) {
+                return (
+                  <Tooltip key={group.href}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={groupFullHref}
+                        aria-label={label}
+                        onClick={() => { toggleSidebar(); setUserToggles((prev) => ({ ...prev, [group.href]: true })); }}
+                        className={cn(
+                          'group relative flex items-center rounded-lg text-[14px] transition-colors duration-150 h-9',
+                          ICON_INDENT,
+                          hasActiveChild
+                            ? 'font-semibold text-primary-700'
+                            : 'text-gray-600 hover:bg-surface-page hover:text-gray-900',
+                        )}
+                      >
+                        {hasActiveChild && (
+                          <motion.span
+                            layoutId="sidebar-active-group-pill"
+                            className="absolute inset-0 rounded-lg bg-primary-50"
+                            transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                          />
+                        )}
+                        <span className="relative z-10 flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
+                          <Icon />
+                        </span>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side={isRtl ? 'left' : 'right'}>{label}</TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              // Expanded state: link for icon+label navigation, separate chevron button for toggle
+              const groupRow = (
+                <div
                   className={cn(
-                    'group w-full relative flex items-center rounded-lg text-[14px] transition-colors duration-150 h-9',
-                    ICON_INDENT,
+                    'relative flex items-center rounded-lg text-[14px] transition-colors duration-150 h-9',
                     hasActiveChild
                       ? 'font-semibold text-primary-700'
                       : 'text-gray-600 hover:bg-surface-page hover:text-gray-900',
@@ -329,30 +476,39 @@ export function AppSidebar() {
                       />
                     </>
                   )}
-                  <span className="relative z-10 flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
-                    <Icon />
-                  </span>
-                  <motion.span
-                    animate={{ width: sidebarCollapsed ? 0 : 'auto', opacity: sidebarCollapsed ? 0 : 1 }}
-                    transition={sidebarCollapsed
-                      ? { width: { duration: 0.18, ease: EASE_SLIDE }, opacity: { duration: 0.08 } }
-                      : { width: { duration: 0.22, ease: EASE_SLIDE }, opacity: { duration: 0.14, delay: 0.16 } }
-                    }
-                    className="relative z-10 flex flex-1 items-center justify-between whitespace-nowrap overflow-hidden ms-2.5 pe-3"
-                    style={{ minWidth: 0 }}
+                  <Link
+                    href={groupFullHref}
+                    aria-label={label}
+                    className={cn('group relative z-10 flex flex-1 items-center h-full', ICON_INDENT)}
                   >
-                    {label}
-                    <span className={cn(
-                      'transition-transform duration-200 opacity-60 flex-shrink-0',
-                      isOpen && 'rotate-180',
-                    )}>
+                    <span className="flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
+                      <Icon />
+                    </span>
+                    <span className="whitespace-nowrap overflow-hidden ms-2.5" style={{ minWidth: 0 }}>
+                      {label}
+                    </span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const willOpen = !openGroups[group.href];
+                      setUserToggles(
+                        willOpen
+                          ? Object.fromEntries(allGroupHrefs.map((h) => [h, h === group.href]))
+                          : (prev) => ({ ...prev, [group.href]: false }),
+                      );
+                    }}
+                    aria-label={isOpen ? 'Collapse section' : 'Expand section'}
+                    className="relative z-10 pe-3 flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+                  >
+                    <span className={cn('transition-transform duration-200 block', isOpen && 'rotate-180')}>
                       <ChevronDownSVG />
                     </span>
-                  </motion.span>
-                </button>
+                  </button>
+                </div>
               );
 
-              const subList = !sidebarCollapsed && isOpen ? (
+              const subList = isOpen ? (
                 <motion.div
                   key={`${group.href}-items`}
                   initial={{ height: 0, opacity: 0 }}
@@ -361,23 +517,32 @@ export function AppSidebar() {
                   transition={{ duration: 0.2, ease: EASE_SLIDE }}
                   style={{ overflow: 'hidden' }}
                 >
-                  <div className={cn('pt-0.5 space-y-0.5', isRtl ? 'pe-6' : 'ps-6')}>
-                    {visibleSubItems.map((sub) => {
-                      const fullHref  = buildNavUrl({ locale, orgSlug, space, entry: sub });
-                      const subActive = (() => {
-                        if (pathname === fullHref) return true;
-                        if (!pathname.startsWith(fullHref + '/')) return false;
-                        if (group.href && sub.href === group.href) {
-                          const rest = pathname.slice(fullHref.length + 1);
-                          const nextSegment = rest.split('/')[0];
-                          if (nextSegment && visibleSubItems.some(s => s.href === `${group.href}/${nextSegment}`)) return false;
-                        }
-                        return true;
-                      })();
-                      const subLabel  = t(sub.labelKey as MessageKey, sub.label);
+                  <div className={cn('pt-0.5 pb-0.5', isRtl ? 'pe-6' : 'ps-6')}>
+                    {visibleSubItems.map((sub, subIdx) => {
+                      // Section header divider
+                      if ('type' in sub && (sub as NavSectionHeader).type === 'section-header') {
+                        const sh = sub as NavSectionHeader;
+                        return (
+                          <div
+                            key={`sh-${subIdx}`}
+                            className={cn(
+                              'px-2.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400',
+                              subIdx === 0 ? 'pt-1 pb-0.5' : 'pt-3 pb-0.5 border-t border-border mt-1',
+                            )}
+                          >
+                            {t(sh.labelKey as MessageKey, sh.label)}
+                          </div>
+                        );
+                      }
+
+                      // Regular sub-item
+                      const navSub = sub as NavItemConfig;
+                      const fullHref = buildNavUrl({ locale, orgSlug, space, entry: navSub });
+                      const subActive = pathname === fullHref || pathname.startsWith(fullHref + '/');
+                      const subLabel  = t(navSub.labelKey as MessageKey, navSub.label);
                       return (
                         <Link
-                          key={sub.href}
+                          key={navSub.href}
                           href={fullHref}
                           aria-label={subLabel}
                           className={cn(
@@ -402,18 +567,9 @@ export function AppSidebar() {
                 </motion.div>
               ) : null;
 
-              if (sidebarCollapsed) {
-                return (
-                  <Tooltip key={group.href}>
-                    <TooltipTrigger asChild>{groupBtn}</TooltipTrigger>
-                    <TooltipContent side={isRtl ? 'left' : 'right'}>{label}</TooltipContent>
-                  </Tooltip>
-                );
-              }
-
               return (
                 <div key={group.href}>
-                  {groupBtn}
+                  {groupRow}
                   <AnimatePresence initial={false}>{subList}</AnimatePresence>
                 </div>
               );
@@ -446,9 +602,11 @@ export function AppSidebar() {
                       className="absolute inset-0 rounded-lg bg-primary-50"
                       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                     />
-                    <span
-                      className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r bg-primary-600', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')}
-                    />
+                    {!sidebarCollapsed && (
+                      <span
+                        className={cn('absolute top-1.5 bottom-1.5 w-0.5 rounded-r bg-primary-600', isRtl ? 'right-0 rounded-r-none rounded-l' : 'left-0')}
+                      />
+                    )}
                   </>
                 )}
                 <span className="relative z-10 flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-110">
@@ -472,6 +630,8 @@ export function AppSidebar() {
             // Visible only when the sidebar is expanded; in collapsed mode children are reachable
             // by clicking the parent and navigating from there.
             const visibleChildren = (navEntry.children ?? []).filter((sub) => {
+              if (sub.harakaModule && !activeHarakaModules.includes(sub.harakaModule)) return false;
+              if (sub.harakaAddOn && !activeAddOns[sub.harakaAddOn]) return false;
               if (canSeeAdmin) return true;
               if (sub.featureKey && !features[sub.featureKey]) return false;
               if (sub.permissionKey && user) return hasPermByKey(user, sub.permissionKey);
@@ -530,11 +690,11 @@ export function AppSidebar() {
                 <TooltipTrigger asChild>
                   <Link
                     href={`/${locale}/${orgSlug}/profile`}
-                    className="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-semibold text-primary-700 flex-shrink-0 overflow-hidden hover:ring-2 hover:ring-primary-400 transition-shadow"
+                    className="relative h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-xs font-semibold text-primary-700 flex-shrink-0 overflow-hidden hover:ring-2 hover:ring-primary-400 transition-shadow"
                   >
-                    {user.avatarUrl ? (
+                    {user.avatarUrl && !avatarError ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                      <img src={user.avatarUrl} alt="" className="object-cover w-full h-full" onError={() => setAvatarError(true)} />
                     ) : (
                       user.displayName?.[0]?.toUpperCase() ?? displayIdentity(user.email)?.[0]?.toUpperCase()
                     )}
@@ -558,7 +718,7 @@ export function AppSidebar() {
                     className="flex-1 min-w-0"
                   >
                     <Link href={`/${locale}/${orgSlug}/profile`} className="block group">
-                      <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-primary-600 transition-colors duration-150">
+                      <p className="text-xs font-medium text-gray-900 truncate group-hover:text-primary-600 transition-colors duration-150">
                         {user.displayName || displayIdentity(user.email)}
                       </p>
                       <p className="text-[11px] text-gray-400 truncate leading-tight">

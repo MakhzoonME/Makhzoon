@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { getOrganizationById } from '@/lib/db/organizations';
-import { sendEmail } from '@/lib/email/resend';
 import { warrantyAlertEmail } from '@/lib/email/templates';
 import { queueAuditLog } from '@/lib/audit/logger';
+import { checkCronSecret } from '@/lib/cron-auth';
+import { logServerEvent } from '@/lib/logging/log-server-event';
+import { notificationQueue } from '@/lib/notifications/notification-queue';
 
 type Row = Record<string, unknown>;
 
@@ -22,7 +24,7 @@ type WarrantyDoc = {
 export async function GET(req: NextRequest) {
   try {
     const secret = req.headers.get('authorization')?.replace('Bearer ', '');
-    if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+    if (!checkCronSecret(secret)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -54,7 +56,7 @@ export async function GET(req: NextRequest) {
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? req.nextUrl.origin;
-    const results: { orgId: string; admins: number; items: number; sent: number; skipped: boolean }[] = [];
+    const results: { orgId: string; admins: number; items: number; skipped: boolean }[] = [];
 
     const entries: [string, WarrantyDoc[]][] = [];
     byOrg.forEach((v, k) => entries.push([k, v]));
@@ -71,7 +73,7 @@ export async function GET(req: NextRequest) {
 
       const admins = (adminsRes.data ?? []) as Row[];
       if (!org || admins.length === 0) {
-        results.push({ orgId, admins: admins.length, items: warranties.length, sent: 0, skipped: true });
+        results.push({ orgId, admins: admins.length, items: warranties.length, skipped: true });
         continue;
       }
 
@@ -103,13 +105,20 @@ export async function GET(req: NextRequest) {
         .sort((a: { daysLeft: number }, b: { daysLeft: number }) => a.daysLeft - b.daysLeft);
 
       const { html, text } = warrantyAlertEmail({ orgName, items, dashboardUrl: `${baseUrl}/warranties` });
-      const recipients = admins.map((a) => a.email as string).filter(Boolean);
 
-      let sent = 0;
-      for (const to of recipients) {
-        const res = await sendEmail({ to, subject: `Warranty alerts for ${orgName}`, html, text });
-        if (!res.skipped) sent++;
-      }
+      // Route through the notification queue instead of emailing admins directly —
+      // this respects per-user notification_preferences and also creates the
+      // in-app bell notification, which the old direct-email path skipped entirely.
+      await notificationQueue.send({
+        tenant: { organizationId: orgId },
+        eventType: 'warranty.expiring',
+        data: { itemCount: items.length, nearestDaysLeft: items[0]?.daysLeft ?? null },
+        link: `${baseUrl}/warranties`,
+        titleOverride: `Warranty alerts for ${orgName}`,
+        emailSubject: `Warranty alerts for ${orgName}`,
+        emailHtml: html,
+        emailText: text,
+      });
 
       queueAuditLog({
         organizationId: orgId,
@@ -117,15 +126,21 @@ export async function GET(req: NextRequest) {
         role: 'super_admin',
         action: 'WARRANTY_ALERT_SENT',
         module: 'warranties',
-        newValue: { items: items.length, recipients: recipients.length, sent },
+        newValue: { items: items.length, admins: admins.length },
       });
 
-      results.push({ orgId, admins: admins.length, items: items.length, sent, skipped: false });
+      results.push({ orgId, admins: admins.length, items: items.length, skipped: false });
     }
+
+    logServerEvent('info', 'cron/warranty-alerts',
+      `Processed ${results.length} org(s)`,
+      { detail: { orgs: results.length } });
 
     return NextResponse.json({ ok: true, orgs: results.length, results });
   } catch (err) {
     console.error('[GET /api/cron/warranty-alerts]', err);
+    logServerEvent('error', 'cron/warranty-alerts',
+      err instanceof Error ? err.message : 'Cron failed');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -13,9 +13,7 @@ import { formatDate } from '@/lib/utils/date';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { SuperAdminPermissionsEditor } from '@/components/super-admin/SuperAdminPermissionsEditor';
 import {
   SuperAdminPermissions,
@@ -24,6 +22,7 @@ import {
   DEFAULT_SUPPORT_PERMISSIONS,
 } from '@/types';
 import { useT } from '@/hooks/ui';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { Search, KeyRound } from 'lucide-react';
 
 function defaultPermsForRole(role: MakhzoonRole): SuperAdminPermissions {
@@ -149,7 +148,7 @@ export default function SuperAdminTeamPage() {
   const [resetTarget, setResetTarget] = useState<TeamMember | null>(null);
   const [resetting, setResetting] = useState(false);
   const [resetSent, setResetSent] = useState(false);
-  const [_copied, _setCopied] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<TeamMember | null>(null);
 
   const { data: allMembers = [], isLoading } = useQuery<TeamMember[]>({
     queryKey: ['superadmin-team'],
@@ -263,13 +262,14 @@ export default function SuperAdminTeamPage() {
     }
   }
 
-  async function handleDelete(member: TeamMember) {
-    if (!confirm(`Permanently delete ${member.displayName}? This cannot be undone.`)) return;
+  async function handleDelete() {
+    if (!deleteTarget) return;
     try {
-      const res = await fetch(`/api/superadmin/team/${member.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/superadmin/team/${deleteTarget.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Failed to delete');
-      toast.success(`${member.displayName} deleted`);
+      toast.success(`${deleteTarget.displayName} deleted`);
+      setDeleteTarget(null);
       qc.invalidateQueries({ queryKey: ['superadmin-team'] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed');
@@ -346,6 +346,7 @@ export default function SuperAdminTeamPage() {
       </div>
 
       <div className="bg-surface-card rounded-lg border border-border overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-page">
@@ -458,7 +459,7 @@ export default function SuperAdminTeamPage() {
                               size="sm"
                               variant="ghost"
                               className="text-red-500 hover:text-red-600 hover:bg-red-50 text-xs"
-                              onClick={() => handleDelete(m)}
+                              onClick={() => setDeleteTarget(m)}
                             >
                               {t('team.delete')}
                             </Button>
@@ -472,6 +473,7 @@ export default function SuperAdminTeamPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       <Dialog open={showAdd} onOpenChange={(o) => !o && setShowAdd(false)}>
@@ -503,24 +505,22 @@ export default function SuperAdminTeamPage() {
             </div>
             <div className="space-y-1.5">
               <Label>{t('team.role')} *</Label>
-              <Select
+              <Combobox
                 value={addForm.role}
-                onValueChange={(v) => {
-                  const role = v as MakhzoonRole;
+                onChange={(v) => {
+                  const role = (v ?? addForm.role) as MakhzoonRole;
                   setAddForm((f) => ({ ...f, role }));
                   setAddPermissions(defaultPermsForRole(role));
                   setShowAddPerms(false);
                 }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {isSuperAdmin && <SelectItem value="super_admin">{t('role.superAdmin')}</SelectItem>}
-                  {isSuperAdmin && <SelectItem value="makhzoon_admin">{t('role.makhzoonAdmin')}</SelectItem>}
-                  <SelectItem value="makhzoon_support">{t('role.makhzoonSupport')}</SelectItem>
-                </SelectContent>
-              </Select>
+                options={[
+                  ...(isSuperAdmin ? [{ value: 'super_admin', label: t('role.superAdmin') }] : []),
+                  ...(isSuperAdmin ? [{ value: 'makhzoon_admin', label: t('role.makhzoonAdmin') }] : []),
+                  { value: 'makhzoon_support', label: t('role.makhzoonSupport') },
+                ]}
+                searchable={false}
+                clearable={false}
+              />
               {addForm.role && (
                 <p className="text-xs text-gray-400">{ROLE_DESCRIPTION[addForm.role]}</p>
               )}
@@ -601,22 +601,22 @@ export default function SuperAdminTeamPage() {
 
             <div className="space-y-1.5">
               <Label>{t('team.role')}</Label>
-              <Select
+              <Combobox
                 value={editForm.role}
-                onValueChange={(v) => {
-                  const role = v as MakhzoonRole;
+                onChange={(v) => {
+                  const role = (v ?? editForm.role) as MakhzoonRole;
                   setEditForm((f) => ({ ...f, role }));
                   setEditPermissions(defaultPermsForRole(role));
                   setShowEditPerms(false);
                 }}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {isSuperAdmin && <SelectItem value="super_admin">{t('role.superAdmin')}</SelectItem>}
-                  {isSuperAdmin && <SelectItem value="makhzoon_admin">{t('role.makhzoonAdmin')}</SelectItem>}
-                  <SelectItem value="makhzoon_support">{t('role.makhzoonSupport')}</SelectItem>
-                </SelectContent>
-              </Select>
+                options={[
+                  ...(isSuperAdmin ? [{ value: 'super_admin', label: t('role.superAdmin') }] : []),
+                  ...(isSuperAdmin ? [{ value: 'makhzoon_admin', label: t('role.makhzoonAdmin') }] : []),
+                  { value: 'makhzoon_support', label: t('role.makhzoonSupport') },
+                ]}
+                searchable={false}
+                clearable={false}
+              />
               {editForm.role && (
                 <p className="text-xs text-gray-400">{ROLE_DESCRIPTION[editForm.role]}</p>
               )}
@@ -647,6 +647,16 @@ export default function SuperAdminTeamPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        title="Delete team member?"
+        description={`"${deleteTarget?.displayName}" will be permanently removed. This cannot be undone.`}
+        confirmLabel={t('common.delete')}
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
 
       {/* Reset password confirm dialog */}
       <Dialog open={!!resetTarget} onOpenChange={(o) => !o && setResetTarget(null)}>

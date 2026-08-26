@@ -50,6 +50,7 @@ const en = {
   'nav.zeyaraVisits':           'Clinical Records',
   'nav.zeyaraFollowUps':        'Follow-ups',
   'nav.zeyaraReminders':        'Reminders',
+  'nav.zeyaraReports':          'Reports',
   'nav.harakaStaff': 'Workers',
   'nav.register':           'POS Register',
   'nav.sessions':           'Sessions',
@@ -1480,6 +1481,7 @@ const en = {
   'permGroup.raseed': 'Raseed',
   'permGroup.haraka': 'Haraka',
   'permGroup.zeyara': 'Zeyara',
+  'permGroup.reports': 'Reports',
   'permGroup.platform': 'Platform',
   'permGroup.settings': 'Settings',
 
@@ -2173,6 +2175,7 @@ const ar: Record<keyof typeof en, string> = {
   'nav.zeyaraVisits':           'السجلات السريرية',
   'nav.zeyaraFollowUps':        'المتابعات',
   'nav.zeyaraReminders':        'التذكيرات',
+  'nav.zeyaraReports':          'التقارير',
   'nav.harakaStaff': 'العاملون',
   'nav.register':           'نقطة البيع',
   'nav.sessions':           'الجلسات',
@@ -3605,6 +3608,7 @@ const ar: Record<keyof typeof en, string> = {
   'permGroup.raseed': 'رصيد',
   'permGroup.haraka': 'حركة',
   'permGroup.zeyara': 'زيارة',
+  'permGroup.reports': 'التقارير',
   'permGroup.platform': 'المنصة',
   'permGroup.settings': 'الإعدادات',
 

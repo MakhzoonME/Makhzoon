@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useOrgSlug } from '@/hooks/ui/useOrgSlug';
 import { useSpace } from '@/hooks/ui/useSpace';
 import { hasModuleAccess, hasPermission } from '@/lib/permissions';
-import { getFirstAccessiblePath } from '@/lib/nav';
+import { getFirstAccessiblePath, navFeatureAllowed } from '@/lib/nav';
 import type { UserPermissions } from '@/types/user-permissions.types';
 import type { AddOnKey, HarakaModule } from '@/types/subscription.types';
 
@@ -13,6 +13,12 @@ const ADMIN_ROLES = new Set(['admin', 'org_owner', 'super_admin', 'makhzoon_admi
 
 export function useModuleGuard(opts: {
   featureKey?: string;
+  /**
+   * ANY-OF feature gate, for a page more than one vertical reaches (the report
+   * template builder serves a Haraka retailer and a Zeyara clinic alike).
+   * Wins over `featureKey` when set. Mirrors navFeatureAllowed() in lib/nav.
+   */
+  featureKeys?: string[];
   moduleKey?: keyof UserPermissions;
   /** Operation to check within moduleKey instead of the module's 'view' gate. */
   permOp?: string;
@@ -22,7 +28,7 @@ export function useModuleGuard(opts: {
   /** Independent add-on (Workers/Warranty Certs/…) this page requires be active on the subscription. */
   harakaAddOn?: AddOnKey;
 }) {
-  const { featureKey, moduleKey, permOp, adminOnly, harakaModule, harakaAddOn } = opts;
+  const { featureKey, featureKeys, moduleKey, permOp, adminOnly, harakaModule, harakaAddOn } = opts;
   const { user, loading } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
@@ -36,7 +42,7 @@ export function useModuleGuard(opts: {
   const canAccess = (() => {
     if (!user) return true;
     if (adminOnly && !isAdmin) return false;
-    if (featureKey && !user.features?.[featureKey]) return false;
+    if (!navFeatureAllowed({ featureKey, featureKeys }, user.features ?? {})) return false;
     if (harakaModule && !user.activeHarakaModules?.includes(harakaModule)) return false;
     if (harakaAddOn && !user.activeAddOns?.[harakaAddOn]) return false;
     // Check module permissions for staff always, and for admins when they have

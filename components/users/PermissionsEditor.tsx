@@ -7,6 +7,7 @@ import {
   MODULE_PERMISSIONS_CONFIG,
   MODULE_GROUP_LABEL_KEYS,
   MODULE_GROUP_ORDER,
+  moduleFeatureAllowed,
   type ModuleConfig,
   type ModuleGroup,
 } from '@/types';
@@ -91,7 +92,7 @@ export function PermissionsEditor({ value, onChange, availableFeatures }: Props)
 
   const visibleModules = MODULE_PERMISSIONS_CONFIG.filter((m) => {
     if (m.hideFromEditor) return false;
-    if (m.featureKey && !availableFeatures[m.featureKey]) return false;
+    if (!moduleFeatureAllowed(m, availableFeatures)) return false;
     return true;
   });
 

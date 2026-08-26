@@ -68,12 +68,14 @@ const EXTRA_HARAKA_MODULES = HARAKA_MODULES.filter(
 type AddOnKey = 'deliveryAgents' | 'warrantyCerts' | 'customization' | 'purchasesRequests' | 'vehicleIntake' | 'documentReports';
 interface AddOnState { included: boolean; price: string }
 
-const ADDON_META: Record<AddOnKey, { label: string; group: 'haraka' | 'raseed' }> = {
+const ADDON_META: Record<AddOnKey, { label: string; group: 'haraka' | 'raseed' | 'crossModule' }> = {
   deliveryAgents:     { label: 'Workers',              group: 'haraka' },
   warrantyCerts:      { label: 'Warranty certificates', group: 'haraka' },
   customization:      { label: 'Customization',         group: 'haraka' },
   vehicleIntake:      { label: 'Vehicle intake (plate capture)', group: 'haraka' },
-  documentReports:    { label: 'Document reports',      group: 'haraka' },
+  // Cross-vertical: sold to Haraka retailers and Zeyara clinics alike, so it
+  // is no longer owned by the Haraka fieldset.
+  documentReports:    { label: 'Document reports',      group: 'crossModule' },
   purchasesRequests:  { label: 'Purchases & Requests',   group: 'raseed' },
 };
 
@@ -501,7 +503,6 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
               <span className="text-sm text-gray-700">Show plate-capture in the intake UI (car-care)</span>
             </label>
             <AddOnRow addonKey="vehicleIntake" state={addOns.vehicleIntake} onChange={(patch) => updateAddOn("vehicleIntake", patch)} />
-            <AddOnRow addonKey="documentReports" state={addOns.documentReports} onChange={(patch) => updateAddOn("documentReports", patch)} />
           </div>
         </fieldset>
 
@@ -515,8 +516,24 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
             <span className="text-sm text-gray-800">Zeyara (base module)</span>
           </label>
           <p className="ps-6 text-xs text-gray-500">
-            Appointments, patients, service catalog, providers, and appointment invoicing.
-            Includes the provider directory — no separate Workers add-on needed.
+            Appointments, patients, clinical records, providers, follow-ups, reminders, and
+            appointment invoicing. Includes the provider directory — no separate Workers add-on
+            needed. Add Document Reports below for printable patient reports and referrals.
+          </p>
+        </fieldset>
+
+        {/* Document Reports — cross-vertical, so it sits outside both the
+            Haraka and Zeyara fieldsets: a retailer's inspection report and a
+            clinic's patient report are the same templates + instances engine,
+            reached from whichever vertical the package sells. */}
+        <fieldset className="space-y-2 border-s-4 border border-border rounded-lg p-4" style={{ borderInlineStartColor: '#6B7280' }}>
+          <legend className="px-2 text-sm font-medium text-gray-700">Document Reports</legend>
+          <div className="ps-2">
+            <AddOnRow addonKey="documentReports" state={addOns.documentReports} onChange={(patch) => updateAddOn("documentReports", patch)} />
+          </div>
+          <p className="ps-2 text-xs text-gray-500">
+            Org-defined report templates filled per customer encounter, printable and shareable by
+            no-login link. Works on Haraka and Zeyara alike; requires at least one of them.
           </p>
         </fieldset>
 

@@ -9,7 +9,7 @@ import { useUiStore } from '@/store/ui.store';
 import { useTransferStore } from '@/store/transfer.store';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, NavSectionHeader, buildNavUrl } from '@/lib/nav';
+import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, NavSectionHeader, buildNavUrl, navFeatureAllowed } from '@/lib/nav';
 import { SpaceSwitcher } from '@/components/layout/SpaceSwitcher';
 import { useOrgInfo, useSubscriptionFeatures, useActiveHarakaModules, useActiveAddOns } from '@/hooks/org';
 import { useSpace } from '@/hooks/ui';
@@ -204,7 +204,7 @@ export function AppSidebar() {
   const visibleEntries = ORG_NAV_ENTRIES.filter((entry): entry is NavEntry => {
     if ('type' in entry && entry.type === 'separator') return false; // handled in finalEntries
     if ('type' in entry && entry.type === 'group') {
-      if (entry.featureKey && !features[entry.featureKey]) return false;
+      if (!navFeatureAllowed(entry, features)) return false;
       if (entry.adminOnly && !canSeeAdmin) {
         // adminOnly group — staff can see it only if they have a specific sub-perm
         return user?.role === 'staff' && !!user && entry.items.some(
@@ -233,9 +233,9 @@ export function AppSidebar() {
       }
       return true;
     }
-    const item = entry as { adminOnly?: boolean; featureKey?: string; harakaModule?: HarakaModule; harakaAddOn?: AddOnKey; permissionKey?: string };
+    const item = entry as { adminOnly?: boolean; featureKey?: string; featureKeys?: string[]; harakaModule?: HarakaModule; harakaAddOn?: AddOnKey; permissionKey?: string };
     if (item.adminOnly && !canSeeAdmin) return false;
-    if (item.featureKey && !features[item.featureKey]) return false;
+    if (!navFeatureAllowed(item, features)) return false;
     if (item.harakaModule && !activeHarakaModules.includes(item.harakaModule)) return false;
     if (item.harakaAddOn && !activeAddOns[item.harakaAddOn]) return false;
     if (!user && authLoading && (item.permissionKey || item.featureKey)) {
@@ -390,7 +390,7 @@ export function AppSidebar() {
               const visibleRegularItems = (group.items as (NavItemConfig | NavSectionHeader)[])
                 .filter((sub): sub is NavItemConfig => !('type' in sub))
                 .filter((sub) => {
-                  if (sub.featureKey && !features[sub.featureKey]) return false;
+                  if (!navFeatureAllowed(sub, features)) return false;
                   if (sub.harakaModule && !activeHarakaModules.includes(sub.harakaModule)) return false;
                   if (sub.harakaAddOn && !activeAddOns[sub.harakaAddOn]) return false;
                   if (canSeeAdmin || !sub.permissionKey) return true;
@@ -633,7 +633,7 @@ export function AppSidebar() {
               if (sub.harakaModule && !activeHarakaModules.includes(sub.harakaModule)) return false;
               if (sub.harakaAddOn && !activeAddOns[sub.harakaAddOn]) return false;
               if (canSeeAdmin) return true;
-              if (sub.featureKey && !features[sub.featureKey]) return false;
+              if (!navFeatureAllowed(sub, features)) return false;
               if (sub.permissionKey && user) return hasPermByKey(user, sub.permissionKey);
               return true;
             });

@@ -30,7 +30,10 @@ export interface DocumentReportTemplate {
   updatedBy: string | null;
 }
 
-export type ReportEncounterType = 'appointment' | 'service_job' | 'order';
+/** What the report is attached to. 'visit' is Zeyara's clinical record
+ *  (zeyara_visits) — reports written during a consultation anchor there rather
+ *  than on the appointment that scheduled it. See migration 0085. */
+export type ReportEncounterType = 'appointment' | 'service_job' | 'order' | 'visit';
 
 /** Stored on the report ('report-attachment' upload kind, private bucket) —
  *  same DocumentRef shape as warranty/purchase documents, re-signed on read

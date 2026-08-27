@@ -2220,6 +2220,7 @@ export type Database = {
       }
       organization_configs: {
         Row: {
+          appointment_document_config: Json | null
           asset_statuses: Json
           categories: Json
           created_at: string
@@ -2233,6 +2234,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          appointment_document_config?: Json | null
           asset_statuses?: Json
           categories?: Json
           created_at?: string
@@ -2246,6 +2248,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          appointment_document_config?: Json | null
           asset_statuses?: Json
           categories?: Json
           created_at?: string

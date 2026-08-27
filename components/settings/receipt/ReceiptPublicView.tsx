@@ -15,6 +15,8 @@ interface Props {
   taglineAr?: string;
   /** Real sale data; omit to render the template with sample data. */
   data?: ReceiptData;
+  /** Public URL of this receipt; encoded when config.qrSource is on. */
+  documentUrl?: string | null;
 }
 
 /* Public, unauthenticated receipt page rendered at /r/[orgSlug]/...
@@ -23,7 +25,7 @@ interface Props {
 
    When the org issues in both languages, the viewer chooses the language
    here (default English) — we never auto-detect from the browser. */
-export function ReceiptPublicView({ orgName, taxNumber, tagline, config, orgNameAr, taglineAr, data }: Props) {
+export function ReceiptPublicView({ orgName, taxNumber, tagline, config, orgNameAr, taglineAr, data, documentUrl }: Props) {
   const params = useSearchParams();
   const autoDownload = params.get('download') === '1';
 
@@ -67,6 +69,7 @@ export function ReceiptPublicView({ orgName, taxNumber, tagline, config, orgName
         lang={lang}
         config={config}
         data={data}
+        documentUrl={documentUrl}
       />
 
       <button

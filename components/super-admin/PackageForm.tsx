@@ -68,12 +68,14 @@ const EXTRA_HARAKA_MODULES = HARAKA_MODULES.filter(
 type AddOnKey = 'deliveryAgents' | 'warrantyCerts' | 'customization' | 'purchasesRequests' | 'vehicleIntake' | 'documentReports';
 interface AddOnState { included: boolean; price: string }
 
-const ADDON_META: Record<AddOnKey, { label: string; group: 'haraka' | 'raseed' }> = {
+const ADDON_META: Record<AddOnKey, { label: string; group: 'haraka' | 'raseed' | 'crossModule' }> = {
   deliveryAgents:     { label: 'Workers',              group: 'haraka' },
   warrantyCerts:      { label: 'Warranty certificates', group: 'haraka' },
   customization:      { label: 'Customization',         group: 'haraka' },
   vehicleIntake:      { label: 'Vehicle intake (plate capture)', group: 'haraka' },
-  documentReports:    { label: 'Document reports',      group: 'haraka' },
+  // Cross-vertical: sold to Haraka retailers and Zeyara clinics alike, so it
+  // is no longer owned by the Haraka fieldset.
+  documentReports:    { label: 'Document reports',      group: 'crossModule' },
   purchasesRequests:  { label: 'Purchases & Requests',   group: 'raseed' },
 };
 
@@ -157,6 +159,9 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
   const [assets,     setAssets]     = useState(initial?.features?.assets     ?? true);
   const [inventory,  setInventory]  = useState(initial?.features?.inventory  ?? true);
   const [pos,        setPos]        = useState(initial?.features?.pos       ?? true);
+  // Zeyara defaults OFF: it is a separate vertical a clinic buys deliberately,
+  // not something every package should carry.
+  const [zeyara,     setZeyara]     = useState(initial?.features?.zeyara    ?? false);
   const [banna,      setBanna]      = useState(initial?.features?.banna     ?? true);
   const [vehicleIntakeFeature, setVehicleIntakeFeature] = useState(initial?.features?.vehicleIntake ?? false);
 
@@ -242,7 +247,7 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
       limits: finalLimits,
       features: {
         dashboard, support, auditLogs,
-        assets, inventory, pos, banna,
+        assets, inventory, pos, zeyara, banna,
         vehicleIntake: vehicleIntakeFeature,
         ...usoolSub,
       },
@@ -498,8 +503,38 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
               <span className="text-sm text-gray-700">Show plate-capture in the intake UI (car-care)</span>
             </label>
             <AddOnRow addonKey="vehicleIntake" state={addOns.vehicleIntake} onChange={(patch) => updateAddOn("vehicleIntake", patch)} />
+          </div>
+        </fieldset>
+
+        {/* Zeyara — clinic vertical over the same appointment engine as Haraka.
+            Sold as its own base module, not as a Haraka slot: a clinic package
+            typically ships Zeyara ON and Point of Sale OFF. */}
+        <fieldset className="space-y-2 border-s-4 border border-border rounded-lg p-4" style={{ borderInlineStartColor: '#0F766E' }}>
+          <legend className="px-2 text-sm font-medium text-gray-700">Zeyara — Clinics</legend>
+          <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-page cursor-pointer font-medium">
+            <input type="checkbox" checked={zeyara} onChange={(e) => setZeyara(e.target.checked)} />
+            <span className="text-sm text-gray-800">Zeyara (base module)</span>
+          </label>
+          <p className="ps-6 text-xs text-gray-500">
+            Appointments, patients, clinical records, providers, follow-ups, reminders, and
+            appointment invoicing. Includes the provider directory — no separate Workers add-on
+            needed. Add Document Reports below for printable patient reports and referrals.
+          </p>
+        </fieldset>
+
+        {/* Document Reports — cross-vertical, so it sits outside both the
+            Haraka and Zeyara fieldsets: a retailer's inspection report and a
+            clinic's patient report are the same templates + instances engine,
+            reached from whichever vertical the package sells. */}
+        <fieldset className="space-y-2 border-s-4 border border-border rounded-lg p-4" style={{ borderInlineStartColor: '#6B7280' }}>
+          <legend className="px-2 text-sm font-medium text-gray-700">Document Reports</legend>
+          <div className="ps-2">
             <AddOnRow addonKey="documentReports" state={addOns.documentReports} onChange={(patch) => updateAddOn("documentReports", patch)} />
           </div>
+          <p className="ps-2 text-xs text-gray-500">
+            Org-defined report templates filled per customer encounter, printable and shareable by
+            no-login link. Works on Haraka and Zeyara alike; requires at least one of them.
+          </p>
         </fieldset>
 
         {/* Banna */}

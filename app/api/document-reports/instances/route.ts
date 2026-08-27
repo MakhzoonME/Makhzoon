@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
-import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireAnyVerticalFeature } from '@/lib/permissions/require-feature'
 import { requireAddOn } from '@/lib/permissions/require-module'
 import { ReportInstancesService } from '@/lib/modules/document-reports/instances.service'
 import { createInstanceSchema } from '@/lib/modules/document-reports/schemas'
@@ -11,7 +11,7 @@ const service = new ReportInstancesService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    requireFeature(tenant, 'pos')
+    requireAnyVerticalFeature(tenant)
     await requireAddOn(tenant, 'documentReports')
     const params = new URL(req.url).searchParams
     const result = await service.list(tenant, {
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    requireFeature(tenant, 'pos')
+    requireAnyVerticalFeature(tenant)
     await requireAddOn(tenant, 'documentReports')
     const body = await req.json()
     const parsed = createInstanceSchema.safeParse(body)

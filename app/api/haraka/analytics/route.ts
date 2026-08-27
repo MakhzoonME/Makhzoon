@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
-import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireAnyVerticalFeature } from '@/lib/permissions/require-feature'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { AnalyticsService } from '@/lib/modules/haraka/analytics/analytics.service'
 import type { HarakaAnalytics } from '@/lib/modules/haraka/analytics/analytics.service'
@@ -51,7 +51,7 @@ function toCsv(result: HarakaAnalytics): string {
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    requireFeature(tenant, 'pos')
+    requireAnyVerticalFeature(tenant)
     const limited = await rateLimitTenant(tenant, 'haraka-analytics', 30, 60_000)
     if (limited) return limited
 

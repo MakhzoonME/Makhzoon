@@ -11,6 +11,7 @@ export type FeatureKey =
   | 'assetCheckouts'
   | 'assetNotes'
   | 'pos'
+  | 'zeyara'
   | 'banna'
   | 'vehicleIntake';
 
@@ -29,6 +30,7 @@ export const FEATURE_KEYS: FeatureKey[] = [
   'assetNotes',
   'inventory',
   'pos',
+  'zeyara',
   'banna',
   'vehicleIntake',
 ];
@@ -44,6 +46,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   assetCheckouts: 'Asset Checkouts',
   assetNotes: 'Asset Notes',
   pos: 'Point of Sale',
+  zeyara: 'Zeyara (Clinics)',
   banna: 'Banna (Custom Fields)',
   vehicleIntake: 'Vehicle Intake',
 };
@@ -59,6 +62,7 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
   assetCheckouts: 'Loan-out and return tracking for shared inventory.',
   assetNotes: 'Free-form notes attached to individual assets.',
   pos: 'Point of sale terminal for processing sales transactions.',
+  zeyara: 'Appointment-based service providers (clinics): bookings, patients, visits, and invoicing.',
   banna: 'Custom fields for assets, inventory, and customers.',
   vehicleIntake: 'Plate-photo intake for Haraka Service Jobs.',
 };
@@ -177,4 +181,23 @@ export interface Package {
   createdBy: string;
   updatedAt: Date;
   updatedBy: string;
+}
+
+/**
+ * Feature keys that must default OFF when absent from a stored feature map.
+ *
+ * The general convention elsewhere is the opposite: a key missing from an org's
+ * subscription defaults ON, so adding a key to an already-sold module never
+ * silently removes access for orgs that pre-date it.
+ *
+ * A NEW VERTICAL inverts that reasoning. Zeyara is a separate product a clinic
+ * buys deliberately; defaulting it on would put the clinic sidebar, patients
+ * directory, and permission group in front of every existing retail org the
+ * first time a superadmin opened and saved their subscription form.
+ */
+export const OPT_IN_FEATURE_KEYS: FeatureKey[] = ['zeyara'];
+
+/** What an absent feature key resolves to. See OPT_IN_FEATURE_KEYS. */
+export function defaultFeatureWhenAbsent(key: FeatureKey): boolean {
+  return !OPT_IN_FEATURE_KEYS.includes(key);
 }

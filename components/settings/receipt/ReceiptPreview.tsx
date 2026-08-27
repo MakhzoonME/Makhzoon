@@ -1,6 +1,8 @@
 'use client';
 
 import { receiptLabels, isRtl, pickText, type ReceiptLang } from '@/lib/receipts/labels';
+import { resolveDocumentQr, type DocumentQrConfig } from '@/lib/qr';
+import { DocumentQr } from '@/components/shared/DocumentQr';
 
 export type TemplateId = 'thermal-58' | 'thermal-80' | 'a4-modern' | 'a4-invoice';
 
@@ -8,7 +10,7 @@ export type TemplateId = 'thermal-58' | 'thermal-80' | 'a4-modern' | 'a4-invoice
  *  'en' | 'ar' by the caller (preview toggle / viewer toggle / cashier pick). */
 export type ReceiptLanguage = 'en' | 'ar' | 'both';
 
-export interface ReceiptConfig {
+export interface ReceiptConfig extends DocumentQrConfig {
   template: TemplateId;
   showLogo: boolean;
   showTaxNumber: boolean;
@@ -95,12 +97,25 @@ interface PreviewProps {
   lang?: ReceiptLang;
   /** Real sale data; falls back to SAMPLE_DATA for the settings preview. */
   data?: ReceiptData;
+  /** Public URL of this receipt, encoded when config.qrSource is on.
+   *  Omitted on the settings preview, where there is no real sale to link to. */
+  documentUrl?: string | null;
+  /** E-invoicing QR payload, when a compliance adapter produced one. */
+  compliancePayload?: string | null;
 }
 
 /** Resolve the single language a template should render in. */
 function resolveLang(props: PreviewProps): ReceiptLang {
   if (props.lang) return props.lang;
   return props.config.language === 'ar' ? 'ar' : 'en';
+}
+
+/** Same QR decision for all three templates — see resolveDocumentQr. */
+function previewQr(props: PreviewProps) {
+  return resolveDocumentQr(props.config, {
+    documentUrl: props.documentUrl,
+    compliancePayload: props.compliancePayload,
+  });
 }
 
 /* ── Thermal receipt (58mm / 80mm) ───────────────────────────── */
@@ -120,6 +135,7 @@ export function ThermalPreview(props: PreviewProps) {
   // never disagree about whether there is a closing line.
   const footer = pickText(lang, config.footerText, config.footerTextAr) || L.thankYou;
   const statusLabel = d.status && d.status !== 'completed' ? L.status[d.status] : '';
+  const qr = previewQr(props);
 
   return (
     <div
@@ -188,6 +204,12 @@ export function ThermalPreview(props: PreviewProps) {
         <div className="text-[9px] text-gray-400 mt-1">{L.taxNo}: {taxNumber}</div>
       )}
 
+      {qr && (
+        <div className="flex justify-center mt-2">
+          <DocumentQr qr={qr} size={is80 ? 96 : 76} captionColor="#9ca3af" />
+        </div>
+      )}
+
       {footer && (
         <>
           {/* Equal air above and below the rule; the closing line then sits on
@@ -213,6 +235,7 @@ export function A4ModernPreview(props: PreviewProps) {
   const address = pickText(lang, config.address, config.addressAr);
   const footer = pickText(lang, config.footerText, config.footerTextAr);
   const statusLabel = d.status && d.status !== 'completed' ? L.status[d.status] : '';
+  const qr = previewQr(props);
 
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} className="bg-white border border-gray-200 shadow-md mx-auto text-[10px] leading-relaxed" style={{ width: 320, minHeight: 420, fontFamily: 'sans-serif' }}>
@@ -293,6 +316,12 @@ export function A4ModernPreview(props: PreviewProps) {
           <div className="text-[9px] text-gray-400 mt-3">{L.taxReg}: {taxNumber}</div>
         )}
 
+        {qr && (
+          <div className="flex justify-center mt-4">
+            <DocumentQr qr={qr} size={84} captionColor="#9ca3af" />
+          </div>
+        )}
+
         {footer && (
           <div className="text-center text-[9px] text-gray-400 mt-4 pt-3 border-t border-dashed border-gray-200">
             {footer}
@@ -317,6 +346,7 @@ export function A4InvoicePreview(props: PreviewProps) {
   const address = pickText(lang, config.address, config.addressAr);
   const footer = pickText(lang, config.footerText, config.footerTextAr);
   const statusLabel = d.status && d.status !== 'completed' ? L.status[d.status] : '';
+  const qr = previewQr(props);
 
   return (
     <div dir={rtl ? 'rtl' : 'ltr'} className="bg-white border border-gray-200 shadow-md mx-auto text-[10px] leading-relaxed" style={{ width: 320, minHeight: 440, fontFamily: 'sans-serif' }}>
@@ -391,6 +421,12 @@ export function A4InvoicePreview(props: PreviewProps) {
 
         {config.showWebsite && config.website && (
           <div className="text-[9px] text-gray-400">{config.website}</div>
+        )}
+
+        {qr && (
+          <div className="flex justify-center mt-4">
+            <DocumentQr qr={qr} size={84} captionColor="#9ca3af" />
+          </div>
         )}
 
         {footer && (

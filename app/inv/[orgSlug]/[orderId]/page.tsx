@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { loadOrderDocument } from '@/lib/modules/haraka/orders/order-document-loader';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { OrderDocumentPublicView } from '@/components/haraka/OrderDocumentPublicView';
+import { publicDocumentBaseUrl } from '@/lib/receipts/public-receipt';
+import { documentPublicUrl } from '@/lib/qr';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -29,6 +31,13 @@ export default async function PublicInvoicePage({
     .eq('organization_id', result.ctx.orgId)
     .order('paid_at', { ascending: true });
 
+  // The QR points back at this exact document — keep ?type so a scanned
+  // receipt reopens as a receipt, not as the invoice this route defaults to.
+  const documentUrl = documentPublicUrl(
+    'order', orgSlug, orderId, await publicDocumentBaseUrl(),
+    type === 'receipt' ? '?type=receipt' : '',
+  );
+
   return (
     <OrderDocumentPublicView
       type={type as 'invoice' | 'receipt'}
@@ -44,6 +53,7 @@ export default async function PublicInvoicePage({
       taxNumber={result.ctx.taxNumber}
       receiptConfig={result.ctx.receiptConfig}
       docConfig={result.ctx.docConfig}
+      documentUrl={documentUrl}
       autoDownload={autoDownload}
     />
   );

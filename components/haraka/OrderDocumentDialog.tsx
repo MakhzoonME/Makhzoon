@@ -13,8 +13,7 @@ import { toast } from '@/hooks/ui';
 import type { HarakaOrder } from '@/types';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import type { OrderDocumentConfig } from '@/lib/modules/haraka/orders/order-document-config';
-import { DEFAULT_ORDER_DOCUMENT_CONFIG } from '@/lib/modules/haraka/orders/order-document-config';
-import { DEFAULT_RECEIPT_CONFIG } from '@/lib/receipts/receipt-config';
+import { useReceiptConfig, useOrderDocumentConfig } from '@/hooks/haraka';
 import { getReceiptBaseUrl } from '@/lib/app-env';
 import { cn } from '@/lib/utils/cn';
 
@@ -34,12 +33,22 @@ interface Props {
 
 export function OrderDocumentDialog({
   open, onOpenChange, order, orgSlug, orgName,
-  tagline = '', taxNumber = '',
-  receiptConfig = DEFAULT_RECEIPT_CONFIG,
-  docConfig = DEFAULT_ORDER_DOCUMENT_CONFIG,
+  tagline: taglineProp, taxNumber: taxNumberProp,
+  receiptConfig: receiptConfigProp,
+  docConfig: docConfigProp,
   currency = 'JOD',
   defaultType,
 }: Props) {
+  // No caller passes these today, and falling back to the DEFAULT_* constants
+  // rendered a preview that disagreed with the document that actually prints —
+  // no logo, stock titles, and no QR even when the org had switched one on.
+  const saved = useReceiptConfig();
+  const savedDocConfig = useOrderDocumentConfig();
+  const receiptConfig = receiptConfigProp ?? saved.receiptConfig;
+  const docConfig = docConfigProp ?? savedDocConfig;
+  const tagline = taglineProp ?? saved.tagline;
+  const taxNumber = taxNumberProp ?? saved.taxNumber;
+
   const isPaid = order.paymentStatus === 'paid';
   const [type, setType] = useState<DocumentType>(defaultType ?? (isPaid ? 'receipt' : 'invoice'));
   const [copiedLink, setCopiedLink] = useState(false);
@@ -162,6 +171,7 @@ export function OrderDocumentDialog({
                 receiptConfig={receiptConfig}
                 docConfig={docConfig}
                 currency={currency}
+                documentUrl={publicUrl}
               />
             </div>
           </div>

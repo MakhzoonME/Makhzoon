@@ -1,5 +1,6 @@
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import type { ReceiptPrintText } from '@/lib/modules/haraka/printing/receipt-canvas';
+import { DEFAULT_DOCUMENT_QR, resolveDocumentQr } from '@/lib/qr';
 
 /* Client-safe default receipt config. Kept free of server-only imports so it
    can be used from both client components (register, settings) and the
@@ -28,6 +29,8 @@ export const DEFAULT_RECEIPT_CONFIG: ReceiptConfig = {
   // Extra blank lines on top of the mandatory blade clearance. 0 = just enough
   // paper for the cut to land below the footer; raise it for a longer tear-off.
   cutFeed: 0,
+  // Off by default: existing orgs keep printing exactly the receipt they had.
+  ...DEFAULT_DOCUMENT_QR,
 };
 
 /**
@@ -46,10 +49,23 @@ export function paperWidthFor(template: ReceiptConfig['template']): 58 | 80 {
  */
 export function toPrintText(
   config: ReceiptConfig | undefined,
-  extras: { orgName: string; tagline: string; taglineAr: string; taxNumber: string },
+  extras: {
+    orgName: string;
+    tagline: string;
+    taglineAr: string;
+    taxNumber: string;
+    /** Public URL of this receipt; drives the QR when qrSource is on. */
+    documentUrl?: string | null;
+    /** E-invoicing payload, when a compliance adapter produced one. */
+    compliancePayload?: string | null;
+  },
 ): ReceiptPrintText {
   const c = config ?? DEFAULT_RECEIPT_CONFIG;
   return {
+    qr: resolveDocumentQr(c, {
+      documentUrl: extras.documentUrl,
+      compliancePayload: extras.compliancePayload,
+    }),
     orgName: c.orgName?.trim() || extras.orgName,
     orgNameAr: c.orgNameAr ?? '',
     tagline: extras.tagline,

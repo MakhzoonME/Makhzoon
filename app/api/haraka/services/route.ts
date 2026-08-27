@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
-import { requireFeature } from '@/lib/permissions/require-feature'
+import { requireAnyVerticalFeature } from '@/lib/permissions/require-feature'
 import { requireHarakaModule } from '@/lib/permissions/require-module'
 import { rateLimitTenant } from '@/lib/rate-limit'
 import { ServicesService } from '@/lib/modules/haraka/services/services.service'
@@ -11,7 +11,7 @@ const service = new ServicesService()
 export async function GET(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    requireFeature(tenant, 'pos')
+    requireAnyVerticalFeature(tenant)
     await requireHarakaModule(tenant, 'services')
     const limited = await rateLimitTenant(tenant, 'haraka-services', 120, 60_000)
     if (limited) return limited
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const tenant = await resolveTenant()
-    requireFeature(tenant, 'pos')
+    requireAnyVerticalFeature(tenant)
     await requireHarakaModule(tenant, 'services')
     const body = await req.json()
     const parsed = createServiceSchema.safeParse(body)

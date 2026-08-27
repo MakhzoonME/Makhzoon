@@ -8,7 +8,8 @@ import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { useTransferStore } from '@/store/transfer.store';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, NavSectionHeader, buildNavUrl } from '@/lib/nav';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ORG_NAV_ENTRIES, NavEntry, NavGroupConfig, NavItemConfig, NavSectionHeader, buildNavUrl, navFeatureAllowed } from '@/lib/nav';
 import { SpaceSwitcher } from '@/components/layout/SpaceSwitcher';
 import { useOrgInfo, useSubscriptionFeatures, useActiveHarakaModules, useActiveAddOns } from '@/hooks/org';
 import { useSpace } from '@/hooks/ui';
@@ -165,7 +166,7 @@ export function AppSidebar() {
   useRouter();
   const locale    = params?.locale ?? 'en';
   const orgSlug   = (params?.orgSlug as string) ?? '';
-  const { user }  = useAuthStore();
+  const { user, loading: authLoading } = useAuthStore();
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
   const { data: orgInfo } = useOrgInfo();
   const space = useSpace();
@@ -203,7 +204,7 @@ export function AppSidebar() {
   const visibleEntries = ORG_NAV_ENTRIES.filter((entry): entry is NavEntry => {
     if ('type' in entry && entry.type === 'separator') return false; // handled in finalEntries
     if ('type' in entry && entry.type === 'group') {
-      if (entry.featureKey && !features[entry.featureKey]) return false;
+      if (!navFeatureAllowed(entry, features)) return false;
       if (entry.adminOnly && !canSeeAdmin) {
         // adminOnly group — staff can see it only if they have a specific sub-perm
         return user?.role === 'staff' && !!user && entry.items.some(
@@ -217,7 +218,12 @@ export function AppSidebar() {
       // dashboard). Prefer the module parsed from permissionKey — featureKey
       // is a subscription-feature name and no longer always matches the
       // permission module name (e.g. featureKey 'assets' -> module 'usool').
-      if (user && (user.role === 'staff' || adminHasCustomPerms)) {
+      if (!user) {
+        // Auth is still resolving — don't flash permission-gated items before
+        // we know whether this account is a restricted staff/custom-admin user.
+        return !authLoading;
+      }
+      if (user.role === 'staff' || adminHasCustomPerms) {
         const u = { ...user, organizationId: user.organizationId ?? null };
         if (entry.permissionKey) {
           const [permModule] = entry.permissionKey.split('.');
@@ -227,11 +233,16 @@ export function AppSidebar() {
       }
       return true;
     }
-    const item = entry as { adminOnly?: boolean; featureKey?: string; harakaModule?: HarakaModule; harakaAddOn?: AddOnKey; permissionKey?: string };
+    const item = entry as { adminOnly?: boolean; featureKey?: string; featureKeys?: string[]; harakaModule?: HarakaModule; harakaAddOn?: AddOnKey; permissionKey?: string };
     if (item.adminOnly && !canSeeAdmin) return false;
-    if (item.featureKey && !features[item.featureKey]) return false;
+    if (!navFeatureAllowed(item, features)) return false;
     if (item.harakaModule && !activeHarakaModules.includes(item.harakaModule)) return false;
     if (item.harakaAddOn && !activeAddOns[item.harakaAddOn]) return false;
+    if (!user && authLoading && (item.permissionKey || item.featureKey)) {
+      // Auth is still resolving — don't flash permission-gated items before
+      // we know whether this account is a restricted staff/custom-admin user.
+      return false;
+    }
     if (user && (user.role === 'staff' || adminHasCustomPerms)) {
       const u = { ...user, organizationId: user.organizationId ?? null };
       if (item.permissionKey) {
@@ -344,7 +355,21 @@ export function AppSidebar() {
         </div>
 
         <nav className="flex-1 p-2.5 space-y-0.5 overflow-y-auto overflow-x-hidden">
-          {finalEntries.map((entry, idx) => {
+          {authLoading && !user ? (
+            /* Skeleton rows while permissions resolve — avoids flashing
+               entries the user shouldn't see, and avoids an empty nav. */
+            Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={`nav-skeleton-${i}`}
+                className={cn('flex items-center h-9 rounded-lg gap-2.5', ICON_INDENT)}
+              >
+                <Skeleton className="h-[18px] w-[18px] flex-shrink-0 rounded" />
+                {!sidebarCollapsed && (
+                  <Skeleton className="h-3 flex-1 max-w-[110px] rounded" />
+                )}
+              </div>
+            ))
+          ) : finalEntries.map((entry, idx) => {
             /* ── Separator ──────────────────────────────────────── */
             if ('type' in entry && entry.type === 'separator') {
               return (
@@ -365,7 +390,7 @@ export function AppSidebar() {
               const visibleRegularItems = (group.items as (NavItemConfig | NavSectionHeader)[])
                 .filter((sub): sub is NavItemConfig => !('type' in sub))
                 .filter((sub) => {
-                  if (sub.featureKey && !features[sub.featureKey]) return false;
+                  if (!navFeatureAllowed(sub, features)) return false;
                   if (sub.harakaModule && !activeHarakaModules.includes(sub.harakaModule)) return false;
                   if (sub.harakaAddOn && !activeAddOns[sub.harakaAddOn]) return false;
                   if (canSeeAdmin || !sub.permissionKey) return true;
@@ -608,7 +633,7 @@ export function AppSidebar() {
               if (sub.harakaModule && !activeHarakaModules.includes(sub.harakaModule)) return false;
               if (sub.harakaAddOn && !activeAddOns[sub.harakaAddOn]) return false;
               if (canSeeAdmin) return true;
-              if (sub.featureKey && !features[sub.featureKey]) return false;
+              if (!navFeatureAllowed(sub, features)) return false;
               if (sub.permissionKey && user) return hasPermByKey(user, sub.permissionKey);
               return true;
             });

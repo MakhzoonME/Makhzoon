@@ -1,17 +1,16 @@
 // Vertical registry — the branded surfaces that sit over the SAME shared
 // engine (appointments, service catalog, customers, staff).
 //
-// Haraka (حركة) is the general commerce surface; Zeyara (زيارة) is the clinic
-// surface. They differ in feature key, permission namespace, URL segment, and
-// vocabulary — not in data model. See
-// docs/plans/2026-08-26-zeyara-clinic-vertical-design.md §2.
+// Haraka (حركة) is the general commerce surface. It differs from any future
+// vertical in feature key, permission namespace, URL segment, and
+// vocabulary — not in data model.
 //
 // No DB access and no 'server-only' here: nav config, client guards, and
 // server gates all import this.
 import type { FeatureKey } from '@/types/package.types';
 import type { UserPermissions } from '@/types/user-permissions.types';
 
-export type Vertical = 'haraka' | 'zeyara';
+export type Vertical = 'haraka';
 
 export interface VerticalConfig {
   key: Vertical;
@@ -39,18 +38,9 @@ export const VERTICALS: Record<Vertical, VerticalConfig> = {
     labelAr: 'حركة',
     color: '#C2185B',
   },
-  zeyara: {
-    key: 'zeyara',
-    featureKey: 'zeyara',
-    permModule: 'zeyara',
-    segment: 'zeyara',
-    label: 'Zeyara',
-    labelAr: 'زيارة',
-    color: '#0F766E',
-  },
 };
 
-export const VERTICAL_KEYS: Vertical[] = ['haraka', 'zeyara'];
+export const VERTICAL_KEYS: Vertical[] = ['haraka'];
 
 /**
  * Feature keys that unlock the shared appointment/catalog/customer engine.

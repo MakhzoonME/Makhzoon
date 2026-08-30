@@ -1,9 +1,9 @@
 'use client'
 
-// Document Reports list, served to BOTH verticals from one body: Haraka
-// mounts it at /haraka/reports, Zeyara at /zeyara/reports. The templates and
-// instances are the same org-wide rows either way — only the entitlement key,
-// brand color, and route root come from the surrounding VerticalProvider.
+// Document Reports list, served to any vertical from one body: Haraka
+// mounts it at /haraka/reports. The templates and instances are the same
+// org-wide rows either way — only the entitlement key, brand color, and
+// route root come from the surrounding VerticalProvider.
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
@@ -18,7 +18,7 @@ import { formatDate } from '@/lib/utils/date'
 import type { DocumentReportInstance } from '@/types'
 
 export function DocumentReportsListPage() {
-  const { vertical, featureKey, basePath, colorVar } = useVertical()
+  const { featureKey, basePath, colorVar } = useVertical()
   const { isAllowed } = useModuleGuard({
     featureKey,
     moduleKey: 'documentReports',
@@ -32,8 +32,6 @@ export function DocumentReportsListPage() {
   const { data, isLoading } = useReportInstances({ page, pageSize: 25 })
 
   if (!isAllowed) return null
-
-  const isClinic = vertical === 'zeyara'
 
   const columns: ColumnDef<DocumentReportInstance>[] = [
     { key: 'templateName', header: 'Template', render: (r) => <span className="font-medium text-gray-800">{r.templateName}</span> },
@@ -58,11 +56,7 @@ export function DocumentReportsListPage() {
     <div className="space-y-6">
       <PageHeader
         title="Reports"
-        description={
-          isClinic
-            ? 'Documents generated for patients — patient reports, referrals, and other structured records.'
-            : 'Documents generated for customers — inspection reports, referrals, and other structured records.'
-        }
+        description="Documents generated for customers — inspection reports, referrals, and other structured records."
         actions={
           <Button onClick={() => setDrawerOpen(true)} style={{ background: colorVar }}>
             <Plus className="h-4 w-4 me-2" /> Generate Report

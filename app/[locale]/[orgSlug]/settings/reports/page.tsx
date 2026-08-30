@@ -20,8 +20,7 @@ import { VERTICAL_FEATURE_KEYS } from '@/lib/platform/verticals'
 import type { DocumentReportTemplate, ReportFieldDef } from '@/types'
 
 export default function ReportTemplatesSettingsPage() {
-  // Org-scoped page shared by both verticals — a clinic holding 'zeyara' but
-  // not 'pos' builds its patient-report templates here too.
+  // Org-scoped page shared across verticals that hold document-report access.
   const { isAllowed } = useModuleGuard({
     featureKeys: VERTICAL_FEATURE_KEYS,
     moduleKey: 'documentReports',

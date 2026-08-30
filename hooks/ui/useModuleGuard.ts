@@ -15,8 +15,8 @@ export function useModuleGuard(opts: {
   featureKey?: string;
   /**
    * ANY-OF feature gate, for a page more than one vertical reaches (the report
-   * template builder serves a Haraka retailer and a Zeyara clinic alike).
-   * Wins over `featureKey` when set. Mirrors navFeatureAllowed() in lib/nav.
+   * template builder serves a Haraka retailer and potentially other verticals
+   * alike). Wins over `featureKey` when set. Mirrors navFeatureAllowed() in lib/nav.
    */
   featureKeys?: string[];
   moduleKey?: keyof UserPermissions;

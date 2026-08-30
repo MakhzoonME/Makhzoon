@@ -1,9 +1,8 @@
 'use client';
 
-// Shared service catalog, rendered by BOTH /haraka/services and
-// /zeyara/services. The catalog IS the definition of what a clinic can book —
-// `appointmentBookable` + `durationMinutes` are what make a row appear in the
-// appointment service picker.
+// Shared service catalog, rendered by /haraka/services. The catalog defines
+// what can be booked — `appointmentBookable` + `durationMinutes` are what
+// make a row appear in the appointment service picker.
 import { useState } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -37,12 +36,11 @@ function formatDuration(minutes: number) {
 }
 
 export function ServiceCatalogPage() {
-  const { vertical, featureKey, permModule, colorVar } = useVertical();
+  const { featureKey, permModule, colorVar } = useVertical();
   const { isAllowed: featureAllowed } = useModuleGuard({
     featureKey,
-    // Services is an à-la-carte Haraka sub-module; for Zeyara the vertical
-    // itself is the entitlement (design doc §3).
-    harakaModule: vertical === 'haraka' ? 'services' : undefined,
+    // Services is an à-la-carte Haraka sub-module.
+    harakaModule: 'services',
     moduleKey: permModule,
   });
   const { isAllowed } = useAdminGuard('pos.manage_services');
@@ -85,7 +83,7 @@ export function ServiceCatalogPage() {
       name: service.name,
       category: service.category ?? '',
       description: service.description ?? '',
-      price: service.price,
+      price: service.price,
       active: service.active,
       durationMinutes: service.durationMinutes,
       appointmentBookable: service.appointmentBookable,
@@ -97,7 +95,7 @@ export function ServiceCatalogPage() {
     const payload = {
       ...values,
       category: values.category || null,
-      description: values.description || null,
+      description: values.description || null,
       // Blank input clears the duration rather than saving NaN.
       durationMinutes: values.durationMinutes ? Number(values.durationMinutes) : null,
     };
@@ -172,13 +170,11 @@ export function ServiceCatalogPage() {
 
   if (!featureAllowed || !isAllowed) return null;
 
-  const isClinic = vertical === 'zeyara';
-
   return (
     <div className="space-y-6">
       <PageHeader
         title={t('services.title')}
-        description={isClinic ? t('zeyara.servicesSubtitle') : t('services.subtitle')}
+        description={t('services.subtitle')}
         actions={
           <Button onClick={openCreate} style={{ background: colorVar }}>
             <Plus size={16} className="me-1" /> {t('services.addService')}
@@ -205,7 +201,7 @@ export function ServiceCatalogPage() {
               <FormItem>
                 <FormLabel>{t('services.labelName')} *</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder={isClinic ? t('zeyara.servicePlaceholder') : 'e.g. Home Delivery'} />
+                  <Input {...field} placeholder="e.g. Home Delivery" />
                 </FormControl>
                 <FormMessage />
               </FormItem>

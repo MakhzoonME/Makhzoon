@@ -12,8 +12,6 @@ import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { AppointmentStatusBadge } from '@/components/haraka/AppointmentStatusBadge';
 import { AppointmentInvoiceDialog } from '@/components/haraka/AppointmentInvoiceDialog';
 import { AppointmentPaymentsPanel } from '@/components/haraka/AppointmentPaymentsPanel';
-import { ClinicalRecordPanel } from '@/components/zeyara/ClinicalRecordPanel';
-import { CustomFieldValuesSection } from '@/components/banna/CustomFieldValuesSection';
 import { ReportGenerateDrawer } from '@/components/document-reports/ReportGenerateDrawer';
 import {
   useAppointment,
@@ -42,10 +40,10 @@ function permOpForStatus(status: AppointmentStatus): string {
 }
 
 export function AppointmentDetailPage() {
-  const { vertical, featureKey, permModule, basePath, customersSegment, colorVar } = useVertical();
+  const { featureKey, permModule, basePath, customersSegment, colorVar } = useVertical();
   const { isAllowed } = useModuleGuard({
     featureKey,
-    harakaModule: vertical === 'haraka' ? 'appointments' : undefined,
+    harakaModule: 'appointments',
     moduleKey: permModule,
     permOp: 'appointmentsView',
   });
@@ -72,13 +70,11 @@ export function AppointmentDetailPage() {
   if (!isAllowed) return null;
 
   const isAdmin = !!user && ['admin', 'org_owner', 'super_admin'].includes(user.role);
-  // Resolves against the ACTIVE vertical's namespace — a clinic user is judged
-  // on zeyara.*, not on Haraka keys they were never granted.
+  // Resolves against the ACTIVE vertical's namespace.
   const can = (op: string) => isAdmin || (!!user && hasPermByKey(user, `${permModule}.${op}`));
 
   const currency = orgInfo?.currency ?? 'JOD';
   const base = basePath;
-  // Document Reports live only under /haraka — there is no Zeyara route for them.
   const appointment = data?.appointment;
 
   if (isLoading) {
@@ -289,19 +285,6 @@ export function AppointmentDetailPage() {
             />
           )}
 
-          {/* Org-configurable booking fields (Phase 3). Zeyara-only: a Haraka
-              org never asked for them and shouldn't get a new empty panel. */}
-          {vertical === 'zeyara' && (
-            <div className="rounded-xl border border-border bg-surface-card p-5">
-              <CustomFieldValuesSection recordType="appointments" recordId={appointment.id} />
-            </div>
-          )}
-
-          {/* Renders only under Zeyara — Haraka has no clinical layer. */}
-          <ClinicalRecordPanel
-            appointmentId={appointment.id}
-            patientName={appointment.customerName}
-          />
         </div>
 
         <div className="space-y-6">

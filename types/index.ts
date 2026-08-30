@@ -27,4 +27,3 @@ export * from './purchase.types';
 export * from './managed-lists.types';
 export * from './space.types';
 export * from './document-report.types';
-export * from './zeyara.types';

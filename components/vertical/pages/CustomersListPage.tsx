@@ -5,13 +5,14 @@
 // permission namespace differ.
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, ArrowRight, Copy, Settings2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowRight, Copy, Settings2, Download } from 'lucide-react';
 import { PageHeader, DataTable, FilterBar, ConfirmDialog, BulkActionsBar, ExportButton } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { useVertical } from '@/components/vertical/VerticalProvider';
 import { useCustomers, useDeleteCustomer } from '@/hooks/haraka';
 import { toast, useT, useModuleGuard } from '@/hooks/ui';
+import { runExport } from '@/lib/export/run-export';
 import { useAuthStore } from '@/store/auth.store';
 import { useAccessibleSpaces } from '@/hooks/spaces';
 import { hasPermission } from '@/lib/permissions';
@@ -47,7 +48,7 @@ export function CustomersListPage() {
   const canBulkDuplicate = canCreate;
   const canManageFields = !!user && hasPermission(user, 'banna', 'create');
   const canExport = !!user && hasPermission(user, permModule, 'customersExport');
-  const showSelection = canBulkDelete || canBulkMove || canBulkDuplicate;
+  const showSelection = canBulkDelete || canBulkMove || canBulkDuplicate || canExport;
   const { data: spaceList } = useAccessibleSpaces();
   const hasMultipleSpaces = (spaceList?.items?.length ?? 0) > 1;
 
@@ -72,6 +73,19 @@ export function CustomersListPage() {
     setSelectedIds(new Set());
     setBulkDeleteOpen(false);
     setBulkDeleting(false);
+  }
+
+  function handleBulkExport() {
+    if (selectedIds.size === 0) return;
+    const stamp = new Date().toISOString().slice(0, 10);
+    const p = new URLSearchParams();
+    p.set('ids', [...selectedIds].join(','));
+    const label = isClinic ? 'patients' : 'customers';
+    runExport({
+      url: `/api/haraka/customers/export?${p.toString()}`,
+      filename: `${label}-${stamp}.csv`,
+      label,
+    });
   }
 
   async function onDelete() {
@@ -173,6 +187,12 @@ export function CustomersListPage() {
       />
 
       <BulkActionsBar count={selectedIds.size} onClear={() => setSelectedIds(new Set())}>
+        {canExport && (
+          <Button size="sm" variant="ghost" className="!text-white hover:bg-white/10" onClick={handleBulkExport}>
+            <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
+            <span className="ms-1">{t('export.selected')}</span>
+          </Button>
+        )}
         {hasMultipleSpaces && canBulkDuplicate && (
           <Button size="sm" variant="ghost" className="!text-white hover:bg-white/10" onClick={() => setDupeOpen(true)}>
             <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />

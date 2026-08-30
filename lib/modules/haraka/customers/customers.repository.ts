@@ -23,6 +23,7 @@ function toCustomer(r: Row): PosCustomer {
 
 export interface CustomerListOpts {
   search?: string
+  ids?: string[]
   page?: number
   pageSize?: number
 }
@@ -42,6 +43,7 @@ export class CustomersRepository {
       .select('*')
       .eq('organization_id', tenant.organizationId)
     if (tenant.spaceId) q = q.eq('space_id', tenant.spaceId)
+    if (opts?.ids?.length) q = q.in('id', opts.ids)
     const { data, error } = await q
     if (error) throw error
     let items = (data ?? []).map(toCustomer)

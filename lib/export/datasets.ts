@@ -89,17 +89,37 @@ export const CUSTOMER_COLUMNS: ExportColumn[] = [
   { header: 'Updated At', key: 'updatedAt' },
 ];
 
-export function customersToRows(customers: PosCustomer[]): Record<string, unknown>[] {
-  return customers.map((c) => ({
-    id: c.id,
-    name: c.name,
-    phone: c.phone ?? '',
-    email: c.email ?? '',
-    taxNumber: c.taxNumber ?? '',
-    notes: c.notes ?? '',
-    createdAt: formatDate(c.createdAt),
-    updatedAt: formatDate(c.updatedAt),
-  }));
+export interface CustomerCustomFieldsData {
+  fields: { id: string; label: string }[];
+  valuesByRecordId: Map<string, Map<string, unknown>>;
+}
+
+export function customersToRows(
+  customers: PosCustomer[],
+  customFields?: CustomerCustomFieldsData,
+): Record<string, unknown>[] {
+  return customers.map((c) => {
+    const row: Record<string, unknown> = {
+      id: c.id,
+      name: c.name,
+      phone: c.phone ?? '',
+      email: c.email ?? '',
+      taxNumber: c.taxNumber ?? '',
+      notes: c.notes ?? '',
+      createdAt: formatDate(c.createdAt),
+      updatedAt: formatDate(c.updatedAt),
+    };
+    if (customFields) {
+      const values = customFields.valuesByRecordId.get(c.id);
+      for (const field of customFields.fields) {
+        const value = values?.get(field.id);
+        row[field.label] = value === null || value === undefined
+          ? ''
+          : typeof value === 'object' ? JSON.stringify(value) : value;
+      }
+    }
+    return row;
+  });
 }
 
 export const AUDIT_LOG_COLUMNS: ExportColumn[] = [

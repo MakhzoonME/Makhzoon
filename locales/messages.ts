@@ -21,7 +21,7 @@ const en = {
   'nav.auditLogs':     'Audit Logs',
   'nav.receipt':          'Receipt',
   'nav.orderDocuments':   'Invoice',
-  'nav.harakaWarrantyCerts': 'Warranty Certs',
+  'nav.harakaWarrantyCerts': 'Warranty Certificates',
   'nav.warrantyCert':           'Warranty Certificate',
   'nav.notificationSettings':   'Notifications',
   'nav.cashDrawer':          'Cash Drawer',
@@ -217,9 +217,8 @@ const en = {
   'nav.settings':          'Settings',
   'nav.orgInfo':           'Organization Info',
   'nav.sectionOperations': 'Operations',
-  'nav.sectionCommerce':   'Commerce',
+  'nav.sectionRecords':    'Records',
   'nav.sectionFinance':    'Finance',
-  'nav.sectionServices':   'Services',
 
   // ── Common actions ───────────────────────────────────────────────
   'common.save':         'Save',
@@ -233,6 +232,7 @@ const en = {
   'export.currentViewHint': 'What you currently see, as an Excel file',
   'export.all':             'Export All',
   'export.allHint':         'Everything as an Excel file',
+  'export.selected':        'Export selected',
 
   // ── Pagination ──────────────────────────────────────────────────
   'pagination.showing':  'Showing',
@@ -2191,9 +2191,8 @@ const ar: Record<keyof typeof en, string> = {
   'nav.spaces':        'المساحات',
   'nav.banna':             'بنّا',
   'nav.sectionOperations': 'العمليات',
-  'nav.sectionCommerce':   'التجارة',
+  'nav.sectionRecords':    'السجلات',
   'nav.sectionFinance':    'المالية',
-  'nav.sectionServices':   'الخدمات',
 
   // ── Spaces feature ────────────────────────────────────────────────
   'spaces.title':              'المساحات',
@@ -2357,6 +2356,7 @@ const ar: Record<keyof typeof en, string> = {
   'export.currentViewHint': 'ما تراه حالياً كملف Excel',
   'export.all':             'تصدير الكل',
   'export.allHint':         'كل البيانات كملف Excel',
+  'export.selected':        'تصدير المحدد',
   'common.delete':       'حذف',
   'common.edit':         'تعديل',
   'common.add':          'إضافة',

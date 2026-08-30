@@ -502,24 +502,8 @@ export interface HarakaAppointmentPayment {
   organizationId: string;
   amount: number;
   paymentMethod: string | null;
-  status: 'paid' | 'unpaid' | 'written_off';
   note: string | null;
   paidAt: Date;
-  createdAt: Date;
-  createdBy: string | null;
-}
-
-/** A stock-tracked product (inventory_items) dispensed during an appointment
- *  — e.g. an injection or medicine given alongside the booked service. */
-export interface HarakaAppointmentProduct {
-  id: string;
-  appointmentId: string;
-  organizationId: string;
-  itemId: string;
-  /** Snapshot of inventory_items.name at add-time. */
-  itemName: string;
-  quantity: number;
-  unitPrice: number;
   createdAt: Date;
   createdBy: string | null;
 }

@@ -123,7 +123,16 @@ function CustomerCustomFields({
   }, [fields.length, recordId]);
 
   if (!posEnabled) return null;
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="pt-2 border-t border-border">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="h-14 rounded-md bg-surface-hover animate-pulse" />
+          <div className="h-14 rounded-md bg-surface-hover animate-pulse" />
+        </div>
+      </div>
+    );
+  }
   if (fields.length === 0 && !canCreateField) return null;
 
   function handleChange(fieldId: string, value: unknown) {

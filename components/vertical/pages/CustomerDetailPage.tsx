@@ -8,6 +8,8 @@ import { useState } from 'react';
 import { PageHeader, ConfirmDialog, StatusBadge } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { useCustomer, useDeleteCustomer, useCustomerHistory, type CustomerHistoryEntry } from '@/hooks/haraka';
+import { useCustomFieldValues } from '@/hooks/banna';
+import type { CustomFieldWithValue, PlateReaderEntry } from '@/types/banna.types';
 import { formatCurrency } from '@/lib/utils/format';
 import { toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
@@ -107,6 +109,7 @@ export function CustomerDetailPage() {
           value={customer.notes ?? '—'}
           multiline
         />
+        <CustomFieldsSummary customerId={customer.id} />
         <div className="text-xs text-gray-500 pt-2 border-t border-border">
           Created {new Date(customer.createdAt).toLocaleString()} · Updated{' '}
           {new Date(customer.updatedAt).toLocaleString()}
@@ -284,6 +287,57 @@ function HistoryRow({
       </Link>
     </li>
   );
+}
+
+/** Read-only display of the org's custom fields for this customer (e.g. "Date
+ *  of Birth") — excludes is_default rows, which are the Name/Phone/Email/Notes
+ *  placeholders already shown above as dedicated fields. */
+function CustomFieldsSummary({ customerId }: { customerId: string }) {
+  const { data } = useCustomFieldValues('customers', customerId);
+  const { locale } = useT();
+  const fields = (data?.items ?? []).filter((f) => !f.isDefault);
+
+  return (
+    <>
+      {fields.map((field) => (
+        <Field
+          key={field.id}
+          label={(locale === 'ar' && field.labelAr) ? field.labelAr : field.label}
+          value={formatCustomFieldValue(field, locale)}
+        />
+      ))}
+    </>
+  );
+}
+
+function formatCustomFieldValue(field: CustomFieldWithValue, locale: string): string {
+  const v = field.value;
+  if (v === null || v === undefined || v === '') return '—';
+
+  switch (field.type) {
+    case 'boolean':
+      return v === true ? 'Yes' : 'No';
+    case 'date':
+      return typeof v === 'string' ? new Date(v).toLocaleDateString() : '—';
+    case 'select': {
+      const opt = field.options?.find((o) => o.value === v);
+      return opt ? ((locale === 'ar' && opt.labelAr) ? opt.labelAr : opt.label) : String(v);
+    }
+    case 'multi_select': {
+      const values = Array.isArray(v) ? (v as string[]) : [];
+      const labels = values.map((val) => {
+        const opt = field.options?.find((o) => o.value === val);
+        return opt ? ((locale === 'ar' && opt.labelAr) ? opt.labelAr : opt.label) : val;
+      });
+      return labels.join(', ') || '—';
+    }
+    case 'plate_reader': {
+      const entries = Array.isArray(v) ? (v as PlateReaderEntry[]) : [];
+      return entries.map((e) => e.plateNumber).filter(Boolean).join(', ') || '—';
+    }
+    default:
+      return String(v);
+  }
 }
 
 function Field({

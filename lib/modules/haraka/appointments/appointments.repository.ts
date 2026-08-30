@@ -5,6 +5,7 @@ import type {
   AppointmentStatus,
   HarakaAppointment,
   HarakaAppointmentPayment,
+  HarakaAppointmentProduct,
   OrderPaymentStatus,
 } from '@/types'
 import {
@@ -12,6 +13,9 @@ import {
   allocateAppointmentInvoiceNumber,
 } from './appointment-numbering'
 import { DEFAULT_ORG_TIMEZONE, type ExistingBooking } from './availability'
+import { InventoryRepository } from '@/lib/modules/inventory/repositories/inventory.repository'
+
+const inventoryRepo = new InventoryRepository()
 
 type Row = Record<string, unknown>
 
@@ -49,15 +53,31 @@ function toAppointment(r: Row): HarakaAppointment {
   }
 }
 
+/** Maps a row from the shared `payments` table (reference_type='appointment'). */
 function toPayment(r: Row): HarakaAppointmentPayment {
+  return {
+    id:             r.id as string,
+    appointmentId:  r.reference_id as string,
+    organizationId: r.organization_id as string,
+    amount:         Number(r.amount ?? 0),
+    paymentMethod:  (r.payment_method as string) ?? null,
+    status:         (r.status as HarakaAppointmentPayment['status']) ?? 'paid',
+    note:           (r.note as string) ?? null,
+    paidAt:         r.paid_at ? new Date(r.paid_at as string) : new Date(),
+    createdAt:      r.created_at ? new Date(r.created_at as string) : new Date(),
+    createdBy:      (r.created_by as string) ?? null,
+  }
+}
+
+function toProduct(r: Row): HarakaAppointmentProduct {
   return {
     id:             r.id as string,
     appointmentId:  r.appointment_id as string,
     organizationId: r.organization_id as string,
-    amount:         Number(r.amount ?? 0),
-    paymentMethod:  (r.payment_method as string) ?? null,
-    note:           (r.note as string) ?? null,
-    paidAt:         r.paid_at ? new Date(r.paid_at as string) : new Date(),
+    itemId:         r.item_id as string,
+    itemName:       r.item_name as string,
+    quantity:       Number(r.quantity ?? 0),
+    unitPrice:      Number(r.unit_price ?? 0),
     createdAt:      r.created_at ? new Date(r.created_at as string) : new Date(),
     createdBy:      (r.created_by as string) ?? null,
   }
@@ -361,9 +381,10 @@ export class AppointmentsRepository {
     appointmentId: string,
   ): Promise<HarakaAppointmentPayment[]> {
     const { data, error } = await supabaseAdmin
-      .from('haraka_appointment_payments')
+      .from('payments')
       .select('*')
-      .eq('appointment_id', appointmentId)
+      .eq('reference_type', 'appointment')
+      .eq('reference_id', appointmentId)
       .eq('organization_id', tenant.organizationId)
       .order('paid_at', { ascending: true })
     if (error) throw error
@@ -371,7 +392,9 @@ export class AppointmentsRepository {
   }
 
   /** Recompute amount_paid / payment_status from the payment rows — the ledger
-   *  is the source of truth, the appointment columns are a cached rollup. */
+   *  is the source of truth, the appointment columns are a cached rollup.
+   *  Only status='paid' rows count toward amount_paid; unpaid/written_off
+   *  rows (e.g. an insurer's outstanding share) are excluded. */
   private async recalcPayments(
     tenant: TenantContext,
     appointmentId: string,
@@ -382,7 +405,9 @@ export class AppointmentsRepository {
     ])
     if (!appointment) throw new Error('Appointment not found')
 
-    const amountPaid = money(payments.reduce((sum, p) => sum + p.amount, 0))
+    const amountPaid = money(
+      payments.filter((p) => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0),
+    )
     const { data, error } = await supabaseAdmin
       .from('haraka_appointments')
       .update({
@@ -405,16 +430,30 @@ export class AppointmentsRepository {
     paymentMethod: string | null,
     note: string | null,
   ): Promise<HarakaAppointment> {
-    const { error } = await supabaseAdmin.from('haraka_appointment_payments').insert({
-      appointment_id:  appointmentId,
+    const before = await this.getById(tenant, appointmentId)
+    if (!before) throw new Error('Appointment not found')
+    const hadPaidBefore = before.amountPaid > 0.0001
+
+    const { error } = await supabaseAdmin.from('payments').insert({
+      reference_type:  'appointment',
+      reference_id:    appointmentId,
       organization_id: tenant.organizationId,
       amount,
-      payment_method:  paymentMethod,
+      payment_method:  paymentMethod ?? 'other',
+      status:          'paid',
+      paid_at:         new Date().toISOString(),
       note,
       created_by:      tenant.userId,
     })
     if (error) throw error
-    return this.recalcPayments(tenant, appointmentId)
+    const updated = await this.recalcPayments(tenant, appointmentId)
+
+    // Deduct product stock the first time the appointment goes from
+    // unpaid to having any paid amount — not on every subsequent payment.
+    if (!hadPaidBefore) {
+      await this.applyProductStock(tenant, appointmentId, 'out')
+    }
+    return updated
   }
 
   async removePayment(
@@ -422,13 +461,146 @@ export class AppointmentsRepository {
     appointmentId: string,
     paymentId: string,
   ): Promise<HarakaAppointment> {
+    const before = await this.getById(tenant, appointmentId)
+    if (!before) throw new Error('Appointment not found')
+    const hadPaidBefore = before.amountPaid > 0.0001
+
     const { error } = await supabaseAdmin
-      .from('haraka_appointment_payments')
+      .from('payments')
       .delete()
       .eq('id', paymentId)
+      .eq('reference_type', 'appointment')
+      .eq('reference_id', appointmentId)
+      .eq('organization_id', tenant.organizationId)
+    if (error) throw error
+    const updated = await this.recalcPayments(tenant, appointmentId)
+
+    // Restock only on the paid→unpaid transition (amount_paid back to 0),
+    // not for every payment removal — e.g. deleting one of two partial
+    // payments while a balance remains doesn't restock.
+    if (hadPaidBefore && updated.amountPaid <= 0.0001) {
+      await this.applyProductStock(tenant, appointmentId, 'in')
+    }
+    return updated
+  }
+
+  /** Deducts ('out') or restores ('in') stock for every product line
+   *  attached to the appointment. Best-effort per line: the payment itself
+   *  is already committed by the time this runs, so a line failing (e.g.
+   *  insufficient stock) is logged rather than thrown — surfacing it would
+   *  make addPayment/removePayment look like they failed when the payment
+   *  actually went through. */
+  private async applyProductStock(
+    tenant: TenantContext,
+    appointmentId: string,
+    direction: 'out' | 'in',
+  ): Promise<void> {
+    const products = await this.listProducts(tenant, appointmentId)
+    for (const p of products) {
+      try {
+        await inventoryRepo.applyTransaction(
+          tenant,
+          p.itemId,
+          direction,
+          p.quantity,
+          direction === 'out' ? 'appointment_payment' : 'appointment_payment_reversed',
+          `Appointment ${appointmentId}`,
+        )
+      } catch (err) {
+        console.error(
+          `[AppointmentsRepository] stock ${direction} failed for item ${p.itemId} on appointment ${appointmentId}:`,
+          err,
+        )
+      }
+    }
+  }
+
+  // ── Products ────────────────────────────────────────────────────────────
+  // Stock-tracked products (inventory_items) dispensed during the visit —
+  // e.g. an injection or medicine — alongside the appointment's single
+  // catalog service. Stock itself is deducted/restored from addPayment/
+  // removePayment above (applyProductStock), gated on the paid transition.
+
+  async listProducts(
+    tenant: TenantContext,
+    appointmentId: string,
+  ): Promise<HarakaAppointmentProduct[]> {
+    const { data, error } = await supabaseAdmin
+      .from('haraka_appointment_products')
+      .select('*')
+      .eq('appointment_id', appointmentId)
+      .eq('organization_id', tenant.organizationId)
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    return (data ?? []).map((r) => toProduct(r as Row))
+  }
+
+  /** Recompute `total` from price/discount plus the product lines, then
+   *  re-derive payment_status against the (possibly now-different) total —
+   *  mirrors recalcPayments' "ledger is the source of truth" convention. */
+  private async recalcProducts(
+    tenant: TenantContext,
+    appointmentId: string,
+  ): Promise<HarakaAppointment> {
+    const [products, appointment] = await Promise.all([
+      this.listProducts(tenant, appointmentId),
+      this.getById(tenant, appointmentId),
+    ])
+    if (!appointment) throw new Error('Appointment not found')
+
+    const productsTotal = money(
+      products.reduce((sum, p) => sum + p.quantity * p.unitPrice, 0),
+    )
+    const total = money(appointment.price - appointment.discountAmount + productsTotal)
+
+    const { data, error } = await supabaseAdmin
+      .from('haraka_appointments')
+      .update({
+        total,
+        payment_status: derivePaymentStatus(total, appointment.amountPaid),
+        updated_by: tenant.userId,
+      })
+      .eq('id', appointmentId)
+      .eq('organization_id', tenant.organizationId)
+      .select('*')
+      .single()
+    if (error) throw error
+    return toAppointment(data as Row)
+  }
+
+  async addProduct(
+    tenant: TenantContext,
+    appointmentId: string,
+    itemId: string,
+    itemName: string,
+    quantity: number,
+    unitPrice: number,
+  ): Promise<HarakaAppointment> {
+    const { error } = await supabaseAdmin.from('haraka_appointment_products').insert({
+      appointment_id:  appointmentId,
+      organization_id: tenant.organizationId,
+      item_id:         itemId,
+      item_name:       itemName,
+      quantity,
+      unit_price:      unitPrice,
+      created_by:      tenant.userId,
+    })
+    if (error) throw error
+    return this.recalcProducts(tenant, appointmentId)
+  }
+
+  async removeProduct(
+    tenant: TenantContext,
+    appointmentId: string,
+    productId: string,
+  ): Promise<HarakaAppointment> {
+    const { error } = await supabaseAdmin
+      .from('haraka_appointment_products')
+      .delete()
+      .eq('id', productId)
       .eq('appointment_id', appointmentId)
       .eq('organization_id', tenant.organizationId)
     if (error) throw error
-    return this.recalcPayments(tenant, appointmentId)
+    return this.recalcProducts(tenant, appointmentId)
   }
 }

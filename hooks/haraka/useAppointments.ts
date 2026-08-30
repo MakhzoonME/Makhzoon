@@ -2,7 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
-import type { AppointmentStatus, HarakaAppointment, HarakaAppointmentPayment } from '@/types';
+import type {
+  AppointmentStatus,
+  HarakaAppointment,
+  HarakaAppointmentPayment,
+  HarakaAppointmentProduct,
+} from '@/types';
 import type {
   CreateAppointmentPayload,
   UpdateAppointmentPayload,
@@ -217,6 +222,73 @@ export function useRemoveAppointmentPayment() {
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: paymentsKey(vars.appointmentId) });
+      qc.invalidateQueries({ queryKey: LIST_KEY });
+    },
+  });
+}
+
+// ── Products ──────────────────────────────────────────────────────────────
+
+function productsKey(appointmentId: string | undefined) {
+  return ['haraka', 'appointment-products', appointmentId] as const;
+}
+
+export function useAppointmentProducts(appointmentId: string | undefined) {
+  const { space } = useParams<{ space?: string }>();
+  return useQuery<{ products: HarakaAppointmentProduct[] }>({
+    queryKey: [...productsKey(appointmentId), space],
+    enabled: !!appointmentId && !!space,
+    queryFn: async () => {
+      const res = await fetch(`/api/haraka/appointments/${appointmentId}/products`, {
+        headers: spaceHeaders(space),
+      });
+      if (!res.ok) throw await errorFrom(res, 'Failed to fetch products');
+      return res.json();
+    },
+  });
+}
+
+export function useAddAppointmentProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: {
+      appointmentId: string;
+      itemId: string;
+      quantity: number;
+      unitPrice: number;
+    }) => {
+      const res = await fetch(`/api/haraka/appointments/${vars.appointmentId}/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemId: vars.itemId,
+          quantity: vars.quantity,
+          unitPrice: vars.unitPrice,
+        }),
+      });
+      if (!res.ok) throw await errorFrom(res, 'Failed to add product');
+      return res.json();
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: productsKey(vars.appointmentId) });
+      qc.invalidateQueries({ queryKey: LIST_KEY });
+    },
+  });
+}
+
+export function useRemoveAppointmentProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { appointmentId: string; productId: string }) => {
+      const res = await fetch(
+        `/api/haraka/appointments/${vars.appointmentId}/products/${vars.productId}`,
+        { method: 'DELETE' },
+      );
+      if (!res.ok) throw await errorFrom(res, 'Failed to remove product');
+      return res.json();
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: productsKey(vars.appointmentId) });
       qc.invalidateQueries({ queryKey: LIST_KEY });
     },
   });

@@ -74,7 +74,7 @@ describe('shared-engine operations resolve in every vertical namespace', () => {
   const SHARED_OPS = [
     'appointmentsView', 'appointmentsCreate', 'appointmentsUpdate',
     'appointmentsConfirm', 'appointmentsComplete', 'appointmentsCancel',
-    'appointmentsMarkNoShow', 'appointmentsGenerateInvoice', 'appointmentsAddPayment',
+    'appointmentsMarkNoShow', 'appointmentsGenerateInvoice', 'appointmentsAddPayment', 'appointmentsAddProduct',
     'customersView', 'customersCreate', 'customersUpdate', 'customersDelete',
     'customersExport', 'customersHistoryView',
     'customerFieldsView', 'customerFieldsCreate', 'customerFieldsUpdate', 'customerFieldsDelete',

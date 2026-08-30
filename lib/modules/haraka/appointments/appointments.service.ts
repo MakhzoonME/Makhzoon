@@ -13,6 +13,7 @@ import {
   type ListAppointmentsOpts,
 } from './appointments.repository'
 import { StaffAvailabilityRepository } from '@/lib/modules/haraka/staff/availability.repository'
+import { InventoryRepository } from '@/lib/modules/inventory/repositories/inventory.repository'
 import {
   fitsWorkingWindows,
   findConflict,
@@ -23,6 +24,7 @@ import {
 
 const repo = new AppointmentsRepository()
 const availabilityRepo = new StaffAvailabilityRepository()
+const inventoryRepo = new InventoryRepository()
 
 type Row = Record<string, unknown>
 
@@ -43,7 +45,8 @@ function requireOp(
     | 'appointmentsCreate'
     | 'appointmentsUpdate'
     | 'appointmentsGenerateInvoice'
-    | 'appointmentsAddPayment',
+    | 'appointmentsAddPayment'
+    | 'appointmentsAddProduct',
 ) {
   if (!hasVerticalPermission(tenant, op)) {
     throw NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -451,6 +454,53 @@ export class AppointmentsService {
       action:   'APPOINTMENT_PAYMENT_REMOVED',
       recordId: appointmentId,
       newValue: { paymentId },
+    })
+    return updated
+  }
+
+  // ── Products ────────────────────────────────────────────────────────────
+  // Unlike payments, products can be recorded at any appointment status —
+  // a dispensed injection/medicine still needs to be on the books even for
+  // a cancelled or no-show visit.
+
+  async listProducts(tenant: TenantContext, appointmentId: string) {
+    requireView(tenant)
+    await this.getById(tenant, appointmentId)
+    return repo.listProducts(tenant, appointmentId)
+  }
+
+  async addProduct(
+    tenant: TenantContext,
+    appointmentId: string,
+    itemId: string,
+    quantity: number,
+    unitPrice: number,
+  ) {
+    requireOp(tenant, 'appointmentsAddProduct')
+    await this.getById(tenant, appointmentId)
+    const item = await inventoryRepo.getById(tenant, itemId)
+    if (!item) badRequest('Product not found')
+    const updated = await repo.addProduct(tenant, appointmentId, itemId, item!.name, quantity, unitPrice)
+    auditLog.queue({
+      tenant,
+      module:   'pos',
+      action:   'APPOINTMENT_PRODUCT_ADDED',
+      recordId: appointmentId,
+      newValue: { itemId, itemName: item!.name, quantity, unitPrice },
+    })
+    return updated
+  }
+
+  async removeProduct(tenant: TenantContext, appointmentId: string, productId: string) {
+    requireOp(tenant, 'appointmentsAddProduct')
+    await this.getById(tenant, appointmentId)
+    const updated = await repo.removeProduct(tenant, appointmentId, productId)
+    auditLog.queue({
+      tenant,
+      module:   'pos',
+      action:   'APPOINTMENT_PRODUCT_REMOVED',
+      recordId: appointmentId,
+      newValue: { productId },
     })
     return updated
   }

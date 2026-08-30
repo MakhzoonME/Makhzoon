@@ -55,6 +55,9 @@ export {
   useAppointmentPayments,
   useAddAppointmentPayment,
   useRemoveAppointmentPayment,
+  useAppointmentProducts,
+  useAddAppointmentProduct,
+  useRemoveAppointmentProduct,
 } from './useAppointments';
 export type { UseAppointmentsParams } from './useAppointments';
 export { useCashDrawerConfig, useUpdateCashDrawerConfig, useVerifyDrawerPin } from './useCashDrawer';

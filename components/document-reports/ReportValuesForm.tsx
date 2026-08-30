@@ -8,6 +8,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { isFieldVisible } from '@/lib/modules/banna/condition-eval'
+import { pickText, isRtl, type ReceiptLang } from '@/lib/receipts/labels'
 import type { ReportFieldDef } from '@/types'
 
 /** Renders the fill-in form for a report's field schema, honoring
@@ -17,11 +18,14 @@ export function ReportValuesForm({
   values,
   onChange,
   disabled,
+  lang = 'en',
 }: {
   schema: ReportFieldDef[]
   values: Record<string, unknown>
   onChange: (fieldKey: string, value: unknown) => void
   disabled?: boolean
+  /** Which language field names/placeholders/options render in. */
+  lang?: ReceiptLang
 }) {
   const byKey = useMemo(
     () => new Map(schema.map((f) => [f.fieldKey, { condition: f.condition, value: values[f.fieldKey] }])),
@@ -33,12 +37,14 @@ export function ReportValuesForm({
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .filter((f) => isFieldVisible(f.fieldKey, byKey))
 
+  const rtl = isRtl(lang)
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" dir={rtl ? 'rtl' : 'ltr'}>
       {visibleFields.map((field) => (
         <div key={field.fieldKey} className="space-y-1.5">
-          <Label>{field.label}{field.required && <span className="text-red-500"> *</span>}</Label>
-          <ReportValueInput field={field} value={values[field.fieldKey]} onChange={(v) => onChange(field.fieldKey, v)} disabled={disabled} />
+          <Label>{pickText(lang, field.label, field.labelAr)}{field.required && <span className="text-red-500"> *</span>}</Label>
+          <ReportValueInput field={field} value={values[field.fieldKey]} onChange={(v) => onChange(field.fieldKey, v)} disabled={disabled} lang={lang} />
         </div>
       ))}
     </div>
@@ -50,19 +56,24 @@ function ReportValueInput({
   value,
   onChange,
   disabled,
+  lang,
 }: {
   field: ReportFieldDef
   value: unknown
   onChange: (value: unknown) => void
   disabled?: boolean
+  lang: ReceiptLang
 }) {
+  const placeholder = pickText(lang, field.placeholder, field.placeholderAr)
+  const optionLabel = (o: NonNullable<ReportFieldDef['options']>[number]) => pickText(lang, o.label, o.labelAr)
+
   switch (field.type) {
     case 'textarea':
       return (
         <Textarea
           value={(value as string) ?? ''}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={field.placeholder}
+          placeholder={placeholder}
           disabled={disabled}
           rows={4}
         />
@@ -73,7 +84,7 @@ function ReportValueInput({
           type="number"
           value={(value as number | string) ?? ''}
           onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
-          placeholder={field.placeholder}
+          placeholder={placeholder}
           disabled={disabled}
         />
       )
@@ -95,16 +106,16 @@ function ReportValueInput({
             onChange={(e) => onChange(e.target.checked)}
             disabled={disabled}
           />
-          {field.placeholder ?? 'Yes'}
+          {placeholder || (lang === 'ar' ? 'نعم' : 'Yes')}
         </label>
       )
     case 'select':
       return (
         <Select value={(value as string) ?? undefined} onValueChange={onChange} disabled={disabled}>
-          <SelectTrigger><SelectValue placeholder={field.placeholder ?? 'Select…'} /></SelectTrigger>
+          <SelectTrigger><SelectValue placeholder={placeholder || (lang === 'ar' ? 'اختر…' : 'Select…')} /></SelectTrigger>
           <SelectContent>
             {(field.options ?? []).map((o) => (
-              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              <SelectItem key={o.value} value={o.value}>{optionLabel(o)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -123,7 +134,7 @@ function ReportValueInput({
                 onClick={() => onChange(checked ? selected.filter((v) => v !== o.value) : [...selected, o.value])}
                 className={`px-2.5 py-1 rounded-full text-xs border ${checked ? 'bg-primary-600 text-white border-primary-600' : 'border-border text-gray-600'}`}
               >
-                {o.label}
+                {optionLabel(o)}
               </button>
             )
           })}
@@ -137,7 +148,7 @@ function ReportValueInput({
         <Input
           value={(value as string) ?? ''}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={field.placeholder}
+          placeholder={placeholder}
           disabled={disabled}
         />
       )

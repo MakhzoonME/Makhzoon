@@ -33,7 +33,7 @@ export default function SuperadminNotificationsPage() {
     }
   }, [config]);
 
-  // /api/whatsapp/webhook lives in this same app, not the rcpt-* receipt app
+  // /api/whatsapp/webhook lives in this same app, not the doc-* document app
   // — the URL to give Meta is always this app's own origin.
   useEffect(() => {
     setWebhookUrl(`${window.location.origin}/api/whatsapp/webhook`);

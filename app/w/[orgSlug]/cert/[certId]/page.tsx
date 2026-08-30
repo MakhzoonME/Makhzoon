@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { WarrantyCertPreview } from '@/components/haraka/WarrantyCertPreview';
+import { loadOrgReceiptContext, publicDocumentBaseUrl } from '@/lib/receipts/public-receipt';
+import { documentPublicUrl } from '@/lib/qr';
 import type { HarakaWarrantyCert, HarakaWarrantyConfig, WarrantyCertItem } from '@/types';
 
 export const dynamic = 'force-dynamic';
@@ -35,7 +37,8 @@ const CONFIG_DEFAULTS: Omit<HarakaWarrantyConfig, 'organizationId'> = {
   termsText: null, termsTextAr: null,
   headerText: null, headerTextAr: null,
   footerText: null, footerTextAr: null,
-  showLogo: true, showQr: false,
+  showLogo: true,
+  qrSource: 'none', qrCaption: '', qrPositionA4: 'bottom-right', qrPositionThermal: 'bottom',
   language: 'en', template: 'a4-modern', accentColor: '#C2185B',
 }
 
@@ -71,18 +74,24 @@ async function loadCert(orgSlug: string, certId: string) {
         footerText:   (cfgRow.footer_text as string) ?? null,
         footerTextAr: (cfgRow.footer_text_ar as string) ?? null,
         showLogo:     (cfgRow.show_logo as boolean) ?? true,
-        showQr:       (cfgRow.show_qr as boolean) ?? false,
+        qrSource:     ((cfgRow.qr_source as string) ?? (cfgRow.show_qr ? 'link' : 'none')) as 'none' | 'link',
+        qrCaption:    (cfgRow.qr_caption as string) ?? '',
+        qrPositionA4: (cfgRow.qr_position_a4 as HarakaWarrantyConfig['qrPositionA4']) ?? 'bottom-right',
+        qrPositionThermal: (cfgRow.qr_position_thermal as HarakaWarrantyConfig['qrPositionThermal']) ?? 'bottom',
         language:     (cfgRow.language as 'en'|'ar'|'both') ?? 'en',
         template:     (cfgRow.template as string) ?? 'a4-modern',
         accentColor:  (cfgRow.accent_color as string) ?? '#C2185B',
       }
     : { organizationId: org.id as string, ...CONFIG_DEFAULTS }
 
+  const receiptContext = await loadOrgReceiptContext(orgSlug)
+
   return {
     cert:      toCert(certRow),
     config,
     orgName:   org.name as string,
     orgNameAr: undefined, // organizations has no Arabic-name column
+    logo:      receiptContext?.config.logo ?? null,
   }
 }
 
@@ -105,6 +114,7 @@ export default async function WarrantyCertPage(
   if (!res) notFound()
 
   const lang = res.config.language === 'ar' ? 'ar' : 'en'
+  const documentUrl = documentPublicUrl('warranty-cert', orgSlug, certId, await publicDocumentBaseUrl())
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-start justify-center py-8 px-4">
@@ -115,6 +125,8 @@ export default async function WarrantyCertPage(
           orgName={res.orgName}
           orgNameAr={res.orgNameAr}
           lang={lang}
+          logo={res.logo}
+          documentUrl={documentUrl}
         />
       </div>
     </div>

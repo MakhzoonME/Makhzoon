@@ -11,11 +11,16 @@ export const APPOINTMENT_INVOICE_THANK_YOU = 'Thank you for your business!';
 /** Per-org appointment invoice settings — stored in
  *  organization_configs.appointment_document_config (JSONB).
  *
- *  QR-only for now. The title/thank-you above stay constants until there is a
- *  reason to make them editable; this exists because the QR source is a
- *  per-document-type choice and the appointment invoice is its own document. */
-export interface AppointmentDocumentConfig extends DocumentQrConfig {}
+ *  QR + logo visibility only for now. The title/thank-you above stay
+ *  constants until there is a reason to make them editable; this exists
+ *  because the QR source and logo visibility are per-document-type choices
+ *  and the appointment invoice is its own document. */
+export interface AppointmentDocumentConfig extends DocumentQrConfig {
+  /** Independent of the shared receipt config — see OrderDocumentConfig.showLogo. */
+  showLogo: boolean;
+}
 
 export const DEFAULT_APPOINTMENT_DOCUMENT_CONFIG: AppointmentDocumentConfig = {
+  showLogo: true,
   ...DEFAULT_DOCUMENT_QR,
 };

@@ -66,6 +66,7 @@ export function useCreateReportInstance() {
       encounterId: string
       fieldValues: Record<string, unknown>
       attachments?: ReportAttachment[]
+      language?: 'en' | 'ar'
     }) => {
       const res = await fetch('/api/document-reports/instances', {
         method: 'POST',
@@ -86,7 +87,7 @@ export function useUpdateReportInstance() {
   const qc = useQueryClient()
   const { space } = useParams<{ space?: string }>()
   return useMutation({
-    mutationFn: async (vars: { id: string; patch: { fieldValues?: Record<string, unknown>; attachments?: ReportAttachment[] } }) => {
+    mutationFn: async (vars: { id: string; patch: { fieldValues?: Record<string, unknown>; attachments?: ReportAttachment[]; language?: 'en' | 'ar' } }) => {
       const res = await fetch(`/api/document-reports/instances/${vars.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...spaceHeaders(space) },

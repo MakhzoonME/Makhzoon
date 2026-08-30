@@ -10,7 +10,7 @@ import { toast, useT } from '@/hooks/ui';
 import { useReceiptConfig, useAppointmentDocumentConfig } from '@/hooks/haraka';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import type { AppointmentDocumentConfig } from '@/lib/modules/haraka/appointments/appointment-document-config';
-import { getReceiptBaseUrl } from '@/lib/app-env';
+import { getDocBaseUrl } from '@/lib/app-env';
 import type { HarakaAppointment } from '@/types';
 
 interface Props {
@@ -47,7 +47,7 @@ export function AppointmentInvoiceDialog({
   const [capturing, setCapturing] = useState<'png' | 'jpg' | null>(null);
   const captureRef = useRef<HTMLDivElement>(null);
 
-  const publicUrl = `${getReceiptBaseUrl()}/appointment-invoice/${orgSlug}/${appointment.id}`;
+  const publicUrl = `${getDocBaseUrl()}/appointment-invoice/${orgSlug}/${appointment.id}`;
 
   async function handleCopyLink() {
     await navigator.clipboard.writeText(publicUrl);

@@ -12,6 +12,9 @@ import {
 import {
   DEFAULT_APPOINTMENT_DOCUMENT_CONFIG, type AppointmentDocumentConfig,
 } from '@/lib/modules/haraka/appointments/appointment-document-config';
+import {
+  DEFAULT_REPORT_DOCUMENT_CONFIG, type ReportDocumentConfig,
+} from '@/lib/modules/document-reports/report-document-config';
 
 /**
  * The saved org config behind each printable document.
@@ -85,4 +88,14 @@ export function useAppointmentDocumentConfig(): AppointmentDocumentConfig {
     staleTime: STALE,
   });
   return data ?? DEFAULT_APPOINTMENT_DOCUMENT_CONFIG;
+}
+
+/** Generated-report QR/logo appearance. Cross-vertical, same as the module itself. */
+export function useReportDocumentConfig(): ReportDocumentConfig {
+  const { data } = useQuery({
+    queryKey: ['report-document-config'],
+    queryFn: () => fetchConfig('/api/organizations/report-document-config', DEFAULT_REPORT_DOCUMENT_CONFIG),
+    staleTime: STALE,
+  });
+  return data ?? DEFAULT_REPORT_DOCUMENT_CONFIG;
 }

@@ -14,9 +14,9 @@ const ALLOWED_ORIGINS = new Set(
     'https://app.makhzoon.me',
     'https://dev.makhzoon.me',
     'https://stg.makhzoon.me',
-    'https://rcpt-app.makhzoon.me',
-    'https://rcpt-dev.makhzoon.me',
-    'https://rcpt-stg.makhzoon.me',
+    'https://doc-app.makhzoon.me',
+    'https://doc-dev.makhzoon.me',
+    'https://doc-stg.makhzoon.me',
   ].filter((o): o is string => !!o),
 );
 

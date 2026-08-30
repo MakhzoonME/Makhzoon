@@ -19,7 +19,10 @@ const CONFIG_DEFAULTS: Omit<HarakaWarrantyConfig, 'organizationId'> = {
   footerText:   null,
   footerTextAr: null,
   showLogo:     true,
-  showQr:       true,
+  qrSource:     'none',
+  qrCaption:    '',
+  qrPositionA4: 'bottom-right',
+  qrPositionThermal: 'bottom',
   language:     'en',
   template:     'a4-modern',
   accentColor:  '#C2185B',
@@ -36,7 +39,10 @@ function toConfig(r: Row): HarakaWarrantyConfig {
     footerText:          (r.footer_text as string) ?? null,
     footerTextAr:        (r.footer_text_ar as string) ?? null,
     showLogo:            (r.show_logo as boolean) ?? true,
-    showQr:              (r.show_qr as boolean) ?? true,
+    qrSource:            (r.qr_source as 'none'|'link') ?? (r.show_qr ? 'link' : 'none'),
+    qrCaption:           (r.qr_caption as string) ?? '',
+    qrPositionA4:        (r.qr_position_a4 as HarakaWarrantyConfig['qrPositionA4']) ?? 'bottom-right',
+    qrPositionThermal:   (r.qr_position_thermal as HarakaWarrantyConfig['qrPositionThermal']) ?? 'bottom',
     language:            (r.language as 'en'|'ar'|'both') ?? 'en',
     template:            (r.template as string) ?? 'a4-modern',
     accentColor:         (r.accent_color as string) ?? '#C2185B',
@@ -126,7 +132,10 @@ export class WarrantyCertsRepository {
     if (patch.footerText   !== undefined) update.footer_text    = patch.footerText
     if (patch.footerTextAr !== undefined) update.footer_text_ar = patch.footerTextAr
     if (patch.showLogo     !== undefined) update.show_logo      = patch.showLogo
-    if (patch.showQr       !== undefined) update.show_qr        = patch.showQr
+    if (patch.qrSource     !== undefined) update.qr_source      = patch.qrSource
+    if (patch.qrCaption    !== undefined) update.qr_caption     = patch.qrCaption
+    if (patch.qrPositionA4 !== undefined) update.qr_position_a4 = patch.qrPositionA4
+    if (patch.qrPositionThermal !== undefined) update.qr_position_thermal = patch.qrPositionThermal
     if (patch.language     !== undefined) update.language       = patch.language
     if (patch.template     !== undefined) update.template       = patch.template
     if (patch.accentColor  !== undefined) update.accent_color   = patch.accentColor

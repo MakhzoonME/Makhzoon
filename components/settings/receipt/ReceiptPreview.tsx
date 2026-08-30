@@ -143,6 +143,11 @@ export function ThermalPreview(props: PreviewProps) {
       className={`${rtl ? 'font-sans' : 'font-mono'} text-[10px] leading-[1.45] bg-white border border-gray-200 shadow-md px-4 py-5 mx-auto`}
       style={{ width: w, color: '#111' }}
     >
+      {qr && config.qrPositionThermal === 'top' && (
+        <div className="flex justify-center mb-2">
+          <DocumentQr qr={qr} size={is80 ? 96 : 76} captionColor="#9ca3af" />
+        </div>
+      )}
       {config.showLogo && (
         <div className="flex justify-center mb-2">
           {config.logo
@@ -204,7 +209,7 @@ export function ThermalPreview(props: PreviewProps) {
         <div className="text-[9px] text-gray-400 mt-1">{L.taxNo}: {taxNumber}</div>
       )}
 
-      {qr && (
+      {qr && config.qrPositionThermal !== 'top' && (
         <div className="flex justify-center mt-2">
           <DocumentQr qr={qr} size={is80 ? 96 : 76} captionColor="#9ca3af" />
         </div>
@@ -238,7 +243,8 @@ export function A4ModernPreview(props: PreviewProps) {
   const qr = previewQr(props);
 
   return (
-    <div dir={rtl ? 'rtl' : 'ltr'} className="bg-white border border-gray-200 shadow-md mx-auto text-[10px] leading-relaxed" style={{ width: 320, minHeight: 420, fontFamily: 'sans-serif' }}>
+    <div dir={rtl ? 'rtl' : 'ltr'} className="bg-white border border-gray-200 shadow-md mx-auto text-[10px] leading-relaxed" style={{ width: 320, minHeight: 420, fontFamily: 'sans-serif', position: 'relative' }}>
+      {qr && <DocumentQr qr={qr} size={64} captionColor="#9ca3af" position={config.qrPositionA4} />}
       {/* Header band */}
       <div className="px-6 py-4 text-white" style={{ background: config.accentColor }}>
         <div className="flex items-center gap-3">
@@ -316,12 +322,6 @@ export function A4ModernPreview(props: PreviewProps) {
           <div className="text-[9px] text-gray-400 mt-3">{L.taxReg}: {taxNumber}</div>
         )}
 
-        {qr && (
-          <div className="flex justify-center mt-4">
-            <DocumentQr qr={qr} size={84} captionColor="#9ca3af" />
-          </div>
-        )}
-
         {footer && (
           <div className="text-center text-[9px] text-gray-400 mt-4 pt-3 border-t border-dashed border-gray-200">
             {footer}
@@ -349,7 +349,8 @@ export function A4InvoicePreview(props: PreviewProps) {
   const qr = previewQr(props);
 
   return (
-    <div dir={rtl ? 'rtl' : 'ltr'} className="bg-white border border-gray-200 shadow-md mx-auto text-[10px] leading-relaxed" style={{ width: 320, minHeight: 440, fontFamily: 'sans-serif' }}>
+    <div dir={rtl ? 'rtl' : 'ltr'} className="bg-white border border-gray-200 shadow-md mx-auto text-[10px] leading-relaxed" style={{ width: 320, minHeight: 440, fontFamily: 'sans-serif', position: 'relative' }}>
+      {qr && <DocumentQr qr={qr} size={64} captionColor="#9ca3af" position={config.qrPositionA4} />}
       {/* Top header */}
       <div className="flex justify-between items-start px-6 pt-5 pb-3 border-b border-gray-200">
         <div className="flex items-center gap-2">
@@ -421,12 +422,6 @@ export function A4InvoicePreview(props: PreviewProps) {
 
         {config.showWebsite && config.website && (
           <div className="text-[9px] text-gray-400">{config.website}</div>
-        )}
-
-        {qr && (
-          <div className="flex justify-center mt-4">
-            <DocumentQr qr={qr} size={84} captionColor="#9ca3af" />
-          </div>
         )}
 
         {footer && (

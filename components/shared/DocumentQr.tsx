@@ -1,7 +1,14 @@
 'use client';
 
 import { useMemo } from 'react';
-import { qrMatrix, type ResolvedDocumentQr } from '@/lib/qr';
+import { qrMatrix, type ResolvedDocumentQr, type QrPositionA4 } from '@/lib/qr';
+
+const CORNER_OFFSET: Record<QrPositionA4, React.CSSProperties> = {
+  'top-left':     { top: 0, left: 0 },
+  'top-right':    { top: 0, right: 0 },
+  'bottom-left':  { bottom: 0, left: 0 },
+  'bottom-right': { bottom: 0, right: 0 },
+};
 
 interface Props {
   /** Output of `resolveDocumentQr` — render nothing when it returned null. */
@@ -10,6 +17,14 @@ interface Props {
   size?: number | string;
   /** Caption color; defaults to the muted grey the document footers use. */
   captionColor?: string;
+  /**
+   * 'inline' (default) renders in normal document flow — the caller decides
+   * placement, as thermal receipts do (QR is one line in a linear layout). A
+   * corner value instead absolutely positions the QR at that corner of the
+   * nearest `position: relative` ancestor — the caller must provide one and
+   * enough padding that page content doesn't run under it.
+   */
+  position?: QrPositionA4 | 'inline';
 }
 
 /**
@@ -24,7 +39,7 @@ interface Props {
  * `shape-rendering: crispEdges` is load-bearing: without it the renderer
  * antialiases module edges into grey seams and phone scanners start missing it.
  */
-export function DocumentQr({ qr, size = 88, captionColor = '#777' }: Props) {
+export function DocumentQr({ qr, size = 88, captionColor = '#777', position = 'inline' }: Props) {
   const matrix = useMemo(() => (qr ? qrMatrix(qr.payload) : null), [qr]);
   if (!qr || !matrix) return null;
 
@@ -51,8 +66,13 @@ export function DocumentQr({ qr, size = 88, captionColor = '#777' }: Props) {
     }
   }
 
+  const style: React.CSSProperties =
+    position === 'inline'
+      ? { display: 'inline-block', textAlign: 'center' }
+      : { position: 'absolute', textAlign: 'center', ...CORNER_OFFSET[position] };
+
   return (
-    <div style={{ display: 'inline-block', textAlign: 'center' }}>
+    <div style={style}>
       <svg
         viewBox={`0 0 ${span} ${span}`}
         width={size}

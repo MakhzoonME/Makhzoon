@@ -7,8 +7,27 @@ import {
   type CreateTemplateInput,
   type UpdateTemplateInput,
 } from './templates.repository'
+import type { ReportFieldDef, ReportLanguageMode } from '@/types'
 
 const repo = new ReportTemplatesRepository()
+
+/** The zod schema only requires "a name in at least one language" (it can't
+ *  see the sibling languageMode); this enforces the mode's actual contract —
+ *  'both' needs both names on every field, a single language needs its own. */
+function assertFieldsMatchLanguageMode(fields: ReportFieldDef[], mode: ReportLanguageMode) {
+  for (const f of fields) {
+    const missing =
+      mode === 'both' ? (!f.label?.trim() || !f.labelAr?.trim())
+      : mode === 'ar'  ? !f.labelAr?.trim()
+      :                  !f.label?.trim()
+    if (missing) {
+      throw NextResponse.json(
+        { error: `Field "${f.fieldKey || f.label || f.labelAr}" is missing its ${mode === 'ar' ? 'Arabic' : mode === 'both' ? 'English or Arabic' : 'English'} name` },
+        { status: 422 },
+      )
+    }
+  }
+}
 
 function requireView(tenant: TenantContext) {
   if (!hasPermission(tenant, 'documentReports', 'reportsView')) {
@@ -37,6 +56,7 @@ export class ReportTemplatesService {
 
   async create(tenant: TenantContext, input: CreateTemplateInput) {
     requireManageTemplates(tenant)
+    assertFieldsMatchLanguageMode(input.fieldSchema, input.languageMode)
     const template = await repo.create(tenant, input)
     auditLog.queue({
       tenant,
@@ -50,7 +70,10 @@ export class ReportTemplatesService {
 
   async update(tenant: TenantContext, id: string, patch: UpdateTemplateInput) {
     requireManageTemplates(tenant)
-    await this.getById(tenant, id)
+    const existing = await this.getById(tenant, id)
+    if (patch.fieldSchema) {
+      assertFieldsMatchLanguageMode(patch.fieldSchema, patch.languageMode ?? existing.languageMode)
+    }
     const template = await repo.update(tenant, id, patch)
     auditLog.queue({
       tenant,

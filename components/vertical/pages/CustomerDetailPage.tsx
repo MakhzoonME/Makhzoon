@@ -202,10 +202,9 @@ function HistoryRow({
 }) {
   const { basePath } = useVertical();
   // The timeline merges records from every module the org runs, but only
-  // appointments and reports have a page under BOTH verticals. Transactions,
+  // appointments and reports have a page under multiple verticals. Transactions,
   // orders, and service jobs are Haraka-only surfaces, so they always link into
-  // Haraka — linking them at the Zeyara base would 404. (Reachable only for a
-  // mixed org holding both verticals; a clinic-only org has no such rows.)
+  // Haraka — linking them at another vertical's base would 404.
   const hrefByKind: Record<CustomerHistoryEntry['kind'], string> = {
     transaction: `${harakaBase}/transactions/${entry.id}`,
     order: `${harakaBase}/orders/${entry.id}`,

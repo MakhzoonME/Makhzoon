@@ -54,8 +54,7 @@ const MODULE_HARAKA_KEY: Record<Exclude<AnalyticsModuleKey, 'pos'>, string> = {
 export function AnalyticsPage() {
   const { featureKey, permModule, basePath, navLabelKey } = useVertical();
   const { isAllowed: featureAllowed } = useModuleGuard({ featureKey, moduleKey: permModule });
-  // Resolve against the ACTIVE vertical's namespace so a clinic user is judged
-  // on zeyara.analyticsView, not a Haraka key they were never granted.
+  // Resolve against the ACTIVE vertical's namespace.
   const { isAllowed } = useAdminGuard(`${permModule}.analyticsView`);
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();

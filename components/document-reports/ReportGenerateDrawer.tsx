@@ -19,12 +19,10 @@ const ENCOUNTER_LABELS: Record<ReportEncounterType, string> = {
   appointment: 'Appointment',
   service_job: 'Service Job',
   order: 'Order',
-  visit: 'Visit',
 }
 
 /** Encounter types the manual picker can resolve, because the customer history
- *  timeline carries them. A 'visit' report is always opened FROM the clinical
- *  record (which passes the visit id in), never picked from a list here. */
+ *  timeline carries them. */
 const PICKABLE_ENCOUNTERS: ReportEncounterType[] = ['appointment', 'service_job', 'order']
 
 /** Generates a new report. When customerId/encounter are already known (e.g.

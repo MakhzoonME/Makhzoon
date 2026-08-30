@@ -64,15 +64,7 @@ export type AuditAction =
   | 'APPOINTMENT_DELETED' | 'APPOINTMENT_INVOICE_GENERATED'
   | 'APPOINTMENT_PAYMENT_ADDED' | 'APPOINTMENT_PAYMENT_REMOVED'
   | 'DOCUMENT_REPORT_TEMPLATE_CREATED' | 'DOCUMENT_REPORT_TEMPLATE_UPDATED'
-  | 'DOCUMENT_REPORT_CREATED' | 'DOCUMENT_REPORT_UPDATED'
-  // Zeyara clinical record. The payloads carry identifiers and field NAMES
-  // only — never diagnoses, findings, or note bodies. The audit trail records
-  // that a record was touched and by whom; it is not a second copy of the
-  // patient's health information.
-  | 'VISIT_CREATED' | 'VISIT_UPDATED' | 'VISIT_DELETED'
-  | 'VISIT_NOTE_ADDED'
-  | 'VISIT_ATTACHMENT_ADDED' | 'VISIT_ATTACHMENT_DELETED'
-  | 'APPOINTMENT_REMINDER_SENT' | 'APPOINTMENT_REMINDER_CONFIG_UPDATED';
+  | 'DOCUMENT_REPORT_CREATED' | 'DOCUMENT_REPORT_UPDATED';
 
 interface LogParams {
   organizationId: string;

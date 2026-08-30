@@ -13,6 +13,7 @@ import { OrdersRepository } from '@/lib/modules/haraka/orders/orders.repository'
 import { AppointmentsRepository } from '@/lib/modules/haraka/appointments/appointments.repository'
 import { ServiceJobsRepository } from '@/lib/modules/haraka/service-jobs/service-jobs.repository'
 import { BannaRepository } from '@/lib/modules/banna/repositories/banna.repository'
+import { BannaValuesRepository } from '@/lib/modules/banna/repositories/banna-values.repository'
 import { ReportInstancesRepository } from '@/lib/modules/document-reports/instances.repository'
 import { findMissingRequiredFields } from './required-fields'
 
@@ -22,6 +23,7 @@ const ordersRepo = new OrdersRepository()
 const appointmentsRepo = new AppointmentsRepository()
 const serviceJobsRepo = new ServiceJobsRepository()
 const bannaRepo = new BannaRepository()
+const bannaValuesRepo = new BannaValuesRepository()
 const reportInstancesRepo = new ReportInstancesRepository()
 
 /**
@@ -93,10 +95,23 @@ export class CustomersService {
     return repo.list(tenant, opts)
   }
 
-  async listAllForExport(tenant: TenantContext, search?: string) {
+  /**
+   * Full export payload: base customer rows plus their custom field values
+   * (Banna module 'customers'), so the export always mirrors what's actually
+   * stored — not just the five default columns. `ids`, when given, limits
+   * the export to that specific selection instead of the whole (optionally
+   * search-filtered) directory.
+   */
+  async listAllForExport(tenant: TenantContext, opts?: { search?: string; ids?: string[] }) {
     requireCustomers(tenant, 'customersExport')
-    const { items } = await repo.list(tenant, { search, page: 1, pageSize: Number.MAX_SAFE_INTEGER })
-    return items
+    const { items } = await repo.list(tenant, {
+      search: opts?.search,
+      ids: opts?.ids,
+      page: 1,
+      pageSize: Number.MAX_SAFE_INTEGER,
+    })
+    const customFields = await bannaValuesRepo.getForRecords(tenant, 'customers', items.map((c) => c.id))
+    return { customers: items, customFields }
   }
 
   async getById(tenant: TenantContext, id: string) {

@@ -14,12 +14,12 @@ import { createInstanceSchema } from '@/lib/modules/document-reports/schemas';
 /**
  * Document Reports started life as a Haraka add-on: the routes required
  * `pos`, the nav item lived under the Haraka group, and the permission module
- * was gated on `pos`. Zeyara clinics — the exact customer the module was
- * designed for ("a doctor's patient report") — hold `zeyara` and not `pos`,
- * so every one of those gates locked them out of the feature they bought.
+ * was gated on `pos`. It was later generalized to be reachable from any
+ * vertical the org holds, not just Haraka.
  *
- * These are the invariants that keep the module reachable from BOTH verticals.
- * Each one is a place the Haraka-only assumption was hard-coded.
+ * These are the invariants that keep the module reachable from EVERY
+ * registered vertical. Each one is a place a single-vertical assumption was
+ * hard-coded.
  */
 
 const ROOT = process.cwd();
@@ -40,12 +40,9 @@ describe('Document Reports is reachable from every vertical', () => {
     expect(mod, 'no documentReports block in MODULE_PERMISSIONS_CONFIG').toBeDefined();
     expect(mod?.featureKeys).toEqual(VERTICAL_FEATURE_KEYS);
 
-    // A clinic org holds zeyara and NOT pos — the editor must still offer the
-    // Document Reports group so its roles can be granted report permissions.
-    expect(moduleFeatureAllowed(mod!, { zeyara: true, pos: false })).toBe(true);
-    expect(moduleFeatureAllowed(mod!, { zeyara: false, pos: true })).toBe(true);
-    // ...and an org holding neither vertical still sees nothing.
-    expect(moduleFeatureAllowed(mod!, { zeyara: false, pos: false })).toBe(false);
+    expect(moduleFeatureAllowed(mod!, { pos: true })).toBe(true);
+    // ...and an org holding no vertical still sees nothing.
+    expect(moduleFeatureAllowed(mod!, { pos: false })).toBe(false);
   });
 
   it('gives the module its own permission group rather than a vertical heading', () => {
@@ -55,8 +52,8 @@ describe('Document Reports is reachable from every vertical', () => {
     expect(MODULE_GROUP_LABELS.reports).toBeTruthy();
   });
 
-  it('renders a Reports nav item under both verticals, add-on gated', () => {
-    for (const [groupHref, featureKey] of [['/haraka', 'pos'], ['/zeyara', 'zeyara']] as const) {
+  it('renders a Reports nav item under every vertical, add-on gated', () => {
+    for (const [groupHref, featureKey] of [['/haraka', 'pos']] as const) {
       const item = itemsOf(groupByHref(groupHref)).find((i) => i.href === `${groupHref}/reports`);
       expect(item, `no Reports nav item under ${groupHref}`).toBeDefined();
       expect(item?.featureKey).toBe(featureKey);
@@ -65,13 +62,13 @@ describe('Document Reports is reachable from every vertical', () => {
     }
   });
 
-  it('shows the template builder to a clinic that never bought pos', () => {
+  it('shows the template builder to any org holding a vertical', () => {
     const settings = groupByHref('/settings');
     const templates = itemsOf(settings).find((i) => i.href === '/settings/reports');
     expect(templates, 'the Report Templates settings entry is missing').toBeDefined();
     expect(templates?.featureKeys).toEqual(VERTICAL_FEATURE_KEYS);
-    expect(navFeatureAllowed(templates!, { zeyara: true, pos: false })).toBe(true);
-    expect(navFeatureAllowed(templates!, { zeyara: false, pos: false })).toBe(false);
+    expect(navFeatureAllowed(templates!, { pos: true })).toBe(true);
+    expect(navFeatureAllowed(templates!, { pos: false })).toBe(false);
   });
 
   it('keeps navFeatureAllowed a strict any-of over the declared keys', () => {
@@ -101,7 +98,7 @@ describe('Document Reports is reachable from every vertical', () => {
       if (rel.includes('/share/')) continue;
       expect(
         src.includes("requireFeature(tenant, 'pos')"),
-        `${rel} still gates on 'pos' — a Zeyara-only org gets a 403 from its own reports`,
+        `${rel} still gates on 'pos' — an org on another vertical gets a 403 from its own reports`,
       ).toBe(false);
       expect(
         src.includes('requireAnyVerticalFeature(tenant)'),
@@ -114,32 +111,18 @@ describe('Document Reports is reachable from every vertical', () => {
     }
   });
 
-  it("accepts a clinical 'visit' as an encounter, alongside the original three", () => {
+  it('accepts the standard encounter types', () => {
     const base = {
       templateId: '00000000-0000-4000-8000-000000000001',
       customerId: '00000000-0000-4000-8000-000000000002',
       encounterId: '00000000-0000-4000-8000-000000000003',
     };
-    for (const encounterType of ['appointment', 'service_job', 'order', 'visit']) {
+    for (const encounterType of ['appointment', 'service_job', 'order']) {
       expect(
         createInstanceSchema.safeParse({ ...base, encounterType }).success,
         `'${encounterType}' should be a valid encounter type`,
       ).toBe(true);
     }
     expect(createInstanceSchema.safeParse({ ...base, encounterType: 'wedding' }).success).toBe(false);
-  });
-
-  it('has a migration widening the encounter CHECK to match the schema', () => {
-    const dir = join(ROOT, 'supabase', 'migrations');
-    const sql = readdirSync(dir)
-      .filter((f) => f.endsWith('.sql'))
-      .map((f) => readFileSync(join(dir, f), 'utf8'))
-      .join('\n');
-    // The DB constraint and the zod enum drift silently otherwise: inserts
-    // pass validation and then fail at the write.
-    expect(
-      /encounter_type IN \('appointment', 'service_job', 'order', 'visit'\)/.test(sql),
-      "no migration allows encounter_type 'visit'",
-    ).toBe(true);
   });
 });

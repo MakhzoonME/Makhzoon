@@ -13,10 +13,15 @@ export async function GET(req: NextRequest) {
     requireAnyVerticalFeature(tenant)
     // CustomersService.listAllForExport() enforces haraka.customersExport.
     const { searchParams } = new URL(req.url)
-    const customers = await service.listAllForExport(tenant, searchParams.get('search') ?? undefined)
+    const idsParam = searchParams.get('ids')
+    const ids = idsParam ? idsParam.split(',').filter(Boolean) : undefined
+    const { customers, customFields } = await service.listAllForExport(tenant, {
+      search: searchParams.get('search') ?? undefined,
+      ids,
+    })
 
     const stamp = format(new Date(), 'yyyy-MM-dd')
-    return new NextResponse(exportCustomersToCSV(customers), {
+    return new NextResponse(exportCustomersToCSV(customers, customFields), {
       headers: {
         'Content-Type': 'text/csv',
         'Content-Disposition': `attachment; filename="customers-${stamp}.csv"`,

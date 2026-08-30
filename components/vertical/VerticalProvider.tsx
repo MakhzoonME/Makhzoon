@@ -1,11 +1,11 @@
 'use client';
 
-// Supplies the active vertical (Haraka or Zeyara) to shared page bodies, so a
-// single component can serve both surfaces instead of being forked per brand.
+// Supplies the active vertical (Haraka) to shared page bodies, so a
+// single component can serve multiple surfaces instead of being forked per brand.
 //
 // Page bodies read featureKey / permModule / basePath / colorVar from here
 // rather than hard-coding 'pos', 'haraka', `.../haraka`, and
-// var(--mod-haraka). See docs/plans/2026-08-26-zeyara-clinic-vertical-design.md §2.4.
+// var(--mod-haraka).
 import { createContext, useContext, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import type { FeatureKey } from '@/types/package.types';
@@ -16,30 +16,29 @@ export interface VerticalContextValue {
   vertical: Vertical;
   featureKey: FeatureKey;
   permModule: keyof UserPermissions;
-  /** Brand hex, e.g. '#0F766E'. */
+  /** Brand hex, e.g. '#C2185B'. */
   color: string;
-  /** CSS custom property reference, e.g. 'var(--mod-zeyara)'. */
+  /** CSS custom property reference, e.g. 'var(--mod-haraka)'. */
   colorVar: string;
-  /** Tenant-scoped route root, e.g. '/en/acme/default/zeyara'. */
+  /** Tenant-scoped route root, e.g. '/en/acme/default/haraka'. */
   basePath: string;
   label: string;
   labelAr: string;
   /**
-   * URL segment for the pos_customers directory. The same rows are
-   * "customers" in Haraka and "patients" in Zeyara, so shared pages build
-   * links from this rather than assuming either word.
+   * URL segment for the pos_customers directory. Shared pages build links
+   * from this rather than assuming a specific word, so a future vertical can
+   * rename it without touching the page bodies.
    */
   customersSegment: string;
-  /** URL segment for the haraka_staff directory: staff vs providers. */
+  /** URL segment for the haraka_staff directory. */
   staffSegment: string;
   /** Sidebar label key for this vertical's root, for breadcrumbs. */
-  navLabelKey: 'nav.pos' | 'nav.zeyara';
+  navLabelKey: 'nav.pos';
 }
 
 /** Per-vertical vocabulary for entities that are shared but named differently. */
 const SEGMENTS: Record<Vertical, Pick<VerticalContextValue, 'customersSegment' | 'staffSegment' | 'navLabelKey'>> = {
   haraka: { customersSegment: 'customers', staffSegment: 'staff', navLabelKey: 'nav.pos' },
-  zeyara: { customersSegment: 'patients', staffSegment: 'providers', navLabelKey: 'nav.zeyara' },
 };
 
 const VerticalCtx = createContext<VerticalContextValue | null>(null);

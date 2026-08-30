@@ -1,6 +1,6 @@
 import Papa from 'papaparse';
 import { Asset, Warranty, PosCustomer } from '@/types';
-import { assetsToRows, warrantiesToRows, customersToRows } from './datasets';
+import { assetsToRows, warrantiesToRows, customersToRows, type CustomerCustomFieldsData } from './datasets';
 
 export function exportAssetsToCSV(assets: Asset[]): string {
   return Papa.unparse(assetsToRows(assets));
@@ -10,6 +10,6 @@ export function exportWarrantiesToCSV(warranties: (Warranty & { assetName?: stri
   return Papa.unparse(warrantiesToRows(warranties));
 }
 
-export function exportCustomersToCSV(customers: PosCustomer[]): string {
-  return Papa.unparse(customersToRows(customers));
+export function exportCustomersToCSV(customers: PosCustomer[], customFields?: CustomerCustomFieldsData): string {
+  return Papa.unparse(customersToRows(customers, customFields));
 }

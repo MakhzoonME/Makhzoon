@@ -25,12 +25,12 @@ export function requireFeature(tenant: TenantContext, featureKey: string): void 
 
 /**
  * Gate a route on the SHARED appointment/catalog/customer engine, which more
- * than one vertical is entitled to reach (Haraka via 'pos', Zeyara via
- * 'zeyara'). Passes when the org holds any one of them.
+ * than one vertical may be entitled to reach. Passes when the org holds any
+ * one of the registered vertical feature keys.
  *
  * Use this only on genuinely shared routes. Haraka-exclusive surfaces —
  * register, orders, warranty certs, cash drawer, card terminal — keep the
- * strict requireFeature(tenant, 'pos') gate, because a clinic never buys them.
+ * strict requireFeature(tenant, 'pos') gate.
  */
 export function requireAnyVerticalFeature(tenant: TenantContext): void {
   const features = tenant.subscription?.features ?? {};

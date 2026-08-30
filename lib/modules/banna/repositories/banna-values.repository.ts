@@ -78,6 +78,45 @@ export class BannaValuesRepository {
     });
   }
 
+  /**
+   * Bulk variant of getByRecord for export: field definitions for the module
+   * plus a per-record map of fieldId -> value, for many records at once.
+   */
+  async getForRecords(
+    tenant: TenantContext,
+    recordType: CustomFieldRecordType,
+    recordIds: string[],
+  ): Promise<{ fields: { id: string; label: string }[]; valuesByRecordId: Map<string, Map<string, unknown>> }> {
+    const { data: fields, error: fieldsErr } = await supabaseAdmin
+      .from('custom_fields')
+      .select('id, label')
+      .eq('organization_id', tenant.organizationId)
+      .eq('module', recordType)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+
+    if (fieldsErr) throw fieldsErr;
+    const fieldDefs = (fields ?? []) as { id: string; label: string }[];
+    const valuesByRecordId = new Map<string, Map<string, unknown>>();
+    if (fieldDefs.length === 0 || recordIds.length === 0) return { fields: fieldDefs, valuesByRecordId };
+
+    const { data: vals, error: valsErr } = await supabaseAdmin
+      .from('custom_field_values')
+      .select('record_id, field_id, value')
+      .eq('organization_id', tenant.organizationId)
+      .eq('record_type', recordType)
+      .in('record_id', recordIds);
+
+    if (valsErr) throw valsErr;
+
+    for (const v of (vals ?? []) as { record_id: string; field_id: string; value: unknown }[]) {
+      if (!valuesByRecordId.has(v.record_id)) valuesByRecordId.set(v.record_id, new Map());
+      valuesByRecordId.get(v.record_id)!.set(v.field_id, v.value);
+    }
+
+    return { fields: fieldDefs, valuesByRecordId };
+  }
+
   async upsert(
     tenant: TenantContext,
     recordType: CustomFieldRecordType,

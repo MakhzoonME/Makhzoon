@@ -16,13 +16,14 @@ export function hasPermission(
  * more than one vertical reaches (see lib/platform/verticals.ts).
  *
  * Grants in either namespace satisfy the check: a Haraka org holds
- * `haraka.appointmentsCreate`, a clinic holds `zeyara.appointmentsCreate`, and
- * both mean the same operation on the same table. Operation keys are kept
- * identical across the two namespaces precisely so this needs no translation
- * table — only the human-facing labels differ.
+ * `haraka.appointmentsCreate`, and that means the operation on the shared
+ * table. Operation keys are kept identical across vertical namespaces
+ * precisely so this needs no translation table — only the human-facing
+ * labels differ.
  *
- * Additive by construction: an org without a Zeyara permission block simply
- * fails that half of the OR, so existing Haraka behaviour is unchanged.
+ * Additive by construction: an org without another vertical's permission
+ * block simply fails that half of the OR, so existing Haraka behaviour is
+ * unchanged.
  */
 export function hasVerticalPermission(
   tenant: TenantContext,

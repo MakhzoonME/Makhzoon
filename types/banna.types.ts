@@ -106,7 +106,7 @@ export interface WorkspaceProfile {
   spaceId: string;
 }
 
-export type CustomFieldRecordType = 'assets' | 'inventory' | 'customers' | 'appointments' | 'visits';
+export type CustomFieldRecordType = 'assets' | 'inventory' | 'customers' | 'appointments';
 
 export interface CustomFieldValue {
   id: string;

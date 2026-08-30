@@ -51,7 +51,7 @@ export function hasModuleAccess(user: AuthUser, module: keyof UserPermissions): 
 
 /**
  * Client-side twin of lib/platform/permissions' hasVerticalPermission: does the
- * user hold this operation in ANY vertical namespace (haraka / zeyara)?
+ * user hold this operation in ANY vertical namespace?
  *
  * Use it in shared page bodies that serve both surfaces. When the caller knows
  * which vertical it is rendering, prefer the explicit

@@ -16,21 +16,11 @@ export const RASEED_BASE_FEATURE: FeatureKey = 'inventory';
 
 export const HARAKA_BASE_FEATURE: FeatureKey = 'pos';
 
-/**
- * Zeyara is its own base module, not a Haraka sub-module: a clinic package
- * typically ships `zeyara` ON and `pos` OFF. It is also OPT-IN when absent
- * (see OPT_IN_FEATURE_KEYS in types/package.types.ts), so it must be rendered
- * as its own toggle rather than folded into the Haraka card — otherwise a
- * superadmin has no way to sell a clinic the product.
- */
-export const ZEYARA_BASE_FEATURE: FeatureKey = 'zeyara';
-
 export const BANNA_FEATURE: FeatureKey = 'banna';
 
 export const MODULE_COLORS = {
   usool: '#00695C',
   raseed: '#E65100',
   haraka: '#C2185B',
-  zeyara: '#0F766E',
   banna: '#1565C0',
 } as const;

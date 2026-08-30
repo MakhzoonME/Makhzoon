@@ -1,7 +1,7 @@
 'use client';
 
-// Shared appointments list, rendered by BOTH /haraka/appointments and
-// /zeyara/appointments. Everything brand-specific comes from useVertical().
+// Shared appointments list, rendered by /haraka/appointments. Everything
+// brand-specific comes from useVertical().
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, CalendarDays } from 'lucide-react';
@@ -20,13 +20,11 @@ import { formatDateTime } from '@/lib/utils/date';
 import type { HarakaAppointment } from '@/types';
 
 export function AppointmentsListPage() {
-  const { vertical, featureKey, permModule, basePath, colorVar } = useVertical();
+  const { featureKey, permModule, basePath, colorVar } = useVertical();
   const { isAllowed } = useModuleGuard({
     featureKey,
-    // Appointments is an à-la-carte sub-module INSIDE Haraka, but for Zeyara
-    // the vertical itself is the entitlement — so this gate applies to Haraka
-    // only (design doc §3).
-    harakaModule: vertical === 'haraka' ? 'appointments' : undefined,
+    // Appointments is an à-la-carte sub-module INSIDE Haraka.
+    harakaModule: 'appointments',
     moduleKey: permModule,
     permOp: 'appointmentsView',
   });
@@ -48,7 +46,6 @@ export function AppointmentsListPage() {
   if (!isAllowed) return null;
 
   const currency = orgInfo?.currency ?? 'JOD';
-  const isClinic = vertical === 'zeyara';
 
   const columns: ColumnDef<HarakaAppointment>[] = [
     {
@@ -72,7 +69,7 @@ export function AppointmentsListPage() {
     },
     {
       key: 'customerName',
-      header: isClinic ? t('zeyara.colPatient') : t('col.customer'),
+      header: t('col.customer'),
       render: (a) => (
         <div className="text-sm">
           <div className="font-medium text-gray-800">{a.customerName}</div>
@@ -119,7 +116,7 @@ export function AppointmentsListPage() {
     <div className="space-y-6">
       <PageHeader
         title={t('appointments.title')}
-        description={isClinic ? t('zeyara.appointmentsSubtitle') : t('appointments.subtitle')}
+        description={t('appointments.subtitle')}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => router.push(`${basePath}/appointments/calendar`)}>

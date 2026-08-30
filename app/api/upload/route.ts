@@ -17,9 +17,6 @@ const ALLOWED_TYPES: Record<UploadKind, string[]> = {
   'warranty-document': DOC,
   'purchase-invoice': DOC,
   'report-attachment': DOC,
-  // Clinical attachments accept HEIC too — phone cameras on iOS default to it,
-  // and a provider photographing a chart shouldn't have to convert first.
-  'zeyara-visit-file': [...DOC, 'image/heic'],
 };
 
 const MB = 1024 * 1024;
@@ -31,8 +28,6 @@ const MAX_SIZES: Record<UploadKind, number> = {
   'warranty-document': 10 * MB,
   'purchase-invoice': 10 * MB,
   'report-attachment': 10 * MB,
-  // Scans and imaging run larger than a receipt photo.
-  'zeyara-visit-file': 20 * MB,
 };
 
 function isUploadKind(v: unknown): v is UploadKind {

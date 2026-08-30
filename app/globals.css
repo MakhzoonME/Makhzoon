@@ -50,9 +50,6 @@
   --mod-usool:  #00695C;   /* teal   — fixed assets (Usool) */
   --mod-raseed: #E65100;   /* orange — inventory (Raseed) */
   --mod-haraka: #C2185B;   /* crimson — point of sale (Haraka) */
-  --mod-zeyara: #0F766E;   /* deep teal — clinics (Zeyara); darker than
-                              --mod-usool so the two stay separable at
-                              sidebar dot size */
 
   /* DEPRECATED — superadmin navy shell removed per design 2026-05-31.
      Use standard surface tokens instead. Remove component usages before deleting. */

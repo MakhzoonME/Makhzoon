@@ -17,8 +17,7 @@ export type UploadKind =
   | 'inventory-receipt'
   | 'warranty-document'
   | 'purchase-invoice'
-  | 'report-attachment'
-  | 'zeyara-visit-file';
+  | 'report-attachment';
 
 interface BucketDef {
   bucket: string;
@@ -34,8 +33,6 @@ export const BUCKETS: Record<UploadKind, BucketDef> = {
   'warranty-document': { bucket: 'warranty-documents', isPublic: false },
   'purchase-invoice':  { bucket: 'purchase-invoices',  isPublic: false },
   'report-attachment': { bucket: 'report-attachments', isPublic: false },
-  // Clinical attachments — private, never served from an open URL.
-  'zeyara-visit-file': { bucket: 'zeyara-visit-files', isPublic: false },
 };
 
 export interface UploadResult {

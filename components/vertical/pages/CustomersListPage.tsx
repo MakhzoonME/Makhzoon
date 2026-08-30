@@ -1,8 +1,7 @@
 'use client';
 
-// Shared directory over pos_customers. Haraka calls these Customers; Zeyara
-// calls them Patients. Same rows, same API — only the vocabulary and the
-// permission namespace differ.
+// Shared directory over pos_customers. Same rows, same API — only the
+// vocabulary and the permission namespace differ per vertical.
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Plus, Pencil, Trash2, ArrowRight, Copy, Settings2, Download } from 'lucide-react';
@@ -22,7 +21,7 @@ import type { PosCustomer } from '@/types';
 import { useOrgInfo } from '@/hooks/org';
 
 export function CustomersListPage() {
-  const { vertical, featureKey, permModule, basePath, colorVar } = useVertical();
+  const { featureKey, permModule, basePath, colorVar } = useVertical();
   const { isAllowed } = useModuleGuard({ featureKey, moduleKey: permModule });
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
@@ -41,7 +40,7 @@ export function CustomersListPage() {
   const { user } = useAuthStore();
   // Bulk actions are available to anyone who can do the equivalent single-item
   // action — no separate bulk permission. Checks resolve against the ACTIVE
-  // vertical's namespace, so a clinic user is judged on zeyara.* alone.
+  // vertical's namespace.
   const canBulkDelete = !!user && hasPermission(user, permModule, 'customersDelete');
   const canBulkMove = !!user && hasPermission(user, permModule, 'customersUpdate');
   const canCreate = !!user && hasPermission(user, permModule, 'customersCreate');
@@ -54,10 +53,8 @@ export function CustomersListPage() {
 
   if (!isAllowed) return null;
 
-  const isClinic = vertical === 'zeyara';
-  // Zeyara's directory lives at /zeyara/patients; Haraka's at /haraka/customers.
-  const base = `${basePath}/${isClinic ? 'patients' : 'customers'}`;
-  const title = isClinic ? t('zeyara.patientsTitle') : t('customers.title');
+  const base = `${basePath}/customers`;
+  const title = t('customers.title');
 
   async function handleBulkDelete() {
     if (selectedIds.size === 0) return;
@@ -80,7 +77,7 @@ export function CustomersListPage() {
     const stamp = new Date().toISOString().slice(0, 10);
     const p = new URLSearchParams();
     p.set('ids', [...selectedIds].join(','));
-    const label = isClinic ? 'patients' : 'customers';
+    const label = 'customers';
     runExport({
       url: `/api/haraka/customers/export?${p.toString()}`,
       filename: `${label}-${stamp}.csv`,
@@ -139,11 +136,11 @@ export function CustomersListPage() {
     <div className="space-y-6">
       <PageHeader
         title={title}
-        description={isClinic ? t('zeyara.patientsSubtitle') : t('customers.subtitle')}
+        description={t('customers.subtitle')}
         breadcrumb={[
           { label: orgInfo?.name ?? params.orgSlug },
           { label: params.space },
-          { label: isClinic ? t('nav.zeyara') : t('nav.pos'), href: basePath },
+          { label: t('nav.pos'), href: basePath },
           { label: title },
         ]}
         actions={
@@ -151,13 +148,13 @@ export function CustomersListPage() {
             {canManageFields && (
               <Button size="sm" variant="outline" onClick={() => router.push(`${base}/fields`)}>
                 <Settings2 size={16} className="me-1" />{' '}
-                {isClinic ? t('zeyara.patientFields') : t('customers.customFields')}
+                {t('customers.customFields')}
               </Button>
             )}
             {canExport && (
               <ExportButton
-                filename={isClinic ? 'patients' : 'customers'}
-                label={isClinic ? 'patients' : 'customers'}
+                filename="customers"
+                label="customers"
                 ext="csv"
                 showFiltered={false}
                 getUrl={() => {
@@ -170,7 +167,7 @@ export function CustomersListPage() {
             {canCreate && (
               <Button size="sm" onClick={() => router.push(`${base}/new`)} style={{ background: colorVar }}>
                 <Plus size={16} className="me-1" />{' '}
-                {isClinic ? t('zeyara.addPatient') : t('customers.addCustomer')}
+                {t('customers.addCustomer')}
               </Button>
             )}
           </div>
@@ -178,7 +175,7 @@ export function CustomersListPage() {
       />
 
       <FilterBar
-        searchPlaceholder={isClinic ? t('zeyara.patientSearchPlaceholder') : t('customers.searchPlaceholder')}
+        searchPlaceholder={t('customers.searchPlaceholder')}
         searchValue={search}
         onSearchChange={(v) => {
           setSearch(v);
@@ -221,7 +218,7 @@ export function CustomersListPage() {
         emptyMessage={
           search
             ? t('customers.noMatching')
-            : isClinic ? t('zeyara.noPatients') : t('customers.noCustomers')
+            : t('customers.noCustomers')
         }
         onRowClick={(c) => router.push(`${base}/${c.id}`)}
         selection={showSelection ? { selectedIds, onChange: setSelectedIds } : undefined}
@@ -241,7 +238,7 @@ export function CustomersListPage() {
       <ConfirmDialog
         open={!!confirmDelete}
         onOpenChange={(v) => !v && setConfirmDelete(null)}
-        title={isClinic ? t('zeyara.deletePatientTitle') : t('customers.deleteTitle')}
+        title={t('customers.deleteTitle')}
         description={
           confirmDelete
             ? t('customers.deleteDesc').replace('{name}', confirmDelete.name)

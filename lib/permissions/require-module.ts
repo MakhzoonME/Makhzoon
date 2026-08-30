@@ -5,14 +5,6 @@ import type { AddOnKey, HarakaModule } from '@/types';
 import { HARAKA_MODULE_LABELS } from '@/types';
 import { getPackageById } from '@/lib/db/packages';
 import { ADDON_LABELS, isAddOnActive, isPricingModelPackage } from '@/lib/platform/entitlements';
-import { VERTICALS } from '@/lib/platform/verticals';
-
-/**
- * Haraka sub-modules that the Zeyara vertical inherently includes. Service
- * JOBS and service VEHICLES are deliberately absent — those are Haraka-only
- * surfaces a clinic never buys, and they must keep the strict slot check.
- */
-const ZEYARA_IMPLIED_MODULES = new Set<HarakaModule>(['appointments', 'services']);
 
 export { getActiveAddOns, isAddOnActive } from '@/lib/platform/entitlements';
 
@@ -26,17 +18,6 @@ export async function requireHarakaModule(
   module: HarakaModule,
 ): Promise<void> {
   const sub = tenant.subscription;
-  // Zeyara implies the modules its surface is built on. Appointments and the
-  // service catalog are sold à la carte INSIDE Haraka, but a clinic bought
-  // them as part of the vertical — re-checking the Haraka slot list here would
-  // 403 a Zeyara-only org out of its own product.
-  // See docs/plans/2026-08-26-zeyara-clinic-vertical-design.md §3.
-  if (
-    ZEYARA_IMPLIED_MODULES.has(module) &&
-    sub?.features?.[VERTICALS.zeyara.featureKey]
-  ) {
-    return;
-  }
   if (!sub?.packageId) return;
   const pkg = await getPackageById(sub.packageId);
   if (!isPricingModelPackage(pkg)) return; // not migrated yet — legacy flags only
@@ -58,19 +39,13 @@ export async function requireHarakaModule(
 }
 
 /**
- * Gate the staff directory on the Workers add-on — with one exception.
+ * Gate the staff directory on the Workers add-on.
  *
  * For Haraka, "Workers" are delivery agents: an optional extra, so appointments
  * fall back to being created without a staff provider when it is off (see
  * createAppointmentSchema).
- *
- * For Zeyara, the same table holds the clinic's PROVIDERS — the practitioners
- * whose calendars are the entire product. A clinic that bought the vertical has
- * already paid for them, so holding `zeyara` satisfies this gate outright.
- * See docs/plans/2026-08-26-zeyara-clinic-vertical-design.md §3.
  */
 export async function requireStaffAccess(tenant: TenantContext): Promise<void> {
-  if (tenant.subscription?.features?.[VERTICALS.zeyara.featureKey]) return;
   await requireAddOn(tenant, 'deliveryAgents');
 }
 

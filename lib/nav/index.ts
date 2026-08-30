@@ -18,8 +18,8 @@ export interface NavItemConfig {
   featureKey?: string;
   /**
    * ANY-OF feature gate for a page more than one vertical reaches (the report
-   * template builder is bought by a Haraka retailer and a Zeyara clinic
-   * alike). Wins over `featureKey` when set. See navFeatureAllowed().
+   * template builder is bought by a Haraka retailer and potentially other
+   * verticals alike). Wins over `featureKey` when set. See navFeatureAllowed().
    */
   featureKeys?: string[];
   /** Haraka sub-module (Orders/Services/Appointments/Retainers) this item requires be active on the subscription. */
@@ -160,52 +160,6 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
       { href: '/haraka/analytics', label: 'Analytics', labelKey: 'nav.harakaReports',
         featureKey: 'pos', permissionKey: 'haraka.analyticsView',
         moduleColor: '#AD1457', moduleName: 'تحليلات' },
-    ],
-  },
-  {
-    // Zeyara (زيارة) — the clinic vertical. Rides the SAME engine as Haraka's
-    // appointments/catalog/customers, so it deliberately carries no
-    // `harakaModule` gate: buying Zeyara IS the entitlement. See
-    // docs/plans/2026-08-26-zeyara-clinic-vertical-design.md §3.
-    type: 'group', href: '/zeyara', label: 'Zeyara', labelKey: 'nav.zeyara',
-    featureKey: 'zeyara', permissionKey: 'zeyara.view', moduleColor: '#0F766E', moduleName: 'زيارة',
-    items: [
-      { href: '/zeyara/appointments', label: 'Appointments', labelKey: 'nav.zeyaraAppointments',
-        featureKey: 'zeyara', permissionKey: 'zeyara.appointmentsView',
-        moduleColor: '#0F766E', moduleName: 'مواعيد',
-        children: [
-          { href: '/zeyara/appointments/calendar', label: 'Calendar', labelKey: 'nav.zeyaraCalendar',
-            featureKey: 'zeyara', permissionKey: 'zeyara.appointmentsView',
-            moduleColor: '#0F766E', moduleName: 'تقويم' },
-        ],
-      },
-      { href: '/zeyara/patients', label: 'Patients', labelKey: 'nav.zeyaraPatients',
-        featureKey: 'zeyara', permissionKey: 'zeyara.customersView',
-        moduleColor: '#0F766E', moduleName: 'مرضى' },
-      { href: '/zeyara/visits', label: 'Clinical Records', labelKey: 'nav.zeyaraVisits',
-        featureKey: 'zeyara', permissionKey: 'zeyara.visitsView',
-        moduleColor: '#0F766E', moduleName: 'السجلات السريرية' },
-      { href: '/zeyara/follow-ups', label: 'Follow-ups', labelKey: 'nav.zeyaraFollowUps',
-        featureKey: 'zeyara', permissionKey: 'zeyara.followUpsView',
-        moduleColor: '#0F766E', moduleName: 'متابعات' },
-      { href: '/zeyara/providers', label: 'Providers', labelKey: 'nav.zeyaraProviders',
-        featureKey: 'zeyara', permissionKey: 'zeyara.staffManage',
-        moduleColor: '#0F766E', moduleName: 'مقدمو الخدمة' },
-      { href: '/zeyara/services', label: 'Service Catalog', labelKey: 'nav.zeyaraServiceCatalog',
-        featureKey: 'zeyara', permissionKey: 'zeyara.serviceCatalogView',
-        moduleColor: '#0F766E', moduleName: 'كتالوج الخدمات' },
-      { href: '/zeyara/analytics', label: 'Analytics', labelKey: 'nav.zeyaraAnalytics',
-        featureKey: 'zeyara', permissionKey: 'zeyara.analyticsView',
-        moduleColor: '#0F766E', moduleName: 'تحليلات' },
-      { href: '/zeyara/reminders', label: 'Reminders', labelKey: 'nav.zeyaraReminders',
-        featureKey: 'zeyara', permissionKey: 'zeyara.staffManage',
-        moduleColor: '#0F766E', moduleName: 'التذكيرات' },
-      // Document Reports is cross-vertical: same templates, same instances,
-      // reached from whichever surface the org bought. The add-on gate is what
-      // sells it; the vertical only decides which route renders it.
-      { href: '/zeyara/reports', label: 'Reports', labelKey: 'nav.zeyaraReports',
-        featureKey: 'zeyara', harakaAddOn: 'documentReports', permissionKey: 'documentReports.reportsView',
-        moduleColor: '#0F766E', moduleName: 'تقارير' },
     ],
   },
   {

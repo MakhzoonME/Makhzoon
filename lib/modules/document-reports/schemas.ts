@@ -48,7 +48,7 @@ export const reportAttachmentSchema = z.object({
 export const createInstanceSchema = z.object({
   templateId: z.string().uuid(),
   customerId: z.string().uuid(),
-  encounterType: z.enum(['appointment', 'service_job', 'order', 'visit']),
+  encounterType: z.enum(['appointment', 'service_job', 'order']),
   encounterId: z.string().uuid(),
   fieldValues: z.record(z.string(), z.unknown()).default({}),
   attachments: z.array(reportAttachmentSchema).default([]),

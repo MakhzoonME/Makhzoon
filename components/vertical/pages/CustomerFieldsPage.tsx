@@ -64,7 +64,7 @@ function mapDbField(raw: Record<string, unknown>): CustomField {
  * custom fields ship ahead of it and ride on the 'pos' feature instead.
  */
 export function CustomerFieldsPage() {
-  const { vertical, featureKey, permModule, basePath, customersSegment, navLabelKey } = useVertical();
+  const { featureKey, permModule, basePath, customersSegment, navLabelKey } = useVertical();
   const { isAllowed } = useModuleGuard({ featureKey, moduleKey: permModule });
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const { t } = useT();
@@ -170,7 +170,7 @@ export function CustomerFieldsPage() {
           { label: params.space },
           { label: t(navLabelKey), href: basePath },
           {
-            label: vertical === 'zeyara' ? t('zeyara.patientsTitle') : t('customers.title'),
+            label: t('customers.title'),
             href: `${basePath}/${customersSegment}`,
           },
           { label: t('customers.customFields') },

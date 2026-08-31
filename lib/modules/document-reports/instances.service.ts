@@ -62,7 +62,10 @@ export class ReportInstancesService {
     if (!template.isActive) {
       throw NextResponse.json({ error: 'This template is no longer active' }, { status: 422 })
     }
-    const report = await repo.create(tenant, input, {
+    // Single-language templates aren't a choice — force it. Only 'both'
+    // actually needs the caller's pick, defaulting to English if omitted.
+    const language = template.languageMode === 'both' ? (input.language ?? 'en') : template.languageMode
+    const report = await repo.create(tenant, { ...input, language }, {
       schemaVersion: template.schemaVersion,
       fieldSchema:   template.fieldSchema,
       name:          template.name,
@@ -81,10 +84,20 @@ export class ReportInstancesService {
   /** Rejects the edit with a 409 + reason when the template has moved on to
    *  a newer schema_version since this report was created — the report stays
    *  fully viewable/printable/shareable either way, only editing locks. */
-  async update(tenant: TenantContext, id: string, patch: { fieldValues?: Record<string, unknown>; attachments?: ReportAttachment[] }) {
+  async update(tenant: TenantContext, id: string, patch: { fieldValues?: Record<string, unknown>; attachments?: ReportAttachment[]; language?: 'en' | 'ar' }) {
     requireEdit(tenant)
     const existing = await this.getById(tenant, id)
-    if (!existing.isEditable) {
+    // A language switch is allowed even once field editing has locked (the
+    // template's fields didn't change, only which language this report
+    // displays them in) — so check it before the isEditable gate below,
+    // which only applies to fieldValues/attachments.
+    if (patch.language && patch.language !== existing.language) {
+      const template = await templatesRepo.getById(tenant, existing.templateId)
+      if (template?.languageMode !== 'both') {
+        throw NextResponse.json({ error: "This report's template isn't bilingual — there's no other language to switch to." }, { status: 422 })
+      }
+    }
+    if ((patch.fieldValues || patch.attachments) && !existing.isEditable) {
       throw NextResponse.json(
         {
           error: "This report's template has been updated since this report was created. Editing is locked to preserve the original record — create a new report to use the current template.",

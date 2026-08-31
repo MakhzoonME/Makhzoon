@@ -3,6 +3,7 @@ import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
 import { requireHarakaModule } from '@/lib/permissions/require-module'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { derivePaymentStatus } from '@/lib/modules/haraka/pricing/calc'
 import { z } from 'zod'
 
 const addPaymentSchema = z.object({
@@ -11,13 +12,17 @@ const addPaymentSchema = z.object({
   note:          z.string().trim().max(500).nullable().optional(),
 })
 
-/** Recalculate amount_paid and payment_status from all entries for an order. */
+/** Recalculate amount_paid and payment_status from all `payments` rows for an order.
+ *  Only status='paid' rows count — unpaid/written_off rows (e.g. an insurer's
+ *  outstanding share) are excluded, same convention as appointments/service-jobs. */
 async function recalcOrder(orgId: string, orderId: string) {
   const { data: payments } = await supabaseAdmin
-    .from('haraka_order_payments')
+    .from('payments')
     .select('amount')
-    .eq('order_id', orderId)
+    .eq('reference_type', 'order')
+    .eq('reference_id', orderId)
     .eq('organization_id', orgId)
+    .eq('status', 'paid')
 
   const amountPaid = (payments ?? []).reduce((sum, p) => sum + Number(p.amount), 0)
 
@@ -29,10 +34,7 @@ async function recalcOrder(orgId: string, orderId: string) {
     .maybeSingle()
 
   const total = Number(order?.total ?? 0)
-  const paymentStatus =
-    amountPaid <= 0             ? 'unpaid'
-    : amountPaid < total - 0.001 ? 'partial'
-    :                              'paid'
+  const paymentStatus = derivePaymentStatus(total, amountPaid)
 
   await supabaseAdmin
     .from('haraka_orders')
@@ -53,9 +55,10 @@ export async function GET(
     await requireHarakaModule(tenant, 'orders')
     const { orderId } = await params
     const { data, error } = await supabaseAdmin
-      .from('haraka_order_payments')
-      .select('id, amount, payment_method, note, paid_at, created_at')
-      .eq('order_id', orderId)
+      .from('payments')
+      .select('id, amount, payment_method, status, note, paid_at, created_at')
+      .eq('reference_type', 'order')
+      .eq('reference_id', orderId)
       .eq('organization_id', tenant.organizationId)
       .order('paid_at', { ascending: true })
     if (error) throw error
@@ -91,12 +94,15 @@ export async function POST(
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
 
     const { data: payment, error } = await supabaseAdmin
-      .from('haraka_order_payments')
+      .from('payments')
       .insert({
-        order_id:        orderId,
+        reference_type:  'order',
+        reference_id:    orderId,
         organization_id: tenant.organizationId,
         amount:          parsed.data.amount,
-        payment_method:  parsed.data.paymentMethod ?? null,
+        payment_method:  parsed.data.paymentMethod ?? 'other',
+        status:          'paid',
+        paid_at:         new Date().toISOString(),
         note:            parsed.data.note ?? null,
         created_by:      tenant.userId ?? null,
       })

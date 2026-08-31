@@ -87,12 +87,17 @@ export class BannaValuesRepository {
     recordType: CustomFieldRecordType,
     recordIds: string[],
   ): Promise<{ fields: { id: string; label: string }[]; valuesByRecordId: Map<string, Map<string, unknown>> }> {
+    // is_default fields (Name/Phone/Email/Notes placeholders used only to let
+    // admins toggle required/visible on the base columns) never have rows in
+    // custom_field_values — their data lives on the record itself — so they're
+    // excluded here to avoid emitting always-empty duplicate columns.
     const { data: fields, error: fieldsErr } = await supabaseAdmin
       .from('custom_fields')
       .select('id, label')
       .eq('organization_id', tenant.organizationId)
       .eq('module', recordType)
       .eq('is_active', true)
+      .eq('is_default', false)
       .order('sort_order', { ascending: true });
 
     if (fieldsErr) throw fieldsErr;

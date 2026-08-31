@@ -25,24 +25,25 @@ export const APP_ENV: 'production' | 'staging' | 'development' | 'support' =
   })();
 
 /**
- * Base URL for the public receipt app (rcpt-*.makhzoon.me), matched to the
- * environment the user is currently on. NEXT_PUBLIC_RECEIPT_URL is inlined at
- * build time and the CI build has no per-env value, so it would bake the same
- * host into every deployment. Deriving from the live hostname keeps dev →
- * rcpt-dev, stg → rcpt-stg, sup → rcpt-sup, app → rcpt-app — and ensures
- * the preview reads the same database the settings page wrote to.
+ * Base URL for the public document app (doc-*.makhzoon.me — receipts,
+ * invoices, reports, warranty certs), matched to the environment the user is
+ * currently on. NEXT_PUBLIC_DOC_URL is inlined at build time and the CI build
+ * has no per-env value, so it would bake the same host into every
+ * deployment. Deriving from the live hostname keeps dev → doc-dev, stg →
+ * doc-stg, sup → doc-sup, app → doc-app — and ensures the preview reads the
+ * same database the settings page wrote to.
  */
-const RECEIPT_SUBDOMAINS = new Set(['dev', 'stg', 'sup']);
+const DOC_SUBDOMAINS = new Set(['dev', 'stg', 'sup']);
 
-export function getReceiptBaseUrl(): string {
+export function getDocBaseUrl(): string {
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
     if (host.endsWith('makhzoon.me')) {
       const sub = host.split('.')[0];
-      const env = RECEIPT_SUBDOMAINS.has(sub) ? sub : 'app';
-      return `https://rcpt-${env}.makhzoon.me`;
+      const env = DOC_SUBDOMAINS.has(sub) ? sub : 'app';
+      return `https://doc-${env}.makhzoon.me`;
     }
   }
-  // Localhost / SSR fallback: explicit env var, else production receipt host.
-  return (process.env.NEXT_PUBLIC_RECEIPT_URL ?? 'https://rcpt-app.makhzoon.me').replace(/\/$/, '');
+  // Localhost / SSR fallback: explicit env var, else production document host.
+  return (process.env.NEXT_PUBLIC_DOC_URL ?? 'https://doc-app.makhzoon.me').replace(/\/$/, '');
 }

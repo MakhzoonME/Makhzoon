@@ -10,7 +10,7 @@ import type {
   OrderPaymentMethod,
   OrderDeliveryAddress,
 } from '@/types'
-import { priceCart, type CartLineInput } from '@/lib/modules/haraka/pricing/calc'
+import { priceCart, derivePaymentStatus, type CartLineInput } from '@/lib/modules/haraka/pricing/calc'
 
 type Row = Record<string, unknown>
 
@@ -288,6 +288,12 @@ export class OrdersRepository {
     return toOrder(data)
   }
 
+  /** Legacy "set total paid" entry point (kept for any caller outside the
+   *  ledger-based /payments endpoint). `amountPaid` is an absolute target,
+   *  not an increment — reconciled into the shared `payments` ledger the
+   *  same way retainers.repository.ts's updateInvoice handles "mark paid",
+   *  so this doesn't bypass the ledger and get silently overwritten by the
+   *  next ledger-based recalc. */
   async recordPayment(
     tenant: TenantContext,
     id: string,
@@ -296,14 +302,53 @@ export class OrdersRepository {
   ): Promise<HarakaOrder> {
     const order = await this.getById(tenant, id)
     if (!order) throw new Error('Order not found')
-    const paymentStatus: OrderPaymentStatus =
-      amountPaid <= 0         ? 'unpaid'
-      : amountPaid < order.total ? 'partial'
-      :                            'paid'
+
+    const { data: paidRows } = await supabaseAdmin
+      .from('payments')
+      .select('amount')
+      .eq('reference_type', 'order')
+      .eq('reference_id', id)
+      .eq('organization_id', tenant.organizationId)
+      .eq('status', 'paid')
+    const currentPaid = (paidRows ?? []).reduce((sum, p) => sum + Number((p as Row).amount ?? 0), 0)
+    const delta = amountPaid - currentPaid
+
+    if (delta > 0.0001) {
+      const { error: insertError } = await supabaseAdmin.from('payments').insert({
+        reference_type:  'order',
+        reference_id:    id,
+        organization_id: tenant.organizationId,
+        amount:          delta,
+        payment_method:  paymentMethod ?? 'other',
+        status:          'paid',
+        paid_at:         new Date().toISOString(),
+        created_by:      tenant.userId,
+      })
+      if (insertError) throw insertError
+    } else if (delta < -0.0001 && amountPaid <= 0.0001) {
+      const { error: deleteError } = await supabaseAdmin
+        .from('payments')
+        .delete()
+        .eq('reference_type', 'order')
+        .eq('reference_id', id)
+        .eq('organization_id', tenant.organizationId)
+      if (deleteError) throw deleteError
+    }
+
+    const { data: finalPaidRows } = await supabaseAdmin
+      .from('payments')
+      .select('amount')
+      .eq('reference_type', 'order')
+      .eq('reference_id', id)
+      .eq('organization_id', tenant.organizationId)
+      .eq('status', 'paid')
+    const finalPaid = (finalPaidRows ?? []).reduce((sum, p) => sum + Number((p as Row).amount ?? 0), 0)
+    const paymentStatus: OrderPaymentStatus = derivePaymentStatus(order.total, finalPaid)
+
     const { data, error } = await supabaseAdmin
       .from('haraka_orders')
       .update({
-        amount_paid:    amountPaid,
+        amount_paid:    finalPaid,
         payment_method: paymentMethod,
         payment_status: paymentStatus,
         updated_by:     tenant.userId,

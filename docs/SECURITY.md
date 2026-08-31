@@ -76,7 +76,7 @@ and asset-QR endpoints, and per-tenant on expensive authenticated routes.
 ## CSRF / origin
 
 `lib/csrf.ts` `checkOrigin()` — explicit first-party origin allowlist
-(app/dev/stg + rcpt-* hosts), no wildcard-subdomain trust; requests with no
+(app/dev/stg + doc-* hosts), no wildcard-subdomain trust; requests with no
 `Origin` header (non-browser) pass; localhost allowed only in dev. CORS header
 (`next.config.mjs`) is pinned to `NEXT_PUBLIC_APP_URL`, never `*`.
 

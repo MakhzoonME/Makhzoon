@@ -2,7 +2,7 @@
 
 import type { PosTransaction } from '@/types';
 import { receiptLabels, isRtl, type ReceiptLang } from '@/lib/receipts/labels';
-import { qrMatrix, type ResolvedDocumentQr } from '@/lib/qr';
+import { qrMatrix, type ResolvedDocumentQr, type QrPositionThermal } from '@/lib/qr';
 
 /**
  * Canvas → 1-bit raster renderer for thermal receipts.
@@ -44,6 +44,8 @@ export interface ReceiptPrintText {
   showItemizedTax: boolean;
   /** Already-decided QR payload, or null to print none. See resolveDocumentQr. */
   qr: ResolvedDocumentQr | null;
+  /** 'top' = before the header/logo, 'bottom' = after totals, before the footer (default). */
+  qrPositionThermal?: QrPositionThermal;
 }
 
 export interface CanvasReceiptOptions {
@@ -252,6 +254,51 @@ export async function renderReceiptRaster(
     };
     const gap = (n = 1) => { y += Math.round(6 * scale) * n; };
 
+    // ── QR ──
+    // Each module is a whole number of printer dots. A fractional module size
+    // puts module edges mid-dot, and the 1-bit threshold pass below then
+    // resolves neighbouring modules inconsistently — that is the QR that looks
+    // fine on paper and never scans. A slightly smaller code beats a blurred
+    // one, so the module size is floored, never rounded.
+    //
+    // No drawn quiet zone beyond a two-module cushion: the rest of the roll is
+    // unprinted white, which is a far larger margin than the spec asks for.
+    //
+    // Drawn from a shared closure since qrPositionThermal decides whether this
+    // runs before the header or in its old spot after totals — everything
+    // else about the QR block itself is position-independent.
+    const drawQr = () => {
+      if (!qrModules) return;
+      const quiet = 2;
+      const span = qrModules.length + quiet * 2;
+      const moduleDots = Math.max(2, Math.floor(Math.min(W * 0.55, 190 * scale) / span));
+      const side = moduleDots * span;
+      const qx = Math.round((W - side) / 2);
+      gap();
+      if (draw) {
+        c.fillStyle = '#fff';
+        c.fillRect(qx, y, side, side);
+        c.fillStyle = '#000';
+        for (let my = 0; my < qrModules.length; my++) {
+          const mrow = qrModules[my];
+          for (let mx = 0; mx < mrow.length; mx++) {
+            if (mrow[mx]) {
+              c.fillRect(
+                qx + (mx + quiet) * moduleDots,
+                y + (my + quiet) * moduleDots,
+                moduleDots,
+                moduleDots,
+              );
+            }
+          }
+        }
+      }
+      y += side;
+      if (t.qr?.caption) center(t.qr.caption, F_SMALL);
+    };
+    const qrPosition = t.qrPositionThermal ?? 'bottom';
+    if (qrPosition === 'top') drawQr();
+
     // ── Header ──
     if (logo) {
       const maxW = Math.round(W * 0.5);
@@ -315,43 +362,7 @@ export async function renderReceiptRaster(
 
     if (t.showTaxNumber && t.taxNumber) { gap(); start(`${L.taxNo}: ${t.taxNumber}`, F_SMALL); }
 
-    // ── QR ──
-    // Each module is a whole number of printer dots. A fractional module size
-    // puts module edges mid-dot, and the 1-bit threshold pass below then
-    // resolves neighbouring modules inconsistently — that is the QR that looks
-    // fine on paper and never scans. A slightly smaller code beats a blurred
-    // one, so the module size is floored, never rounded.
-    //
-    // No drawn quiet zone beyond a two-module cushion: the rest of the roll is
-    // unprinted white, which is a far larger margin than the spec asks for.
-    if (qrModules) {
-      const quiet = 2;
-      const span = qrModules.length + quiet * 2;
-      const moduleDots = Math.max(2, Math.floor(Math.min(W * 0.55, 190 * scale) / span));
-      const side = moduleDots * span;
-      const qx = Math.round((W - side) / 2);
-      gap();
-      if (draw) {
-        c.fillStyle = '#fff';
-        c.fillRect(qx, y, side, side);
-        c.fillStyle = '#000';
-        for (let my = 0; my < qrModules.length; my++) {
-          const mrow = qrModules[my];
-          for (let mx = 0; mx < mrow.length; mx++) {
-            if (mrow[mx]) {
-              c.fillRect(
-                qx + (mx + quiet) * moduleDots,
-                y + (my + quiet) * moduleDots,
-                moduleDots,
-                moduleDots,
-              );
-            }
-          }
-        }
-      }
-      y += side;
-      if (t.qr?.caption) center(t.qr.caption, F_SMALL);
-    }
+    if (qrPosition === 'bottom') drawQr();
 
     // ── Footer ──
     // Balanced: the divider supplies equal space above and below the rule, then

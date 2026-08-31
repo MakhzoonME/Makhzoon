@@ -12,6 +12,7 @@ import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { AppointmentStatusBadge } from '@/components/haraka/AppointmentStatusBadge';
 import { AppointmentInvoiceDialog } from '@/components/haraka/AppointmentInvoiceDialog';
 import { AppointmentPaymentsPanel } from '@/components/haraka/AppointmentPaymentsPanel';
+import { AppointmentProductsPanel } from '@/components/haraka/AppointmentProductsPanel';
 import { ReportGenerateDrawer } from '@/components/document-reports/ReportGenerateDrawer';
 import {
   useAppointment,
@@ -266,6 +267,12 @@ export function AppointmentDetailPage() {
               </div>
             )}
           </div>
+
+          <AppointmentProductsPanel
+            appointment={appointment}
+            currency={currency}
+            readOnly={!can('appointmentsAddProduct')}
+          />
 
           <AppointmentPaymentsPanel
             appointment={appointment}

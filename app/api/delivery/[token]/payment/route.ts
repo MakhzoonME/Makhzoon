@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { derivePaymentStatus } from '@/lib/modules/haraka/pricing/calc'
 import { z } from 'zod'
 
 const paymentSchema = z.object({
@@ -42,28 +43,30 @@ export async function POST(
 
     // Insert payment entry
     await supabaseAdmin
-      .from('haraka_order_payments')
+      .from('payments')
       .insert({
-        order_id:        order.id,
+        reference_type:  'order',
+        reference_id:    order.id,
         organization_id: order.organization_id,
         amount:          body.amount,
-        payment_method:  body.paymentMethod ?? null,
+        payment_method:  body.paymentMethod ?? 'other',
+        status:          'paid',
+        paid_at:         new Date().toISOString(),
         note:            body.note ?? null,
       })
 
     // Recalculate totals
     const { data: allPayments } = await supabaseAdmin
-      .from('haraka_order_payments')
+      .from('payments')
       .select('amount')
-      .eq('order_id', order.id)
+      .eq('reference_type', 'order')
+      .eq('reference_id', order.id)
       .eq('organization_id', order.organization_id)
+      .eq('status', 'paid')
 
     const amountPaid = (allPayments ?? []).reduce((s, p) => s + Number(p.amount), 0)
     const total = Number(order.total)
-    const paymentStatus =
-      amountPaid <= 0              ? 'unpaid'
-      : amountPaid < total - 0.001 ? 'partial'
-      :                              'paid'
+    const paymentStatus = derivePaymentStatus(total, amountPaid)
 
     await supabaseAdmin
       .from('haraka_orders')

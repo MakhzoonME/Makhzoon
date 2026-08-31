@@ -1,7 +1,7 @@
 import 'server-only'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import type { TenantContext } from '@/lib/platform/tenancy/types'
-import type { DocumentReportTemplate, ReportFieldDef } from '@/types'
+import type { DocumentReportTemplate, ReportFieldDef, ReportLanguageMode } from '@/types'
 
 type Row = Record<string, unknown>
 
@@ -10,6 +10,7 @@ function toTemplate(r: Row): DocumentReportTemplate {
     id:             r.id as string,
     organizationId: r.organization_id as string,
     name:           r.name as string,
+    languageMode:   (r.language_mode as ReportLanguageMode) ?? 'both',
     fieldSchema:    (r.field_schema as ReportFieldDef[]) ?? [],
     schemaVersion:  r.schema_version as number,
     isActive:       r.is_active as boolean,
@@ -22,11 +23,13 @@ function toTemplate(r: Row): DocumentReportTemplate {
 
 export interface CreateTemplateInput {
   name: string
+  languageMode: ReportLanguageMode
   fieldSchema: ReportFieldDef[]
 }
 
 export interface UpdateTemplateInput {
   name?: string
+  languageMode?: ReportLanguageMode
   fieldSchema?: ReportFieldDef[]
   isActive?: boolean
 }
@@ -60,6 +63,7 @@ export class ReportTemplatesRepository {
       .insert({
         organization_id: tenant.organizationId,
         name:             input.name,
+        language_mode:    input.languageMode,
         field_schema:     input.fieldSchema,
         schema_version:   1,
         created_by:       tenant.userId,
@@ -75,8 +79,9 @@ export class ReportTemplatesRepository {
    *  instances key their edit-lock off this version, not off content. */
   async update(tenant: TenantContext, id: string, patch: UpdateTemplateInput): Promise<DocumentReportTemplate> {
     const update: Row = { updated_by: tenant.userId }
-    if (patch.name      !== undefined) update.name      = patch.name
-    if (patch.isActive  !== undefined) update.is_active = patch.isActive
+    if (patch.name         !== undefined) update.name          = patch.name
+    if (patch.languageMode !== undefined) update.language_mode = patch.languageMode
+    if (patch.isActive     !== undefined) update.is_active     = patch.isActive
     if (patch.fieldSchema !== undefined) {
       // schema_version must be read-then-incremented — done explicitly here
       // rather than in SQL, since PostgREST update() can't reference the

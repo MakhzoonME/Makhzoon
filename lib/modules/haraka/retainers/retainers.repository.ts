@@ -9,6 +9,7 @@ import type {
   OrderPaymentStatus,
 } from '@/types'
 import { allocateRetainerNumber, allocateRetainerInvoiceNumber } from './retainer-numbering'
+import { derivePaymentStatus } from '@/lib/modules/haraka/pricing/calc'
 
 type Row = Record<string, unknown>
 
@@ -269,6 +270,53 @@ export class RetainersRepository {
     return toInvoice(data as unknown as Row)
   }
 
+  /** Sum of status='paid' rows in the shared ledger for this invoice — the
+   *  ledger is the source of truth, amount_paid/payment_status on the
+   *  invoice row are a cached rollup (same convention as orders/appointments/
+   *  service jobs). */
+  private async recalcInvoicePayments(
+    tenant: TenantContext,
+    retainerId: string,
+    invoiceId: string,
+  ): Promise<HarakaRetainerInvoice> {
+    const { data: paidRows, error: paidErr } = await supabaseAdmin
+      .from('payments')
+      .select('amount')
+      .eq('reference_type', 'retainer_invoice')
+      .eq('reference_id', invoiceId)
+      .eq('organization_id', tenant.organizationId)
+      .eq('status', 'paid')
+    if (paidErr) throw paidErr
+    const amountPaid = (paidRows ?? []).reduce((sum, p) => sum + Number((p as Row).amount ?? 0), 0)
+
+    const { data: invoiceRow } = await supabaseAdmin
+      .from('haraka_retainer_invoices')
+      .select('total')
+      .eq('id', invoiceId)
+      .maybeSingle()
+    const total = Number((invoiceRow as Row | null)?.total ?? 0)
+
+    const { data, error } = await supabaseAdmin
+      .from('haraka_retainer_invoices')
+      .update({
+        amount_paid:    amountPaid,
+        payment_status: derivePaymentStatus(total, amountPaid),
+      })
+      .eq('id', invoiceId)
+      .eq('retainer_id', retainerId)
+      .eq('organization_id', tenant.organizationId)
+      .select('*')
+      .single()
+    if (error) throw error
+    return toInvoice(data as unknown as Row)
+  }
+
+  /** `amountPaid`/`paymentStatus` in the patch mean "this invoice should now
+   *  show this much paid" — translated into a reconciling row in the shared
+   *  `payments` ledger rather than writing the cached columns directly.
+   *  Today's UI only ever sends `amountPaid: invoice.total` (a single "mark
+   *  paid" action, no partial/split payments yet), so this only ever
+   *  produces a single top-up row; it degrades gracefully if that changes. */
   async updateInvoice(
     tenant: TenantContext,
     retainerId: string,
@@ -281,26 +329,63 @@ export class RetainersRepository {
       notes?:         string | null
     },
   ): Promise<HarakaRetainerInvoice> {
-    const update: Row = {}
-    if ('paymentStatus' in patch) update.payment_status = patch.paymentStatus
-    if ('amountPaid'    in patch) update.amount_paid    = patch.amountPaid
-    if ('paymentMethod' in patch) update.payment_method = patch.paymentMethod
-    if ('paidAt'        in patch) update.paid_at        = patch.paidAt
-    if ('notes'         in patch) update.notes          = patch.notes
+    if ('notes' in patch) {
+      const { error } = await supabaseAdmin
+        .from('haraka_retainer_invoices')
+        .update({ notes: patch.notes })
+        .eq('id', invoiceId)
+        .eq('retainer_id', retainerId)
+        .eq('organization_id', tenant.organizationId)
+      if (error) throw error
+    }
 
-    const { data, error } = await supabaseAdmin
-      .from('haraka_retainer_invoices')
-      .update(update)
-      .eq('id', invoiceId)
-      .eq('retainer_id', retainerId)
-      .eq('organization_id', tenant.organizationId)
-      .select('*')
-      .single()
-    if (error) throw error
-    return toInvoice(data as unknown as Row)
+    if ('amountPaid' in patch && typeof patch.amountPaid === 'number') {
+      const { data: paidRows } = await supabaseAdmin
+        .from('payments')
+        .select('amount')
+        .eq('reference_type', 'retainer_invoice')
+        .eq('reference_id', invoiceId)
+        .eq('organization_id', tenant.organizationId)
+        .eq('status', 'paid')
+      const currentPaid = (paidRows ?? []).reduce((sum, p) => sum + Number((p as Row).amount ?? 0), 0)
+      const delta = patch.amountPaid - currentPaid
+
+      if (delta > 0.0001) {
+        const { error: insertError } = await supabaseAdmin.from('payments').insert({
+          reference_type:  'retainer_invoice',
+          reference_id:    invoiceId,
+          organization_id: tenant.organizationId,
+          amount:          delta,
+          payment_method:  patch.paymentMethod ?? 'other',
+          status:          'paid',
+          paid_at:         patch.paidAt ?? new Date().toISOString(),
+          created_by:      tenant.userId,
+        })
+        if (insertError) throw insertError
+      } else if (delta < -0.0001 && patch.amountPaid <= 0.0001) {
+        // "Unmark as paid" — no partial-removal semantics exist yet, so
+        // clear the ledger entirely rather than guessing which rows to drop.
+        const { error: deleteError } = await supabaseAdmin
+          .from('payments')
+          .delete()
+          .eq('reference_type', 'retainer_invoice')
+          .eq('reference_id', invoiceId)
+          .eq('organization_id', tenant.organizationId)
+        if (deleteError) throw deleteError
+      }
+    }
+
+    return this.recalcInvoicePayments(tenant, retainerId, invoiceId)
   }
 
   async deleteInvoice(tenant: TenantContext, retainerId: string, invoiceId: string): Promise<void> {
+    await supabaseAdmin
+      .from('payments')
+      .delete()
+      .eq('reference_type', 'retainer_invoice')
+      .eq('reference_id', invoiceId)
+      .eq('organization_id', tenant.organizationId)
+
     const { error } = await supabaseAdmin
       .from('haraka_retainer_invoices')
       .delete()

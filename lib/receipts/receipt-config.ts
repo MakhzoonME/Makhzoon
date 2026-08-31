@@ -66,6 +66,7 @@ export function toPrintText(
       documentUrl: extras.documentUrl,
       compliancePayload: extras.compliancePayload,
     }),
+    qrPositionThermal: c.qrPositionThermal,
     orgName: c.orgName?.trim() || extras.orgName,
     orgNameAr: c.orgNameAr ?? '',
     tagline: extras.tagline,

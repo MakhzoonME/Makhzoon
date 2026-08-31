@@ -54,11 +54,14 @@ export function ReportGenerateDrawer({
   const [encounterId, setEncounterId] = useState(fixedEncounterId ?? '')
   const [values, setValues] = useState<Record<string, unknown>>({})
   const [attachments, setAttachments] = useState<ReportAttachment[]>([])
+  const [language, setLanguage] = useState<'en' | 'ar'>('en')
 
   const { data: customersData } = useCustomers({ search: customerSearch, enabled: !fixedCustomerId && customerSearch.length > 1 })
   const { data: historyData } = useCustomerHistory(!fixedEncounterId && customerId ? customerId : undefined)
 
   const template = templatesData?.items.find((t) => t.id === templateId)
+  // Single-language templates aren't a choice — only 'both' needs the picker.
+  const resolvedLanguage: 'en' | 'ar' = template ? (template.languageMode === 'both' ? language : template.languageMode) : language
 
   const encounterOptions = useMemo(() => {
     if (!historyData || !encounterType) return []
@@ -73,6 +76,7 @@ export function ReportGenerateDrawer({
     setEncounterId(fixedEncounterId ?? '')
     setValues({})
     setAttachments([])
+    setLanguage('en')
   }
 
   async function handleSubmit() {
@@ -88,6 +92,7 @@ export function ReportGenerateDrawer({
         encounterId,
         fieldValues: values,
         attachments,
+        language: resolvedLanguage,
       })
       toast.success('Report generated')
       onCreated?.(report)
@@ -172,12 +177,27 @@ export function ReportGenerateDrawer({
           </div>
         )}
 
+        {template?.languageMode === 'both' && (
+          <div className="space-y-1.5">
+            <Label>Report Language</Label>
+            <Select value={language} onValueChange={(v) => setLanguage(v as 'en' | 'ar')}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="ar">Arabic</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-400">Can be changed later from the report itself.</p>
+          </div>
+        )}
+
         {template && (
           <div className="pt-2 border-t border-border space-y-4">
             <ReportValuesForm
               schema={template.fieldSchema}
               values={values}
               onChange={(key, v) => setValues((prev) => ({ ...prev, [key]: v }))}
+              lang={resolvedLanguage}
             />
             <div className="space-y-1.5">
               <Label>Attachments</Label>

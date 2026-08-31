@@ -5,11 +5,11 @@ import { useParams } from 'next/navigation';
 import { PageHeader, DataTable } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared';
 import { WarrantyCertShareDialog } from '@/components/haraka/WarrantyCertShareDialog';
-import { useWarrantyCerts, useWarrantyConfig } from '@/hooks/haraka';
+import { useWarrantyCerts, useWarrantyConfig, useReceiptConfig } from '@/hooks/haraka';
 import { useAdminGuard, useModuleGuard } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { formatDate } from '@/lib/utils/date';
-import { getReceiptBaseUrl } from '@/lib/app-env';
+import { getDocBaseUrl } from '@/lib/app-env';
 import type { HarakaWarrantyCert } from '@/types';
 
 export default function WarrantyCertsPage() {
@@ -22,9 +22,10 @@ export default function WarrantyCertsPage() {
 
   const { data, isLoading } = useWarrantyCerts({ page, pageSize: 25 });
   const { data: cfgData }    = useWarrantyConfig();
+  const { receiptConfig }    = useReceiptConfig();
 
   const config      = cfgData?.config;
-  const certBaseUrl = getReceiptBaseUrl();
+  const certBaseUrl = getDocBaseUrl();
 
   if (!featureAllowed || !isAllowed) {
     return null;
@@ -110,6 +111,7 @@ export default function WarrantyCertsPage() {
           orgName={orgInfo?.name ?? params.orgSlug}
           config={config}
           certBaseUrl={certBaseUrl}
+          logo={receiptConfig.logo}
         />
       )}
     </div>

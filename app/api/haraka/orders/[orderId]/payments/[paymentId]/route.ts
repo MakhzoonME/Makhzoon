@@ -3,13 +3,16 @@ import { resolveTenant } from '@/lib/platform/tenancy/resolve-tenant'
 import { requireFeature } from '@/lib/permissions/require-feature'
 import { requireHarakaModule } from '@/lib/permissions/require-module'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { derivePaymentStatus } from '@/lib/modules/haraka/pricing/calc'
 
 async function recalcOrder(orgId: string, orderId: string) {
   const { data: payments } = await supabaseAdmin
-    .from('haraka_order_payments')
+    .from('payments')
     .select('amount')
-    .eq('order_id', orderId)
+    .eq('reference_type', 'order')
+    .eq('reference_id', orderId)
     .eq('organization_id', orgId)
+    .eq('status', 'paid')
 
   const amountPaid = (payments ?? []).reduce((sum, p) => sum + Number(p.amount), 0)
 
@@ -21,10 +24,7 @@ async function recalcOrder(orgId: string, orderId: string) {
     .maybeSingle()
 
   const total = Number(order?.total ?? 0)
-  const paymentStatus =
-    amountPaid <= 0              ? 'unpaid'
-    : amountPaid < total - 0.001 ? 'partial'
-    :                              'paid'
+  const paymentStatus = derivePaymentStatus(total, amountPaid)
 
   await supabaseAdmin
     .from('haraka_orders')
@@ -44,10 +44,11 @@ export async function DELETE(
     const { orderId, paymentId } = await params
 
     const { error } = await supabaseAdmin
-      .from('haraka_order_payments')
+      .from('payments')
       .delete()
       .eq('id', paymentId)
-      .eq('order_id', orderId)
+      .eq('reference_type', 'order')
+      .eq('reference_id', orderId)
       .eq('organization_id', tenant.organizationId)
     if (error) throw error
 

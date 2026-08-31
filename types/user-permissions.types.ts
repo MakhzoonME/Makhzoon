@@ -159,6 +159,7 @@ export interface HarakaPermissions {
   appointmentsMarkNoShow: boolean;
   appointmentsGenerateInvoice: boolean;
   appointmentsAddPayment: boolean;
+  appointmentsAddProduct: boolean;
   // Staff directory beyond the delivery-agent CRUD above: capability tags
   // and per-provider working hours.
   staffManage: boolean;
@@ -311,7 +312,7 @@ const HARAKA_KEYS: (keyof HarakaPermissions)[] = [
   'servicesView', 'serviceJobsCreate', 'serviceJobsMarkConfirmed', 'serviceJobsAddPayment', 'serviceJobsMarkInProgress', 'serviceJobsMarkDone', 'serviceJobsUpdate', 'serviceJobsGenerateInvoice',
   'retainersView', 'retainersCreate', 'retainersPause', 'retainersCancel', 'retainersAddInvoice', 'retainersReactivate',
   'serviceCatalogView', 'serviceCatalogCreate', 'serviceCatalogUpdate', 'serviceCatalogDelete',
-  'appointmentsView', 'appointmentsCreate', 'appointmentsUpdate', 'appointmentsConfirm', 'appointmentsComplete', 'appointmentsCancel', 'appointmentsMarkNoShow', 'appointmentsGenerateInvoice', 'appointmentsAddPayment',
+  'appointmentsView', 'appointmentsCreate', 'appointmentsUpdate', 'appointmentsConfirm', 'appointmentsComplete', 'appointmentsCancel', 'appointmentsMarkNoShow', 'appointmentsGenerateInvoice', 'appointmentsAddPayment', 'appointmentsAddProduct',
   'staffManage', 'staffAvailabilityManage',
   'analyticsView',
 ];
@@ -567,6 +568,7 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'appointmentsMarkNoShow', label: 'Mark Appointment No-Show', labelKey: 'permOp.haraka.appointmentsMarkNoShow', requiresKey: 'appointmentsView' },
       { key: 'appointmentsGenerateInvoice', label: 'Generate Invoice for Appointment', labelKey: 'permOp.haraka.appointmentsGenerateInvoice', requiresKey: 'appointmentsView' },
       { key: 'appointmentsAddPayment', label: 'Add Payment Entry (Appointments)', labelKey: 'permOp.haraka.appointmentsAddPayment', requiresKey: 'appointmentsView' },
+      { key: 'appointmentsAddProduct', label: 'Add Product to Appointment', labelKey: 'permOp.haraka.appointmentsAddProduct', requiresKey: 'appointmentsView' },
       { key: 'staffManage', label: 'Manage Staff Capabilities', labelKey: 'permOp.haraka.staffManage', requiresKey: 'deliveryAgentsView' },
       { key: 'staffAvailabilityManage', label: 'Manage Staff Working Hours', labelKey: 'permOp.haraka.staffAvailabilityManage', requiresKey: 'staffManage' },
       { key: 'analyticsView', label: 'View Analytics', labelKey: 'permOp.haraka.analyticsView' },

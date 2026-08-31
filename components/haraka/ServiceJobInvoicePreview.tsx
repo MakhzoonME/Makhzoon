@@ -53,12 +53,14 @@ export function ServiceJobInvoicePreview({
         width: '210mm', minHeight: '297mm',
         padding: '14mm 16mm', boxSizing: 'border-box',
         fontSize: '10pt', lineHeight: 1.5,
+        position: 'relative',
       }}
     >
+      {qr && <DocumentQr qr={qr} size="24mm" position={docConfig.qrPositionA4} />}
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8mm', borderBottom: `2px solid ${accent}`, paddingBottom: '6mm' }}>
         <div>
-          {receiptConfig.showLogo && receiptConfig.logo && (
+          {docConfig.showLogo && receiptConfig.logo && (
             <div style={{ position: 'relative', width: 120, height: 48, marginBottom: 8 }}>
               <img src={receiptConfig.logo} alt="logo" style={{ objectFit: 'contain', width: '100%', height: '100%' }} />
             </div>
@@ -147,10 +149,9 @@ export function ServiceJobInvoicePreview({
         </tbody>
       </table>
 
-      {/* Totals — the QR sits opposite them rather than in the footer, which
-          already carries free-text terms that can run to several lines. */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8mm', marginBottom: '8mm' }}>
-        <div>{qr && <DocumentQr qr={qr} size="24mm" />}</div>
+      {/* Totals — the QR now prints at a corner (docConfig.qrPositionA4) rather
+          than here, since it's independently positionable per org. */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8mm' }}>
         <div style={{ width: '55mm', fontSize: '9.5pt' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', color: '#555' }}>
             <span>{t('invoicePreview.subtotal')}</span><span style={{ fontFamily: 'monospace' }}>{fmt(job.subtotal, currency)}</span>

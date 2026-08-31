@@ -52,32 +52,75 @@ export async function generateInviteQRDataUrl(acceptUrl: string): Promise<string
 
 export type DocumentQrSource = 'none' | 'link' | 'compliance';
 
+/**
+ * What a 'link' QR actually points at. Only receipts/invoices offer all
+ * three in their settings UI — reports and warranty certs are locked to
+ * 'self' since they have no "physical original" a custom link/file makes
+ * sense for.
+ *
+ *   'self'          — this document's own public/soft-copy page (default)
+ *   'custom-link'    — one fixed URL the org sets for this document type
+ *                      (e.g. a menu, a promo page), same for every document
+ *                      of that type
+ *   'uploaded-file'  — a file the org uploaded (PDF/image), opened directly
+ */
+export type DocumentQrTarget = 'self' | 'custom-link' | 'uploaded-file';
+
+/** Where the QR prints on an A4-style document (reports, invoices, warranty certs). */
+export type QrPositionA4 = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+
+/** Where the QR prints on a thermal (58mm/80mm) receipt — a linear top-to-bottom layout. */
+export type QrPositionThermal = 'top' | 'bottom';
+
 /** QR fields embedded into each document type's own config blob. */
 export interface DocumentQrConfig {
   qrSource: DocumentQrSource;
+  qrTarget: DocumentQrTarget;
+  /** Set when qrTarget === 'custom-link'. */
+  qrCustomLink: string | null;
+  /** Set when qrTarget === 'uploaded-file' — public storage URL. */
+  qrUploadedFileUrl: string | null;
+  qrPositionA4: QrPositionA4;
+  qrPositionThermal: QrPositionThermal;
   /** Optional line printed under the QR ("Scan for your receipt"). */
   qrCaption: string;
 }
 
 export const DEFAULT_DOCUMENT_QR: DocumentQrConfig = {
   qrSource: 'none',
+  qrTarget: 'self',
+  qrCustomLink: null,
+  qrUploadedFileUrl: null,
+  qrPositionA4: 'bottom-right',
+  qrPositionThermal: 'bottom',
   qrCaption: '',
 };
 
 /** Documents that can carry a QR, and where their public copy lives. */
-export type DocumentKind = 'pos-receipt' | 'order' | 'service-job' | 'appointment';
+export type DocumentKind =
+  | 'pos-receipt'
+  | 'order'
+  | 'service-job'
+  | 'appointment'
+  | 'report'
+  | 'warranty-cert';
 
 const DOCUMENT_PATH: Record<DocumentKind, (orgSlug: string, id: string) => string> = {
-  'pos-receipt': (org, id) => `/r/${org}/${id}`,
-  'order':       (org, id) => `/inv/${org}/${id}`,
-  'service-job': (org, id) => `/service-job-invoice/${org}/${id}`,
-  'appointment': (org, id) => `/appointment-invoice/${org}/${id}`,
+  'pos-receipt':   (org, id) => `/r/${org}/${id}`,
+  'order':         (org, id) => `/inv/${org}/${id}`,
+  'service-job':   (org, id) => `/service-job-invoice/${org}/${id}`,
+  'appointment':   (org, id) => `/appointment-invoice/${org}/${id}`,
+  'report':        (org, id) => `/r/${org}/reports/${id}`,
+  'warranty-cert': (org, id) => `/w/${org}/cert/${id}`,
 };
+
+/** Document kinds whose settings UI only offers qrTarget 'self' (no physical original to redirect elsewhere). */
+export const QR_TARGET_LOCKED_KINDS: ReadonlySet<DocumentKind> = new Set(['report', 'warranty-cert']);
 
 /**
  * Public, unauthenticated URL of a document — the same link the share dialogs
  * copy. `baseUrl` is the receipt host for the current environment
- * (`getReceiptBaseUrl()` in the browser, `publicDocumentBaseUrl()` on the
+ * (`getDocBaseUrl()` in the browser, `publicDocumentBaseUrl()` on the
  * server), so a QR printed on dev never points customers at production.
  *
  * `search` carries the variant a route needs to render the right document —
@@ -103,6 +146,11 @@ export interface ResolvedDocumentQr {
 /**
  * Decide what this document's QR should encode, or null to print none.
  * Pure — safe to call during render.
+ *
+ * `opts.documentUrl` is this specific document's own soft-copy link (what
+ * qrTarget 'self' encodes). 'custom-link' and 'uploaded-file' ignore it and
+ * read their static value straight off the config instead, since both are
+ * the same for every document of that type rather than per-document.
  */
 export function resolveDocumentQr(
   config: Partial<DocumentQrConfig> | undefined,
@@ -112,11 +160,17 @@ export function resolveDocumentQr(
   if (source === 'none') return null;
 
   const caption = (config?.qrCaption ?? '').trim();
-  const link = opts.documentUrl?.trim() || null;
   const gov = opts.compliancePayload?.trim() || null;
 
   if (source === 'compliance' && gov) return { payload: gov, source: 'compliance', caption };
-  // 'link', or 'compliance' with no adapter registered yet.
+
+  // 'link', or 'compliance' with no adapter registered yet — both fall back to a link target.
+  const target = config?.qrTarget ?? DEFAULT_DOCUMENT_QR.qrTarget;
+  const link =
+    target === 'custom-link' ? config?.qrCustomLink?.trim() || null :
+    target === 'uploaded-file' ? config?.qrUploadedFileUrl?.trim() || null :
+    opts.documentUrl?.trim() || null;
+
   return link ? { payload: link, source: 'link', caption } : null;
 }
 

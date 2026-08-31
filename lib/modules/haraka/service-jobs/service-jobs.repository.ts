@@ -10,7 +10,7 @@ import type {
   OrderDeliveryAddress,
   ServiceJobAgentAssignment,
 } from '@/types'
-import { priceCart, type CartLineInput } from '@/lib/modules/haraka/pricing/calc'
+import { priceCart, derivePaymentStatus, type CartLineInput } from '@/lib/modules/haraka/pricing/calc'
 import { allocateServiceInvoiceNumber } from './invoice-numbering'
 
 type Row = Record<string, unknown>
@@ -365,6 +365,11 @@ export class ServiceJobsRepository {
     return toJob(data as unknown as Row)
   }
 
+  /** Legacy "set total paid" entry point (kept for any caller outside the
+   *  ledger-based addPayment/removePayment). `amountPaid` is an absolute
+   *  target, not an increment — reconciled into the shared `payments`
+   *  ledger so this doesn't bypass it and get silently overwritten by the
+   *  next ledger-based recalc. */
   async recordPayment(
     tenant: TenantContext,
     id: string,
@@ -373,14 +378,53 @@ export class ServiceJobsRepository {
   ): Promise<HarakaServiceJob> {
     const job = await this.getById(tenant, id)
     if (!job) throw new Error('Service job not found')
-    const paymentStatus: OrderPaymentStatus =
-      amountPaid <= 0           ? 'unpaid'
-      : amountPaid < job.total  ? 'partial'
-      :                           'paid'
+
+    const { data: paidRows } = await supabaseAdmin
+      .from('payments')
+      .select('amount')
+      .eq('reference_type', 'job')
+      .eq('reference_id', id)
+      .eq('organization_id', tenant.organizationId)
+      .eq('status', 'paid')
+    const currentPaid = (paidRows ?? []).reduce((sum, p) => sum + Number((p as unknown as Row).amount ?? 0), 0)
+    const delta = amountPaid - currentPaid
+
+    if (delta > 0.0001) {
+      const { error: insertError } = await supabaseAdmin.from('payments').insert({
+        reference_type:  'job',
+        reference_id:    id,
+        organization_id: tenant.organizationId,
+        amount:          delta,
+        payment_method:  paymentMethod ?? 'other',
+        status:          'paid',
+        paid_at:         new Date().toISOString(),
+        created_by:      tenant.userId,
+      })
+      if (insertError) throw insertError
+    } else if (delta < -0.0001 && amountPaid <= 0.0001) {
+      const { error: deleteError } = await supabaseAdmin
+        .from('payments')
+        .delete()
+        .eq('reference_type', 'job')
+        .eq('reference_id', id)
+        .eq('organization_id', tenant.organizationId)
+      if (deleteError) throw deleteError
+    }
+
+    const { data: finalPaidRows } = await supabaseAdmin
+      .from('payments')
+      .select('amount')
+      .eq('reference_type', 'job')
+      .eq('reference_id', id)
+      .eq('organization_id', tenant.organizationId)
+      .eq('status', 'paid')
+    const finalPaid = (finalPaidRows ?? []).reduce((sum, p) => sum + Number((p as unknown as Row).amount ?? 0), 0)
+    const paymentStatus: OrderPaymentStatus = derivePaymentStatus(job.total, finalPaid)
+
     const { data, error } = await supabaseAdmin
       .from('haraka_service_jobs')
       .update({
-        amount_paid:    amountPaid,
+        amount_paid:    finalPaid,
         payment_method: paymentMethod,
         payment_status: paymentStatus,
         updated_by:     tenant.userId,
@@ -424,9 +468,10 @@ export class ServiceJobsRepository {
 
   async listPayments(tenant: TenantContext, jobId: string): Promise<ServiceJobPaymentEntry[]> {
     const { data, error } = await supabaseAdmin
-      .from('haraka_service_job_payments')
+      .from('payments')
       .select('*')
-      .eq('job_id', jobId)
+      .eq('reference_type', 'job')
+      .eq('reference_id', jobId)
       .eq('organization_id', tenant.organizationId)
       .order('paid_at', { ascending: false })
     if (error) throw error
@@ -451,21 +496,26 @@ export class ServiceJobsRepository {
     note: string | null,
   ): Promise<void> {
     const { error: insertError } = await supabaseAdmin
-      .from('haraka_service_job_payments')
+      .from('payments')
       .insert({
-        job_id:          jobId,
+        reference_type:  'job',
+        reference_id:    jobId,
         organization_id: tenant.organizationId,
         amount,
-        payment_method:  paymentMethod,
+        payment_method:  paymentMethod ?? 'other',
+        status:          'paid',
+        paid_at:         new Date().toISOString(),
         note,
         created_by:      tenant.userId,
       })
     if (insertError) throw insertError
 
     const { data: payments } = await supabaseAdmin
-      .from('haraka_service_job_payments')
+      .from('payments')
       .select('amount')
-      .eq('job_id', jobId)
+      .eq('reference_type', 'job')
+      .eq('reference_id', jobId)
+      .eq('status', 'paid')
     const totalPaid = (payments ?? []).reduce((acc, p) => acc + Number((p as unknown as Row).amount ?? 0), 0)
 
     const { data: jobRow } = await supabaseAdmin
@@ -474,10 +524,7 @@ export class ServiceJobsRepository {
       .eq('id', jobId)
       .maybeSingle()
     const jobTotal = Number((jobRow as unknown as Row | null)?.total ?? 0)
-    const paymentStatus: OrderPaymentStatus =
-      totalPaid <= 0              ? 'unpaid'
-      : totalPaid < jobTotal      ? 'partial'
-      :                             'paid'
+    const paymentStatus: OrderPaymentStatus = derivePaymentStatus(jobTotal, totalPaid)
 
     await supabaseAdmin
       .from('haraka_service_jobs')
@@ -496,17 +543,20 @@ export class ServiceJobsRepository {
     paymentId: string,
   ): Promise<void> {
     const { error } = await supabaseAdmin
-      .from('haraka_service_job_payments')
+      .from('payments')
       .delete()
       .eq('id', paymentId)
-      .eq('job_id', jobId)
+      .eq('reference_type', 'job')
+      .eq('reference_id', jobId)
       .eq('organization_id', tenant.organizationId)
     if (error) throw error
 
     const { data: payments } = await supabaseAdmin
-      .from('haraka_service_job_payments')
+      .from('payments')
       .select('amount')
-      .eq('job_id', jobId)
+      .eq('reference_type', 'job')
+      .eq('reference_id', jobId)
+      .eq('status', 'paid')
     const totalPaid = (payments ?? []).reduce((acc, p) => acc + Number((p as unknown as Row).amount ?? 0), 0)
 
     const { data: jobRow } = await supabaseAdmin
@@ -515,10 +565,7 @@ export class ServiceJobsRepository {
       .eq('id', jobId)
       .maybeSingle()
     const jobTotal = Number((jobRow as unknown as Row | null)?.total ?? 0)
-    const paymentStatus: OrderPaymentStatus =
-      totalPaid <= 0           ? 'unpaid'
-      : totalPaid < jobTotal   ? 'partial'
-      :                          'paid'
+    const paymentStatus: OrderPaymentStatus = derivePaymentStatus(jobTotal, totalPaid)
 
     await supabaseAdmin
       .from('haraka_service_jobs')

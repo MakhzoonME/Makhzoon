@@ -50,7 +50,14 @@ export const addAppointmentPaymentSchema = z.object({
   note:          z.string().trim().max(500).nullable().optional(),
 })
 
+export const addAppointmentProductSchema = z.object({
+  itemId:    z.string().uuid('Pick a product'),
+  quantity:  z.number().int().positive(),
+  unitPrice: z.number().min(0),
+})
+
 export type CreateAppointmentPayload = z.infer<typeof createAppointmentSchema>
 export type UpdateAppointmentPayload = z.infer<typeof updateAppointmentSchema>
 export type UpdateAppointmentStatusPayload = z.infer<typeof updateAppointmentStatusSchema>
 export type AddAppointmentPaymentPayload = z.infer<typeof addAppointmentPaymentSchema>
+export type AddAppointmentProductPayload = z.infer<typeof addAppointmentProductSchema>

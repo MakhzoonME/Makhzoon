@@ -9,6 +9,8 @@ export interface ServiceJobDocumentConfig extends DocumentQrConfig {
   showServiceAddress: boolean;
   termsText: string;
   thankYouText: string;
+  /** Independent of the shared receipt config — see OrderDocumentConfig.showLogo. */
+  showLogo: boolean;
 }
 
 export const DEFAULT_SERVICE_JOB_DOCUMENT_CONFIG: ServiceJobDocumentConfig = {
@@ -18,5 +20,6 @@ export const DEFAULT_SERVICE_JOB_DOCUMENT_CONFIG: ServiceJobDocumentConfig = {
   showServiceAddress: true,
   termsText:          '',
   thankYouText:       'Thank you for your business!',
+  showLogo:           true,
   ...DEFAULT_DOCUMENT_QR,
 }

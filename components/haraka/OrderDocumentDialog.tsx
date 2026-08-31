@@ -14,7 +14,7 @@ import type { HarakaOrder } from '@/types';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import type { OrderDocumentConfig } from '@/lib/modules/haraka/orders/order-document-config';
 import { useReceiptConfig, useOrderDocumentConfig } from '@/hooks/haraka';
-import { getReceiptBaseUrl } from '@/lib/app-env';
+import { getDocBaseUrl } from '@/lib/app-env';
 import { cn } from '@/lib/utils/cn';
 
 interface Props {
@@ -62,7 +62,7 @@ export function OrderDocumentDialog({
     note: p.note,
   }));
 
-  const publicUrl = `${getReceiptBaseUrl()}/inv/${orgSlug}/${order.id}?type=${type}`;
+  const publicUrl = `${getDocBaseUrl()}/inv/${orgSlug}/${order.id}?type=${type}`;
 
   async function ensureInvoiceNumber() {
     if (order.invoiceNumber) return order.invoiceNumber;

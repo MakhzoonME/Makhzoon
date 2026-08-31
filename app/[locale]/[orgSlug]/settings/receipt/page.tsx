@@ -21,7 +21,7 @@ import { buildReceiptFromMatrix } from '@/lib/modules/haraka/printing/receipt-te
 import { sampleReceiptTransaction } from '@/lib/modules/haraka/printing/receipt-canvas';
 import { DEFAULT_RECEIPT_CONFIG, toPrintText, paperWidthFor } from '@/lib/receipts/receipt-config';
 import type { ReceiptLang } from '@/lib/receipts/labels';
-import { getReceiptBaseUrl } from '@/lib/app-env';
+import { getDocBaseUrl } from '@/lib/app-env';
 import { documentPublicUrl } from '@/lib/qr';
 import { DocumentQrCard } from '@/components/settings/DocumentQrCard';
 
@@ -109,7 +109,7 @@ export default function ReceiptSettingsPage() {
   const supported = isWebUsbSupported();
   const [copied, setCopied] = useState(false);
   const qc = useQueryClient();
-  const [receiptBase] = useState(() => getReceiptBaseUrl());
+  const [receiptBase] = useState(() => getDocBaseUrl());
 
   const [settings, setSettings] = useState<ReceiptSettings>(DEFAULT_SETTINGS);
   const [previewLang, setPreviewLang] = useState<ReceiptLang>(locale === 'ar' ? 'ar' : 'en');
@@ -413,6 +413,7 @@ export default function ReceiptSettingsPage() {
             value={settings}
             onChange={(patch) => setSettings((s) => ({ ...s, ...patch }))}
             hint="Printed near the bottom of POS receipts — on the thermal roll and on the shared web receipt."
+            positionMode={settings.template === 'thermal-58' || settings.template === 'thermal-80' ? 'thermal' : 'a4'}
           />
         </div>
 

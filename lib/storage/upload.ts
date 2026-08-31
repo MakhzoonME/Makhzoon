@@ -17,7 +17,8 @@ export type UploadKind =
   | 'inventory-receipt'
   | 'warranty-document'
   | 'purchase-invoice'
-  | 'report-attachment';
+  | 'report-attachment'
+  | 'qr-target-file';
 
 interface BucketDef {
   bucket: string;
@@ -33,6 +34,8 @@ export const BUCKETS: Record<UploadKind, BucketDef> = {
   'warranty-document': { bucket: 'warranty-documents', isPublic: false },
   'purchase-invoice':  { bucket: 'purchase-invoices',  isPublic: false },
   'report-attachment': { bucket: 'report-attachments', isPublic: false },
+  // Public — a scanned QR code opens this with no session to sign a URL with.
+  'qr-target-file':    { bucket: 'qr-target-files',     isPublic: true },
 };
 
 export interface UploadResult {

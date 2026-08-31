@@ -19,6 +19,9 @@ export interface OrderDocumentConfig extends DocumentQrConfig {
   termsText: string;
   /** Custom note below totals. */
   thankYouText: string;
+  /** Independent of the shared receipt config — an org may want the logo on
+   *  the thermal receipt but not on this document, or vice versa. */
+  showLogo: boolean;
 }
 
 export const DEFAULT_ORDER_DOCUMENT_CONFIG: OrderDocumentConfig = {
@@ -30,5 +33,6 @@ export const DEFAULT_ORDER_DOCUMENT_CONFIG: OrderDocumentConfig = {
   showDeliveryAgent:   false,
   termsText:           '',
   thankYouText:        'Thank you for your order!',
+  showLogo:            true,
   ...DEFAULT_DOCUMENT_QR,
 };

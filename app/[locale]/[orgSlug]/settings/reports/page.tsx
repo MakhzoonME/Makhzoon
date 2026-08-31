@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import { PageHeader, DataTable, FormDrawer } from '@/components/shared'
 import type { ColumnDef } from '@/components/shared'
@@ -8,16 +8,26 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Combobox } from '@/components/ui/combobox'
 import { ReportFieldsEditor } from '@/components/document-reports/ReportFieldsEditor'
+import { DocumentQrCard } from '@/components/settings/DocumentQrCard'
 import {
   useReportTemplates,
   useCreateReportTemplate,
   useUpdateReportTemplate,
 } from '@/hooks/document-reports/useReportTemplates'
+import { useReportDocumentConfig } from '@/hooks/haraka'
 import { useModuleGuard } from '@/hooks/ui'
 import { toast } from '@/hooks/ui'
 import { VERTICAL_FEATURE_KEYS } from '@/lib/platform/verticals'
-import type { DocumentReportTemplate, ReportFieldDef } from '@/types'
+import type { ReportDocumentConfig } from '@/lib/modules/document-reports/report-document-config'
+import type { DocumentReportTemplate, ReportFieldDef, ReportLanguageMode } from '@/types'
+
+const LANGUAGE_MODE_OPTIONS: { value: ReportLanguageMode; label: string }[] = [
+  { value: 'both', label: 'Bilingual (EN + AR)' },
+  { value: 'en', label: 'English only' },
+  { value: 'ar', label: 'Arabic only' },
+]
 
 export default function ReportTemplatesSettingsPage() {
   // Org-scoped page shared across verticals that hold document-report access.
@@ -32,9 +42,32 @@ export default function ReportTemplatesSettingsPage() {
   const createMutation = useCreateReportTemplate()
   const updateMutation = useUpdateReportTemplate()
 
+  const savedDocConfig = useReportDocumentConfig()
+  const [docConfig, setDocConfig] = useState<ReportDocumentConfig>(savedDocConfig)
+  const [savingDocConfig, setSavingDocConfig] = useState(false)
+  useEffect(() => setDocConfig(savedDocConfig), [savedDocConfig])
+
+  async function handleSaveDocConfig() {
+    setSavingDocConfig(true)
+    try {
+      const res = await fetch('/api/organizations/report-document-config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(docConfig),
+      })
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'Failed to save')
+      toast.success('Appearance settings saved')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save')
+    } finally {
+      setSavingDocConfig(false)
+    }
+  }
+
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<DocumentReportTemplate | null>(null)
   const [name, setName] = useState('')
+  const [languageMode, setLanguageMode] = useState<ReportLanguageMode>('both')
   const [fields, setFields] = useState<ReportFieldDef[]>([])
 
   if (!isAllowed) return null
@@ -42,6 +75,7 @@ export default function ReportTemplatesSettingsPage() {
   function openCreate() {
     setEditing(null)
     setName('')
+    setLanguageMode('both')
     setFields([])
     setDrawerOpen(true)
   }
@@ -49,6 +83,7 @@ export default function ReportTemplatesSettingsPage() {
   function openEdit(template: DocumentReportTemplate) {
     setEditing(template)
     setName(template.name)
+    setLanguageMode(template.languageMode)
     setFields(template.fieldSchema)
     setDrawerOpen(true)
   }
@@ -58,12 +93,12 @@ export default function ReportTemplatesSettingsPage() {
       toast.error('Template name is required')
       return
     }
-    const cleanFields = fields.filter((f) => f.fieldKey && f.label)
+    const cleanFields = fields.filter((f) => f.fieldKey && (f.label?.trim() || f.labelAr?.trim()))
     try {
       if (editing) {
-        await updateMutation.mutateAsync({ id: editing.id, patch: { name, fieldSchema: cleanFields } })
+        await updateMutation.mutateAsync({ id: editing.id, patch: { name, languageMode, fieldSchema: cleanFields } })
       } else {
-        await createMutation.mutateAsync({ name, fieldSchema: cleanFields })
+        await createMutation.mutateAsync({ name, languageMode, fieldSchema: cleanFields })
       }
       setDrawerOpen(false)
     } catch (err) {
@@ -112,6 +147,27 @@ export default function ReportTemplatesSettingsPage() {
         onRowClick={openEdit}
       />
 
+      <div className="max-w-md space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-700">Report Appearance</h2>
+          <Button size="sm" onClick={handleSaveDocConfig} disabled={savingDocConfig}>
+            {savingDocConfig ? 'Saving…' : 'Save'}
+          </Button>
+        </div>
+        <div className="rounded-xl border border-border bg-surface-page p-4 flex items-center justify-between">
+          <Label className="font-normal text-gray-700">Show logo</Label>
+          <Switch checked={docConfig.showLogo} onCheckedChange={(v) => setDocConfig((c) => ({ ...c, showLogo: v }))} />
+        </div>
+        <DocumentQrCard
+          title="QR code"
+          hint="Lets a customer open the online version of a printed/shared report by scanning it."
+          value={docConfig}
+          onChange={(patch) => setDocConfig((c) => ({ ...c, ...patch }))}
+          positionMode="a4"
+          lockTarget
+        />
+      </div>
+
       <FormDrawer
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
@@ -125,8 +181,21 @@ export default function ReportTemplatesSettingsPage() {
             <Input id="template-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Patient Report" />
           </div>
           <div className="space-y-1.5">
+            <Label>Language</Label>
+            <Combobox
+              value={languageMode}
+              onChange={(v) => setLanguageMode((v ?? 'both') as ReportLanguageMode)}
+              options={LANGUAGE_MODE_OPTIONS}
+              searchable={false}
+              clearable={false}
+            />
+            <p className="text-xs text-gray-400">
+              Bilingual asks for both an English and an Arabic name per field, and lets staff pick which language each generated report renders in.
+            </p>
+          </div>
+          <div className="space-y-1.5">
             <Label>Fields</Label>
-            <ReportFieldsEditor fields={fields} onChange={setFields} />
+            <ReportFieldsEditor fields={fields} onChange={setFields} languageMode={languageMode} />
           </div>
         </div>
         <div className="px-6 py-4 border-t border-border flex justify-end gap-2 flex-shrink-0">

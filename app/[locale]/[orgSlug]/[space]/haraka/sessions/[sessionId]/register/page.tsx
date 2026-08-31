@@ -26,7 +26,7 @@ import { CashDrawerButton } from '@/components/haraka/CashDrawerButton';
 import { useCashDrawerConfig } from '@/hooks/haraka';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import { DEFAULT_RECEIPT_CONFIG } from '@/lib/receipts/receipt-config';
-import { getReceiptBaseUrl } from '@/lib/app-env';
+import { getDocBaseUrl } from '@/lib/app-env';
 import { useQuery } from '@tanstack/react-query';
 import type { InventoryItem, PosTransaction } from '@/types';
 
@@ -103,7 +103,7 @@ export default function RegisterPage() {
   const [lastTx, setLastTx] = useState<PosTransaction | null>(null);
   const [pendingDrawerPayments, setPendingDrawerPayments] = useState<PaymentLine[] | null>(null);
   const [receiptTx, setReceiptTx] = useState<PosTransaction | null>(null);
-  const [receiptBase] = useState(() => getReceiptBaseUrl());
+  const [receiptBase] = useState(() => getDocBaseUrl());
 
   const { data: receiptCfg } = useQuery<{ tagline?: string; taglineAr?: string; taxNumber?: string; config?: ReceiptConfig }>({
     queryKey: ['receipt-config'],

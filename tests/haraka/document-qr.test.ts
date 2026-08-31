@@ -6,7 +6,7 @@ import {
   DEFAULT_DOCUMENT_QR,
 } from '@/lib/qr';
 
-const BASE = 'https://rcpt-dev.makhzoon.me';
+const BASE = 'https://doc-dev.makhzoon.me';
 const ID = '00000000-0000-0000-0000-000000000000';
 
 describe('documentPublicUrl', () => {

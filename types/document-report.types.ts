@@ -7,7 +7,10 @@ import type { DocumentRef } from '@/types/document.types';
 export interface ReportFieldDef {
   fieldKey: string;
   type: 'text' | 'textarea' | 'number' | 'select' | 'multi_select' | 'date' | 'boolean' | 'user';
-  label: string;
+  /** At least one of label/labelAr is required (enforced by
+   *  reportFieldDefSchema's refine + ReportTemplatesService) — which one
+   *  depends on the template's languageMode. */
+  label?: string;
   labelAr?: string;
   required: boolean;
   options?: CustomFieldOption[];
@@ -17,10 +20,15 @@ export interface ReportFieldDef {
   sortOrder: number;
 }
 
+/** Which language(s) this template's field names are authored in. 'both'
+ *  requires every field to carry both `label` (English) and `labelAr`. */
+export type ReportLanguageMode = 'en' | 'ar' | 'both';
+
 export interface DocumentReportTemplate {
   id: string;
   organizationId: string;
   name: string;
+  languageMode: ReportLanguageMode;
   fieldSchema: ReportFieldDef[];
   schemaVersion: number;
   isActive: boolean;
@@ -50,6 +58,9 @@ export interface DocumentReportInstance {
   fieldSchemaSnapshot: ReportFieldDef[];
   fieldValues: Record<string, unknown>;
   attachments: ReportAttachment[];
+  /** Which language this specific report renders in. Fixed to the template's
+   *  language when it isn't 'both'; freely changeable afterward when it is. */
+  language: 'en' | 'ar';
   shareToken: string;
   /** true when templateSchemaVersion still matches the template's current
    *  schemaVersion — editing is only allowed while this holds. */

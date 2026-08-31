@@ -8,7 +8,9 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Combobox } from '@/components/ui/combobox';
 import { WarrantyCertPreview } from '@/components/haraka/WarrantyCertPreview';
+import { DocumentQrCard } from '@/components/settings/DocumentQrCard';
 import { useWarrantyConfig, useUpdateWarrantyConfig } from '@/hooks/haraka';
+import { useReceiptConfig } from '@/hooks/haraka';
 import { useAdminGuard, useModuleGuard, toast } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import type { HarakaWarrantyConfig } from '@/types';
@@ -19,6 +21,7 @@ export default function WarrantyCertSettingsPage() {
   const { data, isLoading } = useWarrantyConfig();
   const updateMut = useUpdateWarrantyConfig();
   const { data: orgInfo } = useOrgInfo();
+  const { receiptConfig } = useReceiptConfig();
 
   const [cfg, setCfg] = useState<Partial<HarakaWarrantyConfig>>({
     defaultDurationDays: 180,
@@ -26,7 +29,9 @@ export default function WarrantyCertSettingsPage() {
     template:    'a4-modern',
     accentColor: '#C2185B',
     showLogo:    true,
-    showQr:      true,
+    qrSource:    'none',
+    qrPositionA4: 'bottom-right',
+    qrPositionThermal: 'bottom',
     termsText:   null,
     termsTextAr: null,
     headerText:  null,
@@ -51,7 +56,10 @@ export default function WarrantyCertSettingsPage() {
     footerText:   cfg.footerText   ?? null,
     footerTextAr: cfg.footerTextAr ?? null,
     showLogo:     cfg.showLogo     ?? true,
-    showQr:       false, // no QR in preview (no real cert)
+    qrSource:     'none', // no QR in preview (no real cert)
+    qrCaption:    cfg.qrCaption    ?? '',
+    qrPositionA4: cfg.qrPositionA4 ?? 'bottom-right',
+    qrPositionThermal: cfg.qrPositionThermal ?? 'bottom',
     language:     cfg.language     ?? 'en',
     template:     cfg.template     ?? 'a4-modern',
     accentColor:  cfg.accentColor  ?? '#C2185B',
@@ -65,7 +73,10 @@ export default function WarrantyCertSettingsPage() {
         template:    cfg.template,
         accentColor: cfg.accentColor,
         showLogo:    cfg.showLogo,
-        showQr:      cfg.showQr,
+        qrSource:    cfg.qrSource,
+        qrCaption:   cfg.qrCaption,
+        qrPositionA4: cfg.qrPositionA4,
+        qrPositionThermal: cfg.qrPositionThermal,
         termsText:   cfg.termsText,
         termsTextAr: cfg.termsTextAr,
         headerText:  cfg.headerText,
@@ -145,11 +156,25 @@ export default function WarrantyCertSettingsPage() {
             <Label>Show logo</Label>
             <Switch checked={cfg.showLogo ?? true} onCheckedChange={(v) => setCfg((c) => ({ ...c, showLogo: v }))} />
           </div>
-          <div className="flex items-center justify-between">
-            <Label>Show QR code</Label>
-            <Switch checked={cfg.showQr ?? true} onCheckedChange={(v) => setCfg((c) => ({ ...c, showQr: v }))} />
-          </div>
         </div>
+
+        <DocumentQrCard
+          title="QR code"
+          hint="Lets a customer verify their warranty online by scanning the certificate."
+          value={cfg}
+          onChange={(patch) => setCfg((c) => ({
+            ...c,
+            // HarakaWarrantyConfig only has none|link (no compliance/target —
+            // lockTarget hides that UI, so this narrows what DocumentQrCard's
+            // wider patch type could otherwise send).
+            ...(patch.qrSource !== undefined ? { qrSource: patch.qrSource === 'compliance' ? 'link' : patch.qrSource } : {}),
+            ...(patch.qrCaption !== undefined ? { qrCaption: patch.qrCaption } : {}),
+            ...(patch.qrPositionA4 !== undefined ? { qrPositionA4: patch.qrPositionA4 } : {}),
+            ...(patch.qrPositionThermal !== undefined ? { qrPositionThermal: patch.qrPositionThermal } : {}),
+          }))}
+          positionMode={cfg.template === 'thermal-58' || cfg.template === 'thermal-80' ? 'thermal' : 'a4'}
+          lockTarget
+        />
 
         <div className="rounded-xl border border-border bg-surface-page p-5 space-y-4">
           <h3 className="text-sm font-semibold text-gray-700">Text content</h3>
@@ -197,6 +222,7 @@ export default function WarrantyCertSettingsPage() {
                 config={previewConfig}
                 orgName={orgInfo?.name ?? 'Your Business'}
                 lang={cfg.language === 'ar' ? 'ar' : 'en'}
+                logo={receiptConfig.logo}
               />
             </div>
           </div>

@@ -15,7 +15,11 @@ export const reportFieldOptionSchema = z.object({
 export const reportFieldDefSchema = z.object({
   fieldKey: z.string().min(1).max(50).regex(/^[a-z_][a-z0-9_]*$/, 'Must be snake_case'),
   type: z.enum(['text', 'textarea', 'number', 'select', 'multi_select', 'date', 'boolean', 'user']),
-  label: z.string().min(1).max(100),
+  // Which of label/labelAr is actually required depends on the template's
+  // languageMode (checked in ReportTemplatesService, not here — this schema
+  // has no access to the sibling template) — so both stay optional here and
+  // only "at least one name" is enforced structurally.
+  label: z.string().max(100).optional(),
   labelAr: z.string().max(100).optional(),
   required: z.boolean().default(false),
   options: z.array(reportFieldOptionSchema).optional(),
@@ -23,15 +27,22 @@ export const reportFieldDefSchema = z.object({
   placeholderAr: z.string().max(200).optional(),
   condition: reportFieldConditionSchema.nullable().optional(),
   sortOrder: z.number().int().min(0).default(0),
+}).refine((f) => (f.label?.trim() || f.labelAr?.trim()), {
+  message: 'Field needs a name in at least one language',
+  path: ['label'],
 })
+
+export const reportLanguageModeSchema = z.enum(['en', 'ar', 'both'])
 
 export const createTemplateSchema = z.object({
   name: z.string().trim().min(1).max(100),
+  languageMode: reportLanguageModeSchema.default('both'),
   fieldSchema: z.array(reportFieldDefSchema).default([]),
 })
 
 export const updateTemplateSchema = z.object({
   name: z.string().trim().min(1).max(100).optional(),
+  languageMode: reportLanguageModeSchema.optional(),
   fieldSchema: z.array(reportFieldDefSchema).optional(),
   isActive: z.boolean().optional(),
 })
@@ -52,11 +63,16 @@ export const createInstanceSchema = z.object({
   encounterId: z.string().uuid(),
   fieldValues: z.record(z.string(), z.unknown()).default({}),
   attachments: z.array(reportAttachmentSchema).default([]),
+  /** Required when the template's languageMode is 'both'; ignored otherwise
+   *  — the service forces it to the template's single language instead. */
+  language: z.enum(['en', 'ar']).optional(),
 })
 
 export const updateInstanceSchema = z.object({
   fieldValues: z.record(z.string(), z.unknown()).optional(),
   attachments: z.array(reportAttachmentSchema).optional(),
+  /** Lets staff switch a 'both'-mode report's render language after the fact. */
+  language: z.enum(['en', 'ar']).optional(),
 })
 
 export type CreateTemplatePayload = z.infer<typeof createTemplateSchema>

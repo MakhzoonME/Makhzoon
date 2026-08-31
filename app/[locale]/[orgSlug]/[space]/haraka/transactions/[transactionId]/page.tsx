@@ -11,7 +11,7 @@ import { toast, useT } from '@/hooks/ui';
 import { useOrgInfo } from '@/hooks/org';
 import { useAuthStore } from '@/store/auth.store';
 import { hasPermission } from '@/lib/permissions';
-import { getReceiptBaseUrl } from '@/lib/app-env';
+import { getDocBaseUrl } from '@/lib/app-env';
 import { ReceiptShareDialog } from '@/components/haraka/ReceiptShareDialog';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import type { PosTransaction } from '@/types';
@@ -57,7 +57,7 @@ export default function TransactionDetailPage(props: Props) {
   const tx: PosTransaction = data.transaction;
   const isMutable = tx.status === 'completed';
 
-  const receiptBase = getReceiptBaseUrl();
+  const receiptBase = getDocBaseUrl();
   const canVoid = !!user && hasPermission(user, 'haraka', 'transactionsVoid');
   const canRefund = !!user && hasPermission(user, 'haraka', 'transactionsRefund');
 

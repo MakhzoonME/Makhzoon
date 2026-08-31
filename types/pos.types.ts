@@ -296,6 +296,13 @@ export interface HarakaWarrantyCert {
   updatedBy: string | null;
 }
 
+/**
+ * QR fields here mirror `DocumentQrConfig` from lib/qr.ts (same
+ * qrSource/qrCaption/qrPositionA4/qrPositionThermal shape, so
+ * resolveDocumentQr/DocumentQrCard work unmodified) but qrTarget is always
+ * 'self' — a warranty cert has no "custom link"/"uploaded file" concept, so
+ * that field isn't stored here at all.
+ */
 export interface HarakaWarrantyConfig {
   organizationId: string;
   defaultDurationDays: number;
@@ -306,7 +313,10 @@ export interface HarakaWarrantyConfig {
   footerText: string | null;
   footerTextAr: string | null;
   showLogo: boolean;
-  showQr: boolean;
+  qrSource: 'none' | 'link';
+  qrCaption: string;
+  qrPositionA4: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  qrPositionThermal: 'top' | 'bottom';
   language: 'en' | 'ar' | 'both';
   template: string;
   accentColor: string;
@@ -492,8 +502,24 @@ export interface HarakaAppointmentPayment {
   organizationId: string;
   amount: number;
   paymentMethod: string | null;
+  status: 'paid' | 'unpaid' | 'written_off';
   note: string | null;
   paidAt: Date;
+  createdAt: Date;
+  createdBy: string | null;
+}
+
+/** A stock-tracked product (inventory_items) dispensed during an appointment
+ *  — e.g. an injection or medicine given alongside the booked service. */
+export interface HarakaAppointmentProduct {
+  id: string;
+  appointmentId: string;
+  organizationId: string;
+  itemId: string;
+  /** Snapshot of inventory_items.name at add-time. */
+  itemName: string;
+  quantity: number;
+  unitPrice: number;
   createdAt: Date;
   createdBy: string | null;
 }

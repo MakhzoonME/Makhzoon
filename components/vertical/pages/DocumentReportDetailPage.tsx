@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { ReportValuesForm } from '@/components/document-reports/ReportValuesForm'
 import { useVertical } from '@/components/vertical/VerticalProvider'
 import { useReportInstance, useUpdateReportInstance } from '@/hooks/document-reports/useReportInstances'
+import { useReportTemplate } from '@/hooks/document-reports/useReportTemplates'
 import { useModuleGuard, toast } from '@/hooks/ui'
 import { useAuthStore } from '@/store/auth.store'
 import { hasPermByKey } from '@/lib/permissions'
@@ -29,6 +30,7 @@ export function DocumentReportDetailPage() {
   const params = useParams<{ orgSlug: string; reportId: string }>()
   const { user } = useAuthStore()
   const { data, isLoading } = useReportInstance(params.reportId)
+  const { data: templateData } = useReportTemplate(data?.report?.templateId)
   const updateMutation = useUpdateReportInstance()
 
   const [values, setValues] = useState<Record<string, unknown>>({})
@@ -48,6 +50,7 @@ export function DocumentReportDetailPage() {
   if (!report) return null
 
   const canEdit = !!user && hasPermByKey(user, 'documentReports.reportsEdit')
+  const isBilingual = templateData?.template.languageMode === 'both'
   const shareUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/r/${params.orgSlug}/reports/${report.shareToken}`
     : ''
@@ -62,6 +65,15 @@ export function DocumentReportDetailPage() {
     }
   }
 
+  async function handleLanguageSwitch(language: 'en' | 'ar') {
+    if (language === report!.language) return
+    try {
+      await updateMutation.mutateAsync({ id: report!.id, patch: { language } })
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to switch language')
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -69,6 +81,24 @@ export function DocumentReportDetailPage() {
         description={`Generated ${formatDate(report.createdAt)}`}
         actions={
           <div className="flex items-center gap-2">
+            {isBilingual && (
+              <div className="flex items-center rounded-lg border border-border overflow-hidden text-sm">
+                <button
+                  type="button"
+                  onClick={() => handleLanguageSwitch('en')}
+                  className={`px-3 py-1.5 ${report.language === 'en' ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-surface-page'}`}
+                >
+                  EN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLanguageSwitch('ar')}
+                  className={`px-3 py-1.5 ${report.language === 'ar' ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-surface-page'}`}
+                >
+                  AR
+                </button>
+              </div>
+            )}
             <Button
               variant="outline"
               onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success('Share link copied') }}
@@ -97,6 +127,7 @@ export function DocumentReportDetailPage() {
           values={values}
           onChange={(key, v) => setValues((prev) => ({ ...prev, [key]: v }))}
           disabled={!editing}
+          lang={report.language}
         />
 
         <div className="pt-4 mt-4 border-t border-border">

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import type { ReportFieldDef } from '@/types'
+import type { ReportFieldDef, ReportLanguageMode } from '@/types'
 
 const FIELD_TYPES: { value: ReportFieldDef['type']; label: string }[] = [
   { value: 'text', label: 'Text' },
@@ -18,8 +18,29 @@ const FIELD_TYPES: { value: ReportFieldDef['type']; label: string }[] = [
   { value: 'boolean', label: 'Yes / No' },
 ]
 
+/** Derived from the English name as the admin types it — never typed
+ *  directly. Arabic-only templates have no ASCII text to derive from, so
+ *  they keep the random key assigned at creation; it's an internal storage
+ *  key, never shown, so that's invisible to the user. */
+function slugify(s: string): string {
+  return s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+}
+
+function randomKey(): string {
+  return `field_${Math.random().toString(36).slice(2, 8)}`
+}
+
+/** Dedupes against every other field's current key (not this one's). */
+function uniqueKey(base: string, fields: ReportFieldDef[], selfIndex: number): string {
+  const taken = new Set(fields.filter((_, i) => i !== selfIndex).map((f) => f.fieldKey))
+  if (!taken.has(base)) return base
+  let n = 2
+  while (taken.has(`${base}_${n}`)) n++
+  return `${base}_${n}`
+}
+
 function emptyField(sortOrder: number): ReportFieldDef {
-  return { fieldKey: '', type: 'text', label: '', required: false, sortOrder }
+  return { fieldKey: randomKey(), type: 'text', label: '', required: false, sortOrder }
 }
 
 /** Add/edit/remove/reorder the field definitions on a report template. Kept
@@ -28,9 +49,12 @@ function emptyField(sortOrder: number): ReportFieldDef {
 export function ReportFieldsEditor({
   fields,
   onChange,
+  languageMode,
 }: {
   fields: ReportFieldDef[]
   onChange: (fields: ReportFieldDef[]) => void
+  /** Which name input(s) each field shows — set by the template's own language picker. */
+  languageMode: ReportLanguageMode
 }) {
   function updateField(index: number, patch: Partial<ReportFieldDef>) {
     onChange(fields.map((f, i) => (i === index ? { ...f, ...patch } : f)))
@@ -68,16 +92,25 @@ export function ReportFieldsEditor({
               </button>
             </div>
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <Input
-                placeholder="Field label"
-                value={field.label}
-                onChange={(e) => updateField(i, { label: e.target.value })}
-              />
-              <Input
-                placeholder="field_key"
-                value={field.fieldKey}
-                onChange={(e) => updateField(i, { fieldKey: e.target.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_') })}
-              />
+              {languageMode !== 'ar' && (
+                <Input
+                  placeholder="Name (English)"
+                  value={field.label ?? ''}
+                  onChange={(e) => {
+                    const label = e.target.value
+                    const slug = slugify(label)
+                    updateField(i, { label, ...(slug ? { fieldKey: uniqueKey(slug, fields, i) } : {}) })
+                  }}
+                />
+              )}
+              {languageMode !== 'en' && (
+                <Input
+                  dir="rtl"
+                  placeholder="الاسم (عربي)"
+                  value={field.labelAr ?? ''}
+                  onChange={(e) => updateField(i, { labelAr: e.target.value })}
+                />
+              )}
               <Select value={field.type} onValueChange={(v) => updateField(i, { type: v as ReportFieldDef['type'] })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -94,20 +127,55 @@ export function ReportFieldsEditor({
                 />
                 Required
               </label>
-              {optionTypes.has(field.type) && (
+              {optionTypes.has(field.type) && languageMode !== 'both' && (
                 <Input
                   className="sm:col-span-2"
-                  placeholder="Options, comma-separated"
-                  value={(field.options ?? []).map((o) => o.label).join(', ')}
+                  dir={languageMode === 'ar' ? 'rtl' : 'ltr'}
+                  placeholder={languageMode === 'ar' ? 'الخيارات، مفصولة بفواصل' : 'Options, comma-separated'}
+                  value={(field.options ?? []).map((o) => (languageMode === 'ar' ? o.labelAr ?? o.label : o.label)).join(', ')}
                   onChange={(e) => {
                     const options = e.target.value
                       .split(',')
                       .map((s) => s.trim())
                       .filter(Boolean)
-                      .map((label) => ({ value: label.toLowerCase().replace(/[^a-z0-9]+/g, '_'), label }))
+                      .map((text) => ({
+                        value: text.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
+                        label: languageMode === 'ar' ? text : text,
+                        ...(languageMode === 'ar' ? { labelAr: text } : {}),
+                      }))
                     updateField(i, { options })
                   }}
                 />
+              )}
+              {optionTypes.has(field.type) && languageMode === 'both' && (
+                <>
+                  <Input
+                    className="sm:col-span-2"
+                    placeholder="Options (English), comma-separated"
+                    value={(field.options ?? []).map((o) => o.label).join(', ')}
+                    onChange={(e) => {
+                      const labels = e.target.value.split(',').map((s) => s.trim()).filter(Boolean)
+                      const existing = field.options ?? []
+                      const options = labels.map((label, idx) => ({
+                        value: label.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
+                        label,
+                        labelAr: existing[idx]?.labelAr ?? '',
+                      }))
+                      updateField(i, { options })
+                    }}
+                  />
+                  <Input
+                    className="sm:col-span-2"
+                    dir="rtl"
+                    placeholder="الخيارات (عربي)، مفصولة بفواصل — بنفس الترتيب"
+                    value={(field.options ?? []).map((o) => o.labelAr ?? '').join(', ')}
+                    onChange={(e) => {
+                      const labelsAr = e.target.value.split(',').map((s) => s.trim())
+                      const options = (field.options ?? []).map((o, idx) => ({ ...o, labelAr: labelsAr[idx] ?? '' }))
+                      updateField(i, { options })
+                    }}
+                  />
+                </>
               )}
             </div>
             <Button type="button" variant="ghost" size="icon" onClick={() => removeField(i)}>

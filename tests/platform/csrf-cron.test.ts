@@ -17,7 +17,7 @@ describe('checkOrigin', () => {
   it('allows explicit first-party origins', () => {
     expect(checkOrigin(reqWithOrigin('https://app.makhzoon.me'))).toBeNull();
     expect(checkOrigin(reqWithOrigin('https://www.makhzoon.me'))).toBeNull();
-    expect(checkOrigin(reqWithOrigin('https://rcpt-app.makhzoon.me'))).toBeNull();
+    expect(checkOrigin(reqWithOrigin('https://doc-app.makhzoon.me'))).toBeNull();
   });
 
   it('rejects an untrusted *.makhzoon.me subdomain (no wildcard trust)', () => {

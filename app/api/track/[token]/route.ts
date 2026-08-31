@@ -50,10 +50,12 @@ export async function GET(
 
     // Payment entries — shown read-only (no recording).
     const { data: payments } = await supabaseAdmin
-      .from('haraka_order_payments')
+      .from('payments')
       .select('id, amount, payment_method, note, paid_at')
-      .eq('order_id', orderId)
+      .eq('reference_type', 'order')
+      .eq('reference_id', orderId)
       .eq('organization_id', orgId)
+      .eq('status', 'paid')
       .order('paid_at', { ascending: true })
 
     const orgRes = await supabaseAdmin

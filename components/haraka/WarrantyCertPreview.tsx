@@ -3,6 +3,8 @@
 
 import type { HarakaWarrantyCert, HarakaWarrantyConfig, WarrantyCertItem } from '@/types';
 import { formatCurrency } from '@/lib/utils/format';
+import { resolveDocumentQr } from '@/lib/qr';
+import { DocumentQr } from '@/components/shared/DocumentQr';
 
 export type CertLang = 'en' | 'ar';
 
@@ -83,16 +85,19 @@ interface Props {
   orgName: string
   orgNameAr?: string
   lang: CertLang
-  /** Base64 QR code data URL — rendered when config.showQr = true */
-  qrDataUrl?: string | null
+  /** Org's shared logo (same image every document type may show), rendered when config.showLogo. */
+  logo?: string | null
+  /** Public URL of this cert; encoded when config.qrSource === 'link'. Omitted on the settings preview. */
+  documentUrl?: string | null
 }
 
-export function WarrantyCertPreview({ cert, config, orgName, orgNameAr, lang, qrDataUrl }: Props) {
+export function WarrantyCertPreview({ cert, config, orgName, orgNameAr, lang, logo, documentUrl }: Props) {
   const data = cert ?? SAMPLE
   const L    = LABELS[lang]
   const isAr = lang === 'ar'
   const dir  = isAr ? 'rtl' : 'ltr'
   const accent = config.accentColor || '#C2185B'
+  const qr = resolveDocumentQr(config, { documentUrl })
 
   const displayOrgName = (isAr && orgNameAr) ? orgNameAr : orgName
   const header   = isAr ? (config.headerTextAr ?? config.headerText) : config.headerText
@@ -111,6 +116,16 @@ export function WarrantyCertPreview({ cert, config, orgName, orgNameAr, lang, qr
           background: '#fff', padding: '8px 10px', color: '#111',
         }}
       >
+        {qr && config.qrPositionThermal === 'top' && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+            <DocumentQr qr={qr} size={72} captionColor="#888" />
+          </div>
+        )}
+        {config.showLogo && logo && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+            <img src={logo} alt="logo" style={{ maxWidth: 60, maxHeight: 36, objectFit: 'contain' }} />
+          </div>
+        )}
         <div style={{ textAlign: 'center', fontWeight: 700, fontSize: 13, marginBottom: 4 }}>
           {displayOrgName}
         </div>
@@ -134,6 +149,11 @@ export function WarrantyCertPreview({ cert, config, orgName, orgNameAr, lang, qr
         </div>
         {terms && (
           <div style={{ fontSize: 9, color: '#555', marginTop: 4 }}>{terms}</div>
+        )}
+        {qr && config.qrPositionThermal !== 'top' && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 6 }}>
+            <DocumentQr qr={qr} size={72} captionColor="#888" />
+          </div>
         )}
         {footer && (
           <div style={{ textAlign: 'center', marginTop: 6, fontSize: 9, color: '#888' }}>{footer}</div>
@@ -164,8 +184,14 @@ export function WarrantyCertPreview({ cert, config, orgName, orgNameAr, lang, qr
         }),
       }}
     >
+      {qr && <DocumentQr qr={qr} size={72} captionColor="#888" position={config.qrPositionA4} />}
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        {config.showLogo && logo && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+            <img src={logo} alt="logo" style={{ maxWidth: 100, maxHeight: 48, objectFit: 'contain' }} />
+          </div>
+        )}
         <div style={{ fontWeight: 800, fontSize: 22, color: accent }}>{displayOrgName}</div>
         {header && <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>{header}</div>}
       </div>
@@ -244,22 +270,15 @@ export function WarrantyCertPreview({ cert, config, orgName, orgNameAr, lang, qr
         </div>
       )}
 
-      {/* Footer row: signature + QR */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 32 }}>
-        {isCertTemplate && (
+      {/* Signature line — the QR itself now prints at a corner (config.qrPositionA4). */}
+      {isCertTemplate && (
+        <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 32 }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ borderTop: '1px solid #333', width: 160, marginBottom: 4 }} />
             <div style={{ fontSize: 11, color: '#666' }}>{L.signature}</div>
           </div>
-        )}
-        {config.showQr && qrDataUrl && (
-          <div style={{ textAlign: 'center' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrDataUrl} alt="QR" width={80} height={80} />
-            <div style={{ fontSize: 9, color: '#888', marginTop: 2 }}>{L.scan}</div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Footer text */}
       {footer && (

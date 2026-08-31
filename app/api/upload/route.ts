@@ -4,7 +4,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { uploadToStorage, type UploadKind } from '@/lib/storage/upload';
 import { z } from 'zod';
 
-const uploadTypeSchema = z.enum(['avatar', 'logo', 'asset-receipt', 'inventory-receipt', 'warranty-document', 'purchase-invoice', 'report-attachment']);
+const uploadTypeSchema = z.enum(['avatar', 'logo', 'asset-receipt', 'inventory-receipt', 'warranty-document', 'purchase-invoice', 'report-attachment', 'qr-target-file']);
 
 const IMG = ['image/jpeg', 'image/png', 'image/webp'];
 const DOC = [...IMG, 'application/pdf'];
@@ -17,6 +17,7 @@ const ALLOWED_TYPES: Record<UploadKind, string[]> = {
   'warranty-document': DOC,
   'purchase-invoice': DOC,
   'report-attachment': DOC,
+  'qr-target-file': DOC,
 };
 
 const MB = 1024 * 1024;
@@ -28,6 +29,7 @@ const MAX_SIZES: Record<UploadKind, number> = {
   'warranty-document': 10 * MB,
   'purchase-invoice': 10 * MB,
   'report-attachment': 10 * MB,
+  'qr-target-file': 10 * MB,
 };
 
 function isUploadKind(v: unknown): v is UploadKind {

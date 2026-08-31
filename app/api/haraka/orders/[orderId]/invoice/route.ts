@@ -60,10 +60,12 @@ export async function GET(
 
     // Also fetch payment entries
     const { data: payments } = await supabaseAdmin
-      .from('haraka_order_payments')
+      .from('payments')
       .select('id, amount, payment_method, note, paid_at')
-      .eq('order_id', orderId)
+      .eq('reference_type', 'order')
+      .eq('reference_id', orderId)
       .eq('organization_id', result.ctx.orgId)
+      .eq('status', 'paid')
       .order('paid_at', { ascending: true })
 
     return NextResponse.json({ ...result, payments: payments ?? [] })

@@ -29,10 +29,11 @@ interface Props {
   orgNameAr?: string;
   config: HarakaWarrantyConfig;
   certBaseUrl: string; // e.g. https://app.makhzoon.me
+  logo?: string | null;
 }
 
 export function WarrantyCertShareDialog({
-  open, onOpenChange, cert, orgSlug, orgName, orgNameAr, config, certBaseUrl,
+  open, onOpenChange, cert, orgSlug, orgName, orgNameAr, config, certBaseUrl, logo,
 }: Props) {
   const [copied, setCopied]       = useState(false);
   const [capturing, setCapturing] = useState<'png' | 'jpg' | null>(null);
@@ -117,6 +118,8 @@ export function WarrantyCertShareDialog({
                       orgName={orgName}
                       orgNameAr={orgNameAr}
                       lang={lang}
+                      logo={logo}
+                      documentUrl={shareLink}
                     />
                   )}
                 </div>

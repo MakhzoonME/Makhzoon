@@ -25,6 +25,7 @@ function toInstance(r: Row, currentTemplateSchemaVersion: number, templateName: 
     fieldSchemaSnapshot:   (r.field_schema_snapshot as ReportFieldDef[]) ?? [],
     fieldValues:           (r.field_values as Record<string, unknown>) ?? {},
     attachments:           (r.attachments as ReportAttachment[]) ?? [],
+    language:              (r.language as 'en' | 'ar') ?? 'en',
     shareToken:            r.share_token as string,
     isEditable:            templateSchemaVersion === currentTemplateSchemaVersion,
     createdAt:             r.created_at ? new Date(r.created_at as string) : new Date(),
@@ -41,6 +42,10 @@ export interface CreateInstanceInput {
   encounterId: string
   fieldValues: Record<string, unknown>
   attachments: ReportAttachment[]
+  /** The service resolves this from the template's languageMode before
+   *  calling create() — optional here only so the zod-inferred API payload
+   *  type (where it's an unresolved caller choice) satisfies this interface. */
+  language?: 'en' | 'ar'
 }
 
 export interface ListInstancesOpts {
@@ -121,6 +126,7 @@ export class ReportInstancesRepository {
         field_schema_snapshot:      template.fieldSchema,
         field_values:               input.fieldValues,
         attachments:                input.attachments,
+        language:                   input.language ?? 'en',
         share_token:                shareToken,
         created_by:                 tenant.userId,
         updated_by:                 tenant.userId,
@@ -137,11 +143,12 @@ export class ReportInstancesRepository {
   async update(
     tenant: TenantContext,
     id: string,
-    patch: { fieldValues?: Record<string, unknown>; attachments?: ReportAttachment[] },
+    patch: { fieldValues?: Record<string, unknown>; attachments?: ReportAttachment[]; language?: 'en' | 'ar' },
   ): Promise<DocumentReportInstance> {
     const update: Row = { updated_by: tenant.userId }
     if (patch.fieldValues !== undefined) update.field_values = patch.fieldValues
     if (patch.attachments !== undefined) update.attachments = patch.attachments
+    if (patch.language    !== undefined) update.language     = patch.language
     const { data, error } = await supabaseAdmin
       .from('document_report_instances')
       .update(update)

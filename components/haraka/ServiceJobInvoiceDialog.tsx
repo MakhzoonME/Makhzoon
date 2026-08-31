@@ -14,7 +14,7 @@ import type { HarakaServiceJob } from '@/types';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import type { ServiceJobDocumentConfig } from '@/lib/modules/haraka/service-jobs/service-job-document-config';
 import { useReceiptConfig, useServiceJobDocumentConfig } from '@/hooks/haraka';
-import { getReceiptBaseUrl } from '@/lib/app-env';
+import { getDocBaseUrl } from '@/lib/app-env';
 import { cn } from '@/lib/utils/cn';
 
 interface Props {
@@ -56,7 +56,7 @@ export function ServiceJobInvoiceDialog({
   const generateMut = useGenerateServiceJobInvoice();
   const { t }       = useT();
 
-  const publicUrl = `${getReceiptBaseUrl()}/service-job-invoice/${orgSlug}/${job.id}`;
+  const publicUrl = `${getDocBaseUrl()}/service-job-invoice/${orgSlug}/${job.id}`;
 
   async function ensureInvoiceNumber() {
     if (job.invoiceNumber) return job.invoiceNumber;

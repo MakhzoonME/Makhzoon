@@ -25,10 +25,12 @@ export default async function PublicInvoicePage({
   if (!result) notFound();
 
   const { data: payments } = await supabaseAdmin
-    .from('haraka_order_payments')
+    .from('payments')
     .select('id, amount, payment_method, note, paid_at')
-    .eq('order_id', orderId)
+    .eq('reference_type', 'order')
+    .eq('reference_id', orderId)
     .eq('organization_id', result.ctx.orgId)
+    .eq('status', 'paid')
     .order('paid_at', { ascending: true });
 
   // The QR points back at this exact document — keep ?type so a scanned

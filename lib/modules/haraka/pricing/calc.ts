@@ -89,3 +89,26 @@ export function paymentsCoverTotal(total: number, payments: Array<{ method: stri
   const paid = payments.reduce((acc, p) => acc + p.amount, 0);
   return paid + 0.0001 >= total;
 }
+
+export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
+
+/**
+ * Total due for an entity, given its priced subtotal, tax, and discount.
+ * Shared across orders, appointments, service jobs, and retainer invoices —
+ * previously each vertical computed this inline with its own arithmetic.
+ */
+export function computeTotalDue(subtotal: number, taxAmount: number, discountAmount: number): number {
+  return r4(Math.max(0, subtotal - discountAmount) + taxAmount);
+}
+
+/**
+ * Derive paid/partial/unpaid from total due vs. the sum of `paid`-status
+ * payment rows for an entity. Single source of truth for a decision that
+ * used to be reimplemented ad hoc at six call sites with three different
+ * rounding-epsilon conventions.
+ */
+export function derivePaymentStatus(total: number, paid: number): PaymentStatus {
+  if (paid <= 0.0001) return 'unpaid';
+  if (paid + 0.0001 >= total) return 'paid';
+  return 'partial';
+}

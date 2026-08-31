@@ -24,7 +24,7 @@ import { DocumentQrCard } from '@/components/settings/DocumentQrCard';
 import type { ReceiptConfig } from '@/components/settings/receipt/ReceiptPreview';
 import { DEFAULT_RECEIPT_CONFIG } from '@/lib/receipts/receipt-config';
 import { documentPublicUrl, type DocumentQrConfig } from '@/lib/qr';
-import { getReceiptBaseUrl } from '@/lib/app-env';
+import { getDocBaseUrl } from '@/lib/app-env';
 
 const MOCK_ORDER = {
   id: 'preview',
@@ -72,7 +72,7 @@ export default function InvoiceSettingsPage() {
     useState<AppointmentDocumentConfig>(DEFAULT_APPOINTMENT_DOCUMENT_CONFIG);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [receiptBase] = useState(() => getReceiptBaseUrl());
+  const [receiptBase] = useState(() => getDocBaseUrl());
 
   const { data: receiptSaved } = useQuery<{ tagline?: string; taxNumber?: string; config?: ReceiptConfig }>({
     queryKey: ['receipt-config'],
@@ -193,6 +193,7 @@ export default function InvoiceSettingsPage() {
             <CardContent className="p-5 space-y-3">
               <h2 className="text-sm font-semibold text-gray-700 mb-1">Content</h2>
               {([
+                { key: 'showLogo',            label: 'Logo' },
                 { key: 'showDeliveryAddress', label: 'Delivery address' },
                 { key: 'showChannel',         label: 'Order channel (Phone, WhatsApp…)' },
                 { key: 'showSalesAgent',      label: 'Sales agent name' },
@@ -240,12 +241,30 @@ export default function InvoiceSettingsPage() {
             value={config}
             onChange={patchQr(setConfig)}
           />
+          <Card>
+            <CardContent className="p-5 flex items-center justify-between">
+              <Label className="font-normal text-gray-700">Logo — service job invoices</Label>
+              <Switch
+                checked={serviceJobConfig.showLogo}
+                onCheckedChange={(v) => setServiceJobConfig((c) => ({ ...c, showLogo: v }))}
+              />
+            </CardContent>
+          </Card>
           <DocumentQrCard
             title="QR code — service job invoices"
             hint="Shown beside the totals on service job invoices."
             value={serviceJobConfig}
             onChange={patchQr(setServiceJobConfig)}
           />
+          <Card>
+            <CardContent className="p-5 flex items-center justify-between">
+              <Label className="font-normal text-gray-700">Logo — appointment invoices</Label>
+              <Switch
+                checked={appointmentConfig.showLogo}
+                onCheckedChange={(v) => setAppointmentConfig((c) => ({ ...c, showLogo: v }))}
+              />
+            </CardContent>
+          </Card>
           <DocumentQrCard
             title="QR code — appointment invoices"
             hint="Shown beside the totals on appointment invoices."

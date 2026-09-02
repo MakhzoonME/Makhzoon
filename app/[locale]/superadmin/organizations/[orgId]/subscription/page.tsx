@@ -47,6 +47,7 @@ import {
   USOOL_SUB_FEATURES,
   RASEED_BASE_FEATURE,
   HARAKA_BASE_FEATURE,
+  ZEYARA_BASE_FEATURE,
   BANNA_FEATURE,
 } from '@/lib/config/package-feature-groups';
 import {
@@ -1020,6 +1021,19 @@ export default function OrgSubscriptionPage(props: { params: Promise<{ orgId: st
                       </label>
                     ))}
                   </div>
+                </ModuleCard>
+
+                {/* Zeyara — separate vertical, its own feature key. Off by
+                    default (see OPT_IN_FEATURE_KEYS); a superadmin flips this
+                    per-org even outside a package that already includes it. */}
+                <ModuleCard
+                  label="Zeyara — Clinic"
+                  enabled={features[ZEYARA_BASE_FEATURE]}
+                  onToggleEnabled={(v) => handleFeatureToggle(ZEYARA_BASE_FEATURE, v)}
+                >
+                  <p className="text-xs text-gray-500">
+                    Patients, providers, and visits over the same shared appointment engine as Haraka.
+                  </p>
                 </ModuleCard>
 
                 {/* Document Reports is cross-vertical — a Haraka retailer's

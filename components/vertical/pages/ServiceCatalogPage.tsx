@@ -36,11 +36,13 @@ function formatDuration(minutes: number) {
 }
 
 export function ServiceCatalogPage() {
-  const { featureKey, permModule, colorVar } = useVertical();
+  const { vertical, featureKey, permModule, colorVar } = useVertical();
   const { isAllowed: featureAllowed } = useModuleGuard({
     featureKey,
-    // Services is an à-la-carte Haraka sub-module.
-    harakaModule: 'services',
+    // Services is an à-la-carte Haraka sub-module; Zeyara buys the service
+    // catalog as part of the vertical itself, so this gate only applies on
+    // the Haraka surface.
+    harakaModule: vertical === 'haraka' ? 'services' : undefined,
     moduleKey: permModule,
   });
   const { isAllowed } = useAdminGuard('pos.manage_services');

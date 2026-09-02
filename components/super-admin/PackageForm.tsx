@@ -161,6 +161,10 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
   const [pos,        setPos]        = useState(initial?.features?.pos       ?? true);
   const [banna,      setBanna]      = useState(initial?.features?.banna     ?? true);
   const [vehicleIntakeFeature, setVehicleIntakeFeature] = useState(initial?.features?.vehicleIntake ?? false);
+  // Zeyara is a separate vertical, opt-in — defaults OFF even for new
+  // packages, unlike the other module flags above. See
+  // types/package.types.ts's OPT_IN_FEATURE_KEYS.
+  const [zeyara, setZeyara] = useState(initial?.features?.zeyara ?? false);
 
   const [usoolSub, setUsoolSub] = useState<Record<(typeof USOOL_SUB_FEATURES)[number], boolean>>(() =>
     USOOL_SUB_FEATURES.reduce(
@@ -246,6 +250,7 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
         dashboard, support, auditLogs,
         assets, inventory, pos, banna,
         vehicleIntake: vehicleIntakeFeature,
+        zeyara,
         ...usoolSub,
       },
       inclusions,
@@ -516,6 +521,17 @@ export function PackageForm({ initial, onSubmit, onCancel, submitting }: Package
             Org-defined report templates filled per customer encounter, printable and shareable by
             no-login link. Works on whichever vertical the org holds; requires at least one of them.
           </p>
+        </fieldset>
+
+        {/* Zeyara — clinic vertical over the same shared appointment/catalog
+            engine as Haraka. Separate feature key/permission namespace so a
+            clinic package can sell it without also selling Haraka's POS. */}
+        <fieldset className="space-y-2 border-s-4 border border-border rounded-lg p-4" style={{ borderInlineStartColor: '#0F766E' }}>
+          <legend className="px-2 text-sm font-medium text-gray-700">Zeyara — Clinic</legend>
+          <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-page cursor-pointer">
+            <input type="checkbox" checked={zeyara} onChange={(e) => setZeyara(e.target.checked)} />
+            <span className="text-sm text-gray-700">Patients, providers, and visits over the shared appointment engine</span>
+          </label>
         </fieldset>
 
         {/* Banna */}

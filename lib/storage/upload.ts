@@ -18,7 +18,8 @@ export type UploadKind =
   | 'warranty-document'
   | 'purchase-invoice'
   | 'report-attachment'
-  | 'qr-target-file';
+  | 'qr-target-file'
+  | 'zeyara-visit-file';
 
 interface BucketDef {
   bucket: string;
@@ -36,6 +37,9 @@ export const BUCKETS: Record<UploadKind, BucketDef> = {
   'report-attachment': { bucket: 'report-attachments', isPublic: false },
   // Public — a scanned QR code opens this with no session to sign a URL with.
   'qr-target-file':    { bucket: 'qr-target-files',     isPublic: true },
+  // Private — clinical attachments must never be served from an open URL.
+  // Bucket created by migration 0082_zeyara_visits.sql.
+  'zeyara-visit-file': { bucket: 'zeyara-visit-files',  isPublic: false },
 };
 
 export interface UploadResult {

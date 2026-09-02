@@ -38,7 +38,7 @@ export interface DocumentReportTemplate {
   updatedBy: string | null;
 }
 
-export type ReportEncounterType = 'appointment' | 'service_job' | 'order';
+export type ReportEncounterType = 'appointment' | 'service_job' | 'order' | 'visit';
 
 /** Stored on the report ('report-attachment' upload kind, private bucket) —
  *  same DocumentRef shape as warranty/purchase documents, re-signed on read

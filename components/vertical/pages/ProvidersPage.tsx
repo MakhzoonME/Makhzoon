@@ -176,7 +176,7 @@ function StaffFormDialog({
 }
 
 export function ProvidersPage() {
-  const { vertical, featureKey, permModule, basePath } = useVertical();
+  const { vertical, featureKey, permModule, basePath, staffSegment, navLabelKey } = useVertical();
   const { isAllowed } = useModuleGuard({ featureKey, moduleKey: permModule, harakaAddOn: vertical === 'haraka' ? 'deliveryAgents' : undefined });
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
   const router = useRouter();
@@ -245,7 +245,7 @@ export function ProvidersPage() {
         breadcrumb={[
           { label: orgInfo?.name ?? params.orgSlug },
           { label: params.space },
-          { label: 'Haraka', href: base },
+          { label: t(navLabelKey), href: base },
           { label: t('staff.title') },
         ]}
         actions={
@@ -289,7 +289,7 @@ export function ProvidersPage() {
                 <tr
                   key={person.id}
                   className="hover:bg-surface-page transition-colors cursor-pointer"
-                  onClick={() => router.push(`${base}/staff/${person.id}`)}
+                  onClick={() => router.push(`${base}/${staffSegment}/${person.id}`)}
                 >
                   <td className="px-4 py-3 font-medium text-gray-900">{person.name}</td>
                   <td className="px-4 py-3 text-gray-500">
@@ -340,7 +340,7 @@ export function ProvidersPage() {
                           aria-label={t('staff.availability')}
                           title={t('staff.availability')}
                           className="text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
-                          onClick={() => router.push(`${base}/staff/${person.id}/availability`)}
+                          onClick={() => router.push(`${base}/${staffSegment}/${person.id}/availability`)}
                         >
                           <CalendarClock className="h-3.5 w-3.5" strokeWidth={1.75} />
                         </Button>

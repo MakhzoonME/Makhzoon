@@ -12,7 +12,8 @@ export type FeatureKey =
   | 'assetNotes'
   | 'pos'
   | 'banna'
-  | 'vehicleIntake';
+  | 'vehicleIntake'
+  | 'zeyara';
 
 // Order here drives the order of checkboxes in the package + org subscription
 // forms. Grouping (Platform / Usool / Raseed / Haraka / Banna) lives in the
@@ -31,6 +32,7 @@ export const FEATURE_KEYS: FeatureKey[] = [
   'pos',
   'banna',
   'vehicleIntake',
+  'zeyara',
 ];
 
 export const FEATURE_LABELS: Record<FeatureKey, string> = {
@@ -46,6 +48,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   pos: 'Point of Sale',
   banna: 'Banna (Custom Fields)',
   vehicleIntake: 'Vehicle Intake',
+  zeyara: 'Zeyara (Clinic)',
 };
 
 export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
@@ -61,6 +64,7 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
   pos: 'Point of sale terminal for processing sales transactions.',
   banna: 'Custom fields for assets, inventory, and customers.',
   vehicleIntake: 'Plate-photo intake for Haraka Service Jobs.',
+  zeyara: 'Clinic vertical: patients, providers, and visits over the shared appointment engine.',
 };
 
 export interface PackageLimits {
@@ -191,7 +195,7 @@ export interface Package {
  * permission group in front of every existing org the first time a
  * superadmin opened and saved their subscription form.
  */
-export const OPT_IN_FEATURE_KEYS: FeatureKey[] = [];
+export const OPT_IN_FEATURE_KEYS: FeatureKey[] = ['zeyara'];
 
 /** What an absent feature key resolves to. See OPT_IN_FEATURE_KEYS. */
 export function defaultFeatureWhenAbsent(key: FeatureKey): boolean {

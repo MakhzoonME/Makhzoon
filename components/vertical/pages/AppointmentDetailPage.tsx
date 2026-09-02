@@ -13,6 +13,8 @@ import { AppointmentStatusBadge } from '@/components/haraka/AppointmentStatusBad
 import { AppointmentInvoiceDialog } from '@/components/haraka/AppointmentInvoiceDialog';
 import { AppointmentPaymentsPanel } from '@/components/haraka/AppointmentPaymentsPanel';
 import { AppointmentProductsPanel } from '@/components/haraka/AppointmentProductsPanel';
+import { ClinicalRecordPanel } from '@/components/zeyara/ClinicalRecordPanel';
+import { CustomFieldValuesSection } from '@/components/banna/CustomFieldValuesSection';
 import { ReportGenerateDrawer } from '@/components/document-reports/ReportGenerateDrawer';
 import {
   useAppointment,
@@ -41,10 +43,14 @@ function permOpForStatus(status: AppointmentStatus): string {
 }
 
 export function AppointmentDetailPage() {
-  const { featureKey, permModule, basePath, customersSegment, colorVar } = useVertical();
+  const { vertical, featureKey, permModule, basePath, customersSegment, colorVar } = useVertical();
   const { isAllowed } = useModuleGuard({
     featureKey,
-    harakaModule: 'appointments',
+    // Zeyara buys the appointment engine as part of the vertical itself — it
+    // has no separate "Choose N Haraka modules" concept — so this gate only
+    // applies on the Haraka surface. See ZEYARA_IMPLIED_MODULES in
+    // lib/permissions/require-module.ts for the server-side mirror.
+    harakaModule: vertical === 'haraka' ? 'appointments' : undefined,
     moduleKey: permModule,
     permOp: 'appointmentsView',
   });
@@ -292,6 +298,19 @@ export function AppointmentDetailPage() {
             />
           )}
 
+          {/* Org-configurable booking fields. Zeyara-only: a Haraka org never
+              asked for them and shouldn't get a new empty panel. */}
+          {vertical === 'zeyara' && (
+            <div className="rounded-xl border border-border bg-surface-card p-5">
+              <CustomFieldValuesSection recordType="appointments" recordId={appointment.id} />
+            </div>
+          )}
+
+          {/* Renders only under Zeyara — Haraka has no clinical layer. */}
+          <ClinicalRecordPanel
+            appointmentId={appointment.id}
+            patientName={appointment.customerName}
+          />
         </div>
 
         <div className="space-y-6">

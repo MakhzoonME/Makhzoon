@@ -45,6 +45,7 @@ export async function POST(
       parsed.data.amount,
       parsed.data.paymentMethod ?? null,
       parsed.data.note ?? null,
+      parsed.data.status ?? 'paid',
     )
     const payments = await service.listPayments(tenant, appointmentId)
     return NextResponse.json({ appointment, payments }, { status: 201 })

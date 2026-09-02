@@ -423,12 +423,19 @@ export class AppointmentsRepository {
     return toAppointment(data as Row)
   }
 
+  /**
+   * `status` defaults to 'paid' for backward compat with every existing
+   * caller. Passing 'unpaid' records a payment LINE without counting it
+   * toward amount_paid yet — e.g. an insurer's share that is owed but not
+   * collected. That line is settled later via `settlePayment`.
+   */
   async addPayment(
     tenant: TenantContext,
     appointmentId: string,
     amount: number,
     paymentMethod: string | null,
     note: string | null,
+    status: 'paid' | 'unpaid' = 'paid',
   ): Promise<HarakaAppointment> {
     const before = await this.getById(tenant, appointmentId)
     if (!before) throw new Error('Appointment not found')
@@ -440,8 +447,8 @@ export class AppointmentsRepository {
       organization_id: tenant.organizationId,
       amount,
       payment_method:  paymentMethod ?? 'other',
-      status:          'paid',
-      paid_at:         new Date().toISOString(),
+      status,
+      paid_at:         status === 'paid' ? new Date().toISOString() : null,
       note,
       created_by:      tenant.userId,
     })
@@ -450,7 +457,46 @@ export class AppointmentsRepository {
 
     // Deduct product stock the first time the appointment goes from
     // unpaid to having any paid amount — not on every subsequent payment.
-    if (!hadPaidBefore) {
+    // recalcPayments only counts status='paid' rows, so an 'unpaid' line
+    // added here never trips this on its own.
+    if (!hadPaidBefore && updated.amountPaid > 0.0001) {
+      await this.applyProductStock(tenant, appointmentId, 'out')
+    }
+    return updated
+  }
+
+  /**
+   * Settles one outstanding payment line: 'unpaid' → 'paid' when the insurer
+   * (or whoever owed it) actually pays, or → 'written_off' when it's denied
+   * and the org is writing off the balance rather than continuing to chase
+   * it. Both are terminal for that line — there is no path back to 'unpaid'.
+   */
+  async settlePayment(
+    tenant: TenantContext,
+    appointmentId: string,
+    paymentId: string,
+    status: 'paid' | 'written_off',
+  ): Promise<HarakaAppointment> {
+    const before = await this.getById(tenant, appointmentId)
+    if (!before) throw new Error('Appointment not found')
+    const hadPaidBefore = before.amountPaid > 0.0001
+
+    const { error } = await supabaseAdmin
+      .from('payments')
+      .update({
+        status,
+        paid_at: status === 'paid' ? new Date().toISOString() : null,
+      })
+      .eq('id', paymentId)
+      .eq('reference_type', 'appointment')
+      .eq('reference_id', appointmentId)
+      .eq('organization_id', tenant.organizationId)
+    if (error) throw error
+    const updated = await this.recalcPayments(tenant, appointmentId)
+
+    // Same first-paid-dollar rule as addPayment: settling an unpaid line to
+    // 'paid' can be the transition that first makes the appointment paid.
+    if (!hadPaidBefore && updated.amountPaid > 0.0001) {
       await this.applyProductStock(tenant, appointmentId, 'out')
     }
     return updated

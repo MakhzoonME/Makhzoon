@@ -163,6 +163,53 @@ export const ORG_NAV_ENTRIES: NavEntry[] = [
     ],
   },
   {
+    // Zeyara — clinic vertical over the same shared appointment/catalog
+    // engine as Haraka, gated on its own feature key ('zeyara') and
+    // permission namespace ('zeyara.*') so it is fully additive: an existing
+    // Haraka-only org holds neither and never sees this group. Same
+    // Operations/Records/Finance grouping as Haraka per the nav reorg.
+    type: 'group', href: '/zeyara', label: 'Zeyara', labelKey: 'nav.zeyara',
+    featureKey: 'zeyara', permissionKey: 'zeyara.view', moduleColor: '#0F766E', moduleName: 'زيارة',
+    items: [
+      { type: 'section-header', label: 'Operations', labelKey: 'nav.sectionOperations' },
+      { href: '/zeyara/appointments', label: 'Visits', labelKey: 'nav.zeyaraAppointments',
+        featureKey: 'zeyara', permissionKey: 'zeyara.appointmentsView',
+        moduleColor: '#0D9488', moduleName: 'زيارات',
+        children: [
+          { href: '/zeyara/appointments/calendar', label: 'Calendar', labelKey: 'nav.zeyaraAppointmentsCalendar',
+            featureKey: 'zeyara', permissionKey: 'zeyara.appointmentsView',
+            moduleColor: '#0D9488', moduleName: 'تقويم' },
+        ],
+      },
+      { type: 'section-header', label: 'Records', labelKey: 'nav.sectionRecords' },
+      { href: '/zeyara/patients', label: 'Patients', labelKey: 'nav.zeyaraPatients',
+        featureKey: 'zeyara', permissionKey: 'zeyara.customersView',
+        moduleColor: '#0D9488', moduleName: 'مرضى' },
+      { href: '/zeyara/visits', label: 'Clinical Records', labelKey: 'zeyara.visitsTitle',
+        featureKey: 'zeyara', permissionKey: 'zeyara.visitsView',
+        moduleColor: '#0D9488', moduleName: 'سجلات سريرية' },
+      { href: '/zeyara/follow-ups', label: 'Follow-ups', labelKey: 'zeyara.followUpsTitle',
+        featureKey: 'zeyara', permissionKey: 'zeyara.followUpsView',
+        moduleColor: '#0D9488', moduleName: 'متابعات' },
+      { href: '/zeyara/providers', label: 'Providers', labelKey: 'nav.zeyaraProviders',
+        featureKey: 'zeyara', permissionKey: 'zeyara.staffManage',
+        moduleColor: '#0D9488', moduleName: 'مقدمو الرعاية' },
+      { href: '/zeyara/services', label: 'Service Catalog', labelKey: 'nav.zeyaraServiceCatalog',
+        featureKey: 'zeyara', permissionKey: 'zeyara.serviceCatalogView',
+        moduleColor: '#0D9488', moduleName: 'كتالوج الخدمات' },
+      { href: '/zeyara/reports', label: 'Reports', labelKey: 'nav.documentReports',
+        featureKey: 'zeyara', harakaAddOn: 'documentReports', permissionKey: 'documentReports.reportsView',
+        moduleColor: '#0D9488', moduleName: 'تقارير' },
+      { type: 'section-header', label: 'Finance', labelKey: 'nav.sectionFinance' },
+      { href: '/zeyara/analytics', label: 'Analytics', labelKey: 'nav.zeyaraAnalytics',
+        featureKey: 'zeyara', permissionKey: 'zeyara.analyticsView',
+        moduleColor: '#0D9488', moduleName: 'تحليلات' },
+      { href: '/zeyara/reminders', label: 'Reminders', labelKey: 'zeyara.remindersTitle',
+        featureKey: 'zeyara', permissionKey: 'zeyara.staffManage',
+        moduleColor: '#0D9488', moduleName: 'التذكيرات' },
+    ],
+  },
+  {
     type: 'group', href: '/banna', label: 'Banna', labelKey: 'nav.banna',
     featureKey: 'banna', permissionKey: 'banna.view', moduleColor: '#1565C0', moduleName: 'بنّا',
     items: [

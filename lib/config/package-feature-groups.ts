@@ -16,11 +16,14 @@ export const RASEED_BASE_FEATURE: FeatureKey = 'inventory';
 
 export const HARAKA_BASE_FEATURE: FeatureKey = 'pos';
 
+export const ZEYARA_BASE_FEATURE: FeatureKey = 'zeyara';
+
 export const BANNA_FEATURE: FeatureKey = 'banna';
 
 export const MODULE_COLORS = {
   usool: '#00695C',
   raseed: '#E65100',
   haraka: '#C2185B',
+  zeyara: '#0F766E',
   banna: '#1565C0',
 } as const;

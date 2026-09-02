@@ -33,12 +33,13 @@ export interface VerticalContextValue {
   /** URL segment for the haraka_staff directory. */
   staffSegment: string;
   /** Sidebar label key for this vertical's root, for breadcrumbs. */
-  navLabelKey: 'nav.pos';
+  navLabelKey: 'nav.pos' | 'nav.zeyara';
 }
 
 /** Per-vertical vocabulary for entities that are shared but named differently. */
 const SEGMENTS: Record<Vertical, Pick<VerticalContextValue, 'customersSegment' | 'staffSegment' | 'navLabelKey'>> = {
   haraka: { customersSegment: 'customers', staffSegment: 'staff', navLabelKey: 'nav.pos' },
+  zeyara: { customersSegment: 'patients', staffSegment: 'providers', navLabelKey: 'nav.zeyara' },
 };
 
 const VerticalCtx = createContext<VerticalContextValue | null>(null);

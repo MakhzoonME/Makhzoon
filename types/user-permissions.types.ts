@@ -169,6 +169,59 @@ export interface HarakaPermissions {
   analyticsView: boolean;
 }
 
+// Zeyara: clinic vertical over the same shared engine (appointments,
+// customers, service catalog, staff) — see lib/platform/verticals.ts.
+// Operation keys deliberately match HarakaPermissions' where the underlying
+// operation is identical, so hasVerticalPermission() can resolve one op name
+// against either namespace with no translation table. Only the visit* ops
+// are Zeyara-only (no Haraka counterpart).
+export interface ZeyaraPermissions {
+  view: boolean; // Zeyara dashboard
+  // Appointments — same rows and semantics as HarakaPermissions' appointment ops
+  appointmentsView: boolean;
+  appointmentsCreate: boolean;
+  appointmentsUpdate: boolean;
+  appointmentsConfirm: boolean;
+  appointmentsComplete: boolean;
+  appointmentsCancel: boolean;
+  appointmentsMarkNoShow: boolean;
+  appointmentsGenerateInvoice: boolean;
+  appointmentsAddPayment: boolean;
+  appointmentsAddProduct: boolean;
+  // Patients — over pos_customers. Keys match Haraka's customer ops so the
+  // shared CustomersService gates resolve in either namespace.
+  customersView: boolean;
+  customersCreate: boolean;
+  customersUpdate: boolean;
+  customersDelete: boolean;
+  customersExport: boolean;
+  customersHistoryView: boolean;
+  customerFieldsView: boolean;
+  customerFieldsCreate: boolean;
+  customerFieldsUpdate: boolean;
+  customerFieldsDelete: boolean;
+  // Service catalog — over haraka_services
+  serviceCatalogView: boolean;
+  serviceCatalogCreate: boolean;
+  serviceCatalogUpdate: boolean;
+  serviceCatalogDelete: boolean;
+  // Providers — over haraka_staff. Key names match Haraka's staff ops.
+  staffManage: boolean;
+  staffAvailabilityManage: boolean;
+  analyticsView: boolean;
+  // Clinical record (Phase 2) — Zeyara-only, no Haraka counterpart. These are
+  // the operations that touch patient health information, so they are gated
+  // separately from the booking/billing ops above.
+  visitsView: boolean;
+  visitsCreate: boolean;
+  visitsUpdate: boolean;
+  visitsDelete: boolean;
+  visitNotesCreate: boolean;
+  visitAttachmentsUpload: boolean;
+  visitAttachmentsDelete: boolean;
+  followUpsView: boolean;
+}
+
 // Document Reports: generic, org-templated report generation (e.g. a
 // doctor's patient report), separate from template building so a role can
 // fill out reports without being able to change what templates look like.
@@ -261,6 +314,7 @@ export interface UserPermissions {
   usool: UsoolPermissions;
   raseed: RaseedPermissions;
   haraka: HarakaPermissions;
+  zeyara: ZeyaraPermissions;
   documentReports: DocumentReportsPermissions;
   support: SupportPermissions;
   auditLogs: AuditLogsPermissions;
@@ -316,12 +370,22 @@ const HARAKA_KEYS: (keyof HarakaPermissions)[] = [
   'staffManage', 'staffAvailabilityManage',
   'analyticsView',
 ];
+const ZEYARA_KEYS: (keyof ZeyaraPermissions)[] = [
+  'view',
+  'appointmentsView', 'appointmentsCreate', 'appointmentsUpdate', 'appointmentsConfirm', 'appointmentsComplete', 'appointmentsCancel', 'appointmentsMarkNoShow', 'appointmentsGenerateInvoice', 'appointmentsAddPayment', 'appointmentsAddProduct',
+  'customersView', 'customersCreate', 'customersUpdate', 'customersDelete', 'customersExport', 'customersHistoryView', 'customerFieldsView', 'customerFieldsCreate', 'customerFieldsUpdate', 'customerFieldsDelete',
+  'serviceCatalogView', 'serviceCatalogCreate', 'serviceCatalogUpdate', 'serviceCatalogDelete',
+  'staffManage', 'staffAvailabilityManage',
+  'analyticsView',
+  'visitsView', 'visitsCreate', 'visitsUpdate', 'visitsDelete', 'visitNotesCreate', 'visitAttachmentsUpload', 'visitAttachmentsDelete', 'followUpsView',
+];
 
 export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   dashboard: { view: true },
   usool: allTrue<UsoolPermissions>(USOOL_KEYS),
   raseed: allTrue<RaseedPermissions>(RASEED_KEYS),
   haraka: allTrue<HarakaPermissions>(HARAKA_KEYS),
+  zeyara: allTrue<ZeyaraPermissions>(ZEYARA_KEYS),
   documentReports: { reportsView: true, reportsCreate: true, reportsEdit: true, reportsManageTemplates: true },
   support: { view: true, viewOthers: true, submit: true, replyOwn: true, replyOthers: true },
   auditLogs: { view: true, viewSpace: true, viewAllSpaces: true },
@@ -344,6 +408,7 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   usool: { ...allFalse<UsoolPermissions>(USOOL_KEYS), view: true, warrantiesView: true, maintenanceView: true, checkoutView: true, notesView: true, auditTrailView: true },
   raseed: { ...allFalse<RaseedPermissions>(RASEED_KEYS), view: true, transactionsView: true },
   haraka: allFalse<HarakaPermissions>(HARAKA_KEYS),
+  zeyara: allFalse<ZeyaraPermissions>(ZEYARA_KEYS),
   documentReports: { reportsView: false, reportsCreate: false, reportsEdit: false, reportsManageTemplates: false },
   support: { view: true, viewOthers: false, submit: true, replyOwn: true, replyOthers: false },
   auditLogs: { view: false, viewSpace: false, viewAllSpaces: false },
@@ -374,7 +439,7 @@ export interface ModuleOperationConfig {
   featureKey?: string;
 }
 
-export type ModuleGroup = 'usool' | 'raseed' | 'haraka' | 'reports' | 'platform' | 'settings';
+export type ModuleGroup = 'usool' | 'raseed' | 'haraka' | 'zeyara' | 'reports' | 'platform' | 'settings';
 
 export interface ModuleConfig {
   key: keyof UserPermissions;
@@ -409,6 +474,7 @@ export const MODULE_GROUP_LABELS: Record<ModuleGroup, string> = {
   usool: 'Usool',
   raseed: 'Raseed',
   haraka: 'Haraka',
+  zeyara: 'Zeyara',
   reports: 'Reports',
   platform: 'Platform',
   settings: 'Settings',
@@ -418,12 +484,13 @@ export const MODULE_GROUP_LABEL_KEYS: Record<ModuleGroup, MessageKey> = {
   usool: 'permGroup.usool',
   raseed: 'permGroup.raseed',
   haraka: 'permGroup.haraka',
+  zeyara: 'permGroup.zeyara',
   reports: 'permGroup.reports',
   platform: 'permGroup.platform',
   settings: 'permGroup.settings',
 };
 
-export const MODULE_GROUP_ORDER: ModuleGroup[] = ['usool', 'raseed', 'haraka', 'reports', 'platform', 'settings'];
+export const MODULE_GROUP_ORDER: ModuleGroup[] = ['usool', 'raseed', 'haraka', 'zeyara', 'reports', 'platform', 'settings'];
 
 export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
   {
@@ -572,6 +639,48 @@ export const MODULE_PERMISSIONS_CONFIG: ModuleConfig[] = [
       { key: 'staffManage', label: 'Manage Staff Capabilities', labelKey: 'permOp.haraka.staffManage', requiresKey: 'deliveryAgentsView' },
       { key: 'staffAvailabilityManage', label: 'Manage Staff Working Hours', labelKey: 'permOp.haraka.staffAvailabilityManage', requiresKey: 'staffManage' },
       { key: 'analyticsView', label: 'View Analytics', labelKey: 'permOp.haraka.analyticsView' },
+    ],
+  },
+  {
+    key: 'zeyara', label: 'Zeyara', labelKey: 'permModule.zeyara',
+    featureKey: 'zeyara', group: 'zeyara',
+    operations: [
+      { key: 'view', label: 'View Zeyara Dashboard', labelKey: 'permOp.zeyara.view' },
+      { key: 'appointmentsView', label: 'View Visits', labelKey: 'permOp.zeyara.appointmentsView' },
+      { key: 'appointmentsCreate', label: 'Book Visit', labelKey: 'permOp.zeyara.appointmentsCreate', requiresKey: 'appointmentsView' },
+      { key: 'appointmentsUpdate', label: 'Edit / Reschedule Visit', labelKey: 'permOp.zeyara.appointmentsUpdate', requiresKey: 'appointmentsView' },
+      { key: 'appointmentsConfirm', label: 'Confirm Visit', labelKey: 'permOp.zeyara.appointmentsConfirm', requiresKey: 'appointmentsView' },
+      { key: 'appointmentsComplete', label: 'Complete Visit', labelKey: 'permOp.zeyara.appointmentsComplete', requiresKey: 'appointmentsView' },
+      { key: 'appointmentsCancel', label: 'Cancel Visit', labelKey: 'permOp.zeyara.appointmentsCancel', requiresKey: 'appointmentsView' },
+      { key: 'appointmentsMarkNoShow', label: 'Mark Visit No-Show', labelKey: 'permOp.zeyara.appointmentsMarkNoShow', requiresKey: 'appointmentsView' },
+      { key: 'appointmentsGenerateInvoice', label: 'Generate Invoice for Visit', labelKey: 'permOp.zeyara.appointmentsGenerateInvoice', requiresKey: 'appointmentsView' },
+      { key: 'appointmentsAddPayment', label: 'Add Payment Entry (Visits)', labelKey: 'permOp.zeyara.appointmentsAddPayment', requiresKey: 'appointmentsView' },
+      { key: 'appointmentsAddProduct', label: 'Add Product / Medication to Visit', labelKey: 'permOp.zeyara.appointmentsAddProduct', requiresKey: 'appointmentsView' },
+      { key: 'customersView', label: 'View Patients', labelKey: 'permOp.zeyara.customersView' },
+      { key: 'customersCreate', label: 'Add Patients', labelKey: 'permOp.zeyara.customersCreate', requiresKey: 'customersView' },
+      { key: 'customersUpdate', label: 'Edit Patients', labelKey: 'permOp.zeyara.customersUpdate', requiresKey: 'customersView' },
+      { key: 'customersDelete', label: 'Delete Patients', labelKey: 'permOp.zeyara.customersDelete', requiresKey: 'customersView' },
+      { key: 'customersExport', label: 'Export Patients (CSV)', labelKey: 'permOp.zeyara.customersExport', requiresKey: 'customersView' },
+      { key: 'customersHistoryView', label: 'View Patient History', labelKey: 'permOp.zeyara.customersHistoryView', requiresKey: 'customersView' },
+      { key: 'customerFieldsView', label: 'View Patient Fields', labelKey: 'permOp.zeyara.customerFieldsView', requiresKey: 'customersView' },
+      { key: 'customerFieldsCreate', label: 'Add Patient Fields', labelKey: 'permOp.zeyara.customerFieldsCreate', requiresKey: 'customerFieldsView' },
+      { key: 'customerFieldsUpdate', label: 'Edit Patient Fields', labelKey: 'permOp.zeyara.customerFieldsUpdate', requiresKey: 'customerFieldsView' },
+      { key: 'customerFieldsDelete', label: 'Delete Patient Fields', labelKey: 'permOp.zeyara.customerFieldsDelete', requiresKey: 'customerFieldsView' },
+      { key: 'serviceCatalogView', label: 'View Service Catalog', labelKey: 'permOp.zeyara.serviceCatalogView' },
+      { key: 'serviceCatalogCreate', label: 'Add Service', labelKey: 'permOp.zeyara.serviceCatalogCreate', requiresKey: 'serviceCatalogView' },
+      { key: 'serviceCatalogUpdate', label: 'Edit Service', labelKey: 'permOp.zeyara.serviceCatalogUpdate', requiresKey: 'serviceCatalogView' },
+      { key: 'serviceCatalogDelete', label: 'Delete Service', labelKey: 'permOp.zeyara.serviceCatalogDelete', requiresKey: 'serviceCatalogView' },
+      { key: 'staffManage', label: 'Manage Providers', labelKey: 'permOp.zeyara.staffManage' },
+      { key: 'staffAvailabilityManage', label: 'Manage Provider Working Hours', labelKey: 'permOp.zeyara.staffAvailabilityManage', requiresKey: 'staffManage' },
+      { key: 'analyticsView', label: 'View Analytics', labelKey: 'permOp.zeyara.analyticsView' },
+      { key: 'visitsView', label: 'View Visit Records', labelKey: 'permOp.zeyara.visitsView' },
+      { key: 'visitsCreate', label: 'Create Visit Record', labelKey: 'permOp.zeyara.visitsCreate', requiresKey: 'visitsView' },
+      { key: 'visitsUpdate', label: 'Edit Visit Record', labelKey: 'permOp.zeyara.visitsUpdate', requiresKey: 'visitsView' },
+      { key: 'visitsDelete', label: 'Delete Visit Record', labelKey: 'permOp.zeyara.visitsDelete', requiresKey: 'visitsView' },
+      { key: 'visitNotesCreate', label: 'Add Visit Notes', labelKey: 'permOp.zeyara.visitNotesCreate', requiresKey: 'visitsView' },
+      { key: 'visitAttachmentsUpload', label: 'Upload Visit Attachments', labelKey: 'permOp.zeyara.visitAttachmentsUpload', requiresKey: 'visitsView' },
+      { key: 'visitAttachmentsDelete', label: 'Delete Visit Attachments', labelKey: 'permOp.zeyara.visitAttachmentsDelete', requiresKey: 'visitsView' },
+      { key: 'followUpsView', label: 'View Follow-Ups', labelKey: 'permOp.zeyara.followUpsView' },
     ],
   },
   {

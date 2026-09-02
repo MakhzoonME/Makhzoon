@@ -1,19 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Trash2, CreditCard } from 'lucide-react';
+import { Plus, Trash2, CreditCard, Check, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ConfigSelect } from '@/components/shared/ConfigSelect';
 import {
   useAppointmentPayments,
   useAddAppointmentPayment,
+  useSettleAppointmentPayment,
   useRemoveAppointmentPayment,
   useUpdateAppointment,
 } from '@/hooks/haraka';
 import { toast, useT } from '@/hooks/ui';
 import { formatCurrency } from '@/lib/utils/format';
-import type { HarakaAppointment } from '@/types';
+import type { HarakaAppointment, HarakaAppointmentPayment } from '@/types';
 import { cn } from '@/lib/utils/cn';
 
 interface Props {
@@ -29,6 +30,14 @@ const PAY_STATUS_STYLE: Record<string, string> = {
   paid:    'bg-[var(--green-100)] text-[var(--green-700)]',
   partial: 'bg-orange-100 text-orange-700',
   unpaid:  'bg-[var(--red-100)] text-[var(--red-700)]',
+};
+
+/** Per-payment-LINE status badge — distinct from the appointment-level
+ *  paid/partial/unpaid badge above, which rolls up only 'paid' lines. */
+const LINE_STATUS_STYLE: Record<HarakaAppointmentPayment['status'], string> = {
+  paid:         'bg-[var(--green-100)] text-[var(--green-700)]',
+  unpaid:       'bg-orange-100 text-orange-700',
+  written_off:  'bg-surface-page text-gray-400',
 };
 
 interface SplitRow { id: string; method: string; value: string }
@@ -47,6 +56,7 @@ function makeSplitRows(): SplitRow[] {
 export function AppointmentPaymentsPanel({ appointment, currency = 'JOD', readOnly, canEditDiscount }: Props) {
   const { data } = useAppointmentPayments(appointment.id);
   const addMut = useAddAppointmentPayment();
+  const settleMut = useSettleAppointmentPayment();
   const removeMut = useRemoveAppointmentPayment();
   const updateMut = useUpdateAppointment();
   const { t } = useT();
@@ -55,6 +65,9 @@ export function AppointmentPaymentsPanel({ appointment, currency = 'JOD', readOn
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('');
   const [note, setNote] = useState('');
+  // A line entered as owed-but-not-collected (e.g. an insurer's share) —
+  // settled later via Mark Paid / Write Off on that line.
+  const [recordUnpaid, setRecordUnpaid] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState(false);
   const [discountInput, setDiscountInput] = useState('');
 
@@ -65,6 +78,18 @@ export function AppointmentPaymentsPanel({ appointment, currency = 'JOD', readOn
   const payments = data?.payments ?? [];
   const remaining = appointment.total - appointment.amountPaid;
   const terminal = appointment.status === 'cancelled' || appointment.status === 'no_show';
+
+  // Outstanding-by-method: unpaid lines only, grouped — separate from the
+  // paid/partial/unpaid badge above, which is about the appointment's total
+  // vs. what's actually been collected, not what's been promised-but-owed.
+  const outstandingByMethod = payments
+    .filter((p) => p.status === 'unpaid')
+    .reduce<Record<string, number>>((acc, p) => {
+      const key = p.paymentMethod ?? t('paymentPanel.sectionLabel');
+      acc[key] = (acc[key] ?? 0) + p.amount;
+      return acc;
+    }, {});
+  const outstandingTotal = Object.values(outstandingByMethod).reduce((s, v) => s + v, 0);
 
   const totalAmt = parseFloat(amount) || 0;
   const splitBasisSum = splitRows.reduce((s, r) => s + (parseFloat(r.value) || 0), 0);
@@ -94,6 +119,7 @@ export function AppointmentPaymentsPanel({ appointment, currency = 'JOD', readOn
   function resetForm() {
     setAmount(''); setMethod(''); setNote(''); setShowForm(false);
     setSplitMode(false); setSplitBasis('percentage'); setSplitRows(makeSplitRows());
+    setRecordUnpaid(false);
   }
 
   async function handleDiscountSave() {
@@ -116,6 +142,7 @@ export function AppointmentPaymentsPanel({ appointment, currency = 'JOD', readOn
     if (isNaN(amt) || amt <= 0) { toast.error(t('paymentPanel.enterValidAmount')); return; }
     if (splitMode && !splitValid) { toast.error(t('paymentPanel.splitMismatch')); return; }
     try {
+      const status = recordUnpaid ? 'unpaid' : 'paid';
       if (splitMode) {
         for (const row of splitRows) {
           await addMut.mutateAsync({
@@ -123,6 +150,7 @@ export function AppointmentPaymentsPanel({ appointment, currency = 'JOD', readOn
             amount: Number(splitRowAmount(row).toFixed(3)),
             paymentMethod: row.method || null,
             note: note || null,
+            status,
           });
         }
       } else {
@@ -131,6 +159,7 @@ export function AppointmentPaymentsPanel({ appointment, currency = 'JOD', readOn
           amount: amt,
           paymentMethod: method || null,
           note: note || null,
+          status,
         });
       }
       toast.success(t('paymentPanel.savePayment'));
@@ -143,6 +172,15 @@ export function AppointmentPaymentsPanel({ appointment, currency = 'JOD', readOn
   async function handleRemove(paymentId: string) {
     try {
       await removeMut.mutateAsync({ appointmentId: appointment.id, paymentId });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong'));
+    }
+  }
+
+  async function handleSettle(paymentId: string, status: 'paid' | 'written_off') {
+    try {
+      await settleMut.mutateAsync({ appointmentId: appointment.id, paymentId, status });
+      toast.success(t('common.updated'));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('common.somethingWentWrong'));
     }
@@ -173,11 +211,42 @@ export function AppointmentPaymentsPanel({ appointment, currency = 'JOD', readOn
                 <span className="capitalize">
                   {p.paymentMethod?.replace(/_/g, ' ') ?? t('paymentPanel.sectionLabel')}
                 </span>
+                {p.status !== 'paid' && (
+                  <span className={cn('px-1.5 py-0.5 rounded text-[11px] font-semibold capitalize', LINE_STATUS_STYLE[p.status])}>
+                    {p.status.replace('_', ' ')}
+                  </span>
+                )}
                 {p.note && <span className="text-gray-400 text-xs">— {p.note}</span>}
               </div>
               <span className="font-mono font-medium text-gray-800">
                 {formatCurrency(p.amount, currency)}
               </span>
+              {!readOnly && !terminal && p.status === 'unpaid' && (
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    aria-label="Mark paid"
+                    title={t('paymentPanel.markPaid')}
+                    className="text-green-600 hover:text-green-700 hover:bg-green-50 h-6 w-6 p-0"
+                    onClick={() => handleSettle(p.id, 'paid')}
+                    disabled={settleMut.isPending}
+                  >
+                    <Check className="h-3 w-3" strokeWidth={1.75} />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    aria-label="Write off"
+                    title={t('paymentPanel.writeOff')}
+                    className="text-gray-400 hover:text-gray-600 hover:bg-surface-page h-6 w-6 p-0"
+                    onClick={() => handleSettle(p.id, 'written_off')}
+                    disabled={settleMut.isPending}
+                  >
+                    <Ban className="h-3 w-3" strokeWidth={1.75} />
+                  </Button>
+                </div>
+              )}
               {!readOnly && !terminal && (
                 <Button
                   size="sm"
@@ -190,6 +259,21 @@ export function AppointmentPaymentsPanel({ appointment, currency = 'JOD', readOn
                   <Trash2 className="h-3 w-3" strokeWidth={1.75} />
                 </Button>
               )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {outstandingTotal > 0.001 && (
+        <div className="rounded-lg border border-dashed border-orange-200 bg-orange-50 p-3 space-y-1 text-sm">
+          <div className="flex justify-between font-semibold text-orange-700">
+            <span>{t('paymentPanel.outstandingByMethod')}</span>
+            <span className="font-mono">{formatCurrency(outstandingTotal, currency)}</span>
+          </div>
+          {Object.entries(outstandingByMethod).map(([m, amt]) => (
+            <div key={m} className="flex justify-between text-xs text-orange-600 capitalize">
+              <span>{m.replace(/_/g, ' ')}</span>
+              <span className="font-mono">{formatCurrency(amt, currency)}</span>
             </div>
           ))}
         </div>
@@ -373,6 +457,17 @@ export function AppointmentPaymentsPanel({ appointment, currency = 'JOD', readOn
               <label className="text-xs font-medium text-gray-600">{t('paymentPanel.noteLabel')}</label>
               <Input value={note} onChange={(e) => setNote(e.target.value)} className="text-sm h-8" />
             </div>
+
+            <label className="flex items-center gap-2 text-xs text-gray-600">
+              <input
+                type="checkbox"
+                checked={recordUnpaid}
+                onChange={(e) => setRecordUnpaid(e.target.checked)}
+                className="rounded border-border"
+              />
+              {t('paymentPanel.recordAsUnpaid')}
+            </label>
+
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={resetForm} className="flex-1">
                 {t('common.cancel')}

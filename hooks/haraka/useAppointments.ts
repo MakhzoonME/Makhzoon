@@ -189,6 +189,10 @@ export function useAddAppointmentPayment() {
       amount: number;
       paymentMethod: string | null;
       note: string | null;
+      /** Omit for the common case — the API defaults to 'paid'. Pass
+       *  'unpaid' to record a line that is owed but not yet collected
+       *  (e.g. an insurer's share), settled later via useSettleAppointmentPayment. */
+      status?: 'paid' | 'unpaid';
     }) => {
       const res = await fetch(`/api/haraka/appointments/${vars.appointmentId}/payments`, {
         method: 'POST',
@@ -197,9 +201,38 @@ export function useAddAppointmentPayment() {
           amount: vars.amount,
           paymentMethod: vars.paymentMethod,
           note: vars.note,
+          status: vars.status,
         }),
       });
       if (!res.ok) throw await errorFrom(res, 'Failed to add payment');
+      return res.json();
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: paymentsKey(vars.appointmentId) });
+      qc.invalidateQueries({ queryKey: LIST_KEY });
+    },
+  });
+}
+
+/** Settles one 'unpaid' payment line to 'paid' (the insurer paid) or
+ *  'written_off' (denied — stop chasing it). Both are terminal for that line. */
+export function useSettleAppointmentPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: {
+      appointmentId: string;
+      paymentId: string;
+      status: 'paid' | 'written_off';
+    }) => {
+      const res = await fetch(
+        `/api/haraka/appointments/${vars.appointmentId}/payments/${vars.paymentId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: vars.status }),
+        },
+      );
+      if (!res.ok) throw await errorFrom(res, 'Failed to settle payment');
       return res.json();
     },
     onSuccess: (_, vars) => {

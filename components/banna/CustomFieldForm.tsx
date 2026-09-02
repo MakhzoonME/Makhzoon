@@ -35,6 +35,7 @@ const MODULES = [
   { value: 'inventory', label: 'Inventory' },
   { value: 'customers', label: 'Customers' },
   { value: 'appointments', label: 'Appointments' },
+  { value: 'visits', label: 'Visits (Zeyara)' },
 ];
 
 export interface CustomFieldFormData {

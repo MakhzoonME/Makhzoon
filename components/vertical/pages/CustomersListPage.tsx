@@ -21,7 +21,7 @@ import type { PosCustomer } from '@/types';
 import { useOrgInfo } from '@/hooks/org';
 
 export function CustomersListPage() {
-  const { featureKey, permModule, basePath, colorVar } = useVertical();
+  const { featureKey, permModule, basePath, customersSegment, navLabelKey, colorVar } = useVertical();
   const { isAllowed } = useModuleGuard({ featureKey, moduleKey: permModule });
   const router = useRouter();
   const params = useParams<{ locale: string; orgSlug: string; space: string }>();
@@ -53,7 +53,7 @@ export function CustomersListPage() {
 
   if (!isAllowed) return null;
 
-  const base = `${basePath}/customers`;
+  const base = `${basePath}/${customersSegment}`;
   const title = t('customers.title');
 
   async function handleBulkDelete() {
@@ -140,7 +140,7 @@ export function CustomersListPage() {
         breadcrumb={[
           { label: orgInfo?.name ?? params.orgSlug },
           { label: params.space },
-          { label: t('nav.pos'), href: basePath },
+          { label: t(navLabelKey), href: basePath },
           { label: title },
         ]}
         actions={

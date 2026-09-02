@@ -426,6 +426,7 @@ export class AppointmentsService {
     amount: number,
     paymentMethod: string | null,
     note: string | null,
+    status: 'paid' | 'unpaid' = 'paid',
   ) {
     requireOp(tenant, 'appointmentsAddPayment')
     const appointment = await this.getById(tenant, appointmentId)
@@ -433,13 +434,34 @@ export class AppointmentsService {
     if (statusItem?.isTerminal && !statusItem.isInvoicingTrigger) {
       badRequest(`A ${appointment.status.replace('_', '-')} appointment cannot take payments`)
     }
-    const updated = await repo.addPayment(tenant, appointmentId, amount, paymentMethod, note)
+    const updated = await repo.addPayment(tenant, appointmentId, amount, paymentMethod, note, status)
     auditLog.queue({
       tenant,
       module:   'pos',
       action:   'APPOINTMENT_PAYMENT_ADDED',
       recordId: appointmentId,
-      newValue: { amount, paymentMethod, paymentStatus: updated.paymentStatus },
+      newValue: { amount, paymentMethod, status, paymentStatus: updated.paymentStatus },
+    })
+    return updated
+  }
+
+  /** Settle an outstanding ('unpaid') payment line to 'paid' or
+   *  'written_off' — see repo.settlePayment for the stock-transition rule. */
+  async settlePayment(
+    tenant: TenantContext,
+    appointmentId: string,
+    paymentId: string,
+    status: 'paid' | 'written_off',
+  ) {
+    requireOp(tenant, 'appointmentsAddPayment')
+    await this.getById(tenant, appointmentId)
+    const updated = await repo.settlePayment(tenant, appointmentId, paymentId, status)
+    auditLog.queue({
+      tenant,
+      module:   'pos',
+      action:   'APPOINTMENT_PAYMENT_ADDED',
+      recordId: appointmentId,
+      newValue: { paymentId, settledTo: status, paymentStatus: updated.paymentStatus },
     })
     return updated
   }

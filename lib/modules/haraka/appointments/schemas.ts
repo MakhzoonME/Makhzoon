@@ -48,6 +48,15 @@ export const addAppointmentPaymentSchema = z.object({
   amount:        z.number().positive(),
   paymentMethod: z.string().max(60).nullable().optional(),
   note:          z.string().trim().max(500).nullable().optional(),
+  // Defaults to 'paid' server-side when omitted — every existing caller
+  // keeps behaving exactly as before. 'unpaid' records a line that is owed
+  // but not yet collected (e.g. an insurer's share), settled later via
+  // PATCH .../payments/[paymentId].
+  status:        z.enum(['paid', 'unpaid']).optional(),
+})
+
+export const settleAppointmentPaymentSchema = z.object({
+  status: z.enum(['paid', 'written_off']),
 })
 
 export const addAppointmentProductSchema = z.object({
@@ -60,4 +69,5 @@ export type CreateAppointmentPayload = z.infer<typeof createAppointmentSchema>
 export type UpdateAppointmentPayload = z.infer<typeof updateAppointmentSchema>
 export type UpdateAppointmentStatusPayload = z.infer<typeof updateAppointmentStatusSchema>
 export type AddAppointmentPaymentPayload = z.infer<typeof addAppointmentPaymentSchema>
+export type SettleAppointmentPaymentPayload = z.infer<typeof settleAppointmentPaymentSchema>
 export type AddAppointmentProductPayload = z.infer<typeof addAppointmentProductSchema>

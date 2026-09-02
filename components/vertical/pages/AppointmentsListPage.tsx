@@ -20,11 +20,13 @@ import { formatDateTime } from '@/lib/utils/date';
 import type { HarakaAppointment } from '@/types';
 
 export function AppointmentsListPage() {
-  const { featureKey, permModule, basePath, colorVar } = useVertical();
+  const { vertical, featureKey, permModule, basePath, colorVar } = useVertical();
   const { isAllowed } = useModuleGuard({
     featureKey,
-    // Appointments is an à-la-carte sub-module INSIDE Haraka.
-    harakaModule: 'appointments',
+    // Appointments is an à-la-carte sub-module INSIDE Haraka; Zeyara buys the
+    // appointment engine as part of the vertical itself, so this gate only
+    // applies on the Haraka surface.
+    harakaModule: vertical === 'haraka' ? 'appointments' : undefined,
     moduleKey: permModule,
     permOp: 'appointmentsView',
   });

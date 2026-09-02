@@ -54,6 +54,7 @@ export {
   useDeleteAppointment,
   useAppointmentPayments,
   useAddAppointmentPayment,
+  useSettleAppointmentPayment,
   useRemoveAppointmentPayment,
   useAppointmentProducts,
   useAddAppointmentProduct,

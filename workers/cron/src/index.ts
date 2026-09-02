@@ -21,6 +21,11 @@ const SCHEDULE: Record<string, string> = {
   '0 1 * * *': '/api/cron/subscription-status',
   '0 2 * * *': '/api/cron/monthly-billing',
   '0 3 * * *': '/api/cron/grace-enforcement',
+  // Zeyara appointment + follow-up reminders. Hourly so a clinic can pick any
+  // lead time (e.g. "24 hours before") without the sweep cadence being the
+  // limiting factor — idempotency comes from the per-(appointment, kind) row,
+  // not the schedule.
+  '0 * * * *': '/api/cron/appointment-reminders',
 };
 
 export default {

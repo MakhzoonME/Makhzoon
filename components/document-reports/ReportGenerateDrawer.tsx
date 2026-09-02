@@ -19,6 +19,7 @@ const ENCOUNTER_LABELS: Record<ReportEncounterType, string> = {
   appointment: 'Appointment',
   service_job: 'Service Job',
   order: 'Order',
+  visit: 'Visit',
 }
 
 /** Encounter types the manual picker can resolve, because the customer history
